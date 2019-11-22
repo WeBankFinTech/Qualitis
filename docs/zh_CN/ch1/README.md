@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-[English](../../../README.md) | 中文  
+[English](../../../) | 中文  
 
 ## 引言
 Qualitis是一个支持多种异构数据源的质量校验、通知、管理服务的一站式数据质量管理平台，用于解决业务系统运行、数据中心建设及数据治理过程中的各种数据质量问题。
