@@ -11,7 +11,7 @@ At the same time, Qualitis provides enterprise-level features of financial-level
 
 ## Features
 - **Define Data Quality Model**  
-Supports data quality model below:  
+Supports data quality model below:   
 1.Model of single table.  
 2.Model of multi-table.  
 3.Custom model.   
