@@ -13,7 +13,7 @@ At the same time, Qualitis provides enterprise-level features of financial-level
 - **Define Data Quality Model**  
 Supports data quality model below:   
 1.Model of single table.  
-2.Model of multi-table.  
+2.Model of multi-table.   
 3.Custom model.   
 <br /> At the same time, Qualitis presets multiple data quality verification templates, including common checks such as null check, blank check, number check, enumeration check and so on, which simplifies data quality model definition.  
 
