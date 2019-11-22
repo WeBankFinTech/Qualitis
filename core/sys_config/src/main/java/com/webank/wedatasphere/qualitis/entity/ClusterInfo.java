@@ -1,0 +1,158 @@
+/*
+ * Copyright 2019 WeBank
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.webank.wedatasphere.qualitis.entity;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import javax.persistence.*;
+
+/**
+ * @author howeye
+ */
+@Entity
+@Table(name = "config_cluster_info")
+public class ClusterInfo {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonProperty("cluster_info_id")
+    private long id;
+
+    @Column(name = "cluster_name", length = 100)
+    @JsonProperty("cluster_name")
+    private String clusterName;
+    @Column(name = "cluster_type", length = 100)
+    @JsonProperty("cluster_type")
+    private String clusterType;
+    @Column(length = 100, name = "meta_store_address")
+    @JsonProperty("meta_store_address")
+    private String metaStoreAddress;
+    @Column(length = 100, name = "hive_server2_address")
+    @JsonProperty("hive_server2_address")
+    private String hiveServer2Address;
+    @Column(length = 100, name = "linkis_address")
+    @JsonProperty("linkis_address")
+    private String linkisAddress;
+    @Column(name = "linkis_token", length = 500)
+    @JsonProperty("linkis_token")
+    private String linkisToken;
+
+    @Column(name = "hive_database_address")
+    @JsonProperty("hive_database_address")
+    private String hiveDatabaseAddress;
+    @Column(name = "hive_database_username")
+    @JsonProperty("hive_database_username")
+    private String hiveDatabaseUsername;
+    @Column(name = "hive_database_password")
+    @JsonProperty("hive_database_password")
+    private String hiveDatabasePassword;
+    @Column(name = "cluster_env")
+    @JsonProperty("cluster_env")
+    private String clusterEnv;
+
+    public ClusterInfo() {
+        // Default Constructor
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public void setClusterType(String clusterType) {
+        this.clusterType = clusterType;
+    }
+
+    public String getMetaStoreAddress() {
+        return metaStoreAddress;
+    }
+
+    public void setMetaStoreAddress(String metaStoreAddress) {
+        this.metaStoreAddress = metaStoreAddress;
+    }
+
+    public String getHiveServer2Address() {
+        return hiveServer2Address;
+    }
+
+    public void setHiveServer2Address(String hiveServer2Address) {
+        this.hiveServer2Address = hiveServer2Address;
+    }
+
+    public String getLinkisAddress() {
+        return linkisAddress;
+    }
+
+    public void setLinkisAddress(String linkisAddress) {
+        this.linkisAddress = linkisAddress;
+    }
+
+    public String getLinkisToken() {
+        return linkisToken;
+    }
+
+    public void setLinkisToken(String linkisToken) {
+        this.linkisToken = linkisToken;
+    }
+
+    public String getHiveDatabaseAddress() {
+        return hiveDatabaseAddress;
+    }
+
+    public void setHiveDatabaseAddress(String hiveDatabaseAddress) {
+        this.hiveDatabaseAddress = hiveDatabaseAddress;
+    }
+
+    public String getHiveDatabaseUsername() {
+        return hiveDatabaseUsername;
+    }
+
+    public void setHiveDatabaseUsername(String hiveDatabaseUsername) {
+        this.hiveDatabaseUsername = hiveDatabaseUsername;
+    }
+
+    public String getHiveDatabasePassword() {
+        return hiveDatabasePassword;
+    }
+
+    public void setHiveDatabasePassword(String hiveDatabasePassword) {
+        this.hiveDatabasePassword = hiveDatabasePassword;
+    }
+
+    public String getClusterEnv() {
+        return clusterEnv;
+    }
+
+    public void setClusterEnv(String clusterEnv) {
+        this.clusterEnv = clusterEnv;
+    }
+}
