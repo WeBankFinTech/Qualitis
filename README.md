@@ -68,7 +68,7 @@ Supports generating data quality reports with optional latitude.
 <br/>
 
 ## Communication
-If you desire immediate response, please kindly raise issues to us or scan the below QR code by WeChat and QQ to join our group: 
+If you desire immediate response, please kindly raise issues to us or scan the below QR code by WeChat and QQ to join our group:   
 ![](images/en_US/ch1/ContractUs.png)
 
 ## License
