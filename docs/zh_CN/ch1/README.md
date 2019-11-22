@@ -70,7 +70,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 非常欢迎广大的社区伙伴给我们贡献新引擎和代码！
 
 ## Communication
-如果您想得到最快的响应，请给我们提issue，或者您也可以扫码进群：
+如果您想得到最快的响应，请给我们提issue，或者您也可以扫码进群：  
 ![](../../../images/en_US/ch1/ContractUs.png)
 
 ## License
