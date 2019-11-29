@@ -1,4 +1,5 @@
 .gradle
+.github
 .git/
 .idea/
 build/
