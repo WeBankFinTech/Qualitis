@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-English | [中文](docs/zh_CN/ch1/README.md)  
+English | [中文](docs/zh_CN/ch1)  
 
 ## Overview
 Qualitis is a one-stop data quality management platform that supports quality verification, notification, and management for various datasource. It is used to solve various data quality problems caused by data processing.
@@ -11,10 +11,10 @@ At the same time, Qualitis provides enterprise-level features of financial-level
 
 ## Features
 - **Define Data Quality Model**  
-Supports data quality model below:   
+Supports data quality model below:  
 1.Model of single table.  
-2.Model of multi-table.    
-3.Custom model.   
+2.Model of multi-table.  
+3.Custom model.  
 <br /> At the same time, Qualitis presets multiple data quality verification templates, including common checks such as null check, blank check, number check, enumeration check and so on, which simplifies data quality model definition.  
 
 - **Data Quality Model Scheduling**  
@@ -31,7 +31,7 @@ Supports abnormal data storage, which can quickly locate problems.
 
 - **Workflow**  
 Supports workflow  
-Workflow needs [DSS](https://github.com/WeBankFinTech/Linkis).
+Workflow needs [DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio).
 
 - **Administrator Console**  
 Administrator console provided.  

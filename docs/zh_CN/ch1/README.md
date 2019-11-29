@@ -1,11 +1,11 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-[English](../../../README.md) | 中文  
+[English](../../../) | 中文  
 
 ## 引言
 Qualitis是一个支持多种异构数据源的质量校验、通知、管理服务的一站式数据质量管理平台，用于解决业务系统运行、数据中心建设及数据治理过程中的各种数据质量问题。
 
-Qualitis基于Spring Boot开发，依赖于Linkis进行数据计算，提供数据质量模型构建，数据质量模型执行，数据质量任务管理，异常数据发现保存以及数据质量报表生成等功能。并提供了金融级数据质量模型资源隔离，资源管控，权限隔离等企业特性，具备高并发，高性能，高可用的大数据质量管理能力。
+Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质量模型构建，数据质量模型执行，数据质量任务管理，异常数据发现保存以及数据质量报表生成等功能。并提供了金融级数据质量模型资源隔离，资源管控，权限隔离等企业特性，具备高并发，高性能，高可用的大数据质量管理能力。
 
 ## 核心特点
 - **数据质量模型定义**   
@@ -29,7 +29,7 @@ Qualitis基于Spring Boot开发，依赖于Linkis进行数据计算，提供数�
 
 - **支持工作流**
 支持在工作流当中进行数据质量校验  
-工作流必装[DSS](https://github.com/WeBankFinTech/Linkis).
+工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/Linkis).
 
 - **管理员控制台**  
 提供管理员控制台界面，支持人员管理，权限管理，权限管理，元数据管理等管理功能。  
