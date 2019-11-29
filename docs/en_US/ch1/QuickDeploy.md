@@ -8,7 +8,7 @@ Hadoop (2.7.2)
 Hive (1.2.1)   
 Zookeeper (3.4.9)  
 Linkis (0.9.0), Spark engine required.[How to install Linkis?](https://github.com/WeBankFinTech/Linkis)  
-DSS (0.5.0) Optional. If you want to use workflow, it it required. [How to install DSS?](https://github.com/WeBankFinTech/DSS)  
+DataSphereStudio (0.5.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)  
 
 ## 2. Download
 [Download](https://github.com/WeBankFinTech/Qualitis/releases)
@@ -95,7 +95,7 @@ Here is an example:
 
 Tips:   
 Workflow default supported. 
-You need to install [DSS](https://github.com/WeBankFinTech/DSS) to use workflow.  
+You need to install [DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio) to use workflow.  
 Enabling workflow does not affect the normal use of Qualitis.  
 If you want to close it, you can do as follow:
 ```
