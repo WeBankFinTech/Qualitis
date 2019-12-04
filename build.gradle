@@ -43,6 +43,9 @@ dependencies {
 repositories {
   mavenLocal()
   mavenCentral()
+  maven {
+    url "https://repo.spring.io/libs-milestone"
+  }
 }
 
 mainClassName = "com.webank.wedatasphere.qualitis.QualitisServer"
@@ -107,6 +110,9 @@ subprojects {
   repositories {
     mavenLocal()
     mavenCentral()
+    maven {
+      url "https://repo.spring.io/libs-milestone"
+    }
   }
 
   processResources {
