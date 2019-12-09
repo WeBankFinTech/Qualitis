@@ -163,6 +163,7 @@ public class DatabaseChecker {
             statement.execute(getChangeOwner(dbName, username));
             LOGGER.info("Succeed to change the owner of database: {}, owner: {}", dbName, username);
         } catch (SQLException e) {
+            LOGGER.error("Failed to create hive server2 statement", e);
             throw new HiveServer2StatementException("Failed to create hive server2 statement, address:" + hiveServer2Address);
         } finally {
             if (statement != null) {
