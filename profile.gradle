@@ -46,24 +46,9 @@ project(':web/app') {
     compile project(':web/user')
     compile project(':web/sys_config')
     compile project(':web/meta_data')
-    compile project(':web/meta_data_auth')
     compile project(':web/project')
     compile project(':web/scheduler')
     compile project(':web/staff')
-  }
-}
-
-project(':web/meta_data_auth') {
-  archivesBaseName = 'web_meta_data_auth'
-
-  dependencies {
-    compile libs.springBootStarter
-    compile libs.springBootStarterJersey
-    compile libs.commonsLang
-
-    compile project(":core/meta_data")
-    compile project(":core/user")
-    compile project(':web/common')
   }
 }
 
@@ -128,7 +113,6 @@ project(':web/sys_config') {
     compile libs.commonsLang
 
     compile project(':web/common')
-    compile project(':web/meta_data_auth')
     compile project(':core/meta_data')
     compile project(':core/sys_config')
   }
