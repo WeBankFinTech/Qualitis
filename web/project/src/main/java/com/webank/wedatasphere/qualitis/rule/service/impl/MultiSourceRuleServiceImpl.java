@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.webank.wedatasphere.qualitis.dao.MetaDataClusterDao;
-import com.webank.wedatasphere.qualitis.entity.MetaDataCluster;
+import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
+import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
@@ -36,22 +36,7 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import com.webank.wedatasphere.qualitis.dao.MetaDataClusterDao;
-import com.webank.wedatasphere.qualitis.entity.MetaDataCluster;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.service.ProjectService;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.adapter.AutoArgumentAdapter;
-import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.*;
-import com.webank.wedatasphere.qualitis.rule.service.*;
+import org.apache.catalina.Cluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -72,8 +57,6 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     @Autowired
     private ProjectService projectService;
     @Autowired
-    private MetaDataClusterDao metaDataClusterDao;
-    @Autowired
     private RuleTemplateService ruleTemplateService;
     @Autowired
     private RuleDao ruleDao;
@@ -89,6 +72,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     private RuleDataSourceMappingService ruleDataSourceMappingService;
     @Autowired
     private RuleGroupDao ruleGroupDao;
+    @Autowired
+    private ClusterInfoDao clusterInfoDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiSourceRuleServiceImpl.class);
     private static final String MID_TMP_STR = "@#$%^&";
@@ -104,8 +89,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         // Check existence of rule name
         ruleService.checkRuleName(request.getRuleName(), projectInDb, null);
         // Check existence of cluster
-        MetaDataCluster metaDataClusterInDb = metaDataClusterDao.findByClusterName(request.getClusterName());
-        if (metaDataClusterInDb == null) {
+        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(request.getClusterName());
+        if (clusterInfo == null) {
             throw new UnExpectedRequestException("Cluster :" + request.getClusterName() + " {&DOES_NOT_EXIST}");
         }
         // Check existence of id and check if multi-table rule
