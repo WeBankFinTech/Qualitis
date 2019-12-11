@@ -25,7 +25,7 @@ import javax.persistence.Table;
  * @author howeye
  */
 @Entity
-@Table(name = "auth_list")
+@Table(name = "qualitis_auth_list")
 public class AuthList {
 
     @Id

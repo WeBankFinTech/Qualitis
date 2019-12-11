@@ -25,7 +25,7 @@ import java.util.Set;
  * @author howeye
  */
 @Entity
-@Table(name = "application_task")
+@Table(name = "qualitis_application_task")
 public class Task {
 
     @Id
