@@ -23,7 +23,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "template_output_meta")
+@Table(name = "qualitis_template_output_meta")
 public class TemplateOutputMeta {
 
     @Id

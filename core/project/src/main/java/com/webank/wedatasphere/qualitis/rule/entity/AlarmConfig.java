@@ -23,7 +23,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "rule_alarm_config")
+@Table(name = "qualitis_rule_alarm_config")
 public class AlarmConfig {
 
     @Id
