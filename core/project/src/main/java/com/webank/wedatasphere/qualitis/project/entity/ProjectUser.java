@@ -23,7 +23,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "project_user")
+@Table(name = "qualitis_project_user")
 public class ProjectUser {
 
     @Id

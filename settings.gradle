@@ -15,7 +15,6 @@
  */
 
 rootProject.name = 'qualitis'
-include 'web/app', 'web/user', 'web/sys_config', 'web/project', 'web/task', 'web/analysis', 'web/scheduler', 'web/meta_data', 'web/common',
-        'web/meta_data_auth', 'web/staff',
+include 'web/app', 'web/user', 'web/sys_config', 'web/project', 'web/task', 'web/analysis', 'web/scheduler', 'web/meta_data', 'web/common', 'web/staff',
         'core/converter', 'core/divider', 'core/common',  'core/monitor', 'core/task', 'core/project',
         'core/scheduler', 'core/analysis', 'util', 'core/user', 'core/sys_config', 'core/meta_data'

@@ -25,7 +25,7 @@ import javax.persistence.*;
  * @author howeye
  */
 @Entity
-@Table(name = "application")
+@Table(name = "qualitis_application")
 public class Application {
 
     @Id

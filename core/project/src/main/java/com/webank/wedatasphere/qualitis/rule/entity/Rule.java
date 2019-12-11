@@ -27,7 +27,7 @@ import java.util.Set;
  * @author howeye
  */
 @Entity
-@Table(name = "rule", uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "name"}))
+@Table(name = "qualitis_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "name"}))
 public class Rule {
 
     @Id
