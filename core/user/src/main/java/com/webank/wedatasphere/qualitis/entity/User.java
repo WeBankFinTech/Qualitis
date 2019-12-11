@@ -51,7 +51,7 @@ public class User {
     private String department;
 
     @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
-    @JoinTable(name = "auth_user_role",
+    @JoinTable(name = "qualitis_auth_user_role",
             joinColumns = {@JoinColumn(name="user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
     private Set<Role> roles;
@@ -63,7 +63,7 @@ public class User {
     private List<UserSpecPermission> userSpecPermissions;
 
     @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
-    @JoinTable(name = "auth_user_permission",
+    @JoinTable(name = "qualitis_auth_user_permission",
             joinColumns = {@JoinColumn(name="user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id")})
     private Set<Permission> specPermissions;
