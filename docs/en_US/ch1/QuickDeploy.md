@@ -7,8 +7,8 @@ JDK (1.8.0_141)
 Hadoop (2.7.2)  
 Hive (1.2.1)   
 Zookeeper (3.4.9)  
-Linkis (0.9.0), Spark engine required.[How to install Linkis?](https://github.com/WeBankFinTech/Linkis)  
-DataSphereStudio (0.5.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)  
+Linkis (0.9.1), Spark engine required.[How to install Linkis?](https://github.com/WeBankFinTech/Linkis)  
+DataSphereStudio (0.6.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)  
 
 ## 2. Download
 [Download](https://github.com/WeBankFinTech/Qualitis/releases)
@@ -83,10 +83,7 @@ Cluster type
 HiveMetaStore address  
 HiveServer2 address  
 Linkis address  
-Linkis Token  
-Hive database address  
-Hive database username  
-Hive database password
+Linkis Token(How to get Linkis Token：[Linkis Access Guide](Linkis Access Guide.md))  
 
 Here is an example:  
 ![](../../../images/en_US/ch1/ClusterConfigurationDemo.png)
