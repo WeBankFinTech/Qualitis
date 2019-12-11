@@ -20,35 +20,6 @@
 # @createtime 2018-12-25
 #
 
-# Attempts to locate java home, prints an error and exits if no
-# java can be found.
-locate_java_home() {
-  local JAVA8_HOME_CANDIDATES='\
-    /usr/java/jdk1.8* \
-    /nemo/jdk1.8*'
-
-  JAVA_HOME_CANDIDATES="$JAVA8_HOME_CANDIDATES"
-
-  # attempt to find java 8
-  flag=""
-  for candidate_regex in $JAVA_HOME_CANDIDATES ; do
-      for candidate in `ls -rd $candidate_regex 2>/dev/null`; do
-        if [ -e $candidate/bin/java ]; then
-          export JAVA_HOME=$candidate
-          flag="true"
-          break 2
-        fi
-      done
-  done
-
-  if [ -z "$flag" ]; then
-    echo "No JDK 8 found. Qualitis System requires Java 1.8" 1>&2
-    exit 1
-  fi
-
-  verify_java_home
-}
-
 # Verify that JAVA_HOME set - does not verify that it's set to a meaningful
 # value.
 verify_java_home() {
@@ -67,7 +38,7 @@ EOF
 bin=`dirname ${BASH_SOURCE-$0}`
 bin=`cd "$bin"; pwd`
 
-locate_java_home
+verify_java_home
 
 # find correct directory
 if [ ! -d "${bin}/../logs" ]; then
