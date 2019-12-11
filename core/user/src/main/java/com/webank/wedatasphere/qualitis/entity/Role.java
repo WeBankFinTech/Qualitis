@@ -24,7 +24,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "auth_role")
+@Table(name = "qualitis_auth_role")
 public class Role {
 
     @Id

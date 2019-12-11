@@ -24,7 +24,7 @@ import javax.persistence.*;
  * @author howeye
  */
 @Entity
-@Table(name = "config_cluster_info")
+@Table(name = "qualitis_config_cluster_info")
 public class ClusterInfo {
 
     @Id
