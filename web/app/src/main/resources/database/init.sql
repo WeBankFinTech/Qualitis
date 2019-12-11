@@ -129,24 +129,6 @@ CREATE TABLE `auth_list` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- Table structure for auth_meta_data
--- ----------------------------
-DROP TABLE IF EXISTS `auth_meta_data`;
-CREATE TABLE `auth_meta_data` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `auth_type` int(11) DEFAULT NULL,
-  `cluster_name` varchar(300) DEFAULT NULL,
-  `column_name` varchar(300) DEFAULT NULL,
-  `column_type` varchar(300) DEFAULT NULL,
-  `create_time` datetime DEFAULT NULL,
-  `db_name` varchar(300) DEFAULT NULL,
-  `is_org` bit(1) DEFAULT NULL,
-  `table_name` varchar(300) DEFAULT NULL,
-  `username` varchar(300) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
 -- Table structure for auth_permission
 -- ----------------------------
 DROP TABLE IF EXISTS `auth_permission`;
@@ -267,58 +249,6 @@ CREATE TABLE `config_cluster_info` (
   `linkis_token` varchar(500) DEFAULT NULL,
   `meta_store_address` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for meta_data_cluster
--- ----------------------------
-DROP TABLE IF EXISTS `meta_data_cluster`;
-CREATE TABLE `meta_data_cluster` (
-  `cluster_name` varchar(100) NOT NULL,
-  PRIMARY KEY (`cluster_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for meta_data_column
--- ----------------------------
-DROP TABLE IF EXISTS `meta_data_column`;
-CREATE TABLE `meta_data_column` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `column_name` varchar(230) DEFAULT NULL,
-  `column_type` varchar(300) DEFAULT NULL,
-  `table_id` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UKlf30be39fg4fkpecn10os6j9f` (`column_name`,`table_id`),
-  KEY `FKjjryo73id291mse2ndo4s9ewl` (`table_id`),
-  CONSTRAINT `FKjjryo73id291mse2ndo4s9ewl` FOREIGN KEY (`table_id`) REFERENCES `meta_data_table` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for meta_data_db
--- ----------------------------
-DROP TABLE IF EXISTS `meta_data_db`;
-CREATE TABLE `meta_data_db` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `db_name` varchar(155) DEFAULT NULL,
-  `cluster_name` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UKa4io2ogf9xtdb6r678kon8xbq` (`db_name`,`cluster_name`),
-  KEY `FK42h2gngnid3oo66dq3md6racq` (`cluster_name`),
-  CONSTRAINT `FK42h2gngnid3oo66dq3md6racq` FOREIGN KEY (`cluster_name`) REFERENCES `meta_data_cluster` (`cluster_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for meta_data_table
--- ----------------------------
-DROP TABLE IF EXISTS `meta_data_table`;
-CREATE TABLE `meta_data_table` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `table_name` varchar(230) DEFAULT NULL,
-  `db_id` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK8j6lf7gt3b5gq6kb02tspu7yu` (`table_name`,`db_id`),
-  KEY `FKjo75osj5y5l6oenrpnijmowh9` (`db_id`),
-  CONSTRAINT `FKjo75osj5y5l6oenrpnijmowh9` FOREIGN KEY (`db_id`) REFERENCES `meta_data_db` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------

@@ -16,51 +16,37 @@
 
 package com.webank.wedatasphere.qualitis.client.impl;
 
-import com.webank.wedatasphere.qualitis.constant.MetaDataAuthEnum;
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
-import com.webank.wedatasphere.qualitis.dao.MetaDataAuthDao;
-import com.webank.wedatasphere.qualitis.dao.MetaDataClusterDao;
-import com.webank.wedatasphere.qualitis.dao.MetaDataColumnDao;
-import com.webank.wedatasphere.qualitis.dao.MetaDataDbDao;
-import com.webank.wedatasphere.qualitis.dao.MetaDataTableDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.request.GetClusterByUserRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetColumnByUserAndTableRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetDbByUserAndClusterRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetTableByUserAndDbRequest;
-import com.webank.wedatasphere.qualitis.metadata.response.ClusterMappingDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
-import com.webank.wedatasphere.qualitis.entity.AuthMetaData;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
-import com.webank.wedatasphere.qualitis.entity.MetaDataCluster;
-import com.webank.wedatasphere.qualitis.entity.MetaDataColumn;
-import com.webank.wedatasphere.qualitis.entity.MetaDataDb;
-import com.webank.wedatasphere.qualitis.entity.MetaDataTable;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-
-import com.webank.wedatasphere.qualitis.constant.MetaDataAuthEnum;
-import com.webank.wedatasphere.qualitis.entity.*;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-import com.webank.wedatasphere.qualitis.metadata.request.GetClusterByUserRequest;
-import com.webank.wedatasphere.qualitis.metadata.request.GetColumnByUserAndTableRequest;
-import com.webank.wedatasphere.qualitis.metadata.request.GetDbByUserAndClusterRequest;
-import com.webank.wedatasphere.qualitis.metadata.request.GetTableByUserAndDbRequest;
-import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
+import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -70,37 +56,28 @@ import java.util.List;
 public class MetaDataClientImpl implements MetaDataClient {
 
   @Autowired
-  private MetaDataAuthDao metaDataAuthDao;
-  @Autowired
-  private MetaDataClusterDao metaDataClusterDao;
-  @Autowired
-  private MetaDataDbDao metaDataDbDao;
-  @Autowired
-  private MetaDataTableDao metaDataTableDao;
-  @Autowired
-  private MetaDataColumnDao metaDataColumnDao;
-  @Autowired
   private ClusterInfoDao clusterInfoDao;
 
-  /**
-   * Paging query auth_meta_data
-   * Query SQL: select distinct(cluster_name) from auth_meta_data where username = "${login_user}" and is_org = 0 limit 0,5;
-   * @param request
-   * @return
-   */
+  @Autowired
+  private RestTemplate restTemplate;
+
+  @Autowired
+  private LinkisConfig linkisConfig;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(MetaDataClientImpl.class);
+
   @Override
   public DataInfo<ClusterInfoDetail> getClusterByUser(GetClusterByUserRequest request) {
-    String authUser = request.getLoginUser();
-    List<String> authMetaDatas = metaDataAuthDao.findDistinctClusterPageByUsernameAndIsOrg(
-        authUser, false, request.getStartIndex(), request.getPageSize());
-    long total = metaDataAuthDao.countDistinctClusterByUsernameAndIsOrg(authUser, false);
-    DataInfo<ClusterInfoDetail> dataInfo = new DataInfo<>((int) total);
-    if (CollectionUtils.isEmpty(authMetaDatas)) {
+    Long total = clusterInfoDao.countAll();
+    List<ClusterInfo> allCluster = clusterInfoDao.findAllClusterInfo(request.getStartIndex(), request.getPageSize());
+
+    DataInfo<ClusterInfoDetail> dataInfo = new DataInfo<>(total.intValue());
+    if (CollectionUtils.isEmpty(allCluster)) {
       return dataInfo;
     }
     List<ClusterInfoDetail> details = new ArrayList<>();
-    for (String clusterName : authMetaDatas) {
-      ClusterInfoDetail detail = new ClusterInfoDetail(clusterName);
+    for (ClusterInfo clusterInfo : allCluster) {
+      ClusterInfoDetail detail = new ClusterInfoDetail(clusterInfo.getClusterName());
       details.add(detail);
     }
     dataInfo.setContent(details);
@@ -109,44 +86,39 @@ public class MetaDataClientImpl implements MetaDataClient {
 
   @Override
   public DataInfo<DbInfoDetail> getDbByUserAndCluster(GetDbByUserAndClusterRequest request)
-      throws UnExpectedRequestException {
+          throws UnExpectedRequestException, MetaDataAcquireFailedException {
     // Check existence of cluster name
-    MetaDataCluster metaDataCluster = checkClusterNameExists(
+    ClusterInfo clusterInfo = checkClusterNameExists(
         request.getClusterName());
     String authUser = request.getLoginUser();
-    // Check permission of user
-    boolean existsClusterAuth = metaDataAuthDao.existsClusterAuth(
-        MetaDataAuthEnum.CLUSTER_AUTH.getCode(), request.getClusterName(), authUser, false);
-    if (existsClusterAuth) {
-      List<MetaDataDb> metaDataDbs = metaDataDbDao.queryPageByCluster(metaDataCluster,
-                                                                      request.getStartIndex(),
-                                                                      request.getPageSize());
-      long total = metaDataDbDao.countByCluster(metaDataCluster);
-      DataInfo<DbInfoDetail> dataInfo = new DataInfo<>((int) total);
-      if (CollectionUtils.isEmpty(metaDataDbs)) {
-        return dataInfo;
-      }
-      List<DbInfoDetail> details = new ArrayList<>();
-      for (MetaDataDb data : metaDataDbs) {
-        DbInfoDetail detail = new DbInfoDetail(data.getDbName());
-        details.add(detail);
-      }
-      dataInfo.setContent(details);
-      return dataInfo;
+    // send request to get dbs
+    String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getDbPath()).toString();
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.add("Token-User", authUser);
+    headers.add("Token-Code", clusterInfo.getLinkisToken());
+
+    HttpEntity<Object> entity = new HttpEntity<>(headers);
+    LOGGER.info("Start to get db by user and cluster by linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
+    Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+    LOGGER.info("Start to get db by user and cluster by linkis. response: {}", response);
+
+    if (!checkResponse(response)) {
+      String message = (String) response.get("message");
+      throw new MetaDataAcquireFailedException("Error! Can not get meta data from linkis, exception: " + message);
     }
 
-    List<String> authMetaDatas = metaDataAuthDao.findDistinctDbPageByClusterNameAndUsernameAndIsOrg(
-        request.getClusterName(), authUser, false, request.getStartIndex(), request.getPageSize());
-    long total = metaDataAuthDao.countDistinctDbByClusterNameAndUsernameAndIsOrg(
-        request.getClusterName(), authUser, false);
-    DataInfo<DbInfoDetail> dataInfo = new DataInfo<>((int) total);
+    List<String> allDbs = ((List<Map<String, String>>)((Map<String, Object>)response.get("data")).get("dbs")).stream()
+            .map(o -> o.get("dbName")).collect(Collectors.toList());
 
-    if (CollectionUtils.isEmpty(authMetaDatas)) {
+    DataInfo<DbInfoDetail> dataInfo = new DataInfo<>(allDbs.size());
+    if (CollectionUtils.isEmpty(allDbs)) {
       return dataInfo;
     }
 
     List<DbInfoDetail> details = new ArrayList<>();
-    for (String data : authMetaDatas) {
+    for (String data : allDbs) {
       DbInfoDetail detail = new DbInfoDetail(data);
       details.add(detail);
     }
@@ -157,48 +129,39 @@ public class MetaDataClientImpl implements MetaDataClient {
 
   @Override
   public DataInfo<TableInfoDetail> getTableByUserAndDb(GetTableByUserAndDbRequest request)
-      throws UnExpectedRequestException {
-
-    MetaDataDb metaData = checkClusterAndDbNameExists(request.getClusterName(),
-                                                                    request.getDbName());
+          throws UnExpectedRequestException, MetaDataAcquireFailedException {
+    ClusterInfo clusterInfo = checkClusterNameExists(request.getClusterName());
     String authUser = request.getLoginUser();
 
-    boolean existsClusterAuth = metaDataAuthDao.existsClusterAuth(
-        MetaDataAuthEnum.CLUSTER_AUTH.getCode(), request.getClusterName(), authUser, false);
+    // send request to get dbs
+    String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getTablePath())
+            .queryParam("database", request.getDbName()).toString();
 
-    boolean existsDbAuth = metaDataAuthDao.existsDbAuth(MetaDataAuthEnum.DB_AUTH.getCode(),
-                                                        request.getClusterName(),
-                                                        request.getDbName(), authUser, false);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.add("Token-User", authUser);
+    headers.add("Token-Code", clusterInfo.getLinkisToken());
 
-    if (existsClusterAuth || existsDbAuth) {
-      List<MetaDataTable> metaDatas = metaDataTableDao.queryPageByDb(metaData,
-                                                                     request.getStartIndex(),
-                                                                     request.getPageSize());
-      long total = metaDataTableDao.countByDb(metaData);
-      DataInfo<TableInfoDetail> dataInfo = new DataInfo<>((int) total);
-      if (CollectionUtils.isEmpty(metaDatas)) {
-        return dataInfo;
-      }
-      List<TableInfoDetail> details = new ArrayList<>();
-      for (MetaDataTable data : metaDatas) {
-        TableInfoDetail detail = new TableInfoDetail(data.getTableName());
-        details.add(detail);
-      }
-      dataInfo.setContent(details);
-      return dataInfo;
+    HttpEntity<Object> entity = new HttpEntity<>(headers);
+    LOGGER.info("Start to get table by user and cluster and db by linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
+    Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+    LOGGER.info("Start to get table by user and cluster and db by linkis. response: {}", response);
+
+    if (!checkResponse(response)) {
+      String message = (String) response.get("message");
+      throw new MetaDataAcquireFailedException("Error! Can not get meta data from linkis, exception: " + message);
     }
 
-    List<String> authMetaDatas = metaDataAuthDao.findDistinctTablePageByClusterNameAndDbNameAndUsernameAndIsOrg(
-        request.getClusterName(), request.getDbName(), authUser, false, request.getStartIndex(),
-        request.getPageSize());
-    long total = metaDataAuthDao.countDistinctTableByClusterNameAndDbNameAndUsernameAndIsOrg(
-        request.getClusterName(), request.getDbName(), authUser, false);
-    DataInfo<TableInfoDetail> dataInfo = new DataInfo<>((int) total);
-    if (CollectionUtils.isEmpty(authMetaDatas)) {
+    List<String> allTables = ((List<Map<String, String>>)((Map<String, Object>)response.get("data")).get("tables")).stream()
+            .map(o -> o.get("tableName")).collect(Collectors.toList());
+
+    DataInfo<TableInfoDetail> dataInfo = new DataInfo<>(allTables.size());
+
+    if (CollectionUtils.isEmpty(allTables)) {
       return dataInfo;
     }
     List<TableInfoDetail> details = new ArrayList<>();
-    for (String data : authMetaDatas) {
+    for (String data : allTables) {
       TableInfoDetail detail = new TableInfoDetail(data);
       details.add(detail);
     }
@@ -208,89 +171,60 @@ public class MetaDataClientImpl implements MetaDataClient {
 
   @Override
   public DataInfo<ColumnInfoDetail> getColumnByUserAndTable(GetColumnByUserAndTableRequest request)
-      throws UnExpectedRequestException {
-
-    MetaDataTable metaData = checkClusterAndDbAndTableNameExists(
-        request.getClusterName(), request.getDbName(), request.getTableName());
+          throws UnExpectedRequestException, MetaDataAcquireFailedException {
+    ClusterInfo clusterInfo = checkClusterNameExists(request.getClusterName());
     String authUser = request.getLoginUser();
 
-    boolean existsClusterAuth = metaDataAuthDao.existsClusterAuth(
-        MetaDataAuthEnum.CLUSTER_AUTH.getCode(), request.getClusterName(), authUser, false);
+    // send request to get dbs
+    String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getColumnPath())
+            .queryParam("database", request.getDbName()).queryParam("table", request.getTableName()).toString();
 
-    boolean existsDbAuth = metaDataAuthDao.existsDbAuth(MetaDataAuthEnum.DB_AUTH.getCode(),
-                                                        request.getClusterName(),
-                                                        request.getDbName(), authUser, false);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.add("Token-User", authUser);
+    headers.add("Token-Code", clusterInfo.getLinkisToken());
 
-    boolean existsTableAuth = metaDataAuthDao.existsTableAuth(MetaDataAuthEnum.TABLE_AUTH.getCode(),
-                                                              request.getClusterName(),
-                                                              request.getDbName(),
-                                                              request.getTableName(), authUser,
-                                                              false);
+    HttpEntity<Object> entity = new HttpEntity<>(headers);
+    LOGGER.info("Start to get column by user and cluster and db and table by linkis. url: {}, method: {}, body: {}", url,
+            javax.ws.rs.HttpMethod.GET, entity);
+    Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+    LOGGER.info("Start to get table by user and cluster and and table by linkis. response: {}", response);
 
-    if (existsClusterAuth || existsDbAuth || existsTableAuth) {
-      List<MetaDataColumn> metaDatas = metaDataColumnDao.queryPageByTable(metaData,
-                                                                          request.getStartIndex(),
-                                                                          request.getPageSize());
-      long total = metaDataColumnDao.countByTable(metaData);
-      DataInfo<ColumnInfoDetail> dataInfo = new DataInfo<>((int) total);
-      if (CollectionUtils.isEmpty(metaDatas)) {
-        return dataInfo;
-      }
-      List<ColumnInfoDetail> details = new ArrayList<>();
-      for (MetaDataColumn data : metaDatas) {
-        ColumnInfoDetail detail = new ColumnInfoDetail(data.getColumnName(), data.getColumnType());
-        details.add(detail);
-      }
-      dataInfo.setContent(details);
-      return dataInfo;
+    if (!checkResponse(response)) {
+      String message = (String) response.get("message");
+      throw new MetaDataAcquireFailedException("Error! Can not get meta data from linkis, exception: " + message);
     }
 
-    List<AuthMetaData> authMetaDatas = metaDataAuthDao.findColumnPageByAuthTypeAndClusterNameAndDbNameAndTableNameAndUsernameAndIsOrg(
-        MetaDataAuthEnum.COLUMN_AUTH.getCode(), request.getClusterName(), request.getDbName(),
-        request.getTableName(), authUser, false, request.getStartIndex(), request.getPageSize());
-    long total = metaDataAuthDao.countColumnByAuthTypeAndClusterNameAndDbNameAndTableNameAndUsernameAndIsOrg(
-        MetaDataAuthEnum.COLUMN_AUTH.getCode(), request.getClusterName(), request.getDbName(),
-        request.getTableName(), authUser, false);
-    DataInfo<ColumnInfoDetail> dataInfo = new DataInfo<>((int) total);
-    if (CollectionUtils.isEmpty(authMetaDatas)) {
+    List<Map<String, String>> allTables = ((List<Map<String, String>>)((Map<String, Object>)response.get("data")).get("columns"));
+
+    DataInfo<ColumnInfoDetail> dataInfo = new DataInfo<>(allTables.size());
+    if (CollectionUtils.isEmpty(allTables)) {
       return dataInfo;
     }
     List<ColumnInfoDetail> details = new ArrayList<>();
-    for (AuthMetaData data : authMetaDatas) {
-      ColumnInfoDetail detail = new ColumnInfoDetail(data.getColumnName(), data.getColumnType());
+    for (Map<String, String> table : allTables) {
+      ColumnInfoDetail detail = new ColumnInfoDetail(table.get("columnName"), table.get("columnType"));
       details.add(detail);
     }
     dataInfo.setContent(details);
     return dataInfo;
   }
 
-  private MetaDataCluster checkClusterNameExists(String clusterName) throws
+  private ClusterInfo checkClusterNameExists(String clusterName) throws
       UnExpectedRequestException {
-    MetaDataCluster metaDataCluster = metaDataClusterDao.findByClusterName(clusterName);
-    if (metaDataCluster == null) {
+    ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(clusterName);
+    if (clusterInfo == null) {
       throw new UnExpectedRequestException(String.format("%s 集群名称不存在", clusterName));
     }
-    return metaDataCluster;
+    return clusterInfo;
   }
 
-  private MetaDataDb checkClusterAndDbNameExists(String clusterName, String dbName) throws
-      UnExpectedRequestException {
-    MetaDataCluster metaDataCluster = checkClusterNameExists(clusterName);
-    MetaDataDb metaDataDb = metaDataDbDao.findByDbNameAndCluster(dbName, metaDataCluster);
-    if (metaDataDb == null) {
-      throw new UnExpectedRequestException(String.format("%s.%s 集群-库关系不存在", clusterName, dbName));
-    }
-    return metaDataDb;
+  private UriBuilder getPath(String linkisAddress) {
+    return UriBuilder.fromUri(linkisAddress).path(linkisConfig.getPrefix());
   }
 
-  private MetaDataTable checkClusterAndDbAndTableNameExists(String clusterName, String dbName,
-      String tableName) throws
-      UnExpectedRequestException {
-    MetaDataDb metaDataDb = checkClusterAndDbNameExists(clusterName, dbName);
-    MetaDataTable metaDataTable = metaDataTableDao.findByTableNameAndDb(tableName, metaDataDb);
-    if (metaDataTable == null) {
-      throw new UnExpectedRequestException(String.format("%s.%s.%s 集群-库-表关系不存在", clusterName, dbName, tableName));
-    }
-    return metaDataTable;
+  private boolean checkResponse(Map response) {
+    Integer responseStatus = (Integer) response.get("status");
+    return responseStatus == 0;
   }
 }
