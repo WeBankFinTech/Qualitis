@@ -23,7 +23,7 @@ import java.util.List;
  * @author howeye
  */
 @Entity
-@Table(name = "auth_proxy_user")
+@Table(name = "qualitis_auth_proxy_user")
 public class ProxyUser {
 
     @Id

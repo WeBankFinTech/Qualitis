@@ -23,7 +23,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "rule_datasource")
+@Table(name = "qualitis_rule_datasource")
 public class RuleDataSource {
 
     @Id

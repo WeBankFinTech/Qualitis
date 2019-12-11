@@ -32,7 +32,7 @@ import javax.persistence.Table;
  * @author howeye
  */
 @Entity
-@Table(name = "auth_permission")
+@Table(name = "qualitis_auth_permission")
 public class Permission {
 
     @Id
