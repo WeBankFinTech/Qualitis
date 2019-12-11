@@ -12,7 +12,7 @@ ALTER TABLE rule_datasource_mapping RENAME TO qualitis_rule_datasource_mapping;
 ALTER TABLE rule_group RENAME TO qualitis_rule_group;
 ALTER TABLE rule_variable RENAME TO qualitis_rule_variable;
 ALTER TABLE template RENAME TO qualitis_template;
-ALTER TABLE template_mid_TABLE_input_meta RENAME TO qualitis_template_mid_TABLE_input_meta;
+ALTER TABLE template_mid_table_input_meta RENAME TO qualitis_template_mid_table_input_meta;
 ALTER TABLE template_output_meta RENAME TO qualitis_template_output_meta;
 ALTER TABLE template_regexp_expr RENAME TO qualitis_template_regexp_expr;
 ALTER TABLE template_statistic_input_meta RENAME TO qualitis_template_statistic_input_meta;
