@@ -24,7 +24,7 @@ import java.util.Set;
  * @author howeye
  */
 @Table
-@Entity(name = "template_mid_table_input_meta")
+@Entity(name = "qualitis_template_mid_table_input_meta")
 public class TemplateMidTableInputMeta {
 
     @Id

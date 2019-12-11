@@ -30,7 +30,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "application_task_rule_simple")
+@Table(name = "qualitis_application_task_rule_simple")
 public class TaskRuleSimple {
 
     @Id

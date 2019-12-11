@@ -24,7 +24,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "rule_variable")
+@Table(name = "qualitis_rule_variable")
 public class RuleVariable {
 
     @Id
