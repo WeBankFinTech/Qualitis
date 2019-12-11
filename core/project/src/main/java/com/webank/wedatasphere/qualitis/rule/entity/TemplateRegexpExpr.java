@@ -22,7 +22,7 @@ import javax.persistence.*;
  * @author howeye
  */
 @Entity
-@Table(name = "template_regexp_expr")
+@Table(name = "qualitis_template_regexp_expr")
 public class TemplateRegexpExpr {
 
     @Id

@@ -43,6 +43,14 @@ public class LinkisConfig {
     @Value("${linkis.log.maskKey}")
     private String logMaskKey;
 
+    @Value("${linkis.api.meta_data.db_path}")
+    private String dbPath;
+
+    @Value("${linkis.api.meta_data.table_path}")
+    private String tablePath;
+
+    @Value("${linkis.api.meta_data.column_path}")
+    private String columnPath;
 
     public String getPrefix() {
         return prefix;
@@ -90,5 +98,29 @@ public class LinkisConfig {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getDbPath() {
+        return dbPath;
+    }
+
+    public void setDbPath(String dbPath) {
+        this.dbPath = dbPath;
+    }
+
+    public String getTablePath() {
+        return tablePath;
+    }
+
+    public void setTablePath(String tablePath) {
+        this.tablePath = tablePath;
+    }
+
+    public String getColumnPath() {
+        return columnPath;
+    }
+
+    public void setColumnPath(String columnPath) {
+        this.columnPath = columnPath;
     }
 }

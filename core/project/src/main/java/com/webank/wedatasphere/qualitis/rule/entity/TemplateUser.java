@@ -23,7 +23,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
-@Table(name = "template_user")
+@Table(name = "qualitis_template_user")
 public class TemplateUser {
 
     @Id

@@ -35,12 +35,6 @@ public class AddClusterInfoRequest {
     private String linkisAddress;
     @JsonProperty("linkis_token")
     private String linkisToken;
-    @JsonProperty("hive_database_address")
-    private String hiveDatabaseAddress;
-    @JsonProperty("hive_database_username")
-    private String hiveDatabaseUsername;
-    @JsonProperty("hive_database_password")
-    private String hiveDatabasePassword;
     public AddClusterInfoRequest() {
         // Default Constructor
     }
@@ -91,30 +85,6 @@ public class AddClusterInfoRequest {
 
     public void setLinkisToken(String linkisToken) {
         this.linkisToken = linkisToken;
-    }
-
-    public String getHiveDatabaseAddress() {
-        return hiveDatabaseAddress;
-    }
-
-    public void setHiveDatabaseAddress(String hiveDatabaseAddress) {
-        this.hiveDatabaseAddress = hiveDatabaseAddress;
-    }
-
-    public String getHiveDatabaseUsername() {
-        return hiveDatabaseUsername;
-    }
-
-    public void setHiveDatabaseUsername(String hiveDatabaseUsername) {
-        this.hiveDatabaseUsername = hiveDatabaseUsername;
-    }
-
-    public String getHiveDatabasePassword() {
-        return hiveDatabasePassword;
-    }
-
-    public void setHiveDatabasePassword(String hiveDatabasePassword) {
-        this.hiveDatabasePassword = hiveDatabasePassword;
     }
 
     @Override

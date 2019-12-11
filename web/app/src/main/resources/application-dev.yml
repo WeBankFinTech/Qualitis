@@ -58,10 +58,11 @@ zk:
 hive:
   username: username
   password: password
-  jdbc:
-    driver-class-name: com.mysql.jdbc.Driver
-    max-pool-size: 50
-    min-pool-size: 2
+# deprecated
+#  jdbc:
+#    driver-class-name: com.mysql.jdbc.Driver
+#    max-pool-size: 50
+#    min-pool-size: 2
 
 auth:
   unFilterUrls:
@@ -72,10 +73,11 @@ auth:
     - /qualitis/api/v1/projector/rule/batch/upload/*
     - /qualitis/api/v1/projector/project/batch/upload*
 
-meta-data:
-  refresh-cron: 55 03 05 * * ?
-  lock-path: /qualitis/tmp/refresh_metadata
-  lock-time: 5
+# deprecated
+#meta-data:
+#  refresh-cron: 55 03 05 * * ?
+#  lock-path: /qualitis/tmp/refresh_metadata
+#  lock-time: 5
 
 linkis:
   api:
@@ -84,5 +86,9 @@ linkis:
     status: jobhistory/{id}/get
     runningLog: entrance/{id}/log
     finishLog: filesystem/openLog
+    meta_data:
+      db_path: datasource/dbs
+      table_path: datasource/tables
+      column_path: datasource/columns
   log:
     maskKey: task.persistent.username, task.persistent.password

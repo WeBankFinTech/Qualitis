@@ -23,7 +23,7 @@ import java.util.Set;
  * @author howeye
  */
 @Entity
-@Table(name = "template")
+@Table(name = "qualitis_template")
 public class Template {
 
     @Id

@@ -94,7 +94,7 @@ Here is an example:
 ---
 
 Tips:   
-Workflow default supported. 
+Workflow is default supported.   
 You need to install [DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio) to use workflow.  
 Enabling workflow does not affect the normal use of Qualitis.  
 If you want to close it, you can do as follow:
@@ -102,3 +102,12 @@ If you want to close it, you can do as follow:
 vim conf/application.yml
 ```
 And set workflow.enable=false
+
+---
+
+Debug mode is default opened, and the default port is 8091.  
+If you want to close it, you can delete the following code in 'build.gradle' when you are using source code.
+```
+-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8091
+```
+or you can edit the 'bin/qualitis' file when you are in binary code.

@@ -22,7 +22,7 @@ import javax.persistence.*;
  * @author howeye
  */
 @Entity
-@Table(name = "application_task_result")
+@Table(name = "qualitis_application_task_result")
 public class TaskResult {
 
     @Id
