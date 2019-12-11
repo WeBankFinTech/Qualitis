@@ -35,7 +35,7 @@ public class Role {
     private String name;
 
     @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
-    @JoinTable(name = "auth_role_permission",
+    @JoinTable(name = "qualitis_auth_role_permission",
             joinColumns = {@JoinColumn(name="role_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "permission_id", referencedColumnName = "id")})
     private List<Permission> permissions;
