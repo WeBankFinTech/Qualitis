@@ -23,7 +23,7 @@ import java.util.List;
  * @author howeye
  */
 @Entity
-@Table(name = "rule_group")
+@Table(name = "qualitis_rule_group")
 public class RuleGroup {
 
     @Id
