@@ -27,7 +27,7 @@ import javax.persistence.*;
  * @author howeye
  */
 @Entity
-@Table(name = "application_task_rule_alarm_config")
+@Table(name = "qualitis_application_task_rule_alarm_config")
 public class TaskRuleAlarmConfig {
 
     @Id
