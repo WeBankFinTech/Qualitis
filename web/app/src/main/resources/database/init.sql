@@ -4,8 +4,8 @@ SET FOREIGN_KEY_CHECKS=0;
 -- ----------------------------
 -- Table structure for auth_role_permission
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_role_permission`;
-CREATE TABLE `auth_role_permission` (
+DROP TABLE IF EXISTS `qualitis_auth_role_permission`;
+CREATE TABLE `qualitis_auth_role_permission` (
   `role_id` bigint(20) NOT NULL,
   `permission_id` bigint(20) NOT NULL,
   KEY `FK5mgu2qwy6vgke5w8ds63it2ni` (`permission_id`),
@@ -17,8 +17,8 @@ CREATE TABLE `auth_role_permission` (
 -- ----------------------------
 -- Table structure for auth_user_permission
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_user_permission`;
-CREATE TABLE `auth_user_permission` (
+DROP TABLE IF EXISTS `qualitis_auth_user_permission`;
+CREATE TABLE `qualitis_auth_user_permission` (
   `user_id` bigint(20) NOT NULL,
   `permission_id` bigint(20) NOT NULL,
   PRIMARY KEY (`user_id`,`permission_id`),
@@ -30,8 +30,8 @@ CREATE TABLE `auth_user_permission` (
 -- ----------------------------
 -- Table structure for auth_user_role
 -- ----------------------------
-DROP TABLE IF EXISTS `auth_user_role`;
-CREATE TABLE `auth_user_role` (
+DROP TABLE IF EXISTS `qualitis_auth_user_role`;
+CREATE TABLE `qualitis_auth_user_role` (
   `user_id` bigint(20) NOT NULL,
   `role_id` bigint(20) NOT NULL,
   PRIMARY KEY (`user_id`,`role_id`),
