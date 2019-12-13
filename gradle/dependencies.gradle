@@ -36,7 +36,7 @@ versions += [
     "springRetry":"1.2.2.RELEASE",
     "aspectJ":"1.8.13",
     "quartz":"2.2.1",
-    "dss":"0.5.0"
+    "dss":"0.6.0"
 ]
 
 libs += [
