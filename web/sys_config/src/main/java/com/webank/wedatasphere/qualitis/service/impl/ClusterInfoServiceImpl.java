@@ -56,8 +56,6 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         // 查看clusterName是否已存在
         String clusterName = request.getClusterName();
         String clusterType = request.getClusterType();
-        String metaStoreAddress = request.getMetaStoreAddress();
-        String hiveServer2Address = request.getHiveServer2Address();
         String linkisAddress = request.getLinkisAddress();
         String linkisToken = request.getLinkisToken();
         ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
@@ -69,8 +67,6 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         ClusterInfo newClusterInfo = new ClusterInfo();
         newClusterInfo.setClusterName(clusterName);
         newClusterInfo.setClusterType(clusterType);
-        newClusterInfo.setMetaStoreAddress(metaStoreAddress);
-        newClusterInfo.setHiveServer2Address(hiveServer2Address);
         newClusterInfo.setLinkisAddress(linkisAddress);
         newClusterInfo.setLinkisToken(linkisToken);
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(newClusterInfo);
@@ -119,8 +115,6 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         clusterInfoInDb.setClusterType(clusterType);
         clusterInfoInDb.setLinkisAddress(request.getLinkisAddress());
         clusterInfoInDb.setLinkisToken(request.getLinkisToken());
-        clusterInfoInDb.setHiveServer2Address(request.getHiveServer2Address());
-        clusterInfoInDb.setMetaStoreAddress(request.getMetaStoreAddress());
 
         // 保存clusterInfo
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(clusterInfoInDb);
@@ -155,8 +149,6 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         checkId(request.getClusterInfoId());
         checkString(request.getClusterName(), "cluster name");
         checkString(request.getClusterType(), "cluster type");
-        checkString(request.getMetaStoreAddress(), "Meta_store_address");
-        checkString(request.getHiveServer2Address(), "Hive_server2_address");
         checkString(request.getLinkisAddress(), "Ujes_address");
         checkString(request.getLinkisToken(), "Ujes_token");
     }
@@ -174,8 +166,6 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         }
         checkString(request.getClusterName(), "cluster name");
         checkString(request.getClusterType(), "cluster type");
-        checkString(request.getMetaStoreAddress(), "Meta_store_address");
-        checkString(request.getHiveServer2Address(), "Hive_server2_address");
         checkString(request.getLinkisAddress(), "Ujes_address");
         checkString(request.getLinkisToken(), "Ujes_token");
     }
