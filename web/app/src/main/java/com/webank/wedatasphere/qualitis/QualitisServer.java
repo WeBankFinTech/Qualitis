@@ -35,9 +35,6 @@ import org.springframework.retry.annotation.EnableRetry;
 @EnableRetry
 public class QualitisServer {
 
-    @Autowired
-    private MessageSource messageSource;
-
     public static void main(String[] args) {
         SpringApplication.run(QualitisServer.class, args);
     }

@@ -91,8 +91,9 @@ public interface OuterExecutionService {
      * @throws InterruptedException
      * @throws ClusterInfoNotConfigException
      */
-    ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, String partition, String executionUser, Application newApplication, Date date) throws RuleVariableNotSupportException,
-            JobSubmitException, RuleVariableNotFoundException, ArgumentException, ConvertException, DataQualityTaskException, TaskTypeException, ExecutionException, InterruptedException, ClusterInfoNotConfigException;
+    ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, String partition, String executionUser, Application newApplication, Date date)
+        throws RuleVariableNotSupportException,
+        JobSubmitException, RuleVariableNotFoundException, ArgumentException, ConvertException, DataQualityTaskException, TaskTypeException, ExecutionException, InterruptedException, ClusterInfoNotConfigException, SystemConfigException;
 
     /**
      * 生成applicationInfo
