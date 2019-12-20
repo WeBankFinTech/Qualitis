@@ -21,3 +21,7 @@ server:
 
 workflow:
   enable: true
+
+system:
+  config:
+    save_database_pattern: save_database_pattern
