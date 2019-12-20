@@ -38,12 +38,6 @@ public class ClusterInfo {
     @Column(name = "cluster_type", length = 100)
     @JsonProperty("cluster_type")
     private String clusterType;
-    @Column(length = 100, name = "meta_store_address")
-    @JsonProperty("meta_store_address")
-    private String metaStoreAddress;
-    @Column(length = 100, name = "hive_server2_address")
-    @JsonProperty("hive_server2_address")
-    private String hiveServer2Address;
     @Column(length = 100, name = "linkis_address")
     @JsonProperty("linkis_address")
     private String linkisAddress;
@@ -77,22 +71,6 @@ public class ClusterInfo {
 
     public void setClusterType(String clusterType) {
         this.clusterType = clusterType;
-    }
-
-    public String getMetaStoreAddress() {
-        return metaStoreAddress;
-    }
-
-    public void setMetaStoreAddress(String metaStoreAddress) {
-        this.metaStoreAddress = metaStoreAddress;
-    }
-
-    public String getHiveServer2Address() {
-        return hiveServer2Address;
-    }
-
-    public void setHiveServer2Address(String hiveServer2Address) {
-        this.hiveServer2Address = hiveServer2Address;
     }
 
     public String getLinkisAddress() {

@@ -29,10 +29,6 @@ public class ModifyClusterInfoRequest {
     private String clusterName;
     @JsonProperty("cluster_type")
     private String clusterType;
-    @JsonProperty("meta_store_address")
-    private String metaStoreAddress;
-    @JsonProperty("hive_server2_address")
-    private String hiveServer2Address;
     @JsonProperty("linkis_address")
     private String linkisAddress;
     @JsonProperty("linkis_token")
@@ -63,22 +59,6 @@ public class ModifyClusterInfoRequest {
 
     public void setClusterType(String clusterType) {
         this.clusterType = clusterType;
-    }
-
-    public String getMetaStoreAddress() {
-        return metaStoreAddress;
-    }
-
-    public void setMetaStoreAddress(String metaStoreAddress) {
-        this.metaStoreAddress = metaStoreAddress;
-    }
-
-    public String getHiveServer2Address() {
-        return hiveServer2Address;
-    }
-
-    public void setHiveServer2Address(String hiveServer2Address) {
-        this.hiveServer2Address = hiveServer2Address;
     }
 
     public String getLinkisAddress() {
