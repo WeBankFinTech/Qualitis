@@ -19,7 +19,7 @@ QUALITIS-AUTH=*
 
 ### 加入MySQL依赖包
 ```
-cd $LINKIS_HOME/linkis-ujes-spark-enginemanager/lib
+cd $SPARK_HOME/jars
 ```
 并加入mysql依赖包
 
