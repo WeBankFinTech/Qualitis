@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.submitter.impl;
 
 import com.webank.wedatasphere.qualitis.bean.*;
 import com.webank.wedatasphere.qualitis.client.AbstractJobSubmitter;
-import com.webank.wedatasphere.qualitis.config.HiveConfig;
 import com.webank.wedatasphere.qualitis.config.TaskExecuteLimitConfig;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.converter.TemplateConverterFactory;
@@ -48,7 +47,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -65,9 +63,6 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
     @Autowired
     private ClusterInfoDao clusterInfoDao;
-
-    @Autowired
-    private HiveConfig hiveConfig;
 
     @Autowired
     private TaskDao taskDao;
