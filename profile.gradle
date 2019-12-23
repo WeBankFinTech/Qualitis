@@ -264,34 +264,6 @@ project(':core/scheduler') {
   archivesBaseName = 'core_scheduler'
 
   dependencies{
-    compile (libs.hiveMetaStore) {
-      exclude group: 'javax.servlet.jsp'
-      exclude group: 'javax.servlet'
-      exclude group: 'com.sun.jersey'
-      exclude group: 'com.sun.jersey.contribs'
-      exclude group: 'javax.xml.bind'
-    }
-    compile (libs.hadoopClient) {
-      exclude group: 'javax.servlet'
-      exclude group: 'javax.servlet.jsp'
-      exclude group: 'com.sun.jersey'
-      exclude group: 'com.sun.jersey.contribs'
-      exclude group: 'javax.xml.bind'
-    }
-    compile (libs.hadoopCommon) {
-      exclude group: 'javax.servlet.jsp'
-      exclude group: 'javax.servlet'
-      exclude group: 'com.sun.jersey'
-      exclude group: 'com.sun.jersey.contribs'
-      exclude group: 'javax.xml.bind'
-    }
-    compile (libs.hiveJdbc) {
-      exclude group: 'javax.servlet.jsp'
-      exclude module: 'jetty-all'
-      exclude group: 'com.sun.jersey'
-      exclude group: 'com.sun.jersey.contribs'
-      exclude group: 'javax.xml.bind'
-    }
     compile libs.curatorRecipes
     compile libs.curatorFramework
     compile libs.curatorClient

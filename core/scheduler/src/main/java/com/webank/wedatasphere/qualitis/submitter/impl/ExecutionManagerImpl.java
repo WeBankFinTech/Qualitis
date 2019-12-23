@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.submitter.impl;
 
 import com.webank.wedatasphere.qualitis.bean.*;
 import com.webank.wedatasphere.qualitis.client.AbstractJobSubmitter;
-import com.webank.wedatasphere.qualitis.config.HiveConfig;
 import com.webank.wedatasphere.qualitis.config.TaskExecuteLimitConfig;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.converter.TemplateConverterFactory;
@@ -31,38 +30,23 @@ import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.*;
-import com.webank.wedatasphere.qualitis.factory.CheckHiveDataBaseExistCallable;
-import com.webank.wedatasphere.qualitis.factory.HiveDataBaseCheckThreadPool;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
-import com.webank.wedatasphere.qualitis.hive.DatabaseChecker;
-import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
 import com.webank.wedatasphere.qualitis.bean.RuleTaskDetail;
 import com.webank.wedatasphere.qualitis.bean.TaskSubmitResult;
-import com.webank.wedatasphere.qualitis.client.AbstractJobSubmitter;
-import com.webank.wedatasphere.qualitis.config.HiveConfig;
-import com.webank.wedatasphere.qualitis.config.TaskExecuteLimitConfig;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.divider.TaskDividerFactory;
 import com.webank.wedatasphere.qualitis.exception.ArgumentException;
-import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
-import com.webank.wedatasphere.qualitis.factory.CheckHiveDataBaseExistCallable;
-import com.webank.wedatasphere.qualitis.factory.HiveDataBaseCheckThreadPool;
-import com.webank.wedatasphere.qualitis.hive.DatabaseChecker;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -78,13 +62,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
     private AbstractJobSubmitter abstractJobSubmitter;
 
     @Autowired
-    private DatabaseChecker databaseChecker;
-
-    @Autowired
     private ClusterInfoDao clusterInfoDao;
-
-    @Autowired
-    private HiveConfig hiveConfig;
 
     @Autowired
     private TaskDao taskDao;
@@ -94,9 +72,6 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
     @Autowired
     private TaskDataSourceRepository taskDataSourceRepository;
-
-    @Autowired
-    private HiveDataBaseCheckThreadPool hiveDataBaseCheckThreadPool;
 
     @Autowired
     private TaskExecuteLimitConfig taskExecuteLimitConfig;
@@ -130,11 +105,6 @@ public class ExecutionManagerImpl implements ExecutionManager {
         for (String clusterName : clusterNameMap.keySet()) {
             List<Rule> clusterRules = clusterNameMap.get(clusterName);
             ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(clusterName);
-
-            // Create database if not exist
-            Future<Boolean> checkLimitFuture = hiveDataBaseCheckThreadPool.submitCallable(new CheckHiveDataBaseExistCallable(databaseChecker, database, clusterInfo.getMetaStoreAddress(),
-                    clusterInfo.getHiveServer2Address(), hiveConfig.getUsername(), hiveConfig.getPassword(), user));
-            checkLimitFuture.get();
 
             // Divide rule into tasks
             List<DataQualityTask> tasks = TaskDividerFactory.getDivider().divide(clusterRules, applicationId, createTime, partition, date,

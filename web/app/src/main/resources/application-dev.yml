@@ -55,10 +55,10 @@ zk:
   connection_time_out: 15000
   lock_wait_time: 3
 
-hive:
-  username: username
-  password: password
 # deprecated
+#hive:
+#  username: username
+#  password: password
 #  jdbc:
 #    driver-class-name: com.mysql.jdbc.Driver
 #    max-pool-size: 50
