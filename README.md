@@ -73,3 +73,8 @@ If you desire immediate response, please kindly raise issues to us or scan the b
 
 ## License
 **Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+
+## Tips
+Because the front-end code of Qualitis is FES, a front-end framework developed by WeBank, but the FES framework is not currently open source, so the front-end code of Qualitis is not open source for the time being. We will promote Qualitis's front-end open source as soon as possible. We are very sorry about this.
+
+You can download the source code and unzip web/app/src/main/resources/static/static.zip to get the compiled front-end code, or use it directly by downloading the release.

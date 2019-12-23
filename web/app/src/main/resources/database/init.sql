@@ -289,6 +289,18 @@ CREATE TABLE `qualitis_config_cluster_info` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
+-- Table structure for qualitis_config_system
+-- ----------------------------
+DROP TABLE IF EXISTS `qualitis_config_system`;
+CREATE TABLE `qualitis_config_system` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `key_name` varchar(50) DEFAULT NULL,
+  `value` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_665kcle6t77m5lbm48gohcyyg` (`key_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
 -- Table structure for qualitis_project
 -- ----------------------------
 DROP TABLE IF EXISTS `qualitis_project`;
@@ -914,5 +926,7 @@ insert into qualitis_template_statistic_input_meta(template_id, id, name, func_n
 	values(19, 19, "", "count", "*", 1, "Long");
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
 	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
+
+insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
 
 insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "a33693de51");
