@@ -16,9 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.config.SystemKeyConfig;
 import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
+import com.webank.wedatasphere.qualitis.dao.SystemConfigDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
@@ -54,6 +56,7 @@ import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
 import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
@@ -98,13 +101,17 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private LocaleParser localeParser;
     @Autowired
     private RuleGroupDao ruleGroupDao;
+    @Autowired
+    private SystemConfigDao systemConfigDao;
+    @Autowired
+    private SystemKeyConfig systemKeyConfig;
 
     @Context
     private HttpServletRequest httpRequest;
 
     private static final FastDateFormat TASK_TIME_FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmssSSS");
+    private static final String USERNAME_FORMAT_PLACEHOLDER = "${USERNAME}";
     private static final Logger LOGGER = LoggerFactory.getLogger(OuterExecutionServiceImpl.class);
-    private Random random = new Random();
 
     public OuterExecutionServiceImpl(@Context HttpServletRequest httpRequest) {
         this.httpRequest = httpRequest;
@@ -425,8 +432,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
 
     @Override
-    public ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, String partition, String executionUser, Application newApplication, Date date) throws RuleVariableNotSupportException,
-            JobSubmitException, RuleVariableNotFoundException, ArgumentException, ConvertException, DataQualityTaskException, TaskTypeException, ExecutionException, InterruptedException, ClusterInfoNotConfigException {
+    public ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, String partition, String executionUser, Application newApplication, Date date)
+        throws RuleVariableNotSupportException, JobSubmitException, RuleVariableNotFoundException, ArgumentException,
+        ConvertException, DataQualityTaskException, TaskTypeException, ExecutionException, InterruptedException,
+        ClusterInfoNotConfigException, SystemConfigException {
         // current user
         String username = executionUser;
 
@@ -494,8 +503,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
     }
 
-    private String generateDatabase(String username) {
-        return "qualitis" + username + "_tmp_safe";
+    private String generateDatabase(String username) throws SystemConfigException {
+        SystemConfig systemConfigInDb = systemConfigDao.findByKeyName(systemKeyConfig.getSaveDatabasePattern());
+
+        if (systemConfigInDb == null || StringUtils.isBlank(systemConfigInDb.getValue())) {
+            throw new SystemConfigException(String.format("System Config: %s, can not be null or empty", systemKeyConfig.getSaveDatabasePattern()));
+        }
+
+        return systemConfigInDb.getValue().replace(USERNAME_FORMAT_PLACEHOLDER, username);
     }
 
     private String generateTaskId(Date date, String nonce) {
