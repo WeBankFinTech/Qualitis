@@ -33,7 +33,7 @@ task:
     username: root
     password: root
     address: jdbc:mysql://localhost:3306/test
-    tableName: application_task_result
+    tableName: qualitis_application_task_result
   execute:
     limit_thread: 10
     rule_size: 10
