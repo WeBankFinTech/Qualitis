@@ -110,17 +110,17 @@ public class PassUtil {
             return true;
         }
         if (compareType.equals(CompareTypeEnum.EQUAL.getCode())) {
-            return taskResult.equals(compareValue);
-        } else if (compareType.equals(CompareTypeEnum.BIGGER.getCode())) {
-            return taskResult > compareValue;
-        } else if (compareType.equals(CompareTypeEnum.SMALLER.getCode())) {
-            return taskResult < compareValue;
-        } else if (compareType.equals(CompareTypeEnum.BIGGER_EQUAL.getCode())) {
-            return taskResult >= compareValue;
-        } else if (compareType.equals(CompareTypeEnum.SMALLER_EQUAL.getCode())) {
-            return taskResult <= compareValue;
-        } else if (compareType.equals(CompareTypeEnum.NOT_EQUAL.getCode())) {
             return !taskResult.equals(compareValue);
+        } else if (compareType.equals(CompareTypeEnum.BIGGER.getCode())) {
+            return taskResult <= compareValue;
+        } else if (compareType.equals(CompareTypeEnum.SMALLER.getCode())) {
+            return taskResult >= compareValue;
+        } else if (compareType.equals(CompareTypeEnum.BIGGER_EQUAL.getCode())) {
+            return taskResult < compareValue;
+        } else if (compareType.equals(CompareTypeEnum.SMALLER_EQUAL.getCode())) {
+            return taskResult > compareValue;
+        } else if (compareType.equals(CompareTypeEnum.NOT_EQUAL.getCode())) {
+            return taskResult.equals(compareValue);
         }
         LOGGER.warn("CompareType is not found, {}", compareType);
         return null;
