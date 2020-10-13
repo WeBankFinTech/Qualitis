@@ -555,378 +555,378 @@ CREATE TABLE `qualitis_template_user` (
 
 -- -------------------------- 插入数据库预先数据 -------------------------
 -- 管理员账户
-insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "管理员", "管理员");
+insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', '管理员', '管理员');
 -- 管理员角色
-insert into qualitis_auth_role(id, name) values(1, "ADMIN");
-insert into qualitis_auth_role(id, name) values(2, "PROJECTOR");
+insert into qualitis_auth_role(id, name) values(1, 'ADMIN');
+insert into qualitis_auth_role(id, name) values(2, 'PROJECTOR');
 -- 管理员权限
-insert into qualitis_auth_permission(id, url, method) values(1, "/qualitis/**", "GET"), (2, "/qualitis/**", "POST"), (3, "/qualitis/**", "DELETE"), (4, "/qualitis/**", "PUT");
-insert into qualitis_auth_permission(id, url, method) values(5, "/qualitis/api/v1/projector/**", "GET"), (6, "/qualitis/api/v1/projector/**", "POST"), (7, "/qualitis/api/v1/projector/**", "DELETE"), (8, "/qualitis/api/v1/projector/**", "PUT");
-insert into qualitis_auth_user_role(id, user_id, role_id) values("5932425efdfe49949587f51a54e0affa", 1, 1);
-insert into qualitis_auth_role_permission(id, role_id, permission_id) values("5932425efdfe49949587f51a54e0affb", 1, 1), ("5932425efdfe49949587f51a54e0affc", 1, 2), ("5932425efdfe49949587f51a54e0affd", 1, 3), ("5932425efdfe49949587f51a54e0affe", 1, 4);
-insert into qualitis_auth_role_permission(id, role_id, permission_id) values("5932425efdfe49949587f51a54e0afaa", 2, 5), ("5932425efdfe49949587f51a54e0afab", 2, 6), ("5932425efdfe49949587f51a54e0afac", 2, 7), ("5932425efdfe49949587f51a54e0afad", 2, 8);
+insert into qualitis_auth_permission(id, url, method) values(1, '/qualitis/**', 'GET'), (2, '/qualitis/**', 'POST'), (3, '/qualitis/**', 'DELETE'), (4, '/qualitis/**', 'PUT');
+insert into qualitis_auth_permission(id, url, method) values(5, '/qualitis/api/v1/projector/**', 'GET'), (6, '/qualitis/api/v1/projector/**', 'POST'), (7, '/qualitis/api/v1/projector/**', 'DELETE'), (8, '/qualitis/api/v1/projector/**', 'PUT');
+insert into qualitis_auth_user_role(id, user_id, role_id) values('5932425efdfe49949587f51a54e0affa', 1, 1);
+insert into qualitis_auth_role_permission(id, role_id, permission_id) values('5932425efdfe49949587f51a54e0affb', 1, 1), ('5932425efdfe49949587f51a54e0affc', 1, 2), ('5932425efdfe49949587f51a54e0affd', 1, 3), ('5932425efdfe49949587f51a54e0affe', 1, 4);
+insert into qualitis_auth_role_permission(id, role_id, permission_id) values('5932425efdfe49949587f51a54e0afaa', 2, 5), ('5932425efdfe49949587f51a54e0afab', 2, 6), ('5932425efdfe49949587f51a54e0afac', 2, 7), ('5932425efdfe49949587f51a54e0afad', 2, 8);
 
 -- 规则模版
 
 -- 字段非空检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(1, "{&NULL_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} is null)", 1, 1, true,
-	      "select count(*) from ${db}.${table} where (${filter}) and (${field} is null)");
+	values(1, '{&NULL_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} is null)', 1, 1, true,
+	      'select count(*) from ${db}.${table} where (${filter}) and (${field} is null)');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 1, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 1, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 1, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 1, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 1, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 1, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(1, "{&RECORD_NUMBER_OF_NULL}", "count", "*", 1, "Long");
+	values(1, '{&RECORD_NUMBER_OF_NULL}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(1, 1, "{&RECORD_NUMBER_OF_NULL}", "count", 1);
+	values(1, 1, '{&RECORD_NUMBER_OF_NULL}', 'count', 1);
 
 -- 主键检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(2, "{&PRIMARY_KEY_VERIFICATION}", 1, 1, 1, -1, 1, "select * from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)", 1, 1, true,
-	      "select count(*) from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)");
+	values(2, '{&PRIMARY_KEY_VERIFICATION}', 1, 1, 1, -1, 1, 'select * from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)', 1, 1, true,
+	      'select count(*) from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 2, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 2, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 2, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 2, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD_CONCAT}", 2, "field_concat", 6, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field_concat}");
+	values('{&FIELD_CONCAT}', 2, 'field_concat', 6, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field_concat}');
 insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(2, "{&PRIMARY_KEY_MULTIPLE_NUMBER}", "count", "*", 1, "Long");
+	values(2, '{&PRIMARY_KEY_MULTIPLE_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(2, 2, "{&PRIMARY_KEY_MULTIPLE_NUMBER}", "count", 1);
+	values(2, 2, '{&PRIMARY_KEY_MULTIPLE_NUMBER}', 'count', 1);
 
 -- 表行数检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(3, "{&TABLE_RECORD_NUMBER_VERIFICATION}", 1, 1, 1, 0, 1, "select count(*) as myCount from ${db}.${table} where ${filter}", 1, 1, false,
-	        "select count(*) from ${db}.${table} where ${filter}");
+	values(3, '{&TABLE_RECORD_NUMBER_VERIFICATION}', 1, 1, 1, 0, 1, 'select count(*) as myCount from ${db}.${table} where ${filter}', 1, 1, false,
+	        'select count(*) from ${db}.${table} where ${filter}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 3, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 3, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 3, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 3, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(3, "{&TABLE_RECORD_NUMBER}", "max", "myCount", 1, "Long");
+	values(3, '{&TABLE_RECORD_NUMBER}', 'max', 'myCount', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(3, 3, "{&TABLE_RECORD_NUMBER}", "max", 1);
+	values(3, 3, '{&TABLE_RECORD_NUMBER}', 'max', 1);
 
 -- 平均值检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(4, "{&AVERAGE_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select avg(${field}) as myAvg from ${db}.${table} where ${filter}", 1, 1, false,
-	      "select avg(${field}) from ${db}.${table} where ${filter}");
+	values(4, '{&AVERAGE_VALUE_VERIFICATION}', 1, 1, 1, 1, 1, 'select avg(${field}) as myAvg from ${db}.${table} where ${filter}', 1, 1, false,
+	      'select avg(${field}) from ${db}.${table} where ${filter}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 4, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 4, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 4, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 4, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 4, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 4, 'field', 4, 1, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(4, 4, "{&AVERAGE_VALUE}", "max", "myAvg", 1, "Long");
+	values(4, 4, '{&AVERAGE_VALUE}', 'max', 'myAvg', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(4, "{&AVERAGE_VALUE}", "max", 1);
+	values(4, '{&AVERAGE_VALUE}', 'max', 1);
 
 -- 总和检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(5, "{&SUM_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select sum(${field}) as mySum from ${db}.${table} where ${filter}", 1, 1, false,
-	      "select sum(${field}) from ${db}.${table} where ${filter}");
+	values(5, '{&SUM_VALUE_VERIFICATION}', 1, 1, 1, 1, 1, 'select sum(${field}) as mySum from ${db}.${table} where ${filter}', 1, 1, false,
+	      'select sum(${field}) from ${db}.${table} where ${filter}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 5, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 5, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 5, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 5, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 5, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 5, 'field', 4, 1, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(5, 5, "{&SUM_VALUE}", "max", "mySum", 1, "Long");
+	values(5, 5, '{&SUM_VALUE}', 'max', 'mySum', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(5, "{&SUM_VALUE}", "max", 1);
+	values(5, '{&SUM_VALUE}', 'max', 1);
 
 -- 最大值检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(6, "{&MAX_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select max(${field}) as myMax from ${db}.${table} where ${filter}", 1, 1, false,
-	"select max(${field}) from ${db}.${table} where ${filter}");
+	values(6, '{&MAX_VALUE_VERIFICATION}', 1, 1, 1, 1, 1, 'select max(${field}) as myMax from ${db}.${table} where ${filter}', 1, 1, false,
+	'select max(${field}) from ${db}.${table} where ${filter}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 6, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 6, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 6, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 6, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 6, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 6, 'field', 4, 1, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(6, 6, "{&MAX_VALUE}", "max", "myMax", 1, "Long");
+	values(6, 6, '{&MAX_VALUE}', 'max', 'myMax', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(6, "{&MAX_VALUE}", "max", 1);
+	values(6, '{&MAX_VALUE}', 'max', 1);
 
 -- 最小值检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(7, "{&MIN_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select min(${field}) as myMin from ${db}.${table} where ${filter}", 1, 1, false,
-	"select min(${field}) from ${db}.${table} where ${filter}");
+	values(7, '{&MIN_VALUE_VERIFICATION}', 1, 1, 1, 1, 1, 'select min(${field}) as myMin from ${db}.${table} where ${filter}', 1, 1, false,
+	'select min(${field}) from ${db}.${table} where ${filter}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 7, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 7, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 7, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 7, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 7, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 7, 'field', 4, 1, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(7, 7, "{&MIN_VALUE}", "max", "myMin", 1, "Long");
+	values(7, 7, '{&MIN_VALUE}', 'max', 'myMin', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(7, "{&MIN_VALUE}", "max", 1);
+	values(7, '{&MIN_VALUE}', 'max', 1);
 
 -- 正则表达式检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(8, "{&REGEXP_EXPRESSION_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
+	values(8, '{&REGEXP_EXPRESSION_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 8, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 8, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 8, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 8, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 8, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 8, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&REGEXP_EXPRESSION}", 8, "regexp", 7, null, true, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&PLEASE_TYPE_IN_REGEXP_EXPRESSION}");
+	values('{&REGEXP_EXPRESSION}', 8, 'regexp', 7, null, true, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&PLEASE_TYPE_IN_REGEXP_EXPRESSION}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(8, 8, "{&MISMATCH_RECORD_NUMBER}", "count", "*", 1, "Long");
+	values(8, 8, '{&MISMATCH_RECORD_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(8, "{&MISMATCH_RECORD_NUMBER}", "count", 1);
+	values(8, '{&MISMATCH_RECORD_NUMBER}', 'count', 1);
 
 -- 时间格式检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(9, "{&DATE_FORMAT_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
+	values(9, '{&DATE_FORMAT_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 9, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 9, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 9, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 9, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 9, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 9, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATE_FORMAT}", 9, "regexp", 7, null, false, 1, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&CHOOSE_APPROPRIATE}");
+	values('{&DATE_FORMAT}', 9, 'regexp', 7, null, false, 1, '{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&CHOOSE_APPROPRIATE}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(9, 9, "{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}", "count", "*", 1, "Long");
+	values(9, 9, '{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(9, "{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}", "count", 1);
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMdd", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyy-MM-dd", 1, "^(?:(?!0000)[0-9]{4}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMddHH", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)([01][0-9]|2[0-3])$");
+	values(9, '{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}', 'count', 1);
+insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values('yyyyMMdd', 1, '^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)$');
+insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values('yyyy-MM-dd', 1, '^(?:(?!0000)[0-9]{4}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$');
+insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values('yyyyMMddHH', 1, '^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)([01][0-9]|2[0-3])$');
 
 -- 数值格式检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(10, "{&NUMBER_FORMAT_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
+	values(10, '{&NUMBER_FORMAT_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 10, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 10, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 10, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 10, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 10, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 10, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&NUMBER_FORMAT_REGEXP_EXPRESSION}", 10, "regexp", 7, null, false, 2, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}");
+	values('{&NUMBER_FORMAT_REGEXP_EXPRESSION}', 10, 'regexp', 7, null, false, 2, '{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(10, 10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", "*", 1, "Long");
+	values(10, 10, '{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", 1);
-insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(2, "-?[0-9]+(\\\\.[0-9])?[0-9]*$");
+	values(10, '{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}', 'count', 1);
+insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(2, '-?[0-9]+(\\\\.[0-9])?[0-9]*$');
 
 -- 枚举值检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(11, "{&ENUM_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)");
+	values(11, '{&ENUM_VALUE_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 11, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 11, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 11, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 11, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 11, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 11, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&ENUM_VALUE}", 11, "list", 8, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${list},示例:'1,2,3,4'");
+	values('{&ENUM_VALUE}', 11, 'list', 8, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${list},示例:\'1,2,3,4\'');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(11, 11, "{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}", "count", "*", 1, "Long");
+	values(11, 11, '{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(11, "{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}", "count", 1);
+	values(11, '{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}', 'count', 1);
 
 -- 数值范围检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(12, "{&NUMBER_RANGE_VERIFICATION}", 1, 1, 1, 0, 1, "select * from ${db}.${table} where (${filter}) and (not (${filter2}))", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (not (${filter2}))");
+	values(12, '{&NUMBER_RANGE_VERIFICATION}', 1, 1, 1, 0, 1, 'select * from ${db}.${table} where (${filter}) and (not (${filter2}))', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (not (${filter2}))');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 12, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 12, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 12, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 12, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&NUMBER_RANGE}", 12, "filter2", 1, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${filter2}，{&PLEASE_TYPE_IN_NUMBER_RANGE}");
+	values('{&NUMBER_RANGE}', 12, 'filter2', 1, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${filter2}，{&PLEASE_TYPE_IN_NUMBER_RANGE}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(12, 12, "{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}", "count", "*", 1, "Long");
+	values(12, 12, '{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(12, "{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}", "count", 1);
+	values(12, '{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}', 'count', 1);
 
 -- 身份证检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(13, "{&IDENTITY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
+	values(13, '{&IDENTITY_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 13, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 13, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 13, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 13, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 13, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 13, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&IDENTITY_REGEXP_EXPRESSION}", 13, "regexp", 7, null, false, 3, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}");
+	values('{&IDENTITY_REGEXP_EXPRESSION}', 13, 'regexp', 7, null, false, 3, '{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(13, 13, "{&MISMATCH_IDENTITY_RECORD_NUMBER}", "count", "*", 1, "Long");
+	values(13, 13, '{&MISMATCH_IDENTITY_RECORD_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(13, "{&MISMATCH_IDENTITY_RECORD_NUMBER}", "count", 1);
-insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(3, "^[1-9][0-9]{5}(18|19|20)[0-9]{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)[0-9]{3}[0-9Xx]$");
+	values(13, '{&MISMATCH_IDENTITY_RECORD_NUMBER}', 'count', 1);
+insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(3, '^[1-9][0-9]{5}(18|19|20)[0-9]{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)[0-9]{3}[0-9Xx]$');
 
 -- 逻辑类检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(14, "{&LOGIC_VERIFICATION}", 1, 1, 1, 0, 1, "select * from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )");
+	values(14, '{&LOGIC_VERIFICATION}', 1, 1, 1, 0, 1, 'select * from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 14, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 14, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 14, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 14, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&PRE_CONDITION}", 14, "condition1", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${condition1},{&PLEASE_TYPE_IN_PRE_CONDITION}");
+	values('{&PRE_CONDITION}', 14, 'condition1', 9, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${condition1},{&PLEASE_TYPE_IN_PRE_CONDITION}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&POST_CONDITION}", 14, "condition2", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${condition2}，{&PLEASE_TYPE_IN_POST_CONDITION}");
+	values('{&POST_CONDITION}', 14, 'condition2', 9, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${condition2}，{&PLEASE_TYPE_IN_POST_CONDITION}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(14, 14, "{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}", "count", "*", 1, "Long");
+	values(14, 14, '{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(14, "{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}", "count", 1);
+	values(14, '{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}', 'count', 1);
 
 -- 空字符串检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(15, "{&EMPTY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (trim(${field}) = '' )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (trim(${field}) = '' )");
+	values(15, '{&EMPTY_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (trim(${field}) = '' )', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (trim(${field}) = '' )');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 15, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 15, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 15, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 15, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 15, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 15, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(15, id, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", "*", 1, "Long");
+	values(15, id, '{&NULL_AND_EMPTY_RECORD_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(15, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", 1);
+	values(15, '{&NULL_AND_EMPTY_RECORD_NUMBER}', 'count', 1);
 
 -- 空值或空字符串检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(16, "{&NULL_AND_EMPTY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )");
+	values(16, '{&NULL_AND_EMPTY_VERIFICATION}', 1, 1, 1, 1, 1, 'select * from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )', 1, 1, true,
+	'select count(*) from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 16, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+	values('{&DATABASE}', 16, 'db', 5, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 16, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+	values('{&TABLE}', 16, 'table', 3, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 16, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
+	values('{&FIELD}', 16, 'field', 4, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${field}');
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(16, 16, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", "*", 1, "Long");
+	values(16, 16, '{&NULL_AND_EMPTY_RECORD_NUMBER}', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(16, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", 1);
+	values(16, '{&NULL_AND_EMPTY_RECORD_NUMBER}', 'count', 1);
 
 -- 跨表模版
 -- 跨表准确性校验
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(17, "{&MULTI-TABLE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )");
+	values(17, '{&MULTI-TABLE_ACCURACY_VERIFICATION}', 1, 2, 2, 0, 1, 'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )', 3, 1, true,
+	'SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )');
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 17, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
+	values('{&SOURCE_DATABASE}', 17, 'source_db', 11, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 17, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
+	values('{&SOURCE_TABLE}', 17, 'source_table', 12, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 17, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
+	values('{&TARGET_DATABASE}', 17, 'target_db', 13, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 17, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
+	values('{&TARGET_TABLE}', 17, 'target_table', 14, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10000, "{&JOIN_CONDITION}", 17, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
+	values(10000, '{&JOIN_CONDITION}', 17, 'mapping_argument', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}', '(${left_statement} ${operation} ${right_statement})');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10001, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 17, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
+	values(10001, '{&SOURCE_TABLE_COLUMN_IS_NULL}', 17, 'source_column_is_null', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}', '${source_column} IS NULL');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10002, "{&TARGET_TABLE_COLUMN_IS_NULL}", 17, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
+	values(10002, '{&TARGET_TABLE_COLUMN_IS_NULL}', 17, 'target_column_is_null', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}', '${target_column} IS NULL');
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 10000);
+	values('{&JOIN_LEFT_EXPRESSION}', null, 'left_statement', 15, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}', 10000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 10000);
+	values('{&JOIN_OPERATION}', null, 'operation', 16, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${operation}', 10000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 10000);
+	values('{&JOIN_RIGHT_EXPRESSION}', null, 'right_statement', 17, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}', 10000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 10001);
+	values('{&JOIN_LEFT_FILED}', null, 'source_column', 18, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}', 10001);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 10002);
+	values('{&JOIN_RIGHT_FILED}', null, 'target_column', 19, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}', 10002);
 
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(17, 17, "", "count", "*", 1, "Long");
+	values(17, 17, '', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(17, "{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}", "count", 1);
+	values(17, '{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}', 'count', 1);
 
 -- 附属模版
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, parent_template_id)
-	values(18, "{&MULTI-TABLE_ACCURACY_VERIFICATION_CHILD_TEMPLATE}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 17);
+	values(18, '{&MULTI-TABLE_ACCURACY_VERIFICATION_CHILD_TEMPLATE}', 1, 2, 2, 0, 1, 'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )', 3, 1, true,
+	'SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )', 17);
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 18, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
+	values('{&SOURCE_DATABASE}', 18, 'source_db', 11, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 18, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
+	values('{&SOURCE_TABLE}', 18, 'source_table', 12, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 18, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
+	values('{&TARGET_DATABASE}', 18, 'target_db', 13, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 18, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
+	values('{&TARGET_TABLE}', 18, 'target_table', 14, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20000, "{&JOIN_OPERATION}", 18, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
+	values(20000, '{&JOIN_OPERATION}', 18, 'mapping_argument', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}', '(${left_statement} ${operation} ${right_statement})');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20001, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 18, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
+	values(20001, '{&SOURCE_TABLE_COLUMN_IS_NULL}', 18, 'source_column_is_null', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}', '${source_column} IS NULL');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20002, "{&TARGET_TABLE_COLUMN_IS_NULL}", 18, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
+	values(20002, '{&TARGET_TABLE_COLUMN_IS_NULL}', 18, 'target_column_is_null', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}', '${target_column} IS NULL');
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 20000);
+	values('{&JOIN_LEFT_EXPRESSION}', null, 'left_statement', 15, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}', 20000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 20000);
+	values('{&JOIN_OPERATION}', null, 'operation', 16, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${operation}', 20000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 20000);
+	values('{&JOIN_RIGHT_EXPRESSION}', null, 'right_statement', 17, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}', 20000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 20001);
+	values('{&JOIN_LEFT_FILED}', null, 'source_column', 18, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}', 20001);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 20002);
+	values('{&JOIN_RIGHT_FILED}', null, 'target_column', 19, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}', 20002);
 
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(18, 18, "", "count", "*", 1, "Long");
+	values(18, 18, '', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(18, "{&DIFFERENT_RECORD_BETWEEN_TARGET_AND_SOURCE_TABLE}", "count", 1);
+	values(18, '{&DIFFERENT_RECORD_BETWEEN_TARGET_AND_SOURCE_TABLE}', 'count', 1);
 
 
 -- 跨表通用校验
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(19, "{&MULTI-TABLE_COMMON_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}");
+	values(19, '{&MULTI-TABLE_COMMON_VERIFICATION}', 1, 2, 2, 0, 1, 'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}', 3, 1, true,
+	'SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}');
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 19, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
+	values('{&SOURCE_DATABASE}', 19, 'source_db', 11, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 19, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
+	values('{&SOURCE_TABLE}', 19, 'source_table', 12, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 19, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
+	values('{&TARGET_DATABASE}', 19, 'target_db', 13, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 19, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
+	values('{&TARGET_TABLE}', 19, 'target_table', 14, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}');
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(30000, "{&JOIN_OPERATION}", 19, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
+	values(30000, '{&JOIN_OPERATION}', 19, 'mapping_argument', 10, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}', '(${left_statement} ${operation} ${right_statement})');
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FILTER_IN_RESULT}", 19, "filter", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${filter}");
+	values('{&FILTER_IN_RESULT}', 19, 'filter', 9, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${filter}');
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 30000);
+	values('{&JOIN_LEFT_EXPRESSION}', null, 'left_statement', 15, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}', 30000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 30000);
+	values('{&JOIN_OPERATION}', null, 'operation', 16, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${operation}', 30000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 30000);
+	values('{&JOIN_RIGHT_EXPRESSION}', null, 'right_statement', 17, null, false, null, '{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}', 30000);
 
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(19, 19, "", "count", "*", 1, "Long");
+	values(19, 19, '', 'count', '*', 1, 'Long');
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
+	values(19, '{&NOT_PASS_VERIFICATION_RECORD_NUMBER}', 'count', 1);
 
-insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
+insert into qualitis_config_system(id, key_name, `value`) values(1, 'save_database_pattern', '${USERNAME}_ind');
 
-insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "a33693de51");
+insert into qualitis_auth_list(app_id, app_token) values('linkis_id', 'a33693de51');
