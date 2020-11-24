@@ -129,3 +129,7 @@ subprojects {
 }
 
 apply from: "profile.gradle"
+
+wrapper {
+  gradleVersion = '4.9'
+}
