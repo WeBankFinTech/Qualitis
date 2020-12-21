@@ -27,6 +27,19 @@ public class ColumnInfoDetail {
     private String fieldName;
     @JsonProperty("data_type")
     private String dataType;
+    /**
+     * Extended attributes, displayed as data source rule query.
+     */
+    @JsonProperty("column_length")
+    private int columnLen;
+    @JsonProperty("column_alias")
+    private String columnAlias;
+    @JsonProperty("column_comment")
+    private String columnComment;
+    @JsonProperty("is_primary")
+    private Boolean isPrimary;
+    @JsonProperty("is_partition")
+    private Boolean isPartitionField;
 
     public ColumnInfoDetail() {
         // Default Constructor
@@ -53,4 +66,43 @@ public class ColumnInfoDetail {
         this.dataType = dataType;
     }
 
+    public int getColumnLen() {
+        return columnLen;
+    }
+
+    public void setColumnLen(int columnLen) {
+        this.columnLen = columnLen;
+    }
+
+    public String getColumnAlias() {
+        return columnAlias;
+    }
+
+    public void setColumnAlias(String columnAlias) {
+        this.columnAlias = columnAlias;
+    }
+
+    public String getColumnComment() {
+        return columnComment;
+    }
+
+    public void setColumnComment(String columnComment) {
+        this.columnComment = columnComment;
+    }
+
+    public Boolean getPrimary() {
+        return isPrimary;
+    }
+
+    public void setPrimary(Boolean primary) {
+        isPrimary = primary;
+    }
+
+    public Boolean getPartitionField() {
+        return isPartitionField;
+    }
+
+    public void setPartitionField(Boolean partitionField) {
+        isPartitionField = partitionField;
+    }
 }

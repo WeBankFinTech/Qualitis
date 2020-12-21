@@ -30,6 +30,8 @@ public class TaskSimpleResponse {
     private Integer taskStatus;
     @JsonProperty("cluster_name")
     private String clusterName;
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
 
     public TaskSimpleResponse() {
     }
@@ -38,6 +40,7 @@ public class TaskSimpleResponse {
         this.taskId = task.getTaskRemoteId();
         this.taskStatus = task.getStatus();
         this.clusterName = task.getClusterId();
+        this.abortOnFailure = task.isAbortOnFailure();
     }
 
     public Integer getTaskId() {
@@ -62,6 +65,14 @@ public class TaskSimpleResponse {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     @Override

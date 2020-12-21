@@ -1,0 +1,126 @@
+//跨表校验css，勿动
+@import "variables";
+.mapSource {
+    display: inline-block;
+    width: 49%;
+    margin-top: 20px;
+    padding: 10px 0;
+    border: 1px solid #d7dde4;
+    border-radius: 4px;
+    .table-title {
+        margin: 0 0 5px 10px;
+    }
+    .table-main {
+        display: flex;
+        width: 100%;
+        margin: 0 auto;
+        padding-bottom: 20px;
+        span {
+            min-width: 130px;
+            margin: 8px 15px 0 10px;
+        }
+        .table-title {
+            max-width: 130px;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+        }
+        .table-content {
+            width: 80%;
+            .ulList {
+                li {
+                    display: inline-block;
+                    padding: 2px 5px;
+                    cursor: pointer;
+                }
+                .circle {
+                    margin: 5px 5px;
+                    width: 50px;
+                    border: 1px solid #d7dde4;
+                    border-radius: 50%;
+                    text-align: center;
+                    color: $primary-color;
+                }
+                .stress {
+                    border: 1px solid #d7dde4;
+                    margin: 5px 5px;
+                    border-radius: 5px;
+                    color: $primary-color;
+                }
+            }
+            
+        }
+        .col {
+            display: flex;
+            margin-left: 10px;
+            .col-select {
+                flex: 1;
+                height: 130px;
+                margin-left: 10px;
+                overflow: auto;
+                overflow-y: visible;
+                border: 1px solid #d7dde4;
+                border-radius: 4px;
+                ul {
+                    li {
+                        display: inline-block;
+                        padding: 5px 5px;
+                        margin: 2px 2px;
+                        border: 1px solid #d7dde4;
+                        border-radius: 2px;
+                    }
+                }
+            }
+            .scale {
+                flex: 1;
+            }
+            .col-content {
+                max-height: 100px;
+                overflow: auto;
+                overflow-y: visible;
+                .col-list {
+                    width: 100%;
+                    li {
+                        padding: 7px 16px;
+                        display: block;
+                    }
+                }
+            }
+            .no-border{
+                border: 1px solid #d7dde4;
+                border-top: none;
+            }             
+        }
+        .map-col {
+            width: 92%;
+        }
+        .custom-input {
+            width: 72%;
+        }
+        /deep/ 
+        textarea {
+            min-height: 44px;
+        }
+        .filter-input {
+            height: 50px;
+            width: 100%;
+            border: 1px solid #d7dde4;
+        }
+    }   
+}
+.filter {
+    margin-top: 0;
+    display: block;
+    width: 100%;
+    border: none;
+}
+.button-action {
+    text-align: center;
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    .determine {
+        margin-right: 20px;
+    }
+}

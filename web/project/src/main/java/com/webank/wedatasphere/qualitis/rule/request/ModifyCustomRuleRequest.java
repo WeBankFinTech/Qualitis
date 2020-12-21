@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
@@ -52,6 +50,10 @@ public class ModifyCustomRuleRequest {
     private List<CustomAlarmConfigRequest> alarmVariable;
     @JsonProperty("cluster_name")
     private String clusterName;
+
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
 
     public ModifyCustomRuleRequest() {
 
@@ -143,6 +145,14 @@ public class ModifyCustomRuleRequest {
 
     public void setRuleId(Long ruleId) {
         this.ruleId = ruleId;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     public static void checkRequest(ModifyCustomRuleRequest request) throws UnExpectedRequestException {

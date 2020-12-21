@@ -22,12 +22,6 @@ import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
-import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
-import com.webank.wedatasphere.qualitis.exception.LogPartialException;
-import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
-import com.webank.wedatasphere.qualitis.bean.LogResult;
-import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
-import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 
 /**
  * The function of submitter is to submit job, get task status and get task log

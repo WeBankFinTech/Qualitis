@@ -1,0 +1,205 @@
+<template>
+    <div class="mapSource filter">
+        <Tabs>
+            <Tab :label="$t('crossTableCheck.serviceMenuEditing')">
+                <div class="table-main">
+                    <span class="table-title" :title="sourceTableName">
+                        {{ $t('common.column') }}：{{ sourceTableName }}
+                    </span>
+                    <div class="table-content col">
+                        <div class="scale">
+                            <Wb-input v-model="sourceField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', sourceField,'leftFilterCol','sourceColumnList')" />
+                            <div :class="['col-content',{'no-border': leftFilterCol && leftFilterCol.length}]">
+                                <ul class="ulList col-list" @click="condition">           
+                                    <li v-for="(item, i) in leftFilterCol" :key="i" :data-name="`tmp1.${item.column_name}`" data-tag="source" data-arrow="left">{{ `${item.column_name}(${item.data_type})` }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-select">
+                            <ul @click="condition">
+                                <li v-for="(item, i) in sourceCol" :key="i" :data-name="item" data-tag="source" data-arrow="left">{{ item }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span class="table-title" :title="targetTableName">
+                        {{ $t('common.column') }}：{{ targetTableName }}
+                    </span>
+                    <div class="table-content col">
+                        <div class="scale">
+                            <Wb-input v-model="targetField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', targetField, 'rightFilterCol', 'targetColumnList')" />
+                            <div :class="['col-content',{'no-border': rightFilterCol && rightFilterCol.length}]">
+                                <ul class="ulList col-list" @click="condition">           
+                                    <li v-for="(item, i) in rightFilterCol" :key="i" :data-name="`tmp2.${item.column_name}`" data-tag="target" data-arrow="right">{{ `${item.column_name}(${item.data_type})` }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-select">
+                            <ul @click="condition">
+                                <li v-for="(item, i) in targetCol" :key="i" :data-name="item" data-tag="target" data-arrow="right">{{ item }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-main joiner">
+                    <span>
+                        {{ $t('crossTableCheck.signOfOperation') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="condition">
+                            <li v-for="(item, i) in calculateList" :key="i" :data-name="item" class="circle">{{ item }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.function') }}：
+                    </span>
+                    <div class="table-content">
+                        <div>
+                            <ul class="ulList" @click="condition">
+                                <li v-for="(item, i) in statisticalFun" :key="i" :data-name="item" class="stress">{{ item }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.keyWords') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="condition">
+                            <li v-for="(item, i) in keyWord" :key="i" :data-name="item" class="stress">{{ item }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.expression') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="condition">
+                            <li v-for="(item, i) in expression" :key="i" :data-name="item.value" class="stress">{{ item.text }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <input id="whereExpression" v-model.lazy="currentValue" class="filter-input">
+                </div>
+            </Tab>
+            <Tab :label="$t('crossTableCheck.customEdit')">
+                <div class="table-main self-edit">
+                    <input id="whereExpression" v-model.lazy="currentValue" class="filter-input">
+                </div>
+            </Tab>
+        </Tabs>
+        <div class="button-action">
+            <WbButton type="primary" class="submitbtn determine" @click="$emit('determine', currentValue)">
+                {{ $t('common.ok') }}
+            </WbButton>
+            <WbButton type="default" class="submitbtn" @click="$emit('cancel')">
+                {{ $t('common.cancel') }}
+            </WbButton>
+        </div>
+    </div>
+</template>
+<script>
+    export default {
+        props: {
+            leftFilterCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            sourceCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            rightFilterCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            targetCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            expressCondition: {
+                type: String,
+                default: '',
+            },
+            sourceTableName: {
+                type: String,
+                default: ''
+            },
+            targetTableName: {
+                type: String,
+                default: ''
+            }
+        },
+        watch: {
+          expressCondition(val) {
+              this.currentValue = val;
+          }  
+        },
+        data() {
+            return {
+                sourceField: '',
+                targetField: '',
+                currentValue: '',
+                statisticalFun: [' sum ', ' avg ', ' count ', ' max ', ' min '],
+                calculateList: [' + ', ' - ', ' * ', ' / ', ' ( ', ' ) ', ' = ', ' != '],
+                keyWord: ['group by ', ' limit ', ' order by ', ' not ', ' and ', ' or ', ' in '],
+                
+            }
+        },
+        computed: {
+            expression() {
+                return  [
+                    {
+                        text: `${(this.$t('crossTableCheck.actualDate'))}`,
+                        value: 'ds=${yyyyMMdd}'
+                    },
+                    {
+                        text: `${this.$t('common.beforeDays')}`,
+                        value: 'ds=${yyyyMMdd}-N'
+                    }]
+            }
+        },
+        methods: {
+            condition(e) {
+                if (e.target.nodeName.toLowerCase() === 'li') {
+                    let tag = e.target.dataset.tag;
+                    let mes = e.target.dataset.name;
+                    let arrow = e.target.dataset.arrow;
+                    this.currentValue+= mes;
+                    this.insertInputTxt(mes, 'whereExpression');
+                    if (tag === 'source' && arrow === 'left') {
+                        this.$emit('compare', 'whereSourceCol', mes);
+                    }else if(tag === 'target' && arrow === 'right') {
+                        this.$emit('compare', 'whereTargetCol', mes);
+                    }
+                }
+            },
+            insertInputTxt(insertTxt, id) {
+                let elInput = document.getElementById(id);
+                let startPos = elInput.selectionStart;
+                let endPos = elInput.selectionEnd;
+                if (startPos === undefined || endPos === undefined) return;
+                let txt = elInput.value;
+                let result = txt.substring(0, startPos) + insertTxt + txt.substring(endPos);
+                elInput.value = result;
+                elInput.focus();
+                elInput.selectionStart = startPos + insertTxt.length;
+                elInput.selectionEnd = startPos + insertTxt.length;
+                this.currentValue = result;
+                this.$emit('express-change', this.currentValue);
+            },
+        }
+    }
+</script>
+<style lang="scss" scoped>
+    @import '../../assets/styles/crossTable';
+    .self-edit {
+        height: 300px;
+    }
+</style>

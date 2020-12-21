@@ -1,0 +1,196 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper personManage p20">
+            <div class="breadcrumb-container mb10">
+                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('personnelManage.personnelManage') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('personnelManagePage.userGroupManagement') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('personnelManagePage.proxyUserDetail') }}</span>
+            </div>
+            <Cell span="24">
+                <Wb-button class="mb20" type="primary" @click="toggleFrom">{{ $t('personnelManagePage.addUser') }}</Wb-button>
+                <Wb-table :data="userList" border :no-data-text="$t('common.noData')">
+                    <Column prop="username" :name="$t('personnelManagePage.userName')" />
+                    <Column prop="proxy_user_name" :name="$t('personnelManagePage.proxyUserName')" />
+                    <Column :name="$t('common.operate')" :component="operationComponent" />
+                </Wb-table>
+                <Pagination class="pt20" :size-list="sizeList" :size="pagination.size" :current="pagination.current" :total="pagination.total"
+                    @on-change="changePage" />
+            </Cell>
+            <modal ref="userModal" :title="$t('personnelManagePage.addMembers')">
+                <Wb-form ref="userForm" :label-width="100" :rule="ruleValidate">
+                    <Form-item :label="$t('personnelManagePage.userName')" :rule="username" prop="username">
+                        <Wb-input v-model="username" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="toggleFrom('close')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submitGroup">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+        </Row>
+    </pageContainer>
+</template>
+<script type="text/ecmascript-6">
+    import { isIE } from "assets/js/utils.js";
+    import { sizeList } from 'assets/js/sizeList';
+    import pageContainer from '../../components/template';
+    import Vue from 'vue';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+            this.init();
+        },
+        data() {
+            const that = this;
+            return {
+                userList: [],
+                username: "",
+                pagination: {
+                    size: 15,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                operationComponent: function (trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                            }
+                        },
+                        methods: {
+                            deleteAction() {
+                                that.deleteUser(trData);
+                            }
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                },
+            };
+        },
+        components: {
+            pageContainer
+        },
+        computed: {
+            ruleValidate() {
+                return {
+                    username:[{required: true, message: this.$t('common.notEmpty')}]
+                }
+            }
+        },
+        methods: {
+            async init() {
+                let { proxyUserName } = this.$route.query;
+                let url = `api/v1/admin/user_proxy_user/${proxyUserName}/all`;
+                let result = await this.FesApi.fetch(url, {
+                    page: this.pagination.current - 1,
+                    size: this.pagination.size
+                })
+                this.userList = result.data;
+                this.pagination.total = Math.ceil(
+                    result.total / this.pagination.size
+                );
+            },
+            toggleFrom(type) {
+                isIE();
+                if(type === 'close'){
+                    this.$refs.userModal.hide();
+                } else {
+                    this.$refs.userModal.show();
+                }
+            },
+            submitGroup() {
+                this.$refs['userForm'].validate(valid => {
+                    let { proxyUserName } = this.$route.query;
+                    let params = {
+                        proxy_user_name: proxyUserName, 
+                        username: this.username
+                    };
+                    if (valid) {
+                        this.FesApi.fetch(
+                            "api/v1/admin/user_proxy_user",
+                            params,
+                            "put"
+                        ).then(() => {
+                            this.$Toast.success(this.$t('common.successfulOperate'));
+                            this.toggleFrom('close');
+                            this.init()
+                        });
+                    }
+                })
+            },
+            async initGroupList() {
+                let result = await this.FesApi.fetch("api/v1/admin/group/all", {
+                    page: this.groupPage.current - 1,
+                    size: this.groupPage.size
+                })
+                this.groupList = result && Array.isArray(result.data) ? result.data : '';
+                this.groupPage.total = Math.ceil(
+                    result.total / this.groupPage.size
+                );
+            },
+            changePage({
+                current,
+                size
+            }) {
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.init();
+            },
+            deleteUser(trData) {
+                this.$Message.confirm(this.$t('common.prompt'), this.$t('personnelManagePage.deleteCurrentUser', {name: trData.username})).then(index => {
+                    if (index === 0) {
+                        this.FesApi.fetch("api/v1/admin/user_proxy_user", {}, {
+                            data: { user_proxy_user_id: trData.user_proxy_user_id },
+                            method: 'delete',
+                            headers: {
+                                'content-type': 'application/json'
+                            }
+                        }).then(() => {
+                            this.init();
+                        });
+                    }
+                })
+            }
+        }
+    };
+
+</script>
+<style lang="scss" scoped>
+.cancelBtn {
+    margin-left: 20px;
+}
+</style>

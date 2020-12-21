@@ -51,7 +51,8 @@ public class JobController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to find task log. task_id: {}, cluster_id: {}, caused by: {}", taskId, clusterId, e.getMessage(), e);
+            LOGGER.error("Failed to find task log. task_id: {}, cluster_id: {}, caused by: {}", taskId.toString().replace("\r", "").replace("\n", ""),
+                clusterId.replace("\r", "").replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""));
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_TASK_LOG}", null);
         }
     }

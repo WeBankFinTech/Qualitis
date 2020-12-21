@@ -16,15 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
-import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
@@ -33,6 +26,9 @@ import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 
 /**
  * @author howeye
@@ -75,5 +71,6 @@ public interface MetaDataService {
      */
     GeneralResponse<GetAllClusterResponse<ClusterInfoDetail>> getUserCluster(GetUserClusterRequest request)
         throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
 
 }

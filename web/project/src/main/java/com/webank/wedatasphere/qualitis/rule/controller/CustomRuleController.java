@@ -103,7 +103,8 @@ public class CustomRuleController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get custom rule detail, rule_id: {}, caused by: {}", ruleId, e.getMessage(), e);
+            LOGGER.error("Failed to get custom rule detail, rule_id: {}, caused by: {}", ruleId.toString().replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_CUSTOM_RULE_DETAIL}, id: " + ruleId + " caused by: " + e.getMessage(), null);
         }
     }

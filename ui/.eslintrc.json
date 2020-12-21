@@ -1,0 +1,37 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es6": true
+    },
+    "extends": ["eslint:recommended", "plugin:vue/recommended"],
+    "parserOptions": {
+        "sourceType": "module"
+    },
+    "plugins": ["vue"],
+    "rules": {
+        "no-console": ["error", {
+            "allow": ["warn", "error"]
+        }],
+        "vue/html-indent": [2, 4, {
+            "attribute": 1,
+            "closeBracket": 0,
+            "alignAttributesVertically": false
+        }],
+        "vue/html-closing-bracket-newline": 0,
+        "vue/html-closing-bracket-spacing": ["error", {
+            "startTag": "never",
+            "endTag": "never",
+            "selfClosingTag": "always"
+        }],
+        "vue/comment-directive": 0,
+        "vue/component-name-in-template-casing": 0,
+        "vue/max-attributes-per-line": 0,
+        "vue/multiline-html-element-content-newline": 0,
+        "vue/singleline-html-element-content-newline": 0
+    },
+    "globals": {
+        "_": true
+    }
+}

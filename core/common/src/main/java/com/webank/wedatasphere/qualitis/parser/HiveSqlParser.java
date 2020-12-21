@@ -95,4 +95,9 @@ public class HiveSqlParser {
             dbAndTableMap.put(db, tableList);
         }
     }
+
+    public static void main(String[] args) throws SemanticException, ParseException {
+        HiveSqlParser hiveSqlParser = new HiveSqlParser();
+        System.out.println(hiveSqlParser.checkSelectSqlAndGetDbAndTable("select a from db1.table1 where ds=10"));
+    }
 }

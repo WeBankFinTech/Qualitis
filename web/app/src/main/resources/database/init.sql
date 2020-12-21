@@ -76,6 +76,7 @@ CREATE TABLE `qualitis_application_task` (
   `submit_address` varchar(255) DEFAULT NULL,
   `task_remote_id` int(11) DEFAULT NULL,
   `application_id` varchar(40) DEFAULT NULL,
+  `abort_on_failure` bit(1) DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `FK8vt8tfuq1jlqofdsl2bfx602d` (`application_id`),
   CONSTRAINT `FK8vt8tfuq1jlqofdsl2bfx602d` FOREIGN KEY (`application_id`) REFERENCES `qualitis_application` (`id`)
@@ -308,11 +309,27 @@ CREATE TABLE `qualitis_project` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `create_user` varchar(50) DEFAULT NULL,
   `create_user_full_name` varchar(50) DEFAULT NULL,
+  `create_time` varchar(25) DEFAULT NULL,
   `description` varchar(1700) DEFAULT NULL,
   `name` varchar(170) DEFAULT NULL,
   `project_type` int(11) DEFAULT NULL,
   `user_department` varchar(50) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `modify_time` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Table structure for qualitis_project_label
+-- ----------------------------
+DROP TABLE IF EXISTS `qualitis_project_label`;
+CREATE TABLE `qualitis_project_label` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `label_name` varchar(25) not null,
+  `project_id` bigint(20) not null,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `UK_project_id_label_name` UNIQUE KEY  (`label_name`, `project_id`),
+  CONSTRAINT `FK_qualitis_project_label_project_id` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -349,6 +366,7 @@ CREATE TABLE `qualitis_rule` (
   `project_id` bigint(20) DEFAULT NULL,
   `rule_group_id` bigint(20) DEFAULT NULL,
   `template_id` bigint(20) DEFAULT NULL,
+  `abort_on_failure` bit(1) DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK29l9s1h04gntnqv4eje2f93n4` (`project_id`,`name`),
   KEY `FKltabc4x1omja141lo9la6dg4k` (`parent_rule_id`),

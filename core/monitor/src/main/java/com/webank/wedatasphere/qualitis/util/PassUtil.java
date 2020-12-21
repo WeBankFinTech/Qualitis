@@ -98,7 +98,7 @@ public class PassUtil {
                 Double maxValue = maxPercentage * compareValue;
                 Double minValue = minPercentage * compareValue;
 
-                return taskResult > maxValue || taskResult < minValue;
+                return taskResult <= maxValue && taskResult >= minValue;
             }
         } else {
             return false;

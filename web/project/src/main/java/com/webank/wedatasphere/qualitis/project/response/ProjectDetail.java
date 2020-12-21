@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -28,6 +29,10 @@ public class ProjectDetail {
     @JsonProperty("project_name")
     private String projectName;
     private String description;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("project_label")
+    private Set<String> projectLabels;
 
     public ProjectDetail() {
         // Default Constructor
@@ -55,6 +60,22 @@ public class ProjectDetail {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public Set<String> getProjectLabels() {
+        return projectLabels;
+    }
+
+    public void setProjectLabels(Set<String> projectLabels) {
+        this.projectLabels = projectLabels;
     }
 
     @Override

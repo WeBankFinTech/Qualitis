@@ -16,34 +16,28 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
-import com.webank.wedatasphere.qualitis.service.MetaDataService;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
 import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.MetaDataService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author howeye

@@ -19,11 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.service;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
@@ -55,9 +50,9 @@ public interface RuleDataSourceService {
      * Check and save custom ruleDatasource
      * @param clusterName
      * @param savedRule
+     * @return
      * @throws SemanticException
      * @throws ParseException
-     * @return
      */
     List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, Rule savedRule) throws SemanticException, ParseException;
 

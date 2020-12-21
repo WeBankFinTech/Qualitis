@@ -19,10 +19,8 @@ package com.webank.wedatasphere.qualitis.rule.service;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -51,4 +49,16 @@ public interface TemplateStatisticsInputMetaService {
     Set<TemplateStatisticsInputMeta> getAndSaveTemplateStatisticsInputMeta(String outputName, Integer functionType, String functionContent,
                                                                            Boolean saveMidTable, Template template);
 
+    /**
+     * Save all statistics input meta
+     * @param templateStatisticsInputMetas
+     * @return
+     */
+    Set<TemplateStatisticsInputMeta> saveAll(List<TemplateStatisticsInputMeta> templateStatisticsInputMetas);
+
+    /**
+     * Delete statistics input meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

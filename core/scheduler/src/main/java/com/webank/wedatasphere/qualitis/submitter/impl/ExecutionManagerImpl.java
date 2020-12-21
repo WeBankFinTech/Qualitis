@@ -86,7 +86,6 @@ public class ExecutionManagerImpl implements ExecutionManager {
     @Override
     public List<TaskSubmitResult> submitApplication(String applicationId, List<Rule> rules, String createTime, String user, String database, String partition, Date date, Application application) throws ArgumentException,
             TaskTypeException, ConvertException, DataQualityTaskException, RuleVariableNotSupportException, RuleVariableNotFoundException, JobSubmitException, ClusterInfoNotConfigException, ExecutionException, InterruptedException {
-
         // Check if cluster supported
         LOGGER.info("Start to collect rule to clusters");
         Map<String, List<Rule>> clusterNameMap = getRuleCluster(rules);
@@ -149,6 +148,14 @@ public class ExecutionManagerImpl implements ExecutionManager {
         for (DataQualityTask dataQualityTask : dataQualityTasks) {
             List<TaskRule> ruleList = getRule(rules, dataQualityTask);
             Task task = new Task(application, createTime, TaskStatusEnum.SUBMITTED.getCode(), clusterInfo.getClusterName(), clusterInfo.getLinkisAddress());
+            Boolean abortOnFailure = false;
+            for (Rule rule : rules) {
+                if (rule.getAbortOnFailure()) {
+                    abortOnFailure = true;
+                    break;
+                }
+            }
+            task.setAbortOnFailure(abortOnFailure);
             Task taskInDb = taskDao.save(task);
             LOGGER.info("Succeed to save task. task_id: {}", taskInDb.getId());
             saveJobRuleSimpleAndJobDataSource(ruleList, taskInDb);

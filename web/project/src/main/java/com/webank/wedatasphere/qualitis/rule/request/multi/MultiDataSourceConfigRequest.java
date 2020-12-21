@@ -20,9 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
 import java.util.Set;
 
@@ -45,6 +42,7 @@ public class MultiDataSourceConfigRequest {
             if (!ruleDataSource.getDatasourceIndex().equals(index)) {
                 continue;
             }
+
             this.dbName = ruleDataSource.getDbName();
             this.tableName = ruleDataSource.getTableName();
             this.filter = ruleDataSource.getFilter();

@@ -1,0 +1,143 @@
+<template>
+    <Panel :title="$t('common.config')">
+        <!-- <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
+            <Wb-switch v-model="dssStream" :disabled="isView" @on-change="$emit('table-change', actionType, 'change')">
+                <span slot="open">{{ $t('common.open') }}</span>
+                <span slot="close">{{ $t('common.close') }}</span>
+            </Wb-switch>
+        </div> -->
+       <div>
+           <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </p>
+            <Form-item :rule="database" :label="`${$t('crossTableCheck.Database')}：`">
+                <Wb-select v-model="currentDbName" filterable :disabled="isView" @click.native="$emit('load-db', actionType)">
+                    <wb-option v-for="(w,i) in dbList" :key="i" :value="w.db_name">
+                        {{ w.db_name }}
+                    </wb-option>
+                </Wb-select>
+            </Form-item>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </p>
+            <Form-item :rule="table" :label="`${$t('crossTableCheck.sheets')}：`">
+                <Wb-select v-model="currentTableName" filterable :disabled="isView" @click.native="$emit('load-table',currentDbName, actionType, currentTableName, dssStream)">
+                    <wb-option v-for="(w,i) in sourceTable" :key="i" :value="w.table_name">
+                        {{ w.table_name }}
+                    </wb-option>
+                </Wb-select>
+            </Form-item>
+             <span>&nbsp;&nbsp;&nbsp;&nbsp;
+            </span>
+            <Form-item :rule="filter" :label="`${$t('common.condition')}：`">
+                <Wb-input v-model.lazy="currentFilter" :disabled="isView" :maxlength="1000" :rows="3" type="textarea" @click="$emit('filter-action',actionType, currentFilter)" />
+            </Form-item>
+        </div>
+    </Panel>
+</template>
+
+<script>
+    export default {
+        props: {
+            sourceTable: {
+                type: Array,
+                default: () => []
+            },
+            dbList: {
+                type: Array,
+                default: () => []
+            },
+            set: {
+                type: String,
+                default: '',
+            },
+            actionType: {
+                type: String,
+                default: '',
+            },
+            filterValue: {
+                type: String,
+                default: ''
+            },
+            isView: {
+                type: Boolean,
+                default: false
+            },
+            dbName: {
+                type: String,
+                default: ''
+            },
+            tableName: {
+                type: String,
+                default: ''
+            },
+            upstream: {
+                type: Boolean,
+                default: false
+            },
+        },
+        data() {
+            return {
+                currentDbName: '',
+                currentTableName: '',
+                currentFilter:'',
+                dssStream: false
+            }
+        },
+        watch: {
+            dbName(val) {
+                this.currentDbName = val;
+            },
+            tableName(val) {
+                this.currentTableName = val;
+            },
+            filterValue(val) {
+                this.currentFilter = val;
+            },
+            upstream(val) {
+                this.dssStream = val;
+            }
+        },
+        computed: {
+            database() {
+                return [{required: true,message: this.$t('common.notEmpty')}]
+            },
+            table() {
+                return [{required: true,message: this.$t('common.notEmpty')}]
+            },
+            filter() {
+                return [{required: true,message: this.$t('common.notEmpty')}]
+            },
+            showDSSNode() {
+                return top !== self
+            },
+            upstreamTitle() {
+                return this.dssStream ? this.$t('common.openUpstream') : this.$t('common.closeUpstream');
+            }
+        }
+    }
+</script>
+
+<style scoped lang="scss">
+    .upstream {
+        position: absolute;
+        top: -30px;
+        right: 3%;
+    }
+    .upstream:hover:after { 
+        content: attr(data-title);
+        display: block;
+        position: absolute;
+        top: 26px;
+        left: -34px;
+        width: 110px;
+        padding: 6px 4px;
+        text-align: left;
+        border: 1px solid #9e9e9e;
+        border-radius: 2px;
+        background-color: #555e67;
+        font-size: 14px;
+        color: #fff;
+        white-space: pre-wrap;
+        z-index: 2;
+    }
+</style>

@@ -16,27 +16,24 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
-import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 
 /**
  * @author howeye
@@ -48,6 +45,21 @@ public class RuleTemplateController {
     private RuleTemplateService ruleTemplateService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleTemplateController.class);
+
+    @POST
+    @Path("multi/all")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(PageRequest request) throws UnExpectedRequestException {
+        try {
+            return ruleTemplateService.getMultiRuleTemplate(request);
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to find multi rule_template, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_MULTI_RULE_TEMPLATE}", null);
+        }
+    }
 
     @POST
     @Path("custom/all")
@@ -88,7 +100,8 @@ public class RuleTemplateController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage(), e);
+            LOGGER.error("Failed to get rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId.toString().replace("\r", "")
+                .replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
@@ -102,7 +115,8 @@ public class RuleTemplateController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to find the input of rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage() ,e);
+            LOGGER.error("Failed to find the input of rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId.toString().replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_THE_INPUT_OF_RULE_TEMPLATE}", null);
         }
     }
@@ -116,23 +130,9 @@ public class RuleTemplateController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to find the meta of multi_rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage() ,e);
+            LOGGER.error("Failed to find the meta of multi_rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId.toString()
+                .replace("\r", "").replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", "") ,e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_THE_META_OF_MULTI_RULE_TEMPLATE}", null);
-        }
-    }
-
-    @POST
-    @Path("multi/all")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(PageRequest request) throws UnExpectedRequestException {
-        try {
-            return ruleTemplateService.getMultiRuleTemplate(request);
-        } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to find multi rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_MULTI_RULE_TEMPLATE}", null);
         }
     }
 

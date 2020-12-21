@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -23,4 +24,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @author howeye
  */
 public interface TemplateStatisticsInputMetaRepository extends JpaRepository<TemplateStatisticsInputMeta, Long> {
+
+    /**
+     * Delete statistics input meta by template.
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

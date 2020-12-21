@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-import com.webank.wedatasphere.qualitis.request.*;
+import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.request.*;
@@ -100,7 +100,8 @@ public class MetaDataServiceImpl implements MetaDataService {
     }
 
     @Override
-    public GeneralResponse<GetAllResponse<ColumnInfoDetail>> getUserColumnByTableId(GetUserColumnByTableIdRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+    public GeneralResponse<GetAllResponse<ColumnInfoDetail>> getUserColumnByTableId(GetUserColumnByTableIdRequest request)
+        throws UnExpectedRequestException, MetaDataAcquireFailedException {
         // Check Arguments
         checkRequest(request);
         // Get login user

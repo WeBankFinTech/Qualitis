@@ -17,12 +17,14 @@
 package com.webank.wedatasphere.qualitis.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 /**
  * @author howeye
  */
 @Configuration
+@ConditionalOnProperty(name = "ha.enable", havingValue = "true")
 public class ZkConfig {
 
     @Value("${zk.address}")
