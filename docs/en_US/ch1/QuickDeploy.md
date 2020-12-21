@@ -8,7 +8,7 @@ Hadoop (2.7.2)
 Hive (1.2.1)   
 Zookeeper (3.4.9)  
 Linkis (0.9.1), Spark engine required.[How to install Linkis?](https://github.com/WeBankFinTech/Linkis)  
-DataSphereStudio (0.6.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)
+DataSphereStudio (0.6.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)  
 
 ## 2. Download
 [Download](https://github.com/WeBankFinTech/Qualitis/releases)

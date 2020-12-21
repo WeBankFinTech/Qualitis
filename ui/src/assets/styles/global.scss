@@ -1,0 +1,99 @@
+
+@import "variables";
+@import "mixins";
+// Warning ：此文件用于覆盖ui-webank默认样式，请谨慎修改
+.layout-left {
+    display: none;
+}
+.pointerTag {
+    span {
+        color: #267BF3;
+        cursor: pointer;
+    }
+}
+
+.ui-menu {
+    .ui-menu-item, .ui-menu-submenu {
+        .ui-menu-item-icon, .ui-menu-submenu-icon {
+            width: 20px;
+            height: 20px;
+        }
+    }
+}
+.layout-right .layout-right-body {
+    top: 48px;
+}
+// Wb-menu组件
+.ui-menu {
+    .ui-menu-item-actived {
+        color: $primary-hover-color
+    }
+    .ui-menu-item, .ui-menu-submenu-title {
+        color: $second-text-color
+    }
+    .ui-menu-submenu {
+        .ui-menu-submenu-title {
+            color: $second-text-color;
+            .ui-menu-arrow {
+                right: 15px;
+            }
+        }
+        .ui-menu-submenu-ul {
+            width: 100%;
+            .ui-menu-item {
+                text-align: center;
+                color: $second-text-color;
+                left: -20px;
+                width: calc(100% + 20px);
+            }
+        }
+    }
+}
+
+.ui-modal, .ui-modal.scroll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .ui-modal-dialog {
+        left: auto;
+        top: auto;
+        transform: none;
+        max-width: 100%;
+        max-height: 100%;
+    }
+}
+
+
+//confirm弹窗
+.ui-message-swap {
+    .ui-message-body {
+        margin-bottom: 50px;
+        .ui-message-buttons {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+        }
+    }
+    .ui-button:first-child {
+        float: right;
+        margin-left: 15px;
+    }
+}
+.breadcrumb-container {
+    height: 30px;
+    border-bottom: 1px solid #e8eaec;
+    .breadcrumb {
+        color: #515a6e;
+    }
+    .breadcrumb-item-separator {
+        margin: 0 8px;
+        color: #dcdee2;
+    }
+    .breadcrumb-item-link {
+        font-weight: 700;
+        color: #515a6e;
+    }
+    .cursor{
+        cursor: pointer;
+    }
+}

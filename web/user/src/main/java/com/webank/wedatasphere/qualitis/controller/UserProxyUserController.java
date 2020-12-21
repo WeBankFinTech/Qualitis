@@ -68,7 +68,7 @@ public class UserProxyUserController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to delete user_proxy_user, user_proxy_user_id: {}, caused by: {}", request.getUserProxyUserId(), e.getMessage(), e);
+            LOGGER.error("Failed to delete user_proxy_user, user_proxy_user_id: {}, caused by: {}", request.getUserProxyUserId(), e.getMessage());
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USER_PROXY_USER}", null);
         }
     }
@@ -83,7 +83,8 @@ public class UserProxyUserController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get all user_proxy_user by proxy_user name, proxy_user_name: {}, caused by: {}", proxyUserName, e.getMessage(), e);
+            LOGGER.error("Failed to get all user_proxy_user by proxy_user name, proxy_user_name: {}, caused by: {}", proxyUserName.replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""));
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_USER_PROXY_USER_BY_PROXY_USER_NAME}", null);
         }
     }

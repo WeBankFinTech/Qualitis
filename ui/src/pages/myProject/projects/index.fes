@@ -1,0 +1,547 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper p20">
+            <Cell span="24">
+                <div class="breadcrumb-container mb10">
+                    <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                    <span class="breadcrumb-item-separator">/</span>
+                    <span class="breadcrumb-item-link">{{ $t('myProject.myProject') }}</span>
+                </div>
+                <div>
+                    <Wb-button type="primary" class="mr10" @click="addNewProj"><Icon type="plus" size="14" />
+                        {{ $t('common.newProject') }}
+                    </Wb-button>
+                    <Wb-button class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importProject') }}
+                        <input ref="projectFile" class="fileInput" type="file" accept=".xlsx" @change="importFile">
+                    </Wb-button>
+                    <WbButton v-show="projectList.length" type="warn" class="mr10" @click="exportExcel">
+                        <Icon type="download" size="14" />
+                        {{ $t('myProject.downloadProject') }}
+                    </WbButton>
+                </div>
+                <Tabs v-model="tabType" class="mt20">
+                    <Tab :label="$t('myProject.ordinaryProject')" name="1">
+                        <Wb-table ref="projectTable" :data="projectList" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-td-click="toDetail">
+                            <Column type="selection" />
+                            <Column prop="project_id" :name="$t('label.projectId')" />
+                            <Column prop="project_name" :name="$t('common.projectName')" classes="pointerTag" />
+                            <Column prop="description" :name="$t('common.description')" />
+                            <Column prop="project_label" :name="$t('myProject.label')" :filter="formatLabel" />
+                            <Column prop="create_user" :name="$t('common.founder')" />
+                            <Column prop="create_time" :name="$t('common.createTime')" />
+                            <Column prop="modify_user" :name="$t('common.modifier')" />
+                            <Column prop="modify_time" :name="$t('common.changeTheTime')" />
+                            <Column :name="$t('common.operate')" :component="operationComponent" />
+                        </Wb-table>
+                        <Pagination v-if="tabType ==='1'" :size-list="sizeList" :current="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                    </Tab>
+                    <Tab :label="$t('myProject.workflowProject')" name="2">
+                        <Wb-table ref="flowProjectTable" :data="flowData" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-td-click="flowProject">
+                            <Column type="selection" />
+                            <Column prop="project_id" :name="$t('label.projectId')" />
+                            <Column prop="project_name" :name="$t('common.projectName')" classes="pointerTag" />
+                            <Column prop="description" :name="$t('common.description')" />
+                            <Column prop="project_label" :name="$t('myProject.label')" :filter="formatLabel" />
+                            <Column prop="create_user" :name="$t('common.founder')" />
+                            <Column prop="create_time" :name="$t('common.createTime')" />
+                            <Column prop="modify_user" :name="$t('common.modifier')" />
+                            <Column prop="modify_time" :name="$t('common.changeTheTime')" />
+                            <Column :name="$t('common.operate')" :action="flowOperation" />
+                        </Wb-table>
+                        <Pagination v-if="tabType ==='2'" :size-list="sizeList" :current="flowPagination.page" :size="flowPagination.size" :total="flowPagination.total" @on-change="changePage" />
+                    </Tab>
+                    <div class="project-mes" slot="action" :data-title="`${$t('projects.projectHint')}`">
+                        <icon type="question-circle-o" size="20" />
+                    </div>
+                </Tabs>
+                <Loading v-show="showLoading" class="loading-layout" />
+            </Cell>
+            <Modal ref="executionUser" :title="$t('common.runUser')" class="execution-modal">
+                <Wb-form ref="form" :rule="userValidate" :label-width="100">
+                    <FormItem :label="$t('common.runUser')" prop="executor_user">
+                        <WbSelect v-model="executor_user">
+                            <WbOption v-for="(usr,index) in users" :key="index" :value="usr">
+                                {{ usr }}
+                            </WbOption>
+                        </WbSelect>
+                    </FormItem>
+                    <Form-item :label="`${$t('common.condition')}：`" prop="filterCondition">
+                        <wb-input v-model="filterCondition" :placeholder="$t('common.pleaseEnter')" />
+                    </Form-item>
+                    <div class="button-container fr">
+                        <WbButton class="mr10" @click="cancle('executionUser')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton ref="doSave" type="primary" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </Modal>
+            <Modal ref="addProjectModal" :title="$t('myProject.addOrdinaryProject')" class="project-modal">
+                <Wb-form ref="projectForm" :rule="ruleValidate" :label-width="150">
+                    <Form-item :label="$t('common.projectName')" prop="project_name">
+                        <WbInput v-model="project_name" :maxlength="50" :placeholder="$t('common.pleaseEnter')" />
+                    </Form-item>
+                    <Form-item :label="`${$t('label.projectIntro')}：`" prop="description">
+                        <WbInput v-model="description" :maxlength="500" type="textarea" :placeholder="$t('common.pleaseEnter')" />
+                    </Form-item>
+                    <Form-item :label="`${$t('common.itemTag')}：`">
+                        <div :class="{'mb10' :tagList.length}">
+                            <span v-for="(item, index) in tagList" :key="index" class="labelTag">
+                                {{ item }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
+                            </span>
+                        </div>
+                        <div>
+                            <Wb-button v-if="!inputShowControler" type="ghost" @click="editTag">{{ $t('common.addTag') }}</Wb-button>
+                            <WbInput v-else v-model="newLabel" :placeholder="$t('common.pleaseEnter')" @on-blur="addTag" />
+                        </div>
+                    </Form-item>
+                    <div class="fr">
+                        <Wb-button type="primary" @click="submitPorject">{{ $t('common.ok') }}</Wb-button>
+                    </div>
+                </Wb-form>
+            </Modal>
+        </Row>
+    </pageContainer>
+</template>
+<script type="text/ecmascript-6">
+    import { isIE, forceDownload } from 'assets/js/utils';
+    import { sizeList } from 'assets/js/sizeList';
+    import pageContainer from '../../../components/template';
+    import Vue from 'vue';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesData: {},
+        FesSyncData: {},
+        FesReady: function () {
+            this.init()
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            const that = this;
+            return {
+                projectList: [],
+                pagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                sizeList,
+                showLoading: true,
+                delete: '',               
+                shortStaffList: [],
+                staffList: [],
+                filterCondition: '',
+                project_id: '',             
+                project_name: '',
+                description: '',
+                executor_user: [],
+                users: [],
+                tabType: '1',
+                flowData: [],
+                flowPagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                inputShowControler: '',
+                label: "",
+                newLabel: "",
+                tagList: [],
+                operationComponent: function (trData) {
+                    return new Vue({
+                        data() {
+
+                        },
+                        methods: {
+                            deleteAction() {
+                                that.deleteProject(trData);
+                            },
+                            executeAction() {
+                                that.project_id = trData.project_id;
+                                that.$refs.executionUser.show();
+                            }
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: that.$t('common.delete'),
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)'
+                                }, {
+                                    text: that.$t('common.executeTask'),
+                                    handle: this.executeAction,
+                                    color: ''
+                                }
+                                   
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            }
+        },
+        computed: {
+            operation() {
+                return [
+                    {
+                        text: this.$t('common.delete'),
+                        func: function (trData) {
+                            this.deleteProject(trData);
+                        }
+                    },
+                    {
+                        text: this.$t('common.executeTask'),
+                        func: function (trData) {
+                            this.project_id = trData.project_id;
+                            this.$refs.executionUser.show();
+                        } 
+                    }
+                ];
+            },
+            flowOperation() {
+                return [
+                    {
+                        text: this.$t('common.executeTask'),
+                        func: function (trData) {
+                            this.project_id = trData.project_id;
+                            this.$refs.executionUser.show();
+                        } 
+                    }
+                ]
+            },
+            ruleValidate() {
+                return {
+                    project_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    description: [
+                        { required: true, message: this.$t('common.notEmpty') },
+                    ]
+                }
+            },
+            userValidate() {
+                    return {
+                        executor_user: [
+                            { required: true, message: this.$t('common.notEmpty') }
+                        ],
+                    }
+                },
+        },
+        async mounted() {
+            let group = await this.getUsrGroup();
+            let user = this.FesStorage.get('simulatedUser') || this.FesApp.get("FesUserName");
+            if(Array.isArray(user)) {
+                this.users = [].concat(user)
+            } else {
+                this.users = [ user ]
+            }
+            if(Array.isArray(group)) {
+                this.users = this.users.concat(group)
+            } else if (!this.FesUtil.isPlainObject(group)) {
+                this.users.push(group);
+            }
+            this.users = _.uniq(this.users);
+        },
+        methods: {
+            init() {
+                this.getData();
+                this.getFlowData()
+            },
+            getUsrGroup() {
+                return this.FesApi.fetch("/api/v1/projector/proxy_user", {}, "get");
+            },
+            toDetail(val, td, index) {
+                if (index === 2) {
+                    this.$router.push({
+                        path: '/myProject/projects/list',
+                        query: {
+                            id: val.project_id
+                        }
+                    });
+                }
+            },
+            flowProject(val, td, index) {
+                if (index === 2) {
+                    this.$router.push({
+                        path: '/myProject/projects/list',
+                        query: {
+                            id: val.project_id,
+                            flow: true
+                        }
+                    });
+                }
+            },
+            async getData() {
+                let { data, total } = await this.FesApi.fetch("api/v1/projector/project/all", {
+                    page: this.pagination.page - 1,
+                    size: this.pagination.size
+                });
+                this.showLoading = false;
+                this.projectList = Array.isArray(data) ? data : [];
+                this.pagination.total = Math.ceil(total/this.pagination.size);
+            },
+            async getFlowData() {
+                let { data, total } = await this.FesApi.fetch("api/v1/projector/project/workflow/all", {
+                    page: this.flowPagination.page - 1,
+                    size: this.flowPagination.size
+                });
+                this.showLoading = false;
+                this.flowData = Array.isArray(data) ? data : [];
+                this.flowPagination.total = Math.ceil(total/this.flowPagination.size);
+            },
+            addNewProj () {
+                this.resetForm();
+                this.$refs.addProjectModal.show()
+            },
+            resetForm() {
+                Object.assign(this, {
+                    project_name: '',
+                    description: '',
+                    tagList: []
+                })
+                setTimeout(() => {
+                    this.$refs.projectForm.resetFields();
+                })
+            },
+            changePage({ current, size }) {
+                if(this.tabType === '1'){
+                    this.pagination.page = current;
+                    this.pagination.size = size;
+                    this.getData();
+                }else {
+                    this.flowPagination.page = current;
+                    this.flowPagination.size = size;
+                    this.getFlowData();
+                }
+            },
+            importFile() {
+                isIE()
+                let file = this.$refs.projectFile.files[0];
+                const SIZE = 5;
+                if (file.size > SIZE * 1024 * 1024) return this.$Toast.warn(this.$t('toastWarn.importFile'));
+                let formData = new FormData();
+                formData.append('file', file);
+                this.FesApi.fetch('api/v1/projector/project/batch/upload', formData).then(()=> {
+                    this.$Toast.success(this.$t('toastSuccess.successImport'));
+                    this.pagination.page = 1;
+                    this.init();
+                });
+                this.$refs.projectFile.value = null;
+            },
+            exportExcel() {
+                isIE();
+                let selectProject = [];
+                if (this.tabType === '1') {
+                     selectProject = this.$refs.projectTable.getSelected();
+                }else {
+                     selectProject = this.$refs.flowProjectTable.getSelected();
+                }
+                if (selectProject.length === 0 ) {
+                    this.$Toast.error(this.$t('toastError.selectFile'));
+                    return;
+                }
+                let project_id = [];
+                let fileName = '';
+                for (let i = 0; i < selectProject.length; i++) {
+                    project_id.push(selectProject[i].project_id);
+                }
+                let param = {};
+                param.project_ids = project_id;
+                let exportUrl = this.FesEnv.api + '/api/v1/projector/project/batch/download'
+                fetch(exportUrl,{
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        'Content-Language': this.FesFesx.get('Language')
+                    },
+                    mode: 'cors',
+                    credentials: 'include',
+                    body: JSON.stringify(param),
+                    responseType: 'blob'
+                }).then( res => {
+                    let fileNameUnicode = res.headers.get('Content-Disposition').split("filename*=")[1];
+                    fileName = fileNameUnicode ? decodeURIComponent(fileNameUnicode.split("''")[1]) : '项目.xlsx';
+                    return res.blob();
+                }).then( blob => {
+                    let blobUrl = window.URL.createObjectURL(blob);
+                    forceDownload(blobUrl, fileName)
+                }).catch( err => {
+                    this.$Toast.error(`${this.$t('toastError.importFail')}:${err.message}`)
+                })
+            },
+            async deleteProject(data) {
+                let index = await this.$Message.confirm(`${this.$t('common.prompt')}`, `${this.$t('myProject.deleteProject', {name: data.project_name})}`)
+                if (index === 0) {
+                    await this.FesApi.fetch("api/v1/projector/project/delete", {
+                        project_id: data.project_id
+                    });
+                    this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                    this.pagination.page = 1;
+                    this.getData();
+                }
+            },
+            cancle(ref) {
+                this.$refs[ref].hide();          
+            },
+            submit() {
+                this.$refs.form.validate(valid => {
+                    if (!valid) return;
+                    let create_user = this.FesApp.get("FesUserName");
+                    let params = {
+                        create_user,
+                        project_id: this.project_id,
+                        partition: this.filterCondition,
+                        execution_user: this.executor_user
+                    }
+                    this.FesApi.fetch('api/v1/projector/execution/project', params,{
+                        button:this.$refs.doSave,//防止重复请求
+                    }).then(() => {
+                        this.$Toast.success(this.$t('toastSuccess.executeSuccess'));
+                        this.cancle('executionUser')
+                    });
+                })
+            },
+            submitPorject() {
+                this.$refs.projectForm.validate(valid=> {
+                    if (!valid) return
+                    let { project_name, description} = this;
+                    let params = {
+                        project_name,
+                        description,
+                        project_label: this.tagList
+                    }
+                    this.FesApi.fetch('api/v1/projector/project', params, 'put').then(()=> {
+                        this.$Toast.success(this.$t('toastSuccess.addSuccess'));
+                        this.cancle("addProjectModal")
+                        this.pagination.page = 1;
+                        this.getData();
+                    })
+                })
+            },
+            editTag() {
+                this.newLabel = this.label;
+                this.inputShowControler = true;
+            },
+            addTag() {
+                if (this.newLabel) {
+                    let labelRepeat = this.tagList.some(it=> it === this.newLabel);
+                    if (labelRepeat) {
+                        return this.$Toast.warn(this.$t('projects.lableRepeat'))
+                    }else {
+                        this.tagList.push(this.newLabel)
+                    }
+                }
+                this.initData();
+            },
+            deleteTag(index) {
+                this.tagList.splice(index,1);
+            },
+            initData() {
+                this.inputShowControler = false
+                this.newLabel = ''
+            },
+            formatLabel(value) {
+                if (value) {
+                    return value.toString()                    
+                }
+            }
+        }
+    };
+</script>
+<style scoped lang="scss">
+    .projectBtn {
+        margin-right: 4px;
+    }
+    .fileInput {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+    .execution-modal,
+    .project-modal {
+        /deep/
+        .ui-modal-body {
+            min-height: 300px;
+        }
+    }
+    .submit-button {
+        position: absolute;
+        left: 50%;
+        bottom: 10px;
+        transform: translate(-50%);
+    }
+    .labelTag {
+        display: inline-block;
+        margin: 0 10px 5px;
+        height: 32px;
+        padding: 0 10px;
+        line-height: 30px;
+        font-size: 12px;
+        color: #409eff;
+        background-color: #ecf5ff;
+        border: 1px solid #d9ecff;
+        border-radius: 4px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        padding-left: 15px;
+        i {
+            margin-left: 15px;
+            vertical-align: top;
+        }
+    }
+    .button-container {
+        position: absolute;
+        right: 0;
+        bottom: 10px;
+    }
+    .project-mes {
+        position: absolute;
+        top: 0;
+        left: 320px;
+        margin-left: 10px;
+    }
+    .project-mes:hover:after {
+        content: attr(data-title);
+        position: absolute;
+        top: 30px;
+        left: -110px;
+        width: 275px;
+        padding: 10px 10px;
+        border: 1px solid #9e9e9e;
+        border-radius: 5px;
+        background-color: #555e67;
+        color: #fff;
+        opacity: 0.9;
+        z-index: 2;
+        white-space: pre-wrap;
+        font-size: 14px;
+    }
+</style>
+
+<style lang="scss">
+    .projectId span{
+        cursor: pointer;
+        color: #3399ff !important;
+    }
+</style>

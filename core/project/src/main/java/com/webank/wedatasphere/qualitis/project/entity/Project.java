@@ -16,8 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.project.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.persistence.*;
 import java.util.Set;
 
@@ -25,6 +29,7 @@ import java.util.Set;
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_project")
 public class Project {
 
@@ -38,6 +43,9 @@ public class Project {
 
     @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
     private Set<ProjectUser> projectUsers;
+
+    @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
+    private Set<ProjectLabel> projectLabels;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private Set<Rule> rules;
@@ -53,6 +61,15 @@ public class Project {
     @Column(name = "user_department", length = 50)
     private String userDepartment;
 
+    @Column(name = "create_time", length = 25)
+    private String createTime;
+
+    @Column(name = "modify_user", length = 50)
+    private String modifyUser;
+
+    @Column(name = "modify_time", length = 25)
+    private String modifyTime;
+
     @Column(name = "project_type")
     private Integer projectType;
 
@@ -65,6 +82,15 @@ public class Project {
         this.createUser = username;
         this.createUserFullName = username + "(" + chineseName + ")";
         this.userDepartment = department;
+    }
+
+    public Project(String projectName, String description, String username, String chineseName, String department, String createTime) {
+        this.name = projectName;
+        this.description = description;
+        this.createUser = username;
+        this.createUserFullName = username + "(" + chineseName + ")";
+        this.userDepartment = department;
+        this.createTime = createTime;
     }
 
     public Long getId() {
@@ -97,6 +123,14 @@ public class Project {
 
     public void setProjectUsers(Set<ProjectUser> projectUsers) {
         this.projectUsers = projectUsers;
+    }
+
+    public Set<ProjectLabel> getProjectLabels() {
+        return projectLabels;
+    }
+
+    public void setProjectLabels(Set<ProjectLabel> projectLabels) {
+        this.projectLabels = projectLabels;
     }
 
     public Set<Rule> getRules() {
@@ -139,15 +173,39 @@ public class Project {
         this.projectType = projectType;
     }
 
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
     @Override
     public String toString() {
         return "Project{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", createUser='" + createUser + '\'' +
-                ", createUserFullName='" + createUserFullName + '\'' +
-                ", userDepartment='" + userDepartment + '\'' +
-                '}';
+            "id=" + id +
+            ", name='" + name + '\'' +
+            ", description='" + description + '\'' +
+            ", createUser='" + createUser + '\'' +
+            ", createUserFullName='" + createUserFullName + '\'' +
+            ", userDepartment='" + userDepartment + '\'' +
+            '}';
     }
 }

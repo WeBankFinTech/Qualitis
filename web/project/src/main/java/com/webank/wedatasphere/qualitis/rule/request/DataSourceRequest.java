@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 import java.util.List;
 
@@ -96,15 +94,14 @@ public class DataSourceRequest {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getFilter(), "filter");
         CommonChecker.checkStringLength(request.getFilter(), 1000, "filter");
-        CommonChecker.checkString(request.getClusterName(), "cluster_name");
-        CommonChecker.checkString(request.getDbName(), "db_name");
         CommonChecker.checkString(request.getTableName(), "table_name");
+        CommonChecker.checkString(request.getDbName(), "db_name");
+        CommonChecker.checkString(request.getClusterName(), "cluster_name");
         if (request.getColNames() == null) {
             throw new UnExpectedRequestException("col_names can not be null");
         }
         DataSourceColumnRequest.checkRequest(request.getColNames());
     }
-
     @Override
     public String toString() {
         return "DataSourceRequest{" +

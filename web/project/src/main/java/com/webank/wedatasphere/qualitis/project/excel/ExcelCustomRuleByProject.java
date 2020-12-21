@@ -67,6 +67,9 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
     @ExcelProperty(value = "Verification Threshold", index = 13)
     private String threshold;
 
+    @ExcelProperty(value = "AbortOnFailure", index = 14)
+    private Boolean abortOnFailure;
+
     public ExcelCustomRuleByProject() {
     }
 
@@ -186,21 +189,32 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
         this.ruleGroupName = ruleGroupName;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     @Override
     public String toString() {
         return "ExcelCustomRuleByProject{" +
-                "projectName='" + projectName + '\'' +
-                ", ruleName='" + ruleName + '\'' +
-                ", outputName='" + outputName + '\'' +
-                ", saveMidTable=" + saveMidTable +
-                ", clusterName='" + clusterName + '\'' +
-                ", functionName='" + functionName + '\'' +
-                ", functionContent='" + functionContent + '\'' +
-                ", fromContent='" + fromContent + '\'' +
-                ", whereContent='" + whereContent + '\'' +
-                ", checkTemplateName='" + checkTemplateName + '\'' +
-                ", compareType='" + compareType + '\'' +
-                ", threshold='" + threshold + '\'' +
-                '}';
+            "projectName='" + projectName + '\'' +
+            ", ruleGroupName='" + ruleGroupName + '\'' +
+            ", ruleName='" + ruleName + '\'' +
+            ", outputName='" + outputName + '\'' +
+            ", saveMidTable=" + saveMidTable +
+            ", clusterName='" + clusterName + '\'' +
+            ", functionName='" + functionName + '\'' +
+            ", functionContent='" + functionContent + '\'' +
+            ", fromContent='" + fromContent + '\'' +
+            ", whereContent='" + whereContent + '\'' +
+            ", alarmCheckName='" + alarmCheckName + '\'' +
+            ", checkTemplateName='" + checkTemplateName + '\'' +
+            ", compareType='" + compareType + '\'' +
+            ", threshold='" + threshold + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            '}';
     }
 }

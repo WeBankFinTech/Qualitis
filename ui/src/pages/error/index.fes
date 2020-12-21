@@ -1,0 +1,39 @@
+<template>
+    <div class="error-page">
+        <span>
+            404
+        </span>
+        <p>
+            {{ $t('common.errorPage') }}
+        </p>
+        <div class="mt20">
+            <Wb-button type="primary" @click="toHome">{{ $t('common.homePage') }}</Wb-button>
+            <Wb-button type="primary" class="ml10" @click="back">{{ $t('common.previousPage') }}</Wb-button>
+        </div>
+    </div>
+</template> 
+<script>
+    export default {
+        FesHeader: false,
+        FesLeft: false,
+        methods: {
+            toHome() {
+                this.$router.push({path: '/Dashboard'})
+            },
+            back() {
+                this.FesApp.router.back();
+            }
+        }
+    }
+</script>
+<style lang="scss" scoped>
+    .error-page {
+        padding: 0 20px;
+        span {
+            font-size: 200px;
+        }
+        p {
+            font-size: 100px;
+        }
+    }
+</style>

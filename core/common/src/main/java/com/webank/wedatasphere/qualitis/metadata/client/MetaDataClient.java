@@ -17,23 +17,18 @@
 package com.webank.wedatasphere.qualitis.metadata.client;
 
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.request.GetClusterByUserRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetColumnByUserAndTableRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetDbByUserAndClusterRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetTableByUserAndDbRequest;
-import com.webank.wedatasphere.qualitis.metadata.response.ClusterMappingDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.request.GetDbByUserAndClusterRequest;
-import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
+import java.util.List;
 
 /**
  * @author howeye
@@ -70,6 +65,19 @@ public interface MetaDataClient {
         throws MetaDataAcquireFailedException, UnExpectedRequestException;
 
     /**
+     * Get table commit from table basic info. More table details can be obtained in the future
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param userName
+     * @return
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     */
+    String getTableComment(String clusterName, String dbName, String tableName, String userName)
+        throws MetaDataAcquireFailedException, UnExpectedRequestException;
+
+    /**
      * Get column by user and table
      * @param request
      * @return
@@ -77,6 +85,19 @@ public interface MetaDataClient {
      * @throws UnExpectedRequestException
      */
     DataInfo<ColumnInfoDetail> getColumnByUserAndTable(GetColumnByUserAndTableRequest request)
+        throws MetaDataAcquireFailedException, UnExpectedRequestException;
+
+    /**
+     * Get the columns' information of the table
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param userName
+     * @return
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     */
+    List<ColumnInfoDetail> getColumnInfo(String clusterName, String dbName, String tableName, String userName)
         throws MetaDataAcquireFailedException, UnExpectedRequestException;
 
 }

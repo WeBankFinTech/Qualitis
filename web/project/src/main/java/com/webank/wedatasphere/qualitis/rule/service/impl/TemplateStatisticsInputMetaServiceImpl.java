@@ -24,13 +24,7 @@ import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMeta
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateStatisticsInputMetaRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateStatisticsInputMetaRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,9 +75,26 @@ public class TemplateStatisticsInputMetaServiceImpl implements TemplateStatistic
         templateStatisticsInputMeta.setValueType(StatisticsValueTypeEnum.FIXED_VALUE.getCode());
         templateStatisticsInputMeta.setTemplate(template);
 
-        TemplateStatisticsInputMeta savedTemplateStatisticsInputMeta = repository.save(templateStatisticsInputMeta);
-        templateStatisticsInputMetas.add(savedTemplateStatisticsInputMeta);
-        LOGGER.info("Succeed to save template statistics input_meta, input_meta_id: {}, name: {}", savedTemplateStatisticsInputMeta.getId(), savedTemplateStatisticsInputMeta.getName());
+        try {
+            TemplateStatisticsInputMeta savedTemplateStatisticsInputMeta = repository.save(templateStatisticsInputMeta);
+            templateStatisticsInputMetas.add(savedTemplateStatisticsInputMeta);
+            LOGGER.info("Succeed to save template statistics input_meta, input_meta_id: {}, name: {}", savedTemplateStatisticsInputMeta.getId(), savedTemplateStatisticsInputMeta.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return templateStatisticsInputMetas;
+    }
+
+    @Override
+    public Set<TemplateStatisticsInputMeta> saveAll(List<TemplateStatisticsInputMeta> templateStatisticsInputMetas) {
+        Set<TemplateStatisticsInputMeta> result = new HashSet<>();
+        result.addAll(repository.saveAll(templateStatisticsInputMetas));
+        return result;
+    }
+
+    @Override
+    public void deleteByTemplate(Template templateInDb) {
+        repository.deleteByTemplate(templateInDb);
     }
 }

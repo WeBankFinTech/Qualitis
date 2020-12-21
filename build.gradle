@@ -32,7 +32,9 @@ def defaultEncoding = 'UTF-8'
 buildscript {
   repositories {
     mavenLocal()
-    mavenCentral()
+    maven {
+      url "http://maven.aliyun.com/nexus/content/groups/public/"
+    }
   }
 }
 
@@ -42,9 +44,8 @@ dependencies {
 
 repositories {
   mavenLocal()
-  mavenCentral()
   maven {
-    url "https://repo.spring.io/libs-milestone"
+    url "http://maven.aliyun.com/nexus/content/groups/public/"
   }
 }
 
@@ -54,8 +55,7 @@ applicationDefaultJvmArgs =
         ['-Xms256M', '-Xmx2G',
          '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=20', '-XX:InitiatingHeapOccupancyPercent=50',
          '-Dfile.encoding=UTF-8', "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
-         "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log",
-         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8091"]
+         "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log"]
 
 tasks.startScripts << {
   def scriptFile = file "${outputDir}/${applicationName}"
@@ -109,10 +109,10 @@ subprojects {
 
   repositories {
     mavenLocal()
-    mavenCentral()
     maven {
-      url "https://repo.spring.io/libs-milestone"
+      url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
+//     mavenCentral()
   }
 
   processResources {
@@ -125,6 +125,24 @@ subprojects {
     pom {
 
     }.writeTo("$buildDir/pom.xml")
+  }
+}
+
+configurations.all {
+  resolutionStrategy {
+    force 'org.springframework:spring-aop:5.1.15.RELEASE'
+    force 'org.springframework:spring-aspects:5.1.15.RELEASE'
+    force 'org.springframework:spring-beans:5.1.15.RELEASE'
+    force 'org.springframework:spring-context:5.1.15.RELEASE'
+    force 'org.springframework:spring-core:5.1.15.RELEASE'
+    force 'org.springframework:spring-expressions:5.1.15.RELEASE'
+    force 'org.springframework:spring-jcl:5.1.15.RELEASE'
+    force 'org.springframework:spring-jdbc:5.1.15.RELEASE'
+    force 'org.springframework:spring-orm:5.1.15.RELEASE'
+    force 'org.springframework:spring-test:5.1.15.RELEASE'
+    force 'org.springframework:spring-tx:5.1.15.RELEASE'
+    force 'org.springframework:spring-web:5.1.15.RELEASE'
+    force 'org.springframework:spring-webmvc:5.1.15.RELEASE'
   }
 }
 

@@ -27,19 +27,21 @@ public enum CheckTemplateEnum {
     /**
      * Monthly, weekly, day and fixed name
      */
-    MONTH_FLUCTUATION(1,"月波动", Arrays.asList(Number.class)),
-    WEEK_FLUCTUATION(2,"周波动", Arrays.asList(Number.class)),
-    DAY_FLUCTUATION(3,"日波动", Arrays.asList(Number.class)),
-    FIXED_VALUE(4,"固定值", Arrays.asList(Number.class)),
+    MONTH_FLUCTUATION(1,"月波动", "Month Fluctuation", Arrays.asList(Number.class)),
+    WEEK_FLUCTUATION(2,"周波动", "Week Fluctuation", Arrays.asList(Number.class)),
+    DAY_FLUCTUATION(3,"日波动", "Daily Fluctuation", Arrays.asList(Number.class)),
+    FIXED_VALUE(4,"固定值", "Fix Value", Arrays.asList(Number.class)),
         ;
 
     private Integer code;
-    private String message;
+    private String zhMessage;
+    private String enMessage;
     private List<Class> classes;
 
-    CheckTemplateEnum(Integer code, String message, List<Class> classes) {
+    CheckTemplateEnum(Integer code, String zhMessage, String enMessage, List<Class> classes) {
         this.code = code;
-        this.message = message;
+        this.zhMessage = zhMessage;
+        this.enMessage = enMessage;
         this.classes = classes;
     }
 
@@ -47,8 +49,12 @@ public enum CheckTemplateEnum {
         return code;
     }
 
-    public String getMessage() {
-        return message;
+    public String getZhMessage() {
+        return zhMessage;
+    }
+
+    public String getEnMessage() {
+        return enMessage;
     }
 
     public List<Class> getClasses() {
@@ -58,7 +64,7 @@ public enum CheckTemplateEnum {
     public static String getCheckTemplateName(Integer code) {
         for (CheckTemplateEnum c : CheckTemplateEnum.values()) {
             if (c.getCode().equals(code)) {
-                return c.getMessage();
+                return c.getZhMessage();
             }
         }
         return null;
@@ -66,8 +72,36 @@ public enum CheckTemplateEnum {
 
     public static Integer getCheckTemplateCode(String checkTemplateName) {
         for (CheckTemplateEnum c : CheckTemplateEnum.values()) {
-            if (c.getMessage().equals(checkTemplateName)) {
+            if (c.getZhMessage().equals(checkTemplateName)) {
                 return c.getCode();
+            }
+        }
+        return null;
+    }
+
+    public static String getCheckTemplateName(Integer code, String local) {
+        for (CheckTemplateEnum c : CheckTemplateEnum.values()) {
+            if (c.getCode().equals(code)) {
+                if (local.equals("en_US")) {
+                    return c.getEnMessage();
+                } else {
+                    return c.getZhMessage();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static Integer getCheckTemplateCode(String checkTemplateName, String local) {
+        for (CheckTemplateEnum c : CheckTemplateEnum.values()) {
+            if (local.equals("en_US")) {
+                if (c.getEnMessage().equals(checkTemplateName)) {
+                    return c.getCode();
+                }
+            } else {
+                if (c.getZhMessage().equals(checkTemplateName)) {
+                    return c.getCode();
+                }
             }
         }
         return null;

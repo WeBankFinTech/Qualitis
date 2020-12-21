@@ -22,8 +22,13 @@ import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
@@ -33,21 +38,10 @@ import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
 import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.service.ProjectService;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
-import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.slf4j.Logger;
@@ -56,11 +50,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * @author howeye
@@ -76,6 +65,8 @@ public class CustomRuleServiceImpl implements CustomRuleService {
     private RuleService ruleService;
     @Autowired
     private RuleDao ruleDao;
+    @Autowired
+    private RuleDataSourceDao ruleDatasourceDao;
     @Autowired
     private AlarmConfigService alarmConfigService;
     @Autowired
@@ -127,6 +118,7 @@ public class CustomRuleServiceImpl implements CustomRuleService {
         newRule.setOutputName(request.getOutputName());
         newRule.setRuleTemplateName(template.getName());
         newRule.setRuleGroup(ruleGroup);
+        newRule.setAbortOnFailure(request.getAbortOnFailure());
         Rule savedRule = ruleDao.saveRule(newRule);
         LOGGER.info("Succeed to save custom rule, rule_id: {}", savedRule.getId());
 
@@ -258,6 +250,7 @@ public class CustomRuleServiceImpl implements CustomRuleService {
         ruleInDb.setWhereContent(request.getWhereContent());
         ruleInDb.setAlarm(request.getAlarm());
         ruleInDb.setRuleTemplateName(template.getName());
+        ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
         Rule savedRule = ruleDao.saveRule(ruleInDb);
 
         // Save alarm config and rule datasource

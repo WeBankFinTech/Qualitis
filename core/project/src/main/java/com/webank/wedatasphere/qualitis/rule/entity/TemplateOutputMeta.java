@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -23,6 +26,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_template_output_meta")
 public class TemplateOutputMeta {
 
@@ -31,6 +35,7 @@ public class TemplateOutputMeta {
     private Long id;
 
     @ManyToOne
+    @JsonBackReference
     private Template template;
 
     @Column(length = 150, name = "output_name", updatable = false)

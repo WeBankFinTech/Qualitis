@@ -44,4 +44,9 @@ public interface TemplateOutputMetaRepository extends JpaRepository<TemplateOutp
      */
     TemplateOutputMeta findByTemplateAndOutputName(Template template, String outputName);
 
+    /**
+     * Delete output meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

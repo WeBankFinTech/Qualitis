@@ -18,20 +18,16 @@ package com.webank.wedatasphere.qualitis.rule.service;
 
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
 
 /**
  * @author howeye
@@ -80,6 +76,22 @@ public interface RuleService {
     GeneralResponse<RuleDetailResponse> getRuleDetail(Long ruleId) throws UnExpectedRequestException;
 
     /**
+     * 根据规则组，使用json序列化，导出rule及其相关对象
+     * @param ruleGroupId
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<RuleNodeResponse> exportRuleByGroupId(Long ruleGroupId) throws UnExpectedRequestException;
+
+    /**
+     * 使用json反序列化，导入rule及其相关对象
+     * @param ruleObject
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<RuleResponse> importRule(RuleNodeRequest ruleObject) throws UnExpectedRequestException;
+
+    /**
      * Check rule name unique exclude ruleId
      * @param ruleName
      * @param project
@@ -88,4 +100,10 @@ public interface RuleService {
      */
     void checkRuleName(String ruleName, Project project, Long ruleId) throws UnExpectedRequestException;
 
+    /**
+     * check rule existence using template
+     * @param templateInDb
+     * @throws UnExpectedRequestException
+     */
+    void checkRuleOfTemplate(Template templateInDb)  throws UnExpectedRequestException;
 }

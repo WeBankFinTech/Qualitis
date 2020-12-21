@@ -1,8 +1,8 @@
 spring:
   datasource:
-    username: root
-    password: root
-    url: jdbc:mysql://localhost:3306/test?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    username: default
+    password: default
+    url: jdbc:mysql://127.0.0.1:3306/qualitis_cdh_dev?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     driver-class-name: com.mysql.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
@@ -30,9 +30,9 @@ restTemplate:
 task:
   persistent:
     type: jdbc
-    username: root
-    password: root
-    address: jdbc:mysql://localhost:3306/test
+    username: default
+    password: default
+    address: jdbc:mysql://127.0.0.1:3306/qualitis_cdh_dev?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     tableName: qualitis_application_task_result
   execute:
     limit_thread: 10
@@ -55,15 +55,6 @@ zk:
   connection_time_out: 15000
   lock_wait_time: 3
 
-# deprecated
-#hive:
-#  username: username
-#  password: password
-#  jdbc:
-#    driver-class-name: com.mysql.jdbc.Driver
-#    max-pool-size: 50
-#    min-pool-size: 2
-
 auth:
   unFilterUrls:
     - /qualitis/api/v1/login/local
@@ -72,12 +63,6 @@ auth:
   uploadUrls:
     - /qualitis/api/v1/projector/rule/batch/upload/*
     - /qualitis/api/v1/projector/project/batch/upload*
-
-# deprecated
-#meta-data:
-#  refresh-cron: 55 03 05 * * ?
-#  lock-path: /qualitis/tmp/refresh_metadata
-#  lock-time: 5
 
 linkis:
   api:
@@ -89,6 +74,15 @@ linkis:
     meta_data:
       db_path: datasource/dbs
       table_path: datasource/tables
+      table_comment: datasource/getTableBaseInfo
       column_path: datasource/columns
+      column_info: datasource/getTableFieldsInfo
+  spark:
+    application:
+      name: IDE
   log:
     maskKey: task.persistent.username, task.persistent.password
+
+front_end:
+  home_page: http://127.0.0.1:8090/#/dashboard
+  domain_name: http://127.0.0.1:8090

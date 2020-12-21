@@ -48,9 +48,17 @@ public class LinkisConfig {
 
     @Value("${linkis.api.meta_data.table_path}")
     private String tablePath;
+    @Value("${linkis.api.meta_data.table_comment}")
+    private String tableComment;
 
     @Value("${linkis.api.meta_data.column_path}")
     private String columnPath;
+    @Value("${linkis.api.meta_data.column_info}")
+    private String columnInfo;
+
+    @Value("${linkis.spark.application.name}")
+    private String appName;
+
 
     public String getPrefix() {
         return prefix;
@@ -116,6 +124,14 @@ public class LinkisConfig {
         this.tablePath = tablePath;
     }
 
+    public String getTableComment() {
+        return tableComment;
+    }
+
+    public void setTableComment(String tableComment) {
+        this.tableComment = tableComment;
+    }
+
     public String getColumnPath() {
         return columnPath;
     }
@@ -123,4 +139,21 @@ public class LinkisConfig {
     public void setColumnPath(String columnPath) {
         this.columnPath = columnPath;
     }
+
+    public String getColumnInfo() {
+        return columnInfo;
+    }
+
+    public void setColumnInfo(String columnInfo) {
+        this.columnInfo = columnInfo;
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public void setAppName(String appName) {
+        this.appName = appName;
+    }
+
 }
