@@ -1,0 +1,172 @@
+<template>
+    <div class="leftmenu-content-layout">
+        <div class="page-container">
+            <LeftMenuPage ref="leftMenu" class="menu-container" :items="items" :default-active="defaultActive" />
+            <div class="template-page">
+                <slot />
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesData() {
+            return {
+                toggle: false,
+                defaultActive: '0',
+            };
+        },
+        FesCreated () {
+            const path = this.$route.path;
+            for (let i = 0; i < this.items.length; i++) {
+                if (path === '/taskDetail') {
+                    this.defaultActive = '4'
+                    return;
+                }
+                if (this.items[i].path === path) {
+                    this.defaultActive = this.items[i].name;
+                    return;
+                }
+                if (this.items[i].subItems.length>0) {
+                    let item = '';
+                    for (let k = 0; k < this.items[i].subItems.length; k++) {
+                            if (this.items[i].subItems[k].path === path) {
+                                item = this.items[i].subItems[k];
+                                this.items[i].expand= true;
+                                this.defaultActive = item.name;
+                                return;
+                            }
+                        for (let kk = 0; kk < this.items[i].subItems[k].items.length; kk++) {
+                            if (this.items[i].subItems[k].items[kk].path === path) {
+                                item = this.items[i].subItems[k];
+                                this.items[i].expand= true;
+                                this.defaultActive = item.name;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        computed: {
+            adminRole() {
+                return this.FesFesx.get('userRole') === 'admin' ? true  : false;
+            },
+            items() {
+                let arr = [{
+                        icon: 'static/over-view.png',
+                        title: this.$t('dashboard.dashboard'),
+                        path: '/dashboard',
+                        name: '0',
+                        subItems: []
+                    },
+                    {
+                        icon: "static/rule-config.png",
+                        title: this.$t('projects.projects'),
+                        path: '/myProject',
+                        subItems: [
+                            {
+                                title: this.$t('myProject.myProject'),
+                                path: '/myProject/projects',
+                                name: '1',
+                                icon: "static/project.png",                               
+                                items: [
+                                    {
+                                        path: '/myProject/projects/list',
+                                    },
+                                    {
+                                        path: '/addGroupTechniqueRule'
+                                    }
+                                ]
+                            },
+                            {
+                                title: this.$t('ruleQuery.ruleQuery'),
+                                path: '/ruleQuery',
+                                name: '2',
+                                icon: "static/rule-query.png",
+                                items: [
+                                    {
+                                        path: '/ruleQuery/projectId'
+                                    }
+                                ]
+                            },
+                            {
+                                title: this.$t('ruleTemplate.ruleTemplate'),
+                                path: '/ruleTemplateList',
+                                name: '3',
+                                icon: "static/rule-template.png",
+                                items: [
+                                    {
+                                        path: '/ruleTemplateList/detail'
+                                    }
+                                ]
+
+                            }
+                        ]
+                    },
+                    {
+                        icon: 'static/task-search.png',
+                        title: this.$t('taskQuery.taskQuery'),
+                        path: '/taskQuery',
+                        name: '4',
+                        subItems: []
+                    },
+                ]
+                if (this.adminRole) {
+                    arr.push(
+                        {
+                            icon: 'static/system-config.png',
+                            title: this.$t('configureParameter.configureParameter'),
+                            path: '/',
+                            subItems: [
+                                {
+                                    title: this.$t('configureParameter.configureParameter'),
+                                    path: '/configureParameter',
+                                    name: '5',
+                                    icon: "static/sub-system.png",
+                                    items: []
+
+                                },
+                                {
+                                    title: this.$t('personnelManage.personnelManage'),
+                                    path: '/personnelManage',
+                                    name: '6',
+                                    icon: "static/people-config.png",
+                                    items: [
+                                        {
+                                            path: '/personnelManage/groupUser'
+                                        }
+                                    ]
+
+                                },
+                                {
+                                    title: this.$t('optionManage.optionManage'),
+                                    path: '/optionManage',
+                                    name: '7',
+                                    icon: "static/authorith-management.png",
+                                    items: []
+                                }
+                            ]
+                        }
+                    )
+            }
+            return arr
+        }
+    }
+}
+</script>
+
+<style scoped lang="scss">
+    .leftmenu-content-layout {
+        .page-container {
+            display: flex;
+            height: 100%;
+            .template-page {
+                width: 100%;
+            }
+        }
+    }
+</style>

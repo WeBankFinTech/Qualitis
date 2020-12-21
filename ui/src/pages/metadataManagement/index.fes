@@ -1,0 +1,413 @@
+<template>
+    <Row>
+        <Cell span="24">
+            <Panel :title="$t('metadataManagementPage.addAuthorization')" class="management">
+                <Wb-form :label-width="100">
+                    <div class="content">
+                        <div class="author">
+                            <Form-item :label="$t('common.cluster')">
+                                <Wb-select v-model="clusterName" filterable @on-change="loadDb(clusterName,'author')">
+                                    <Wb-option v-for="(w, i) in clusterList" :key="i" :value="w.cluster_name">
+                                        {{ w.cluster_name }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                    
+                        <div class="author">
+                            <Form-item :label="$t('common.databaseList')">
+                                <Wb-select v-model="dbName" filterable @on-change="loadTable(dbName, 'author')">
+                                    <Wb-option v-for="(w, i) in dbList" :key="i" :value="w.db_name">
+                                        {{ w.db_name }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                    
+                        <div class="author"> 
+                            <Form-item :label="$t('common.tableList')">
+                                <WbSelect v-model="tableName" filterable>
+                                    <Wb-option v-for="(w, i) in tableList" :key="i" :value="w.table_name">
+                                        {{ w.table_name }}
+                                    </Wb-option>
+                                </WbSelect>
+                            </Form-item>
+                        </div>
+                        <div class="author"> 
+                            <Form-item :label="$t('common.user')">
+                                <Wb-select v-model="userName" filterable>
+                                    <Wb-option v-for="(w, i) in userList" :key="i" :value="w.username">
+                                        {{ w.username }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                    <div class="author">
+                        <Wb-button class="submit-button" icon="edit" circle @click="modalShow">{{ $t('metadataManagementPage.authorization') }}</Wb-button>
+                        <Wb-button class="submit-button" icon="reload" circle @click="refresh">{{ $t('common.refresh') }}</Wb-button>
+                    </div>
+                    </div>
+                </Wb-form>
+            </Panel>
+        </Cell>
+
+        <Cell span="24" class="loading-content">
+            <Panel :title="$t('metadataManagementPage.authorizationManagementList')" class="list">
+                <Wb-form :label-width="150">
+                    <div class="content">
+                        <div class="search">
+                            <Form-item :label="$t('common.cluster')">
+                                <Wb-select v-model="searchCluster" @on-change="loadDb(searchCluster, 'search')">
+                                    <Wb-option v-for="(item, i ) in clusterList" :key="i" :value="item.cluster_name" :label="item.cluster_name">
+                                    {{ item.cluster_name }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                    
+                        <div class="search">
+                            <Form-item :label="$t('common.databaseList')">
+                                <Wb-select v-model="searchDb" @on-change="loadTable(searchDb, 'search')">
+                                    <Wb-option v-for="(item, i ) in dbList" :key="i" :value="item.db_name" :label="item.db_name">
+                                        {{ item.db_name }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                        
+                        <div class="search">
+                            <Form-item :label="$t('common.tableList')">
+                                <Wb-select v-model="searchTable">
+                                    <Wb-option v-for="(item, i) in tableList" :key="i" :value="item.table_name" :label="item.table_name">
+                                        {{ item.table_name }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                        
+                        <div class="search">
+                            <Form-item :label="$t('common.user')">
+                                <Wb-select v-model="searchUser" filterable>
+                                    <Wb-option v-for="(item, i) in userList" :key="i" :value="item.username" :label="item.type">
+                                        {{ item.username }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                        <div class="search">
+                            <Form-item :label="$t('metadataManagementPage.type')">
+                                <Wb-select v-model="searchType" multiple>
+                                    <Wb-option v-for="(item, index) in type" :key="index" :value="index" :label="item">
+                                        {{ item }}
+                                    </Wb-option>
+                                </Wb-select>
+                            </Form-item>
+                        </div>
+                        <div class="search">
+                            <WbButton icon="search" circle class="submit-button" @click="searchList">
+                                {{ $t('common.search') }}
+                            </WbButton>
+                        </div>
+                    </div>
+                </Wb-form>
+                <div>
+                    <Wb-table :data="authorList" border :no-data-text="$t('common.noData')">
+                        <Column prop="auth_type" :name="$t('metadataManagementPage.permissionType')" :filter="formatType" />
+                        <Column prop="cluster_name" :name="$t('common.cluster')" />
+                        <Column prop="db_name" :name="$t('common.databaseList')" />
+                        <Column prop="table_name" :name="$t('common.tableList')" />
+                        <Column prop="username" :name="$t('metadataManagementPage.authorizedUser')" />
+                        <Column prop="create_time" :name="$t('metadataManagementPage.authorizationTime')" />
+                        <Column :name="$t('common.operate')" :action="action" />
+                    </Wb-table>
+                </div>
+                <Pagination :size-list="sizeList" :current="pagination.page" :size="pagination.size"
+                    :total="pagination.total" class="p20"
+                    @on-change="changePage" />
+                <Loading v-show="showLoading" class="loading-layout" />
+            </panel>  
+        </Cell>
+
+        <Modal ref="authorization" :title="$t('metadataManagementPage.authorizationInformation')">
+            <Wb-form ref="addHostForm" :label-width="90">
+                <Form-item :label="$t('common.cluster')">
+                    <Wb-input v-model="clusterName" disabled />
+                </Form-item>
+                <Form-item :label="$t('common.databaseList')">
+                    <Wb-input v-model="dbName" disabled />
+                </Form-item>
+                <Form-item :label="$t('common.tableList')">
+                    <Wb-input v-model="tableName" disabled />
+                </Form-item>
+                <Form-item :label="$t('common.user')">
+                    <Wb-input v-model="userName" disabled />
+                </Form-item>
+                <div class="submit-button-container">
+                    <WbButton ref="submitButton" type="primary" class="managent-button" @click="confirmAuthor">
+                        {{ $t('metadataManagementPage.confirmAuthorization') }}
+                    </WbButton>
+                </div>
+            </Wb-form>
+        </Modal>
+    </Row>
+</template>
+
+<script>
+    import { sizeList } from 'assets/js/sizeList';
+    export default {
+        data() {
+            return {
+                clusterName: '',
+                clusterList: [],
+                dbName: '',
+                dbList: [],
+                tableName: '',
+                tableList: [],
+                userName: '',
+                userList: [],
+                auth_type: 1,
+                searchType: [],
+                searchCluster: '',
+                searchDb: '',
+                searchTable: '',
+                searchUser: '',
+                authorList: [],
+                // type: ['集群权限','数据库权限','数据表权限'],
+                clusterSize: {
+                    size: 10000,
+                    page: 0
+                },
+                userSize: {
+                    size: 1000,
+                    current: 1,
+                },
+                pagination: {
+                    size: 15,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                showLoading: false,
+                //刷新结果返回前禁止多次刷新
+                canFresh: true,
+            }
+        },
+        FesReady() {
+            this.initCluster();
+            this.initUser();
+        },
+        computed: {
+            action() {
+                return [{
+                    text: this.$t('common.delete'),
+                    func: function(trData) {
+                        this.$Message.confirm(this.$t('common.ok'), this.$t('message.delete')).then(index => {
+                            if (index === 0) {
+                                this.FesApi.fetch('api/v1/admin/meta_data_auth', {}, {
+                                data: {
+                                    auth_id: trData.id
+                                },
+                                method: 'delete',
+                                headers: {
+                                    'content-type': 'application/json'
+                                }
+                                }).then(()=>{
+                                    this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                                    this.changePage({ current:1, size:5 });
+                                })
+                            } 
+                        })
+                    }
+                }]
+            },
+            type() {
+                return [this.$t('metadataManagementPage.clusterPermissions'),this.$t('metadataManagementPage.databasePermissions'),this.$t('metadataManagementPage.dataTablePermissions')]
+            }
+        },
+        methods: {
+            initCluster() {
+                this.FesApi.fetch('api/v1/admin/meta_data_all/cluster', this.clusterSize, 'post').then((res)=> {
+                    this.clusterList = res.clusters;
+                })
+            },
+            initUser() {
+                this.FesApi.fetch("api/v1/admin/user/all", {
+                    page: this.userSize.current - 1,
+                    size: this.userSize.size
+                }).then(result => {
+                    this.userList = result.data;
+                });
+            },
+            loadDb(value,type) {
+                if (!value) {
+                    return;
+                }
+                if (type === 'author') {
+                    this.clusterName = value;
+                }else {
+                    this.searchCluster = value;
+                }
+                let params = {
+                    cluster_name: value,
+                    page: 0,
+                    size: 10000
+                }
+                this.FesApi.fetch('api/v1/admin/meta_data_all/db', params, 'post').then(res=> {                   
+                    this.dbList = res.dbs;
+                })
+            },
+            //加载数据表
+            loadTable(value, type){      
+                if (!value) {
+                    return;
+                }
+                let cluster_name = '';
+                if (type === 'author') {
+                    if (!this.clusterName) {
+                        return this.$Toast.warn('toastWarn.cluster')
+                    }
+                    this.dbName = value;
+                    cluster_name = this.clusterName;
+                }else {
+                    if (!this.searchCluster) {
+                        return this.$Toast.warn('toastWarn.cluster')
+                    }
+                    this.searchDb = value;
+                    cluster_name = this.searchCluster
+                }
+                let params = {
+                    cluster_name,
+                    db_name: value,
+                    page: 0,
+                    size: 10000
+                }
+                this.FesApi.fetch('api/v1/admin/meta_data_all/table', params, 'post').then(res=> {
+                    this.tableList = res.tables;
+                })
+            },
+            formatType(data) {   
+                return this.type[data-1];
+            },
+            modalShow() {
+                this.$refs.authorization.show()
+            },
+            refresh() {
+                if (!this.canFresh) return;
+                this.canFresh = false;
+                //防止用户选择了集群后，选择了数据库，然后清掉集群
+                if (!this.clusterName && this.dbName) return this.$Toast.warn("toastWarn.selectCluster");
+                let url = '', params = {};
+                if (this.dbName && this.clusterName) {
+                    url = 'api/v1/admin/meta_data/refresh/table_column';
+                    params = {
+                        cluster_name: this.clusterName,
+                        db_name: this.dbName
+                    }
+                }else if(!this.dbName && this.clusterName) {
+                    url = 'api/v1/admin/meta_data/refresh/db';
+                    params = {
+                        cluster_name: this.clusterName
+                    }
+                }else if (!this.clusterName && !this.dbName) {
+                    url = 'api/v1/admin/meta_data/refresh/cluster';
+                }
+                this.FesApi.fetch(url, params, 'post').then(()=> {
+                    this.clusterName = '';
+                    this.dbName = '';
+                    this.tableName = '';
+                    this.initCluster();
+                    this.canFresh = true;
+                    this.$Toast.success(this.$t('toastSuccess.refreshSuccessfully'));
+                }).catch(()=> {
+                    this.canFresh = true;
+                })
+            },
+            searchList() {
+                if (this.searchTable !== '' && (this.searchCluster !== '' || this.searchDb !== '')) {
+                    //防止用户选择了集群，库，表后，清空了集群或者库。
+                    return;
+                }else if (this.searchDb && !this.searchCluster) {
+                    //防止用户选择了集群，库后，清空了库。
+                    return;
+                }
+                if (this.searchType.length<1) return this.$Toast.warn(this.$t('toastWarn.oneType'));
+                this.showLoading = true;
+                let searchType = this.searchType.map(ele => {
+                    return (++ele);
+                });
+                let params = {
+                    cluster_name: this.searchCluster,
+                    db_name: this.searchDb,
+                    table_name: this.searchTable,
+                    username: this.searchUser,
+                    auth_types: searchType,
+                    page: this.pagination.current - 1,
+                    size: this.pagination.size
+                };
+                this.FesApi.fetch('api/v1/admin/meta_data_auth/query', params, 'post').then(res=> {
+                    this.showLoading = false;  
+                    this.$Toast.success(this.$t('toastSuccess.search'));
+                    this.pagination.total = Math.ceil(res.total / this.pagination.size);
+                    this.authorList = res.data;
+                })
+            },
+            confirmAuthor() {
+                if (!this.userName) {
+                    return this.$Toast.warn(this.$t('toastWarn.userEmpty'));
+                }
+                //确认授权操作
+                if (this.tableName) {
+                    this.auth_type = 3
+                }else if (this.dbName) {
+                    this.auth_type = 2
+                }else {
+                    this.auth_type = 1;
+                }
+                let params = {
+                    auth_type: this.auth_type,
+                    username: this.userName,
+                    cluster_name: this.clusterName,
+                    db_name: this.dbName,
+                    table_name: this.tableName,
+                    column_name: '',
+                    is_org: false
+                }
+                this.FesApi.fetch('api/v1/admin/meta_data_auth', params, 'put').then(()=> {
+                    this.$refs.authorization.hide();
+                    this.$Toast.success(this.$t('toastSuccess.authorizedSuccess'));
+                })
+            },
+            changePage({current, size}) {
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.searchList();
+            }
+        }
+    }
+</script>
+
+<style lang="scss" scoped>
+    .content {
+        display: flex;
+    }
+    .search {
+        flex: 6
+    }
+    .author {
+        flex: 5;
+    }
+    .management {
+        margin: 20px 20px 200px;
+    }
+    .list {
+        margin: 0 20px;
+    }
+    .submit-button {
+        width: 120px;
+        margin-left: 20px;
+    }
+    .managent-button {
+        display: block;
+        margin: 0 auto;
+    }
+</style>

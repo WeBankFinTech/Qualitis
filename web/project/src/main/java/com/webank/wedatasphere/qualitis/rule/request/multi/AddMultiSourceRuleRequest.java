@@ -20,9 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
 
 import java.util.List;
 
@@ -49,6 +46,10 @@ public class AddMultiSourceRuleRequest {
     private List<AlarmConfigRequest> alarmVariable;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
 
     public AddMultiSourceRuleRequest() {
     }
@@ -141,6 +142,14 @@ public class AddMultiSourceRuleRequest {
         this.ruleGroupId = ruleGroupId;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getRuleName(), "Rule name");
@@ -154,6 +163,7 @@ public class AddMultiSourceRuleRequest {
         }
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
+        CommonChecker.checkObject(request.getAbortOnFailure(), "abort_on_failure");
         if (request.getAlarm()) {
             CommonChecker.checkObject(request.getAlarmVariable(), "alarm_variable");
             if (request.getAlarmVariable().isEmpty()) {

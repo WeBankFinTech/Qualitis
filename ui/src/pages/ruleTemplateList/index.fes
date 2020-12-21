@@ -1,0 +1,755 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper p20">
+            <div class="breadcrumb-container mb10">
+                <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('ruleTemplate.ruleTemplate') }}</span>
+            </div>
+            <Cell v-if="userRole" span="1" class="flex pb20">
+                <Wb-button type="primary" class="mr10" @click="deleteAction">
+                    <Icon type="delete" size="14" />
+                    {{ $t('common.delete') }}
+                </Wb-button>
+                <Wb-button type="primary" @click="addRule"><Icon type="plus" size="14" />
+                    {{ $t('common.add') }}
+                </Wb-button>
+            </Cell>
+            <Cell span="24" class="middle-wrapper">
+                <Tabs v-model="tabType">
+                    <Tab :label="$t('ruleTemplatelist.baseTemplate')" name="1">
+                        <Wb-table ref="listTable" :data="list" border :no-data-text="$t('common.noData')">
+                            <Column v-if="userRole" type="selection" />
+                            <Column prop="template_id" :name="$t('ruleTemplatelist.templateId')" />
+                            <Column prop="template_name" width="40%" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column :name="$t('common.detail')" :component="operationComponent" />
+                        </Wb-table>
+                        <Pagination v-if="tabType ==='1'" class="pt20" :size-list="sizeList" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                    </Tab>
+                    <Tab :label="$t('ruleTemplatelist.multiTableTemplate')" name="2">
+                        <Wb-table ref="multiTable" :data="multiData" border :no-data-text="$t('common.noData')">
+                            <Column v-if="userRole" type="selection" />
+                            <Column prop="template_id" :name="$t('ruleTemplatelist.templateId')" />
+                            <Column prop="template_name" width="40%" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column :name="$t('common.operate')" :component="operationComponent" />
+                        </Wb-table>
+                        <Pagination v-if="tabType ==='2'" class="pt20" :size-list="sizeList" :page="multiPagination.page" :size="multiPagination.size" :total="multiPagination.total" @on-change="changePage" />
+                    </Tab>
+                </Tabs>
+            </Cell>
+        </Row>
+        <Modal ref="addRuleModal" :title="title" width="1000">
+            <WbForm ref="ruleForm" :label-width="120">
+                <Row>
+                    <Cell span="11">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]"
+                            :label="`${$t('ruleTemplatelist.templateName')}`" prop="name"> 
+                            <WbInput v-model="name" :placeholder="$t('common.pleaseEnter')"  :disabled="edit" />
+                        </FormItem>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                        <Form-item :label="`${$t('ruleTemplatelist.clusterNum')}`" prop="clusterName" :rule="[{ required: true, message: $t('common.notEmpty')}]">
+                            <WbInput v-model="clusterName" :placeholder="$t('common.pleaseEnter')" type="number" />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <Form-item :label="`${$t('ruleTemplatelist.dbNum')}`" prop="dbName" :rule="[{ required: true, message: $t('common.notEmpty')}]">
+                            <WbInput v-model="dbName" :placeholder="$t('common.pleaseEnter')" type="number" />
+                        </Form-item>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                        <Form-item :label="`${$t('ruleTemplatelist.tableNum')}`" prop="tableName" :rule="[{ required: true, message: $t('common.notEmpty')}]">
+                            <WbInput v-model="tableName" :placeholder="$t('common.pleaseEnter')" type="number" />          
+                        </Form-item>
+                    </Cell>
+                </Row> 
+                <Row>
+                    <Cell span="11">
+                        <Form-item :label="`${$t('ruleTemplatelist.fleldNum')}`" prop="field" :rule="[{ required: true, message: $t('common.notEmpty')}]">
+                            <WbInput v-model="field" :placeholder="$t('common.pleaseEnter')" type="number" />     
+                        </Form-item>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                         <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="$t('ruleTemplatelist.dataSourceType')" prop="sourceType">
+                            <WbSelect v-model="sourceType">
+                                <WbOption v-for="(item, index) in sourceList" :key="index" :value="item.key" :label="item.value" />
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="$t('ruleTemplatelist.parseFormat')" prop="formatValue">
+                            <WbSelect v-model="formatValue">
+                                <WbOption v-for="(item, index) in parseFormatList" :key="index" :value="item.key" :label="item.value" />
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                     <Cell span="11" offset="1">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('label.statisticalFunction')}`" prop="func_name">
+                            <WbInput v-model="func_name" :placeholder="$t('common.pleaseEnter')" />
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.templateStatisticalFunctions')}`" prop="statisticalFunctions">
+                            <Wb-select v-model="statisticalFunctions">
+                                <wb-option v-for="(k,i) in statisticalFun" :key="i" :value="k.code">{{ k.type }}</wb-option>
+                            </Wb-select>
+                        </FormItem>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.numberType')}`" prop="numberType">
+                            <Wb-select v-model="numberType">
+                                <wb-option v-for="(k,i) in numTypeList" :key="i" :value="k.code">{{ k.value }}</wb-option>
+                            </Wb-select>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.templateStatisticsName')}`">
+                            <WbInput v-model="statisticsName" :placeholder="$t('common.pleaseEnter')" />
+                        </FormItem>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                        <FormItem :label="$t('ruleTemplatelist.saveTable')" :rule="[{ required: true, message: $t('common.notEmpty') }]" prop="saveTable">
+                            <Radio-group v-model="saveTable">
+                                <Radio :value="true">
+                                    {{ $t('common.yes') }}
+                                </Radio>
+                                <Radio :value="false">
+                                    {{ $t('common.no') }}
+                                </Radio>
+                            </Radio-group>
+                        </FormItem> 
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.templateOutputName')}`" prop="templateOutputName">
+                            <WbInput v-model="templateOutputName" :placeholder="$t('common.pleaseEnter')" />
+                        </FormItem>
+                    </Cell>
+                    <Cell span="11" offset="1">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.templateType')}`" prop="templateFormulationValue">
+                            <Wb-select v-model="templateFormulationValue" :disabled="edit">
+                                <wb-option v-for="(k,i) in templateFormulationList" :key="i" :value="k.code">{{ k.value }}</wb-option>
+                            </Wb-select>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.createIntermediateTable')}`" prop="table" class="intermediate-table">
+                    <Icon :data-title="$t('ruleTemplatelist.tableHint')" type="question-circle-o" color="red" size="20" class="hostSpanTitle" />  
+                    <WbInput v-model="templateSql" :placeholder="$t('common.pleaseEnter')" type="textarea" :rows="2" />
+                </FormItem>
+                <Tabs value="1" style="margin-bottom:60px;" @on-tab-remove="remove">
+                    <Tab v-for="(item,index) in templateItem" :key="index" :label="item.name">
+                        <div>
+                            <Row>
+                                <Cell span="11">
+                                    <Form-item :label="`${$t('ruleTemplatelist.replaceName')}`" :rule="[{ required: true, message: $t('common.notEmpty') }]" prop="item.input_meta_name">
+                                        <Wb-input v-model="item.input_meta_name" />
+                                    </Form-item>
+                                </Cell>
+                                <Cell span="11" offset="1">
+                                    <Form-item :label="`${$t('ruleTemplatelist.replaceContent')}`" :rule="[{ required: true, message: $t('common.notEmpty') }]" prop="item.input_meta_placeholder">
+                                        <Wb-input v-model="item.input_meta_placeholder" />
+                                    </Form-item>
+                                </Cell>
+                            </Row>
+                            <Row>
+                                <Cell span="11" class="select-container">
+                                    <Form-item :label="`${$t('ruleTemplatelist.replaceType')}`" :rule="[{ required: true, message: $t('common.notEmpty') }]" prop="item.input_type">
+                                        <Wb-select v-model="item.input_type">
+                                            <wb-option v-for="(k,i) in templateTypeList" :key="i" :value="k.code" :label="k.value">{{ k.value }}</wb-option>
+                                        </Wb-select>
+                                    </Form-item>
+                                </Cell>
+                                <Cell span="11" offset="1">
+                                    <Form-item :label="`${$t('common.description')}`" :rule="[{ required: true, message: $t('common.notEmpty') }]" prop="item.placeholder_description">
+                                        <Wb-input v-model="item.placeholder_description" />
+                                    </Form-item>
+                                </Cell>
+                            </Row>
+                        </div>
+                    </Tab>
+                    <Wb-button slot="action" type="ghost" @click="addItem">{{ $t('common.addTo') }}</Wb-button>
+                </Tabs> 
+                
+                <div class="submit-button-container fr mb10">
+                    <WbButton class="submit-button mr10" @click="cancel">
+                        {{ $t('common.cancel') }}
+                    </WbButton>
+                    <WbButton type="primary" class="submit-button" @click="submit">
+                        {{ $t('common.ok') }}
+                    </WbButton>
+                </div>
+            </WbForm>
+        </Modal>
+        <Loading v-show="showLoading" class="loading-layout" />
+    </pageContainer>    
+</template>
+<script type="text/ecmascript-6">
+    import { sizeList } from 'assets/js/sizeList';
+    import pageContainer from '../../components/template';
+    import Vue from 'vue';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesData: {},
+        FesSyncData: {},
+        FesReady: function () {
+            this.init()
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            const that = this;
+            return {
+                list: [],
+                pagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                multiPagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                sizeList,
+                showLoading: true,
+                multiData: [],
+                tabType: '1',
+                actionList: [
+                    {
+                        content: this.$t('common.delete'),
+                        key: 'del'
+                    }
+                ],
+                name: '',
+                type: '',
+                table: '',
+                saveTable: false,
+                templateSql: '',
+                statisticsName: '',
+                statisticalFunctions: '',
+                templateOutputName: '',
+                clusterList: [],
+                dbList: [],
+                tableList: [],
+                columnList: [],
+                clusterName: '',
+                dbName: '',
+                tableName: '',
+                field: '',
+                sourceType: '', //数据源类型
+                func_name: '',
+                template_id: '',
+                parseFormatList: [{
+                    value: "SQL",
+                    key: 1
+                }, {
+                    value: 'JAVA',
+                    key: 2
+                }, {
+                    value: 'SCALA',
+                    key: 3
+                }],
+                formatValue: '',
+                maxSize: 2147483647,
+                templateType: '',
+                replace: '',
+                replaceContent: '',
+                templateMetaType: '',
+                description: '',
+                numberType: '',
+                currentTab: '1',
+                edit: false,
+                templateFormulationValue: '',
+                numTypeList: [{
+                    value: this.$t('common.fixedValue'),
+                    code: 1
+                }, {
+                    value: this.$t('common.column'),
+                    code: 2
+                }],
+                sourceList: [{
+                    value: 'HIVE',
+                    key: 1
+                }, {
+                    value: 'MYSQL',
+                    key: 2
+                }, {
+                    value: 'KAFKA',
+                    key: 3
+                }],
+                statisticalFun: [
+                    {
+                        type: 'sum',
+                        code: 1
+                    },
+                    {
+                        type: 'avg',
+                        code: 2
+                    },
+                    {
+                        type: 'count',
+                        code: 3
+                    },
+                    {
+                        type: 'max',
+                        code: 4
+                    },
+                    {
+                        type: 'min',
+                        code: 5
+                    },
+                ],
+                templateTypeList: [{
+                    value: this.$t('common.fixedValue'),
+                    code: 1
+                }, {
+                    value: this.$t('common.tableList'),
+                    code: 3
+                }, {
+                    value: this.$t('common.column'),
+                    code: 4
+                }, {
+                    value: this.$t('common.databaseList'),
+                    code: 5
+                }, {
+                    value: this.$t('ruleTemplatelist.fieldSplice'),
+                    code: 6
+                }, {
+                    value: this.$t('ruleTemplatelist.regular'),
+                    code: 7
+                }, {
+                    value: this.$t('ruleTemplatelist.array'),
+                    code: 8
+                }, {
+                    value: this.$t('ruleTemplatelist.condition'),
+                    code: 9
+                }, {
+                    value: this.$t('ruleTemplatelist.ANDStitching'),
+                    code: 10
+                }, {
+                    value: this.$t('ruleTemplatelist.sourceDatabase'),
+                    code: 11
+                },{
+                    value: this.$t('ruleTemplatelist.sourceTable'),
+                    code: 12
+                },{
+                    value: this.$t('ruleTemplatelist.targetDatabase'),
+                    code: 13
+                },{
+                    value: this.$t('ruleTemplatelist.targetTable'),
+                    code: 14
+                },{
+                    value: this.$t('ruleTemplatelist.joinLeftExpression'),
+                    code: 15
+                },{
+                    value: this.$t('ruleTemplatelist.joinOperator'),
+                    code: 16
+                },{
+                    value: this.$t('ruleTemplatelist.joinRightExpression'),
+                    code: 17
+                }, {
+                    value: this.$t('ruleTemplatelist.joinLeftField'),
+                    code: 18
+                },{
+                    value: this.$t('ruleTemplatelist.joinRightField'),
+                    code: 19
+                },{
+                    value: this.$t('ruleTemplatelist.precondition'),
+                    code: 20
+                },{
+                    value: this.$t('ruleTemplatelist.postcondition'),
+                    code: 21
+                }],
+                templateItem: [
+                    {
+                        name: `${this.$t('ruleTemplatelist.placeholder')}1`,
+                        input_meta_name: '',
+                        input_meta_placeholder: '',
+                        input_type: '',
+                        placeholder_description: ''
+                }, {
+                        name: `${this.$t('ruleTemplatelist.placeholder')}2`,
+                        input_meta_name: '',
+                        input_meta_placeholder: '',
+                        input_type: '',
+                        placeholder_description: ''
+                }],
+                templateFormulationList: [{
+                    value: this.$t('ruleTemplatelist.baseTemplate'),
+                    code: 1
+                }, {
+                    
+                    value: this.$t('common.crossTableType'),
+                    code: 3
+                }],
+                operationComponent: function(trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                detailText: that.$t('common.detail'),
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                            }
+                        },
+                        methods: {
+                            async editAction() {
+                                that.edit = true;
+                                await that.FesApi.fetch(`api/v1/admin/rule_template/modify/detail/${trData.template_id}`, {}, 'get').then((res)=> {
+                                    let {
+                                        template_id,
+                                        template_name, 
+                                        cluster_num,
+                                        db_num,
+                                        table_num,
+                                        field_num,
+                                        datasource_type,
+                                        action_type,
+                                        save_mid_table,
+                                        mid_table_action,
+                                        template_output_meta,
+                                        template_mid_table_input_meta,
+                                        template_statistics_input_meta,
+                                        template_type,
+                                    } = res;
+                                    template_mid_table_input_meta.map((item, index)=> {
+                                        return item.name = `${that.$t('ruleTemplatelist.placeholder')}${index+1}`
+                                    })
+                                    let code = that.statisticalFun.filter(it=> it.type ===template_statistics_input_meta[0]['func_name']);
+                                    Object.assign(that, {
+                                        name: template_name,
+                                        template_id,
+                                        clusterName: cluster_num,
+                                        dbName: db_num,
+                                        tableName: table_num,
+                                        field: field_num,
+                                        sourceType: datasource_type,
+                                        formatValue: action_type,
+                                        saveTable: save_mid_table,
+                                        templateSql: mid_table_action,
+                                        templateOutputName: template_output_meta[0]['output_name'],
+                                        func_name: template_statistics_input_meta[0]['func_value'],
+                                        numberType: template_statistics_input_meta[0]['value_type'],
+                                        templateItem: template_mid_table_input_meta,
+                                        statisticsName: template_statistics_input_meta[0]['input_meta_name'],
+                                        statisticalFunctions: code[0]['code'],
+                                        templateFormulationValue: template_type
+                                    })
+                                    that.$refs.addRuleModal.show();
+                                })
+                            },
+                            deleteAction() {
+                                if (trData.template_id < 20) return that.$Toast.warn(that.$t('ruleTemplatelist.notDeleteTemplate'));
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('ruleTemplatelist.deleteTemplate', {name: trData.template_name})}`).then(index=> {
+                                    if (index === 0) {
+                                        that.FesApi.fetch(`api/v1/admin/rule_template/default/delete/${trData.template_id}`, {}, 'post').then(()=> {
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'));
+                                            that.init()
+                                        })
+                                    }
+                                })
+                            },
+                            toDetail() {
+                                let {template_id} = this.trData;
+                                that.$router.push({
+                                    path: '/ruleTemplateList/detail',
+                                    query: {
+                                        id: template_id
+                                    }
+                                })
+                            }
+                        },
+                        render: function (createElement) {
+                            let role = this.FesFesx.get('userRole') === 'admin' ? true : false;
+                            let arr = [
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                    admin: role
+                                }, {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                    admin: role
+                                }, {
+                                    text: this.detailText,
+                                    handle: this.toDetail,
+                                    color: '',
+                                    admin: true
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    directives: [
+                                        {
+                                            name: 'show',
+                                            value: item.admin,
+                                        }
+                                    ],
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            }
+        },
+        computed: {
+            title () {
+                return this.edit === true ? this.$t('common.edit') : this.$t('common.addTo')
+            },
+            userRole() {
+                return this.FesFesx.get('userRole') === 'admin' ? true : false;
+            }
+        },
+        methods: {
+            init() {
+                this.getData();
+                this.getMulti();
+            },
+            async getData() {
+                let {data, total} = await this.FesApi.fetch("api/v1/projector/rule_template/default/all", {
+                    page: this.pagination.page-1,
+                    size: this.pagination.size
+                });
+                this.showLoading = false;
+                this.list = data;
+                this.pagination.total = Math.ceil(total/this.pagination.size);
+            },
+            async getMulti() {
+                //获取跨表校验模板
+                let result = await this.FesApi.fetch('api/v1/projector/rule_template/multi/all', {
+                    page: this.multiPagination.page-1,
+                    size: this.multiPagination.size
+                })
+                let total = result.total;
+                this.multiData = result.data;
+                this.multiPagination.total = Math.ceil(total/this.multiPagination.size);
+            },
+            changePage({current, size}) {
+                if(this.tabType === '1'){
+                    this.resetCurrent(current, size, 'pagination')
+                    this.getData();
+                }else {
+                    this.resetCurrent(current, size, 'multiPagination')
+                    this.getMulti();
+                }
+            },
+            resetCurrent(current, size, type) {
+                this[type].page = current;
+                this[type].size = size;
+            },
+            getSelectedRows() {
+                let ref = this.tabType ===  '1' ? 'listTable' : 'multiTable';
+                let rows = this.$refs[ref] ? this.$refs[ref].getSelected() : [];
+                return rows;
+            },
+            deleteAction() {
+                this.rows = this.getSelectedRows();
+                if (this.rows.length < 1) {
+                    return this.$Toast.warn(this.$t('common.selectOne'));
+                }
+                let name = '', forbiddenDelete = false;
+                let ids = this.rows.map((item)=> {
+                    if (item.template_id < 20) {
+                        forbiddenDelete = true
+                    }
+                    name += `${item.template_name}、`
+                    return item.template_id
+                })
+                if (forbiddenDelete) return this.$Toast.warn(this.$t('ruleTemplatelist.notDeleteTemplate'));
+                let params = {ruleTemplateIdList: ids};
+                this.$Message.confirm(this.$t('common.prompt'), `${this.$t('ruleTemplatelist.deleteTemplate', {name})}`).then(index=> {
+                    if (index === 0) {
+                        this.FesApi.fetch(`/api/v1/admin/rule_template/delete/all`, params, 'post').then(()=> {
+                            this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                            this.init()
+                        })
+                    }
+                })
+            },
+            addRule() {
+                this.initData();
+                this.edit = false;
+                this.templateFormulationValue = this.tabType === '1' ? 1 : 3
+                this.$refs.addRuleModal.show();
+            },
+            initData() {
+                Object.assign(this, {
+                    name: '',
+                    template_id: '',
+                    clusterName: '',
+                    dbName: '',
+                    tableName: '',
+                    field: '',
+                    sourceType: '',
+                    formatValue: '',
+                    saveTable: false,
+                    templateSql: '',
+                    templateOutputName: '',
+                    func_name: '',
+                    numberType: '',
+                    templateItem: [
+                        {
+                            name: `${this.$t('ruleTemplatelist.placeholder')}1`,
+                            input_meta_name: '',
+                            input_meta_placeholder: '',
+                            input_type: '',
+                            placeholder_description: ''
+                    }, {
+                            name: `${this.$t('ruleTemplatelist.placeholder')}2`,
+                            input_meta_name: '',
+                            input_meta_placeholder: '',
+                            input_type: '',
+                            placeholder_description: ''
+                    }],
+                    statisticsName: '',
+                    statisticalFunctions: '',
+                    templateFormulationValue: ''
+                })
+                setTimeout(() => {
+                    this.$refs.ruleForm.resetFields();
+                })
+            },
+            submit() {
+                this.$refs.ruleForm.validate(valid=> {
+                    this.showLoading = true;
+                    let placeholderTag = false;
+                    this.templateItem.map((item)=> {
+                        if (!item['input_meta_name'] || !item['input_meta_placeholder'] || !item['input_type'] || !item['placeholder_description']) {
+                            return placeholderTag = true;
+                        }
+                    })
+                    if (placeholderTag) return this.$Toast.warn(this.$t('ruleTemplatelist.checkPlaceholderContent'));
+                    if (valid) {
+                        let {clusterName,  dbName,  tableName, field, name, saveTable, templateSql,
+                        sourceType,formatValue, statisticsName, statisticalFunctions, templateOutputName, 
+                        templateItem, numberType, template_id, templateFormulationValue, func_name} = this;
+                        let func_type = this.statisticalFun.filter((item) => item.code === statisticalFunctions)[0]['type'];
+                        //模板统计名称
+                        let template_statistics_input_meta = [{
+                            input_meta_name: statisticsName,
+                            func_name: func_type,
+                            func_value: func_name,
+                            value_type: numberType,
+                            result_type: "Long"
+                        }]
+                        //模板输出名称
+                        let template_output_meta =[
+                            {
+                                output_name: templateOutputName,
+                                field_name: func_type,
+                                field_type: numberType
+                            }
+                        ];
+                        let params = {
+                            cluster_num: clusterName,
+                            db_num: dbName,
+                            table_num: tableName,
+                            field_num: field,
+                            template_name: name,
+                            datasource_type: sourceType,
+                            action_type: formatValue,
+                            save_mid_table: saveTable,
+                            mid_table_action: templateSql,
+                            template_mid_table_input_meta: templateItem,
+                            template_statistics_input_meta,
+                            template_output_meta,
+                            template_type: templateFormulationValue
+                        }
+                        let url = '', mes = '';
+                        if (this.edit) {
+                            url = 'api/v1/admin/rule_template/default/modify';
+                            params.template_id = template_id;
+                            mes = this.$t('toastSuccess.editSuccess')
+                        }else {
+                            url = 'api/v1/admin/rule_template/default/add';
+                            mes = this.$t('toastSuccess.addSuccess')
+                        }
+                        this.FesApi.fetch(url, params, 'post').then(()=> {
+                            this.cancel();
+                            this.$Toast.success(mes)
+                            this.init();
+                        }).finally(()=> {
+                            this.showLoading = false;
+                        })
+                    }
+                })
+            },
+            cancel() {
+                this.showLoading = false;
+                this.$refs.addRuleModal.close();             
+            },
+            addItem() {
+                this.templateItem.push({
+                    name: `${this.$t('ruleTemplatelist.placeholder')}${this.templateItem.length+1}`,
+                    input_meta_name: '',
+                    input_meta_placeholder: '',
+                    input_type: '',
+                    placeholder_description: ''
+                });
+            },
+            remove() {
+
+            }
+        }
+    };
+</script>
+
+<style lang="scss" scoped>
+    .intermediate-table {
+        label {
+            position: relative;
+        }
+        i {
+            position: absolute;
+            top: 0;
+            left: -115px;
+            z-index: 1;
+        }
+        i:hover:after { 
+            content: attr(data-title);
+            display: block;
+            position: absolute;
+            top: -50px;
+            left: 30px;
+            width: 310px;
+            padding: 6px 4px;
+            text-align: left;
+            border: 1px solid #9e9e9e;
+            border-radius: 2px;
+            background-color: #555e67;
+            font-size: 14px;
+            color: #fff;
+            white-space: pre-wrap;
+        }
+    }
+    .select-container {
+        /deep/
+        .ui-select-dropdown {
+            max-height: 120px !important;
+        }
+    }
+</style>

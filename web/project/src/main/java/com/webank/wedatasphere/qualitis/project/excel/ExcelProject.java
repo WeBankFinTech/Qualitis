@@ -30,6 +30,9 @@ public class ExcelProject extends BaseRowModel {
     @ExcelProperty(value = "Project Description", index = 1)
     private String projectDescription;
 
+    @ExcelProperty(value = "Project Labels", index = 2)
+    private String projectLabels;
+
     public ExcelProject() {
         // Default Constructor
     }
@@ -50,11 +53,20 @@ public class ExcelProject extends BaseRowModel {
         this.projectDescription = projectDescription;
     }
 
+    public String getProjectLabels() {
+        return projectLabels;
+    }
+
+    public void setProjectLabels(String projectLabels) {
+        this.projectLabels = projectLabels;
+    }
+
     @Override
     public String toString() {
         return "ExcelProject{" +
-                "projectName='" + projectName + '\'' +
-                ", projectDescription='" + projectDescription + '\'' +
-                '}';
+            "projectName='" + projectName + '\'' +
+            ", projectDescription='" + projectDescription + '\'' +
+            ", projectLabels='" + projectLabels + '\'' +
+            '}';
     }
 }

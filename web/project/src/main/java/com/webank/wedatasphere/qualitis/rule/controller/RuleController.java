@@ -24,13 +24,6 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +66,7 @@ public class RuleController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to delete rule. rule_id: {}, caused by: {}", request.getRuleId(), e.getMessage(), e);
+            LOGGER.error("Failed to delete rule. rule_id: {}, caused by: {}", request.getRuleGroupId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE}", null);
         }
     }
@@ -102,7 +95,8 @@ public class RuleController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get rule detail. rule_id: {}, caused by: {}", ruleId, e.getMessage(), e);
+            LOGGER.error("Failed to get rule detail. rule_id: {}, caused by: {}", ruleId.toString().replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_DETAIL}", null);
         }
     }

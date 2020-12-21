@@ -27,11 +27,6 @@ import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
-import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
-import com.webank.wedatasphere.qualitis.bean.LogResult;
-import com.webank.wedatasphere.qualitis.config.LinkisConfig;
-import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
-import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,11 +79,11 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         headers.add("Token-Code", getToken(clusterName));
 
         Map<String, Object> map = new HashMap<>(4);
-        map.put("requestApplicationName", "qualitis");
+        // TODO：recover qualitis
+        map.put("requestApplicationName", linkisConfig.getAppName());
         map.put("executeApplicationName", "spark");
         map.put("executionCode", code);
         map.put("runType", "scala");
-        map.put("params", new Object());
         Gson gson = new Gson();
         HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(map), headers);
         LOGGER.info("Start to submit job to linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
@@ -232,7 +227,8 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             throw new TaskNotExistException("Can not get status of task, task_id : " + taskId);
         }
 
-        if (((Map)response.get("data")).get("task") == null) {
+        Object taskObj = ((Map)response.get("data")).get("task");
+        if (taskObj == null) {
             throw new TaskNotExistException("Job id: " + taskId + " does not exist");
         }
 

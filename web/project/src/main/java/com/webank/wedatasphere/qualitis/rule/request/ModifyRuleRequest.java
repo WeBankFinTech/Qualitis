@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
@@ -43,6 +41,12 @@ public class ModifyRuleRequest {
     private List<DataSourceRequest> datasource;
     @JsonProperty("template_arguments")
     private List<TemplateArgumentRequest> templateArgumentRequests;
+    @JsonProperty("project_id")
+    private long projectId;
+    @JsonProperty("project_name")
+    private String projectName;
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
 
     public ModifyRuleRequest() {
         // Default Constructor
@@ -102,6 +106,31 @@ public class ModifyRuleRequest {
 
     public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
         this.templateArgumentRequests = templateArgumentRequests;
+    }
+
+    public long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(long projectId) {
+        this.projectId = projectId;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     public static void checkRequest(ModifyRuleRequest request) throws UnExpectedRequestException {

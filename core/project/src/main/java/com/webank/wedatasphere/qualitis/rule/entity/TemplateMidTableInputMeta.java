@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
@@ -24,6 +26,7 @@ import java.util.Set;
  * @author howeye
  */
 @Table
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Entity(name = "qualitis_template_mid_table_input_meta")
 public class TemplateMidTableInputMeta {
 

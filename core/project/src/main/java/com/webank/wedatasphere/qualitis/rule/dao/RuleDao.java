@@ -20,6 +20,7 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import java.util.List;
 
 /**
@@ -33,6 +34,14 @@ public interface RuleDao {
      * @return
      */
     List<Rule> findByProject(Project project);
+
+    /**
+     * Find rule by project
+     * @param project
+     * @param ruleName
+     * @return
+     */
+    Rule findByProjectAndRuleName(Project project, String ruleName);
 
     /**
      * Save rule
@@ -67,4 +76,11 @@ public interface RuleDao {
      * @return
      */
     List<Rule> findByRuleGroup(RuleGroup ruleGroup);
+
+    /**
+     * Find rule by rule template
+     * @param templateInDb
+     * @return
+     */
+    List<Rule> findByTemplate(Template templateInDb);
 }

@@ -1,0 +1,227 @@
+<template>
+    <Row class="mt20 mb20">
+        <div>
+            <Wb-button class="m10" type="primary" @click="addTr">{{ $t('common.add') }}</Wb-button>
+        </div>
+        <Cell span="24" class="tableTitle">
+            <p>{{ $t('optionManagePage.authorityManagement') }}</p>
+        </Cell>
+        <Cell span="24" class="loading-content">
+            <Wb-table :data="permissionData" border :no-data-text="$t('common.noData')">
+                <Column prop="permission_id" :name="$t('optionManagePage.authorizationId')" width="150px" />
+                <Column prop="url" :name="$t('optionManagePage.URLAddress')" />
+                <Column prop="method" :name="$t('optionManagePage.requestMethod')" />
+                <Column :name="$t('common.operate')" :component="operationComponent" width="300px" />
+            </Wb-table>
+            <div class="flex mt10">
+                <Pagination class="m10" :size-list="sizeList" :size="pagination.size"
+                    :current="pagination.current" :total="pagination.total"
+                    @on-change="changePage" />
+            </div>
+            <modal ref="permissionForm" :title="$t('optionManagePage.authorityManagement')">
+                <Wb-form ref="addformValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.URLAddress')" prop="addUrlAdr">
+                        <Wb-input v-model="addUrlAdr" />
+                    </Form-item>
+                    <Form-item :label="$t('optionManagePage.requestMethod')" prop="addMethod">
+                        <wb-select v-model="addMethod">
+                            <wb-option value="GET">GET</wb-option>
+                            <wb-option value="POST">POST</wb-option>
+                            <wb-option value="PUT">PUT</wb-option>
+                            <wb-option value="DELETE">DELETE</wb-option>
+                        </wb-select>
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('permissionForm')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <modal ref="perReviseForm" :title="$t('optionManagePage.editPermissionManagement')">
+                <Wb-form ref="editformValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.URLAddress')" prop="reviseUrlAdr">
+                        <Wb-input v-model="reviseUrlAdr" />
+                    </Form-item>
+                    <Form-item :label="$t('optionManagePage.requestMethod')" prop="reviseMethod">
+                        <wb-select v-model="reviseMethod">
+                            <wb-option value="GET">GET</wb-option>
+                            <wb-option value="POST">POST</wb-option>
+                            <wb-option value="PUT">PUT</wb-option>
+                            <wb-option value="DELETE">DELETE</wb-option>
+                        </wb-select>
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('perReviseForm')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="save">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </Cell>
+    </Row>
+</template>
+<script>
+    import { isIE } from "assets/js/utils.js";
+    import { sizeList } from 'assets/js/sizeList';
+    import Vue from "vue";
+    export default {
+        FesReady: function () {
+            this.init();
+        },
+        data(){
+            const that = this;
+            return{
+                permissionData:[],
+                addUrlAdr:"",
+                addMethod:"",
+                reviseUrlAdr:"",
+                reviseMethod:"",
+                permission_id:"",
+                pagination: {
+                    size: 5,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                showLoading: true,
+                operationComponent: function(trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                            }
+                        },
+                        methods: {
+                            editAction() {
+                                that.permission_id=trData.permission_id;
+                                that.reviseMethod=trData.method;
+                                that.reviseUrlAdr=trData.url;
+                                that.$refs.perReviseForm.show();
+                            },
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('optionManagePage.deleteLimitID', {name: trData.permission_id})}`).then(index=> {
+                                    if (index === 0) {
+                                        that.FesApi.fetch('api/v1/admin/permission/delete', {permission_id:trData.permission_id},).then( () => {
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
+                                            let current =1;
+                                            let size =5;
+                                            that.pagination.current=current;
+                                            that.pagination.size=size;
+                                            that.changePage({current, size})
+                                        })
+                                    }
+                                })
+                            },
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                }, {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            }
+        },
+        computed: {
+            ruleValidate() {
+                return {
+                    addUrlAdr: [{
+                        required: true, message: this.$t('common.notEmpty')
+                    }],
+                    addMethod: [{
+                        required: true, message: this.$t('common.notEmpty')
+                    }],
+                    reviseUrlAdr: [{
+                        required:true, message: this.$t('common.notEmpty')
+                    }],
+                    reviseMethod: [{
+                        required: true, message: this.$t('common.notEmpty')
+                    }]
+                }
+            }
+        },
+        methods: {
+            init(){
+                this.FesApi.fetch('api/v1/admin/permission/all', {page: this.pagination.current-1, size: this.pagination.size}).then( (result) => {
+                    this.showLoading = false;
+                    this.permissionData=result.data;
+                    this.pagination.total=Math.ceil(result.total/this.pagination.size);
+                })
+            },
+            addTr(){
+                isIE()
+                this.$refs.permissionForm.show()
+            },
+            submit(){
+                this.$refs.addformValidate.validate(valid=> {
+                    if (valid) {
+                        this.FesApi.fetch('api/v1/admin/permission',{url:this.addUrlAdr,method:this.addMethod},'put').then( () => {
+                            this.$refs.permissionForm.hide();
+                            this.$Toast.success(this.$t('toastSuccess.addSuccess'));
+                            let current =1;
+                            let size =5;
+                            this.pagination.current=current;
+                            this.pagination.size=size;
+                            this.changePage({current, size})
+                        })
+                    }
+                })
+            },
+            save(){
+                this.$refs.editformValidate.validate(valid=> {
+                    if (valid) {
+                        let newTrData={};
+                        newTrData.permission_id=this.permission_id;
+                        newTrData.url=this.reviseUrlAdr;
+                        newTrData.method=this.reviseMethod;
+                        this.FesApi.fetch('api/v1/admin/permission',newTrData,).then( () =>{
+                            this.$refs.perReviseForm.hide();
+                            this.$Toast.success(this.$t('toastSuccess.editSuccess'))
+                            this.init();
+                        })
+                    }
+                })
+            },
+            changePage({current, size}){
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.init();
+            },
+            cancel(ref) {
+                this.$refs[ref].hide()
+            }
+        }
+    }
+</script>

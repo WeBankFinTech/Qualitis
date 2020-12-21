@@ -22,10 +22,6 @@ import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
-import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 
 /**
  * @author howeye

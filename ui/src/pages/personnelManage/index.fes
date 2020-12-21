@@ -1,0 +1,424 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper personManage p20">
+            <div class="breadcrumb-container mb10">
+                <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('personnelManage.personnelManage') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('personnelManagePage.userManagement') }}</span>
+            </div>
+            <Cell span="24">
+                <Wb-button class="mb20" type="primary" @click="showUser">{{ $t('personnelManagePage.newUsers') }}</Wb-button>
+                <Wb-table :data="userList" border :no-data-text="$t('common.noData')">
+                    <Column prop="user_id" :name="$t('personnelManagePage.userId')" />
+                    <Column prop="username" :name="$t('personnelManagePage.userName')" />
+                    <Column prop="chinese_name" :name="$t('personnelManagePage.chineseName')" />
+                    <Column prop="department" :name="$t('personnelManagePage.department')" />
+                    <Column :name="$t('common.operate')" :component="operationComponent" />
+                </Wb-table>
+                <Pagination class="pt20" :size-list="sizeList" :size="pagination.size" :current="pagination.current" :total="pagination.total"
+                    @on-change="changePage" />
+                <Loading v-show="userLoading" class="loading-layout" />
+            </Cell>
+            <Cell span="24" class="mt20">
+                <Wb-button class="mb20" type="primary" @click="showGroupFrom">{{ $t('personnelManagePage.proxyUser') }}</Wb-button>
+                <Wb-table :data="groupList" border :no-data-text="$t('common.noData')">
+                    <Column prop="proxy_user_id" :name="$t('personnelManagePage.proxyUserId')" />
+                    <Column prop="proxy_user_name" :name="$t('personnelManagePage.proxyUserName')" />
+                    <Column :name="$t('common.operate')" :component="groupComponent" />
+                </Wb-table>
+                <Pagination class="pt20" :size-list="sizeList" :size="groupPage.size" :current="groupPage.current" :total="groupPage.total"
+                    @on-change="changeGrouprPage" />
+                <Loading v-show="groupLoading" class="loading-layout" />
+            </Cell>
+            <modal ref="userModal" :title="$t('personnelManagePage.userGroup')" class="user-modal">
+                <Wb-form ref="userForm" :label-width="130" :rule="ruleValidate">
+                    <Form-item :label="$t('personnelManagePage.userName')" prop="username">
+                        <Wb-input v-model="username" />
+                    </Form-item>
+                    <Form-item :label="$t('personnelManagePage.chineseName')" prop="chinese_name">
+                        <Wb-input v-model="chinese_name" />
+                    </Form-item>
+                    <Form-item :label="$t('personnelManagePage.department')" prop="department">
+                        <Wb-input v-model="department" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('userModal')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <modal ref="userGroupModal" :title="$t('personnelManagePage.userGroup')">
+                <Wb-form ref="userGroupForm" :label-width="130" :rule="ruleValidate">
+                    <Form-item :label="$t('personnelManagePage.userGroupName')" prop="proxy_user_name">
+                        <Wb-input v-model="proxy_user_name" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('userGroupModal')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submitGroup">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+        </Row>
+    </pageContainer>
+</template>
+<script type="text/ecmascript-6">
+    import {
+        isIE
+    } from "assets/js/utils.js";
+    // 人事接口成员数量6200+条数据，全部丢进select组件有性能问题，这里控制数量，选择是可以通过搜索来找到相应成员
+    import { sizeList } from 'assets/js/sizeList';
+    import pageContainer from '../../components/template';
+    import Vue from 'vue';
+    let listSize = 200;
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+            this.init();
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            const that = this;
+            return {
+                userList: [],
+                username: "",
+                staffList: [],
+                groupList: [],
+                shortStaffList: [],
+                pagination: {
+                    size: 15,
+                    current: 1,
+                    total: 0
+                },
+                groupPage: {
+                    size: 15,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                userLoading: true,
+                groupLoading: true,
+                proxy_user_name: "",
+                proxy_user_id: "",
+                chinese_name: '',
+                department: '',
+                operationComponent: function (trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                            }
+                        },
+                        methods: {
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('personnelManagePage.deleteCurrentUser', {name: trData.username})}`).then(index=>{
+                                    if (index === 0) {
+                                        that.FesApi.fetch("api/v1/admin/user/delete", {
+                                            user_id: trData.user_id
+                                        }).then(() => {
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
+                                            that.init();
+                                        });
+                                    }
+                                })
+                            }
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                },
+                groupComponent: function (trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                                managementText: that.$t('personnelManagePage.memberManagement'),
+                            }
+                        },
+                        methods: {
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('personnelManagePage.deleteProxyUser', {name: trData.proxy_user_name})}`).then(index=>{
+                                    if (index === 0) {
+                                        that.FesApi.fetch("/api/v1/admin/proxy_user", {
+                                        }, {
+                                            data: {
+                                                proxy_user_id: trData.proxy_user_id
+                                            },
+                                            method: 'delete',
+                                            headers: {
+                                                'content-type': 'application/json'
+                                            }
+
+                                        }).then(() => {
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
+                                            that.init();
+                                        });
+                                    }
+                                })
+                            },
+                            editAction() {
+                                that.showGroupFrom('edit');
+                                that.proxy_user_name = trData.proxy_user_name;
+                                that.proxy_user_id = trData.proxy_user_id;
+                            },
+                            managementAction() {
+                                let proxyUserName = trData.proxy_user_name;
+                                that.FesApp.router.push(`/personnelManage/groupUser?proxyUserName=${proxyUserName}`)
+                            }
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.managementText,
+                                    handle: this.managementAction,
+                                    color: '',
+                                },
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                },
+                                {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                                
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            };
+        },
+        computed: {
+            ruleValidate() {
+                return {
+                    username: [
+                        {
+                            required: true, message: this.$t('common.notEmpty')
+                        }
+                    ],
+                    chinese_name: [
+                        {
+                            required: true, message: this.$t('common.notEmpty')
+                        }
+                    ],
+                    department: [
+                        {
+                            required: true, message: this.$t('common.notEmpty')
+                        }
+                    ],
+                    proxy_user_name: [
+                        {
+                            required: true, message: this.$t('common.notEmpty')
+                        }
+                    ]
+                }
+            }
+        },
+        methods: {
+            async init() {
+                this.initUserList();
+                this.initGroupList();
+            },
+            submit() {
+                this.$refs.userForm.validate(valid => {
+                    let params = {
+                        username: this.username,
+                        chinese_name: this.chinese_name,
+                        department: this.department
+                    } 
+                    if (valid) {
+                        this.FesApi.fetch(
+                            "api/v1/admin/user",
+                            params,
+                            "put"
+                        ).then(result => {
+                            this.$refs.userModal.hide();
+                            let passWord = result.password;
+                            this.$Message.confirm(this.$t('message.title'), `<b>${this.$t('toastSuccess.addSuccess')}</b><br><p>${this.$t('message.password')} ${passWord}</p>`)
+                            this.init();
+                        });
+                    }
+                })
+            },
+            showGroupFrom(type) {
+                isIE();
+                this.proxy_user_name = '';
+                this.$refs.userGroupModal.show();
+                this.isEdit = type === 'edit';
+            },
+            submitGroup() {
+                let method = 'put';
+                let params = {
+                    proxy_user_name: this.proxy_user_name
+                };
+                if (this.isEdit) {
+                    method = 'post';
+                    params.proxy_user_id = this.proxy_user_id;
+                }
+                this.$refs.userGroupForm.validate(valid => {
+                    if (valid) {
+                        this.FesApi.fetch("api/v1/admin/proxy_user", params, method).then(() => {
+                            this.$refs.userGroupModal.hide();
+                            this.initGroupList();
+                        })
+
+                    }
+                })
+            },
+            async initUserList() {
+                this.FesApi.fetch("api/v1/admin/user/all", {
+                    page: this.pagination.current - 1,
+                    size: this.pagination.size
+                }).then(result => {
+                    this.userLoading = false;
+                    this.userList = result.data;
+                    this.pagination.total = Math.ceil(
+                        result.total / this.pagination.size
+                    );
+                });
+            },
+            async initGroupList() {
+                let result = await this.FesApi.fetch("api/v1/admin/proxy_user/all", {
+                    page: this.groupPage.current - 1,
+                    size: this.groupPage.size
+                })
+                this.groupLoading = false;
+                this.groupList = result && Array.isArray(result.data) ? result.data : '';
+                this.groupPage.total = Math.ceil(
+                    result.total / this.groupPage.size
+                );
+            },
+            changePage({
+                current,
+                size
+            }) {
+                this.pagination.size = size;
+                this.pagination.current = current;
+                this.initUserList();
+            },
+            changeGrouprPage({
+                current,
+                size
+            }) {
+                this.groupPage.current = current;
+                this.groupPage.size = size;
+                this.initGroupList();
+            },
+            serach(filter) {
+                let shortStaffList = [],
+                    filtrList = [];
+                if (Array.isArray(this.stakeholders)) {
+                    shortStaffList = this.staffList.find(staff => staff.username == this.username);
+                }
+                if (filter) {
+                    filtrList = this.staffList.filter(staff => {
+                        return staff.username.indexOf(filter) > -1 || staff.chinese_name.indexOf(filter) > -1
+                    })
+                } else {
+                    if (this.staffList.length > listSize) {
+                        filtrList = this.staffList.slice(0, listSize);
+                    }
+                }
+                shortStaffList = shortStaffList.concat(filtrList);
+                this.shortStaffList = _.uniqBy(shortStaffList, 'username');
+            },
+            deleteGroup(trData) {
+                this.$Message.confirm(this.$t('common.ok'), this.$t('message.delete')).then(index => {
+                    if (index === 0) {
+                        this.FesApi.fetch("api/v1/admin/proxy_user", {}, {
+                            data: {
+                                proxy_user_id: trData.proxy_user_id
+                            },
+                            method: 'delete',
+                            headers: {
+                                'content-type': 'application/json'
+                            }
+                        }).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                            this.$refs.userGroupModal.hide();
+                            this.initGroupList();
+                        })
+                    }
+                })
+            },
+            showUser() {
+                this.$refs.userModal.show()
+            },
+            cancel(ref) {
+                this.$refs[ref].hide()
+            }
+        }
+    };
+
+</script>
+<style scoped lang="scss">
+    .title {
+        border-left: 3px solid #3399ff;
+        padding-left: 5px;
+        font-size: 17px;
+    }
+    .user-modal {
+        /deep/
+        .ui-modal-body {
+            height: 250px;
+        }
+    }
+    .submit-contaniner {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 10px;
+    }
+</style>

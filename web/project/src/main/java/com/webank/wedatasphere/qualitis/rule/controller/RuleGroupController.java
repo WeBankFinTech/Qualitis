@@ -66,7 +66,8 @@ public class RuleGroupController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get rules by rule group id. rule_group_id: {}, caused by: {}", ruleGroupId, e.getMessage(), e);
+            LOGGER.error("Failed to get rules by rule group id. rule_group_id: {}, caused by: {}", ruleGroupId.toString().replace("\r", "")
+                .replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULES_BY_RULE_GROUP}", null);
         }
     }

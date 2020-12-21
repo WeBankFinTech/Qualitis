@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.query.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 
 /**
  *
@@ -28,9 +29,13 @@ public class RuleQueryRequest {
   private String cluster;
   private String db;
   private String table;
+  private String column;
   @JsonProperty("user_type")
   private Integer[] userType;
   private String user;
+
+  private int page;
+  private int size;
 
   public RuleQueryRequest() {
   }
@@ -71,6 +76,14 @@ public class RuleQueryRequest {
     this.userType = userType;
   }
 
+  public String getColumn() {
+    return column;
+  }
+
+  public void setColumn(String column) {
+    this.column = column;
+  }
+
   public String getUser() {
     return user;
   }
@@ -79,4 +92,26 @@ public class RuleQueryRequest {
     this.user = user;
   }
 
+  public int getPage() {
+    return page;
+  }
+
+  public void setPage(int page) {
+    this.page = page;
+  }
+
+  public int getSize() {
+    return size;
+  }
+
+  public void setSize(int size) {
+    this.size = size;
+  }
+
+  public void checkRequest() throws UnExpectedRequestException {
+    if (cluster == null || "".equals(cluster)
+       || table == null || "".equals(table)) {
+      throw new UnExpectedRequestException("Params of {&REQUEST_CAN_NOT_BE_NULL}");
+    }
+  }
 }

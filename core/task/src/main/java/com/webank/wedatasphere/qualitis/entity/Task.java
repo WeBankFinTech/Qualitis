@@ -55,6 +55,9 @@ public class Task {
     @Column(name = "submit_address")
     private String submitAddress;
 
+    @Column(name = "abort_on_failure")
+    private Boolean abortOnFailure;
+
     public Task() {
     }
 
@@ -146,6 +149,14 @@ public class Task {
 
     public void setSubmitAddress(String submitAddress) {
         this.submitAddress = submitAddress;
+    }
+
+    public Boolean isAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     @Override

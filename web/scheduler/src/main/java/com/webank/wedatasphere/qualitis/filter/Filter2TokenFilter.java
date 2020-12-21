@@ -21,14 +21,18 @@ import com.webank.wedatasphere.qualitis.dao.AuthListDao;
 import com.webank.wedatasphere.qualitis.encoder.Md5Encoder;
 import com.webank.wedatasphere.qualitis.entity.AuthList;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.entity.AuthList;
+import java.io.IOException;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 
 /**
  * @author howeye
@@ -73,14 +77,19 @@ public class Filter2TokenFilter implements Filter {
             AuthList authList = authListDao.findByAppId(appId);
             if (authList != null && validateSignature(nonce, timestamp, authList.getAppToken(), appId, signature)) {
                     LOGGER.info("Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
-                            appId, nonce, timestamp, signature);
+                        appId.replace("\r", "").replace("\n", ""),
+                        nonce.replace("\r", "").replace("\n", ""),
+                        timestamp.replace("\r", "").replace("\n", ""),
+                        signature.replace("\r", "").replace("\n", ""));
                     filterChain.doFilter(request, servletResponse);
                     return;
             }
         }
 
-        LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'", appId,
-                nonce, timestamp, signature);
+        LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'", appId.replace("\r", "").replace("\n", ""),
+                nonce.replace("\r", "").replace("\n", ""),
+            timestamp.replace("\r", "").replace("\n", ""),
+            signature.replace("\r", "").replace("\n", ""));
         writeToResponse("Forbidden! please check appid and token", servletResponse);
     }
 
@@ -110,6 +119,6 @@ public class Filter2TokenFilter implements Filter {
         Filter2TokenFilter filter2TokenFilter = new Filter2TokenFilter();
         String timeStamp = System.currentTimeMillis() + "";
         System.out.println(timeStamp);
-        System.out.println(filter2TokenFilter.getSignature("11111", timeStamp, "a33693de51", "linkis_id"));
+        System.out.println(filter2TokenFilter.getSignature("36975", timeStamp, "a33693de51", "linkis_id"));
     }
 }

@@ -64,6 +64,9 @@ public class ExcelCustomRule extends BaseRowModel {
     @ExcelProperty(value = "Verification Threshold", index = 12)
     private String threshold;
 
+    @ExcelProperty(value = "AbortOnFailure", index = 13)
+    private Boolean abortOnFailure;
+
     public ExcelCustomRule() {
     }
 
@@ -175,21 +178,31 @@ public class ExcelCustomRule extends BaseRowModel {
         this.ruleGroupName = ruleGroupName;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     @Override
     public String toString() {
         return "ExcelCustomRule{" +
-                "ruleName='" + ruleName + '\'' +
-                ", outputName='" + outputName + '\'' +
-                ", saveMidTable=" + saveMidTable +
-                ", clusterName='" + clusterName + '\'' +
-                ", functionName='" + functionName + '\'' +
-                ", functionContent='" + functionContent + '\'' +
-                ", fromContent='" + fromContent + '\'' +
-                ", whereContent='" + whereContent + '\'' +
-                ", alarmCheckName='" + alarmCheckName + '\'' +
-                ", checkTemplateName='" + checkTemplateName + '\'' +
-                ", compareType='" + compareType + '\'' +
-                ", threshold='" + threshold + '\'' +
-                '}';
+            "ruleGroupName='" + ruleGroupName + '\'' +
+            ", ruleName='" + ruleName + '\'' +
+            ", outputName='" + outputName + '\'' +
+            ", saveMidTable=" + saveMidTable +
+            ", clusterName='" + clusterName + '\'' +
+            ", functionName='" + functionName + '\'' +
+            ", functionContent='" + functionContent + '\'' +
+            ", fromContent='" + fromContent + '\'' +
+            ", whereContent='" + whereContent + '\'' +
+            ", alarmCheckName='" + alarmCheckName + '\'' +
+            ", checkTemplateName='" + checkTemplateName + '\'' +
+            ", compareType='" + compareType + '\'' +
+            ", threshold='" + threshold + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            '}';
     }
 }

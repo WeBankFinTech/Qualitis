@@ -35,7 +35,8 @@ import java.util.regex.Pattern;
 public class LocaleParser {
 
     private static final Pattern KEY_WORD_PATTERN = Pattern.compile("\\{&.*?}");
-
+    private static final String ZH_CN_1 = "zh-CN";
+    private static final String ZH_CN_2 = "zh_CN";
     private static final Logger LOGGER = LoggerFactory.getLogger(LocaleParser.class);
 
     @Autowired
@@ -46,15 +47,19 @@ public class LocaleParser {
         try {
             locale = LocaleUtils.toLocale(localeStr);
         } catch (Exception e) {
-            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr);
-            locale = Locale.US;
+            LOGGER.warn("Failed to get locale: {}, set according to actual parameters", localeStr.replace("\r", "").replace("\n", ""));
+            if (ZH_CN_1.equals(localeStr) || ZH_CN_2.equals(localeStr)) {
+                locale = Locale.CHINA;
+            } else {
+                locale = Locale.US;
+            }
         }
         if (StringUtils.isBlank(localeStr)) {
-            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr);
+            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr.replace("\r", "").replace("\n", ""));
             locale = Locale.US;
         }
         if (!locale.equals(Locale.US) && !locale.equals(Locale.CHINA)) {
-            LOGGER.warn("Does not support locale: {}, set to default en_US", localeStr);
+            LOGGER.warn("Does not support locale: {}, set to default en_US", localeStr.replace("\r", "").replace("\n", ""));
             locale = Locale.US;
         }
         Matcher m = KEY_WORD_PATTERN.matcher(message);

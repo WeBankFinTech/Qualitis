@@ -1,0 +1,579 @@
+.login-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background-color: $body-background;
+    background-image: url("../images/bg.png");
+    background-position: left bottom;
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+    font-size: 18px;
+    color: $black-text-color;
+}
+
+.login-panel .login-panel-swap {
+    position: relative;
+    width: 945px;
+    height: 324px;
+    margin: 10% auto;
+    border-radius: $border-radius-small;
+}
+
+.login-panel .logo {
+    display: inline-block;
+    vertical-align: middle;
+    width: 400px;
+    height: 100%;
+    text-align: center;
+    .logo-text {
+        display: inline-block;
+        vertical-align: middle;
+        margin-top: 130px;
+        font-size: 28px;
+        font-weight: bold;
+    }
+}
+
+.login-panel .split {
+    display: inline-block;
+    background: $border-color-base;
+    width: 1px;
+    height: 180px;
+    vertical-align: middle;
+}
+
+.login-panel .error {
+    margin-top: 10px;
+    width: 350px;
+    color: $error-color;
+    font-size: 14px;
+    .ui-icon-exclamation-circle {
+        margin-right: 6px;
+    }
+}
+
+.login-panel .login-form {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0 75px 0;
+    height: 270px;
+    input::-webkit-input-placeholder {
+        color: $black-text-color;
+    }
+    input::-moz-placeholder {
+        color: $black-text-color;
+    }
+    /* ie */
+    input:-ms-input-placeholder {
+        color: $black-text-color;
+    }
+    /* firefox 19+ */
+    input:-moz-placeholder {
+        color: $black-text-color;
+    }
+    input:-webkit-autofill {
+        box-shadow: 0 0 0px 1000px white inset !important;
+        -webkit-text-fill-color: $black-text-color !important;
+    }
+    .line {
+        padding-top: 30px;
+        border-bottom: 1px solid $border-color-split;
+    }
+    input[type="text"],
+    input[type="password"] {
+        margin: 0;
+        width: 350px;
+        height: 40px;
+        line-height: 40px;
+        padding: 0 15px;
+        vertical-align: middle;
+        background: 0 0;
+        outline: 0;
+        border: none;
+        font-size: 16px;
+        color: $black-text-color;
+    }
+    button {
+        margin-top: 10px;
+        width: 350px;
+        height: 48px;
+        border-radius: 4px;
+        line-height: 46px;
+        border: none;
+        outline: 0;
+        background-color: $primary-color;
+        color: #ffffff;
+        cursor: pointer;
+        text-align: center;
+        font-size: 18px;
+        &:hover {
+            background-color: $selected-color;
+        }
+    }
+}
+
+.ie-palceholder::after {
+    content: '用户名';
+    position: absolute;
+    left: 88px;
+    top: 38px;
+    font-size: 16px;
+}
+
+.ie-palceholder-password::after {
+    content: '密码';
+    top: 110px;
+}
+
+.img {
+    margin-top: 20px;
+}
+
+.nav {
+    width: 10%;
+    font-size: 16px;
+}
+
+.system {
+    margin-left: 30%
+}
+
+
+.footer {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    text-align: center;
+    line-height: 60px;
+    font-size: 16px;
+    border-top: 1px solid #dcdcdc;
+    background: #fff;
+}
+
+.middle-wrapper {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+.all-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.Row-wrapper {
+    height: 100%;
+}
+
+.left-content {
+    height: 100%;
+}
+
+.right-content {
+    height: 100%;
+}
+
+.head-wrapper {
+    height: 100px;
+    text-align: center;
+    line-height: 100px;
+}
+
+.filter-wrapper {
+    height: 30px;
+    line-height: 32px;
+    text-align: center;
+    font-size: 14px;
+    width: 90%;
+    border: 1px solid #dcdcdc;
+}
+
+.right-head {
+    height: 100px;
+    line-height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.right-wrapper {
+    height: 700px;
+    border: 1px solid #dcdcdc;
+}
+
+.item-wrapper {
+    display: inline-block;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    width: 50%;
+    font-size: 14px;
+    margin: 0 20px;
+    border: 1px solid #dcdcdc;
+}
+
+.right-top {
+    height: 25%;
+    width: 100%;
+}
+
+.right-bottom {
+    height: 50%;
+    width: 100%;
+}
+
+.item-title {
+    height: 60px;
+    line-height: 60px;
+}
+
+.item-input {
+    width: 100px;
+    margin-bottom: 1px;
+}
+
+.item-list {
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+}
+
+.item-page {
+    height: 44px;
+    text-align: right;
+    line-height: 54px;
+}
+
+.page-wrapper {
+    margin-right: 20px;
+}
+
+.rightContent {
+    height: 100%;
+    width: calc(100% - 200px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+    padding-left:10px;
+    padding-right: 20px
+}
+
+.parameterButton {
+    height: 60px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center
+}
+
+.addButton {
+    margin: 0 20px;
+}
+
+
+.dataWrapper {
+    width: 370px;
+    margin-left: 20px;
+}
+
+.ascertainWrapper {
+    height: 60px;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    line-height: 60px;
+}
+
+.stencilHead {
+    height: 40px;
+    line-height: 40px;
+    font-size: 16px;
+    border-bottom: 1px solid #dcdcdc;
+}
+
+.stencilHeadTitle {
+    height: 100%;
+    text-align: center;
+    line-height: 40px;
+}
+
+.typeWrapper {
+    width: 150px;
+}
+
+.qualityWrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+}
+
+.checkRule {
+    width: 20%;
+    height: 300px;
+    margin-top: 10px;
+    float: left;
+    margin-left: 20px;
+    border: 1px solid #dcdcdc;
+    position: relative;
+    font-size: 14px;
+}
+
+.checkRuleWrapper {
+    position: absolute;
+    top: 0;
+    left: 40%;
+    width: 70px;
+    line-height: 40px;
+    height: 40px;
+    text-align: center;
+    border: 1px solid #dcdcdc;
+    border-top: none;
+}
+
+.dataCheckbox {
+    height: 30px;
+    line-height: 30px;
+    text-align: left;
+    margin-left: 40%;
+    font-size: 14px;
+}
+
+.depositTableSearch {
+    width: 370px;
+    margin-left: 20px;
+}
+
+.confirmWrapper {
+    display: flex;
+    justify-content: center;
+    height: 50px;
+    align-items: center;
+    margin-top: 70px;
+}
+
+.firstBtn {
+    margin-right: 80px;
+    margin-left: 20px;
+}
+
+.qualityTestForm {
+    border: 1px solid #dcdcdc;
+    margin-left: 20px;
+}
+
+.addQualityTest {
+    margin-left: 40px;
+    float: left;
+    font-size: 22px;
+    margin-top: 5px;
+}
+
+.delStencilWrapper {
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+}
+
+.delStencil {
+    height: 60px;
+    width: 180px;
+    border: 1px solid #dcdcdc;
+    text-align: center;
+    line-height: 60px;
+}
+
+.tdInput {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    width: 80px;
+}
+
+.submitWrapper .ui-form-content {
+    margin-top: 50px;
+}
+
+.borderLeft {
+    border-left: 1px solid #dcdcdc;
+    margin-left: -1px;
+}
+
+.reportAllBox {
+    margin: 0 10px;
+}
+
+.leftPageWrapper .ui-page .ui-page-prev {
+    text-indent: 0;
+    line-height: 30px;
+}
+
+.leftPageWrapper .ui-page .ui-page-item {
+    text-indent: 0;
+    line-height: 30px;
+}
+
+.leftPageWrapper .ui-page .ui-page-next {
+    text-indent: 0;
+    line-height: 30px;
+}
+
+.leftPageWrapper .ui-page .ui-page-select {
+    display: none;
+}
+
+.addProjectColor {
+    color: blue;
+    font-size: 14px !important;
+}
+
+.checkRule .ui-radio-group-vertical {
+    margin-top: 20px;
+}
+
+.radioSpan {
+    margin: 0 10px;
+}
+
+.myProject {
+    line-height: 48px;
+    text-indent: 24px;
+    cursor: pointer;
+    position: relative;
+    color: #657180;
+    margin-left: 10px;
+    font-size: 16px;
+}
+
+.iconWrapper {
+    color: #999;
+    float: right;
+    position: absolute;
+    top: 1px;
+    right: 24px;
+    text-indent: 0;
+}
+
+.hoverColor:hover {
+    background-color: #f3f3f3;
+}
+
+.cursor {
+    cursor: pointer;
+}
+
+.childMenu li {
+    text-indent: 48px;
+    cursor: pointer;
+    position: relative;
+    line-height: 48px;
+    font-size: 15px;
+    position: relative;
+}
+
+.active {
+    color: #128bd6;
+    border-right: 2px solid #128bd6;
+}
+
+.tabActive {
+    color: #128bd6;
+}
+
+.radioLable {
+    margin: 0 20px;
+}
+
+.regInput {
+    width: 70%;
+    min-width: 120px !important
+}
+
+.templateForm {
+    width: 18%;
+    height: 350px;
+    float: left;
+    margin-left: 20px;
+    border: 1px solid #dcdcdc;
+}
+
+.columnWrapper {
+    max-height: 120px;
+    overflow: auto;
+    overflow-x: hidden;
+    min-height: 50px;
+    text-align: center;
+}
+
+.checkboxInputWrapper {
+    height: 40px;
+}
+
+.checkboxInput {
+    float: left;
+    width: 60%;
+    min-width: 130px;
+    margin-right: 20px;
+}
+
+.showColumnWrapper {
+    margin-top: 10px;
+}
+
+.retract {
+    position: absolute;
+    top: 50px;
+    left: 160px;
+    color: white;
+}
+
+.columnSearch {
+    font-size: 14px;
+    min-width: 80px;
+    width: 30%;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    float: left;
+    margin: 0 20px;
+    border: 1px solid #dcdcdc;
+}
+
+.templateForm {
+    width: 18%;
+    min-width: 250px;
+    height: 300px;
+    float: left;
+    margin-left: 20px;
+    border: 1px solid #dcdcdc;
+    margin-top: 10px;
+}
+
+.showRulePage {
+    width: 0;
+}
+
+.showRulePage .ui-input {
+    right: 14px;
+    width: 45px;
+    height: 28px;
+    text-align: center;
+}
+
+.rulePageLi {
+    text-indent: 15px !important;
+}
+
+.rulePageLi a {
+    font-size: 14px;
+}
+
+.rulePageLi span {
+    font-size: 14px;
+    margin-left: 45px;
+}

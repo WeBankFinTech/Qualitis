@@ -1,0 +1,160 @@
+<template>
+    <div class="mapSource">
+        <div class="table-title">{{ $t('crossTableCheck.mapSheets') }}： {{ sourceTableName }}</div>
+        <div class="table-main">
+            <div class="table-content col map-col">
+                <div class="scale">
+                    <Wb-input v-model="sourceField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', sourceField, arrowCol, 'sourceColumnList')" />
+                    <div :class="['col-content',{'no-border': filterCol.length}]">
+                        <ul class="ulList col-list" @click="handleClick">
+                            <li v-for="(item, i) in filterCol" :key="i" :data-name="item.column_name" :data-tag="dataTag" data-arrow="left">{{ `${item.column_name}(${item.data_type})` }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-select">
+                    <ul @click="handleClick">
+                        <li v-for="(item, i) in mapCol" :key="i" :data-name="item" :data-tag="dataTag" data-arrow="left">{{ item }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="table-main joiner">
+            <span>
+                {{ $t('crossTableCheck.operatetheOperator') }}：
+            </span>
+            <div class="table-content">
+                <ul class="ulList" @click="handleClick">
+                    <li v-for="item in MapOperation" :key="item" :data-name="item" :data-tag="dataTag" data-map="oper" class="circle">{{ item }}</li>
+                </ul>
+            </div>
+        </div>
+        <div class="table-main">
+            <span>
+                {{ $t('crossTableCheck.thecustomValue') }}：
+            </span>
+            <div class="table-content custom-input">
+                <Wb-input v-model.lazy="customValue" :placeholder="$t('crossTableCheck.enterValue')" @on-enter="$emit('custom-value', customValue, relation, arrowSql)" />
+            </div>
+        </div>
+        <div class="table-title">{{ $t('crossTableCheck.dataTable') }}:{{ targetTableName }}</div>
+        <div class="table-main">
+            <div class="table-content col map-col">
+                <div class="scale">
+                    <Wb-input v-model="targetField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', targetField, targetColStr, 'targetColumnList')" />
+                    <div :class="['col-content', {'no-border': arrowTargetCol.length}]">
+                        <ul class="ulList col-list" @click="handleClick">
+                            <li v-for="(item, i) in arrowTargetCol" :key="i" :data-name="item.column_name" :data-tag="dataTag" data-arrow="right">{{ `${item.column_name}(${item.data_type})` }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-select">
+                    <ul @click="handleClick">
+                        <li v-for="(item, i) in filterTargetCol" :key="i" :data-name="item" :data-tag="dataTag" data-arrow="right">{{ item }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        props: {
+            sourceTableName: {
+                type: String,
+                default: '',
+            },
+            targetTableName: {
+                type: String,
+                default: '',
+            },
+            arrowCol: {
+                type: String,
+                default: '',
+            },
+            targetColStr: {
+                type: String,
+                default: '',
+            },
+            dataTag: {
+                type: String,
+                default: '',
+            },
+            relation: {
+                type: String,
+                default: '',
+            },
+            arrowSql: {
+                type: String,
+                default: '',
+            },
+            filterCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            mapCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            arrowTargetCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            filterTargetCol: {
+                type: Array,
+                default: ()=> [],
+            }
+        },
+        data() {
+            return {
+                sourceField: '',
+                targetField: '',
+                customValue: '',
+                MapOperation: ['=', '!=', '>', '>=', '<', '<=', '+', '-', '*', '/', '(', ')' ],
+            }
+        },
+        methods: {
+            handleClick(e){
+                if (e.target.nodeName.toLowerCase() === 'li') {
+                    const tag = e.target.dataset.tag;
+                    const cloName = e.target.dataset.name;
+                    const arrow = e.target.dataset.arrow;
+                    const oper = e.target.dataset.map;
+                    if (tag === 'source') {
+                        this.$emit('join-statement', 'source', cloName);
+                        if (arrow === 'left') {
+                            //mappings里面的left中需要的字段,左边所选择$t('database')1的字段&加上tmp1前缀，
+                            this.$emit('trans-data', 'sourceField1', cloName, 'left1', 'sqlLeft', 'tmp1');
+                            this.$emit('compare', 'sourceLeftMapCol', cloName);
+                        }else if(arrow === 'right'){
+                            //mappings里面的left中需要的字段,左边所选择$t('database')2的字段&加上tmp2前缀，
+                            this.$emit('trans-data', 'targetField1', cloName, 'left2', 'sqlLeft', 'tmp2');
+                            this.$emit('compare', 'targetLeftMapCol', cloName);
+                        }else if(oper === 'oper'){
+                            this.$emit('assembly-sql', 'sqlLeft', cloName);
+                        }
+                        this.$emit("trans-sql", 'sqlLeft', 'sourceField');
+                    }else {
+                        this.$emit('joinStatement', 'target', cloName);
+                        if (tag === 'target' && arrow === 'left') {
+                            //mappings里面的right中需要的字段,右边所选择$t('database')1的字段&加上tmp1前缀，
+                            this.$emit('trans-data', 'sourceField2', cloName, 'right1', 'sqlRight', 'tmp1');
+                            this.$emit('compare', 'sourceRightMapCol', cloName);
+                        }else if (tag === "target" && arrow === 'right') {
+                            //mappings里面的right中需要的字段,右边所选择$t('database')2的字段&加上tmp2前缀，
+                            this.$emit('trans-data', 'targetField2', cloName, 'right2', 'sqlRight', 'tmp2');
+                            this.$emit('compare', 'targetRightMapCol', cloName);
+                        }else if (tag === 'target' && oper === 'oper') {
+                            this.$emit('assembly-sql', 'sqlRight', cloName);
+                        }
+                        this.$emit("trans-sql", 'sqlRight', 'targetField');
+                    }
+                }
+            }
+        }
+    }
+</script>
+
+<style lang="scss" scoped>
+    @import '../../assets/styles/crossTable';
+</style>

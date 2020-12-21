@@ -16,13 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Set;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_template")
 public class Template {
 
@@ -50,7 +54,9 @@ public class Template {
     private String midTableAction;
     @Column(name = "save_mid_table")
     private Boolean saveMidTable;
+
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<TemplateStatisticsInputMeta> statisticAction;
 
     @Column(name = "show_sql", length = 5000)
@@ -69,15 +75,19 @@ public class Template {
     private Integer actionType;
 
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<TemplateMidTableInputMeta> templateMidTableInputMetas;
 
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<TemplateOutputMeta> templateOutputMetas;
 
     @OneToOne
+    @JsonIgnore
     private Template parentTemplate;
 
     @OneToOne(mappedBy = "parentTemplate", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Template childTemplate;
 
     public Template() {

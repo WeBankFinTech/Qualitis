@@ -50,7 +50,8 @@ public class TransferUserController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to transfer to user: {}, caused by: {}", proxyUsername, e.getMessage(), e);
+            LOGGER.error("Failed to transfer to user: {}, caused by: {}", proxyUsername.replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""));
             return new GeneralResponse<>("500", "{&FAILED_TO_TRANSFER_TO_USER}: " + proxyUsername +", caused by: " + e.getMessage(), null);
         }
     }

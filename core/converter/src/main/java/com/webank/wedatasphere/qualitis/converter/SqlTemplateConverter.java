@@ -45,6 +45,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 import com.webank.wedatasphere.qualitis.translator.AbstractTranslator;
 import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
+import java.util.regex.Matcher;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,11 +74,15 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
     public static final String VARIABLE_NAME_PLACEHOLDER = "${VARIABLE}";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(".*\\$\\{(.*)}.*");
+    private static final Pattern AGGREGATE_FUNC_PATTERN = Pattern.compile("[a-zA-Z]+\\([0-9a-zA-Z_]+\\)");
     private static final String SPARK_SQL_TEMPLATE_PLACEHOLDER = "${SQL}";
     private static final String SAVE_MID_TABLE_NAME_PLACEHOLDER = "${TABLE_NAME}";
     private static final String FILTER_PLACEHOLDER = "${filter}";
     private static final String FILTER_LEFT_PLACEHOLDER = "${filter_left}";
     private static final String FILTER_RIGHT_PLACEHOLDER = "${filter_right}";
+    private static final Integer COMMON_RULE = 1;
+    private static final Integer CUSTOM_RULE = 2;
+    private static final Integer MUL_SOURCE_RULE = 3;
 
     private static final String SPARK_SQL_TEMPLATE = "val " + VARIABLE_NAME_PLACEHOLDER + " = spark.sql(\"" + SPARK_SQL_TEMPLATE_PLACEHOLDER + "\");";
     private static final String SAVE_MID_TABLE_SENTENCE_TEMPLATE = VARIABLE_NAME_PLACEHOLDER + ".write.saveAsTable(\"" + SAVE_MID_TABLE_NAME_PLACEHOLDER + "\");";
@@ -116,7 +121,9 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                         childMidTableName, dataQualityTask.getCreateTime(), dataQualityTask.getPartition(), count);
                 job.getJobCode().addAll(codes);
                 LOGGER.info("Succeed to convert rule into code. rule_id: {}, rul_name: {}, codes: {}", ruleTaskDetail.getRule().getId(), ruleTaskDetail.getRule().getName(), codes);
-                count++;
+                count ++;
+                // Fix variables' sequence when solving child rule of parent rule. Solving widget influence.
+                count ++;
             }
             List<String> codes = generateSparkSqlByTask(ruleTaskDetail.getRule(), dataQualityTask.getApplicationId(),
                     ruleTaskDetail.getMidTableName(), dataQualityTask.getCreateTime(), dataQualityTask.getPartition(), count);
@@ -143,9 +150,9 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      */
     private List<String> generateSparkSqlByTask(Rule rule, String applicationId, String midTableName, String createTime, String partition, Integer count) throws ConvertException, RuleVariableNotSupportException, RuleVariableNotFoundException {
         List<String> sqlList = new ArrayList<>();
-
         // Get SQL from template
         String templateMidTableAction = rule.getTemplate().getMidTableAction();
+
         // Get input meta from template
         List<RuleVariable> inputMetaRuleVariables = rule.getRuleVariables().stream().filter(
                 ruleVariable -> ruleVariable.getInputActionStep().equals(InputActionStepEnum.TEMPLATE_INPUT_META.getCode())).collect(Collectors.toList());
@@ -201,7 +208,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
         // Generate select statement and save into hive database
         sqlList.addAll(generateSparkSqlAndSaveSentence(midTableAction, midTableName, rule.getTemplate().getSaveMidTable(), count));
-
+        count ++;
         // Generate statistics statement, and save into mysql
         List<RuleVariable> statisticsRuleVariables = rule.getRuleVariables().stream().filter(
                 ruleVariable -> ruleVariable.getInputActionStep().equals(InputActionStepEnum.STATISTICS_ARG.getCode())).collect(Collectors.toList());
@@ -229,6 +236,18 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         String sparkSqlSentence = getSparkSqlSentence(sql, count);
         sparkSqlList.add(sparkSqlSentence);
         LOGGER.info("Succeed to generate spark sql. sentence: {}", sparkSqlSentence);
+        // Fix bug in the workflow between widget node and qualitis node.
+        String variableFormer = getVariableName(count);
+        String str1 = "val schemas = " + variableFormer + ".schema.fields.map(f => f.name).toList";
+        String str2 = "val newSchemas = schemas.map(s => s.replaceAll(\"[()]\", \"\")).toList";
+        // 后续变量序号加一
+        count ++;
+        String variableLatter = getVariableName(count);
+        String str3 = "val " + variableLatter + " = " + variableFormer + ".toDF(newSchemas: _*)";
+        sparkSqlList.add(str1);
+        sparkSqlList.add(str2);
+        sparkSqlList.add(str3);
+        //
         if (saveMidTable) {
             String midTableSentence = getSaveMidTableSentence(saveTableName, count);
             sparkSqlList.add(midTableSentence);
@@ -263,7 +282,23 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         LOGGER.info("Succeed to replace {} into {}", FILTER_PLACEHOLDER, filter);
         for (RuleVariable ruleVariable : variables) {
             String placeHolder = "\\$\\{" + ruleVariable.getTemplateMidTableInputMeta().getPlaceholder() + "}";
-            sqlAction = sqlAction.replaceAll(placeHolder, ruleVariable.getValue());
+            // Fix issue of wedget node in the front.
+            if ("\\$\\{field}".equals(placeHolder)) {
+                Matcher matcher = AGGREGATE_FUNC_PATTERN.matcher(ruleVariable.getValue());
+                while(matcher.find()) {
+                    String[] funcs = matcher.group().split("\n");
+                    for (String func : funcs) {
+                        ruleVariable.setValue(ruleVariable.getValue().replace(func, "`" + func + "`"));
+                    }
+                }
+            }
+            // Fix replacement issue that db is null when running workflow.
+            if ("".equals(ruleVariable.getValue())) {
+                sqlAction = sqlAction.replaceAll(placeHolder + ".", "");
+            } else {
+                sqlAction = sqlAction.replaceAll(placeHolder, ruleVariable.getValue());
+            }
+
             LOGGER.info("Succeed to replace {} into {}", placeHolder, ruleVariable.getValue());
         }
         if (PLACEHOLDER_PATTERN.matcher(sqlAction).matches()) {

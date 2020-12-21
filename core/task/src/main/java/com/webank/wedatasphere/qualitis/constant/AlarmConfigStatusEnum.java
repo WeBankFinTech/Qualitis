@@ -19,7 +19,7 @@ package com.webank.wedatasphere.qualitis.constant;
 /**
  * @author howeye
  */
-public enum  AlarmConfigStatusEnum {
+public enum AlarmConfigStatusEnum {
     /**
      * 1 Pass verification，2 Not pass verification， 3 Not verified
      */

@@ -49,7 +49,8 @@ public class SystemConfigController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("{&FAILED_TO_FIND_SYSTEM_CONFIG}. key: {}, caused by: {}", keyName, e.getMessage(), e);
+            LOGGER.error("{&FAILED_TO_FIND_SYSTEM_CONFIG}. key: {}, caused by: {}", keyName.replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""));
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_SYSTEM_CONFIG}", null);
         }
     }

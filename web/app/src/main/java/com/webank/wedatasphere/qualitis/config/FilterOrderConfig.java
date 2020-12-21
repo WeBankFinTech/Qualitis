@@ -18,13 +18,11 @@ package com.webank.wedatasphere.qualitis.config;
 
 import com.webank.wedatasphere.qualitis.filter.Filter1AuthorizationFilter;
 import com.webank.wedatasphere.qualitis.filter.Filter2TokenFilter;
-import com.webank.wedatasphere.qualitis.filter.Filter2TokenFilter;
+import javax.servlet.Filter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.CharacterEncodingFilter;
-
-import javax.servlet.Filter;
 
 /**
  * @author howeye
@@ -38,9 +36,7 @@ public class FilterOrderConfig {
     }
 
     @Bean
-    public Filter filter2TokenFilter() {
-        return new Filter2TokenFilter();
-    }
+    public Filter filter2TokenFilter() { return new Filter2TokenFilter(); }
 
     @Bean
     public FilterRegistrationBean characterEncodingFilter() {
@@ -68,5 +64,4 @@ public class FilterOrderConfig {
         filterRegistrationBean.setOrder(2);
         return filterRegistrationBean;
     }
-
 }

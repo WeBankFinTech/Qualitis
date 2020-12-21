@@ -1,0 +1,1148 @@
+<template>
+    <Row class="all-wrapper p20 technique-rule">
+        <WbForm ref="ruleform" :rule="ruleValidate" :label-width="130">
+            <div>
+                <Row>
+                    <Cell span="11">
+                        <FormItem :label="`${$t('common.ruleName')}：`" prop="ruleName">
+                            <WbInput v-model="ruleName" :disabled="isView" :maxlength="50" />
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <FormItem prop="checkTemplateId" :label="`${$t('common.ruleTemplate')}：`">
+                            <WbSelect v-model="checkTemplateId" :disabled="isView" @on-change="checkRule">
+                                <WbOption v-for="item in validateRuleList" :key="item.template_id" :value="item.template_id">
+                                    {{ item.template_name }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                </Row>
+            </div>
+            <div class="settingPanel">
+                <Row>
+                    <Cell span="11">
+                         <Panel :title="$t('common.config')" class="rulePanel">
+                            <!-- <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
+                                <Wb-switch v-model="upstream" :disabled="isView">
+                                    <span slot="open">{{ $t('common.open') }}</span>
+                                    <span slot="close">{{ $t('common.close') }}</span>
+                                </Wb-switch>
+                            </div>                           -->
+                            <div v-for="(d,index) in dataSourceList" :key="index" class="dataSourceForm">
+                                <FormItem :rule="ruleValidate.clutser_name" :prop="'s_cluster_'+index" :label="`${$t('common.dataSource')}：`">
+                                    <WbSelect v-model="d.selectCluster" filterable :disabled="isView" @on-change="clusterChange">
+                                        <WbOption v-for="(w,i) in clusterList" :key="i" :disabled="w.disabled" :value="w.cluster_name">
+                                            {{ w.cluster_name }}
+                                        </WbOption>
+                                    </WbSelect>
+                                </FormItem>
+                                <FormItem :rule="ruleValidate.db_name" :prop="'s_db_'+index" :label="`${$t('common.database')}：`" class="form-item">
+                                    <WbSelect v-model="d.selectDb" filterable :disabled="isView" @click.native="loadDb(index)"
+                                        @on-change="dbChange(index)">
+                                        <WbOption v-for="(w,i) in dbList" :key="i" :value="w.db_name">
+                                            {{ w.db_name }}
+                                        </WbOption>
+                                    </WbSelect>
+                                    <div v-show="textShow" :data-title="dbText" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" class="iconTitle" />
+                                    </div>
+                                </FormItem>
+                                <FormItem :rule="ruleValidate.table_name" :prop="'s_table_'+index" :label="`${$t('common.table')}：`" class="form-item">
+                                    <WbSelect v-model="d.selectTable" filterable :disabled="isView" @click.native="loadTable(index,d.selectTable,d.selectCluster)"
+                                        @on-change="tableChange(index)">
+                                        <WbOption v-for="(k,i) in tableList" :key="i" :value="k.table_name">
+                                            {{ k.table_name }}
+                                        </WbOption>
+                                    </WbSelect>
+                                    <div v-show="textShow" :data-title="tableText" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" />
+                                    </div>
+                                </FormItem>
+                                <FormItem v-if="ruleConfig.field_num !== 0" :prop="'s_col_'+index"
+                                    :rule="ruleValidate.selectColumn"
+                                    :label="`${$t('common.column')}：`" class="form-item" @click.native="loadColumn(d.selectTable, index, d.selectTable, d.selectCluster)">
+                                    <Loading v-show="isLoadingFileld" class="loadingField" />
+                                    <WbSelect v-model="d.selectColumn" filterable multiple :disabled="isView" @on-change="columnChange(index, d.selectColumn)">
+                                        <WbOption v-for="(z,zz) in columnList" :key="zz" :value="z.column_name" :label="z.column_name+' ('+z.data_type+')'"
+                                            :disabled="z.disabled" class="dataCheckbox" />
+                                    </WbSelect>
+                                    <div v-show="textShow" :data-title="fieldText" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" />
+                                    </div>
+                                </FormItem>
+                                <FormItem :prop="'s_filter_'+index" :rule="ruleValidate.filter" :label="`${$t('common.condition')}：`">
+                                    <WbInput v-model="d.filterData" type="textarea" placeholder="ds=${yyyyMMdd}-1" :disabled="isView" :maxlength="1000" :rows="3" @on-input="filterValue(index)" />
+                                    <div v-show="textShow" :data-title="filterText" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" />
+                                    </div>
+                                </FormItem>
+                            </div>
+                        </Panel>
+                    </Cell>
+                    <Cell span="12" offset="1">
+                        <Panel v-if="ruleArgumentList.length" :title="$t('common.templateParameter')" class="tplParamsPanel rulePanel">
+                            <div v-for="(w,k) in ruleArgumentList" :key="k">
+                                <FormItem v-if="w.flag" prop="w.argument_value" :label="`${w.argument_name}:`"
+                                    :rule="[{required: w.flag,message: $t('common.notEmpty')}]" class="form-item">
+                                    <WbSelect v-model="w.argument_value" class="regInput" :disabled="isView" @on-change="replaceParameter(k)">
+                                        <WbOption v-for="d in w.argsSelectList" :key="d.key_name" :value="d.value">
+                                            {{ d.key_name }}
+                                        </WbOption>
+                                    </WbSelect>
+                                    <div v-show="textShow" :data-title="regText[k]" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" />
+                                    </div>
+                                </FormItem>
+                                <FormItem v-else prop="w.argument_value" :label="`${w.argument_name}:`" :rule="[{required: !w.flag,message: $t('common.notEmpty')}]">
+                                    <WbInput v-model="w.argument_value" class="regInput" :disabled="isView" @on-input="replaceParameter(k)" />
+                                    <div v-show="textShow" :data-title="regText[k]" class="icon-title">
+                                        <Icon type="question-circle-o" size="18" />
+                                    </div>
+                                </FormItem>
+                            </div>
+                        </Panel>
+                    </Cell>
+                </Row>
+            </div>
+            <Cell span="24" class="cellWrap">
+                <div class="sqlWrapper">
+                    {{ $t('common.SQL') }}
+                </div>
+                <div ref="sql" class="projectTextbox">{{ sqlResult }}</div>
+            </Cell>
+            <Cell span="24" class="cellWrap">
+                <filterDescription />
+            </Cell>
+            <Cell span="24" class="cellWrap mt20">
+                <div>
+                    <Wb-switch v-model="abort_on_failure" :disabled="isView">
+                        <span slot="open">{{ $t('common.openTask') }}</span>
+                        <span slot="close">{{ $t('common.closeTask') }}</span>
+                    </Wb-switch>
+                </div>
+                <div style="margin: 20px 0;">
+                    <Checkbox v-model="alarm" :label="`${$t('label.alarm')}：`" :disabled="isView" />
+                </div>
+                <Tabs v-if="alarm" v-model="currentTab" :closable="closable()"
+                    :disabled="isView" @on-tab-remove="removeQuaCheck">
+                    <Tab v-for="(item,index) in quaCheckList" :key="index" :label="$t('common.qualityCheck')">
+                        <FormItem :rule="ruleValidate.output_name" class="fieldWrapper" prop="item.output_meta_id" :label="`${$t('common.parityField')}：`">
+                            <WbSelect v-model="item.output_meta_id" class="inlineField" :disabled="isView">
+                                <WbOption v-for="w in ruleConfig.checkFieldList" :key="w.output_id" :value="w.output_id">
+                                    {{ w.output_name }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                        <FormItem class="fieldWrapper" :rule="ruleValidate.check_template" prop="item.output_meta_id" :label="`${$t('common.template')}：`">
+                            <WbSelect v-model="item.check_template" class="inlineField" :disabled="isView">
+                                <WbOption :value="1">
+                                    {{ $t('common.monthlyFluctuation') }}
+                                </WbOption>
+                                <WbOption :value="2">
+                                    {{ $t('common.weeklyFluctuation') }}
+                                </WbOption>
+                                <WbOption :value="3">
+                                    {{ $t('common.daillyFluctuation') }}
+                                </WbOption>
+                                <WbOption :value="4">
+                                    {{ $t('common.fixedValue') }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                        <FormItem v-show="item.check_template === 4" class="fieldWrapper"
+                            :rule="[{required: alarm && item.check_template === 4,message: $t('common.notEmpty')}]" prop="item.compareValue" :label="`${$t('label.comparisonMethod')}：`">
+                            <WbSelect v-model="item.compareValue" class="inlineField" :disabled="isView">
+                                <WbOption :value="1">
+                                    {{ $t('common.equal') }}
+                                </WbOption>
+                                <WbOption :value="2">
+                                    {{ $t('common.greaterThan') }}
+                                </WbOption>
+                                <WbOption :value="3">
+                                    {{ $t('common.lessThan') }}
+                                </WbOption>
+                                <WbOption :value="4">
+                                    {{ $t('common.greatThanOrEqualTo') }}
+                                </WbOption>
+                                <WbOption :value="5">
+                                    {{ $t('common.lessThanOrEqualTo') }}
+                                </WbOption>
+                                <WbOption :value="6">
+                                    {{ $t('common.unequalTo') }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                        <FormItem class="fieldWrapper" prop="item.threshold" :label="`${$t('common.thresholdValue')}：`"
+                            :rule="ruleValidate.threshold">
+                            <WbInput v-model="item.threshold" type="number" class="inlineField"
+                                :disabled="isView" @on-input="watchThreshold(item)" />
+                            <span v-if="item.check_template !== 4">
+                                %
+                            </span>
+                        </FormItem>
+                    </Tab>
+                    <Icon v-if="pageType!='view'" slot="action" type="plus-circle-o" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
+                </Tabs>
+            </Cell>
+            <Cell span="24" class="cellWrap align-center">
+                <WbButton v-if="pageType!='view'" type="primary" @click.prevent="submit">
+                    {{ $t('common.save') }}
+                </WbButton>
+            </Cell>
+        </WbForm>
+    </Row>
+</template>
+
+<script type="text/ecmascript-6">
+    // 此模块功能包括新增规则及编辑规则
+    import { dateFormat, DWSMessage } from "assets/js/utils.js";
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+            this.init();
+        },
+        props: {
+            projectId: {
+                type: String,
+                default: ''
+            },
+            ruleGroupId: {
+                type: Number,
+                default: 0
+            },
+            dssParams: {
+                type: Object,
+                default: {}
+            }
+        },
+        data() {
+            return {
+                dataSourceList: [{ //规则数据源库表字段等参数
+                    selectCluster: "",
+                    selectDb: "",
+                    selectTable: "",
+                    selectColumn: [],
+                    filterData: "",
+                    sqlDataSource: {} // 从校验规则sql模版中匹配出所需字段，每个数据源一份配置,
+                }],
+                sqlTpl: "", // 当前规则sql模版
+                alarm: false,
+                ruleName: "", // 规则名称
+                validateRuleList: [], // 校验规则列表
+                isLoadingFileld: false,
+                checkTemplateId: "", // 当前规则id
+                clusterList: [],
+                dbList: [],
+                tableList: [],
+                columnList: [],
+                ruleArgumentList: [],
+                quaCheckList: [{
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                }],
+                ruleConfig: {checkFieldList :[]}, //质量校验配置
+                currentTab: 1,
+                sqlResult: "",
+                pageType: "add", //默认是新增
+                ruleParams: {
+                    page: 0,
+                    size: 500
+                },
+                textShow: false,
+                dbText: '',
+                tableText: '',
+                fieldText: '',
+                regText: [],
+                thresholdLimit: false,
+                maxSize: 2147483647,
+                ruleId: '',
+                ruleTemplateId: null,
+                upstream: false, //dss上游节点
+                context_key: {},
+                abort_on_failure: true
+            }
+        },
+        computed: {
+            isView() {
+                return this.pageType === "view";
+            },
+            ruleValidate(){
+                return {
+                    ruleName: [{required: true,message: this.$t('common.notEmpty')}],
+                    checkTemplateId: [{required: true,message: this.$t('common.notEmpty')}],
+                    clutser_name: [{required: true,message: this.$t('common.notEmpty')}],
+                    db_name: [{required: true,message: this.$t('common.notEmpty')}],
+                    table_name: [{required: true,message: this.$t('common.notEmpty')}],
+                    selectColumn: [{required: this.ruleConfig.field_num !== 0,message: this.$t('common.notEmpty')}],
+                    filter: [{required: true,message: this.$t('common.notEmpty')}],
+                    output_name: [{required: this.alarm,message: this.$t('common.notEmpty')}],
+                    check_template: [{required: this.alarm,message: this.$t('common.notEmpty')}],
+                    threshold: [{required: true,message: this.$t('common.notEmpty')}],
+                }
+            },
+            filterText(){
+                return this.$t('addTechniqueRule.replace')
+            },
+            showDSSNode() {
+                return top !== self
+            },
+            EditDSSUpstream() {
+                let {ruleId, ruleTemplateId, showDSSNode, upstream} = this;
+                //已存上游规则在DQM无法编辑
+                return ruleId && ruleTemplateId && !showDSSNode && upstream
+            },
+            upstreamTitle() {
+                return this.upstream ? this.$t('common.openUpstream') : this.$t('common.closeUpstream');
+            }
+        },
+        methods: {
+            async init(action,ruleId,ruleTemplateId) {
+                if (this.showDSSNode && this.pageType !== "view") {
+                    this.upstream = true //从dss页面新建 默认开启
+                    this.ruleName = this.$route.query.nodeName;
+                }
+                this.checkTemplateId = ruleTemplateId;
+                if( ruleId && ruleTemplateId ) {
+                    this.ruleId = ruleId;
+                    this.ruleTemplateId = ruleTemplateId
+                    // 回填数据标识，不触发的change事件，dom更新重重标识
+                    this.initEditData = true;
+                }
+                if (action === 'view' && ruleId && ruleTemplateId) {
+                    this.pageType = "view";
+                }
+                let result = await this.FesApi.fetch('api/v1/projector/rule_template/default/all', this.ruleParams);
+                this.validateRuleList = result && result.data;
+                await this.loadCluster();
+                // 查看，编辑时先加载规则模版信息，然后回填规则详情数据
+                if(this.pageType === "view" && ruleId && ruleTemplateId) {
+                    await this.loadTemplateData(this.checkTemplateId);
+                    this.initEditRuleData(ruleId);
+                    this.checkTemplateId = ruleTemplateId - 0;
+                }
+            },
+            //校验规则选中获取模板参数数据
+            async loadTemplateData(id) {
+                if (!id) {
+                    return
+                }
+                this.regText = [];
+                let result = await this.FesApi.fetch('api/v1/projector/rule_template/meta_input/' + id, {}, 'get');
+                //质量校验中的校验字段下拉框中可以选择的值
+                this.ruleConfig = {
+                    checkFieldList: result.template_output || [],
+                    field_type: result.field_type,
+                    placeholders: result.sql_display_response.placeholders,
+                    field_num: result.field_num
+                }
+                await this.placeholderPrompt(id);
+                this.quaCheckList = [{
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                }]
+                this.parseSqlTpl(result);
+                this.ruleArgumentList = [];
+                if (result.rule_arguments && result.rule_arguments.length) {
+                    this.initRuleArgsList(result.rule_arguments);
+                }
+                this.dataSourceList.forEach(item => {
+                    this.checkFieldsValid(item.selectColumn,false);
+                })
+                this.changeSqlResult();
+                return result;
+            },
+            /**
+             * 请求规则详情数据，回填
+             */
+            async initEditRuleData(ruleId) {
+                let ruleDetail = await this.FesApi.fetch(`api/v1/projector/rule/${ruleId}`, {}, 'get');
+                let dataSourceList = [],quaCheckList=[],ruleArgumentList=[],cluster;
+                if(Array.isArray(ruleDetail.datasource)) { //数据源，库，表，过滤条件
+                    ruleDetail.datasource.forEach((item,index) => {
+                        this.dbList.push({ db_name: item.db_name });
+                        this.tableList.push({ table_name: item.table_name });
+                        cluster = this.clusterList.find((cluster) => cluster.cluster_name === item.cluster_name);
+                        this.columnList = item.col_names;
+                        let col_names = Array.isArray(item.col_names) ? item.col_names.map(it=>it.column_name) : [];
+                        //正则表达式的如果有枚举值则使用枚举值
+                        let sqlDataSource = this.dataSourceList[index] && this.dataSourceList[index].sqlDataSource;
+                        let source = {
+                            selectCluster: cluster && cluster.cluster_name,
+                            selectDb: item.db_name || "",
+                            selectTable: item.table_name || "",
+                            selectColumn: col_names,
+                            filterData: item.filter,
+                            sqlDataSource: {
+                                "${db}": item.db_name,
+                                "${table}": item.table_name,
+                                "${field}": col_names,
+                                "${filter}": item.filter,
+                                "${regexp}": (sqlDataSource && sqlDataSource["${regexp}"]) || ""
+                            }
+                        };
+                        dataSourceList.push(source);
+                    });
+                }
+                if(Array.isArray(ruleDetail.alarm_variable)) { // 质量检查告警配置
+                    ruleDetail.alarm_variable.forEach(item => {
+                        let alarm = {
+                            "compareValue": null,
+                            "output_meta_name": "",
+                            "threshold": item.threshold,
+                            "output_meta_id": item.output_meta_id,
+                            "check_template": item.check_template,
+                            "compare_type": item.compare_type,
+                        };
+                        if(item.check_template === 4){
+                            alarm.compareValue = item.compare_type;
+                        }
+                        quaCheckList.push(alarm);
+                    })
+                    if (this.pageType === 'view') {
+                        this.hidden(quaCheckList)
+                    }
+                }
+                let upstream = ruleDetail.context_service;
+                this.$emit('getUpstream', upstream);
+                let alarm = ruleDetail.alarm;
+                let ruleName = ruleDetail.rule_name;
+                let abort_on_failure = ruleDetail.abort_on_failure;
+                if(Array.isArray(ruleDetail.template_variable)) { //模版参数
+                    ruleArgumentList = this.ruleArgumentList.map(arg => {
+                        let args = {...arg};
+                        ruleDetail.template_variable.forEach(tv=> {
+                            if(arg.argument_id === tv.input_meta_id) {
+                                let selected;
+                                if(arg.argsSelectList && arg.argsSelectList.length>0) {
+                                    selected = arg.argsSelectList.find(it=>it.value == tv.value );
+                                }
+                                args.argument_value = selected ? selected.value : tv.value;
+                            }
+                        })
+                        return args;
+                    })
+                }
+                if(quaCheckList.length < 1) { // 质量检查部分
+                    quaCheckList = [{
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: ""
+                    }]
+                }
+                Object.assign(this,{ dataSourceList, quaCheckList, alarm, ruleName, ruleArgumentList ,upstream, abort_on_failure});
+                setTimeout(()=> {
+                    this.initEditData = false;
+                }, 0);
+                this.changeSqlResult();
+            },
+            changeSqlResult() {
+                let result = [];
+                this.dataSourceList.forEach(item => {
+                    let sql = this.sqlTpl;
+                    let clusterRule = item.sqlDataSource;
+                    Object.keys(clusterRule).forEach(key => {
+                        let value = clusterRule[key];
+                        if (value && value.length) { // 对应字段有值则进行替换
+                            while (sql.indexOf(key) > -1) { // 可能有多个
+                                // 过滤字段有日期类型模版表达式则转换时间
+                                let dateReg =
+                                    /\$\{(yyyy(?:-|\/|\s)?MM(?:-|\/|\s)?dd(?:(?:-|\/|\s)?HH)?(?:(?:-|\/|\s|:)?mm)?(?:(?:-|\/|\s|:)?ss)?)\}(?:-(\d+))?/;
+                                if (dateReg.test(value)) {
+                                    let d;
+                                    while (( d = value.match(dateReg) )) {// ${yyyyMMdd}-1  ["${yyyyMMdd}", "yyyyMMdd", "1"]
+                                        let dateObj = new Date();
+                                        if(d[2]){ // ${yyyyMMdd}-n  n:减去多少天
+                                            dateObj =  new Date(new Date() - 24 * 60 * 60 * 1000 * d[2]);
+                                        }
+                                        let formated = dateFormat(d[1], dateObj);
+                                        value = value.replace(d[0], formated);
+                                    }
+                                }
+                                if(value.length){
+                                    sql = sql.replace(key, `<font color=#d20909>${value}</font>`);
+                                }
+                            }
+                        }
+                    })
+                    result.push(sql);
+                });
+                this.sqlResult = result.join("\n");
+                this.$refs.sql.innerHTML = this.sqlResult;
+            },
+            //选中检验规则选项触发事件
+            checkRule() {
+                if(this.initEditData) return;
+                this.sqlTpl = "";
+                this.loadTemplateData(this.checkTemplateId);
+            },
+            parseSqlTpl({sql_display_response}) {
+                // 切换规则，sql模版会变化
+                // 先遍历看placeholder有没有枚举值，如果有且只有一个则直接替换预览
+                let sourceItemRuls = {};
+                let tpl = sql_display_response.show_sql;
+                this.sqlTpl = tpl;
+                let placeholders = sql_display_response.placeholders;
+                placeholders.forEach(p => {
+                    let placeholderEnumValue = this.getReplacePlaceholder({
+                        key: "enum_value",
+                        condition: {
+                            key: "placeholder",
+                            value: p.placeholder
+                        }
+                    });
+                    if (Array.isArray(placeholderEnumValue) && placeholderEnumValue.length == 1) {
+                        sourceItemRuls[p.placeholder] = placeholderEnumValue[0] && placeholderEnumValue[0].value;
+                    } else {
+                        sourceItemRuls[p.placeholder] = "";
+                    }
+                })
+                this.dataSourceList.forEach(item => {
+                    Object.keys(sourceItemRuls).forEach(key => {
+                        item.isEnum = item.isEnum || {};
+                        // 如果数据项已有枚举值，切换规则时优先使用枚举值，如果有上个规则的值且其不是枚举值则保留
+                        let lastData = item.isEnum[key] === 1 ? "" : item.sqlDataSource[key];
+                        if(sourceItemRuls[key]) {
+                            item.isEnum[key] = 1;
+                        } else {
+                            item.isEnum[key] = 0;
+                        }
+                        item.sqlDataSource[key] = sourceItemRuls[key] || lastData;
+                    })
+
+                })
+            },
+            placeholderPrompt(id) {
+                this.textShow = true;
+                this.dbText = this.ruleConfig.placeholders.find(item=> item.input_type === 5).placeholder_description;
+                this.tableText = this.ruleConfig.placeholders.find(item=> item.input_type === 3).placeholder_description;
+                if (id !==3 && id !==12 && id !==14) {
+                    this.fieldText = this.ruleConfig.placeholders.find(item=> item.input_type === 4 || item.input_type === 6).placeholder_description;
+                }
+                switch (id) {
+                    case 8:
+                    case 9:
+                        this.regText.push(this.ruleConfig.placeholders.find(item=> item.input_type === 7).placeholder_description);
+                        break;
+                    case 11:
+                        this.regText.push(this.ruleConfig.placeholders.find(item=> item.input_type === 8).placeholder_description)
+                        break;
+                    case 12:
+                        this.regText.push(this.ruleConfig.placeholders.find(item=> item.input_type === 1).placeholder_description)
+                        break;
+                    case 14:
+                        this.ruleConfig.placeholders.map(ele => {
+                            if (ele.input_type === 9) {
+                                this.regText.push(ele.placeholder_description)
+                            }
+                        });
+                        break;
+                }
+            },
+            // 如果规则有模版参数，则组织列表数据
+            initRuleArgsList(list = []) {
+                if(Array.isArray(list)){
+                    list.forEach(rule => {
+                        rule.flag = rule.argument_type === 7 && rule.regexp_type === 1;
+                        let placeholder = this.getReplacePlaceholder({
+                            key: false,
+                            condition: {
+                                key: "placeholder_id",
+                                value: rule.argument_id
+                            }
+                        });
+                        rule.argsSelectList = placeholder ? placeholder.enum_value : [];
+                    })
+                }
+                this.ruleArgumentList = list;
+            },
+            //获取集群列表
+            async loadCluster() {
+                let params ={
+                    start_index: 0,
+                    page_size: 100
+                }
+                let result =  await this.FesApi.fetch('api/v1/projector/meta_data/cluster', params, 'post' );
+                if(Array.isArray(result.data) && result.optional_clusters) {
+                    result.data.forEach(item=> {
+                        item.disabled = result.optional_clusters.indexOf(item.cluster_name) < 0;
+                    })
+                    this.clusterList = result.data;
+                }
+                return result;
+            },
+            clusterChange() {
+                if (!this.checkTemplateId) return;
+                // 回填数据触发的不处理
+                if(this.initEditData){ return }
+                this.tableList = [];
+                this.dbList = [];
+                this.columnList = [];
+                this.dataSourceList.forEach(item=>{
+                    item.selectTable = "";
+                    item.selectDb = "";
+                    item.selectColumn = [];
+                })
+            },
+            //加载库名列表数据
+            async loadDb(index) {
+                //清空字段名数据
+                if (!this.checkTemplateId) return this.$Toast.warn(this.$t('toastWarn.validationRule'));
+                let cluster_name = this.dataSourceList[index].selectCluster;
+                if(this.pageType === "view" || !cluster_name){ return }
+                this.tableList = [];
+                this.dbList = [];
+                this.columnList = [];
+                if(this.cacheDB && cluster_name && this.cacheDB[cluster_name]) {
+                    this.dbList =  this.cacheDB[cluster_name]
+                    return;
+                }
+                let cluster = this.clusterList.find((cluster) => {
+                    return cluster.cluster_name === cluster_name;
+                })
+                let source_type = cluster ? cluster.source_type : '';
+                let params = {
+                    source_type,
+                    cluster_name,
+                    start_index: 0,
+                    page_size: 50000
+                }
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/db', params, "post");
+                this.dbList = result.data;
+                this.cacheDB = this.cacheDB || {};
+                this.cacheDB[cluster_name] = result.data;
+            },
+            //库名被选中获取表名列表
+            dbChange(index) {
+                if(this.initEditData) { return }
+                //清空字段名数据
+                this.columnList = [];
+                //清空表名字段列表数据
+                this.tableList = [];
+                let sourceItem = this.dataSourceList[index];
+                sourceItem.selectTable = "";
+                sourceItem.selectColumn = [];
+                let db = this.dbList.find((db) => db.db_name === sourceItem.selectDb);
+                let dbStr = this.getReplacePlaceholder({ type: [5] });
+                sourceItem.sqlDataSource[dbStr] = db ? db.db_name : "";
+                this.changeSqlResult();
+            },
+            //加载表名列表数据
+            async loadTable(index, tableName, clusterName) {
+                if(this.pageType === "view") { return }
+                // if(!this.upstream) {  //配合DSS开源版本 暂时注释逻辑判断
+                    let sourceItem = this.dataSourceList[index];
+                    let db_name = sourceItem.selectDb;
+                    if (!db_name) return;
+                    if(this.cacheTable && this.cacheTable[db_name]) {
+                        this.tableList =  this.cacheTable[db_name]
+                        return;
+                    }
+                    let cluster_name = sourceItem.selectCluster;
+                    let result = await this.FesApi.fetch('api/v1/projector/meta_data/table', {
+                        cluster_name,
+                        db_name,
+                        start_index: 0,
+                        page_size: this.maxSize
+                    }, "post");
+                    this.tableList = result.data;
+                    this.cacheTable = this.cacheTable || {};
+                    this.cacheTable[db_name] = result.data;
+                // }
+                // else {
+                //     let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_table', {
+                //         cs_id: this.dssParams.contextID,
+                //         node_name: this.dssParams.nodeName,
+                //         cluster_name: clusterName,
+                //         start_index: 0,
+                //         page_size: this.maxSize
+                //     }, "post");
+                //     this.tableList = result.data;
+                //     this.cacheTable = this.cacheTable || {};
+                //     this.cacheTable[tableName] = result.data;
+                //     this.context_key = this.tableList.filter((item)=> item.table_name === tableName)
+                // }
+            },
+            //表名被选中获取字段列表数据
+            tableChange(index) {
+                if(this.initEditData) { return }
+                //清空字段名数据
+                this.columnList = [];
+                let sourceItem = this.dataSourceList[index];
+                sourceItem.selectColumn = [];
+                let tableStr = this.getReplacePlaceholder({ type: [3] });
+                let table = this.tableList.find((t) => t.table_name === sourceItem.selectTable);
+                sourceItem.sqlDataSource[tableStr] = table ? table.table_name : "";
+                this.changeSqlResult();
+            },
+            /**
+             *  type: input_type数组
+             *  key: false 返回符合条件列表项, string 返回对应值
+             *  condition: 条件
+             */
+            getReplacePlaceholder({ type = [], key = "placeholder", condition = {} }) {
+                if (Array.isArray(this.ruleConfig.placeholders)) {
+                    let placeholderItem = this.ruleConfig.placeholders.find(p => {
+                        let match = {
+                            matchKeyValue: !condition.key,
+                            macthType: type.length < 1
+                        };
+                        if (condition.key) {
+                            match.matchKeyValue = p[ condition.key ] === condition.value;
+                        }
+                        if (type.length) {
+                            match.macthType = type.indexOf(p.input_type) > -1;
+                        }
+                        return match.macthType && match.matchKeyValue;
+                    });
+                    return key === false ? placeholderItem : (placeholderItem[ key ] ||  "");
+                }
+            },
+            //加载字段列表数据
+            async loadColumn(id,index, tableName, clusterName) {
+                if(id === "" ||  this.pageType === "view"){ return }
+                let sourceItem = this.dataSourceList[index];
+                let cluster_name = sourceItem.selectCluster;
+                let db_name = sourceItem.selectDb;
+                let table = this.tableList.find((t) => t.table_name === id);
+                this.cacheColumn = this.cacheColumn || {};
+                // if (!this.upstream) { // DSS暂未开源，先屏蔽
+                    if(table && table.table_name && this.cacheColumn[`${table.table_name}${id}`]) {
+                        this.columnList = this.cacheColumn[`${table.table_name}${id}`];
+                        return;
+                    }
+                    this.isLoadingFileld = true;
+                    let result = await this.FesApi.fetch('api/v1/projector/meta_data/column', {
+                        cluster_name,
+                        db_name,
+                        table_name: id,
+                        start_index: 0,
+                        page_size: this.maxSize
+                    });
+                    this.isLoadingFileld = false;
+                    if(result && Array.isArray(result.data)) {
+                        if (this.ruleConfig.field_type === 1) {// 1 只能是数字
+                            result.data.forEach((col) => {
+                                let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
+                                col.disabled = numArr.indexOf(col.data_type) < 0;
+                            })
+                        }
+                    }
+                    this.columnList = result.data;
+                    if(table && table.table_name) {
+                        this.cacheColumn[`${table.table_name}${id}`] = result.data;
+                    }
+                // }else {
+                //     if (Object.keys(this.context_key).length === 0) {
+                //         return this.$Toast.warn(this.$t('addTechniqueRule.selectDataFirst'))
+                //     }
+                //     this.isLoadingFileld = true;
+                //     let context_key = this.context_key[0]['context_Key'];
+                //     let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_column', {
+                //         cs_id: this.dssParams.contextID,
+                //         node_name: this.dssParams.nodeName,
+                //         cluster_name: clusterName,
+                //         context_key,
+                //         start_index: 0,
+                //         page_size: this.maxSize
+                //     });
+                //     this.isLoadingFileld = false;
+                //     if(result && Array.isArray(result.data)) {
+                //         if (this.ruleConfig.field_type === 1) {// 1 只能是数字
+                //             result.data.forEach((col) => {
+                //                 let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
+                //                 col.disabled = numArr.indexOf(col.data_type) < 0;
+                //             })
+                //         }
+                //     }
+                //     this.columnList = result.data;
+                //     if(table && table.table_name) {
+                //         this.cacheColumn[`${table.table_name}${id}`] = result.data;
+                //     }
+                // }              
+            },
+            checkFieldsValid(column = [], showErr = true) {
+                /**
+                 * field_num：
+                 * -1代表可以随意选择，但至少一个。
+                 * 0代表不能选
+                 * n就代表必须选n个。
+                 */
+                let errors = [];
+                let msg = "";
+                if (this.ruleConfig.field_num === 0) {
+                    column.splice(0,column.length);
+                }
+                if (this.ruleConfig.field_type === 1) {// 1 只能是数字
+                    column.forEach((col, index) => {
+                        let colItem = this.columnList.find(item => item.column_name == col);
+                        let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
+                        if (numArr.indexOf(colItem.data_type) < 0) {
+                            msg = this.$t('addTechniqueRule.notConformRules');
+                            column.splice(index,1);
+                        }
+                        if (msg && errors.indexOf(msg) < 0) errors.push(msg);
+                    })
+                }
+                if (this.ruleConfig.field_num > 0) {
+                    while (column.length > this.ruleConfig.field_num) {
+                        column.pop();
+                        msg = this.$t('toastWarn.atMost') + this.ruleConfig.field_num + this.$t('addTechniqueRule.fields');
+                    }
+
+                    if (msg && errors.indexOf(msg) < 0 ) errors.push(msg);
+
+                } else if (this.ruleConfig.field_num === -1) {
+                    if (column.length === 0) {
+                        msg = this.$t('toastWarn.oneField') ;
+                        if (errors.indexOf(msg) < 0) errors.push(msg);
+                    }
+                }
+
+                if (showErr) errors.forEach(err => this.$Toast.error(err));
+                return {column, errors};
+
+            },
+            //字段被选中
+            columnChange(index, col) {
+                if(col.length) {
+                    let sourceItem = this.dataSourceList[index];
+                    let { column } = this.checkFieldsValid(sourceItem.selectColumn);
+                    let columnStr = this.getReplacePlaceholder({ type: [4, 6] });
+                    if(columnStr){
+                        sourceItem.sqlDataSource[columnStr]= column;
+                    }
+                }
+                this.isLoadingFileld = false;
+                this.changeSqlResult();
+                setTimeout(()=>this.$refs["ruleform"].resetFields(),0);
+            },
+            filterValue(index) {
+                let sourceItem = this.dataSourceList[index];
+                sourceItem.sqlDataSource['${filter}'] =  sourceItem.filterData;
+                this.changeSqlResult();
+            },
+            //增加质量校验框
+            addQuaCheck() {
+                this.quaCheckList.push({
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                });
+            },
+            removeQuaCheck(index) {
+                this.quaCheckList[index-1].hidden = true;
+                this.quaCheckList = this.quaCheckList.slice(index, 1);
+            },
+            closable() {
+                return this.pageType === 'edit'
+            },
+            hidden(data){
+                data.forEach(element => {
+                    element.hidden = true
+                });
+                this.quaCheckList = data;
+            },
+            //模板参数替换
+            replaceParameter(index) {
+                if(this.initEditData){ return }
+                let ruleItem = this.ruleArgumentList[index] || {};
+                let pStr = this.getReplacePlaceholder({
+                    condition: {
+                        key: "placeholder_id",
+                        value: ruleItem.argument_id
+                    }
+                });
+                this.dataSourceList.forEach(item => {
+                    item.sqlDataSource[pStr] = ruleItem.argument_value || "";
+                });
+                this.changeSqlResult();
+            },
+            toastText() {
+                this.$Message.alert(this.$t('message.thresholdTitle'), this.$t('message.thresholdText')).then(function () {
+                })
+            },
+            watchThreshold(data) {
+                if (data.check_template !== 4 && data.threshold > 10000) {
+                    this.toastText();
+                }
+            },
+            thresholdCheck() {
+                if (this.alarm && this.quaCheckList) {
+                    this.quaCheckList.map(item => {
+                        if (item.check_template !== 4 && item.threshold > 10000) {
+                            this.thresholdLimit = true;
+                            this.toastText()
+                        }
+                    })
+                }
+            },
+            submit() {
+                this.$refs["ruleform"].validate(valid => {
+                    this.thresholdCheck();
+                    if (this.alarm && this.thresholdLimit) {
+                        return;
+                    }
+                    if(valid) {
+                        let allValue = {
+                            project_id: this.projectId,
+                            rule_name: this.ruleName,
+                            alarm: this.alarm,
+                            rule_template_id: this.checkTemplateId,
+                            abort_on_failure: this.abort_on_failure
+                        }
+                        //获取用户填入质量校验框的数据
+                        if (this.alarm) {
+                            allValue.alarm_variable = this.quaCheckList.map(({
+                                output_meta_id,
+                                check_template,
+                                threshold,
+                                compareValue
+                            }) => {
+                                let alarmRule = {
+                                    output_meta_id,
+                                    check_template,
+                                    threshold
+                                };
+                                if (check_template === 4) {
+                                    alarmRule.compare_type = compareValue;
+                                }
+                                return alarmRule;
+                            })
+                        }
+                        //获取用户填写的数据源数据
+                        allValue.datasource = this.dataSourceList.map((dataItem, index) => {
+                            let selectedCluster = this.clusterList.find(cluster => cluster.cluster_name === dataItem.selectCluster);
+                            let db = this.dbList.find((db) => db.db_name === this.dataSourceList[index].selectDb);
+                            let table = this.tableList.find((t) => t.table_name === this.dataSourceList[index].selectTable);
+                            let selectColumn = [];
+                            if(Array.isArray(dataItem.selectColumn)){
+                                dataItem.selectColumn.forEach(name => {
+                                    let col = this.columnList.find(col=>col.column_name === name);
+                                    if(col.column_name || col.data_type) {
+                                        selectColumn.push({column_name:col.column_name,data_type:col.data_type})
+                                    }
+                                })
+                            }
+                            //DSS暂未开源 先屏蔽
+                            // let db_name = '';
+                            // if (this.upstream) {
+                            //     db_name = ''
+                            // }else {
+                            //     db_name = db ? db.db_name : ""
+                            // }
+                            return {
+                                db_name: (db ? db.db_name : ""), //DSS开源后，参数值需改变
+                                table_name: (table ? table.table_name : ""),
+                                col_names: selectColumn,
+                                filter: dataItem.filterData,
+                                cluster_name: selectedCluster ? selectedCluster.cluster_name : ""
+                            };
+                        })
+                        //获取模板参数
+                        allValue.template_arguments = this.ruleArgumentList
+                            .map(({
+                                argument_step,
+                                argument_id,
+                                argument_value,
+                                argsSelectList,
+                                flag
+                                }) => {
+                                    if(flag){
+                                        let item = argsSelectList.find(k=>k.value === argument_value);
+                                        argument_value = item ? item.key_name : argument_value
+                                    }
+                                    return {
+                                        argument_step,
+                                        argument_id,
+                                        argument_value
+                                    }
+                                })
+                        let method = 'put', action = 'add';
+                        let {ruleId, ruleTemplateId} = this;
+                        let key = this.$route.query.nodeId;
+                        // 如果参数带有ruleTemplateId 则是编辑技术规则
+                        if(ruleId && ruleTemplateId) {
+                            method = 'post';
+                            allValue.rule_id = ruleId;
+                            action = 'edit';
+                        }
+                        if (this.ruleGroupId) {
+                            allValue.rule_group_id = this.ruleGroupId
+                        }
+                        if (this.upstream) {
+                            allValue.cs_id = this.dssParams.contextID,
+                            allValue.node_name= this.dssParams.nodeName,
+                            allValue.nodeId = this.dssParams.nodeId;
+                        }
+                        this.FesApi.fetch('api/v1/projector/rule', allValue, method).then((res) => {
+                            let inIframe = top != self;
+                            this.$Toast.success(this.$t('common.successfulOperate'));
+                            this.pageType = "view";
+                            this.$emit('get-list', res.rule_group_id)
+                            this.context_key = {}; //添加后--编辑避免context_key与tablename不对应
+                            if (inIframe && res.rule_group_id) {
+                                DWSMessage(key, res.rule_group_id, action);
+                            }
+                        })
+                    }
+                })
+            },
+            editRule() {
+                if (this.EditDSSUpstream) {
+                    return this.$Toast.warn(this.$t('addTechniqueRule.notSupportUpstream'))
+                }
+                this.pageType = 'edit';
+            },
+            clearParam() {
+                Object.assign(this,{
+                    ruleName: '',
+                    alarm: false,
+                    quaCheckList: [{
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: ""
+                    }],
+                    dataSourceList: [{ //规则数据源库表字段等参数
+                        selectCluster: "",
+                        selectDb: "",
+                        selectTable: "",
+                        selectColumn: [],
+                        filterData: "",
+                        sqlDataSource: {} // 从校验规则sql模版中匹配出所需字段，每个数据源一份配置,
+                    }],
+                    ruleArgumentList: [],
+                    checkTemplateId: '',
+                    sqlTpl: '',
+                    pageType: 'edit',
+                    ruleId: '',
+                    ruleTemplateId: ''
+                });
+                if (this.showDSSNode && this.dssParams && this.dssParams.nodeName) {
+                    this.ruleName = this.dssParams.nodeName
+                }
+            }
+        }
+    }
+</script>
+<style scoped lang="scss">
+    .sqlWrapper {
+        height: 20px;
+        line-height: 20px;
+        text-align: left;
+        margin-bottom: 10px;
+    }
+    .fieldWrapper {
+        width: 33%;
+        padding: 10px;
+        display: inline-block;
+        .ui-select,.ui-input {
+            width: 220px;
+        }
+    }
+    .dataSourceForm {
+        max-width: 90%;
+    }
+    .settingPanel {
+        padding: 15px 0;
+    }
+    .rulePanel {
+        vertical-align: top;
+        height: 380px;
+        margin: 0 10px;
+        overflow-y: auto;
+        /deep/
+        .ui-form-content {
+            display: flex;
+        }
+    }
+    .align-center {
+        text-align: center;
+    }
+    .cellWrap {
+        padding-left: 10px;
+
+        .ui-button {
+            margin: 20px auto;
+        }
+    }
+    .inlineField {
+        width: 220px;
+    }
+    .loadingField {
+        position: absolute;
+        z-index: 3;
+        margin-top: 10px;
+        right: 60px;
+        width: 15px!important;
+        height: 15px!important;
+    }
+    .projectTextbox {
+        padding: 5px;
+        height: 100px;
+        width:100%;
+        background-color: #f3f3f3;
+    }
+    .form-item,
+    .icon-title {
+        position: relative;
+    }
+    .icon-title {
+        margin-left: 10px;
+    }
+    .icon-title:hover:after {
+        content: attr(data-title);
+        position: absolute;
+        top: 30px;
+        left: -102px;
+        width: 180px;
+        padding: 2px 2px;
+        border: 1px solid #9e9e9e;
+        border-radius: 5px;
+        background-color: #555e67;
+        color: #fff;
+        opacity: 0.9;
+        z-index: 2;
+    }
+    .upstream {
+        position: absolute;
+        top: -30px;
+        right: 8%;
+    }
+    .upstream:hover:after { 
+        content: attr(data-title);
+        display: block;
+        position: absolute;
+        top: 26px;
+        left: -34px;
+        width: 110px;
+        padding: 6px 4px;
+        text-align: left;
+        border: 1px solid #9e9e9e;
+        border-radius: 2px;
+        background-color: #555e67;
+        font-size: 14px;
+        color: #fff;
+        white-space: pre-wrap;
+        z-index: 2;
+    }
+    .taskSwitch {
+        margin-right: 50px;
+        position: absolute;
+        top: -30px;
+        right: 150px;
+    }
+    .disableEdit {
+        color: #666
+    }
+</style>

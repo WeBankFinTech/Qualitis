@@ -79,6 +79,9 @@ public class ExcelMultiTemplateRule extends BaseRowModel {
     @ExcelProperty(value = "Verification Threshold", index = 17)
     private String threshold;
 
+    @ExcelProperty(value = "AbortOnFailure", index = 18)
+    private Boolean abortOnFailure;
+
     public ExcelMultiTemplateRule() {
     }
 
@@ -230,26 +233,36 @@ public class ExcelMultiTemplateRule extends BaseRowModel {
         this.ruleGroupName = ruleGroupName;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     @Override
     public String toString() {
         return "ExcelMultiTemplateRule{" +
-                "ruleName='" + ruleName + '\'' +
-                ", templateName='" + templateName + '\'' +
-                ", clusterName='" + clusterName + '\'' +
-                ", leftDbName='" + leftDbName + '\'' +
-                ", leftTableName='" + leftTableName + '\'' +
-                ", leftFilter='" + leftFilter + '\'' +
-                ", rightDbName='" + rightDbName + '\'' +
-                ", rightTableName='" + rightTableName + '\'' +
-                ", rightFilter='" + rightFilter + '\'' +
-                ", leftMappingStatement='" + leftMappingStatement + '\'' +
-                ", mappingOperation='" + mappingOperation + '\'' +
-                ", rightMappingStatement='" + rightMappingStatement + '\'' +
-                ", whereFilter='" + whereFilter + '\'' +
-                ", alarmCheckName='" + alarmCheckName + '\'' +
-                ", checkTemplateName='" + checkTemplateName + '\'' +
-                ", compareType='" + compareType + '\'' +
-                ", threshold='" + threshold + '\'' +
-                '}';
+            "ruleGroupName='" + ruleGroupName + '\'' +
+            ", ruleName='" + ruleName + '\'' +
+            ", templateName='" + templateName + '\'' +
+            ", clusterName='" + clusterName + '\'' +
+            ", leftDbName='" + leftDbName + '\'' +
+            ", leftTableName='" + leftTableName + '\'' +
+            ", leftFilter='" + leftFilter + '\'' +
+            ", rightDbName='" + rightDbName + '\'' +
+            ", rightTableName='" + rightTableName + '\'' +
+            ", rightFilter='" + rightFilter + '\'' +
+            ", leftMappingStatement='" + leftMappingStatement + '\'' +
+            ", mappingOperation='" + mappingOperation + '\'' +
+            ", rightMappingStatement='" + rightMappingStatement + '\'' +
+            ", whereFilter='" + whereFilter + '\'' +
+            ", alarmCheckName='" + alarmCheckName + '\'' +
+            ", checkTemplateName='" + checkTemplateName + '\'' +
+            ", compareType='" + compareType + '\'' +
+            ", threshold='" + threshold + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            '}';
     }
 }
