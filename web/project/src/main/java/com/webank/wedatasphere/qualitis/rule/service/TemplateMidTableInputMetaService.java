@@ -17,9 +17,10 @@
 package com.webank.wedatasphere.qualitis.rule.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -34,4 +35,16 @@ public interface TemplateMidTableInputMetaService {
      */
     TemplateMidTableInputMeta checkTemplateInputMetaId(Long templateInputMetaId) throws UnExpectedRequestException;
 
+    /**
+     * Save all template input meta.
+     * @param templateMidTableInputMetas
+     * @return
+     */
+    Set<TemplateMidTableInputMeta> saveAll(List<TemplateMidTableInputMeta> templateMidTableInputMetas);
+
+    /**
+     * Delete mid_table input meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

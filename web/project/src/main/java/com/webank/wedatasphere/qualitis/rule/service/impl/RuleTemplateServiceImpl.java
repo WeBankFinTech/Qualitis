@@ -22,6 +22,15 @@ import com.webank.wedatasphere.qualitis.rule.constant.TemplateActionTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateMidTableInputMetaRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateOutputMetaRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateStatisticsInputMetaRequest;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateMidTableInputMetaResponse;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateOutputMetaResponse;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateStatisticsInputMetaResponse;
+import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -38,33 +47,17 @@ import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateActionTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.dao.UserRuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -98,7 +91,13 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     private TemplateStatisticsInputMetaService templateStatisticsInputMetaService;
 
     @Autowired
+    private TemplateMidTableInputMetaService templateMidTableInputMetaService;
+
+    @Autowired
     private TemplateOutputMetaService templateOutputMetaService;
+
+    @Autowired
+    private RuleService ruleService;
 
     private HttpServletRequest httpServletRequest;
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleTemplateServiceImpl.class);
@@ -149,7 +148,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         response.setData(responseList);
 
         LOGGER.info("Succeed to find default rule_template. response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_DEFAULT_RULE_TEMPLATE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -219,15 +218,20 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
     private String getMidTableAction(AddCustomRuleRequest request) {
         StringBuilder sb = new StringBuilder("SELECT ");
-        if (request.getSaveMidTable()) {
+        if (request.getFunctionContent().equals("*")) {
             sb.append(request.getFunctionContent());
         } else {
-            sb.append(FunctionTypeEnum.getByCode(request.getFunctionType()).getFunction())
-                    .append("(")
-                    .append(request.getFunctionContent())
-                    .append(") AS ")
-                    .append(getFunctionAlias(request.getFunctionType()));
+            sb.append(request.getFunctionContent()).append(" AS ").append(getFunctionAlias(request.getFunctionType()));
         }
+//
+//        if (request.getSaveMidTable()) {
+//        } else {
+//            sb.append(FunctionTypeEnum.getByCode(request.getFunctionType()).getFunction())
+//                    .append("(")
+//                    .append(request.getFunctionContent())
+//                    .append(") AS ")
+//                    .append(getFunctionAlias(request.getFunctionType()));
+//        }
         sb.append(" FROM ").append(request.getFromContent()).append(" WHERE ").append("${filter}");
         // Check SQL grammar
         String sql = sb.toString();
@@ -318,5 +322,171 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
         LOGGER.info("Succeed to get rule_template. rule_template_id: {}", ruleTemplateId);
         return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class}, propagation = Propagation.REQUIRED)
+    public RuleTemplateResponse addRuleTemplate(AddRuleTemplateRequest request)
+        throws UnExpectedRequestException {
+        AddRuleTemplateRequest.checkRequest(request, false);
+        LOGGER.info("Add default rule template request detail: {}", request.toString());
+
+        // Save template.
+        checkTemplateName(request.getTemplateName());
+        Template newTemplate = new Template();
+        newTemplate.setName(request.getTemplateName());
+        newTemplate.setClusterNum(request.getClusterNum());
+        newTemplate.setDbNum(request.getDbNum());
+        newTemplate.setTableNum(request.getTableNum());
+        newTemplate.setFieldNum(request.getFieldNum());
+        newTemplate.setActionType(request.getActionType());
+        newTemplate.setDatasourceType(request.getDatasourceType());
+        newTemplate.setMidTableAction(request.getMidTableAction());
+        newTemplate.setSaveMidTable(request.getSaveMidTable());
+        newTemplate.setShowSql(request.getMidTableAction());
+        newTemplate.setTemplateType(request.getTemplateType());
+
+        Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
+        LOGGER.info("Succeed to save rule template, template_id: {}", savedTemplate.getId());
+        createAndSaveTemplateInfo(savedTemplate, request);
+        return new RuleTemplateResponse(savedTemplate);
+    }
+
+    private void createAndSaveTemplateInfo(Template savedTemplate, AddRuleTemplateRequest request) {
+        // Save template output meta.
+        Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>();
+        for (TemplateOutputMetaRequest templateOutputMetaRequest : request.getTemplateOutputMetaRequests()) {
+            templateOutputMetas.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(templateOutputMetaRequest.getOutputName(),
+                FunctionTypeEnum.getFunctionTypeByName(templateOutputMetaRequest.getFieldName()),
+                request.getSaveMidTable(), savedTemplate));
+        }
+        savedTemplate.setTemplateOutputMetas(templateOutputMetas);
+        LOGGER.info("Success to save template output meta. TemplateOutputMetas: {}", savedTemplate.getTemplateOutputMetas());
+
+        // Save template mid_table input meta
+        List<TemplateMidTableInputMeta> templateMidTableInputMetas = new ArrayList<>();
+        for (TemplateMidTableInputMetaRequest  templateMidTableInputMetaRequest : request.getTemplateMidTableInputMetaRequests()) {
+            TemplateMidTableInputMeta templateMidTableInputMeta = new TemplateMidTableInputMeta();
+            templateMidTableInputMeta.setName(templateMidTableInputMetaRequest.getName());
+            templateMidTableInputMeta.setFieldType(templateMidTableInputMetaRequest.getFieldType());
+            templateMidTableInputMeta.setInputType(templateMidTableInputMetaRequest.getInputType());
+            templateMidTableInputMeta.setPlaceholder(templateMidTableInputMetaRequest.getPlaceholder());
+            templateMidTableInputMeta.setPlaceholderDescription(templateMidTableInputMetaRequest.getPlaceholderDescription());
+            templateMidTableInputMeta.setRegexpType(templateMidTableInputMetaRequest.getRegexpType());
+            templateMidTableInputMeta.setReplaceByRequest(templateMidTableInputMetaRequest.getReplaceByRequest());
+            templateMidTableInputMeta.setTemplate(savedTemplate);
+            templateMidTableInputMetas.add(templateMidTableInputMeta);
+        }
+        savedTemplate.setTemplateMidTableInputMetas(templateMidTableInputMetaService.saveAll(templateMidTableInputMetas));
+        LOGGER.info("Success to save template mid_table input meta. TemplateMidTableInputMetas: {}", savedTemplate.getTemplateMidTableInputMetas());
+
+        // Save template statistics input meta
+        List<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new ArrayList<>();
+        for (TemplateStatisticsInputMetaRequest templateStatisticsInputMetaRequest : request.getTemplateStatisticsInputMetaRequests()) {
+            TemplateStatisticsInputMeta templateStatisticsInputMeta = new TemplateStatisticsInputMeta();
+            templateStatisticsInputMeta.setName(templateStatisticsInputMetaRequest.getName());
+            templateStatisticsInputMeta.setFuncName(templateStatisticsInputMetaRequest.getFuncName());
+            templateStatisticsInputMeta.setResultType(templateStatisticsInputMetaRequest.getResultType());
+            templateStatisticsInputMeta.setValue(templateStatisticsInputMetaRequest.getValue());
+            templateStatisticsInputMeta.setValueType(templateStatisticsInputMetaRequest.getValueType());
+            templateStatisticsInputMeta.setTemplate(savedTemplate);
+            templateStatisticsInputMetas.add(templateStatisticsInputMeta);
+        }
+        savedTemplate.setStatisticAction(templateStatisticsInputMetaService.saveAll(templateStatisticsInputMetas));
+        LOGGER.info("Success to save template statistics input meta. templateStatisticsInputMetas: {}", savedTemplate.getStatisticAction());
+    }
+    private void checkTemplateName(String templateName) throws UnExpectedRequestException {
+        List<Template> templates = ruleTemplateDao.getAllTemplate();
+        LOGGER.info("Number of templates in database is {}", templates.size());
+        for (Template template : templates) {
+            if (templateName.equals(template.getName())) {
+                throw new UnExpectedRequestException("Template name {&ALREADY_EXIST}");
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
+        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException {
+        AddRuleTemplateRequest addRuleTemplateRequest = ModifyRuleTemplateRequest.checkRequest(request, "modifyDefaultRuleTemplateRequest");
+        // Check template existence
+        Template templateInDb = checkRuleTemplate(request.getTemplateId());
+        // delete output meta
+        templateOutputMetaService.deleteByTemplate(templateInDb);
+        // delete mid_table input meta
+        templateMidTableInputMetaService.deleteByTemplate(templateInDb);
+        // delete statistics input meta
+        templateStatisticsInputMetaService.deleteByTemplate(templateInDb);
+        // Save template.
+        templateInDb.setClusterNum(request.getClusterNum());
+        templateInDb.setDbNum(request.getDbNum());
+        templateInDb.setTableNum(request.getTableNum());
+        templateInDb.setFieldNum(request.getFieldNum());
+        templateInDb.setActionType(request.getActionType());
+        templateInDb.setDatasourceType(request.getDatasourceType());
+        templateInDb.setMidTableAction(request.getMidTableAction());
+        templateInDb.setSaveMidTable(request.getSaveMidTable());
+        templateInDb.setShowSql(request.getMidTableAction());
+        templateInDb.setTemplateType(request.getTemplateType());
+
+        Template savedTemplate = ruleTemplateDao.saveTemplate(templateInDb);
+        LOGGER.info("Succeed to save rule template, template_id: {}", savedTemplate.getId());
+
+
+        createAndSaveTemplateInfo(savedTemplate, addRuleTemplateRequest);
+        return new RuleTemplateResponse(savedTemplate);
+    }
+
+    @Override
+    public void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException {
+        // Check template existence
+        Template templateInDb = checkRuleTemplate(templateId);
+        // Check rules of template
+        ruleService.checkRuleOfTemplate(templateInDb);
+        ruleTemplateDao.deleteTemplate(templateInDb);
+    }
+
+    @Override
+    public RuleTemplateResponse getModifyRuleTemplateDetail(Long templateId) throws UnExpectedRequestException {
+        // Check template existence
+        Template templateInDb = checkRuleTemplate(templateId);
+        RuleTemplateResponse response = new RuleTemplateResponse(templateInDb);
+        response.setClusterNum(templateInDb.getClusterNum());
+        response.setDbNum(templateInDb.getDbNum());
+        response.setTableNum(templateInDb.getTableNum());
+        response.setFieldNum(templateInDb.getFieldNum());
+        response.setDatasourceType(templateInDb.getDatasourceType());
+        response.setActionType(templateInDb.getActionType());
+        response.setMidTableAction(templateInDb.getMidTableAction());
+        response.setSaveMidTable(templateInDb.getSaveMidTable());
+        List<TemplateOutputMetaResponse> outputMetaResponses = new ArrayList<>(1);
+        List<TemplateMidTableInputMetaResponse> midTableInputMetaResponses = new ArrayList<>(2);
+        List<TemplateStatisticsInputMetaResponse> statisticsInputMetaResponses = new ArrayList<>(1);
+        for (TemplateOutputMeta templateOutputMeta : templateInDb.getTemplateOutputMetas()) {
+            TemplateOutputMetaResponse templateOutputMetaResponse = new TemplateOutputMetaResponse();
+            templateOutputMetaResponse.setOutputName(templateOutputMeta.getOutputName());
+            outputMetaResponses.add(templateOutputMetaResponse);
+        }
+        response.setTemplateOutputMetaResponses(outputMetaResponses);
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : templateInDb.getTemplateMidTableInputMetas()) {
+            TemplateMidTableInputMetaResponse templateMidTableInputMetaResponse = new TemplateMidTableInputMetaResponse();
+            templateMidTableInputMetaResponse.setName(templateMidTableInputMeta.getName());
+            templateMidTableInputMetaResponse.setPlaceholder(templateMidTableInputMeta.getPlaceholder());
+            templateMidTableInputMetaResponse.setPlaceholderDescription(templateMidTableInputMeta.getPlaceholderDescription());
+            templateMidTableInputMetaResponse.setInputType(templateMidTableInputMeta.getInputType());
+            midTableInputMetaResponses.add(templateMidTableInputMetaResponse);
+        }
+        response.setTemplateMidTableInputMetaResponses(midTableInputMetaResponses);
+        for (TemplateStatisticsInputMeta templateStatisticsInputMeta : templateInDb.getStatisticAction()) {
+            TemplateStatisticsInputMetaResponse templateStatisticsInputMetaResponse = new TemplateStatisticsInputMetaResponse();
+            templateStatisticsInputMetaResponse.setName(templateStatisticsInputMeta.getName());
+            templateStatisticsInputMetaResponse.setFuncName(templateStatisticsInputMeta.getFuncName());
+            templateStatisticsInputMetaResponse.setValue(templateStatisticsInputMeta.getValue());
+            templateStatisticsInputMetaResponse.setValueType(templateStatisticsInputMeta.getValueType());
+            statisticsInputMetaResponses.add(templateStatisticsInputMetaResponse);
+        }
+        response.setTemplateStatisticsInputMetaResponses(statisticsInputMetaResponses);
+        return response;
     }
 }

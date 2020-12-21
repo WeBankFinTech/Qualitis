@@ -97,9 +97,11 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
                     ruleTaskDetails = new ArrayList<>();
                 }
             }
-            DataQualityTask tmp = new DataQualityTask(applicationId, createTime, partition, ruleTaskDetails);
-            result.add(tmp);
-            LOGGER.info("Succeed to divide rules: {} into a task {}", ruleIdList, tmp);
+            if (ruleTaskDetails.size() > 0) {
+                DataQualityTask tmp = new DataQualityTask(applicationId, createTime, partition, ruleTaskDetails);
+                result.add(tmp);
+                LOGGER.info("Succeed to divide rules: {} into a task {}", ruleIdList, tmp);
+            }
         }
         LOGGER.info("Succeed to divide all rules into tasks. result: {}", result);
 

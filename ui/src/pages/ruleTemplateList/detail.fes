@@ -1,0 +1,192 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper rule-template p20">
+            <div class="breadcrumb-container mb20">
+                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('ruleTemplate.ruleTemplate') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('ruleTemplate.templateDetails') }}</span>
+            </div>
+            <Cell span="24">
+                <Panel :title="$t('ruleTemplatelist.basicInformation')">
+                    <Wb-form label-position="left" :label-width="200">
+                        <Form-item :label="`${$t('ruleTemplatelist.templateName')}：`">
+                            <wb-input v-model="templateName" readonly />
+                        </Form-item>
+                        <Form-item :label="`${$t('ruleTemplatelist.dataSourceType')}：`">
+                            <wb-input v-model="templateDatasourceType" readonly />
+                        </Form-item>
+                        <Form-item :label="`${$t('ruleTemplatelist.templateType')}：`">
+                            <wb-input v-model="templateType" readonly />
+                        </Form-item>
+                        <Form-item :label="`${$t('ruleTemplatelist.saveData')}：`">
+                            <wb-input v-model="saveMidTable" readonly />
+                        </Form-item>
+                    </Wb-form>
+                </Panel>
+                <Panel :title="$t('ruleTemplatelist.inputLimit')" class="input-limit">
+                    <div v-for="(item,index) in limitList" :key="index">
+                        <span class="inline-block field-limit">
+                            <span class="label">
+                                {{ $t('ruleTemplatelist.numberOfClusters') }}：
+                            </span>{{ item.cluster_num }}
+                        </span>
+                        <span class="inline-block field-limit">
+                            <span class="label">
+                                {{ $t('ruleTemplatelist.numberOfDatabases') }}：
+                            </span>{{ item.db_num }}
+                        </span>
+                        <span class="inline-block field-limit">
+                            <span class="label">
+                                {{ $t('ruleTemplatelist.numberOfDataTables') }}：
+                            </span>{{ item.table_num }}
+                        </span>
+                        <span class="inline-block field-limit">
+                            <span class="label">
+                                {{ $t('ruleTemplatelist.fieldLimit') }}：
+                            </span>{{ fieldLimit(item.field_num) }}
+                        </span>
+                    </div>
+                </Panel>
+                <Panel :title="$t('ruleTemplatelist.templateOutput')" class="template-output">
+                    <div>{{ tplOutput }}</div>
+                </Panel>
+                <textarea v-model="show_sql" rows="3" cols="90" readonly disabled class="sqltextbox" />
+            </Cell>
+        </Row>
+    </pageContainer>
+</template>
+<script type="text/ecmascript-6">
+    import pageContainer from '../../components/template';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function() {
+            this.init();
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            return {
+                rule_template_id: "",
+                templateName: "",
+                limitList: [],
+                templateType: "",
+                show_sql: "",
+                output_name: [],
+                inputList: [],
+                saveMidTable: "",
+                templateDatasourceType: ""
+            };
+        },
+        computed: {
+            tplOutput() {
+                return this.output_name.join(',')
+            }
+        },
+        methods: {
+            content() {
+                this.$router.push({ path: "/projects/add" });
+            },
+            init() {
+                this.rule_template_id = this.$route.query.id;
+                this.loadStencilData(this.rule_template_id);
+            },
+            loadStencilData(id) {
+                if(typeof id == "undefined") {
+                    return
+                }
+                this.limitList = [];
+                this.FesApi.fetch(
+                    "api/v1/projector/rule_template/meta/" + id,
+                    {},
+                    "get"
+                ).then(result => {
+                    this.templateName = result.template_name;
+                    //输入限制表格数据转换
+                    let limitData = {};
+                    limitData.cluster_num = result.cluster_num;
+                    limitData.db_num = result.db_num;
+                    limitData.table_num = result.table_num;
+                    limitData.field_num = result.field_num;
+                    if (this.limitList) this.limitList.push(limitData);
+                    switch (result.template_action_type) {
+                        case 1:
+                            this.templateType = "SQL";
+                            break;
+                        case 2:
+                            this.templateType = "Java";
+                            break;
+                        case 3:
+                            this.templateType = "Scala";
+                            break;
+                        case 4:
+                            this.templateType = "Python";
+                            break;
+                    }
+                    this.saveMidTable = result.save_mid_table ? this.$t('common.yes') : this.$t('common.no');
+                    this.show_sql = result.show_sql;
+                    this.output_name = result.output_name;
+                    this.inputList = result.input_meta;
+                    switch (result.template_datasource_type) {
+                        case 1:
+                            this.templateDatasourceType = "hive";
+                            break;
+                        case 2:
+                            this.templateDatasourceType = "mysql";
+                            break;
+                        case 3:
+                            this.templateDatasourceType = "kafka";
+                            break;
+                    }
+                });
+            },
+            inputType(data) {
+                // let typeMap = {1:"固定值",2:"枚举值",3:"数据表",4:"字段",5:"数据库",6:"字段拼接",7:"正则",8:"数组",9:"条件"}
+                return this.$t('ruleTemplatelist.typeMap')[data];
+            },
+            fieldType(data) {
+                if (data == 1) {
+                    return "数值";
+                }
+            },
+            fieldLimit(n) {
+                let O = {'-1': this.$t('ruleTemplatelist.notLimited'), 0: this.$t('ruleTemplatelist.notSelectable'), 1: this.$t('ruleTemplatelist.one')};
+                return O[n];
+            }
+        }
+    };
+</script>
+<style scoped lang="scss">
+    .basic {
+        display: flex;
+        .label {
+            width: 20%
+        }
+    }
+    .field-limit {
+        font-weight: 400;
+        width: 20%;
+        font-size: 12px;
+    }
+    .input-limit {
+        margin: 20px 0;
+    }
+    .template-output {
+        margin-bottom: 20px;
+    }
+    .label {
+        padding-right: 15px;
+        line-height: 25px;
+        display: inline-block;
+    }
+    .sqltextbox {
+        resize: none;
+        padding: 5px;
+        width:100%;
+        border-color: #dcdcdc;
+    }
+</style>

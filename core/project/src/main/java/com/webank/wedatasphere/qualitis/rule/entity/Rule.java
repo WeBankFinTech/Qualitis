@@ -16,17 +16,21 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 
 import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "name"}))
 public class Rule {
 
@@ -35,14 +39,18 @@ public class Rule {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     private Template template;
+
     @Column(length = 170)
     private String name;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<RuleDataSource> ruleDataSources;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<RuleDataSourceMapping> ruleDataSourceMappings;
 
     @Column(name = "alarm")
@@ -52,18 +60,23 @@ public class Rule {
     private Integer ruleType;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<AlarmConfig> alarmConfigs;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Set<RuleVariable> ruleVariables;
 
     @OneToOne(mappedBy = "parentRule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
     private Rule childRule;
 
     @OneToOne(fetch = FetchType.EAGER)
+    @JsonIgnore
     private Rule parentRule;
 
     @ManyToOne
+    @JsonIgnore
     private Project project;
 
     @Column(name = "rule_template_name", length = 180, updatable = false)
@@ -80,7 +93,11 @@ public class Rule {
     @Column(name = "output_name", length = 170)
     private String outputName;
 
+    @Column(name = "abort_on_failure")
+    private Boolean abortOnFailure;
+
     @ManyToOne
+    @JsonIgnore
     private RuleGroup ruleGroup;
 
     public Rule() {
@@ -237,6 +254,14 @@ public class Rule {
 
     public void setRuleGroup(RuleGroup ruleGroup) {
         this.ruleGroup = ruleGroup;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     @Override

@@ -50,7 +50,8 @@ public class TaskController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get task detail. task_id: {}, caused by: {}", taskId, e.getMessage(), e);
+            LOGGER.error("Failed to get task detail. task_id: {}, caused by: {}", taskId.toString().replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_TASK_DETAIL}"+ e.getMessage() + ".", null);
         }
     }

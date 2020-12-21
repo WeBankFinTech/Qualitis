@@ -1,0 +1,485 @@
+<template>
+    <pageContainer>
+        <div class="task-container">
+            <Row class="operate">
+                <div class="breadcrumb-container mb10">
+                    <span class="breadcrumb-item-link">{{ $t('taskQuery.taskQuery') }}</span>
+                </div>
+                <Cell span="4">
+                    <div>{{ $t('taskQuery.searchCriteria0') }}</div>
+                    <Wb-select v-model="searchType">
+                        <Wb-option v-for="(item,index) in searchTypeList" :key="item" :value="index" :label="item" />
+                    </Wb-select>
+                </Cell>
+                <Cell v-if="searchType === 0" span="4" offset="1">
+                    <div>{{ $t('common.projectName') }}</div>
+                    <Wb-select v-model="proj.project_name" filterable @on-change="chooseProj">
+                        <Wb-option v-for="(item,index) in projList" :key="index" :value="item.project_name" :label="item.project_name" :title="item.project_name" />
+                    </Wb-select>
+                </Cell>
+                <div v-if="searchType===1" class="datasource">
+                    <Cell span="4" offset="1">
+                        <div>{{ $t('common.dataSource') }}</div>
+                        <Wb-select v-model="cluster.name" filterable @on-change="chooseDatasource">
+                            <Wb-option v-for="(item,index) in dataSource" :key="index" :value="item.cluster_name" :label="item.cluster_name" />
+                        </Wb-select>
+                    </Cell>
+                    <Cell span="4" offset="1">
+                        <div>{{ $t('common.databaseList') }}</div>
+                        <Wb-select v-model="db.database_name" filterable @on-change="changeDb">
+                            <Wb-option v-for="(item,index) in cluster.database" :key="index" :value="item.database_name" :label="item.database_name" />
+                        </Wb-select>
+                    </Cell>
+                    <Cell span="4" offset="1">
+                        <div>{{ $t('common.tableList') }}</div>
+                        <Wb-select v-model="table" filterable>
+                            <Wb-option v-for="item in db.table" :key="item" :value="item" :label="item" />
+                        </Wb-select>
+                    </Cell>
+                </div>
+                <Cell v-if="searchType===2" span="4" offset="1">
+                    <div>{{ $t('taskQuery.status') }}</div>
+                    <Wb-select v-model="status" @on-change="changeStatus">
+                        <Wb-option v-for="item in statusList" :key="item.status" :value="item.status" :label="item.type" />
+                    </Wb-select> 
+                </Cell>
+                <Cell v-if="searchType===3" span="4" offset="1">
+                    <div>{{ $t('common.number') }}</div>
+                    <wb-input v-model="application_id" />
+                </Cell>
+                <Cell span="4" offset="1" style="margin-top:20px;">
+                    <div>
+                        <Wb-button type="primary" class="searchBtn" @click="search">{{ $t('taskQuery.search') }}</Wb-button>
+                    </div>
+                </Cell>
+            </Row>
+            <Row>
+                <Cell span="24" class="taskTable p20">
+                    <Wb-table :data="taskData" border :no-data-text="$t('common.noData')" @on-td-click="goToDetail">
+                        <Column prop="application_id" width="15%" :name="$t('common.number')" classes="idlink" />
+                        <Column classes="pointer" prop="projects" width="16%" :filter="formatProjects" :name="$t('common.projectName')" />
+                        <Column classes="pointer" prop="rule_size" width="4%" :name="$t('taskQuery.ruleNumber')" />
+                        <Column classes="pointer" prop="table_name" width="16%" :component="component" :filter="formatTable" :name="$t('common.tableList')" />
+                        <Column classes="pointer" prop="start_time" width="12%" :name="$t('taskQuery.submissionTime')" />
+                        <Column classes="pointer" prop="end_time" width="12%" :name="$t('taskQuery.endTime')" />
+                        <Column classes="pointer" prop="status" width="7%" :filter="formatStatus" :name="$t('taskQuery.status')" />
+                        <Column classes="pointer" prop="status" width="13%" :filter="formatSuccessful" :name="$t('taskQuery.taskCheck')" />
+                        <Column classes="pointer" prop="invoke_type" width="5%" :filter="formatInvoke" :name="$t('taskQuery.scheduling')" />
+                    </Wb-table>
+                    <Pagination :size-list="sizeList" :current="taskPagination.page" :size="taskPagination.size"
+                        :total="listTotal" class="pt20"
+                        @on-change="changeTableListPage" />
+                    <div v-if="loading === 0 && taskData.length<1" class="nodata">
+                        <span class="text">{{ $t('taskQuery.selectSearchCriteria') }}</span>
+                    </div>
+                    <div v-if="loading === 1" class="nodata">
+                        <Loading v-show="loading === 1" />
+                    </div>
+                </Cell>
+            </Row>         
+        </div>
+    </pageContainer>  
+</template>
+<script type="text/ecmascript-6">
+    import { sizeList } from 'assets/js/sizeList';
+    import Vue from 'vue';
+    import pageContainer from '../../components/template';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        components: {
+            pageContainer
+        },
+        FesSyncData: {},
+        FesReady: function() {
+            this.init();
+        },
+        data() {
+            return {
+                loading: 0, // 0 初始 1请求 2 已经加载
+                projList: [],
+                dataSource: [],
+                taskData: [],
+                status: null,
+                searchType: 2,
+                projPagination: {
+                    total: 0,
+                    size: 5000,
+                    page: 1
+                },
+                dataPagination:{
+                    total: 0,
+                    size: 200,
+                    page: 1
+                },
+                taskPagination: {
+                    total: 0,
+                    size: 15,
+                    page: 1
+                },
+                proj: {
+                    project_name:"",
+                    project_id:""
+                },
+                cluster: {name: null, database:[]},
+                db: { database_name: null, table: []},
+                table: "",
+                component: this.createDbComp,
+                application_id: null,
+                sizeList
+            };
+        },
+        computed:{
+            listTotal() {
+                return this.taskPagination.total ? Math.ceil(this.taskPagination.total/this.taskPagination.size) : 0;
+            },
+            searchTypeList() {
+                return [this.$t('common.project'),this.$t('common.dataSource'), this.$t('taskQuery.status'), this.$t('common.number')]
+            },
+            statusList() {
+                return [
+                    {
+                        type: this.$t('taskQuery.all'),
+                        status: 0,
+                    },
+                    {
+                        type: this.$t('taskQuery.submitted'),
+                        status: 1,
+                    },
+                    {
+                        type: this.$t('taskQuery.inTheOperation'),
+                        status: 3,
+                    },
+                    {
+                        type: this.$t('common.byCheck'),
+                        status: 4,
+                    },
+                    {
+                        type: this.$t('taskQuery.failure'),
+                        status: 7,
+                    },
+                    {
+                        type: this.$t('common.failCheck'),
+                        status: 8,
+                    },
+                    {
+                        type: this.$t('taskQuery.tasksFailed'),
+                        status: 9,
+                    },
+                    {
+                        type: this.$t('taskQuery.tasksSuccessfully'),
+                        status: 10,
+                    },
+                    {
+                        type: this.$t('taskQuery.parameterError'),
+                        status: 11,
+                    }
+                ]
+            }
+        },
+        methods: {
+            fetchData(action, params = {}, method = "get")  {
+                return this.FesApi.fetch(`api/v1/projector/${action}`, params,  method).catch(() => {
+                    return this.loading = 2;
+                });
+            },
+            init() {
+                this.getDatasourceList();
+                this.getProjs();
+                this.search();
+            },
+            async getProjs() {
+                let params =  {
+                    size: this.projPagination.size,
+                    page: this.projPagination.page - 1
+                }
+                let { total, data } = await this.fetchData("project/all", params, 'post');
+                this.projPagination.total = total;
+                this.projList = Array.isArray(data) ? data: [];
+            },
+            async getDatasourceList() {
+                let params =  {
+                    size: this.dataPagination.size,
+                    page: this.dataPagination.page - 1
+                }
+                let data = await this.fetchData("application/datasource", params, 'post');
+                this.dataPagination.total =  data.total;
+                this.dataSource = Array.isArray(data) ? data : [];
+            },
+            async filterAction( action, params, method = "post" ){
+                this.loading = 1;
+                let {total, data} =  await this.fetchData(action, params, method);
+                this.taskPagination.total = total || 0;
+                this.taskData = Array.isArray(data) ? data : [];
+                this.loading = 2;
+            },
+            changeStatus(value) {
+                this.status = value;
+            },
+            search() {
+                let url = "" ;
+                let errs = [];
+                let params = {
+                    size: this.taskPagination.size,
+                    page: this.taskPagination.page - 1
+                };
+                switch (this.searchType) {
+                    case 0:
+                        url = "application/filter/project";
+                        if (this.proj.project_id) {
+                            params.project_id = this.proj.project_id
+                        } else {
+                            errs.push(this.$t('taskQuery.selectProject0'));
+                        }
+                        break;
+                    case 1:
+                        url = "application/filter/datasource"
+                        if(this.cluster.name) {
+                            params.cluster_name = this.cluster.name;
+                        }
+                        if(this.db.database_name) {
+                            params.database_name = this.db.database_name;
+                        }
+                        if(this.table) {
+                            params.table_name = this.table;
+                        }
+                        break;
+                    case 2:
+                        url = "application/filter/status"
+                        if (this.status) {
+                            params.status = this.status
+                        }
+                        break;
+                    case 3:
+                        url = "application/filter/application_id";
+                        if (this.application_id) {
+                            params = {
+                                application_id: this.application_id
+                            }
+                        }
+                        break;
+                    default:
+                    errs.push(this.$t('taskQuery.searchCriteria'));
+                        break;
+                }
+                if (this.searchType === 3 && !this.application_id) {
+                    return this.$Toast.warn(this.$t('taskQuery.inputNumber'));
+                }
+                if (errs.length) {
+                    return errs.forEach(err => this.$Toast.warn(err))
+                }
+                this.filterAction(url, params);
+            },
+            // 选择项目
+            chooseProj(value) {
+                if (value) {
+                    this.proj = Object.assign({},this.projList.find(item=> item.project_name === value));
+                }
+            },
+            // 选择数据源
+            chooseDatasource(c) {
+                let cluster = this.dataSource.find(item => item.cluster_name === c);
+                this.cluster.database = [];
+                if(cluster) {
+                    this.cluster.database = cluster.database;
+                }
+                this.db = { database_name: null, table: []};
+            },
+            changeDb(db) {
+                let database = this.cluster.database.find(item => item.database_name === db);
+                this.db.table = [];
+                if (database) {
+                    this.db.table = database.table || [];
+                }
+                this.table = "";
+            },
+            formatProjects(data) {
+                return data.join(',');
+            },
+            formatStatus( data ) {
+                return this.statusList.find((item)=> item.status === data).type
+            },
+            formatInvoke( data ){
+                let invoke = {
+                    1: this.$t('taskQuery.interfaceScheduling'),
+                    2: this.$t('taskQuery.timeSchedule')
+                }
+                return invoke[ data ];
+            },
+            formatSuccessful( data, trData ){
+                return `${trData.finished_task_num}/${trData.failed_task_num}/${trData.failed_check_task_num}`;
+            },
+            formatTable( data, trData ){
+                return `${trData.database_name}.${trData.table_name}`
+            },
+            createDbComp (trData) {
+                return new Vue({
+                    data: function () {
+                        let itemData = (trData && trData.task) || [];
+                        let dbtable = [];
+                        itemData.forEach(task => {
+                            task.task_rules.forEach(rule => {
+                                let sources = rule.rule_data_sources;
+                                sources.forEach(item => {
+                                    dbtable.push({
+                                        task: task.task_id,
+                                        rule_id: rule.rule_id,
+                                        rule_name: rule.rule_name,
+                                        ...item
+                                    })
+                                })
+                            })
+                        })
+                        return {
+                            dbtable,
+                            option: {
+                                direction: 'bottom',
+                                align: "center",
+                                component: new Vue({
+                                    data: function () {
+                                        return {
+                                            list: dbtable,
+                                        }
+                                    },
+                                    render: function (createElement) {
+                                        return createElement('div', this.list.map(function name(item) {
+                                            return createElement('div', {}, [
+                                                createElement('p', {
+                                                }, `${item.rule_name}:`),
+                                                createElement('p', {
+                                                }, `${item.db_name} . ${item.table_name}`)
+                                            ])
+                                        }))
+                                    }
+                                })
+                            }
+                        }
+                    },
+                    render: function (createElement) {
+                        if (this.dbtable.length) {
+                            return createElement('span', {
+                                class: {
+                                    datasourceopt: true
+                                },
+                                directives: [
+                                    {
+                                        name: 'tooltip',
+                                        value: this.option,
+                                    }
+                                ],
+                            },`${this.dbtable[0].db_name}.${this.dbtable[0].table_name}` )
+                        }else {
+                            return ''
+                        }   
+                    }
+                })
+            },
+            changeTableListPage( { current, size } ) {
+                this.taskPagination = Object.assign(this.taskPagination, {
+                    page: current,
+                    size
+                });
+                this.search();
+            },
+            goToDetail(trData,id) {
+                if (trData.application_id === id) {
+                    return;
+                }
+                this.FesFesx.set("task_info_map", {
+                    [trData.application_id]: trData
+                });
+                this.$router.push({
+                    path: "/taskDetail",
+                    query: {
+                        id: trData.application_id
+                    }
+                });
+            }
+        }
+    };
+</script>
+
+<style scoped lang="scss">
+    .task-container {
+        width: 100%;
+    }
+    .filterForm {
+        display: flex;
+        justify-content: left;
+        .searchtype{
+            flex: 1;
+            padding-right: 20px;
+            max-width: 350px;
+        }
+        .project-name {
+            flex: 1;
+            padding-right: 20px;
+            max-width: 500px;
+        }
+        .datasource {
+            flex: 3;
+            display: flex;
+            padding-right: 20px;
+        }
+        .taskstatus {
+            flex: 1;
+            padding-right: 20px;
+            max-width: 350px;
+        }
+        .searchBtn {
+            flex: 1;
+            max-width: 80px;
+            height: 100%;
+        }
+    }
+    .taskTable {
+        margin-bottom: 20px;
+        .datasourceopt{
+            position: relative;
+            border: none;
+            background: none;
+            word-wrap: break-word;
+        }
+        .idlink {
+            color: #2db7f5;
+        }
+        /deep/ .ui-table {
+            overflow: auto;
+        }
+    }
+    .operate {
+        margin: 20px 20px 0px;
+    }
+    .flex-end {
+        display: flex;
+        justify-content: flex-end;
+    }
+    .goToPage {
+        width: 35px;
+        display: inline-block;
+        margin: 0 6px;
+    }
+    .filterForm li.ui-page-item {
+        display: inline-block;
+        vertical-align: top;
+        padding: 0 6px;
+        margin: 0 6px;
+    }
+    .filterForm .wb-dropdown, .filterForm .wb-dropdown-menu{
+        width: 100%;
+    }
+    .nodata {
+        text-align: center;
+        height: 50px;
+        line-height: 50px;
+        margin-top: 80px;
+    }
+    .nodata .text {
+        display: inline-block;
+        height: 50px;
+        line-height: 50px;
+        vertical-align: top;
+        font-size: 14px;
+        margin-left:5px;
+    }
+</style>

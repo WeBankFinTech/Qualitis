@@ -1,0 +1,25 @@
+<template>
+    <div class="head">
+        <div @click="FesApp.router.back()">
+            <Icon type="left" :title="$t('common.back')" size="20" />
+            <span class="back">{{ $t('common.back') }}</span>
+        </div>
+    </div>
+</template>
+<style lang="scss" scoped>
+    .head {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        color: #3399ff;
+        .back {
+            display: inline-block;
+            height: 30px;
+            line-height: 30px;
+            vertical-align: top;
+        }
+    }
+    .head:hover {
+        cursor: pointer;
+    }
+</style>
+

@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.project.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -28,6 +29,9 @@ public class AddProjectRequest {
     private String projectName;
     private String description;
     private String username;
+
+    @JsonProperty("project_label")
+    private Set<String> projectLabels;
 
     public AddProjectRequest() {
         // Default Constructor
@@ -55,6 +59,14 @@ public class AddProjectRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public Set<String> getProjectLabels() {
+        return projectLabels;
+    }
+
+    public void setProjectLabels(Set<String> projectLabels) {
+        this.projectLabels = projectLabels;
     }
 
     public static void checkRequest(AddProjectRequest request) throws UnExpectedRequestException {

@@ -1,0 +1,258 @@
+<template>
+    <pageContainer>
+        <div class="all-wrapper">
+            <Row class="operate">
+                <div class="breadcrumb-container mb10">
+                    <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                    <span class="breadcrumb-item-separator">/</span>
+                    <span class="breadcrumb-item-link">{{ $t('ruleQuery.ruleQuery') }}</span>
+                </div>
+                <Cell span="4">
+                    <div>{{ $t('common.dataSource') }}</div>
+                    <Wb-select v-model="slectedCluster" filterable @on-change="filterCluster">
+                        <wb-option v-for="(d,i) in clusterList" :key="i" :value="d.cluster_type" :disabled="d.disabled">{{ d.cluster_type }}</wb-option>
+                    </Wb-select>
+                </Cell>
+                <Cell span="4" offset="1">
+                    <div>{{ $t('common.database') }}</div>
+                    <Wb-select v-model="dbName" filterable @on-change="filterDb">
+                        <wb-option v-for="(d,k) in dbList" :key="k" :value="d.db_name">{{ d.db_name }}</wb-option>
+                    </Wb-select>
+                </Cell>
+                <Cell span="4" offset="1">
+                    <div>{{ $t('ruleQueryPage.dataTableName') }}</div>
+                    <Wb-select v-model="tableName" filterable :disabled="disableTable">
+                        <wb-option v-for="(d,i) in tableList" :key="i" :value="d.table_name">{{ d.table_name }}</wb-option>
+                    </Wb-select>
+                </Cell>
+                <Cell span="4" offset="1" style="margin-top: 15px;">
+                    <Wb-input v-model="filterTableName" :placeholder="`${$t('ruleQueryPage.filterTable')}`" :disabled="disableFilter">
+                        <span slot="append" @click="search"><Icon type="search" /></span>
+                    </Wb-input>
+                </Cell>
+                <Cell span="4" offset="1" style="margin-top: 12px;">
+                    <Wb-button type="primary" @click="search">{{ $t('ruleQueryPage.search') }}</Wb-button>
+                </Cell>
+            </Row>
+            <Row>
+                <Cell span="24" class="p20">
+                    <Wb-table :data="projectList" border :no-data-text="$t('common.noData')" @on-td-click="clickHandle">
+                        <Column prop="cluster_name" :name="$t('common.cluster')" />
+                        <Column prop="db_name" :name="$t('common.database')" />
+                        <Column prop="table_name" :name="$t('common.table')" classes="pointerTag" />
+                        <Column prop="table_commit" :name="$t('common.description')" />
+                    </Wb-table>
+                    <Pagination class="pt20" :size-list="sizeList" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                </Cell>
+            </Row>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </div>
+    </pageContainer>
+</template>
+<script>
+    import pageContainer from '../../components/template';
+    import { sizeList } from 'assets/js/sizeList';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+            this.init()
+            this.loadCluster()
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            return {
+                projectList: [],
+                clusterList: [],
+                tableList: [],
+                dbList: [],
+                slectedCluster: "",
+                dbName: "",
+                tableName: "",
+                typeData: "",
+                showLoading: true,
+                filterTableName: '',
+                pagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                sizeList,
+            }
+        },
+        computed: {
+            disableFilter() {
+                return this.tableName.length>0 ? true : false; 
+            },
+            disableTable() {
+                return this.filterTableName.length>0 ? true : false; 
+            }
+        },
+        methods: {
+            init() {
+                this.FesApi.fetch("api/v1/projector/query/all", {
+                    page: this.pagination.page - 1,
+                    size: this.pagination.size
+                }).then(res=> {              
+                    this.projectList = Array.isArray(res.content) ? res.content : [];
+                    this.pagination.total = Math.ceil(res.totalCount/this.pagination.size);
+                }).finally(()=> {
+                    this.showLoading = false;
+                });
+            },
+            //获取集群列表
+            loadCluster() {
+                this.FesApi.fetch('api/v1/projector/query/conditions', {}, 'get').then((result) => {
+                    let clusterList = [], dbList =[], tableList=[];
+                    if(Array.isArray(result.clusters)){
+                        clusterList = result.clusters.map(item => {
+                            return { cluster_type:item };
+                        });
+                    }
+                    if(Array.isArray(result.dbs)) {
+                        dbList = result.dbs.map(item => {
+                            return { db_name:item };
+                        });
+                    }
+                    if(Array.isArray(result.tables)) {
+                        tableList = result.tables.map(item => {
+                            return { table_name: item };
+                        });
+                    }
+                    this.result = result || [];
+                    this.clusterList = clusterList
+                    this.dbList = dbList
+                    this.tableList = tableList
+                    this.cluster_dbs = result.cluster_dbs||[];
+                    this.cluster_tables = result.cluster_tables||[];
+                    this.db_tables = result.db_tables||[];
+                })
+            },
+            filterCluster() {
+                let dbList = [], tableList = [];
+                if(this.slectedCluster){
+                    dbList = this.cluster_dbs[this.slectedCluster].map(item => {
+                        return { db_name: item };
+                    });
+                    tableList = this.cluster_tables[this.slectedCluster].map(item => {
+                        return { table_name: item };
+                    });
+                } else if(this.result) {
+                    dbList = this.result.dbs.map(item => {
+                        return { db_name:item };
+                    });
+                    tableList = this.result.tables.map(item => {
+                        return { table_name: item };
+                    });
+                }
+                this.dbList = dbList
+                this.tableList = tableList
+            },
+            filterDb() {
+                let tableList = [];
+                if(this.dbName) {
+                    tableList = this.db_tables[this.dbName].map(item => {
+                        return { table_name: item };
+                    });
+                }else if(this.result) {
+                    let dbList =[];
+                    dbList = this.result.dbs.map(item => {
+                        return { db_name:item };
+                    });
+                    tableList = this.result.tables.map(item => {
+                        return { table_name: item };
+                    });
+                    this.dbList = dbList
+                }
+                this.tableList = tableList
+            },
+            search() {
+                this.showLoading = true;
+                let params = {
+                    user_type: [1]
+                };
+                if(this.slectedCluster){
+                    params.cluster = this.slectedCluster;
+                }
+                if(this.dbName) {
+                    params.db = this.dbName;
+                }
+                if(this.tableName){
+                    params.table = this.tableName;
+                }
+                if (this.filterTableName) {
+                    params.table = `%${this.filterTableName}%`;   
+                }
+                params.page = this.pagination.page-1;
+                params.size = this.pagination.size;
+                this.FesApi.fetch('api/v1/projector/query/query', params, 'post').then((result) => {
+                    this.projectList = Array.isArray(result.content) ? result.content : [];
+                    this.pagination.total = Math.ceil(result.totalCount/this.pagination.size);
+                    this.$Toast.success(this.$t('toastSuccess.search'));
+                }).finally(()=> {
+                    this.showLoading = false;
+                })
+            },
+            goToDetal(trData) {
+                this.$router.push({
+                    path: `/ruleQuery/projectId`,
+                    query: {
+                        cluster: trData.cluster_name,
+                        dbName: trData.db_name,
+                        tableName: trData.table_name,
+                    }
+                })
+            },
+            clickHandle(trData, tdData, index) {
+                switch (index) {
+                    case 2:
+                        this.goToDetal(trData);
+                        break;
+                    default:
+                        break;
+                }
+            },
+            changePage({ current, size }) {
+                this.pagination.page = current;
+                this.pagination.size = size;
+                this.search();
+            },
+        }
+    }
+
+</script>
+<style scoped>
+    .labelItem {
+        height: 60px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        font-size: 14px;
+    }
+    .ruleDetList .ui-modal-dialog .ui-modal-body {
+        width: 1200px !important;
+    }
+
+    .ruleDetList td {
+        white-space: pre;
+    }
+
+    .mydatatable .label {
+        display: inline-block;
+        text-align: right;
+        padding-right: 8px;
+        height: 30px;
+        min-width: 140px;
+        line-height: 30px;
+        font-size: 14px;
+    }
+    .operate {
+        margin: 20px 20px 0px;
+    }
+    .flex-end {
+        display: flex;
+        justify-content: flex-end;
+    }
+</style>

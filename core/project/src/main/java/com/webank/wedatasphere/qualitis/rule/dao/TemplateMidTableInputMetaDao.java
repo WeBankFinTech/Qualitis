@@ -20,6 +20,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -40,4 +41,16 @@ public interface TemplateMidTableInputMetaDao {
      */
     TemplateMidTableInputMeta findById(Long templateInputMetaId);
 
+    /**
+     * Save all template input meta.
+     * @param templateMidTableInputMetas
+     * @return
+     */
+    Set<TemplateMidTableInputMeta> saveAll(List<TemplateMidTableInputMeta> templateMidTableInputMetas);
+
+    /**
+     * Delete mid_table input meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

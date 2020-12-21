@@ -1,0 +1,200 @@
+<template>
+    <div class="mapSource filter">
+        <Tabs>
+            <Tab :label="$t('crossTableCheck.serviceMenuEditing')">
+                <div class="table-main">
+                    <span class="table-title" :title="tableName">
+                        {{ $t('common.column') }}：{{ tableName }}
+                    </span>
+                    <div class="table-content col">
+                        <div class="scale">
+                            <Wb-input v-model="field" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', field, arrowFilterCol, typeColumnList)" />
+                            <div :class="['col-content',{'no-border':filterCol.length}]">
+                                <ul class="ulList col-list" @click="filterCondition"> 
+                                    <li v-for="(item, i) in filterCol" :key="i" :data-name="item.column_name" :data-tag="dataTag" :data-arrow="arrow">{{ `${item.column_name}(${item.data_type})` }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-select">
+                            <ul @click="filterCondition">
+                                <li v-for="(item, i) in selectedCol" :key="i" :data-name="item" :data-tag="dataTag" :data-arrow="arrow">{{ item }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-main joiner">
+                    <span>
+                        {{ $t('crossTableCheck.signOfOperation') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="filterCondition">
+                            <li v-for="(item, i) in calculateList" :key="i" :data-name="item" :data-tag="dataTag" class="circle">{{ item }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.function') }}：
+                    </span>
+                    <div class="table-content">
+                        <div>
+                            <ul class="ulList" @click="filterCondition">
+                                <li v-for="(item, i) in statisticalFun" :key="i" :data-name="item" :data-tag="dataTag" class="stress">{{ item }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.keyWords') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="filterCondition">
+                            <li v-for="(item, i) in keyWord" :key="i" :data-name="item" :data-tag="dataTag" class="stress">{{ item }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <span>
+                        {{ $t('crossTableCheck.expression') }}：
+                    </span>
+                    <div class="table-content">
+                        <ul class="ulList" @click="filterCondition">
+                            <li v-for="(item, i) in expression" :key="i" :data-name="item.value" :data-tag="dataTag" class="stress">{{ item.text }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="table-main">
+                    <input :id="onlyId" v-model="currentValue" type="textarea" :rows="4" class="filter-input">
+                </div>
+            </Tab>
+            <Tab :label="$t('crossTableCheck.customEdit')">
+                <div class="table-main self-edit">
+                    <input :id="onlyId" v-model="currentValue" type="textarea" :rows="4" class="filter-input"> 
+                </div>
+            </Tab>
+        </Tabs>
+        <div class="submit-button-container fr mb10">
+            <WbButton class="submit-button mr10" @click="$emit('filter-cancel', dataTag)">
+                {{ $t('common.cancel') }}
+            </WbButton>
+            <WbButton type="primary" class="submit-button" @click="determine">
+                {{ $t('common.ok') }}
+            </WbButton>
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        props: {
+            arrow: {
+                type: String,
+                default: '',
+            },
+            dataTag: {
+                type: String,
+                default: '',
+            },
+            filterCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            arrowFilterCol: {
+                type: String,
+                default: ''
+            },
+            typeColumnList: {
+                type: String,
+                default: ''
+            },
+            selectedCol: {
+                type: Array,
+                default: ()=> [],
+            },
+            filterValue: {
+                type: String,
+                default: ''
+            },
+            onlyId: {
+                type: String,
+                default: ''
+            },
+            tableName: {
+                type: String,
+                default: ''
+            }
+        },
+        watch: {
+            filterValue(val) {
+                this.currentValue = val;
+            },
+            currentValue(val) {
+                this.$emit('value-change', val, this.dataTag);
+            }
+        },
+        data() {
+            return {
+                calculateList: [' + ', ' - ', ' * ', ' / ', ' ( ', ' ) ', ' = ', ' != '],
+                statisticalFun: [' sum ', ' avg ', ' count ', ' max ', ' min '],
+                keyWord: ['group by ', ' limit ', ' order by ', ' not ', ' and ', ' or ', ' in '],
+                field: '',
+                currentValue: ''
+            }
+        },
+        computed: {
+            expression() {
+                return  [
+                    {
+                        text: `${(this.$t('crossTableCheck.actualDate'))}`,
+                        value: 'ds=${yyyyMMdd}'
+                    },
+                    {
+                        text: `${this.$t('common.beforeDays')}`,
+                        value: 'ds=${yyyyMMdd}-N'
+                    }]
+            }
+        },
+        methods: {
+            filterCondition(e) {
+                if (e.target.nodeName.toLowerCase() === 'li') {
+                    let tag = e.target.dataset.tag;
+                    let filterMes = e.target.dataset.name;
+                    let arrow = e.target.dataset.arrow;
+                    this.insertInputTxt(filterMes, this.onlyId);
+                    if (tag === 'source' && arrow === 'left') {
+                        this.$emit('compare', 'sourceFilterCol', filterMes);
+                    }else if(tag === 'target' && arrow === 'right'){
+                        this.$emit('compare', 'targetFilterCol', filterMes);
+                    }
+                }
+            },
+            insertInputTxt(insertTxt, id) {
+                let elInput = document.getElementById(id);
+                let startPos = elInput.selectionStart;
+                let endPos = elInput.selectionEnd;
+                if (startPos === undefined || endPos === undefined) return;
+                let txt = elInput.value;
+                let result = txt.substring(0, startPos) + insertTxt + txt.substring(endPos);
+                elInput.value = result;
+                elInput.focus();
+                elInput.selectionStart = startPos + insertTxt.length;
+                elInput.selectionEnd = startPos + insertTxt.length;
+                this.currentValue = result;
+                this.$emit('change-value', this.currentValue, this.dataTag);
+            },
+            determine() {
+                this.$emit('filter-modal', this.currentValue);
+                this.$emit('sql-change');
+            },
+        }
+    }
+</script>
+
+<style lang="scss" scoped>
+    @import '../../assets/styles/crossTable';
+    .self-edit {
+        height: 300px;
+    }
+</style>

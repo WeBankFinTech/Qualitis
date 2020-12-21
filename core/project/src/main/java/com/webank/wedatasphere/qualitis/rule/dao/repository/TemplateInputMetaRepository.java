@@ -42,4 +42,9 @@ public interface TemplateInputMetaRepository extends JpaRepository<TemplateMidTa
      */
     TemplateMidTableInputMeta findByTemplateAndName(Template template, String name);
 
+    /**
+     * Delete mid_table input meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

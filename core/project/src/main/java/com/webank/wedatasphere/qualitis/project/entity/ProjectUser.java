@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.project.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -23,6 +25,7 @@ import java.util.Objects;
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_project_user")
 public class ProjectUser {
 
@@ -32,6 +35,7 @@ public class ProjectUser {
 
     @ManyToOne
     private Project project;
+
     private Integer permission;
 
     @Column(name = "user_name", length = 20)

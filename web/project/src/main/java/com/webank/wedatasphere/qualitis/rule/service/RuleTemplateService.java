@@ -22,20 +22,12 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
-import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
-import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * @author howeye
@@ -128,4 +120,36 @@ public interface RuleTemplateService {
      */
     GeneralResponse<TemplateMetaResponse> getRuleMultiTemplateMeta(Long ruleTemplateId)
         throws UnExpectedRequestException;
+
+    /**
+     * Add default template.
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    RuleTemplateResponse addRuleTemplate(AddRuleTemplateRequest request) throws UnExpectedRequestException;
+
+    /**
+     * Modify default template.
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
+        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException;
+
+    /**
+     * Delete default template.
+     * @param templateId
+     * @throws UnExpectedRequestException
+     */
+    void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException;
+
+    /**
+     * get rule template detail
+     * @param templateId
+     * @throws UnExpectedRequestException
+     * @return
+     */
+    RuleTemplateResponse getModifyRuleTemplateDetail(Long templateId) throws UnExpectedRequestException;
 }

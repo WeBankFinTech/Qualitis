@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 import java.util.List;
 
@@ -41,9 +39,11 @@ public class AddRuleRequest {
     private Long projectId;
     @JsonProperty("template_arguments")
     private List<TemplateArgumentRequest> templateArgumentRequests;
-
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
 
     public AddRuleRequest() {
         // Default Constructor
@@ -97,12 +97,21 @@ public class AddRuleRequest {
         this.projectId = projectId;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     public static void checkRequest(AddRuleRequest request, boolean modifyOrNot) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getRuleName(), "rule_name");
         CommonChecker.checkObject(request.getTemplateArgumentRequests(), "template_arguments");
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
+        CommonChecker.checkObject(request.getAbortOnFailure(), "abort_on_failure");
         if (request.getAlarm()) {
             CommonChecker.checkObject(request.getAlarmVariable(), "alarm_variable");
             if (request.getAlarmVariable().isEmpty()) {
@@ -141,13 +150,14 @@ public class AddRuleRequest {
     @Override
     public String toString() {
         return "AddRuleRequest{" +
-                "ruleName='" + ruleName + '\'' +
-                ", ruleTemplateId=" + ruleTemplateId +
-                ", alarm=" + alarm +
-                ", alarmVariable=" + alarmVariable +
-                ", datasource=" + datasource +
-                ", projectId=" + projectId +
-                ", templateArgumentRequests=" + templateArgumentRequests +
-                '}';
+            "ruleName='" + ruleName + '\'' +
+            ", ruleTemplateId=" + ruleTemplateId +
+            ", alarm=" + alarm +
+            ", alarmVariable=" + alarmVariable +
+            ", datasource=" + datasource +
+            ", projectId=" + projectId +
+            ", templateArgumentRequests=" + templateArgumentRequests +
+            ", ruleGroupId=" + ruleGroupId +
+            '}';
     }
 }

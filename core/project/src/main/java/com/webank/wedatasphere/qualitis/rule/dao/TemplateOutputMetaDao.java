@@ -54,4 +54,9 @@ public interface TemplateOutputMetaDao {
      */
     List<TemplateOutputMeta> findByTemplate(Template template);
 
+    /**
+     * Delete output meta by template
+     * @param templateInDb
+     */
+    void deleteByTemplate(Template templateInDb);
 }

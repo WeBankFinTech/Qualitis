@@ -53,7 +53,7 @@ public class OuterExecutionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to dispatch application, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}, caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}, caused by: " + e.getMessage(), e);
         }
     }
 
@@ -66,8 +66,9 @@ public class OuterExecutionController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), null);
+            LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId.replace("\r", "").replace("\n", ""),
+                e.getMessage().replace("\r", "").replace("\n", ""));
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
         }
     }
 
@@ -82,7 +83,7 @@ public class OuterExecutionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get log of the task: {}, cluster_id: {}", request.getTaskId(), request.getClusterId(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", null);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
         }
     }
 
@@ -96,7 +97,7 @@ public class OuterExecutionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get result of application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, null);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
         }
     }
 }

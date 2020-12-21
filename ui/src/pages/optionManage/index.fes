@@ -1,0 +1,52 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper optionManage p20">
+            <div class="breadcrumb-container mb10">
+            <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
+            <span class="breadcrumb-item-separator">/</span>
+            <span class="breadcrumb-item-link">{{ $t('optionManagePage.authorityManagement') }}</span>
+        </div>
+        <roleper-table class="border1px" />
+        <userspec-table class="border1px" />
+        <userrole-table class="border1px" />
+        <role-table class="border1px" />
+        <permission-table class="border1px" />
+    </Row>
+    </pageContainer>
+</template>
+<style scoped>
+    .optionManage >>> .tableTitle {
+        font-size: 16px;
+        height: 40px;
+        line-height: 40px;
+        font-weight: 500;
+        margin: 10px;
+        text-align: center;
+        color:#333;
+    }
+</style>
+
+<script type="text/ecmascript-6">
+    import roleTable from "./components/roleTable.fes";
+    import roleperTable from "./components/roleperTable.fes";
+    import permissionTable from "./components/permissionTable.fes";
+    import userroleTable from "./components/userroleTable.fes";
+    import userspecTable from "./components/userspecTable.fes";
+    import pageContainer from '../../components/template'
+
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        methods:{
+
+        },
+        components: {
+            roleTable,
+            roleperTable,
+            permissionTable,
+            userroleTable,
+            userspecTable,
+            pageContainer
+        }
+    }
+</script>

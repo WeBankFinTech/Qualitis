@@ -48,6 +48,10 @@ public class ModifyMultiSourceRequest {
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
 
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
+
     public ModifyMultiSourceRequest() {
     }
 
@@ -137,6 +141,14 @@ public class ModifyMultiSourceRequest {
 
     public void setAlarmVariable(List<AlarmConfigRequest> alarmVariable) {
         this.alarmVariable = alarmVariable;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     public static void checkRequest(ModifyMultiSourceRequest request) throws UnExpectedRequestException {

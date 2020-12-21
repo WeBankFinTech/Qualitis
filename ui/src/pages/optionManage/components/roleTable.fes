@@ -1,0 +1,290 @@
+<template>
+    <Row class="mt20 mb20">
+        <div>
+            <Wb-button class="m10" type="primary" @click="addTr">{{ $t('common.add') }}</Wb-button>
+        </div>
+        <Cell span="24" class="tableTitle">
+            <p>{{ $t('optionManagePage.roleManagement') }}</p>
+        </Cell>
+        <Cell span="24" class="loading-content">
+            <Wb-table :data="roleData" border :no-data-text="$t('common.noData')">
+                <Column prop="role_id" :name="$t('optionManagePage.roleID')" width="150px" />
+                <Column prop="role_name" :name="$t('optionManagePage.characterName')" :component="roleChild" />
+                <Column :name="$t('common.operate')" :component="operationComponent" width="300px" />
+            </Wb-table>
+            <div class="flex mt10">
+                <Pagination class="m10" :size-list="sizeList" :size="pagination.size"
+                    :current="pagination.current" :total="pagination.total"
+                    @on-change="changePage" />
+            </div>
+            <modal ref="roleForm" :title="$t('optionManagePage.roleManagement')">
+                <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.characterName')" prop="addRoleName">
+                        <Wb-input v-model="addRoleName" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('roleForm')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <modal ref="roleReviseForm" :title="$t('optionManagePage.editRoleManagement')">
+                <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.characterName')" prop="reviseRoleName">
+                        <Wb-input v-model="reviseRoleName" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('roleReviseForm')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="save">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </Cell>
+    </Row>
+</template>
+<script>
+    import Vue from 'vue';
+    import { isIE } from 'assets/js/utils.js';
+    import { sizeList } from 'assets/js/sizeList';
+    export default {
+        FesReady: function () {
+            this.init();
+        },
+        data() {
+            let that = this;
+            return {
+                roleData: [],
+                addRoleName: "",
+                reviseRoleId: "",
+                reviseRoleName: "",
+                pagination: {
+                    size: 5,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                showLoading: true,
+                roleChild: function (trData, tdData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                tdRoleName: tdData,
+                                newtdRoleName: "",
+                                inputShowControler: '',
+                                trData
+                            }
+                        },
+                        methods: {
+                            editRoleName() {
+                                this.newtdRoleName = this.tdRoleName;
+                                this.inputShowControler = true;
+                            },
+                            update() {
+                                if (this.tdRoleName == this.newtdRoleName) return this.initData();
+                                that.$Message.confirm(that.$t('optionManagePage.modifyRoleName'), that.$t('optionManagePage.confirmRoleName')).then(index => {
+                                    if (index === 0) {
+                                        let newTrData = {
+                                            role_name: this.newtdRoleName,
+                                            role_id: trData.role_id
+                                        };
+                                        this.saveAsk(newTrData)
+                                    }else {
+                                        this.initData()
+                                    }
+                                })
+                            },
+                            saveAsk(data) {
+                                that.FesApi.fetch('api/v1/admin/role', data, ).then(() => {
+                                    that.$Toast.success(that.$t('toastSuccess.editSuccess'))
+                                    that.init()
+                                })
+                            },
+                            initData() {
+                                this.inputShowControler = false;
+                                this.newtdRoleName = null;
+                            }
+                        },
+                        render: function(createElement) {
+                            let _that = this;
+                            function showTag() {
+                                if (!_that.inputShowControler) {
+                                    return createElement('a', {
+                                        on: {
+                                            click: _that.editRoleName
+                                        }
+                                    }, _that.tdRoleName)
+                                } else {
+                                    return createElement('wb-input', {
+                                        props: {
+                                            value: _that.newtdRoleName
+                                        },
+                                        on: {
+                                            'on-blur': _that.update,
+                                            input: function (value) {
+                                                _that.newtdRoleName = value
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                            return createElement('div', {}, [showTag()])
+                        }
+                    })
+                },
+                operationComponent: function(trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                            }
+                        },
+                        methods: {
+                            editAction() {
+                                that.reviseRoleId = trData.role_id;
+                                that.reviseRoleName = trData.role_name;
+                                that.$refs.roleReviseForm.show();
+                            },
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('optionManagePage.deleteCurrentRole', {name: trData.role_name})}`).then(index=> {
+                                    if (index === 0) {
+                                        that.FesApi.fetch('api/v1/admin/role/delete', {
+                                                role_id: trData.role_id
+                                            }).then(() => {
+                                                that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
+                                                that.pagination.current = 1;
+                                                that.init();
+                                            })
+                                    }
+                                })
+                            },
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                }, {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            }
+        },
+        computed: {
+            action() {
+                return [{
+                    text: this.$t('common.delete'),
+                    func: function (trData) {
+                        this.FesApi.fetch('api/v1/admin/role/delete', {
+                            role_id: trData.role_id
+                        }).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.deleteSuccess'))
+                            this.pagination.current = 1;
+                            this.init();
+                        })
+                    }
+                }, {
+                    text: this.$t('common.edit'),
+                    func: function (trData) {
+                        isIE();
+                        this.reviseRoleId = trData.role_id;
+                        this.reviseRoleName = trData.role_name;
+                        this.$refs.roleReviseForm.show();
+                    }
+                }]
+            },
+            ruleValidate() {
+                return {
+                    addRoleName: [{ required: true, message: this.$t('common.notEmpty')}],
+                    reviseRoleName: [{ required:true, message: this.$t("common.notEmpty")}]
+                }
+            }
+        },
+        methods: {
+            init() {
+                this.FesApi.fetch('api/v1/admin/role/all', {
+                    page: this.pagination.current - 1,
+                    size: this.pagination.size
+                }).then((result) => {
+                    this.showLoading = false;
+                    this.roleData = result.data;
+                    this.pagination.total = Math.ceil(result.total / this.pagination.size);
+                })
+            },
+            addTr() {
+                isIE();
+                this.$refs.roleForm.show()
+            },
+            submit() {
+                if (!this.addRoleName == "") {
+                    this.FesApi.fetch('api/v1/admin/role', {
+                        role_name: this.addRoleName
+                    }, 'put').then(() => {
+                        this.$refs.roleForm.hide();
+                        this.$Toast.success(this.$t('toastSuccess.addSuccess'));
+                        this.pagination.current = 1;
+                        this.init();
+                    })
+                }
+            },
+            save() {
+                let newTrData = {};
+                newTrData.role_id = this.reviseRoleId;
+                newTrData.role_name = this.reviseRoleName;
+                this.FesApi.fetch('api/v1/admin/role', newTrData, ).then(() => {
+                    this.$refs.roleReviseForm.hide();
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'))
+                    this.init();
+                })
+            },
+            changePage({
+                current,
+                size
+            }) {
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.FesApi.fetch('api/v1/admin/role/all', {
+                    page: current - 1,
+                    size: this.pagination.size
+                }).then((result) => {
+                    this.roleData = result.data;
+                    this.pagination.total = Math.ceil(result.total / this.pagination.size);
+                })
+            },
+            cancel(ref) {
+                this.$refs[ref].hide()
+            }
+        }
+    }
+
+</script>

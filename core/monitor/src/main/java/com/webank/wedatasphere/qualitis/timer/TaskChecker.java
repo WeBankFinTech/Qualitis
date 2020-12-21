@@ -158,7 +158,11 @@ public class TaskChecker implements IChecker {
         } else if (newStatus.equals(TaskStatusEnum.PASS_CHECKOUT.getState())) {
             task.setStatus(TaskStatusEnum.PASS_CHECKOUT.getCode());
         } else if (newStatus.equals(TaskStatusEnum.FAIL_CHECKOUT.getState())) {
-            task.setStatus(TaskStatusEnum.FAIL_CHECKOUT.getCode());
+            if (task.isAbortOnFailure() != null && task.isAbortOnFailure()) {
+                task.setStatus(TaskStatusEnum.FAILED.getCode());
+            } else {
+                task.setStatus(TaskStatusEnum.FAIL_CHECKOUT.getCode());
+            }
         } else if (newStatus.equals(TaskStatusEnum.CANCELLED.getState())) {
             task.setStatus(TaskStatusEnum.CANCELLED.getCode());
         } else if (newStatus.equals(TaskStatusEnum.TIMEOUT.getState())) {
@@ -193,10 +197,10 @@ public class TaskChecker implements IChecker {
         TaskResult taskResult = taskResultDao.findByApplicationIdAndRuleId(applicationId, taskRuleSimple.getRuleId());
         for (TaskRuleAlarmConfig taskRuleAlarmConfig : taskRuleSimple.getTaskRuleAlarmConfigList()) {
             if (PassUtil.notSafe(applicationId, taskRuleSimple.getRuleId(), taskRuleAlarmConfig, taskResult, taskResultDao)) {
+                taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.PASS.getCode());
+            } else {
                 passFlag = false;
                 taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
-            } else {
-                taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.PASS.getCode());
             }
         }
         return passFlag;

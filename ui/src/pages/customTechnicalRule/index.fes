@@ -1,0 +1,761 @@
+<template>
+    <div>
+        <!-- <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
+            <Wb-switch v-model="upstream" :disabled="pageType=='view'">
+                <span slot="open">{{ $t('common.open') }}</span>
+                <span slot="close">{{ $t('common.close') }}</span>
+            </Wb-switch>
+        </div>      -->
+        <Row>
+            <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="150">
+                <Row>
+                    <Cell span="10">
+                        <Form-item :label="`${$t('common.ruleName')}：`" prop="ruleName">
+                            <Wb-input
+                                v-model="ruleName"
+                                :disabled="pageType=='view'"
+                                :maxlength="50"
+                            />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="10">
+                        <Form-item :label="`${$t('label.validationRules')}：`" prop="checkTemplate">
+                            <Wb-input
+                                v-model="checkTemplate"
+                                :disabled="pageType=='view'"
+                                :maxlength="50"
+                            />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="10">
+                        <Form-item prop="type" :label="`${$t('label.statisticalFunction')}：`">
+                            <Wb-select
+                                v-model="function_type"
+                                filterable
+                                :disabled="pageType=='view'"
+                                @on-change="changeFun"
+                            >
+                                <wb-option
+                                    v-for="(k,i) in statisticalFun"
+                                    :key="i"
+                                    :value="k.code"
+                                >{{ k.type }}</wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="10">
+                        <Form-item prop="cluster_name" :label="`${$t('common.cluster')}：`">
+                            <Wb-select
+                                v-model="cluster_name"
+                                filterable
+                                :disabled="pageType=='view'"
+                                @on-change="clusterChange"
+                            >
+                                <wb-option
+                                    v-for="(w,i) in clusterList"
+                                    :key="i"
+                                    :disabled="w.disabled"
+                                    :value="w.cluster_name"
+                                >{{ w.cluster_name }}</wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <p>&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </p>
+                <!-- <Row v-if="upstream">
+                    <Cell span="10">
+                        <Form-item :label="`${$t('common.table')}：`" class="select-options">
+                            <Wb-select
+                                v-model="tableName"
+                                filterable
+                                :disabled="isView"
+                                @click.native="loadTable"
+                            >
+                                <wb-option
+                                    v-for="(w,i) in tableList"
+                                    :key="i"
+                                    :value="w.table_name"
+                                >{{ w.table_name }}</wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row> -->
+                <!-- <Row v-if="upstream">
+                    <Cell span="10">
+                        <Form-item :label="`${$t('common.column')}：`" class="select-options">
+                            <Loading v-show="isLoadingFileld" class="loadingField" />
+                            <WbSelect
+                                v-model="selectColumn"
+                                filterable
+                                multiple
+                                :disabled="isView"
+                                @click.native="loadColumn"
+                            >
+                                <WbOption
+                                    v-for="(z,zz) in columnList"
+                                    :key="zz"
+                                    :value="z.column_name"
+                                    :label="`${z.column_name}(${z.data_type})`"
+                                />
+                            </WbSelect>
+                        </Form-item>
+                    </Cell>
+                </Row> -->
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+                <Row class="sql-container">
+                    <Cell span="12">
+                            <Wb-input
+                                v-model="funText"
+                                :placeholder="$t('common.pleaseEnter')"
+                                :disabled="pageType=='view'"
+                                :maxlength="1000"
+                            >
+                                <span slot="prepend">select {{ statistical }}&nbsp;&nbsp;(</span>
+                                <span slot="append">)</span>
+                            </Wb-input>
+                    </Cell>
+                </Row>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                <Row class="sql-container">
+                    <Cell span="12">
+                        <Wb-input
+                            v-model="fromText"
+                            :placeholder="$t('common.pleaseEnter')"
+                            :disabled="pageType=='view'"
+                            :maxlength="1000"
+                        >
+                            <span slot="prepend">from</span>
+                        </Wb-input>
+                    </Cell>
+                </Row>
+                <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                <Row class="sql-container">
+                    <Cell span="12">
+                            <Wb-input
+                                v-model="whereText"
+                                placeholder="ds=${yyyyMMdd}-1"
+                                :disabled="pageType=='view'"
+                                :maxlength="1000"
+                            >
+                                <span slot="prepend">where</span>
+                            </Wb-input>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="24" class="cellWrap">
+                        <div class="sqlWrapper">{{ $t('common.SQL') }}</div>
+                        <div class="projectTextbox">{{ sqlResult }}</div>
+                    </Cell>
+                    <Cell span="24" class="cellWrap">
+                        <filterDescription />
+                    </Cell>
+                    <Cell span="24" class="cellWrap mt20">
+                        <Wb-switch v-model="abort_on_failure" :disabled="pageType=='view'">
+                            <span slot="open">{{ $t('common.openTask') }}</span>
+                            <span slot="close">{{ $t('common.closeTask') }}</span>
+                        </Wb-switch>
+                    </Cell>                  
+                    <Cell span="24" class="cellWrap">
+                        <div style="margin: 20px 0;">
+                            <Checkbox
+                                v-model="alarm"
+                                :label="`${$t('label.alarm')}：`"
+                                :disabled="pageType=='view'"
+                            />
+                        </div>
+                        <Tabs
+                            v-show="alarm"
+                            v-model="currentTab"
+                            :closable="closable()"
+                            :disabled="pageType=='view'"
+                            @on-tab-remove="removeQuaCheck"
+                        >
+                            <Tab
+                                v-for="(item,index) in quaCheckList"
+                                :key="index"
+                                :label="$t('common.qualityCheck')"
+                            >
+                                <Form-item
+                                    :label="`${$t('label.validationRules')}：`"
+                                    prop="checkTemplate"
+                                    class="fieldWrapper"
+                                >
+                                    <Wb-input
+                                        v-model="checkTemplate"
+                                        :value="checkTemplate"
+                                        :disabled="pageType=='view'"
+                                        class="inlineField"
+                                    />
+                                </Form-item>
+                                <Form-item
+                                    class="fieldWrapper"
+                                    prop="item.output_meta_id"
+                                    :label="`${$t('common.template')}：`"
+                                >
+                                    <Wb-select
+                                        v-model="item.check_template"
+                                        class="inlineField"
+                                        :disabled="pageType=='view'"
+                                    >
+                                        <wb-option :value="1">{{ $t('common.monthlyFluctuation') }}</wb-option>
+                                        <wb-option :value="2">{{ $t('common.weeklyFluctuation') }}</wb-option>
+                                        <wb-option :value="3">{{ $t('common.daillyFluctuation') }}</wb-option>
+                                        <wb-option :value="4">{{ $t('common.fixedValue') }}</wb-option>
+                                    </Wb-select>
+                                </Form-item>
+                                <Form-item
+                                    v-show="item.check_template === 4"
+                                    class="fieldWrapper"
+                                    prop="item.compareValue"
+                                    :label="`${$t('label.comparisonMethod')}：`"
+                                >
+                                    <Wb-select
+                                        v-model="item.compareValue"
+                                        class="inlineField"
+                                        :disabled="pageType=='view'"
+                                    >
+                                        <wb-option :value="1">{{ $t('common.equal') }}</wb-option>
+                                        <wb-option :value="2">{{ $t('common.greaterThan') }}</wb-option>
+                                        <wb-option :value="3">{{ $t('common.lessThan') }}</wb-option>
+                                        <wb-option :value="4">{{ $t('common.greatThanOrEqualTo') }}</wb-option>
+                                        <wb-option :value="5">{{ $t('common.lessThanOrEqualTo') }}</wb-option>
+                                        <wb-option :value="6">{{ $t('common.unequalTo') }}</wb-option>
+                                    </Wb-select>
+                                </Form-item>
+                                <Form-item
+                                    class="fieldWrapper"
+                                    prop="item.threshold"
+                                    :label="$t('common.thresholdValue')"
+                                >
+                                    <Wb-input
+                                        v-model="item.threshold"
+                                        type="number"
+                                        :disabled="pageType=='view'"
+                                        class="inlineField"
+                                        @on-input="watchThreshold(item)"
+                                    />
+                                    <span v-if="item.check_template !== 4">%</span>
+                                </Form-item>
+                            </Tab>
+                            <Icon
+                                slot="action"
+                                type="plus-circle-o"
+                                color="rgba(51, 153, 255, 0.9)"
+                                size="20"
+                                @click="addQuaCheck"
+                            />
+                        </Tabs>
+                    </Cell>
+                    <Cell span="24" class="cellWrap">
+                        <div class="saveResult">
+                            <Checkbox v-model="saveResult" :label="$t('customTechnicalRule.save')" :disabled="pageType=='view'" />
+                            <Icon :data-title="$t('customTechnicalRule.text')" type="question-circle-o" size="20" />
+                        </div>
+                    </Cell>                  
+                    <Cell span="24" class="cellWrap align-center">
+                        <Wb-button
+                            v-if="pageType!='view'"
+                            type="primary"
+                            @click.prevent="submit"
+                        >{{ $t('common.save') }}</Wb-button>
+                    </Cell>
+                </Row>
+            </Wb-form>
+        </Row>
+    </div>
+</template>
+
+<script type="text/ecmascript-6">
+    import { dateFormat, DWSMessage } from "assets/js/utils.js";
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+            this.init()
+        },
+        props: {
+            projectId: {
+                type: String,
+                default: ''
+            },
+            ruleGroupId: {
+                type: Number,
+                default: 0
+            },
+            dssParams: {
+                type: Object,
+                default: {}
+            }
+        },
+        data() {
+            return {
+                value: '',
+                ruleName: '',
+                checkTemplate: '',
+                function_type: 3,
+                slectedCluster: '',
+                clusterList: [],
+                statisticalFun: [
+                    {
+                        type: 'sum',
+                        code: 1
+                    },
+                    {
+                        type: 'avg',
+                        code: 2
+                    },
+                    {
+                        type: 'count',
+                        code: 3
+                    },
+                    {
+                        type: 'max',
+                        code: 4
+                    },
+                    {
+                        type: 'min',
+                        code: 5
+                    },
+                ],
+                pageType: 'add',
+                funText: '',
+                fromText: '',
+                whereText: '',
+                quaCheckList: [{
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                }],
+                currentTab: 1,
+                alarm: false,
+                saveResult: false,
+                cluster_name: '',
+                thresholdLimit: false,
+                ruleId: '',
+                ruleTemplateId: '',
+                upstream: false, //dss上游节点
+                context_key: {},
+                tableName: '',
+                selectColumn: [],
+                tableList: [],
+                isLoadingFileld: false,
+                maxSize: 2147483647,
+                columnList: [],
+                abort_on_failure: true
+            }
+        },
+        computed: {
+            sqlResult: function () {
+                return `select ${this.statistical}(${this.funText}) from ${this.fromText} where ${this.changeSqlResult}`
+            },
+            changeSqlResult() {
+                let value = this.whereText;
+                let dateReg = /\$\{(yyyy(?:-|\/|\s)?MM(?:-|\/|\s)?dd(?:(?:-|\/|\s)?HH)?(?:(?:-|\/|\s|:)?mm)?(?:(?:-|\/|\s|:)?ss)?)\}(?:-(\d+))?/;
+                if (dateReg.test(value)) {
+                    let d;
+                    while ((d = value.match(dateReg))) {
+                        let dateObj = new Date();
+                        if (d[2]) {
+                            dateObj = new Date(new Date() - 24 * 60 * 60 * 1000 * d[2]);
+                        }
+                        let formated = dateFormat(d[1], dateObj);
+                        value = value.replace(d[0], formated);
+                    }
+                }
+                return value;
+            },
+            statistical: function () {
+                return this.statisticalFun.find((item) => item.code === this.function_type).type;
+            },
+            isView() {
+                return this.pageType === 'view'
+            },
+            ruleValidate() {
+                return {
+                    ruleName: [{ required: true, message: this.$t('common.notEmpty') }],
+                    checkTemplate: [{ required: true, message: this.$t('common.notEmpty') }],
+                    type: [{ required: true, message: this.$t('common.notEmpty') }],
+                    cluster_name: [{ required: true, message: this.$t('common.notEmpty') }],
+                    check_template: [{ required: this.alarm, message: this.$t('common.notEmpty') }],
+                    threshold: [{ required: this.alarm, message: this.$t('common.notEmpty') }],
+                }
+            },
+            showDSSNode() {
+                return top !== self
+            },
+            EditDSSUpstream() {
+                let { ruleId, ruleTemplateId, showDSSNode, upstream } = this;
+                //已存上游规则在DQM无法编辑
+                return ruleId && ruleTemplateId && !showDSSNode && upstream
+            },
+            upstreamTitle() {
+                return this.upstream ? this.$t('common.openUpstream') : this.$t('common.closeUpstream');
+            }
+        },
+        methods: {
+            async init(action, ruleId, ruleTemplateId) {
+                if (this.showDSSNode && this.pageType !== "view") {
+                    this.upstream = true //从dss页面新建 默认开启
+                    this.ruleName = this.$route.query.nodeName;
+                }
+                if (typeof ruleId !== "undefined" && typeof ruleTemplateId !== "undefined") {
+                    this.ruleId = ruleId;
+                    this.ruleTemplateId = ruleTemplateId
+                }
+                if (action === 'view') {
+                    this.pageType = "view";
+                }
+                await this.loadCluster();
+                if (this.pageType === "edit" || this.pageType === "view") {
+                    await this.loadTemplateData(ruleId);
+                }
+            },
+            async loadCluster() {
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cluster', {});
+                if (Array.isArray(result.data) && result.optional_clusters) {
+                    result.data.forEach(item => {
+                        item.disabled = result.optional_clusters.indexOf(item.cluster_name) < 0;
+                    })
+                    this.clusterList = result.data;
+                }
+                return result;
+            },
+            async loadTemplateData(id) {
+                let quaCheckList = [];
+                let result = await this.FesApi.fetch('api/v1/projector/rule/custom/' + id, {}, 'get');
+                this.ruleName = result.rule_name;
+                this.checkTemplate = result.output_name;
+                this.saveResult = result.save_mid_table;
+                this.function_type = result.function_type;
+                this.cluster_name = result.cluster_name;
+                this.funText = result.function_content;
+                this.fromText = result.from_content;
+                this.whereText = result.where_content;
+                this.alarm = result.alarm;
+                this.upstream = result.context_service;
+                this.$emit('get-upstream', this.upstream);
+                this.abort_on_failure = result.abort_on_failure;
+                if (Array.isArray(result.alarm_variable)) { // 质量检查告警配置
+                    result.alarm_variable.forEach(item => {
+                        let alarm = {
+                            "compareValue": null,
+                            "output_meta_name": "",
+                            "threshold": item.threshold,
+                            "output_meta_id": item.output_meta_id,
+                            "check_template": item.check_template,
+                            "compare_type": item.compare_type,
+                        };
+                        if (item.check_template === 4) {
+                            alarm.compareValue = item.compare_type;
+                        }
+                        quaCheckList.push(alarm);
+                    })
+                }
+                if (quaCheckList.length < 1) {
+                    quaCheckList = [{
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: ""
+                    }]
+                }
+                Object.assign(this, { quaCheckList })
+            },
+            changeFun(value) {
+                this.function_type = value;
+            },
+            clusterChange(value) {
+                this.cluster_name = value;
+            },
+            removeQuaCheck(index) {
+                this.quaCheckList[index - 1].hidden = true;
+                this.quaCheckList = this.quaCheckList.slice(index, 1);
+            },
+            closable() {
+                return this.pageType === 'edit'
+            },
+            addQuaCheck() {
+                this.quaCheckList.push({
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                });
+            },
+            toastText() {
+                this.$Message.alert(this.$t('message.thresholdTitle'), this.$t('message.thresholdText')).then(function () {
+                })
+            },
+            watchThreshold(data) {
+                if (data.check_template !== 4 && data.threshold > 10000) this.toastText()
+            },
+            thresholdCheck() {
+                if (this.alarm && this.quaCheckList) {
+                    this.quaCheckList.map(item => {
+                        if (item.check_template !== 4 && item.threshold > 10000) {
+                            this.thresholdLimit = true;
+                            this.toastText()
+                        }
+                    })
+                }
+            },
+            submit() {
+                this.$refs["formValidate"].validate(valid => {
+                    this.thresholdCheck();
+                    if (this.alarm && this.thresholdlimit) return;
+                    if (valid) {
+                        let param = {
+                            project_id: this.projectId,
+                            rule_name: this.ruleName,
+                            cluster_name: this.cluster_name,
+                            function_type: this.function_type,
+                            output_name: this.checkTemplate,
+                            alarm: this.alarm,
+                            save_mid_table: this.saveResult,
+                            function_content: this.funText,
+                            from_content: this.fromText,
+                            where_content: this.whereText,
+                            abort_on_failure: this.abort_on_failure
+                        }
+                        //告警内容
+                        if (this.alarm) {
+                            param.alarm_variable = this.quaCheckList.map(({
+                                check_template,
+                                threshold,
+                                compareValue
+                            }) => {
+                                let alarmRule = {
+                                    check_template,
+                                    threshold
+                                };
+                                if (check_template === 4) {
+                                    alarmRule.compare_type = compareValue;
+                                }
+                                return alarmRule;
+                            })
+                        }
+                        let method = 'put', action = 'add';
+                        let key = this.$route.query.nodeId;
+                        // 如果参数带有ruleTemplateId 则是编辑技术规则
+                        if (this.ruleId && this.ruleTemplateId) {
+                            method = 'post';
+                            param.rule_id = this.ruleId;
+                            action = 'edit';
+                        }
+                        if (this.ruleGroupId) {
+                            param.rule_group_id = this.ruleGroupId
+                        }
+                        if (this.upstream) {
+                            param.cs_id = this.dssParams.contextID,
+                                param.node_name = this.dssParams.nodeName,
+                                param.nodeId = this.dssParams.nodeId;
+                        }
+                        this.FesApi.fetch('api/v1/projector/rule/custom', param, method).then((res) => {
+                            let inIframe = top != self;
+                            this.$Toast.success(this.$t('common.successfulOperate'));
+                            this.pageType = "view";
+                            this.$emit('get-list', res.rule_group_id);
+                            if (inIframe && res.rule_group_id) {
+                                DWSMessage(key, res.rule_group_id, action);
+                            }
+                        })
+                    }
+                })
+            },
+            editRule() {
+                if (this.EditDSSUpstream) {
+                    return this.$Toast.warn(this.$t('addTechniqueRule.notSupportUpstream'))
+                }
+                this.pageType = 'edit';
+            },
+            clearParam() {
+                Object.assign(this, {
+                    ruleName: '',
+                    checkTemplate: '',
+                    cluster_name: '',
+                    function_type: 3,
+                    alarm: false,
+                    saveResult: false,
+                    funText: '',
+                    fromText: '',
+                    whereText: '',
+                    quaCheckList: [{
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: ""
+                    }],
+                    pageType: 'edit',
+                    ruleId: '',
+                    ruleTemplateId: ''
+                })
+                if (this.showDSSNode && this.dssParams && this.dssParams.nodeName) {
+                    this.ruleName = this.dssParams.nodeName
+                }
+                setTimeout(() => {
+                    this.$refs.formValidate.resetFields();
+                }, 0)
+            },
+            async loadTable() {
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_table', {
+                    cs_id: this.dssParams.contextID,
+                    node_name: this.dssParams.nodeName,
+                    cluster_name: this.cluster_name,
+                    start_index: 0,
+                    page_size: this.maxSize
+                }, "post");
+                this.tableList = result.data;
+                this.context_key = this.tableList.filter((item) => item.table_name === this.tableName)
+            },
+            async loadColumn() {
+                this.isLoadingFileld = true;
+                let context_key = this.context_key[0]['context_Key'];
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_column', {
+                    cs_id: this.dssParams.contextID,
+                    node_name: this.dssParams.nodeName,
+                    cluster_name: this.cluster_name,
+                    context_key,
+                    start_index: 0,
+                    page_size: this.maxSize
+                });
+                this.isLoadingFileld = false;
+                if (result && Array.isArray(result.data)) {
+                    this.columnList = result.data;
+                }
+            }
+        }
+    }
+</script>
+
+<style scoped lang="scss">
+    .rule-content,
+    .select-content,
+    .select-fun {
+      display: flex;
+      justify-content: flex-start;
+    }
+    .saveResult {
+        i {
+            vertical-align: middle;
+        }
+        i:hover:after { 
+            content: attr(data-title);
+            display: block;
+            position: absolute;
+            top: -5px;
+            left: 225px;
+            width: 360px;
+            padding: 6px 4px;
+            text-align: left;
+            border: 1px solid #9e9e9e;
+            border-radius: 2px;
+            background-color: #555e67;
+            font-size: 14px;
+            color: #fff;
+        }
+    }
+    .select-content {
+      margin-left: 10px;
+    }
+    .source {
+      width: 50%;
+    }
+    .cellWrap {
+      padding-left: 32px;
+      .ui-button {
+        margin: 20px auto;
+      }
+    }
+    .align-center {
+      text-align: center;
+    }
+    .sqlWrapper {
+      height: 20px;
+      line-height: 20px;
+      text-align: left;
+      margin-bottom: 10px;
+    }
+    .projectTextbox {
+      padding: 5px;
+      height: 100px;
+      width: 100%;
+      background-color: #f3f3f3;
+    }
+    .fieldWrapper {
+      width: 33%;
+      padding: 10px;
+      display: inline-block;
+      .ui-select,
+      .ui-input {
+        width: 220px;
+      }
+    }
+    .inlineField {
+      width: 220px;
+    }
+    .loadingField {
+      position: absolute;
+      z-index: 3;
+      margin-top: 10px;
+      right: 25px;
+      width: 15px !important;
+      height: 15px !important;
+    }
+    .disableEdit {
+      color: #666;
+    }
+    .taskSwitch {
+      margin-right: 50px;
+      position: absolute;
+      top: -30px;
+      right: 150px;
+    }
+    /deep/
+    .ui-input-swap .ui-input-prepend {
+        width: 100px;
+    }
+    .sql-container {
+        padding: 0 0 24px 50px;
+    }
+    .upstream {
+        position: absolute;
+        top: -30px;
+        right: 3%;
+    }
+    .upstream:hover:after { 
+        content: attr(data-title);
+        display: block;
+        position: absolute;
+        top: 26px;
+        left: -34px;
+        width: 110px;
+        padding: 6px 4px;
+        text-align: left;
+        border: 1px solid #9e9e9e;
+        border-radius: 2px;
+        background-color: #555e67;
+        font-size: 14px;
+        color: #fff;
+        white-space: pre-wrap;
+        z-index: 2;
+    }
+</style>

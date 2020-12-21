@@ -1,0 +1,324 @@
+<template>
+    <pageContainer>
+        <div class="all-wrapper p20">
+            <Row class="mb20 operate">
+                <Cell span="24">
+                    <div class="breadcrumb-container mb10">
+                        <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                        <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                        <span class="breadcrumb-item-separator">/</span>
+                        <span class="breadcrumb">{{ $t('ruleQuery.ruleQuery') }}</span>
+                        <span class="breadcrumb-item-separator">/</span>
+                        <span class="breadcrumb-item-link">{{ $t('ruleQuery.tableRuleInformation') }}</span>
+                    </div>
+                    <Wb-table :data="currentList" border :no-data-text="$t('common.noData')">
+                        <Column prop="column_name" :name="$t('common.column')" />
+                        <Column prop="column_comment" :name="$t('common.description')" />
+                        <Column prop="data_type" :name="$t('metadataManagementPage.type')" />
+                        <Column prop="is_partition" :name="$t('ruleQueryPage.partition')" :filter="getText" />
+                        <Column prop="is_primary" :name="$t('ruleQueryPage.primaryKey')" :filter="getText" />
+                        <Column prop="column_length" :name="$t('ruleQueryPage.negativeLength')" />
+                        <Column align="left" :name="$t('common.operate')" :component="operationComponent" width="120px" />
+                    </Wb-table>
+                </Cell>
+            </Row>
+            <div v-if="!show">
+                <div class="dialog" />
+                <div class="management">
+                    <div class="close">
+                        <icon type="close-circle-o" size="20" @click="handler" />
+                    </div>
+                    <div class="table-container">
+                        <div class="operate-container mb10">
+                            <WbButton type="primary" class="mr10" @click="taskExecution">
+                                {{ $t('ruleQueryPage.carriedOut') }}
+                            </WbButton>
+                            <WbButton type="ghost" class="mr10" @click="exportExcel">
+                                {{ $t('ruleQueryPage.export') }}
+                            </WbButton>
+                            <WbButton type="ghost" @click="deleteRule">
+                                {{ $t('common.delete') }}
+                            </WbButton>
+                        </div>
+                        <Wb-table ref="tableRule" :data="ruleList" border :no-data-text="$t('common.noData')">
+                            <Column type="selection" width="60px" />
+                            <Column prop="rule_name" :name="$t('ruleQueryPage.ruleName')" />
+                            <Column prop="template_name" :name="$t('tableThead.templateName')" />
+                            <Column prop="rule_type" :name="$t('common.ruleType')" :filter="getType" />
+                            <Column prop="filter" :name="$t('common.condition')" />
+                        </Wb-table>
+                    </div>
+                </div>
+            </div>
+            <Modal ref="executionUser" :title="$t('common.runUser')" class="execution-modal">
+                <Wb-form ref="form" :rule="[{ required: true, message: $t('common.notEmpty') }]" :label-width="90">
+                    <FormItem :label="$t('common.runUser')" prop="executor_user">
+                        <WbSelect v-model="executor_user">
+                            <WbOption v-for="(usr,index) in users" :key="index" :value="usr">
+                                {{ usr }}
+                            </WbOption>
+                        </WbSelect>
+                    </FormItem>
+                    <Form-item :label="`${$t('common.condition')}：`" prop="filterCondition">
+                        <wb-input v-model="filterCondition" :placeholder="$t('common.pleaseEnter')" />
+                    </Form-item>
+                    <div class="button-container fr">
+                        <WbButton class="mr10" @click="cancle('executionUser')"> {{ $t('common.cancel') }}</WbButton>
+                        <WbButton ref="doSave" type="primary" @click="submit">{{ $t('common.ok') }}</WbButton>
+                    </div>
+                </Wb-form>
+            </Modal>
+        </div>
+    </pageContainer>
+</template>
+
+<script type="text/ecmascript-6">
+    import Vue from "vue";
+    import pageContainer from '../../components/template';
+    import {forceDownload} from 'assets/js/utils';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        components: {
+            pageContainer
+        },
+        FesReady: function() {
+            this.init();
+        },
+        data() {
+            const that = this;
+            return  {
+                ruleList : [],
+                show: true,
+                currentList: [],
+                selectRows: [],
+                executor_user: [],
+                users: [],
+                filterCondition: '',
+                currentTrData: {},
+                templateType: [" ", this.$t('common.templateType'), this.$t('common.customType'), this.$t('common.crossTableType')],
+                operationComponent: function(trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                detailText: that.$t('common.detail'),
+                            }
+                        },
+                        methods: {
+                            operate() {
+                                that.currentTrData = trData;
+                                that.getRuleList();
+                                that.handler()
+                            }
+                        },
+                        render: function (createElement) {
+                            return createElement('div', {}, [
+                                createElement('a', {
+                                    on: {
+                                        click: this.operate
+                                    }
+                                }, `${that.$t('ruleQueryPage.associationRuleManagement')}`)
+                            ])
+                        }
+                    })
+                }
+            }
+        },
+        async mounted() {
+            let group = await this.getUsrGroup();
+            let user = this.FesStorage.get('simulatedUser') || this.FesApp.get("FesUserName");
+            if(Array.isArray(user)) {
+                this.users = [].concat(user)
+            } else {
+                this.users = [ user ]
+            }
+            if(Array.isArray(group)) {
+                this.users = this.users.concat(group)
+            } else if (!this.FesUtil.isPlainObject(group)) {
+                this.users.push(group);
+            }
+            this.users = _.uniq(this.users);
+        },
+        methods:{
+            init() {
+                let {cluster, dbName, tableName} = this.$route.query;
+                this.FesApi.fetch('api/v1/projector/query/columns', {
+                    cluster,
+                    db: dbName,
+                    table: tableName
+                }, 'post').then(res=> {
+                    if (Array.isArray(res)) {
+                        this.currentList = res;                
+                    }
+                })
+            },
+            getRuleList(type) {
+                let {cluster, dbName, tableName} = this.$route.query;
+                let params = {
+                    cluster,
+                    db: dbName,
+                    table: tableName,
+                    column: `${this.currentTrData.column_name}:${this.currentTrData.data_type}`
+                }
+                this.FesApi.fetch('api/v1/projector/query/rules', params, 'post').then(res=> {
+                    if (Array.isArray(res.content)) {
+                        this.ruleList = res.content || [];
+                    }
+                    if (type === 'deleteAction' && !this.ruleList.length) {
+                        this.$router.push({
+                            path: '/ruleQuery'
+                        })
+                    }
+                })
+            },
+            getUsrGroup() {
+                return this.FesApi.fetch("/api/v1/projector/proxy_user", {}, "get");
+            },
+            ruleDetail(data) {
+                this.$router.push({
+                    path: '/addGroupTechniqueRule',
+                    query: {
+                        ruleGroupId: data[0].rule_group_id,
+                        id: this.project_id
+                    }
+                })
+            },
+            getText(flag) {
+                return flag ? this.$t('common.yes') : this.$t('common.no')
+            },
+            getType(value) {
+                return this.templateType[value];
+            },
+            handler() {
+                this.show = !this.show;
+            },
+            checkSelect() {
+                this.selectRows = this.$refs.tableRule ? this.$refs.tableRule.getSelected() : [];
+                if (this.selectRows.length === 0) {
+                    this.$Toast.warn(this.$t('common.selectOne'));
+                    return false
+                }else {
+                    return true
+                }
+            },
+            deleteRule() {
+                if (this.checkSelect()) {
+                    let name = '';
+                    let ids = this.selectRows.map((item)=> {
+                        name += `${item.rule_name}、`
+                        return item.rule_id
+                    })
+                    let params = {
+                        rule_id_list: ids
+                    }
+                    this.$Message.confirm(this.$t('common.prompt'), `${this.$t('ruleQueryPage.deleteRule', {name})}`).then(index=> {
+                        if (index === 0) {
+                            this.FesApi.fetch(`api/v1/projector/query/rules/delete`, params, 'post').then(()=> {
+                                this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                                this.getRuleList('deleteAction');
+                            })
+                        }
+                    })
+                }
+                this.selectRows = [];
+            },
+            taskExecution() {
+                if (this.checkSelect()) {
+                    this.$refs.executionUser.show();
+                }
+            },
+            exportExcel() {
+                if (this.checkSelect()) {
+                    let fileName = '', params = {};
+                    let ruleId = this.selectRows.map((item)=> {
+                        return item.rule_id
+                    })
+                    params.rule_ids = ruleId;
+                    let exporturl = this.FesEnv.api + '/api/v1/projector/rule/batch/download';
+                    fetch(exporturl, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json",
+                            'Content-Language': this.FesFesx.get('Language')
+                        },
+                        mode: 'cors',
+                        credentials: 'include',
+                        body: JSON.stringify(params),
+                        responseType: 'blob'
+                    }).then( res => {
+                        let fileNameUnicode = res.headers.get('Content-Disposition').split("filename*=")[1];
+                        fileName = fileNameUnicode ? decodeURIComponent(fileNameUnicode.split("''")[1]) : '技术规则.xlsx';
+                        return res.blob();
+                    }).then( blob => {
+                        let blobUrl = window.URL.createObjectURL(blob);
+                        forceDownload(blobUrl, fileName);
+                    }).catch( err => {
+                        this.$Toast.error(`${this.$t('toastError.importFail')}:${err.message}`)
+                    })
+                }
+                
+            },
+            submit() {
+                this.$refs.form.validate(valid => {
+                    if (valid) {
+                        let rule_list = this.selectRows.map((item)=> {
+                            return item.rule_id
+                        })
+                        let create_user = this.FesApp.get("FesUserName");
+                        let params = {
+                            rule_list,
+                            partition: this.filterCondition,
+                            execution_user: this.executor_user,
+                            create_user,
+                        }
+                        this.FesApi.fetch('api/v1/projector/execution/rule', params,{
+                            button:this.$refs.doSave,//防止重复请求
+                            }).then(() => {
+                               this.$Toast.success(this.$t('toastSuccess.executeSuccess'));
+                                this.$refs.executionUser.hide();
+                        });
+                    }
+                })
+            },
+            cancle(ref) {
+                this.$refs[ref].hide();
+            }
+        }
+    };
+</script>
+
+<style lang="scss" scoped>
+    .dialog {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        opacity: 0.6;
+    }
+    .management {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 60%;
+        background: #fff;
+    }
+    .table-container {
+        margin-top: 60px;
+        padding: 0 20px;
+    }
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .execution-modal {
+        /deep/
+        .ui-modal-body {
+            min-height: 300px;
+        }
+    }
+</style>

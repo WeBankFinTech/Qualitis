@@ -1,0 +1,21 @@
+<template>
+    <Row class="all-wrapper p20">
+        <go-back />
+        <proj-form :technical="ruleDetails" />
+    </Row>
+</template>
+<script type="text/ecmascript-6">
+    import projForm from './projForm.fes'
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        components: {
+            projForm
+        },
+        data () {
+            return {
+                ruleDetails: []
+            }
+        }
+    }
+</script>

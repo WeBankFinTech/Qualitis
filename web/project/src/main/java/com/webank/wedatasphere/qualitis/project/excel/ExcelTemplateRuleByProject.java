@@ -69,6 +69,9 @@ public class ExcelTemplateRuleByProject extends BaseRowModel {
     @ExcelProperty(value = "Verification Threshold", index = 14)
     private String threshold;
 
+    @ExcelProperty(value = "AbortOnFailure", index = 15)
+    private Boolean abortOnFailure;
+
     public ExcelTemplateRuleByProject() {
         // Default Constructor
     }
@@ -193,23 +196,33 @@ public class ExcelTemplateRuleByProject extends BaseRowModel {
         this.ruleGroupName = ruleGroupName;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     @Override
     public String toString() {
         return "ExcelTemplateRuleByProject{" +
-                "projectName='" + projectName + '\'' +
-                ", ruleName='" + ruleName + '\'' +
-                ", templateName='" + templateName + '\'' +
-                ", clusterName='" + clusterName + '\'' +
-                ", dbName='" + dbName + '\'' +
-                ", tableName='" + tableName + '\'' +
-                ", colNames='" + colNames + '\'' +
-                ", filter='" + filter + '\'' +
-                ", argumentKey='" + argumentKey + '\'' +
-                ", argumentValue='" + argumentValue + '\'' +
-                ", alarmCheckName='" + alarmCheckName + '\'' +
-                ", checkTemplateName='" + checkTemplateName + '\'' +
-                ", compareType='" + compareType + '\'' +
-                ", threshold='" + threshold + '\'' +
-                '}';
+            "projectName='" + projectName + '\'' +
+            ", ruleGroupName='" + ruleGroupName + '\'' +
+            ", ruleName='" + ruleName + '\'' +
+            ", templateName='" + templateName + '\'' +
+            ", clusterName='" + clusterName + '\'' +
+            ", dbName='" + dbName + '\'' +
+            ", tableName='" + tableName + '\'' +
+            ", colNames='" + colNames + '\'' +
+            ", filter='" + filter + '\'' +
+            ", argumentKey='" + argumentKey + '\'' +
+            ", argumentValue='" + argumentValue + '\'' +
+            ", alarmCheckName='" + alarmCheckName + '\'' +
+            ", checkTemplateName='" + checkTemplateName + '\'' +
+            ", compareType='" + compareType + '\'' +
+            ", threshold='" + threshold + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            '}';
     }
 }

@@ -18,17 +18,41 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import java.util.List;
 
 /**
  * @author howeye
  */
 public class RuleTemplateResponse {
-
     @JsonProperty("template_id")
     private Long ruleTemplateId;
     @JsonProperty("template_name")
     private String ruleTemplateName;
+    @JsonProperty("cluster_num")
+    private Integer clusterNum;
+    @JsonProperty("db_num")
+    private Integer dbNum;
+    @JsonProperty("table_num")
+    private Integer tableNum;
+    @JsonProperty("field_num")
+    private Integer fieldNum;
+    @JsonProperty("datasource_type")
+    private Integer datasourceType;
+    @JsonProperty("action_type")
+    private Integer actionType;
+    @JsonProperty("save_mid_table")
+    private Boolean saveMidTable;
+    @JsonProperty("mid_table_action")
+    private String midTableAction;
+    @JsonProperty("template_type")
+    private Integer templateType;
+
+    @JsonProperty("template_output_meta")
+    private List<TemplateOutputMetaResponse> templateOutputMetaResponses;
+    @JsonProperty("template_mid_table_input_meta")
+    private List<TemplateMidTableInputMetaResponse> templateMidTableInputMetaResponses;
+    @JsonProperty("template_statistics_input_meta")
+    private List<TemplateStatisticsInputMetaResponse> templateStatisticsInputMetaResponses;
 
     public RuleTemplateResponse() {
     }
@@ -36,6 +60,7 @@ public class RuleTemplateResponse {
     public RuleTemplateResponse(Template template) {
         this.ruleTemplateId = template.getId();
         this.ruleTemplateName = template.getName();
+        this.templateType = template.getTemplateType();
     }
 
     public Long getRuleTemplateId() {
@@ -52,6 +77,106 @@ public class RuleTemplateResponse {
 
     public void setRuleTemplateName(String ruleTemplateName) {
         this.ruleTemplateName = ruleTemplateName;
+    }
+
+    public Integer getClusterNum() {
+        return clusterNum;
+    }
+
+    public void setClusterNum(Integer clusterNum) {
+        this.clusterNum = clusterNum;
+    }
+
+    public Integer getDbNum() {
+        return dbNum;
+    }
+
+    public void setDbNum(Integer dbNum) {
+        this.dbNum = dbNum;
+    }
+
+    public Integer getTableNum() {
+        return tableNum;
+    }
+
+    public void setTableNum(Integer tableNum) {
+        this.tableNum = tableNum;
+    }
+
+    public Integer getFieldNum() {
+        return fieldNum;
+    }
+
+    public void setFieldNum(Integer fieldNum) {
+        this.fieldNum = fieldNum;
+    }
+
+    public Integer getDatasourceType() {
+        return datasourceType;
+    }
+
+    public void setDatasourceType(Integer datasourceType) {
+        this.datasourceType = datasourceType;
+    }
+
+    public Integer getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(Integer actionType) {
+        this.actionType = actionType;
+    }
+
+    public Boolean getSaveMidTable() {
+        return saveMidTable;
+    }
+
+    public void setSaveMidTable(Boolean saveMidTable) {
+        this.saveMidTable = saveMidTable;
+    }
+
+    public String getMidTableAction() {
+        return midTableAction;
+    }
+
+    public void setMidTableAction(String midTableAction) {
+        this.midTableAction = midTableAction;
+    }
+
+
+    public Integer getTemplateType() {
+        return templateType;
+    }
+
+    public void setTemplateType(Integer templateType) {
+        this.templateType = templateType;
+    }
+
+    public List<TemplateOutputMetaResponse> getTemplateOutputMetaResponses() {
+        return templateOutputMetaResponses;
+    }
+
+    public void setTemplateOutputMetaResponses(
+        List<TemplateOutputMetaResponse> templateOutputMetaResponses) {
+        this.templateOutputMetaResponses = templateOutputMetaResponses;
+    }
+
+    public List<TemplateMidTableInputMetaResponse> getTemplateMidTableInputMetaResponses() {
+        return templateMidTableInputMetaResponses;
+    }
+
+    public void setTemplateMidTableInputMetaResponses(
+        List<TemplateMidTableInputMetaResponse> templateMidTableInputMetaResponses) {
+        this.templateMidTableInputMetaResponses = templateMidTableInputMetaResponses;
+    }
+
+    public List<TemplateStatisticsInputMetaResponse> getTemplateStatisticsInputMetaResponses() {
+        return templateStatisticsInputMetaResponses;
+    }
+
+    public void setTemplateStatisticsInputMetaResponses(
+        List<TemplateStatisticsInputMetaResponse> templateStatisticsInputMetaResponses) {
+        this.templateStatisticsInputMetaResponses = templateStatisticsInputMetaResponses;
     }
 
     @Override

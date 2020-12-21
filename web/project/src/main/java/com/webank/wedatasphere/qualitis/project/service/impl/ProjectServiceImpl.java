@@ -20,7 +20,9 @@ import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import com.webank.wedatasphere.qualitis.project.dao.ProjectLabelDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
+import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
@@ -40,6 +42,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+import com.webank.wedatasphere.qualitis.submitter.impl.ExecutionManagerImpl;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
@@ -89,6 +92,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private MultiSourceRuleService multiSourceRuleService;
 
+    @Autowired
+    private ProjectLabelDao projectLabelDao;
+
     private HttpServletRequest httpServletRequest;
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
@@ -106,6 +112,8 @@ public class ProjectServiceImpl implements ProjectService {
         newProject.setProjectType(ProjectTypeEnum.NORMAL_PROJECT.getCode());
 
         Project savedProject = projectDao.saveProject(newProject);
+        Set<String> labels = request.getProjectLabels();
+        addProjectLabels(labels, savedProject);
         ProjectDetailResponse response = new ProjectDetailResponse(savedProject, null);
         LOGGER.info("Succeed to add project, response: {}", response);
         return new GeneralResponse<>("200", "{&ADD_PROJECT_SUCCESSFULLY}", response);
@@ -123,8 +131,8 @@ public class ProjectServiceImpl implements ProjectService {
     public GeneralResponse<ProjectDetailResponse> getProjectDetail(Long projectId) throws UnExpectedRequestException {
         // Check existence of project
         Project projectInDb = projectDao.findById(projectId);
-        if (null == projectInDb) {
-            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
+        if (projectInDb == null) {
+            throw new UnExpectedRequestException("Project id {&DOES_NOT_EXIST}");
         }
 
         String username =  HttpUtils.getUserName(httpServletRequest);
@@ -147,7 +155,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Check existence of project
         Project projectInDb = projectDao.findById(request.getProjectId());
-        if (null == projectInDb) {
+        if (projectInDb == null) {
             throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
         }
         LOGGER.info("Succeed to get project. project: {}", projectInDb);
@@ -173,15 +181,21 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // Save project
-        BeanUtils.copyProperties(request, projectInDb);
         projectInDb.setName(request.getProjectName());
-
+        projectInDb.setDescription(request.getDescription());
         // Delete old projectUser
         projectUserDao.deleteByProject(projectInDb);
         LOGGER.info("Succeed to delete all project_user, project_id: {}", request.getProjectId());
+        // Delete old projectLabel
+        projectLabelDao.deleteByProject(projectInDb);
+        LOGGER.info("Succeed to delete all project_label, project_id: {}", request.getProjectId());
         // Rebuild projectUser
         setProjectUser(projectInDb, user);
-
+        // Rebuild project labels.
+        addProjectLabels(request.getProjectLabelStrs(), projectInDb);
+        // Record modify user
+        projectInDb.setModifyUser(user.getUsername());
+        projectInDb.setModifyTime(ExecutionManagerImpl.PRINT_TIME_FORMAT.format(new Date()));
         Project savedProject = projectDao.saveProject(projectInDb);
         LOGGER.info("Succeed to modify project. project: {}", savedProject);
         return new GeneralResponse<>("200", "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", null);
@@ -254,7 +268,8 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // Save project
-        Project newProject = new Project(projectName, projectDescription, user.getUsername(), user.getChineseName(), user.getDepartment());
+        Project newProject = new Project(projectName, projectDescription, user.getUsername(), user.getChineseName(), user.getDepartment(),
+            ExecutionManagerImpl.PRINT_TIME_FORMAT.format(new Date()));
 
         // Create project user
         setProjectUser(newProject, user);
@@ -297,6 +312,41 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
         throw new UnExpectedRequestException("{&NO_PERMISSION_OPERATING_PROJECT}");
+    }
+
+    @Override
+    public void addProjectLabels(Set<String> labels, Project project) {
+        Map<String, ProjectLabel> map = new HashMap<>(2);
+        if (project.getProjectLabels() != null) {
+            for (ProjectLabel projectLabel : project.getProjectLabels()) {
+                map.put(projectLabel.getLabelName(), projectLabel);
+            }
+        } else {
+            project.setProjectLabels(new HashSet<>());
+        }
+        if (labels != null && ! labels.isEmpty()) {
+            Set<ProjectLabel> projectLabels = new HashSet<>();
+            for (String labelName : labels) {
+                if (map.keySet().contains(labelName)) {
+                    continue;
+                }
+                ProjectLabel projectLabel = new ProjectLabel();
+                projectLabel.setProject(project);
+                projectLabel.setLabelName(labelName);
+                projectLabels.add(projectLabel);
+            }
+            LOGGER.info("Start to save project labels. Labels: {}", Arrays.toString(projectLabels.toArray()));
+            projectLabelDao.saveAll(projectLabels);
+            for (String temp : map.keySet()) {
+                if (! labels.contains(temp)) {
+                    map.remove(temp);
+                }
+            }
+            project.setProjectLabels(new HashSet<>(map.values()));
+            LOGGER.info("Succeed to save project labels.");
+        } else {
+            project.setProjectLabels(null);
+        }
     }
 
     private void deleteAllRules(Iterable<Rule> ruleList) throws UnExpectedRequestException {

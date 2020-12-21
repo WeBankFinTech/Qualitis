@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 import java.util.List;
 
@@ -54,6 +52,10 @@ public class AddCustomRuleRequest {
 
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
 
     public AddCustomRuleRequest() {
 
@@ -155,10 +157,17 @@ public class AddCustomRuleRequest {
         this.ruleGroupId = ruleGroupId;
     }
 
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
     public static void checkRequest(AddCustomRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkObject(request.getProjectId(), "Project id");
-
         AddCustomRuleRequest.checkCustomRuleRequest(request);
     }
 
@@ -171,8 +180,8 @@ public class AddCustomRuleRequest {
         CommonChecker.checkString(request.getFromContent(), "From content");
         CommonChecker.checkString(request.getWhereContent(), "Where content");
         CommonChecker.checkString(request.getClusterName(), "Cluster name");
-
         CommonChecker.checkObject(request.getAlarm(), "alarm");
+        CommonChecker.checkObject(request.getAbortOnFailure(), "abort_on_failure");
         if (request.getAlarm()) {
             CommonChecker.checkObject(request.getAlarmVariable(), "alarm_variable");
             if (request.getAlarmVariable().size() == 0) {

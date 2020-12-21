@@ -18,7 +18,10 @@ package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.beans.BeanUtils;
 
 import java.util.ArrayList;
@@ -42,7 +45,15 @@ public class ProjectDetailResponse {
         BeanUtils.copyProperties(project, projectDetail);
         projectDetail.setProjectId(project.getId());
         projectDetail.setProjectName(project.getName());
-
+        projectDetail.setCreateUser(project.getCreateUser());
+        Set<ProjectLabel> labelSet = project.getProjectLabels();
+        if (labelSet != null && ! labelSet.isEmpty()) {
+            Set<String> labels = new HashSet<>();
+            for (ProjectLabel projectLabel : labelSet) {
+                labels.add(projectLabel.getLabelName());
+            }
+            projectDetail.setProjectLabels(labels);
+        }
         ruleDetails = new ArrayList<>();
         if (null != ruleList) {
             for (Rule rule : ruleList) {

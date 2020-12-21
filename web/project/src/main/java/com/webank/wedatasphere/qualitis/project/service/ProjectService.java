@@ -30,6 +30,7 @@ import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -95,6 +96,13 @@ public interface ProjectService {
      * @throws UnExpectedRequestException
      */
     Project addProjectReal(Long userId, String projectName, String projectDescription) throws UnExpectedRequestException;
+
+    /**
+     * Add project labels
+     * @param labels
+     * @param project
+     */
+    void addProjectLabels(Set<String> labels, Project project);
 
     /**
      * Paging get all project by user and type

@@ -49,6 +49,8 @@ public class GeneralExecutionRequest {
     @JsonProperty("group_id")
     private Long groupId;
 
+
+
     public GeneralExecutionRequest() {
         this.crossTable = false;
     }

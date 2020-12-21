@@ -11,6 +11,8 @@ spring:
   messages:
     encoding: UTF-8
     basename: i18n/messages
+
+
 # logging
 logging:
   config: classpath:log4j2-${spring.profiles.active}.xml
@@ -18,9 +20,16 @@ logging:
 server:
   port: 8090
   connection-timeout: 6000000 # 600s
+  error:
+    whitelabel:
+      enabled: false
+
 
 workflow:
   enable: true
+
+ha:
+  enable: false
 
 system:
   config:

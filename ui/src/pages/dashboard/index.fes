@@ -1,0 +1,333 @@
+<template>
+    <pageContainer>
+        <Row class="p20">
+            <Cell span="20" offset="2" class="p20 list-status">
+                <div class="task p20">
+                    {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
+                    <span class="green pl20">
+                        {{ todayTask.application_succ_num || 0 }}
+                    </span>/<span class="red">
+                        {{ todayTask.application_fail_num || 0 }}
+                    </span>/<span class="blue">
+                        {{ todayTask.application_fail_check_num || 0 }}
+                    </span>
+                </div>
+                <AlarmsList :list="todayTask.applications" />
+                <Pagination :current="taskPageInfo.page" :size="taskPageInfo.size" :total="taskPageInfo.total" class="pl20 pr20"
+                    @on-change="changeTaskPage" />
+            </Cell>
+
+            <Cell span="20" offset="2" class="chart-cbox">
+                <div class="task-content">
+                    <div class="flex">
+                        <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
+                        <p class="rangeBtn">
+                            <a :class="{'current': taskRange.step_size==7}" @click="changeDateRange('taskChartData',7)">
+                                {{ $t('dashboard.last7Days') }}
+                            </a>
+                        </p>
+                        <p class="rangeBtn">
+                            <a :class="{'current': taskRange.step_size==30}" @click="changeDateRange('taskChartData',30)">
+                                {{ $t('dashboard.last30Days') }}
+                            </a>
+                        </p>
+                    </div>
+                    <LineChart :chartdata="taskChartData.chartdata" :options="taskChartData.options" class="mt20" />
+                </div>
+            </Cell>
+        </Row>
+    </pageContainer>
+</template>
+<style>
+    canvas {
+        border-radius: 5px;
+        box-shadow: 0px 2px 15px rgba(25, 25, 25, 0.27);
+        margin:  25px 0;
+    }
+</style>
+<style scoped>
+    .alarm-day, .list-status {
+        padding-left: 0
+    }
+    .status,.task {
+        text-align: center;
+        font-size: 1.6rem;
+    }
+    .datepicker {
+        flex: 6
+    }
+    .rangeBtn {
+        height: 32px;
+        line-height: 32px;
+        flex: 1;
+        padding-left: 20px;
+    }
+    .current {
+        color: #333;
+    }
+    .red {
+        color: #f00;
+    }
+    .green {
+        color: green;
+    }
+    .blue {
+        color: blue;
+    }
+    .chart-cbox {
+        margin-top: 20px;
+    }
+    .task-content {
+        margin-right: 30px;
+    }
+</style>
+
+<script type="text/ecmascript-6">
+    import Vue from "vue";
+    import { dateFormat } from "assets/js/utils.js";
+    import { Bar } from "vue-chartjs";
+    import AlarmsList from './AlarmsList';
+    import pageContainer from '../../components/template';
+    let LineChart = Vue.extend({
+        extends: Bar,
+        props: {
+            chartdata: {
+                type: Object,
+                default: null
+            },
+            options: {
+                type: Object,
+                default: null
+            }
+        },
+        data() {
+            return {
+                defaultOpt: {
+                    layout: {
+                        padding: 15
+                    },
+                    legend: {
+                        position: 'bottom'
+                    },
+                    scales: {
+                        gridLines: {
+                            display: false
+                        },
+                        yAxes: [{
+                            ticks: {
+                                min: 0,
+                                stepSize: 1
+                            }
+                        }]
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            }
+        },
+        watch: {
+            chartdata() {
+                this.renderAction();
+            }
+        },
+        mounted() {
+            this.renderAction();
+        },
+        methods: {
+            hexToRgba(hex, opacity) {
+                return "rgba(" + parseInt("0x" + hex.slice(1, 3)) + "," + parseInt("0x" + hex.slice(3, 5)) +
+                    "," + parseInt("0x" + hex.slice(5, 7)) + "," + opacity + ")";
+            },
+            adjustTick() {
+                let values = [];
+                let stepSize = 1;
+                this.chartdata.datasets.forEach(item => {
+                    values = values.concat(item.data);
+                })
+                values.sort((a,b) => b-a);
+                if(values[0] > 17) {
+                    stepSize = Math.ceil(values[0]/17);
+                }
+                return stepSize
+            },
+            renderAction() {
+                this.chartdata.datasets.forEach(sets => {
+                    let gradient = this.$refs.canvas.getContext('2d').createLinearGradient(0, 500, 0, 0);
+                    gradient.addColorStop(0.2, this.hexToRgba(sets.backgroundColor, 0.1));
+                    gradient.addColorStop(0.5, this.hexToRgba(sets.backgroundColor, 0.3));
+                    gradient.addColorStop(0.7, this.hexToRgba(sets.backgroundColor, 0.6));
+                    gradient.addColorStop(1, this.hexToRgba(sets.backgroundColor, 1));
+                    sets.backgroundColor = gradient;
+                })
+                let stepSize = this.adjustTick(this.chartdata)
+                this.defaultOpt.scales.yAxes.forEach(ax=>{
+                    ax.ticks.stepSize = stepSize
+                })
+                let options = Object.assign(this.defaultOpt, this.options)
+                this.renderChart(this.chartdata, options);
+            }
+        }
+    });
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        components: {
+            LineChart,
+            AlarmsList,
+            pageContainer
+        },
+        FesReady: function () {
+            this.loadTaskTodayData(true);
+        },
+        watch: {
+            '$i18n.locale'(){
+                this.loadTaskTodayData(true);
+            }
+        },
+        data() {
+            return {
+                alarmPageInfo: {
+                    page: 1,
+                    size: 5,
+                    total: 0
+                },
+                taskPageInfo: {
+                    page: 1,
+                    size: 5,
+                    total: 0
+                },
+                todayTask: {},
+                taskRange: {
+                    step_size: 7,
+                    range: null
+                },
+                taskChartData: {
+                    chartdata: {
+                        labels: [],
+                        datasets: []
+                    },
+                    options: {
+                        title: {
+                            display: false,
+                            text: '任务状态趋势',
+                            fontColor: "#333",
+                            fontSize: "16"
+                        }
+                    }
+                }
+            }
+        },
+        methods: {
+            fetchData(action, params = {}, method = "get") {
+                return this.FesApi.fetch(`api/v1/projector/application/${action}`, params, method);
+            },
+            async loadTaskTodayData(init = false, params = this.taskPageInfo) {
+                let data = await this.fetchData("index/application/today", {
+                    page: params.page - 1,
+                    size: params.size
+                }, 'post');
+                this.todayTask = data || {};
+                this.taskPageInfo.total = Math.ceil(data.total_num / this.taskPageInfo.size);
+                if (init) this.changeDateRange('taskChartData');
+            },
+            async loadTaskData({
+                start_date,
+                end_date,
+                step_size
+            }) {
+                let params = step_size ? {
+                    step_size: step_size * -1
+                } : {
+                    start_date,
+                    end_date
+                };
+                let taskChart = await this.fetchData("index/application/chart", params, "post");
+                this.renderTaskChartData(taskChart);
+            },
+            renderTaskChartData(taskChart = []) {
+                if (!Array.isArray(taskChart)) {
+                    taskChart = [];
+                }
+                let application_total_num = [],
+                    application_fail_num = [],
+                    application_succ_num = [],
+                    application_fail_check_num = [],
+                    taskDates = [];
+                taskChart.reverse().forEach(item => {
+                    taskDates.push(item.date);
+                    application_total_num.push(item.application_total_num);
+                    application_fail_num.push(item.application_fail_num);
+                    application_succ_num.push(item.application_succ_num);
+                    application_fail_check_num.push(item.application_fail_check_num)
+                });
+                let taskDatasets = [{
+                    label: this.$t('dashboard.totalNumberOfApplication'),
+                    backgroundColor: "#e4df2c",
+                    borderColor: '#e4df2c',
+                    borderWidth: 1,
+                    data: application_total_num
+                }, {
+                    label: this.$t('dashboard.failedNumberOfAppliaction'),
+                    backgroundColor: '#f87979',
+                    borderColor: '#f87979',
+                    borderWidth: 1,
+                    data: application_fail_num
+                }, {
+                    label: this.$t('dashboard.passNumberOfApplication'),
+                    backgroundColor: '#1f984a',
+                    borderColor: '#1f984a',
+                    borderWidth: 1,
+                    data: application_succ_num
+                }, {
+                    label: this.$t('dashboard.notPassNumberOfApplication'),
+                    backgroundColor: '#EE82EE',
+                    borderColor: '#EE82EE',
+                    borderWidth: 1,
+                    data: application_fail_check_num
+                }];
+                let taskChartData = Object.assign({},
+                    this.taskChartData, {
+                        chartdata: {
+                            labels: taskDates,
+                            datasets: taskDatasets
+                        }
+                    }
+                );
+                this.taskChartData = taskChartData;
+            },
+            async changeDateRange(type, step_size = 7) {
+                let current = +new Date();
+                let start = current - step_size * 24 * 60 * 60 * 1000;
+                if (type == "taskChartData") {
+                    this.taskRange = {
+                        step_size,
+                        range: [start, current]
+                    }
+                    this.loadTaskData({
+                        step_size
+                    });
+                }
+            },
+            changeTaskRange(range) {
+                if (range) {
+                    let start_date = dateFormat("yyyy-MM-dd", new Date(range[0]));
+                    let end_date = dateFormat("yyyy-MM-dd", new Date(range[1]));
+                    this.loadTaskData({
+                        start_date,
+                        end_date
+                    });
+                }
+            },
+            changeTaskPage({
+                current,
+                size
+            }) {
+                this.taskPageInfo = Object.assign(this.taskPageInfo, {
+                    page: current,
+                    size
+                });
+                this.loadTaskTodayData();
+            },
+        }
+    }
+</script>
