@@ -63,6 +63,9 @@ public class MultiRuleDetailResponse {
     private List<AlarmConfigResponse> alarmVariable;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
 
     public MultiRuleDetailResponse() {
     }
@@ -77,7 +80,7 @@ public class MultiRuleDetailResponse {
 
         this.source = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 0);
         this.target = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 1);
-
+        this.abortOnFailure = rule.getAbortOnFailure();
         // 设置mapping
         this.mappings = new ArrayList<>();
         for (RuleDataSourceMapping ruleDataSourceMapping : rule.getRuleDataSourceMappings()) {
@@ -90,7 +93,6 @@ public class MultiRuleDetailResponse {
         if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
             this.filter = filterRuleVariable.iterator().next().getValue();
         }
-
         this.alarm = rule.getAlarm();
         // 设置alarmVariable
         this.alarmVariable = new ArrayList<>();
@@ -198,5 +200,13 @@ public class MultiRuleDetailResponse {
 
     public void setRuleTemplateName(String ruleTemplateName) {
         this.ruleTemplateName = ruleTemplateName;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 }

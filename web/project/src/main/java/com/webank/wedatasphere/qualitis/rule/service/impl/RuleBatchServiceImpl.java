@@ -20,49 +20,47 @@ import com.alibaba.excel.ExcelReader;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.metadata.Sheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
-import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.*;
-import com.webank.wedatasphere.qualitis.rule.dao.*;
-import com.webank.wedatasphere.qualitis.rule.excel.ExcelCustomRule;
-import com.webank.wedatasphere.qualitis.rule.excel.ExcelMultiTemplateRule;
-import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
-import com.webank.wedatasphere.qualitis.rule.excel.ExcelTemplateRule;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
-import com.webank.wedatasphere.qualitis.rule.request.*;
-import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.MappingOperationEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
-import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
-import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.*;
-import com.webank.wedatasphere.qualitis.rule.dao.*;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelCustomRule;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelMultiTemplateRule;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelTemplateRule;
-import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
+import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
@@ -73,6 +71,20 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Context;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -82,19 +94,8 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Context;
-import java.io.*;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -129,6 +130,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
     @Autowired
     private MultiSourceRuleService multiSourceRuleService;
 
+    @Autowired
+    private LocaleParser localeParser;
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBatchServiceImpl.class);
     private static final String SUPPORT_EXCEL_SUFFIX_NAME = ".xlsx";
     private final FastDateFormat FILE_DATE_FORMATTER = FastDateFormat.getInstance("yyyyMMddHHmmss");
@@ -284,6 +287,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             AddMultiSourceRuleRequest addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
             String ruleTemplateName = ruleInfos.get(0).getTemplateName();
             String ruleGroupName = ruleInfos.get(0).getRuleGroupName();
+            addMultiSourceRuleRequest.setAbortOnFailure(ruleInfos.get(0).getAbortOnFailure());
             if (StringUtils.isBlank(ruleGroupName)) {
                 throw new UnExpectedRequestException("RuleGroupName {&CAN_NOT_BE_NULL_OR_EMPTY}");
             }
@@ -413,7 +417,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
                 throw new UnExpectedRequestException("{&TEMPLATE_OUTPUT_NAME} {&DOES_NOT_EXIST}");
             }
             AlarmConfigRequest alarmConfigRequest = new AlarmConfigRequest();
-            alarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName));
+            String localeStr = httpServletRequest.getHeader("Content-Language");
+            alarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName, localeStr));
             alarmConfigRequest.setCompareType(CompareTypeEnum.getCompareTypeCode(compareTypeName));
             alarmConfigRequest.setThreshold(Double.valueOf(threshold));
             alarmConfigRequest.setOutputMetaId(templateOutputMeta.getId());
@@ -448,6 +453,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             String whereContent = null;
             String clusterName = null;
             String ruleGroupName = null;
+            addCustomRuleRequest.setAbortOnFailure(ruleInfos.get(0).getAbortOnFailure());
             for (ExcelCustomRule excelCustomRule : ruleInfos) {
                 getCustomAlarmConfig(alarmConfigRequests, excelCustomRule);
                 outputName = excelCustomRule.getOutputName();
@@ -501,6 +507,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             AddRuleRequest addRuleRequest = new AddRuleRequest();
             String ruleTemplateName = ruleInfos.get(0).getTemplateName();
             String ruleGroupName = ruleInfos.get(0).getRuleGroupName();
+            addRuleRequest.setAbortOnFailure(ruleInfos.get(0).getAbortOnFailure());
             if (StringUtils.isBlank(ruleGroupName)) {
                 throw new UnExpectedRequestException("RuleGroupName {&CAN_NOT_BE_NULL_OR_EMPTY}");
             }
@@ -555,7 +562,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             String threshold = excelCustomRule.getThreshold();
 
             CustomAlarmConfigRequest customAlarmConfigRequest = new CustomAlarmConfigRequest();
-            customAlarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName));
+            String localeStr = httpServletRequest.getHeader("Content-Language");
+            customAlarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName, localeStr));
             customAlarmConfigRequest.setCompareType(CompareTypeEnum.getCompareTypeCode(compareTypeName));
             customAlarmConfigRequest.setThreshold(Double.valueOf(threshold));
 
@@ -575,7 +583,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
                 throw new UnExpectedRequestException("{&TEMPLATE_OUTPUT_NAME} {&DOES_NOT_EXIST}");
             }
             AlarmConfigRequest alarmConfigRequest = new AlarmConfigRequest();
-            alarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName));
+            String localeStr = httpServletRequest.getHeader("Content-Language");
+            alarmConfigRequest.setCheckTemplate(CheckTemplateEnum.getCheckTemplateCode(checkTemplateName, localeStr));
             alarmConfigRequest.setCompareType(CompareTypeEnum.getCompareTypeCode(compareTypeName));
             alarmConfigRequest.setThreshold(Double.valueOf(threshold));
             alarmConfigRequest.setOutputMetaId(templateOutputMeta.getId());
@@ -728,11 +737,12 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             ruleLinePrefix.setFromContent(fromContent);
             ruleLinePrefix.setWhereContent(whereContent);
             ruleLinePrefix.setSaveMidTable(saveMidTable);
-
+            ruleLinePrefix.setAbortOnFailure(rule.getAbortOnFailure());
             Boolean alarmFlag = false;
             for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
                 String alarmOutputName = alarmConfig.getTemplateOutputMeta().getOutputName();
-                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate());
+                String localeStr = httpServletRequest.getHeader("Content-Language");
+                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate(), localeStr);
                 String alarmCompareType = CompareTypeEnum.getCompareTypeName(alarmConfig.getCompareType());
                 Double threshold = alarmConfig.getThreshold();
                 ExcelCustomRule tmp = new ExcelCustomRule(ruleLinePrefix);
@@ -767,6 +777,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             ruleLinePrefix.setRuleName(ruleName);
             ruleLinePrefix.setTemplateName(templateName);
             ruleLinePrefix.setClusterName(clusterName);
+            ruleLinePrefix.setAbortOnFailure(rule.getAbortOnFailure());
             List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
                     ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
             if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
@@ -807,7 +818,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             }
             for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
                 String alarmOutputName = alarmConfig.getTemplateOutputMeta().getOutputName();
-                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate());
+                String localeStr = httpServletRequest.getHeader("Content-Language");
+                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate(), localeStr);
                 String alarmCompareType = CompareTypeEnum.getCompareTypeName(alarmConfig.getCompareType());
                 Double threshold = alarmConfig.getThreshold();
                 ExcelMultiTemplateRule tmp = new ExcelMultiTemplateRule(ruleLinePrefix);
@@ -835,6 +847,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             ruleLinePrefix.setRuleGroupName(rule.getRuleGroup().getRuleGroupName());
             ruleLinePrefix.setRuleName(ruleName);
             ruleLinePrefix.setTemplateName(templateName);
+            ruleLinePrefix.setAbortOnFailure(rule.getAbortOnFailure());
             for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
                 String clusterName = ruleDataSource.getClusterName();
                 String databaseName = ruleDataSource.getDbName();
@@ -874,7 +887,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
 
             for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
                 String alarmOutputName = alarmConfig.getTemplateOutputMeta().getOutputName();
-                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate());
+                String localeStr = httpServletRequest.getHeader("Content-Language");
+                String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(alarmConfig.getCheckTemplate(), localeStr);
                 String alarmCompareType = CompareTypeEnum.getCompareTypeName(alarmConfig.getCompareType());
                 Double threshold = alarmConfig.getThreshold();
                 ExcelTemplateRule tmp = new ExcelTemplateRule(ruleLinePrefix);

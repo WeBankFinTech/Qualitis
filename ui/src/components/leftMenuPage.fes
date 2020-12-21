@@ -1,0 +1,34 @@
+<template>
+    <div class="left-menu-page">
+        <div class="left">
+            <LeftMenu ref="leftMenu" :items="items" :default-active="defaultActive" />
+        </div>
+        <div class="right">
+            <div ref="content" class="content">
+                 <router-view />
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        FesHeader: true,
+        props: {
+            items: {
+                type: Array
+            },
+            defaultActive: {
+                type: String,
+                default: '0'
+            }
+        },
+    }
+
+</script>
+<style lang="scss" scoped>
+    .left {
+        width: 210px;
+        height: 100%;
+    }
+</style>

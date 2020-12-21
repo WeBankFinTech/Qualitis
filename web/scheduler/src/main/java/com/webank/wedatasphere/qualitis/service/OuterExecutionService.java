@@ -90,6 +90,7 @@ public interface OuterExecutionService {
      * @throws ExecutionException
      * @throws InterruptedException
      * @throws ClusterInfoNotConfigException
+     * @throws SystemConfigException
      */
     ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, String partition, String executionUser, Application newApplication, Date date)
         throws RuleVariableNotSupportException,

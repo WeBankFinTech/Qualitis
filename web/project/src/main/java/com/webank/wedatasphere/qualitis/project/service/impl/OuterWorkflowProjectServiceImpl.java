@@ -32,6 +32,7 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,8 +74,9 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
 
         Project newProject = projectService.addProjectReal(userInDb.getId(), request.getProjectName(), request.getDescription());
         newProject.setProjectType(ProjectTypeEnum.WORKFLOW_PROJECT.getCode());
-
+        Set<String> labels = request.getProjectLabels();
         Project savedProject = projectDao.saveProject(newProject);
+        projectService.addProjectLabels(labels, savedProject);
         ProjectDetailResponse response = new ProjectDetailResponse(savedProject, null);
         LOGGER.info("Succeed to add workflow project, response: {}", response);
         return new GeneralResponse<>("200", "{&ADD_PROJECT_SUCCESSFULLY}", response);

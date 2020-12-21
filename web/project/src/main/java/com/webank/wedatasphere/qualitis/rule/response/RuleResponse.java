@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +47,17 @@ public class RuleResponse {
     @JsonProperty("rule_type")
     private Integer ruleType;
 
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
+    @JsonProperty("project_id")
+    private String newProjectId;
+
     public RuleResponse() {
+    }
+
+    public RuleResponse(Long ruleGroupId) {
+        this.ruleGroupId = ruleGroupId;
     }
 
     public RuleResponse(Rule rule) {
@@ -60,9 +68,9 @@ public class RuleResponse {
         this.ruleGroupId = rule.getRuleGroup().getId();
         this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
         this.ruleType = rule.getRuleType();
-
         clusterName = new ArrayList<>();
         tableName = new ArrayList<>();
+        this.abortOnFailure = rule.getAbortOnFailure();
         for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
             clusterName.add(ruleDataSource.getClusterName());
             tableName.add(ruleDataSource.getDbName() + "." + ruleDataSource.getTableName());
@@ -139,5 +147,21 @@ public class RuleResponse {
 
     public void setRuleType(Integer ruleType) {
         this.ruleType = ruleType;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
+    }
+
+    public String getNewProjectId() {
+        return newProjectId;
+    }
+
+    public void setNewProjectId(String newProjectId) {
+        this.newProjectId = newProjectId;
     }
 }

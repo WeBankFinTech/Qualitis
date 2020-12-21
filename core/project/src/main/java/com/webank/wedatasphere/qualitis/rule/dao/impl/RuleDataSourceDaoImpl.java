@@ -21,9 +21,11 @@ import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleDataSourceReposi
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -38,50 +40,76 @@ import javax.persistence.criteria.Predicate;
 @Repository
 public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
 
-  @Autowired
-  private RuleDataSourceRepository ruleDataSourceRepository;
+    @Autowired
+    private RuleDataSourceRepository ruleDataSourceRepository;
 
-  @Override
-  public List<RuleDataSource> saveAllRuleDataSource(List<RuleDataSource> ruleDataSources) {
-    return ruleDataSourceRepository.saveAll(ruleDataSources);
-  }
+    @Override
+    public List<RuleDataSource> saveAllRuleDataSource(List<RuleDataSource> ruleDataSources) {
+        return ruleDataSourceRepository.saveAll(ruleDataSources);
+    }
 
-  @Override
-  public List<RuleDataSource> findByRule(Rule rule) {
-    return ruleDataSourceRepository.findByRule(rule);
-  }
+    @Override
+    public List<RuleDataSource> findByRule(Rule rule) {
+        return ruleDataSourceRepository.findByRule(rule);
+    }
 
-  @Override
-  public List<RuleDataSource> findByProjectId(Long projectId) {
-    return ruleDataSourceRepository.findByProjectId(projectId);
-  }
+    @Override
+    public List<RuleDataSource> findByProjectId(Long projectId) {
+        return ruleDataSourceRepository.findByProjectId(projectId);
+    }
 
-  @Override
-  public List<RuleDataSource> findByProjectUser(Long projectId, String cluster, String db,
-      String table) {
-    return ruleDataSourceRepository.findAll((root, query, cb) -> {
-      List<Predicate> predicates = new ArrayList<>();
-      if (projectId != null) {
-        predicates.add(cb.equal(root.get("projectId"), projectId));
-      }
-      if (StringUtils.isNotBlank(cluster)) {
-        predicates.add(cb.equal(root.get("clusterName"), cluster));
-      }
-      if (StringUtils.isNotBlank(db)) {
-        predicates.add(cb.equal(root.get("dbName"), db));
-      }
-      if (StringUtils.isNotBlank(table)) {
-        predicates.add(cb.equal(root.get("tableName"), table));
-      }
-      Predicate[] p = new Predicate[predicates.size()];
-      query.where(cb.and(predicates.toArray(p)));
+    @Override
+    public List<RuleDataSource> findByProjectUser(Long projectId, String cluster, String db,
+        String table) {
+        return ruleDataSourceRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (projectId != null) {
+                predicates.add(cb.equal(root.get("projectId"), projectId));
+            }
+            if (StringUtils.isNotBlank(cluster)) {
+                predicates.add(cb.equal(root.get("clusterName"), cluster));
+            }
+            if (StringUtils.isNotBlank(db)) {
+                predicates.add(cb.equal(root.get("dbName"), db));
+            }
+            if (StringUtils.isNotBlank(table)) {
+                predicates.add(cb.equal(root.get("tableName"), table));
+            }
+            Predicate[] p = new Predicate[predicates.size()];
+            query.where(cb.and(predicates.toArray(p)));
 
-      return query.getRestriction();
-    });
-  }
+            return query.getRestriction();
+        });
+    }
 
-  @Override
-  public List<Map<String, String>> findProjectDsByUser(String user) {
-    return ruleDataSourceRepository.findProjectDsByUser(user);
-  }
+    @Override
+    public List<Map<String, String>> findProjectDsByUser(String user) {
+        return ruleDataSourceRepository.findProjectDsByUser(user);
+    }
+
+    @Override
+    public List<Map<String, String>> findProjectDsByUser(String user, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return ruleDataSourceRepository.findProjectDsByUser(user, pageable).getContent();
+    }
+
+
+    @Override
+    public List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user) {
+        return ruleDataSourceRepository.findRuleByDataSource(clusterName, dbName, tableName, colName, user);
+    }
+
+    @Override
+    public List<Map<String, String>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName) {
+        return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName);
+    }
+
+    @Override
+    public List<Map<String, String>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName, pageable).getContent();
+    }
+
 }

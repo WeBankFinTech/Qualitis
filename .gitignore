@@ -1,5 +1,4 @@
 .gradle
-.github
 .git/
 .idea/
 build/
@@ -10,4 +9,4 @@ out/
 __pycache__/
 *.pyc
 logs
-dist/
+dist

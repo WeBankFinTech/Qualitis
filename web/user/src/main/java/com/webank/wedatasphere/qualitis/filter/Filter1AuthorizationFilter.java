@@ -19,17 +19,19 @@ package com.webank.wedatasphere.qualitis.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
 import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
+import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.Permission;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.service.LoginService;
+import com.webank.wedatasphere.qualitis.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.management.relation.RoleNotFoundException;
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,6 +49,15 @@ public class Filter1AuthorizationFilter implements Filter {
 
     @Autowired
     private AuthFilterUrlConfig authFilterUrlConfig;
+
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private LoginService loginService;
+
+    @Autowired
+    private UserService userService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Filter1AuthorizationFilter.class);
 
@@ -102,22 +113,26 @@ public class Filter1AuthorizationFilter implements Filter {
             String method = requestWrapper.getMethod();
             if (!checkPermission(requestUrl, method, permissions)) {
                 writeForbidden("no permissions", response);
-                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", user, requestWrapper.getRequestURI());
+                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", user.toString().replace("\r", "").replace("\n", ""),
+                    requestWrapper.getRequestURI().replace("\r", "").replace("\n", ""));
                 return;
             }
         }
         Object user = session.getAttribute("user");
-        LOGGER.info("User: {} succeed to access url: {}", user, requestWrapper.getRequestURI());
+        LOGGER.info("User: {} succeed to access url: {}", user.toString().replace("\r", "").replace("\n", ""),
+            requestWrapper.getRequestURI().replace("\r", "").replace("\n", ""));
         filterChain.doFilter(requestWrapper, response);
     }
 
     private void printReceiveLog(HttpServletRequest request) throws IOException {
         String requestUrl = request.getRequestURI();
         if (RequestMethod.GET.name().equalsIgnoreCase(request.getMethod())) {
-            LOGGER.info("Receive request:[{}], method:[{}]", requestUrl, request.getMethod());
+            LOGGER.info("Receive request:[{}], method:[{}]", requestUrl.replace("\r", "").replace("\n", ""),
+                request.getMethod().replace("\r", "").replace("\n", ""));
         } else {
             String body = CharStreams.toString(request.getReader());
-            LOGGER.info("Receive request:[{}], method:[{}], body:\n{}", requestUrl, request.getMethod(), body);
+            LOGGER.info("Receive request:[{}], method:[{}], body:\n{}", requestUrl.replace("\r", "").replace("\n", ""),
+                request.getMethod().replace("\r", "").replace("\n", ""), body.replace("\r", "").replace("\n", ""));
         }
     }
 

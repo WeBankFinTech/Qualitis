@@ -1,0 +1,304 @@
+<template>
+    <pageContainer>
+        <Row class="all-wrapper p20">
+            <div class="breadcrumb-container mb10">
+                <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('common.clustetrConfig') }}</span>
+            </div>
+            <div>
+                <Wb-button type="primary" @click="addTr">{{ $t('common.add') }}</Wb-button>
+            </div>
+            <Cell span="24">
+                <Wb-form ref="dataMapTable" :rule="ruleValidate">
+                    <div class="adr-wrapper">
+                        <span class="adr">{{ $t('configureParameterPage.errorData') }}</span>
+                        <Form-item prop="dataMapValue" style="displat: line-block">
+                            <Wb-input v-model="dataMapValue" prop="dataMapValue" width="600px" />
+                        </Form-item>
+                        <Wb-button type="primary" class="map-button" @click="newDataMap">{{ $t('common.refresh') }}</Wb-button>
+                        <Icon class="question" type="question-circle-o" color="#555" size="22" :title="title" />
+                    </div>
+                </Wb-form>
+            </Cell>
+            <Cell span="24">
+                <Wb-table :data="clusterData" border :no-data-text="$t('common.noData')">
+                    <Column v-if="hideId" prop="cluster_info_id" :name="$t('configureParameterPage.clusterParameterId')" />
+                    <Column prop="cluster_name" :name="$t('configureParameterPage.clusterName')" />
+                    <Column prop="cluster_type" :name="$t('configureParameterPage.clusterType')" />
+                    <Column prop="linkis_address" :name="$t('common.linkis')" />
+                    <Column prop="linkis_token" name="LinkisToken" />
+                    <Column :name="$t('common.operate')" :component="operationComponent" />
+                </Wb-table>
+                <div class="flex mt10">
+                    <Pagination class="m10" :size-list="sizeList" :size="pagination.size"
+                        :current="pagination.current" :total="pagination.total"
+                        @on-change="changePage" />
+                </div>
+                <Loading v-show="clusterLoading" class="loading-layout" />     
+            </Cell>
+ 
+            <modal ref="clusterForm" :title="$t('configureParameterPage.parameterConfiguration')" width="700">
+                <Wb-form ref="formValidate" :label-width="200" :rule="formValidRule">
+                    <Form-item :label="$t('configureParameterPage.clusterName')" prop="clusterName">
+                        <Wb-input v-model="clusterName" />
+                    </Form-item>
+                    <Form-item :label="$t('configureParameterPage.clusterType')" prop="clusterType">
+                        <Wb-input v-model="clusterType" />
+                    </Form-item>
+                    <Form-item :label="$t('common.linkis')" prop="linkis_address">
+                        <Wb-input v-model="linkis_address" />
+                    </Form-item>
+                    <Form-item label="LinkisToken" prop="linkis_token">
+                        <Wb-input v-model="linkis_token" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+        </Row>
+    </pageContainer>   
+</template>
+
+<script type="text/ecmascript-6">
+    import { isIE } from 'assets/js/utils';
+    import { sizeList } from 'assets/js/sizeList';
+    import pageContainer from '../../components/template';
+    import Vue from 'vue';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function() {
+            this.init();
+            this.loadDataMap();
+        },
+        components: {
+            pageContainer
+        },
+        data() {
+            const that = this;
+            return {
+                clusterData: [],
+                formType: "", // add or edit
+                linkis_address: "",
+                linkis_token: "",
+                clusterType: "",
+                clusterName: "",
+                clusterId: "",
+                dataMapValue: "",
+                hideId: false,
+                pagination: {
+                    size: 5,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                clusterLoading: true,
+                ruleValidate: {
+                    dataMapValue: [
+                            { required: true, message: this.$t('configureParameterPage.dataMapValueRule'), pattern: '^[a-zA-Z_${}]*$' }
+                        ],
+                },
+                operationComponent: function (trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                            }
+                        },
+                        methods: {
+                            editAction() {
+                                Object.assign(that, {
+                                    formType: 'edit',
+                                    clusterId: trData.cluster_info_id,
+                                    clusterType: trData.cluster_type,
+                                    clusterName: trData.cluster_name,
+                                    linkis_address: trData.linkis_address,
+                                    linkis_token: trData.linkis_token,
+                                })
+                                that.$refs.clusterForm.show();
+                            },
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('configureParameterPage.deleteCurrentCluster', {name: trData.cluster_name})}`).then(index=>{
+                                    if (index === 0) {
+                                        that.FesApi.fetch(
+                                            "api/v1/admin/cluster_info/delete",
+                                            { cluster_info_id: trData.cluster_info_id }
+                                        ).then(() => {
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'));
+                                            that.changePage({ current:1, size:5 });
+                                        });
+                                    }
+                                })
+                            }
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                }, {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            };
+        },
+        computed: {
+            formValidRule(){
+                return {
+                    linkis_address: [{required: true, message: this.$t('common.notEmpty')}],
+                    linkis_token: [{required: true, message: this.$t('common.notEmpty')}],
+                    clusterType: [{required: true, message: this.$t('common.notEmpty')}],
+                    clusterName: [{required: true, message:this.$t('common.notEmpty')}]
+                }
+            },
+            title() {
+                return this.$t('configureParameterPage.executor')
+            },
+        },
+        methods: {
+            init() {
+                this.getData();
+            },
+            async getData(){
+                let result = await this.FesApi.fetch("api/v1/admin/cluster_info/all", {
+                    page: this.pagination.current-1,
+                    size: this.pagination.size
+                })
+                this.clusterLoading = false;
+                this.clusterData = result.data;
+                this.pagination.total = Math.ceil(
+                    result.total / this.pagination.size
+                );
+            },
+            loadDataMap() {
+                this.FesApi.fetch(
+                    "api/v1/admin/system_config/save_database_pattern",
+                    "get"
+                ).then(result => {
+                    this.dataMapValue = result.value;
+                });
+            },
+            addTr() {
+                isIE();
+                this.$refs.clusterForm.show();
+                this.formType = "add";
+            },
+            submit() {
+                this.$refs["formValidate"].validate(valid=>{
+                    if(valid){
+                        let msg = this.$t('toastSuccess.addSuccess');
+                        let params = {
+                            linkis_address: this.linkis_address,
+                            linkis_token: this.linkis_token,
+                            cluster_name: this.clusterName,
+                            cluster_type: this.clusterType
+                        }
+                        let method = 'put';
+                        if(this.formType === "edit"){
+                            params.cluster_info_id = this.clusterId;
+                            msg = this.$t('toastSuccess.editSuccess');
+                            method = "post"
+                        }
+                        this.FesApi.fetch(
+                            "api/v1/admin/cluster_info",
+                            params,
+                            method
+                        ).then(() => {
+                            this.$refs.clusterForm.hide();
+                            this.$Toast.success(msg);
+                            this.changePage({current: 1, size: 5});
+                        });
+                    }
+                })
+            },
+            newDataMap() {
+                this.$refs.dataMapTable.validate(valid=> {
+                    if (valid) {
+                        this.newParameterValue(this.dataMapValue, "save_database_pattern");
+                    }
+                })
+            },
+            newParameterValue(newValue, type) {
+                this.FesApi.fetch("api/v1/admin/system_config", {
+                    value: newValue,
+                    key_name: type
+                }).then(() => {
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                });
+            },
+            changePage({current, size}) {
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.getData();
+            },
+            cancel() {
+                this.$refs['clusterForm'].hide()
+            }
+        }
+    };
+</script>
+<style scoped lang="scss">
+    .adr {
+        display: inline-block;
+        height: 30px;
+        width: 210px;
+        text-align: left;
+        font-size: 14px;
+        line-height: 28px;
+        margin-right: 40px;
+    }
+    .adr-wrapper {
+        display: flex;
+        /deep/
+        .ui-form-item{
+            width: 700px;
+            margin-left: 20px;
+        }
+        .map-button {
+            height: 35px;
+        }
+    }
+    .parameter-input {
+        width: 50%;
+        margin-right: 40px;
+        
+    }
+    .title {
+        border-left: 3px solid #3399ff;
+        padding-left: 5px;
+        font-size: 17px;
+    }
+    .question {
+        vertical-align: middle;
+        margin-left: 10px;
+    }
+</style>

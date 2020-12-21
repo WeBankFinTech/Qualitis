@@ -48,9 +48,12 @@ public class RuleDetailResponse {
     @JsonProperty("alarm_variable")
     private List<AlarmConfigResponse> alarmVariable;
     private List<DataSourceResponse> datasource;
-
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
+
 
     public RuleDetailResponse() {
     }
@@ -61,6 +64,7 @@ public class RuleDetailResponse {
         this.ruleTemplateId = rule.getTemplate().getId();
         this.ruleTemplateName = rule.getRuleTemplateName();
         this.ruleGroupId = rule.getRuleGroup().getId();
+        this.abortOnFailure = rule.getAbortOnFailure();
         // Set TemplateVariable
         this.templateVariable = new ArrayList<>();
         for (RuleVariable ruleVariable : rule.getRuleVariables()) {

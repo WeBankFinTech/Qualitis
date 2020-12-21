@@ -53,6 +53,8 @@ public class CustomRuleDetailResponse {
     private String clusterName;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+    @JsonProperty("abort_on_failure")
+    private Boolean abortOnFailure;
 
     public CustomRuleDetailResponse(Rule customRule) {
         this.ruleId = customRule.getId();
@@ -66,6 +68,7 @@ public class CustomRuleDetailResponse {
         this.alarm = customRule.getAlarm();
         this.alarmVariable = new ArrayList<>();
         this.ruleGroupId = customRule.getRuleGroup().getId();
+        this.abortOnFailure = customRule.getAbortOnFailure();
         for (AlarmConfig alarmConfig : customRule.getAlarmConfigs()) {
             this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
         }
@@ -166,6 +169,14 @@ public class CustomRuleDetailResponse {
 
     public void setRuleGroupId(Long ruleGroupId) {
         this.ruleGroupId = ruleGroupId;
+    }
+
+    public Boolean getAbortOnFailure() {
+        return abortOnFailure;
+    }
+
+    public void setAbortOnFailure(Boolean abortOnFailure) {
+        this.abortOnFailure = abortOnFailure;
     }
 
     @Override

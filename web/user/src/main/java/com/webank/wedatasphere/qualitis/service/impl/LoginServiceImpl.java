@@ -27,14 +27,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.Role;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.service.LoginService;
+import javax.servlet.http.Cookie;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +84,27 @@ public class LoginServiceImpl implements LoginService {
         session.removeAttribute("permissions");
         session.removeAttribute("user");
         session.removeAttribute("proxyUser");
+
+        Cookie[] cookies = httpServletRequest.getCookies();
+        // Clear cookies.
+        for (Cookie cookie : cookies) {
+            String cookieName = cookie.getName ();
+            if ("JSESSIONID".equals (cookieName)) {
+                cookieName = cookieName.replace("\r", "");
+                cookieName = cookieName.replace("\n", "");
+                Cookie newCookie = new Cookie(cookieName, null);
+                newCookie.setSecure(true);
+                newCookie.setHttpOnly(true);
+                newCookie.setMaxAge (0);
+                newCookie.setPath ("/");
+                httpServletResponse.addCookie(newCookie);
+            }
+        }
+
         LOGGER.info("Succeed to logout, user: {}, current_user: {}", username, username);
+        String ip = httpServletRequest.getLocalAddr();
+        String logoutUrl = "http://" + ip + ":8090/#/home";
+        httpServletResponse.sendRedirect(logoutUrl);
         return new GeneralResponse<>("200", "{&LOGOUT_SUCCESSFULLY}", null);
     }
 

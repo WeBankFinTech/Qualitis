@@ -20,6 +20,7 @@ import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.adapter.AutoArgumentAdapter;
@@ -36,7 +37,6 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import org.apache.catalina.Cluster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -82,6 +82,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     @Transactional(rollbackFor = {Exception.class})
     public GeneralResponse<RuleResponse> addMultiSourceRule(AddMultiSourceRuleRequest request) throws UnExpectedRequestException {
         // Check Arguments
+        CommonChecker.checkObject(request, "Request");
+
         AddMultiSourceRuleRequest.checkRequest(request, false);
 
         // Check existence of project
@@ -122,7 +124,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         }
 
         RuleResponse response = new RuleResponse(savedRule);
-        LOGGER.info("Succeed to add custom rule, rule_id: {}", savedRule.getId());
+        LOGGER.info("Succeed to add multi source rule, rule_id: {}", savedRule.getId());
         return new GeneralResponse<>("200", "{&ADD_MULTI_RULE_SUCCESSFULLY}", response);
     }
 
@@ -158,6 +160,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     @Transactional(rollbackFor = {Exception.class})
     public GeneralResponse<RuleResponse> modifyMultiSourceRule(ModifyMultiSourceRequest request) throws UnExpectedRequestException {
         // Check Arguments
+        CommonChecker.checkObject(request, "request");
         ModifyMultiSourceRequest.checkRequest(request);
 
         // Check existence of rule
@@ -214,7 +217,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         }
 
         RuleResponse response = new RuleResponse(savedRule);
-        LOGGER.info("Succeed to modify custom rule, rule_id: {}", savedRule.getId());
+        LOGGER.info("Succeed to modify multi source rule, rule_id: {}", savedRule.getId());
         return new GeneralResponse<>("200", "{&MODIFY_MULTI_RULE_SUCCESSFULLY}", response);
     }
 
@@ -241,6 +244,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         reverseRequest.setRuleName(request.getRuleName() + "_child_rule");
         reverseRequest.setMultiSourceRuleTemplateId(childTemplate.getId());
         reverseRequest.setMappings(getReverseMapping(request.getMappings()));
+        reverseRequest.setAbortOnFailure(request.getAbortOnFailure());
         return reverseRequest;
     }
 
@@ -319,7 +323,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         return tmp2.replace(MID_TMP_STR, "tmp2");
     }
 
-    private Rule generateRule(AddMultiSourceRuleRequest request, Project projectInDb, Boolean modify, Rule ruleInDb, Boolean isChild) throws UnExpectedRequestException {
+    private Rule generateRule(AddMultiSourceRuleRequest request, Project projectInDb, Boolean modify, Rule ruleInDb, Boolean isChild)
+        throws UnExpectedRequestException {
         // Check existence of rule and if multi-table rule
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
         if (!templateInDb.getTemplateType().equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
@@ -332,6 +337,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
             ruleInDb.setRuleTemplateName(templateInDb.getName());
             ruleInDb.setName(request.getRuleName());
             ruleInDb.setAlarm(request.getAlarm());
+            ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
             savedRule = ruleDao.saveRule(ruleInDb);
             LOGGER.info("Succeed to save rule, rule_id: {}", savedRule.getId());
         } else {
@@ -343,6 +349,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
             newRule.setAlarm(request.getAlarm());
             newRule.setProject(projectInDb);
             newRule.setRuleType(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode());
+            newRule.setAbortOnFailure(request.getAbortOnFailure());
             savedRule = ruleDao.saveRule(newRule);
             LOGGER.info("Succeed to save rule, rule_id: {}", savedRule.getId());
         }
@@ -361,6 +368,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         if (!isChild) {
             List<DataSourceRequest> dataSourceRequests = generateDataSourceRequest(request.getClusterName(), request.getSource(), request.getTarget());
             List<RuleDataSource> savedRuleDataSource = ruleDataSourceService.checkAndSaveRuleDataSource(dataSourceRequests, savedRule);
+
             LOGGER.info("Succeed to save rule_dataSources, rule_dataSources: {}", savedRuleDataSource);
             savedRule.setRuleDataSources(new HashSet<>(savedRuleDataSource));
         }

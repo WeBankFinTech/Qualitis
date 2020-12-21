@@ -43,6 +43,33 @@ project(':web/app') {
     compile libs.springBootStarterTest
     compile libs.springBootStarterAop
     compile libs.dssAppJointAuth
+//    compile (libs.springAop) {
+//      force = true
+//    }
+    compile libs.springAop
+    compile libs.springAspects
+    compile libs.springBeans
+    compile libs.springContext
+    compile libs.springCore
+    compile libs.springJcl
+    compile libs.springJdbc
+    compile libs.springOrm
+    compile libs.springTest
+    compile libs.springTx
+    compile libs.springWeb
+    compile libs.springWebMvc
+    compile libs.jacksonCore
+    compile libs.jacksonDatabind
+    compile libs.jacksonAnnotations
+    compile libs.fastJson
+    compile libs.log4j
+    compile libs.dom4j
+    compile libs.apiUtil
+    compile libs.nettyAll
+    compile libs.nettyTransport
+    compile libs.derby
+    compile libs.zookeeper
+    compile libs.log4jCore
     compile project(':web/user')
     compile project(':web/sys_config')
     compile project(':web/meta_data')
@@ -192,6 +219,13 @@ project(':core/common') {
     compile libs.springBootStarterJersey
     compile libs.commonsLang
 
+    compile (libs.hadoopClient) {
+      exclude group: 'javax.servlet'
+      exclude group: 'javax.servlet.jsp'
+      exclude group: 'com.sun.jersey'
+      exclude group: 'com.sun.jersey.contribs'
+      exclude group: 'javax.xml.bind'
+    }
     compile (libs.hiveExec) {
       exclude group: 'org.apache.commons'
       exclude group: 'commons-lang'
@@ -306,7 +340,6 @@ project(':core/user') {
   dependencies{
     compile libs.springBootStarterDataJpa
     compile libs.mysqlConnectorJava
-
   }
 }
 

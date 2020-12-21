@@ -20,6 +20,7 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -42,4 +43,11 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @return
      */
     List<Rule> findByRuleGroup(RuleGroup ruleGroup);
+
+    /**
+     * Find rule by rule template
+     * @param templateInDb
+     * @return
+     */
+    List<Rule> findByTemplate(Template templateInDb);
 }

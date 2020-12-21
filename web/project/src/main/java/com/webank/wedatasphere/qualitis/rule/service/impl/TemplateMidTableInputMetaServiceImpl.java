@@ -16,14 +16,13 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
+import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,5 +42,15 @@ public class TemplateMidTableInputMetaServiceImpl implements TemplateMidTableInp
             throw new UnExpectedRequestException("template_input_meta_id {&DOES_NOT_EXIST}");
         }
         return templateMidTableInputMeta;
+    }
+
+    @Override
+    public Set<TemplateMidTableInputMeta> saveAll(List<TemplateMidTableInputMeta> templateMidTableInputMetas) {
+        return templateMidTableInputMetaDao.saveAll(templateMidTableInputMetas);
+    }
+
+    @Override
+    public void deleteByTemplate(Template templateInDb) {
+        templateMidTableInputMetaDao.deleteByTemplate(templateInDb);
     }
 }

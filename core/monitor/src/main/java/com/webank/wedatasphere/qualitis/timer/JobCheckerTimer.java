@@ -17,13 +17,10 @@
 package com.webank.wedatasphere.qualitis.timer;
 
 import com.webank.wedatasphere.qualitis.config.ThreadPoolConfig;
-import com.webank.wedatasphere.qualitis.zk.ZookeeperCuratorManager;
 
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.zk.ZookeeperCuratorManager;
+import com.webank.wedatasphere.qualitis.ha.AbstractServiceCoordinator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,15 +43,14 @@ public class JobCheckerTimer {
     @Autowired
     private TaskDao taskDao;
     @Autowired
-    private ZookeeperCuratorManager zookeeperCuratorManager;
-    @Autowired
     private IChecker iChecker;
+    @Autowired
+    private AbstractServiceCoordinator abstractServiceCoordinator;
 
     @PostConstruct
     public void init() {
         ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(threadPoolConfig.getSize(), new MonitoryThreadFactory());
-        executor.scheduleWithFixedDelay(new CheckerRunnable(applicationDao, taskDao, zookeeperCuratorManager,
-                threadPoolConfig.getLockZkPath(), iChecker), 0, threadPoolConfig.getPeriod(), TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new CheckerRunnable(applicationDao, taskDao, iChecker, abstractServiceCoordinator), 0, threadPoolConfig.getPeriod(), TimeUnit.MILLISECONDS);
     }
 
 }

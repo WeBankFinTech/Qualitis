@@ -80,6 +80,13 @@ public class CommonChecker {
         throw new UnExpectedRequestException("{&THE_SIZE_OF} [" + listName + "] {&CAN_NOT_LARGER_THAN_THE_MAX_SIZE}, [" + maxSize + "]");
     }
 
+    public static void checkListMinSize(List list, Integer minSize, String listName) throws UnExpectedRequestException {
+        if (list == null || list.size() >= minSize) {
+            return;
+        }
+        throw new UnExpectedRequestException("{&THE_SIZE_OF} [" + listName + "] {&CAN_NOT_LESS_THAN_THE_MIN_SIZE}, [" + minSize + "]");
+    }
+
     public static void checkActionStepEnum(Integer key) throws UnExpectedRequestException {
         for (InputActionStepEnum e : InputActionStepEnum.values()) {
             if (e.getCode().equals(key)) {

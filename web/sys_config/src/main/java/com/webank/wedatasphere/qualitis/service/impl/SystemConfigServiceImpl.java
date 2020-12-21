@@ -10,11 +10,11 @@ import com.webank.wedatasphere.qualitis.service.SystemConfigService;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
@@ -41,7 +41,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigServiceImpl.class);
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public GeneralResponse<?> modifySystemConfig(ModifySystemConfigRequest request) throws UnExpectedRequestException {
         // Check Argument
         ModifySystemConfigRequest.checkRequest(request);

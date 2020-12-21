@@ -77,4 +77,9 @@ public class TemplateOutputMetaServiceImpl implements TemplateOutputMetaService 
         templateOutputMetas.add(savedTemplateOutputMeta);
         return templateOutputMetas;
     }
+
+    @Override
+    public void deleteByTemplate(Template templateInDb) {
+        templateOutputMetaDao.deleteByTemplate(templateInDb);
+    }
 }

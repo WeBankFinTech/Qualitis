@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.List;
 
@@ -23,6 +25,7 @@ import java.util.List;
  * @author howeye
  */
 @Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_rule_group")
 public class RuleGroup {
 

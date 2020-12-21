@@ -26,6 +26,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.project.excel.*;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.DownloadProjectRequest;
@@ -138,12 +139,17 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         allProjects.addAll(excelMultiTemplateRulePartitionedByProject.keySet());
 
         for (String projectName : allProjects) {
-            Project projectInDb = projectDao.findByName(projectName);
-            if (projectInDb == null) {
-                throw new UnExpectedRequestException("{&PROJECT}: [" + projectName + "] {&DOES_NOT_EXIST}");
-            }
-            ruleBatchService.getAndSaveRule(excelTemplateRulePartitionedByProject.get(projectName), excelCustomRulePartitionedByProject.get(projectName),
+
+            try {
+                Project projectInDb = projectDao.findByName(projectName);
+                if (projectInDb == null) {
+                    throw new UnExpectedRequestException("{&PROJECT}: [" + projectName + "] {&DOES_NOT_EXIST}");
+                }
+                ruleBatchService.getAndSaveRule(excelTemplateRulePartitionedByProject.get(projectName), excelCustomRulePartitionedByProject.get(projectName),
                     excelMultiTemplateRulePartitionedByProject.get(projectName), projectInDb, username);
+            } catch (Exception e) {
+                 throw new UnExpectedRequestException("{&PROJECT_NAME_EXISTS}");
+            }
         }
 
         fileInputStream.close();
@@ -155,6 +161,15 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         AddProjectRequest addProjectRequest = new AddProjectRequest();
         addProjectRequest.setProjectName(excelProject.getProjectName());
         addProjectRequest.setDescription(excelProject.getProjectDescription());
+        String projectLabels = excelProject.getProjectLabels();
+        if (projectLabels != null && projectLabels.length() > 0) {
+            String[] labels = projectLabels.split(" ");
+            Set<String> labelSet = new HashSet<>();
+            for (String label : labels) {
+                labelSet.add(label);
+            }
+            addProjectRequest.setProjectLabels(labelSet);
+        }
 
         return addProjectRequest;
     }
@@ -306,6 +321,15 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
             excelProject.setProjectName(project.getName());
             excelProject.setProjectDescription(project.getDescription());
+
+            Set<ProjectLabel> projectLabels = project.getProjectLabels();
+            StringBuffer labelBuffer = new StringBuffer();
+            if (projectLabels != null && ! projectLabels.isEmpty()) {
+                for (ProjectLabel projectLabel : projectLabels) {
+                    labelBuffer.append(projectLabel.getLabelName() + " ");
+                }
+                excelProject.setProjectLabels(labelBuffer.toString());
+            }
 
             LOGGER.info("Collect excel line: {}", excelProject);
             excelProjects.add(excelProject);
