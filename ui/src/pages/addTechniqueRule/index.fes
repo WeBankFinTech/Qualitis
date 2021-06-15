@@ -731,8 +731,9 @@
                     if(result && Array.isArray(result.data)) {
                         if (this.ruleConfig.field_type === 1) {// 1 只能是数字
                             result.data.forEach((col) => {
-                                let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
-                                col.disabled = numArr.indexOf(col.data_type) < 0;
+                                let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "decimal"];
+                                // col.disabled = numArr.indexOf(col.data_type) < 0;
+                                col.disabled = numArr.every(item => !(col.data_type || '').startsWith(item));
                             })
                         }
                     }
@@ -758,8 +759,8 @@
                 //     if(result && Array.isArray(result.data)) {
                 //         if (this.ruleConfig.field_type === 1) {// 1 只能是数字
                 //             result.data.forEach((col) => {
-                //                 let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
-                //                 col.disabled = numArr.indexOf(col.data_type) < 0;
+                //                 let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "decimal"];
+                //                 col.disabled = numArr.every(item => !(col.data_type || '').startsWith(item));
                 //             })
                 //         }
                 //     }
@@ -784,7 +785,8 @@
                 if (this.ruleConfig.field_type === 1) {// 1 只能是数字
                     column.forEach((col, index) => {
                         let colItem = this.columnList.find(item => item.column_name == col);
-                        let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "deicimal"];
+                        let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "
+                        "];
                         if (numArr.indexOf(colItem.data_type) < 0) {
                             msg = this.$t('addTechniqueRule.notConformRules');
                             column.splice(index,1);
