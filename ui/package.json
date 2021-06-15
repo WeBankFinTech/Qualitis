@@ -41,8 +41,8 @@
     "@antv/data-set": "^0.11.7",
     "@antv/g2": "^4.0.15",
     "@babel/runtime-corejs3": "^7.11.2",
-    "@webank/fes-core": "0.0.11",
-    "@webank/ui-webank": "^2.3.42"
+    "@webank/fes-core": "0.4.8",
+    "@webank/ui-webank": "0.4.8"
   },
   "gitHead": "357575247bde6d1d24a8d2e11d2bfe7adbe6abd6"
 }
