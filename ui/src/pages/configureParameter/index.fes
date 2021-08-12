@@ -35,9 +35,9 @@
                         :current="pagination.current" :total="pagination.total"
                         @on-change="changePage" />
                 </div>
-                <Loading v-show="clusterLoading" class="loading-layout" />     
+                <Loading v-show="clusterLoading" class="loading-layout" />
             </Cell>
- 
+
             <modal ref="clusterForm" :title="$t('configureParameterPage.parameterConfiguration')" width="700">
                 <Wb-form ref="formValidate" :label-width="200" :rule="formValidRule">
                     <Form-item :label="$t('configureParameterPage.clusterName')" prop="clusterName">
@@ -63,7 +63,7 @@
                 </Wb-form>
             </modal>
         </Row>
-    </pageContainer>   
+    </pageContainer>
 </template>
 
 <script type="text/ecmascript-6">
@@ -278,7 +278,7 @@
     }
     .adr-wrapper {
         display: flex;
-        /deep/
+        ::v-deep
         .ui-form-item{
             width: 700px;
             margin-left: 20px;
@@ -290,7 +290,7 @@
     .parameter-input {
         width: 50%;
         margin-right: 40px;
-        
+
     }
     .title {
         border-left: 3px solid #3399ff;

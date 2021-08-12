@@ -18,7 +18,7 @@
                     <div>{{ $t('taskDetail.startTime') }} {{ task.start_time }}</div>
                     <div v-if="task.end_time" class="pl20 pr20">{{ $t('taskDetail.endTime') }} {{ task.end_time }}</div>
                     <div class="pr20" @click="searchReason(task.task_id)">&nbsp;&nbsp;{{ $t('common.status') }}:  <a href="javascript:void(0);" style="color:#657180;" :class="{ 'status': task.task_id}">{{ formatStatus(task.status) }}</a></div>
-                    <Wb-button v-if="task.exception_message" type="primary" @click="moreLog(task)">{{ task.showMore ? `${$t('taskDetail.collapse')}` : `${$t('taskDetail.moreErrors')}` }}</Wb-button>    
+                    <Wb-button v-if="task.exception_message" type="primary" @click="moreLog(task)">{{ task.showMore ? `${$t('taskDetail.collapse')}` : `${$t('taskDetail.moreErrors')}` }}</Wb-button>
                     <Wb-button v-else type="primary" @click="moreLog(task)">{{ task.showMore ? `${$t('taskDetail.collapse')}` :`${$t('taskDetail.moreLogs')}` }}</Wb-button>
                 </div>
                 <div class="lineItem" :class="logColors(task)">
@@ -153,14 +153,14 @@
         height:32px;
     }
     .lineItem.logArea   {
-        /deep/
+        ::v-deep
         textarea{
             border: none;
             overflow: hidden !important;
         }
     }
     .lineItem.showAllLog  {
-        /deep/
+        ::v-deep
         textarea{
             overflow: hidden;
         }

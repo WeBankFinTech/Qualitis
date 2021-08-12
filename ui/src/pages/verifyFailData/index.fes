@@ -20,7 +20,7 @@
                     <span class="colorTag">{{ $t('verifyFailData.notCheck') }}</span>
                 </div>
             </Cell>
-        
+
             <div v-if="single.length > 0">
                 <Cell v-for="(item, i) in single" :key="i" span="24" class="mt20">
                     <Panel :title="$t('verifyFailData.singleTableCheck')">
@@ -35,7 +35,7 @@
                     </Panel>
                 </Cell>
             </div>
-        
+
             <div v-if="multiple.length > 0">
                 <Cell v-for="(item, i) in multiple" :key="i" span="24" class="mt20">
                     <Panel :title="$t('verifyFailData.acrossCheck')">
@@ -67,7 +67,7 @@
                 taskData: {},
                 single: [],
                 multiple: [],
-                showLoading: true   
+                showLoading: true
             }
         },
         components: {
@@ -93,7 +93,7 @@
                         })
                     }
                 });
-                this.showLoading = false;                
+                this.showLoading = false;
             },
             sortArray(value){
                 return value.sort((a, b) => {
@@ -251,7 +251,7 @@
             }
         },
     }
-</script>   
+</script>
 
 <style lang="scss">
     @import '../../assets/styles/variables';
@@ -303,7 +303,7 @@
     .ruleTag:not(:last-child) {
         margin-right: 8px;
     }
-    .ruleTag:not(:last-child)::after { 
+    .ruleTag:not(:last-child)::after {
         content: ",";
     }
     .pass {
@@ -314,7 +314,7 @@
     }
     .unVerified {
         background-color: #656060;
-    } 
+    }
     .field{
         position: relative;
         border: none;
@@ -323,7 +323,7 @@
         word-wrap: break-word;
     }
     .all-wrapper {
-        /deep/ .ui-table {
+        ::v-deep .ui-table {
             overflow: auto;
         }
     }

@@ -172,7 +172,7 @@
                             <span slot="open">{{ $t('common.openTask') }}</span>
                             <span slot="close">{{ $t('common.closeTask') }}</span>
                         </Wb-switch>
-                    </Cell>                  
+                    </Cell>
                     <Cell span="24" class="cellWrap">
                         <div style="margin: 20px 0;">
                             <Checkbox
@@ -269,7 +269,7 @@
                             <Checkbox v-model="saveResult" :label="$t('customTechnicalRule.save')" :disabled="pageType=='view'" />
                             <Icon :data-title="$t('customTechnicalRule.text')" type="question-circle-o" size="20" />
                         </div>
-                    </Cell>                  
+                    </Cell>
                     <Cell span="24" class="cellWrap align-center">
                         <Wb-button
                             v-if="pageType!='view'"
@@ -657,7 +657,7 @@
         i {
             vertical-align: middle;
         }
-        i:hover:after { 
+        i:hover:after {
             content: attr(data-title);
             display: block;
             position: absolute;
@@ -729,7 +729,7 @@
       top: -30px;
       right: 150px;
     }
-    /deep/
+    ::v-deep
     .ui-input-swap .ui-input-prepend {
         width: 100px;
     }
@@ -741,7 +741,7 @@
         top: -30px;
         right: 3%;
     }
-    .upstream:hover:after { 
+    .upstream:hover:after {
         content: attr(data-title);
         display: block;
         position: absolute;
