@@ -30,19 +30,17 @@
   "author": "harrywan qlin",
   "license": "MIT",
   "devDependencies": {
+    "@vue/test-utils": "^1.1.0",
     "@webank/eslint-config-webank": "^0.1.4",
-    "chart.js": "^2.9.4",
-    "csp-html-webpack-plugin": "^4.0.0",
-    "node-sass": "^4.14.1",
-    "sass-loader": "^10.0.4",
-    "vue-chartjs": "^3.5.1"
+    "@webank/fes-cli": "^0.4.6",
+    "chai": "^4.2.0",
+    "csp-html-webpack-plugin": "^4.0.0"
   },
   "dependencies": {
-    "@antv/data-set": "^0.11.7",
-    "@antv/g2": "^4.0.15",
-    "@babel/runtime-corejs3": "^7.11.2",
-    "@webank/fes-core": "0.4.8",
-    "@webank/ui-webank": "0.4.8"
+    "@webank/fes-core": "^0.4.8",
+    "@webank/fes-ui": "^0.4.8",
+    "chart.js": "^3.5.0",
+    "vue-chartjs": "^3.5.1"
   },
   "gitHead": "357575247bde6d1d24a8d2e11d2bfe7adbe6abd6"
 }
