@@ -28,6 +28,11 @@ export default {
         },
         // 生产环境 fes build默认使用prod环境 fes dev --env=prod 触发使用
         prod: {
+        },
+        sandbox: {
+            api: '/wdsent/qualitis/qualitis',
+            env: 'sandbox',
+            path: '/wdsent/qualitis'
         }
     },
     // 配置角色-路由访问权限，使用FesApp.setRole('unLogin')来修改当前用户的角色，控制路由访问权限
