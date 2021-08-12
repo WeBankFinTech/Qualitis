@@ -768,7 +768,7 @@
                 //     if(table && table.table_name) {
                 //         this.cacheColumn[`${table.table_name}${id}`] = result.data;
                 //     }
-                // }              
+                // }
             },
             checkFieldsValid(column = [], showErr = true) {
                 /**
@@ -785,8 +785,7 @@
                 if (this.ruleConfig.field_type === 1) {// 1 只能是数字
                     column.forEach((col, index) => {
                         let colItem = this.columnList.find(item => item.column_name == col);
-                        let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float", "
-                        "];
+                        let numArr = ["int", "double", "tinyint", "smallint", "bigint", "float"];
                         if (numArr.indexOf(colItem.data_type) < 0) {
                             msg = this.$t('addTechniqueRule.notConformRules');
                             column.splice(index,1);
@@ -1063,7 +1062,7 @@
         height: 380px;
         margin: 0 10px;
         overflow-y: auto;
-        /deep/
+        ::v-deep
         .ui-form-content {
             display: flex;
         }
@@ -1121,7 +1120,7 @@
         top: -30px;
         right: 8%;
     }
-    .upstream:hover:after { 
+    .upstream:hover:after {
         content: attr(data-title);
         display: block;
         position: absolute;

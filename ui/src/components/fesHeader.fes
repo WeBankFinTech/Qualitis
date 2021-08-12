@@ -95,7 +95,7 @@ import { getUserRole, sha256 } from "assets/js/utils";
                         {
                             content: this.$t('fesHeader.language'),
                             key: 'change'
-                        }, 
+                        },
                         {
                             content: this.$t('fesHeader.changePassword'),
                             key: 'password'
@@ -210,7 +210,7 @@ import { getUserRole, sha256 } from "assets/js/utils";
                 this.FesStorage.remove('userLogin', false);
                 if(url) { // 如果是sso登录的，那么点击退出时需要用sso退出链接来退出sso登录
                     this.FesStorage.set('redirect_to_um_login', null);
-                    window.location.href = url;   
+                    window.location.href = url;
                 }
                 this.FesStorage.remove('simulatedUser');
                 this.FesStorage.remove('firstRole');
@@ -290,7 +290,7 @@ import { getUserRole, sha256 } from "assets/js/utils";
     }
 
     .userModal {
-        /deep/
+        ::v-deep
         .ui-modal-body {
             height: 300px;
         }

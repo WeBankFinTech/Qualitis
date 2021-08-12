@@ -63,7 +63,7 @@
                 </Wb-form>
             </Modal>
         </Row>
-    </pageContainer> 
+    </pageContainer>
 </template>
 <script type="text/ecmascript-6">
     import ProjForm from '../projForm.fes';
@@ -459,7 +459,7 @@
         opacity: 0;
     }
     .execution-modal {
-        /deep/
+        ::v-deep
         .ui-modal-body {
             min-height: 300px;
         }

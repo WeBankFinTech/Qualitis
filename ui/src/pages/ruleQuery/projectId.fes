@@ -149,7 +149,7 @@
                     table: tableName
                 }, 'post').then(res=> {
                     if (Array.isArray(res)) {
-                        this.currentList = res;                
+                        this.currentList = res;
                     }
                 })
             },
@@ -257,7 +257,7 @@
                         this.$Toast.error(`${this.$t('toastError.importFail')}:${err.message}`)
                     })
                 }
-                
+
             },
             submit() {
                 this.$refs.form.validate(valid => {
@@ -316,7 +316,7 @@
         right: 10px;
     }
     .execution-modal {
-        /deep/
+        ::v-deep
         .ui-modal-body {
             min-height: 300px;
         }

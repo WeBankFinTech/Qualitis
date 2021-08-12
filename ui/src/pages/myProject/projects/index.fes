@@ -132,11 +132,11 @@
                 },
                 sizeList,
                 showLoading: true,
-                delete: '',               
+                delete: '',
                 shortStaffList: [],
                 staffList: [],
                 filterCondition: '',
-                project_id: '',             
+                project_id: '',
                 project_name: '',
                 description: '',
                 executor_user: [],
@@ -177,7 +177,7 @@
                                     handle: this.executeAction,
                                     color: ''
                                 }
-                                   
+
                             ]
                             return createElement("div", arr.map(function(item){
                                 return createElement('a', {
@@ -212,7 +212,7 @@
                         func: function (trData) {
                             this.project_id = trData.project_id;
                             this.$refs.executionUser.show();
-                        } 
+                        }
                     }
                 ];
             },
@@ -223,7 +223,7 @@
                         func: function (trData) {
                             this.project_id = trData.project_id;
                             this.$refs.executionUser.show();
-                        } 
+                        }
                     }
                 ]
             },
@@ -399,7 +399,7 @@
                 }
             },
             cancle(ref) {
-                this.$refs[ref].hide();          
+                this.$refs[ref].hide();
             },
             submit() {
                 this.$refs.form.validate(valid => {
@@ -460,7 +460,7 @@
             },
             formatLabel(value) {
                 if (value) {
-                    return value.toString()                    
+                    return value.toString()
                 }
             }
         }
@@ -480,7 +480,7 @@
     }
     .execution-modal,
     .project-modal {
-        /deep/
+        ::v-deep
         .ui-modal-body {
             min-height: 300px;
         }

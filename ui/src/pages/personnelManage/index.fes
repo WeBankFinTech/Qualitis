@@ -219,7 +219,7 @@
                                     handle: this.deleteAction,
                                     color: 'rgb(245, 34, 45)',
                                 }
-                                
+
                             ]
                             return createElement("div", arr.map(function(item){
                                 return createElement('a', {
@@ -277,7 +277,7 @@
                         username: this.username,
                         chinese_name: this.chinese_name,
                         department: this.department
-                    } 
+                    }
                     if (valid) {
                         this.FesApi.fetch(
                             "api/v1/admin/user",
@@ -410,7 +410,7 @@
         font-size: 17px;
     }
     .user-modal {
-        /deep/
+        ::v-deep
         .ui-modal-body {
             height: 250px;
         }

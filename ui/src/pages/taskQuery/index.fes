@@ -41,7 +41,7 @@
                     <div>{{ $t('taskQuery.status') }}</div>
                     <Wb-select v-model="status" @on-change="changeStatus">
                         <Wb-option v-for="item in statusList" :key="item.status" :value="item.status" :label="item.type" />
-                    </Wb-select> 
+                    </Wb-select>
                 </Cell>
                 <Cell v-if="searchType===3" span="4" offset="1">
                     <div>{{ $t('common.number') }}</div>
@@ -76,9 +76,9 @@
                         <Loading v-show="loading === 1" />
                     </div>
                 </Cell>
-            </Row>         
+            </Row>
         </div>
-    </pageContainer>  
+    </pageContainer>
 </template>
 <script type="text/ecmascript-6">
     import { sizeList } from 'assets/js/sizeList';
@@ -370,7 +370,7 @@
                             },`${this.dbtable[0].db_name}.${this.dbtable[0].table_name}` )
                         }else {
                             return ''
-                        }   
+                        }
                     }
                 })
             },
@@ -443,7 +443,7 @@
         .idlink {
             color: #2db7f5;
         }
-        /deep/ .ui-table {
+        ::v-deep .ui-table {
             overflow: auto;
         }
     }

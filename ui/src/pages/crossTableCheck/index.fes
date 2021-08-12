@@ -268,7 +268,7 @@
                 </Modal>
             </Wb-form>
         </Row>
-    </div> 
+    </div>
 </template>
 
 
@@ -578,7 +578,7 @@
                     }]
                 }
                 this.getColumnInfo(this.sourceTableName, this.sourceDbName, 'source', this.sourceUpstream);
-                this.getColumnInfo(this.targetTableName, this.targetDbName, 'target', this.targetUpstream);  
+                this.getColumnInfo(this.targetTableName, this.targetDbName, 'target', this.targetUpstream);
                 Object.assign(this, {quaCheckList});
                 await this.getMapField();
                 setTimeout(()=> {
@@ -1370,7 +1370,7 @@
     }
     .sqlWhere {
         padding-left: 10px;
-        /deep/
+        ::v-deep
         .ui-form-label {
             text-align: left;
         }
@@ -1398,11 +1398,11 @@
         width: 220px;
     }
     .add-map-modal {
-        /deep/
+        ::v-deep
         .ui-modal-dialog {
             top: 10%;
         }
-        /deep/ {
+        ::v-deep {
             .ui-modal-body {
                 height: 800px;
             }
