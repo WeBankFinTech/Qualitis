@@ -49,6 +49,7 @@
 <script>
 
 import { getUserRole, sha256 } from "assets/js/utils";
+import bus from '../bus';
     export default {
         FesData() {
             return {
@@ -128,7 +129,10 @@ import { getUserRole, sha256 } from "assets/js/utils";
             }
         },
         FesReady: function(){
-            this.init()
+            this.init();
+            bus.$on('LOGIN', () => {
+                this.init();
+            });
         },
         methods: {
             init() {

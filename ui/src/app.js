@@ -4,6 +4,7 @@ export default function() {
     this.setBeforeRouter(function(from, to, next) {
         // dqm 登录后检查登录并设置登录信息
         if (from.path === '/home') return next();
+        if (to.path === '/home') return next();
         this.FesApi.fetch("api/v1/projector/role", "get").then(({roles,username}) => {
             if(Array.isArray(roles)){
                 roles = roles.map(item => item.toLowerCase())
@@ -38,8 +39,7 @@ export default function() {
         timeout: 1000 * 60
     });
     const that = this;
-    const lang = this.FesFesx.get('currentLanguage');
-    
+    // const lang = this.FesFesx.get('currentLanguage');
     this.FesApi.setError({
         404: function() {
             that.router.replace({path: '/error'})
@@ -47,10 +47,11 @@ export default function() {
         401: ({data:{data}}) => {
             let lastRedirect = this.FesStorage.get('redirect_to_um_login');
             if(!data) {
-                let mes = lang === 'zh-cn' ? '登录失败，请检查密码或帐号' :'Login failed, please check your password or account';
-                window.Toast.error(mes);
+                // let mes = lang === 'zh-cn' ? '登录失败，请检查密码或帐号' :'Login failed, please check your password or account';
+                // window.Toast.error(mes);
                 this.FesStorage.set('userLogin', false);
                 this.FesApp.setRole('unLogin');
+                this.FesApp.router.replace('/home');
             } else {
                 // 防止接口问题引起循环跳转, 正常登录不会有问题如果sso登录回调回来没有登录态就会循环 setBeforeRouter 里有获取角色的信息
                 if( (!lastRedirect || +new Date() - lastRedirect > 3000) && data.redirect) {
@@ -78,7 +79,7 @@ export default function() {
             'Content-Language': this.FesFesx.get('Language')
         })
     }, 0)
-   
+
     // 设置响应结构
     this.FesApi.setResponse({
         successCode: '200',
