@@ -24,6 +24,7 @@
 </template>
 <script>
     import { getUserRole, sha256} from "assets/js/utils.js";
+    import bus from '../../bus';
     export default {
         FesLeft: false,
         FesHeader: false,
@@ -56,7 +57,9 @@
                         // 设置用户、角色等
                         this.FesApp.set("FesUserName", username);
                         this.FesStorage.set("userLogin", true);
+                        this.FesFesx.set('logout', false);
                         this.getRole();
+                        bus.$emit('LOGIN');
                     });
                 }
             },
