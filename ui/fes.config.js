@@ -30,9 +30,9 @@ export default {
         prod: {
         },
         sandbox: {
-            api: '/wdsent/qualitis/qualitis',
+            api: '/wds/qualitis/qualitis',
             env: 'sandbox',
-            path: '/wdsent/qualitis'
+            path: '/wds/qualitis'
         }
     },
     // 配置角色-路由访问权限，使用FesApp.setRole('unLogin')来修改当前用户的角色，控制路由访问权限
