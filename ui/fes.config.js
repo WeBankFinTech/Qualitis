@@ -11,7 +11,6 @@ export default {
         local: {
             // api: 'http://127.0.0.1:8090/qualitis'     //行内
             api: 'http://127.0.0.1:8090/qualitis'    //开源
-
         },
         // 开发环境机器
         dev: {
