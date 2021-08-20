@@ -1,13 +1,13 @@
 ### BDP-DQM数据质量服务前端
 
-项目依赖FES2
+项目依赖FES
 
 ### 项目目录结构
 
 ``` tree -C -L 3 -I "node_modules"
 .
 ├── README.md
-├── dist    # fes2 build 之后资源目录
+├── dist    # fes build 之后资源目录
 │   ├── assets
 │   │   ├── iconfont.0dd8.svg
 │   │   ├── iconfont.126d.eot
@@ -57,7 +57,7 @@
 ### 开发
 
 ```
-fes2 dev
+fes dev
 ```
 
 ### 代码检查
@@ -77,8 +77,8 @@ wnpm install -g @webank/fes-jenkins
 ```
 
 ```
-fes2 build
-fes2 build --env $env
+fes build
+fes build --env $env
 ```
 
 ### 构建发布
