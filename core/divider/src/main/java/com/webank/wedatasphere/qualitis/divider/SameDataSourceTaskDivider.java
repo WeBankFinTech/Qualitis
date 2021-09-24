@@ -87,9 +87,9 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
                     midTableName += "," + database + "." + tableName;
                 }
 
-                if (ruleTaskDetails.size() < threshold) {
-                    ruleTaskDetails.add(new RuleTaskDetail(rule, midTableName));
-                } else {
+                ruleTaskDetails.add(new RuleTaskDetail(rule, midTableName));
+
+                if (ruleTaskDetails.size() >= threshold) {
                     List<RuleTaskDetail> ruleTaskDetailCopy = new ArrayList<>();
                     ruleTaskDetailCopy.addAll(ruleTaskDetails);
                     DataQualityTask tmp = new DataQualityTask(applicationId, createTime, partition, ruleTaskDetailCopy);
