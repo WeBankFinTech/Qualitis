@@ -389,6 +389,10 @@
                 })
             },
             taskExecution() {
+                if(this.$refs.tableRule){
+                }else{
+                   this.$Toast.error('No rule can be executed')
+                }
                 let arr = this.$refs.tableRule.map((item)=> {
                     return item.getSelected();
                 })
