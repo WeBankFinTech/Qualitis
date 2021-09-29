@@ -55,7 +55,7 @@ public class LocaleParser {
             }
         }
         if (StringUtils.isBlank(localeStr)) {
-            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr.replace("\r", "").replace("\n", ""));
+            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr);
             locale = Locale.US;
         }
         if (!locale.equals(Locale.US) && !locale.equals(Locale.CHINA)) {
