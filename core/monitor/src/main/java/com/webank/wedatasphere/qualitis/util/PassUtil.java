@@ -84,7 +84,7 @@ public class PassUtil {
         calendar.add(calendarStepUnit, -1);
         Date lastMonthDate = calendar.getTime();
 
-        return taskResultDao.findAvgByCreateTimeBetweenAndRuleId(ExecutionManagerImpl.PRINT_TIME_FORMAT.format(lastMonthDate), ExecutionManagerImpl.PRINT_TIME_FORMAT.format(nowDate), ruleId);
+        return taskResultDao.findAvgByCreateTimeBetweenAndRuleId(ExecutionManagerImpl.PRINT_DATE_FORMAT.format(lastMonthDate), ExecutionManagerImpl.PRINT_DATE_FORMAT.format(nowDate), ruleId);
     }
 
     private static Boolean moreThanThresholds(Double taskResult, Double compareValue, Double percentage) {
