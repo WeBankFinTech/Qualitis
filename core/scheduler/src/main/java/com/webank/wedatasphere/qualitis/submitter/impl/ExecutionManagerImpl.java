@@ -77,6 +77,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
     private TaskExecuteLimitConfig taskExecuteLimitConfig;
 
     public static final FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+    public static final FastDateFormat PRINT_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionManagerImpl.class);
 
