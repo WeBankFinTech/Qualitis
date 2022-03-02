@@ -22,6 +22,8 @@ import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.ha.AbstractServiceCoordinator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,7 +37,6 @@ import javax.annotation.PostConstruct;
  */
 @Component
 public class JobCheckerTimer {
-
     @Autowired
     private ThreadPoolConfig threadPoolConfig;
     @Autowired
@@ -50,7 +51,9 @@ public class JobCheckerTimer {
     @PostConstruct
     public void init() {
         ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(threadPoolConfig.getSize(), new MonitoryThreadFactory());
-        executor.scheduleWithFixedDelay(new CheckerRunnable(applicationDao, taskDao, iChecker, abstractServiceCoordinator), 0, threadPoolConfig.getPeriod(), TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(
+            new CheckerRunnable(applicationDao, taskDao, iChecker, abstractServiceCoordinator, threadPoolConfig.getUpdateJobSize()),
+            0, threadPoolConfig.getPeriod(), TimeUnit.MILLISECONDS);
     }
 
 }

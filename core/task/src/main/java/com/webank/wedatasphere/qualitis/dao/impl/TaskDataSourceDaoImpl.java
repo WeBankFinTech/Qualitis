@@ -20,7 +20,7 @@ import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskDataSourceRepository;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,15 +45,21 @@ public class TaskDataSourceDaoImpl implements TaskDataSourceDao {
     private TaskDataSourceRepository taskDataSourceRepository;
 
     @Override
-    public List<TaskDataSource> findByUser(String username, Integer page, Integer size) {
+    public List<TaskDataSource> findByCreateUserAndDatasource(String createUser, String clusteName, String databaseName, String tableName, int page
+        , int size) {
         Sort sort = new Sort(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return taskDataSourceRepository.findByCreateUser(username, pageable);
+        return taskDataSourceRepository.findByCreateUserAndDatasource(createUser, clusteName, databaseName, tableName, pageable).getContent();
     }
 
     @Override
-    public int countByUser(String username) {
-        return taskDataSourceRepository.countByCreateUser(username).size();
+    public Long countByCreateUserAndDatasource(String username, String clusteName, String databaseName, String tableName) {
+        return taskDataSourceRepository.countByCreateUserAndDatasource(username, clusteName, databaseName, tableName);
+    }
+
+    @Override
+    public List<Map<String, String>> findByUser(String username) {
+        return taskDataSourceRepository.findByCreateUser(username);
     }
 
     @Override

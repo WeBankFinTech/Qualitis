@@ -16,27 +16,29 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.request.ApplicationQueryRequest;
 import com.webank.wedatasphere.qualitis.request.GeneralExecutionRequest;
-import com.webank.wedatasphere.qualitis.exception.*;
 import com.webank.wedatasphere.qualitis.request.GetTaskLogRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
-import com.webank.wedatasphere.qualitis.request.GeneralExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.GetTaskLogRequest;
-import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 
 /**
  * @author howeye
  */
 @Path("outer/api/v1")
 public class OuterExecutionController {
-
     @Autowired
     private OuterExecutionService outerExecutionService;
 
@@ -48,27 +50,88 @@ public class OuterExecutionController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> generalExecution(GeneralExecutionRequest request) throws UnExpectedRequestException {
         try {
-            return outerExecutionService.generalExecution(request);
+            if (request.getAsync()) {
+                LOGGER.info("Start to axync run submit application.");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            outerExecutionService.generalExecution(request);
+                        } catch (UnExpectedRequestException e) {
+                            LOGGER.error(e.getMessage(), e);;
+                        } catch (Exception e) {
+                            LOGGER.error("Async failed exception.", e);
+                        }
+                    }
+                }).start();
+
+                return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_SUBMIT_TASK}", null);
+            } else {
+                return outerExecutionService.generalExecution(request);
+            }
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to dispatch application, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}, caused by: " + e.getMessage(), e);
+            LOGGER.error("Failed to dispatch application, caused by: {}. Exception: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}", e);
         }
     }
 
     @GET
-    @Path("application/{applicationId}/status/")
+    @Path("execution/application/kill/{applicationId}/{executionUser}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse<?> killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) throws UnExpectedRequestException {
+        try {
+            return outerExecutionService.killApplication(applicationId, executionUser);
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to kill application: {}", applicationId, e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
+        }
+    }
+
+    @GET
+    @Path("application/{applicationId}/status")
     @Produces(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> getApplicationStatus(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException{
         try {
             return outerExecutionService.getApplicationStatus(applicationId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId.replace("\r", "").replace("\n", ""),
-                e.getMessage().replace("\r", "").replace("\n", ""));
+            LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
+        }
+    }
+
+    @GET
+    @Path("application/dynamic/{applicationId}/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse<?> getApplicationDynamicStatus(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException{
+        try {
+            return outerExecutionService.getApplicationDynamicStatus(applicationId);
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
+        }
+    }
+
+    @GET
+    @Path("application/{applicationId}/result")
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse<?> getApplicationResult(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException {
+        try {
+            return outerExecutionService.getApplicationResult(applicationId);
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get result of application: {}", applicationId, e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
         }
     }
 
@@ -80,24 +143,10 @@ public class OuterExecutionController {
         try {
             return outerExecutionService.getTaskLog(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get log of the task: {}, cluster_id: {}", request.getTaskId(), request.getClusterId(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
-        }
-    }
-
-    @GET
-    @Path("application/{applicationId}/result")
-    @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getApplicationResult(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException {
-        try {
-            return outerExecutionService.getApplicationResult(applicationId);
-        } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to get result of application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
         }
     }
 }

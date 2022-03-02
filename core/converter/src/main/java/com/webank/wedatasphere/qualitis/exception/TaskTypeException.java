@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class TaskTypeException extends Exception {
-
     public TaskTypeException(String message) {
         super(message);
     }

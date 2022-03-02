@@ -18,7 +18,10 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -37,7 +40,7 @@ public class RuleTemplateResponse {
     @JsonProperty("field_num")
     private Integer fieldNum;
     @JsonProperty("datasource_type")
-    private Integer datasourceType;
+    private List<Integer> datasourceType;
     @JsonProperty("action_type")
     private Integer actionType;
     @JsonProperty("save_mid_table")
@@ -46,6 +49,10 @@ public class RuleTemplateResponse {
     private String midTableAction;
     @JsonProperty("template_type")
     private Integer templateType;
+    @JsonProperty("template_level")
+    private Integer templateLevel;
+    @JsonProperty("creator")
+    private String creator;
 
     @JsonProperty("template_output_meta")
     private List<TemplateOutputMetaResponse> templateOutputMetaResponses;
@@ -61,6 +68,11 @@ public class RuleTemplateResponse {
         this.ruleTemplateId = template.getId();
         this.ruleTemplateName = template.getName();
         this.templateType = template.getTemplateType();
+        this.templateLevel = template.getLevel();
+        this.saveMidTable = template.getSaveMidTable();
+        if (template.getCreateUser() != null) {
+            this.creator = template.getCreateUser().getUserName();
+        }
     }
 
     public Long getRuleTemplateId() {
@@ -111,11 +123,11 @@ public class RuleTemplateResponse {
         this.fieldNum = fieldNum;
     }
 
-    public Integer getDatasourceType() {
+    public List<Integer> getDatasourceType() {
         return datasourceType;
     }
 
-    public void setDatasourceType(Integer datasourceType) {
+    public void setDatasourceType(List<Integer> datasourceType) {
         this.datasourceType = datasourceType;
     }
 
@@ -152,6 +164,14 @@ public class RuleTemplateResponse {
         this.templateType = templateType;
     }
 
+    public Integer getTemplateLevel() {
+        return templateLevel;
+    }
+
+    public void setTemplateLevel(Integer templateLevel) {
+        this.templateLevel = templateLevel;
+    }
+
     public List<TemplateOutputMetaResponse> getTemplateOutputMetaResponses() {
         return templateOutputMetaResponses;
     }
@@ -177,6 +197,14 @@ public class RuleTemplateResponse {
     public void setTemplateStatisticsInputMetaResponses(
         List<TemplateStatisticsInputMetaResponse> templateStatisticsInputMetaResponses) {
         this.templateStatisticsInputMetaResponses = templateStatisticsInputMetaResponses;
+    }
+
+    public String getCreator() {
+        return creator;
+    }
+
+    public void setCreator(String creator) {
+        this.creator = creator;
     }
 
     @Override

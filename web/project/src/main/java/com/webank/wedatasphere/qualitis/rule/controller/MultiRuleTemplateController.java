@@ -62,8 +62,7 @@ public class MultiRuleTemplateController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get multi rule_template. multi_rule_template_id: {}, caused by: {}", ruleTemplateId.toString().replace("\r", "")
-                .replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""), e);
+            LOGGER.error("Failed to get multi rule_template. multi_rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }

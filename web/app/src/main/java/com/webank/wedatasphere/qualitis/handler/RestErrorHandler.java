@@ -40,11 +40,11 @@ public class RestErrorHandler extends DefaultResponseErrorHandler {
         switch (statusCode.series()) {
             case CLIENT_ERROR:
                 LOGGER.error("Client Error! response: status code: {}, status text: {}, header: {}, body: {}, charset: {}",
-                        statusCode.value(), response.getStatusText(), response.getHeaders(), Arrays.toString(getResponseBody(response)), getCharset(response));
+                        statusCode.value(), response.getStatusText(), response.getHeaders(), new String(getResponseBody(response)), getCharset(response));
                 throw new HttpRestTemplateException(String.valueOf(statusCode.value()), statusCode.value() + " " + response.getStatusText());
             case SERVER_ERROR:
                 LOGGER.error("Server Error! response: status code: {}, status text: {}, header: {}, body: {}, charset: {}",
-                        statusCode.value(), response.getStatusText(), response.getHeaders(), Arrays.toString(getResponseBody(response)), getCharset(response));
+                        statusCode.value(), response.getStatusText(), response.getHeaders(), new String(getResponseBody(response)), getCharset(response));
                 throw new HttpRestTemplateException(String.valueOf(statusCode.value()), statusCode.value() + " " + response.getStatusText());
             default:
                 throw new RestClientException("Unknown status code [" + statusCode + "]");

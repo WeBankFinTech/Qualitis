@@ -19,6 +19,7 @@ package com.webank.wedatasphere.qualitis.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.bean.TaskSubmitResult;
 
+import com.webank.wedatasphere.qualitis.entity.Application;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,21 +27,39 @@ import java.util.List;
  * @author howeye
  */
 public class ApplicationTaskSimpleResponse {
-
     @JsonProperty("application_id")
     private String applicationId;
+    @JsonProperty("application_status")
+    private Integer applicationStatus;
     @JsonProperty("tasks")
     private List<TaskSimpleKeyResponse> tasks;
 
     public ApplicationTaskSimpleResponse() {
     }
 
+    public ApplicationTaskSimpleResponse(String applicationId) {
+        this.applicationId = applicationId;
+    }
+
     public ApplicationTaskSimpleResponse(List<TaskSubmitResult> taskDivideResults) {
         this.tasks = new ArrayList<>();
         for (TaskSubmitResult taskSubmitResult : taskDivideResults) {
             this.applicationId = taskSubmitResult.getApplicationId();
-            this.tasks.add(new TaskSimpleKeyResponse(taskSubmitResult.getTaskRemoteId(), taskSubmitResult.getClusterName()));
+            if (taskSubmitResult.getTaskRemoteId() != null) {
+                this.tasks.add(new TaskSimpleKeyResponse(taskSubmitResult.getTaskRemoteId(), taskSubmitResult.getClusterName()));
+            } else if (taskSubmitResult.getClusterName() != null){
+                this.tasks.add(new TaskSimpleKeyResponse(taskSubmitResult.getClusterName()));
+            }
         }
+    }
+
+    public ApplicationTaskSimpleResponse(Application application) {
+        this.applicationId = application.getId();
+    }
+
+    public ApplicationTaskSimpleResponse(String applicationId, Integer status) {
+        this.applicationId = applicationId;
+        this.applicationStatus = status;
     }
 
     public String getApplicationId() {
@@ -49,6 +68,14 @@ public class ApplicationTaskSimpleResponse {
 
     public void setApplicationId(String applicationId) {
         this.applicationId = applicationId;
+    }
+
+    public Integer getApplicationStatus() {
+        return applicationStatus;
+    }
+
+    public void setApplicationStatus(Integer applicationStatus) {
+        this.applicationStatus = applicationStatus;
     }
 
     public List<TaskSimpleKeyResponse> getTasks() {

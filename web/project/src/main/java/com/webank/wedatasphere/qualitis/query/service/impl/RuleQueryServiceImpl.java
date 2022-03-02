@@ -16,10 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.query.service.impl;
 
+import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
+import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
+import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
+import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
+import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
@@ -39,11 +47,17 @@ import com.webank.wedatasphere.qualitis.query.service.RuleQueryService;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceCountDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
+import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,19 +78,31 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RuleQueryServiceImpl implements RuleQueryService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RuleQueryServiceImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleQueryServiceImpl.class);
+    @Autowired
+    private UserDao userDao;
+    @Autowired
+    private RuleDao ruleDao;
     @Autowired
     private ProjectUserDao projectUserDao;
     @Autowired
     private RuleDataSourceDao ruleDataSourceDao;
     @Autowired
+    private RuleDataSourceCountDao ruleDataSourceCountDao;
+    @Autowired
     private MetaDataClient metaDataClient;
     @Autowired
-    RuleDao ruleDao;
+    private RuleDataSourceService ruleDataSourceService;
     @Autowired
-    RuleTemplateService ruleTemplateService;
+    private ProjectService projectService;
     @Autowired
-    ProjectService projectService;
+    private RuleTemplateService ruleTemplateService;
+
+    private HttpServletRequest httpServletRequest;
+
+    public RuleQueryServiceImpl(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
 
     /**
      * Initialize rule query
@@ -103,7 +129,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         List<ProjectUser> projectUsers = projectUserDao.findByUsernameAndPermissionsIn(param);
         boolean projectUsersNull = (projectUsers == null || projectUsers.isEmpty());
         if (projectUsersNull) {
-            LOG.info("[My DataSource] Find no projects of user:{},", queryParam.getUser());
+            LOGGER.info("[My DataSource] Find no projects of user:{},", queryParam.getUser());
             return null;
         }
 
@@ -111,7 +137,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
 
         getProjectsByUserPerm(param, projectUsers, projectMap);
         if (projectMap.values().isEmpty()) {
-            LOG.info("[My DataSource] Find no datasources/rules of user, user: {}", queryParam.getUser());
+            LOGGER.info("[My DataSource] Find no datasources/rules of user, user: {}", queryParam.getUser());
             return null;
         }
         return new ArrayList<>(projectMap.values());
@@ -129,7 +155,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         if (tableName == null || "".equals(tableName)) {
             tableName = "%";
         }
-        List<Map<String, String>> results = null;
+        List<Map<String, Object>> results = null;
         if (pageRequest == null) {
             results = ruleDataSourceDao.filterProjectDsByUser(user, clusterName, dbName, tableName);
         } else {
@@ -138,22 +164,33 @@ public class RuleQueryServiceImpl implements RuleQueryService {
 
         List<RuleQueryDataSource> ruleQueryDataSources = new ArrayList<>(8);
         if (results != null && ! results.isEmpty()) {
-            for (Map<String, String> temp : results) {
+            for (Map<String, Object> temp : results) {
                 RuleQueryDataSource ruleQueryDataSource = new RuleQueryDataSource();
-                String tempClusterName = temp.get("cluster_name");
-                String tempDbName = temp.get("db_name");
-                String tempTableName = temp.get("table_name");
+                String tempClusterName = (String) temp.get("cluster_name");
+                String tempDbName = (String) temp.get("db_name");
+                String tempTableName = (String) temp.get("table_name");
+                String proxyUser = (String) temp.get("proxy_user");
+                Long datasourceId = (Long) temp.get("datasource_id");
+                if (StringUtils.isNotBlank(proxyUser)) {
+                    user = proxyUser;
+                }
                 ruleQueryDataSource.setClusterName(tempClusterName);
                 ruleQueryDataSource.setDbName(tempDbName);
                 ruleQueryDataSource.setTableName(tempTableName);
+                ruleQueryDataSource.setProxyUser(proxyUser);
+                ruleQueryDataSource.setDatasourceId(datasourceId != null ? datasourceId.toString() : "");
                 if (tempDbName != null && ! "".equals(tempDbName)) {
                     String comment = null;
                     try {
                         if (! getTotal) {
-                            comment = metaDataClient.getTableComment(tempClusterName, tempDbName, tempTableName, user);
+                            if (datasourceId == null) {
+                                comment = metaDataClient.getTableBasicInfo(tempClusterName, tempDbName, tempTableName, user);
+                            } else {
+                                comment = "Not hive table";
+                            }
                         }
                     } catch (Exception e) {
-                        LOG.error("Datasource {&DOES_NOT_EXIST}");
+                        LOGGER.error("Datasource {&DOES_NOT_EXIST}");
                     }
                     ruleQueryDataSource.setTableCommit(comment);
                 } else {
@@ -174,11 +211,11 @@ public class RuleQueryServiceImpl implements RuleQueryService {
      */
     @Override
     public Map<String, Object> conditions(String user) {
-        List<Map<String, String>> projectDs = ruleDataSourceDao.findProjectDsByUser(user);
+        List<Map<String, Object>> projectDs = ruleDataSourceDao.findProjectDsByUser(user);
 
         boolean projectUsersNull = (projectDs == null || projectDs.isEmpty());
         if (projectUsersNull) {
-            LOG.info("[My DataSource] no projects of user:{},", user);
+            LOGGER.info("[My DataSource] no projects of user:{},", user);
             return null;
         }
         // Unique and classify datasource
@@ -189,24 +226,34 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     public List<RuleQueryDataSource> all(String user, PageRequest pageRequest) {
         int page = pageRequest.getPage();
         int size = pageRequest.getSize();
-        List<Map<String, String>> results = ruleDataSourceDao.findProjectDsByUser(user, page, size);
-        LOG.info("Success to find all datasource, datasource: {}", results);
+        List<Map<String, Object>> results = ruleDataSourceDao.findProjectDsByUser(user, page, size);
         List<RuleQueryDataSource> ruleQueryDataSources = new ArrayList<>(8);
         if (results != null && ! results.isEmpty()) {
-            for (Map<String, String> temp : results) {
+            for (Map<String, Object> temp : results) {
                 RuleQueryDataSource ruleQueryDataSource = new RuleQueryDataSource();
-                String clusterName = temp.get("cluster_name");
-                String dbName = temp.get("db_name");
-                String tableName = temp.get("table_name");
+                String clusterName = (String) temp.get("cluster_name");
+                String dbName = (String) temp.get("db_name");
+                String tableName = (String) temp.get("table_name");
+                Long datasourceId = (Long) temp.get("datasource_id");
                 ruleQueryDataSource.setClusterName(clusterName);
                 ruleQueryDataSource.setDbName(dbName);
                 ruleQueryDataSource.setTableName(tableName);
-                if (dbName != null && ! "".equals(dbName)) {
+                ruleQueryDataSource.setDatasourceId(datasourceId != null ? datasourceId.toString() : "");
+                String proxyUser = (String) temp.get("proxy_user");
+                ruleQueryDataSource.setProxyUser(proxyUser);
+                if (StringUtils.isNotBlank(dbName)) {
                     String comment = null;
                     try {
-                        comment = metaDataClient.getTableComment(clusterName, dbName, tableName, user);
+                        if (StringUtils.isNotBlank(proxyUser)) {
+                            user = proxyUser;
+                        }
+                         if (datasourceId == null) {
+                             comment = metaDataClient.getTableBasicInfo(clusterName, dbName, tableName, user);
+                         } else {
+                             comment = "Not hive table";
+                         }
                     } catch (Exception e) {
-                        LOG.error("Datasource {&DOES_NOT_EXIST}");
+                        LOGGER.error("Datasource {&DOES_NOT_EXIST}");
                     }
                     ruleQueryDataSource.setTableCommit(comment);
                 } else {
@@ -220,56 +267,134 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     }
 
     @Override
-    public List<ColumnInfoDetail> getColumnsByTableName(String clusterName, String dbName, String tableName, String user) {
+    public List<ColumnInfoDetail> getColumnsByTableName(String clusterName, Long datasourceId, String dbName, String tableName, String userName)
+        throws UnExpectedRequestException, MetaDataAcquireFailedException {
         List<ColumnInfoDetail> result = null;
+        User user = userDao.findByUsername(userName);
+        if (user == null) {
+            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", userName));
+        }
         try {
-            if (dbName == null || "".equals(dbName)) {
-                LOG.info("No rules for this datasource!");
-                return null;
+            if (StringUtils.isBlank(dbName)) {
+                List<Rule> rules =  ruleDataSourceDao.findRuleByDataSource(clusterName, dbName, tableName, "%", userName);
+                if (rules == null || rules.isEmpty()) {
+                    LOGGER.info("No rules for this datasource!");
+                    return null;
+                }
+                LOGGER.info("Rules related with context service table: [{}] are: {}", tableName, rules.toArray());
+                String csId = rules.get(0).getCsId();
+                String nodeName = rules.get(0).getName();
+                GetUserTableByCsIdRequest getUserTableByCsIdRequest = new GetUserTableByCsIdRequest();
+                getUserTableByCsIdRequest.setClusterName(clusterName);
+                getUserTableByCsIdRequest.setLoginUser(userName);
+                getUserTableByCsIdRequest.setNodeName(nodeName);
+                getUserTableByCsIdRequest.setCsId(csId);
+                DataInfo<CsTableInfoDetail> csTableInfoDetails = metaDataClient.getTableByCsId(getUserTableByCsIdRequest);
+                if (csTableInfoDetails.getTotalCount() == 0) {
+                    LOGGER.info("Cannot find context service table with existed rules!");
+                    return null;
+                }
+                for (CsTableInfoDetail csTableInfoDetail : csTableInfoDetails.getContent()) {
+                    if (csTableInfoDetail.getTableName().equals(tableName)) {
+                        GetUserColumnByCsRequest getUserColumnByCsRequest = new GetUserColumnByCsRequest();
+                        getUserColumnByCsRequest.setClusterName(clusterName);
+                        getUserColumnByCsRequest.setContextKey(csTableInfoDetail.getContextKey());
+                        getUserColumnByCsRequest.setCsId(csId);
+                        getUserColumnByCsRequest.setLoginUser(userName);
+                        result = metaDataClient.getColumnByCsId(getUserColumnByCsRequest).getContent();
+                        setRuleCount(result, user.getId(), clusterName, dbName, tableName);
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+
             } else {
-                result = metaDataClient.getColumnInfo(clusterName, dbName, tableName, user);
+                if (datasourceId == null) {
+                    result = metaDataClient.getColumnInfo(clusterName, dbName, tableName, userName);
+                } else {
+                    result = metaDataClient.getColumnsByDataSource(clusterName, userName, datasourceId, dbName, tableName).getContent();
+                }
+                setRuleCount(result, user.getId(), clusterName, dbName, tableName);
             }
-            LOG.info("Datasource table number of columns: {}", result == null ? 0 : result.size());
+            LOGGER.info("Datasource table number of columns: {}", result == null ? 0 : result.size());
         } catch (MetaDataAcquireFailedException e) {
-            LOG.error("Datasource colums info {&DOES_NOT_EXIST}, exception: {}", e);
+            LOGGER.error("Datasource colums info {&DOES_NOT_EXIST}. Exception: {}", e);
+            throw new MetaDataAcquireFailedException("Datasource colums info {&DOES_NOT_EXIST}. Exception: " + e.getMessage());
         } catch (UnExpectedRequestException e) {
-            LOG.error("Request param error for datasource colums info , exception: {}", e);
+            LOGGER.error("{&QUERY_PARAM_HAS_ERROR}. Exception: {}", e);
+            throw new UnExpectedRequestException("{&QUERY_PARAM_HAS_ERROR}. Exception: " + e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("exception: {}", e);
         }
         return result;
     }
 
     @Override
-    public List<HiveRuleDetail> getRulesByColumn(String cluster, String db, String table, String column, String user) {
-        LOG.info("Start to get rules with column. cluster: {}, db: {}, table: {}, column: {}", cluster, db, table, column);
-        List<Rule> rules =  ruleDataSourceDao.findRuleByDataSource(cluster, db, table, column, user);
+    public DataInfo<HiveRuleDetail> getRulesByColumn(String cluster, String db, String table, String column, String userName, int page, int size) {
+        LOGGER.info("Start to get rules with column. cluster: {}, db: {}, table: {}, column: {}", cluster, db, table, column);
+        DataInfo<HiveRuleDetail> dataInfo = new DataInfo<>();
+        List<Rule> rules = ruleDataSourceDao.findRuleByDataSource(cluster, db, table, column, userName, page, size);
+        int total = ruleDataSourceDao.countRuleByDataSource(cluster, db, table, column, userName);
+
         if (rules == null || rules.isEmpty()) {
             return null;
         }
-        List<HiveRuleDetail> result = new ArrayList<>(8);
-        LOG.info("Success to get rules with column. Rules: {}", rules);
+        List<HiveRuleDetail> result = new ArrayList<>(rules.size());
+        LOGGER.info("Success to get rules with column. Rules: {}", rules);
         for (Rule rule : rules) {
             HiveRuleDetail hiveRuleDetail = new HiveRuleDetail(rule);
             hiveRuleDetail.setTemplateName(rule.getRuleTemplateName());
             result.add(hiveRuleDetail);
         }
-        return result;
+        dataInfo.setContent(result);
+        dataInfo.setTotalCount(total);
+        return dataInfo;
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public void deleteRules(RulesDeleteRequest request) throws UnExpectedRequestException {
+    public void deleteRules(RulesDeleteRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         for (long ruleId : request.getRuleIdList()) {
             Rule ruleInDb = ruleDao.findById(ruleId);
-            projectService.checkProjectExistence(ruleInDb.getProject().getId());
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            // Check existence of rule
+            if (ruleInDb == null) {
+                throw new UnExpectedRequestException("Rule id [" + ruleId + "]) {&DOES_NOT_EXIST}");
+            }
+            // Check existence of project
+            Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(),
+                loginUser);
+            // Check permissions of project
+            List<Integer> permissions = new ArrayList<>();
+            permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+            projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+            // Update rule count of datasource
+            ruleDataSourceService.updateRuleDataSourceCount(ruleInDb, -1);
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
-            LOG.info("Succeed to delete rule. rule_id: {}", ruleInDb.getId());
+            LOGGER.info("Succeed to delete rule. rule_id: {}", ruleInDb.getId());
             if (ruleInDb.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
                 // Delete template of custom rule
                 ruleTemplateService.deleteCustomTemplate(ruleInDb.getTemplate());
-                LOG.info("Succeed to delete custom rule. rule_id: {}", ruleInDb.getId());
+                LOGGER.info("Succeed to delete custom rule. rule_id: {}", ruleInDb.getId());
             }
         }
+    }
+
+    @Override
+    public boolean compareDataSource(List<String> cols, List<ColumnInfoDetail> columnInfoDetails) {
+        for (String colInfo : cols) {
+            if(metaDataClient.fieldExist(colInfo, columnInfoDetails, null)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public List<String> findCols(String cluster, String db, String table, String user) {
+        return ruleDataSourceDao.findColsByUser(user, cluster, db, table);
     }
 
     private List<RuleQueryProject> getProjectsByUserPerm(DataSourceQo param,
@@ -389,7 +514,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         return new RuleQueryProject(newRuleQueryRule(rule, ds), project);
     }
 
-    private Map<String, Object> getConditionsByDs(List<Map<String, String>> projectDs) {
+    private Map<String, Object> getConditionsByDs(List<Map<String, Object>> projectDs) {
         Integer total = projectDs.size();
         // result
         Map<String, Object> results = new HashMap<>(7);
@@ -405,7 +530,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         Map<String, Set<String>> dbTables = new HashMap<>(projectDs.size());
         // relationship between clusters and tables
         Map<String, Set<String>> clusterTables = new HashMap<>(projectDs.size());
-        for (Map<String, String> ds : projectDs) {
+        for (Map<String, Object> ds : projectDs) {
             putIntoTotalData(ds, clusters, dbs, tables);
             putIntoCascadeData(ds, clusterDbs, dbTables, clusterTables);
         }
@@ -419,11 +544,11 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         return results;
     }
 
-    private void putIntoTotalData(Map<String, String> ds, Set<String> clusters, Set<String> dbs,
+    private void putIntoTotalData(Map<String, Object> ds, Set<String> clusters, Set<String> dbs,
         Set<String> tables) {
-        String clusterName = ds.get("cluster_name");
-        String dbName = ds.get("db_name");
-        String tableName = ds.get("table_name");
+        String clusterName = (String) ds.get("cluster_name");
+        String dbName = (String) ds.get("db_name");
+        String tableName = (String) ds.get("table_name");
 
         clusters.add(clusterName);
         if (dbName == null) {
@@ -434,11 +559,10 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         tables.add(tableName);
     }
 
-    private void putIntoCascadeData(Map<String, String> ds, Map<String, Set<String>> clusterDbs,
-        Map<String, Set<String>> dbTables, Map<String, Set<String>> clusterTables) {
-        String clusterName = ds.get("cluster_name");
-        String dbName = ds.get("db_name");
-        String tableName = ds.get("table_name");
+    private void putIntoCascadeData(Map<String, Object> ds, Map<String, Set<String>> clusterDbs, Map<String, Set<String>> dbTables, Map<String, Set<String>> clusterTables) {
+        String clusterName = (String) ds.get("cluster_name");
+        String dbName = (String) ds.get("db_name");
+        String tableName = (String) ds.get("table_name");
         Set<String> clusterDbsSet = clusterDbs.computeIfAbsent(clusterName, k -> new HashSet<>());
         Set<String> dbTablesSet = null;
         if (dbName == null) {
@@ -453,5 +577,16 @@ public class RuleQueryServiceImpl implements RuleQueryService {
 
         Set<String> clusterTablesSet = clusterTables.computeIfAbsent(clusterName, k -> new HashSet<>());
         clusterTablesSet.add(tableName);
+    }
+
+    private void setRuleCount(List<ColumnInfoDetail> result, Long userId, String clusterName, String dbName, String tableName) {
+        for (ColumnInfoDetail columnInfoDetail : result) {
+            Integer count = ruleDataSourceCountDao.findCount(clusterName + "-" + dbName + "-" + tableName
+                + "-" + columnInfoDetail.getFieldName() + ":" + columnInfoDetail.getDataType(), userId);
+            if (count == null || count < 0) {
+                LOGGER.error("Rule count of datasource is unlegal.");
+            }
+            columnInfoDetail.setRuleCount(count);
+        }
     }
 }

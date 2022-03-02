@@ -47,8 +47,16 @@ public enum TemplateInputTypeEnum {
     SOURCE_FIELD(18, "join左字段"),
     TARGET_FIELD(19, "join右字段"),
     FRONT_CONDITION(20, "前置条件"),
-    BEHIND_CONDITION(21, "后置条件")
+    BEHIND_CONDITION(21, "后置条件"),
+    SOURCE_FIELDS(22, "来源字段"),
+    TARGET_FIELDS(23, "目标字段"),
+
+    /**
+     * Provided for primary line repeat
+     */
+    FIELD_REPLACE_NULL_CONCAT(24, "替换空字段拼接"),
     ;
+
     private Integer code;
     private String message;
 

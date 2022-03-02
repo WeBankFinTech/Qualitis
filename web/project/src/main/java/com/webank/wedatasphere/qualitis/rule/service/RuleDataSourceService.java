@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
@@ -25,6 +26,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 import java.util.List;
 import java.util.Set;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
@@ -35,10 +37,13 @@ public interface RuleDataSourceService {
      * Check and save ruleDatasource
      * @param requests
      * @param rule
+     * @param cs
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    List<RuleDataSource> checkAndSaveRuleDataSource(List<DataSourceRequest> requests, Rule rule) throws UnExpectedRequestException;
+    List<RuleDataSource> checkAndSaveRuleDataSource(List<DataSourceRequest> requests, Rule rule, boolean cs, String loginUser)
+        throws UnExpectedRequestException;
 
     /**
      * Delete ruleDatasource by rule
@@ -47,14 +52,24 @@ public interface RuleDataSourceService {
     void deleteByRule(Rule rule);
 
     /**
-     * Check and save custom ruleDatasource
+     * Check and save custom ruleDatasource.
      * @param clusterName
+     * @param proxyUser
+     * @param loginUser
      * @param savedRule
+     * @param cs
+     * @param sqlCheck
+     * @param linkisDataSourceId
+     * @param linkisDataSourceVersionId
+     * @param linkisDataSourceName
+     * @param linkisDataSourceType
      * @return
-     * @throws SemanticException
-     * @throws ParseException
+     * @throws UnExpectedRequestException
      */
-    List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, Rule savedRule) throws SemanticException, ParseException;
+    @Transactional(rollbackFor = {RuntimeException.class, SemanticException.class, ParseException.class})
+    List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String proxyUser, String loginUser, Rule savedRule, boolean cs
+        , boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName, String linkisDataSourceType)
+        throws UnExpectedRequestException;
 
     /**
      * Check cluster name supported
@@ -69,4 +84,21 @@ public interface RuleDataSourceService {
      * @throws UnExpectedRequestException
      */
     void checkDataSourceClusterSupport(Set<String> submittedClusterNames)  throws UnExpectedRequestException;
+
+    /**
+     * Check and save file rule datasource
+     * @param datasource
+     * @param savedRule
+     * @param cs
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    RuleDataSource checkAndSaveFileRuleDataSource(DataSourceRequest datasource, Rule savedRule, boolean cs) throws UnExpectedRequestException;
+
+    /**
+     * Updata rule datasource count.
+     * @param ruleInDb
+     * @param varyAmount
+     */
+    void updateRuleDataSourceCount(Rule ruleInDb, Integer varyAmount);
 }

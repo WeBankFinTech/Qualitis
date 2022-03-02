@@ -32,6 +32,6 @@ public interface TaskService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getTaskDetail(Integer taskId) throws UnExpectedRequestException;
+    GeneralResponse<?> getTaskDetail(Long taskId) throws UnExpectedRequestException;
 
 }

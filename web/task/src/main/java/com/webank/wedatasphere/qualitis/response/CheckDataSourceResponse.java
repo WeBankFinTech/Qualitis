@@ -24,7 +24,9 @@ import java.util.List;
 public class CheckDataSourceResponse {
 
     private List<CheckSingleDataSourceResponse> single;
+    private List<CheckCustomDataSourceResponse> custom;
     private List<CheckMultipleDataSourceResponse> multiple;
+    private List<CheckFileDataSourceResponse> file;
 
     public CheckDataSourceResponse() {
     }
@@ -37,11 +39,27 @@ public class CheckDataSourceResponse {
         this.single = single;
     }
 
+    public List<CheckCustomDataSourceResponse> getCustom() {
+        return custom;
+    }
+
+    public void setCustom(List<CheckCustomDataSourceResponse> custom) {
+        this.custom = custom;
+    }
+
     public List<CheckMultipleDataSourceResponse> getMultiple() {
         return multiple;
     }
 
     public void setMultiple(List<CheckMultipleDataSourceResponse> multiple) {
         this.multiple = multiple;
+    }
+
+    public List<CheckFileDataSourceResponse> getFile() {
+        return file;
+    }
+
+    public void setFile(List<CheckFileDataSourceResponse> file) {
+        this.file = file;
     }
 }

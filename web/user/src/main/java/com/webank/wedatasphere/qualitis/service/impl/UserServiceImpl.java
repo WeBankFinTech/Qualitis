@@ -16,11 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.Role;
+import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
@@ -69,7 +72,11 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private RoleDao roleDao;
 
+    @Autowired
+    private DepartmentDao departmentDao;
+
     private HttpServletRequest httpServletRequest;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
 
     public UserServiceImpl(@Context HttpServletRequest httpServletRequest) {
@@ -93,10 +100,15 @@ public class UserServiceImpl implements UserService {
         User newUser = new User();
         String password = RandomPasswordGenerator.generate(16);
         String passwordEncoded = Sha256Encoder.encode(password);
-        newUser.setUsername(username);
+        newUser.setUserName(username);
         newUser.setPassword(passwordEncoded);
         newUser.setChineseName(request.getChineseName());
-        newUser.setDepartment(request.getDepartment());
+        // Find department by department name
+        Department departmentInDb = departmentDao.findById(request.getDepartmentId());
+        if (null == departmentInDb) {
+            throw new UnExpectedRequestException("Department ID of " + request.getDepartmentId() + " {&DOES_NOT_EXIST}");
+        }
+        newUser.setDepartment(departmentInDb);
 
         User savedUser = userDao.saveUser(newUser);
         AddUserResponse addUserResponse = new AddUserResponse(savedUser, password);
@@ -116,6 +128,8 @@ public class UserServiceImpl implements UserService {
         if (userInDb == null) {
             throw new UnExpectedRequestException("user id {&DOES_NOT_EXIST}, request: " + request);
         }
+        // Check personal template.
+        checkTemplate(userInDb);
         List<UserRole> userRolesInDb = userRoleDao.findByUser(userInDb);
         if (null != userRolesInDb && !userRolesInDb.isEmpty()) {
             throw new UnExpectedRequestException("{&DELETE_ERROR_USER_ROLE_HAS_FOREIGN_KEY}");
@@ -127,8 +141,14 @@ public class UserServiceImpl implements UserService {
 
         // Delete user
         userDao.deleteUser(userInDb);
-        LOGGER.info("Succeed to delete user, userId: {}, username: {}, current_user: {}", userInDb.getId(), userInDb.getUsername(), HttpUtils.getUserName(httpServletRequest));
+        LOGGER.info("Succeed to delete user, userId: {}, username: {}, current_user: {}", userInDb.getId(), userInDb.getUserName(), HttpUtils.getUserName(httpServletRequest));
         return new GeneralResponse<>("200", "{&DELETE_USER_SUCCESSFULLY}", null);
+    }
+
+    private void checkTemplate(User userInDb) throws UnExpectedRequestException {
+        if (! userDao.checkTemplate(userInDb)) {
+            throw new UnExpectedRequestException("{&USER_HAS_TEMPLATES}");
+        }
     }
 
     @Override
@@ -177,6 +197,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public GeneralResponse<?> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException {
+        // Check Arguments
+        checkRequest(request);
+        User userInDb = userDao.findById(request.getUserId());
+        if (null == userInDb) {
+            throw new UnExpectedRequestException("userId {&DOES_NOT_EXIST}");
+        }
+        // Find department by name.
+        Department departmentInDb = departmentDao.findByName(request.getDepartmentName());
+        if (null == departmentInDb) {
+            throw new UnExpectedRequestException("Department of " + request.getDepartmentName() + " {&DOES_NOT_EXIST}");
+        }
+        userInDb.setDepartment(departmentInDb);
+        // Save user
+        userDao.saveUser(userInDb);
+        LOGGER.info("Succeed to modify department, userId: {}, current_user: {}", userInDb.getId(), userInDb.getUserName());
+        return new GeneralResponse<>("200", "{&MODIFY_DEPARTMENT_SUCCESSFULLY}", null);
+    }
+
+    @Override
     public GeneralResponse<?> modifyPassword(ModifyPasswordRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
@@ -205,7 +245,7 @@ public class UserServiceImpl implements UserService {
         User newUser = new User();
         String password = username;
         String passwordEncoded = Sha256Encoder.encode(password);
-        newUser.setUsername(username);
+        newUser.setUserName(username);
         newUser.setPassword(passwordEncoded);
         User savedUser = userDao.saveUser(newUser);
 
@@ -221,13 +261,23 @@ public class UserServiceImpl implements UserService {
         LOGGER.info("Succeed to save user_role. uuid: {}, user_id: {}, role_id: {}", userRole.getId(), savedUser.getId(), role.getId());
     }
 
-
     private void checkRequest(ModifyPasswordRequest request) throws UnExpectedRequestException {
         if (request == null) {
             throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
         }
         checkString(request.getOldPassword(), "old password");
         checkString(request.getNewPassword(), "new password");
+    }
+
+    private void checkRequest(ModifyDepartmentRequest request) throws UnExpectedRequestException {
+        if (request == null) {
+            throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
+        }
+        if (request.getUserId() == null) {
+            throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
+        }
+        checkString(request.getUserId().toString(), "user ID");
+        checkString(request.getDepartmentName(), "department role id");
     }
 
     private void checkId(Long id, String idName) throws UnExpectedRequestException {
@@ -256,6 +306,6 @@ public class UserServiceImpl implements UserService {
         }
         checkString(request.getUsername(), "username");
         checkString(request.getChineseName(), "ChineseName");
-        checkString(request.getDepartment(), "Department");
+        checkString(request.getDepartmentId().toString(), "Department");
     }
 }

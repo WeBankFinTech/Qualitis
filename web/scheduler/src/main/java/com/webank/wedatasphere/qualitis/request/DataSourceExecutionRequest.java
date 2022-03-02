@@ -16,22 +16,42 @@
 
 package com.webank.wedatasphere.qualitis.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
  * @author howeye
  */
 public class DataSourceExecutionRequest {
 
-    private String cluster;
     private String database;
+    private String cluster;
     private String table;
-    private String partition;
+
     private String executionUser;
-    private String createUser;
     private Boolean crossTable;
+    private String createUser;
+
+    @JsonProperty("execution_param")
+    private String executionParam;
+
+    @JsonProperty("cluster_name")
+    private String clusterName;
+    @JsonProperty("startup_param_name")
+    private String startupParamName;
+    @JsonProperty("set_flag")
+    private String setFlag;
+
+    @JsonProperty("dynamic_partition_bool")
+    private boolean dyNamicPartition;
+    @JsonProperty("dynamic_partition_prefix")
+    private String dyNamicPartitionPrefix;
+    @JsonProperty("bool_async")
+    private boolean async;
+
+    @JsonProperty("job_id")
+    private String jobId;
 
     public DataSourceExecutionRequest() {
         crossTable = false;
@@ -61,12 +81,12 @@ public class DataSourceExecutionRequest {
         this.table = table;
     }
 
-    public String getPartition() {
-        return partition;
+    public String getExecutionParam() {
+        return executionParam;
     }
 
-    public void setPartition(String partition) {
-        this.partition = partition;
+    public void setExecutionParam(String executionParam) {
+        this.executionParam = executionParam;
     }
 
     public String getExecutionUser() {
@@ -93,12 +113,68 @@ public class DataSourceExecutionRequest {
         this.createUser = createUser;
     }
 
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getStartupParamName() {
+        return startupParamName;
+    }
+
+    public void setStartupParamName(String startupParamName) {
+        this.startupParamName = startupParamName;
+    }
+
+    public String getSetFlag() {
+        return setFlag;
+    }
+
+    public void setSetFlag(String setFlag) {
+        this.setFlag = setFlag;
+    }
+
+    public boolean getDyNamicPartition() {
+        return dyNamicPartition;
+    }
+
+    public void setDyNamicPartition(boolean dyNamicPartition) {
+        this.dyNamicPartition = dyNamicPartition;
+    }
+
+    public String getDyNamicPartitionPrefix() {
+        return dyNamicPartitionPrefix;
+    }
+
+    public void setDyNamicPartitionPrefix(String dyNamicPartitionPrefix) {
+        this.dyNamicPartitionPrefix = dyNamicPartitionPrefix;
+    }
+
+    public boolean getAsync() {
+        return async;
+    }
+
+    public void setAsync(boolean async) {
+        this.async = async;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
     public static void checkRequest(DataSourceExecutionRequest request) throws UnExpectedRequestException {
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject(request, "Request");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getCluster(), "Cluster");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getDatabase(), "Cluster");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getTable(), "Cluster");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
+        CommonChecker.checkObject(request, "Request");
+        CommonChecker.checkString(request.getCluster(), "Cluster");
+        CommonChecker.checkString(request.getDatabase(), "Database");
+        CommonChecker.checkString(request.getTable(), "Table");
+        CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
         CommonChecker.checkString(request.getCreateUser(), "Create_user");
     }
 }

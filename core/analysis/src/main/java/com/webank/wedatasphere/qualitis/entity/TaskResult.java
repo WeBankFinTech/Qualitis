@@ -33,11 +33,19 @@ public class TaskResult {
     private String applicationId;
     @Column(name = "rule_id")
     private Long ruleId;
-    private Double value;
+    private String value;
     @Column(name = "result_type")
     private String resultType;
     @Column(name = "create_time")
     private String createTime;
+    @Column(name = "save_result")
+    private Boolean saveResult;
+    @Column(name = "rule_metric_id")
+    private Long ruleMetricId;
+    @Column(name = "run_date")
+    private Long runDate;
+    @Column(name = "department_code")
+    private String departmentCode;
 
     public TaskResult() {
         // Default Constructor
@@ -67,11 +75,11 @@ public class TaskResult {
         this.ruleId = ruleId;
     }
 
-    public Double getValue() {
+    public String getValue() {
         return value;
     }
 
-    public void setValue(Double value) {
+    public void setValue(String value) {
         this.value = value;
     }
 
@@ -89,5 +97,37 @@ public class TaskResult {
 
     public void setCreateTime(String createTime) {
         this.createTime = createTime;
+    }
+
+    public Boolean getSaveResult() {
+        return saveResult;
+    }
+
+    public void setSaveResult(Boolean saveResult) {
+        this.saveResult = saveResult;
+    }
+
+    public Long getRuleMetricId() {
+        return ruleMetricId;
+    }
+
+    public void setRuleMetricId(Long ruleMetricId) {
+        this.ruleMetricId = ruleMetricId;
+    }
+
+    public Long getRunDate() {
+        return runDate;
+    }
+
+    public void setRunDate(Long runDate) {
+        this.runDate = runDate;
+    }
+
+    public String getDepartmentCode() {
+        return departmentCode;
+    }
+
+    public void setDepartmentCode(String departmentCode) {
+        this.departmentCode = departmentCode;
     }
 }

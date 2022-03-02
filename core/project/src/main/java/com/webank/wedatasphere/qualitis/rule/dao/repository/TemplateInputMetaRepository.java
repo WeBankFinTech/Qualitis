@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye

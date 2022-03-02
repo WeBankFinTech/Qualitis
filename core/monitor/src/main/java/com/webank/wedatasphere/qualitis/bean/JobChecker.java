@@ -22,11 +22,11 @@ import com.webank.wedatasphere.qualitis.entity.Task;
  * @author howeye
  */
 public class JobChecker implements Comparable<JobChecker> {
-
     private String applicationId;
     private String username;
     private Integer count;
     private String oldStatus;
+    private Double oldProgress;
     private String ujesAddress;
     private String clusterName;
     private Task task;
@@ -41,7 +41,18 @@ public class JobChecker implements Comparable<JobChecker> {
         this.task = task;
     }
 
-    public Integer getTaskId() {
+    public JobChecker(String applicationId, String oldStatus, Double oldProgress, String username, String ujesAddress, String clusterName, Task task) {
+        this.applicationId = applicationId;
+        this.oldStatus = oldStatus;
+        this.oldProgress = oldProgress;
+        this.username = username;
+        count = 0;
+        this.ujesAddress = ujesAddress;
+        this.clusterName = clusterName;
+        this.task = task;
+    }
+
+    public Long getTaskId() {
         return task.getTaskRemoteId();
     }
 
@@ -63,6 +74,14 @@ public class JobChecker implements Comparable<JobChecker> {
 
     public void setOldStatus(String oldStatus) {
         this.oldStatus = oldStatus;
+    }
+
+    public Double getOldProgress() {
+        return oldProgress;
+    }
+
+    public void setOldProgress(Double oldProgress) {
+        this.oldProgress = oldProgress;
     }
 
     public void addCount() {

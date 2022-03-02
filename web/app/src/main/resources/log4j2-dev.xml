@@ -20,8 +20,8 @@
         <property name="LOG_FILE_NAME">qualitis.log</property>
     </properties>
     <Appenders>
-        <RollingFile name="RollingFile" fileName="logs/qualitis/${LOG_FILE_NAME}"
-                     filePattern="logs/qualitis/${LOG_FILE_NAME}-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="RollingFile" fileName="/appcom/logs/qualitis/logs/qualitis/${LOG_FILE_NAME}"
+                     filePattern="/appcom/logs/qualitis/${LOG_FILE_NAME}-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %c{2}: %m%n</Pattern>
             </PatternLayout>
@@ -31,7 +31,6 @@
             </Policies>
             <DefaultRolloverStrategy min="1" max="10" />
         </RollingFile>
-
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %c{2} %M: %m%n"/>
         </Console>
@@ -46,5 +45,9 @@
             <AppenderRef ref="Console" />
             <AppenderRef ref="RollingFile" />
         </Logger>
+<!--        <Logger name="com.zaxxer.hikari" level="DEBUG">-->
+<!--            <AppenderRef ref="Console" />-->
+<!--            <AppenderRef ref="RollingFile" />-->
+<!--        </Logger>-->
     </Loggers>
 </Configuration>

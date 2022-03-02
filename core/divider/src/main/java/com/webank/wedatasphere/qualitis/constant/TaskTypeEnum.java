@@ -27,8 +27,7 @@ public enum TaskTypeEnum {
     JAVA_TASK(2, "JAVA TASK"),
     SPARK_TASK(3, "SPARK TASK"),
     PYTHON_TASK(4, "PYTHON TASK"),
-    MIX_TASK(5, "MIX TASK"),
-    ;
+    MIX_TASK(5, "MIX TASK");
 
     private Integer code;
     private String message;

@@ -18,10 +18,7 @@ package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.persistence.*;
 import java.util.Set;
 
@@ -38,17 +35,19 @@ public class Project {
     private Long id;
     @Column(length = 170)
     private String name;
+    @Column(name = "cn_name")
+    private String cnName;
     @Column(length = 1700)
     private String description;
 
     @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
     private Set<ProjectUser> projectUsers;
 
+    @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
+    private Set<ProjectEvent> projectEvents;
+
     @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
     private Set<ProjectLabel> projectLabels;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
-    private Set<Rule> rules;
 
     @Column(name = "create_user", length = 50)
     private String createUser;
@@ -76,16 +75,9 @@ public class Project {
     public Project() {
     }
 
-    public Project(String projectName, String description, String username, String chineseName, String department) {
+    public Project(String projectName, String cnName, String description, String username, String chineseName, String department, String createTime) {
         this.name = projectName;
-        this.description = description;
-        this.createUser = username;
-        this.createUserFullName = username + "(" + chineseName + ")";
-        this.userDepartment = department;
-    }
-
-    public Project(String projectName, String description, String username, String chineseName, String department, String createTime) {
-        this.name = projectName;
+        this.cnName = cnName;
         this.description = description;
         this.createUser = username;
         this.createUserFullName = username + "(" + chineseName + ")";
@@ -107,6 +99,14 @@ public class Project {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
     }
 
     public String getDescription() {
@@ -131,14 +131,6 @@ public class Project {
 
     public void setProjectLabels(Set<ProjectLabel> projectLabels) {
         this.projectLabels = projectLabels;
-    }
-
-    public Set<Rule> getRules() {
-        return rules;
-    }
-
-    public void setRules(Set<Rule> rules) {
-        this.rules = rules;
     }
 
     public String getCreateUser() {
@@ -195,6 +187,14 @@ public class Project {
 
     public void setModifyTime(String modifyTime) {
         this.modifyTime = modifyTime;
+    }
+
+    public Set<ProjectEvent> getProjectEvents() {
+        return projectEvents;
+    }
+
+    public void setProjectEvents(Set<ProjectEvent> projectEvents) {
+        this.projectEvents = projectEvents;
     }
 
     @Override

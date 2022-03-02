@@ -20,10 +20,6 @@ import com.webank.wedatasphere.qualitis.request.IndexRequest;
 import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
 import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.request.IndexRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
 
 import java.text.ParseException;
 import java.util.List;

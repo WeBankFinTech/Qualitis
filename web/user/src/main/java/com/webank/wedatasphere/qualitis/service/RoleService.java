@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
@@ -29,6 +30,8 @@ import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * @author howeye
@@ -79,5 +82,12 @@ public interface RoleService {
      * @return
      */
     GeneralResponse<?> getProxyUserByUser();
+
+    /**
+     * Get role Type
+     * @param userRoles
+     * @return
+     */
+    Integer getRoleType(List<UserRole> userRoles);
 
 }

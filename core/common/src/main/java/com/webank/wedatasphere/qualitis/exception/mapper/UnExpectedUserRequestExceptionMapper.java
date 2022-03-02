@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.webank.wedatasphere.qualitis.exception.mapper;
 
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
 /**
  * @author howeye
+ *
+ * 作用是UnexpectedRequestException被直接抛出到前端时，UnExpectedUserRequestExceptionMapper实现的toResponse方法会将该异常作为参数并信息处理之后再返回
+ * （比如国际化替换）。
  */
 @Provider
 public class UnExpectedUserRequestExceptionMapper implements ExceptionMapper<UnExpectedRequestException> {
@@ -43,6 +42,6 @@ public class UnExpectedUserRequestExceptionMapper implements ExceptionMapper<UnE
     public Response toResponse(UnExpectedRequestException exception) {
         String message = localeParser.replacePlaceHolderByLocale(exception.getMessage(), "en_US");
         LOGGER.warn(message, exception);
-        return Response.ok(exception.getResponse()).status(200).build();
+        return Response.ok(exception.getResponse()).status(exception.getStatus()).build();
     }
 }

@@ -16,12 +16,15 @@
 
 package com.webank.wedatasphere.qualitis.project.service;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.GetProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import javax.management.relation.RoleNotFoundException;
 
 /**
  * @author howeye
@@ -34,23 +37,36 @@ public interface OuterWorkflowService {
      * @param username
      * @return
      * @throws UnExpectedRequestException
+     * @throws RoleNotFoundException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<ProjectDetailResponse> addWorkflowProject(AddProjectRequest request, String username) throws UnExpectedRequestException;
+    GeneralResponse<ProjectDetailResponse> addWorkflowProject(AddProjectRequest request, String username)
+        throws UnExpectedRequestException, RoleNotFoundException, PermissionDeniedRequestException;
 
     /**
      * Modify workflow project
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request) throws UnExpectedRequestException;
+    GeneralResponse<?> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
+        throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
      * Delete workflow project
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException;
+    GeneralResponse<?> deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
+    /**
+     * Get workflow project
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> getWorkflowProject(GetProjectRequest request) throws UnExpectedRequestException;
 }

@@ -18,20 +18,24 @@ package com.webank.wedatasphere.qualitis.project.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author howeye
  */
 public class AddProjectRequest {
-
     @JsonProperty("project_name")
     private String projectName;
-    private String description;
+    @JsonProperty("cn_name")
+    private String cnName;
     private String username;
-
+    private String description;
     @JsonProperty("project_label")
     private Set<String> projectLabels;
+    @JsonProperty("project_authorize_users")
+    private List<AuthorizeProjectUserRequest>authorizeProjectUserRequests;
 
     public AddProjectRequest() {
         // Default Constructor
@@ -43,6 +47,14 @@ public class AddProjectRequest {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
     }
 
     public String getDescription() {
@@ -69,11 +81,24 @@ public class AddProjectRequest {
         this.projectLabels = projectLabels;
     }
 
+    public List<AuthorizeProjectUserRequest> getAuthorizeProjectUserRequests() {
+        return authorizeProjectUserRequests;
+    }
+
+    public void setAuthorizeProjectUserRequests(
+        List<AuthorizeProjectUserRequest> authorizeProjectUserRequests) {
+        this.authorizeProjectUserRequests = authorizeProjectUserRequests;
+    }
+
     public static void checkRequest(AddProjectRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getProjectName(), "project name");
 
-        CommonChecker.checkStringLength(request.getProjectName(), 50, "project name");
+        CommonChecker.checkStringLength(request.getProjectName(), 64, "project name");
         CommonChecker.checkStringLength(request.getDescription(), 500, "project description");
+
+        if (StringUtils.isNotEmpty(request.getCnName())) {
+            CommonChecker.checkStringLength(request.getCnName(), 128, "project chinese name");
+        }
     }
 }

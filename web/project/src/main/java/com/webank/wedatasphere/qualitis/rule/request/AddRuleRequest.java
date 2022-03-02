@@ -25,11 +25,21 @@ import java.util.List;
 /**
  * @author howeye
  */
-public class AddRuleRequest {
+public class AddRuleRequest extends AbstractAddRequest {
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("cn_name")
+    private String ruleCnName;
+    @JsonProperty("rule_detail")
+    private String ruleDetail;
     @JsonProperty("rule_template_id")
     private Long ruleTemplateId;
+    @JsonProperty("alert")
+    private Boolean alert;
+    @JsonProperty("alert_level")
+    private Integer alertLevel;
+    @JsonProperty("alert_receiver")
+    private String alertReceiver;
     @JsonProperty("alarm")
     private Boolean alarm;
     @JsonProperty("alarm_variable")
@@ -41,9 +51,19 @@ public class AddRuleRequest {
     private List<TemplateArgumentRequest> templateArgumentRequests;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
-
+    @JsonProperty("cs_id")
+    private String csId;
     @JsonProperty("abort_on_failure")
     private Boolean abortOnFailure;
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
+    @JsonProperty("specify_static_startup_param")
+    private Boolean specifyStaticStartupParam;
+    @JsonProperty("static_startup_param")
+    private String staticStartupParam;
+
+    private List<String> ruleMetricNamesForBdpClient;
 
     public AddRuleRequest() {
         // Default Constructor
@@ -55,6 +75,22 @@ public class AddRuleRequest {
 
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
+    }
+
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
     }
 
     public Long getRuleTemplateId() {
@@ -81,6 +117,22 @@ public class AddRuleRequest {
         this.alarm = alarm;
     }
 
+    public Boolean getAlert() {
+        return alert;
+    }
+
+    public void setAlert(Boolean alert) {
+        this.alert = alert;
+    }
+
+    public Integer getAlertLevel() {
+        return alertLevel;
+    }
+
+    public void setAlertLevel(Integer alertLevel) {
+        this.alertLevel = alertLevel;
+    }
+
     public List<DataSourceRequest> getDatasource() {
         return datasource;
     }
@@ -97,12 +149,87 @@ public class AddRuleRequest {
         this.projectId = projectId;
     }
 
+    public String getCsId() { return csId; }
+
+    public void setCsId(String csId) { this.csId = csId; }
+
     public Boolean getAbortOnFailure() {
         return abortOnFailure;
     }
 
     public void setAbortOnFailure(Boolean abortOnFailure) {
         this.abortOnFailure = abortOnFailure;
+    }
+
+    public List<TemplateArgumentRequest> getTemplateArgumentRequests() {
+        return templateArgumentRequests;
+    }
+
+    public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
+        this.templateArgumentRequests = templateArgumentRequests;
+    }
+
+    public Long getRuleGroupId() {
+        return ruleGroupId;
+    }
+
+    public void setRuleGroupId(Long ruleGroupId) {
+        this.ruleGroupId = ruleGroupId;
+    }
+
+    public String getAlertReceiver() {
+        return alertReceiver;
+    }
+
+    public void setAlertReceiver(String alertReceiver) {
+        this.alertReceiver = alertReceiver;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
+    }
+
+    public List<String> getRuleMetricNamesForBdpClient() {
+        return ruleMetricNamesForBdpClient;
+    }
+
+    public void setRuleMetricNamesForBdpClient(List<String> ruleMetricNamesForBdpClient) {
+        this.ruleMetricNamesForBdpClient = ruleMetricNamesForBdpClient;
+    }
+
+    @Override
+    public String toString() {
+        return "AddRuleRequest{" +
+            "ruleName='" + ruleName + '\'' +
+            ", ruleTemplateId=" + ruleTemplateId +
+            ", alarm=" + alarm +
+            ", alarmVariable=" + alarmVariable +
+            ", datasource=" + datasource +
+            ", projectId=" + projectId +
+            ", templateArgumentRequests=" + templateArgumentRequests +
+            ", ruleGroupId=" + ruleGroupId +
+            ", csId='" + csId + '\'' +
+            '}';
     }
 
     public static void checkRequest(AddRuleRequest request, boolean modifyOrNot) throws UnExpectedRequestException {
@@ -124,40 +251,10 @@ public class AddRuleRequest {
             CommonChecker.checkObject(dataSourceRequest.getFilter(), "filter");
         }
 
-        if (!modifyOrNot) {
+        if (! modifyOrNot) {
             CommonChecker.checkObject(request.getProjectId(), "project_id");
         }
 
-        CommonChecker.checkStringLength(request.getRuleName(), 50, "rule name");
-    }
-
-    public List<TemplateArgumentRequest> getTemplateArgumentRequests() {
-        return templateArgumentRequests;
-    }
-
-    public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
-        this.templateArgumentRequests = templateArgumentRequests;
-    }
-
-    public Long getRuleGroupId() {
-        return ruleGroupId;
-    }
-
-    public void setRuleGroupId(Long ruleGroupId) {
-        this.ruleGroupId = ruleGroupId;
-    }
-
-    @Override
-    public String toString() {
-        return "AddRuleRequest{" +
-            "ruleName='" + ruleName + '\'' +
-            ", ruleTemplateId=" + ruleTemplateId +
-            ", alarm=" + alarm +
-            ", alarmVariable=" + alarmVariable +
-            ", datasource=" + datasource +
-            ", projectId=" + projectId +
-            ", templateArgumentRequests=" + templateArgumentRequests +
-            ", ruleGroupId=" + ruleGroupId +
-            '}';
+        CommonChecker.checkStringLength(request.getRuleName(), 128, "rule name");
     }
 }

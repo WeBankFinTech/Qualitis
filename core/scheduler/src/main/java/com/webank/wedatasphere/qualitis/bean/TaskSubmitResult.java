@@ -22,13 +22,17 @@ package com.webank.wedatasphere.qualitis.bean;
 public class TaskSubmitResult {
 
     private String applicationId;
-    private Integer taskRemoteId;
+    private Long taskRemoteId;
     private String clusterName;
 
-    public TaskSubmitResult(String applicationId, Integer taskRemoteId, String clusterName) {
+    public TaskSubmitResult(String applicationId, Long taskRemoteId, String clusterName) {
         this.applicationId = applicationId;
         this.taskRemoteId = taskRemoteId;
         this.clusterName = clusterName;
+    }
+
+    public TaskSubmitResult() {
+
     }
 
     public String getApplicationId() {
@@ -39,11 +43,11 @@ public class TaskSubmitResult {
         this.applicationId = applicationId;
     }
 
-    public Integer getTaskRemoteId() {
+    public Long getTaskRemoteId() {
         return taskRemoteId;
     }
 
-    public void setTaskRemoteId(Integer taskRemoteId) {
+    public void setTaskRemoteId(Long taskRemoteId) {
         this.taskRemoteId = taskRemoteId;
     }
 
