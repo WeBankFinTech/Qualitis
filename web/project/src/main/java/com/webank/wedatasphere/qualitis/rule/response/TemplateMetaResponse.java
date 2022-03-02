@@ -49,7 +49,7 @@ public class TemplateMetaResponse {
     @JsonProperty("template_action_type")
     private Integer templateActionType;
     @JsonProperty("template_datasource_type")
-    private Integer dataSourceType;
+    private List<Integer> dataSourceType;
     @JsonProperty("save_mid_table")
     private Boolean saveMidTable;
     @JsonProperty("show_sql")
@@ -60,18 +60,18 @@ public class TemplateMetaResponse {
     public TemplateMetaResponse() {
     }
 
-    public TemplateMetaResponse(Template template, List<TemplateMidTableInputMeta> templateMidTableInputMetas, List<TemplateOutputMeta> templateOutputMetas) {
+    public TemplateMetaResponse(Template template, List<TemplateMidTableInputMeta> templateMidTableInputMetas, List<TemplateOutputMeta> templateOutputMetas, List<Integer> dataSourceTypes) {
+        this.dataSourceType = dataSourceTypes;
+        this.dbNum = template.getDbNum();
         this.templateId = template.getId();
         this.templateName = template.getName();
-        this.clusterNum = template.getClusterNum();
-        this.dbNum = template.getDbNum();
         this.tableNum = template.getTableNum();
         this.fieldNum = template.getFieldNum();
+        this.clusterNum = template.getClusterNum();
         this.templateType = template.getTemplateType();
-        this.showSql = template.getMidTableAction();
         this.templateActionType = template.getActionType();
-        this.dataSourceType = template.getDatasourceType();
         this.saveMidTable = template.getSaveMidTable();
+        this.showSql = template.getMidTableAction();
         this.templateOutputName = new ArrayList<>();
 
         for (TemplateOutputMeta templateOutputMeta : templateOutputMetas) {
@@ -79,18 +79,19 @@ public class TemplateMetaResponse {
         }
     }
 
-    public TemplateMetaResponse(Template template, List<TemplateOutputMeta> templateOutputMetas) {
+    public TemplateMetaResponse(Template template, List<TemplateOutputMeta> templateOutputMetas, List<Integer> dataSourceTypes) {
+        this.dataSourceType = dataSourceTypes;
+
+        this.dbNum = template.getDbNum();
         this.templateId = template.getId();
         this.templateName = template.getName();
         this.clusterNum = template.getClusterNum();
-        this.dbNum = template.getDbNum();
         this.tableNum = template.getTableNum();
         this.fieldNum = template.getFieldNum();
         this.templateType = template.getTemplateType();
-        this.showSql = template.getMidTableAction();
         this.templateActionType = template.getActionType();
-        this.dataSourceType = template.getDatasourceType();
         this.saveMidTable = template.getSaveMidTable();
+        this.showSql = template.getMidTableAction();
         this.templateOutputName = new ArrayList<>();
 
         for (TemplateOutputMeta templateOutputMeta : templateOutputMetas) {
@@ -163,11 +164,11 @@ public class TemplateMetaResponse {
         this.fieldNum = fieldNum;
     }
 
-    public Integer getDataSourceType() {
+    public List<Integer> getDataSourceType() {
         return dataSourceType;
     }
 
-    public void setDataSourceType(Integer dataSourceType) {
+    public void setDataSourceType(List<Integer> dataSourceType) {
         this.dataSourceType = dataSourceType;
     }
 

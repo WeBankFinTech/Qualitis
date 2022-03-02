@@ -21,10 +21,6 @@ import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 
 import java.util.*;
 
@@ -44,13 +40,18 @@ public class TaskCheckResultResponse {
     }
 
     public TaskCheckResultResponse(Task task, Map<TaskRuleSimple, List<TaskDataSource>> singleRuleDataSourceMap,
-                                   Map<TaskRuleSimple, List<TaskDataSource>> multiRuleDataSourceMap, Map<Long, TaskResult> taskResultMap) {
-        this.clusterName = task.getClusterId();
+        Map<TaskRuleSimple, List<TaskDataSource>> customRuleDataSourceMap,
+        Map<TaskRuleSimple, List<TaskDataSource>> multiRuleDataSourceMap,
+        Map<TaskRuleSimple, List<TaskDataSource>> fileRuleDataSourceMap,
+        Map<Long, List<TaskResult>> taskResultMap) {
+        this.clusterName = task.getClusterName();
         this.savedDb = task.getApplication().getSavedDb();
         this.checkDataSourceResponse = new CheckDataSourceResponse();
         List<CheckSingleDataSourceResponse> single = new ArrayList<>();
+        List<CheckCustomDataSourceResponse> custom = new ArrayList<>();
         List<CheckMultipleDataSourceResponse> multiple = new ArrayList<>();
-
+        List<CheckFileDataSourceResponse> file = new ArrayList<>();
+        // 根据单表数据源进行划分TaskRuleSimple
         Map<String, List<TaskDataSource>> partitionedByDbAndTable = partitionByDbAndTable(singleRuleDataSourceMap.values());
         Map<Long, TaskRuleSimple> taskRuleSimpleMap = getTaskRuleSimpleMap(singleRuleDataSourceMap);
         for (List<TaskDataSource> taskDataSources : partitionedByDbAndTable.values()) {
@@ -59,6 +60,13 @@ public class TaskCheckResultResponse {
         }
         this.checkDataSourceResponse.setSingle(single);
 
+        // 根据自定义规则的复杂语句解析响应结果
+        Map<Long, TaskRuleSimple> taskRuleSimpleCustomMap = getTaskRuleSimpleMap(customRuleDataSourceMap);
+        for (TaskRuleSimple taskRuleSimple : customRuleDataSourceMap.keySet()) {
+            custom.add(new CheckCustomDataSourceResponse(customRuleDataSourceMap.get(taskRuleSimple), taskRuleSimpleCustomMap, taskResultMap));
+        }
+        this.checkDataSourceResponse.setCustom(custom);
+
         // 根据跨表数据源进行划分TaskRuleSimple
         Map<String, List<Map<TaskRuleSimple, List<TaskDataSource>>>> partitionedMultiRule = partitionMultiRule(multiRuleDataSourceMap);
         for (List<Map<TaskRuleSimple, List<TaskDataSource>>> taskDataSourcesList : partitionedMultiRule.values()) {
@@ -66,6 +74,15 @@ public class TaskCheckResultResponse {
             multiple.add(new CheckMultipleDataSourceResponse(taskDataSourcesList, taskResultMap));
         }
         this.checkDataSourceResponse.setMultiple(multiple);
+
+        // 根据文件表数据源进行划分TaskRuleSimple
+        Map<String, List<TaskDataSource>> partitionedFileByDbAndTable = partitionByDbAndTable(fileRuleDataSourceMap.values());
+        Map<Long, TaskRuleSimple> taskFileRuleSimpleMap = getTaskRuleSimpleMap(fileRuleDataSourceMap);
+        for (List<TaskDataSource> taskDataSources : partitionedFileByDbAndTable.values()) {
+            TaskDataSource taskDataSource = taskDataSources.get(0);
+            file.add(new CheckFileDataSourceResponse(taskDataSource.getDatabaseName(), taskDataSource.getTableName(), taskDataSources, taskFileRuleSimpleMap, taskResultMap));
+        }
+        this.checkDataSourceResponse.setFile(file);
     }
 
     private Map<String, List<Map<TaskRuleSimple, List<TaskDataSource>>>> partitionMultiRule(Map<TaskRuleSimple, List<TaskDataSource>> multiRuleDataSourceMap) {
@@ -115,9 +132,9 @@ public class TaskCheckResultResponse {
         return map;
     }
 
-    private Map<Long, TaskRuleSimple> getTaskRuleSimpleMap(Map<TaskRuleSimple, List<TaskDataSource>> singleRuleDataSourceMap) {
-        Map<Long, TaskRuleSimple> map = new HashMap<>(singleRuleDataSourceMap.keySet().size());
-        for (TaskRuleSimple taskRuleSimple : singleRuleDataSourceMap.keySet()) {
+    private Map<Long, TaskRuleSimple> getTaskRuleSimpleMap(Map<TaskRuleSimple, List<TaskDataSource>> ruleDataSourceMap) {
+        Map<Long, TaskRuleSimple> map = new HashMap<>(ruleDataSourceMap.keySet().size());
+        for (TaskRuleSimple taskRuleSimple : ruleDataSourceMap.keySet()) {
             map.put(taskRuleSimple.getRuleId(), taskRuleSimple);
         }
         return map;

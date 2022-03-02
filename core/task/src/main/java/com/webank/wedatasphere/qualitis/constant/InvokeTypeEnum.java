@@ -19,13 +19,14 @@ package com.webank.wedatasphere.qualitis.constant;
 /**
  * @author howeye
  */
-public enum  InvokeTypeEnum {
+public enum InvokeTypeEnum {
     /**
-     * schedule type
-     * 1 api，2 timing
+     * Invke source type
+     * 1 ui，2 bdp-client，3 工作流
      */
-    API_INVOKE(1, "接口调用"),
-    TIME_INVOKE(2, "定时调用"),;
+    UI_INVOKE(1, "系统触发"),
+    BDP_CLIENT_API_INVOKE(2, "bdp-client触发"),
+    FLOW_API_INVOKE(3, "工作流触发");
 
     private Integer code;
     private String message;

@@ -39,7 +39,7 @@ public class CheckMultipleDataSourceResponse {
     public CheckMultipleDataSourceResponse() {
     }
 
-    public CheckMultipleDataSourceResponse(List<Map<TaskRuleSimple, List<TaskDataSource>>> taskDataSourcesList, Map<Long, TaskResult> taskResultMap) {
+    public CheckMultipleDataSourceResponse(List<Map<TaskRuleSimple, List<TaskDataSource>>> taskDataSourcesList, Map<Long, List<TaskResult>> taskResultMap) {
         this.multiDataSourceResponse = new ArrayList<>();
         this.checkTableResponse = new ArrayList<>();
         for (Map<TaskRuleSimple, List<TaskDataSource>> tmp : taskDataSourcesList) {

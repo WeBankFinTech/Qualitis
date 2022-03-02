@@ -26,7 +26,8 @@ public class UserAddRequest {
     private String username;
     @JsonProperty("chinese_name")
     private String chineseName;
-    private String department;
+    @JsonProperty("department")
+    private Long departmentId;
 
     public UserAddRequest() {
         // Default Constructor
@@ -40,12 +41,12 @@ public class UserAddRequest {
         this.chineseName = chineseName;
     }
 
-    public String getDepartment() {
-        return department;
+    public Long getDepartmentId() {
+        return departmentId;
     }
 
-    public void setDepartment(String department) {
-        this.department = department;
+    public void setDepartmentId(Long departmentId) {
+        this.departmentId = departmentId;
     }
 
     public String getUsername() {

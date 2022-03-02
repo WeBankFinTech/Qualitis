@@ -25,17 +25,19 @@ public class JobSubmitResult {
     private String jobStatus;
     private String clusterName;
     private String ujesAddress;
-    private Integer taskRemoteId;
+    private Long taskRemoteId;
+    private String taskExecId;
 
     public JobSubmitResult() {
     }
 
-    public JobSubmitResult(Long taskId, String jobStatus, String clusterName, String ujesAddress, Integer taskRemoteId) {
+    public JobSubmitResult(Long taskId, String jobStatus, String clusterName, String ujesAddress, Long taskRemoteId, String execId) {
         this.taskId = taskId;
         this.jobStatus = jobStatus;
         this.clusterName = clusterName;
         this.ujesAddress = ujesAddress;
         this.taskRemoteId = taskRemoteId;
+        this.taskExecId = execId;
     }
 
     public Long getTaskId() {
@@ -70,22 +72,31 @@ public class JobSubmitResult {
         this.ujesAddress = ujesAddress;
     }
 
-    public Integer getTaskRemoteId() {
+    public Long getTaskRemoteId() {
         return taskRemoteId;
     }
 
-    public void setTaskRemoteId(Integer taskRemoteId) {
+    public void setTaskRemoteId(Long taskRemoteId) {
         this.taskRemoteId = taskRemoteId;
+    }
+
+    public String getTaskExecId() {
+        return taskExecId;
+    }
+
+    public void setTaskExecId(String taskExecId) {
+        this.taskExecId = taskExecId;
     }
 
     @Override
     public String toString() {
         return "JobSubmitResult{" +
-                "taskId=" + taskId +
-                ", jobStatus='" + jobStatus + '\'' +
-                ", clusterName='" + clusterName + '\'' +
-                ", ujesAddress='" + ujesAddress + '\'' +
-                ", taskRemoteId=" + taskRemoteId +
-                '}';
+            "taskId=" + taskId +
+            ", jobStatus='" + jobStatus + '\'' +
+            ", clusterName='" + clusterName + '\'' +
+            ", ujesAddress='" + ujesAddress + '\'' +
+            ", taskRemoteId=" + taskRemoteId +
+            ", taskExecId='" + taskExecId + '\'' +
+            '}';
     }
 }

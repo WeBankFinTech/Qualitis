@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.project.response;
 
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.lang.StringUtils;
+
 /**
  * @author howeye
  */

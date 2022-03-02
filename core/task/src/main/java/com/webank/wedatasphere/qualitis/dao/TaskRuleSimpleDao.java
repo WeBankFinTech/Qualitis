@@ -20,11 +20,19 @@ import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
  */
 public interface TaskRuleSimpleDao {
+
+    /**
+     * Count yesterday execute num.
+     * @param ruleId
+     * @return
+     */
+    List<TaskRuleSimple> findBetweenYesterday(Long ruleId);
 
     /**
      * Find task rule simple by creator and project id

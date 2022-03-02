@@ -33,6 +33,6 @@ public interface JobService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getTaskLog(Integer taskId, String clusterName) throws UnExpectedRequestException;
+    GeneralResponse<?> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException;
 
 }

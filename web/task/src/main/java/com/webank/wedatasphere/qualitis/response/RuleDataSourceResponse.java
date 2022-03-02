@@ -40,7 +40,10 @@ public class RuleDataSourceResponse {
         this.clusterName = taskDataSource.getClusterName();
         this.dbName = taskDataSource.getDatabaseName();
         this.tableName = taskDataSource.getTableName();
-        this.fieldNames = Arrays.asList(taskDataSource.getColName().split(","));
+        String colName = taskDataSource.getColName();
+        if (colName != null) {
+            this.fieldNames = Arrays.asList(colName.split(","));
+        }
     }
 
     public String getClusterName() {

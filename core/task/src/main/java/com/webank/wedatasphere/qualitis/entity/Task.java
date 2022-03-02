@@ -33,12 +33,17 @@ public class Task {
     private Long id;
 
     @Column(name = "task_remote_id")
-    private Integer taskRemoteId;
+    private Long taskRemoteId;
     @Column(name = "begin_time", length = 25)
     private String beginTime;
+    @Column(name = "running_time", length = 25)
+    private Long runningTime;
     @Column(name = "end_time", length = 25)
     private String endTime;
     private Integer status;
+    @Column(name = "new_progress_time")
+    private Long newProgressTime;
+    private Double progress;
 
     @OneToMany(mappedBy = "task", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<TaskRuleSimple> taskRuleSimples;
@@ -50,25 +55,57 @@ public class Task {
     private Application application;
 
     @Column(name = "cluster_id", length = 100)
-    private String clusterId;
+    private String clusterName;
 
     @Column(name = "submit_address")
     private String submitAddress;
 
+    @Column(name = "task_exec_id")
+    private String taskExecId;
+
+    @Column(name = "task_proxy_user")
+    private String taskProxyUser;
+
     @Column(name = "abort_on_failure")
     private Boolean abortOnFailure;
+
+    @Column(name = "task_comment")
+    private Integer taskComment;
 
     public Task() {
     }
 
-    public Task(Application application, String beginTime, Integer status, String clusterId, String submitAddress) {
+    public Task(Application application, String beginTime, Integer status, Double progress, String clusterName, String submitAddress) {
         this.beginTime = beginTime;
         this.application = application;
         this.status = status;
+        this.progress = progress;
         taskRuleSimples = new HashSet<>();
         taskDataSources = new HashSet<>();
-        this.clusterId = clusterId;
+        this.clusterName = clusterName;
         this.submitAddress = submitAddress;
+    }
+
+    public Task(Application application, String beginTime, Integer status) {
+        this.beginTime = beginTime;
+        this.application = application;
+        this.status = status;
+    }
+
+    public Long getRunningTime() {
+        return runningTime;
+    }
+
+    public void setRunningTime(Long runningTime) {
+        this.runningTime = runningTime;
+    }
+
+    public String getTaskProxyUser() {
+        return taskProxyUser;
+    }
+
+    public void setTaskProxyUser(String taskProxyUser) {
+        this.taskProxyUser = taskProxyUser;
     }
 
     public Long getId() {
@@ -79,11 +116,11 @@ public class Task {
         this.id = id;
     }
 
-    public Integer getTaskRemoteId() {
+    public Long getTaskRemoteId() {
         return taskRemoteId;
     }
 
-    public void setTaskRemoteId(Integer taskRemoteId) {
+    public void setTaskRemoteId(Long taskRemoteId) {
         this.taskRemoteId = taskRemoteId;
     }
 
@@ -135,12 +172,28 @@ public class Task {
         this.status = status;
     }
 
-    public String getClusterId() {
-        return clusterId;
+    public Long getNewProgressTime() {
+        return newProgressTime;
     }
 
-    public void setClusterId(String clusterId) {
-        this.clusterId = clusterId;
+    public void setNewProgressTime(Long newProgressTime) {
+        this.newProgressTime = newProgressTime;
+    }
+
+    public Double getProgress() {
+        return progress;
+    }
+
+    public void setProgress(Double progress) {
+        this.progress = progress;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
     }
 
     public String getSubmitAddress() {
@@ -151,12 +204,28 @@ public class Task {
         this.submitAddress = submitAddress;
     }
 
-    public Boolean isAbortOnFailure() {
+    public Boolean getAbortOnFailure() {
         return abortOnFailure;
     }
 
     public void setAbortOnFailure(Boolean abortOnFailure) {
         this.abortOnFailure = abortOnFailure;
+    }
+
+    public String getTaskExecId() {
+        return taskExecId;
+    }
+
+    public void setTaskExecId(String taskExecId) {
+        this.taskExecId = taskExecId;
+    }
+
+    public Integer getTaskComment() {
+        return taskComment;
+    }
+
+    public void setTaskComment(Integer taskComment) {
+        this.taskComment = taskComment;
     }
 
     @Override

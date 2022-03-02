@@ -16,7 +16,10 @@
 
 package com.webank.wedatasphere.qualitis.query.service;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
 import com.webank.wedatasphere.qualitis.query.request.RuleQueryRequest;
@@ -80,12 +83,15 @@ public interface RuleQueryService {
   /**
    * Get the column information of the table
    * @param cluster
+   * @param datasourceId
    * @param db
    * @param table
    * @param user
    * @return
+   * @throws UnExpectedRequestException
    */
-    List<ColumnInfoDetail> getColumnsByTableName(String cluster, String db, String table, String user);
+    List<ColumnInfoDetail> getColumnsByTableName(String cluster, Long datasourceId, String db, String table, String user)
+        throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
   /**
    * Get rules related with columns
@@ -94,14 +100,34 @@ public interface RuleQueryService {
    * @param table
    * @param user
    * @param s
+   * @param page
+   * @param size
    * @return
    */
-  List<HiveRuleDetail> getRulesByColumn(String cluster, String db, String table, String user, String s);
+  DataInfo<HiveRuleDetail> getRulesByColumn(String cluster, String db, String table, String user, String s, int page, int size);
 
   /**
-   * delete batch rules
+   * delete rule in rule query UI.
    * @param request
+   * @throws UnExpectedRequestException
    */
-    void deleteRules(RulesDeleteRequest request) throws UnExpectedRequestException;
+    void deleteRules(RulesDeleteRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
+  /**
+   * Compare datasource in hive.
+   * @param cols
+   * @param columnInfoDetails
+   * @return
+   */
+    boolean compareDataSource(List<String> cols, List<ColumnInfoDetail> columnInfoDetails);
+
+  /**
+   * Find cols with conditions to compare datasource in hive.
+   * @param cluster
+   * @param db
+   * @param table
+   * @param user
+   * @return
+   */
+  List<String> findCols(String cluster, String db, String table, String user);
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.dao;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
 
 import java.util.List;
@@ -75,5 +76,17 @@ public interface UserDao {
      */
     List<User> findAllUser();
 
+    /**
+     * Find user by department.
+     * @param departmentInDb
+     * @return
+     */
+    List<User> findByDepartment(Department departmentInDb);
 
+    /**
+     * Check template.
+     * @param userInDb
+     * @return
+     */
+    boolean checkTemplate(User userInDb);
 }

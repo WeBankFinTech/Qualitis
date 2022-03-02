@@ -41,8 +41,11 @@ public class TaskRuleResponse {
         this.ruleId = taskRuleSimple.getRuleId();
         this.ruleName = taskRuleSimple.getRuleName();
         this.ruleDataSources = new ArrayList<>();
-        List<TaskDataSource> taskDataSources1 = taskDataSources.stream().filter(jobDataSource -> jobDataSource.getRuleId().equals(ruleId)).collect(Collectors.toList());
-        for (TaskDataSource taskDataSource : taskDataSources1) {
+        List<TaskDataSource> dataSources = taskDataSources.stream().filter(jobDataSource -> jobDataSource.getRuleId().equals(ruleId)).collect(Collectors.toList());
+        for (TaskDataSource taskDataSource : dataSources) {
+            if (taskDataSource.getDatasourceIndex() != null && taskDataSource.getDatasourceIndex() < 0) {
+                continue;
+            }
             this.ruleDataSources.add(new RuleDataSourceResponse(taskDataSource));
         }
     }

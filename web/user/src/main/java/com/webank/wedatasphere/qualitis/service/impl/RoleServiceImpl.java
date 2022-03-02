@@ -16,13 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
+import com.webank.wedatasphere.qualitis.filter.BodyReaderHttpServletRequestWrapper;
 import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
+import com.webank.wedatasphere.qualitis.rule.constant.RoleDefaultTypeEnum;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -32,18 +35,8 @@ import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RoleResponse;
 import com.webank.wedatasphere.qualitis.response.UserAndRoleResponse;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.dao.RoleDao;
-import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
-import com.webank.wedatasphere.qualitis.entity.*;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.UserAndRoleResponse;
-import com.webank.wedatasphere.qualitis.service.RoleService;
+import java.io.IOException;
+import javax.servlet.http.HttpSession;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +68,9 @@ public class RoleServiceImpl implements RoleService {
     @Autowired
     private UserDao userDao;
 
+    @Autowired
+    private DepartmentDao departmentDao;
+
     private HttpServletRequest httpServletRequest;
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleServiceImpl.class);
 
@@ -98,6 +94,15 @@ public class RoleServiceImpl implements RoleService {
         // Save new role
         Role newRole = new Role();
         newRole.setName(roleName);
+        if (request.getDepartmentName() != null) {
+            Department departmentInDb = departmentDao.findByName(request.getDepartmentName());
+            if (departmentInDb == null) {
+                throw new UnExpectedRequestException("department {&DOES_NOT_EXIST}, name: " + request.getDepartmentName());
+            }
+            LOGGER.info("Succeed to find department. Name: " + departmentInDb.getName());
+            newRole.setDepartment(departmentInDb);
+        }
+
         Role savedRole = roleDao.saveRole(newRole);
         RoleResponse roleResponse = new RoleResponse(savedRole);
 
@@ -118,6 +123,8 @@ public class RoleServiceImpl implements RoleService {
         if (roleInDb == null) {
             throw new UnExpectedRequestException("role id {&DOES_NOT_EXIST}, request: " + request);
         }
+        // Check department template.
+        checkTemplate(roleInDb);
         List<UserRole> userRolesInDb = userRoleDao.findByRole(roleInDb);
         if (null != userRolesInDb && !userRolesInDb.isEmpty()) {
             throw new UnExpectedRequestException("{&DELETE_ERROR_USER_ROLE_HAS_FOREIGN_KEY}");
@@ -132,6 +139,12 @@ public class RoleServiceImpl implements RoleService {
 
         LOGGER.info("Succeed to delete role, role_id: {}, role_name: {}, current_user: {}", roleInDb.getId(), roleInDb.getName(), HttpUtils.getUserName(httpServletRequest));
         return new GeneralResponse<>("200", "{&DELETE_ROLE_SUCCESSFULLY}", null);
+    }
+
+    private void checkTemplate(Role roleInDb) throws UnExpectedRequestException {
+        if (! roleDao.checkTemplate(roleInDb)) {
+            throw new UnExpectedRequestException("{&ROLE_HAS_DEPARTMENT_TEMPLATES}");
+        }
     }
 
     @Override
@@ -151,6 +164,14 @@ public class RoleServiceImpl implements RoleService {
 
         // Modify role name and save
         roleInDb.setName(roleName);
+        if (request.getDepartmentName() != null) {
+            Department departmentInDb = departmentDao.findByName(request.getDepartmentName());
+            if (departmentInDb == null) {
+                throw new UnExpectedRequestException("department {&DOES_NOT_EXIST}, name: " + request.getDepartmentName());
+            }
+            LOGGER.info("Succeed to find department. Name: " + departmentInDb.getName());
+            roleInDb.setDepartment(departmentInDb);
+        }
         Role savedRole = roleDao.saveRole(roleInDb);
         LOGGER.info("Succeed to modify role, role_id: {}, role_name: {}, current_user: {}", savedRole.getId(), savedRole.getName(), HttpUtils.getUserName(httpServletRequest));
         return new GeneralResponse<>("200", "{&MODIFY_ROLE_SUCCESSFULLY}", null);
@@ -194,7 +215,8 @@ public class RoleServiceImpl implements RoleService {
         UserAndRoleResponse response = new UserAndRoleResponse();
         response.setRoles(roleNames);
         response.setUsername(username);
-
+        HttpSession session = httpServletRequest.getSession();
+        response.setLoginRandom((Integer) session.getAttribute("loginRandom"));
         LOGGER.info("Succeed to get role of user, {}  role: {}, current_user: {}", username, roleNames.toString(), username);
         return new GeneralResponse<>("200", "{&GET_ROLE_SUCCESSFULLY}", response);
     }
@@ -210,11 +232,27 @@ public class RoleServiceImpl implements RoleService {
                 proxyUserNames.add(userProxyUser.getProxyUser().getProxyUserName());
             }
         }
-        LOGGER.info("Succeed to get proxy user of user. user: {}, proxy user: {}",userInDb.getUsername(), proxyUserNames);
+        LOGGER.info("Succeed to get proxy user of user. user: {}, proxy user: {}",userInDb.getUserName(), proxyUserNames);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_PROXY_USER_OF_USER}", proxyUserNames);
     }
 
-    private void checkRequest(RoleAddRequest request) throws UnExpectedRequestException {
+  @Override
+  public Integer getRoleType(List<UserRole> userRoles) {
+      Integer roleType = RoleDefaultTypeEnum.PROJECTOR.getCode();
+      for (UserRole userRole : userRoles) {
+          if (userRole.getRole().getName().equals(RoleDefaultTypeEnum.ADMIN.getMessage())) {
+              roleType = RoleDefaultTypeEnum.ADMIN.getCode();
+              break;
+          } else if (! userRole.getRole().getName().equals(RoleDefaultTypeEnum.PROJECTOR.getMessage())) {
+              roleType = RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode();
+          } else {
+              continue;
+          }
+      }
+      return roleType;
+  }
+
+  private void checkRequest(RoleAddRequest request) throws UnExpectedRequestException {
         if (request == null) {
             throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
         }

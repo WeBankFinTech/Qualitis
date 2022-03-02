@@ -24,11 +24,12 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ThreadPoolConfig {
-
     @Value("${timer.thread.size}")
     private Integer size;
     @Value("${timer.check.period}")
     private Integer period;
+    @Value("${timer.check.update_job_size}")
+    private Integer updateJobSize;
     @Value("${timer.lock.zk.path}")
     private String lockZkPath;
 
@@ -58,5 +59,13 @@ public class ThreadPoolConfig {
 
     public void setLockZkPath(String lockZkPath) {
         this.lockZkPath = lockZkPath;
+    }
+
+    public Integer getUpdateJobSize() {
+        return updateJobSize;
+    }
+
+    public void setUpdateJobSize(Integer updateJobSize) {
+        this.updateJobSize = updateJobSize;
     }
 }

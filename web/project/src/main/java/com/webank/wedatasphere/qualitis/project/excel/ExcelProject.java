@@ -24,13 +24,16 @@ import com.alibaba.excel.metadata.BaseRowModel;
  */
 public class ExcelProject extends BaseRowModel {
 
-    @ExcelProperty(value = "Project", index = 0)
+    @ExcelProperty(value = "Project Name", index = 0)
     private String projectName;
 
-    @ExcelProperty(value = "Project Description", index = 1)
+    @ExcelProperty(value = "Project Chinese Name", index = 1)
+    private String projectChName;
+
+    @ExcelProperty(value = "Project Description", index = 2)
     private String projectDescription;
 
-    @ExcelProperty(value = "Project Labels", index = 2)
+    @ExcelProperty(value = "Project Labels", index = 3)
     private String projectLabels;
 
     public ExcelProject() {
@@ -43,6 +46,14 @@ public class ExcelProject extends BaseRowModel {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getProjectChName() {
+        return projectChName;
+    }
+
+    public void setProjectChName(String projectChName) {
+        this.projectChName = projectChName;
     }
 
     public String getProjectDescription() {
@@ -66,7 +77,6 @@ public class ExcelProject extends BaseRowModel {
         return "ExcelProject{" +
             "projectName='" + projectName + '\'' +
             ", projectDescription='" + projectDescription + '\'' +
-            ", projectLabels='" + projectLabels + '\'' +
             '}';
     }
 }

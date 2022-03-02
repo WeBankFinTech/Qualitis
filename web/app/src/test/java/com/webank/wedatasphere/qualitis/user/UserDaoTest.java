@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.user;
 
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.User;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +50,7 @@ public class UserDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setDepartment("xx部门");
-    user.setUsername("xxx");
+    user.setUserName("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);
@@ -71,12 +68,12 @@ public class UserDaoTest {
     assertNotNull(findUser);
     assertEquals(findUser.getChineseName(), saveUser.getChineseName());
     assertEquals(findUser.getDepartment(), saveUser.getDepartment());
-    assertEquals(findUser.getUsername(), saveUser.getUsername());
+    assertEquals(findUser.getUserName(), saveUser.getUserName());
 
     //根据username查询的数据库对象是否和保存的值一致
-    User findByUsernameUser = userDao.findByUsername(saveUser.getUsername());
+    User findByUsernameUser = userDao.findByUsername(saveUser.getUserName());
     assertNotNull(findByUsernameUser);
-    assertEquals(findByUsernameUser.getUsername(), saveUser.getUsername());
+    assertEquals(findByUsernameUser.getUserName(), saveUser.getUserName());
 
     //删除后,是否还能找到对象
     userDao.deleteUser(saveUser);

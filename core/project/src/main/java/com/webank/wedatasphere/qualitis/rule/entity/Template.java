@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.webank.wedatasphere.qualitis.entity.User;
 import javax.persistence.*;
 import java.util.Set;
 import org.codehaus.jackson.annotate.JsonIgnore;
@@ -45,20 +46,10 @@ public class Template {
     @Column(name = "field_num")
     private Integer fieldNum;
 
-    /**
-     * datasource type, such as hive, mysql, kafka
-     */
-    @Column(name = "datasource_type")
-    private Integer datasourceType;
     @Column(length = 5000, name = "mid_table_action")
     private String midTableAction;
     @Column(name = "save_mid_table")
     private Boolean saveMidTable;
-
-    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    private Set<TemplateStatisticsInputMeta> statisticAction;
-
     @Column(name = "show_sql", length = 5000)
     private String showSql;
 
@@ -69,10 +60,14 @@ public class Template {
     private Integer templateType;
 
     /**
-     * SQL, Java，Python，Scala
+     * SQL(Hive), Java，Python，Scala
      */
     @Column(name = "action_type")
     private Integer actionType;
+
+    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @JsonIgnore
+    private Set<TemplateStatisticsInputMeta> statisticAction;
 
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
@@ -81,6 +76,27 @@ public class Template {
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
     private Set<TemplateOutputMeta> templateOutputMetas;
+
+    /**
+     * Built-in templates, department shared templates, personal templates
+     */
+    @Column(name = "template_level")
+    private Integer level;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JsonIgnore
+    private User createUser;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JsonIgnore
+    private User modifyUser;
+
+    @OneToMany(mappedBy = "template", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
+    @JsonIgnore
+    private Set<TemplateDepartment> templateDepartments;
+
+    @Column(name = "import_export_name")
+    private String importExportName;
 
     @OneToOne
     @JsonIgnore
@@ -108,14 +124,6 @@ public class Template {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Integer getDatasourceType() {
-        return datasourceType;
-    }
-
-    public void setDatasourceType(Integer datasourceType) {
-        this.datasourceType = datasourceType;
     }
 
     public String getMidTableAction() {
@@ -212,6 +220,46 @@ public class Template {
 
     public void setShowSql(String showSql) {
         this.showSql = showSql;
+    }
+
+    public User getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(User createUser) {
+        this.createUser = createUser;
+    }
+
+    public User getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(User modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public Integer getLevel() {
+        return level;
+    }
+
+    public void setLevel(Integer level) {
+        this.level = level;
+    }
+
+    public Set<TemplateDepartment> getTemplateDepartments() {
+        return templateDepartments;
+    }
+
+    public void setTemplateDepartments(Set<TemplateDepartment> templateDepartments) {
+        this.templateDepartments = templateDepartments;
+    }
+
+    public String getImportExportName() {
+        return importExportName;
+    }
+
+    public void setImportExportName(String importExportName) {
+        this.importExportName = importExportName;
     }
 
     public Template getParentTemplate() {

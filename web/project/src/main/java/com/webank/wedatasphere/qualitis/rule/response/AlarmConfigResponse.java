@@ -17,14 +17,19 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import javax.persistence.Column;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
  */
 public class AlarmConfigResponse {
-
+    @JsonProperty("alarm_config_id")
+    private Long id;
     @JsonProperty("output_meta_id")
     private Long outputMetaId;
     @JsonProperty("output_meta_name")
@@ -35,15 +40,68 @@ public class AlarmConfigResponse {
     private Integer compareType;
     private Double threshold;
 
+    @JsonProperty("file_output_name")
+    private Integer fileOutputName;
+
+    @JsonProperty("file_output_unit")
+    private Integer fileOutputUnit;
+
+    @JsonProperty("rule_metric_id")
+    private Long ruleMetricId;
+
+    @JsonProperty("rule_metric_en_code")
+    private String ruleMetricEnCode;
+
+    @JsonProperty("upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+
+    @JsonProperty("upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
     public AlarmConfigResponse() {
     }
 
     public AlarmConfigResponse(AlarmConfig alarmConfig) {
+        this.id = alarmConfig.getId();
         this.outputMetaId = alarmConfig.getTemplateOutputMeta().getId();
         this.outputMetaName = alarmConfig.getTemplateOutputMeta().getOutputName();
         this.checkTemplate = alarmConfig.getCheckTemplate();
         this.compareType = alarmConfig.getCompareType();
         this.threshold = alarmConfig.getThreshold();
+        this.ruleMetricId = alarmConfig.getRuleMetric() == null ? -1 : alarmConfig.getRuleMetric().getId();
+        this.ruleMetricEnCode = alarmConfig.getRuleMetric() == null ? "" : alarmConfig.getRuleMetric().getEnCode();
+        this.uploadRuleMetricValue = alarmConfig.getUploadRuleMetricValue();
+        this.uploadAbnormalValue = alarmConfig.getUploadAbnormalValue();
+    }
+
+    public AlarmConfigResponse(AlarmConfig alarmConfig, Integer type) {
+        this.id = alarmConfig.getId();
+        if (type.equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
+            this.fileOutputName = alarmConfig.getFileOutputName();
+            this.fileOutputUnit = alarmConfig.getFileOutputUnit();
+        } else if (type.equals(RuleTypeEnum.CUSTOM_RULE.getCode())){
+            this.outputMetaId = alarmConfig.getTemplateOutputMeta().getId();
+            this.outputMetaName = alarmConfig.getTemplateOutputMeta().getOutputName();
+        }
+        this.checkTemplate = alarmConfig.getCheckTemplate();
+        this.compareType = alarmConfig.getCompareType();
+        this.threshold = alarmConfig.getThreshold();
+        this.ruleMetricId = alarmConfig.getRuleMetric() == null ? -1 : alarmConfig.getRuleMetric().getId();
+        this.ruleMetricEnCode = alarmConfig.getRuleMetric() == null ? "" : alarmConfig.getRuleMetric().getEnCode();
+        this.uploadAbnormalValue = alarmConfig.getUploadAbnormalValue();
+        this.uploadRuleMetricValue = alarmConfig.getUploadRuleMetricValue();
+        this.deleteFailCheckResult = alarmConfig.getDeleteFailCheckResult();
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Long getOutputMetaId() {
@@ -84,5 +142,61 @@ public class AlarmConfigResponse {
 
     public void setThreshold(Double threshold) {
         this.threshold = threshold;
+    }
+
+    public Integer getFileOutputName() {
+        return fileOutputName;
+    }
+
+    public void setFileOutputName(Integer fileOutputName) {
+        this.fileOutputName = fileOutputName;
+    }
+
+    public Integer getFileOutputUnit() {
+        return fileOutputUnit;
+    }
+
+    public void setFileOutputUnit(Integer fileOutputUnit) {
+        this.fileOutputUnit = fileOutputUnit;
+    }
+
+    public Long getRuleMetricId() {
+        return ruleMetricId;
+    }
+
+    public void setRuleMetricId(Long ruleMetricId) {
+        this.ruleMetricId = ruleMetricId;
+    }
+
+    public String getRuleMetricEnCode() {
+        return ruleMetricEnCode;
+    }
+
+    public void setRuleMetricEnCode(String ruleMetricEnCode) {
+        this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
     }
 }

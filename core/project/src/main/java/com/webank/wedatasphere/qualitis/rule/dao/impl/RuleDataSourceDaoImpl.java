@@ -83,17 +83,16 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<Map<String, String>> findProjectDsByUser(String user) {
+    public List<Map<String, Object>> findProjectDsByUser(String user) {
         return ruleDataSourceRepository.findProjectDsByUser(user);
     }
 
     @Override
-    public List<Map<String, String>> findProjectDsByUser(String user, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
+    public List<Map<String, Object>> findProjectDsByUser(String user, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return ruleDataSourceRepository.findProjectDsByUser(user, pageable).getContent();
     }
-
 
     @Override
     public List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user) {
@@ -101,15 +100,42 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<Map<String, String>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName) {
+    public List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return ruleDataSourceRepository.findRuleByDataSource(clusterName, dbName, tableName, colName, user, pageable).getContent();
+    }
+
+    @Override
+    public int countRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user) {
+        return ruleDataSourceRepository.countRuleByDataSource(clusterName, dbName, tableName, colName, user);
+    }
+
+    @Override
+    public List<Map<String, Object>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName) {
         return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName);
     }
 
     @Override
-    public List<Map<String, String>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size) {
+    public List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size) {
         Sort sort = new Sort(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
         Pageable pageable = PageRequest.of(page, size, sort);
         return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName, pageable).getContent();
+    }
+
+    @Override
+    public RuleDataSource saveRuleDataSource(RuleDataSource ruleDataSource) {
+        return ruleDataSourceRepository.save(ruleDataSource);
+    }
+
+    @Override
+    public List<String> findColsByUser(String user, String clusterName, String dbName, String tableName) {
+        return ruleDataSourceRepository.findColsByUser(user, clusterName, dbName, tableName);
+    }
+
+    @Override
+    public List<RuleDataSource> findDatasourcesByUser(String user, String clusterName, String dbName, String tableName) {
+        return ruleDataSourceRepository.findDatasourcesByUser(user, clusterName, dbName, tableName);
     }
 
 }

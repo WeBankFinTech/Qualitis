@@ -17,15 +17,19 @@
 package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -68,15 +72,24 @@ public class HiveRuleDetail {
               .filter(item -> TemplateInputTypeEnum.CONDITION.getCode().equals(item.getTemplateMidTableInputMeta().getInputType()))
               .findAny()
               .ifPresent(variable -> this.filter = Collections.singletonList(variable.getValue()));
+        } else if (rule.getRuleType().equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
+            this.filter = rule.getRuleDataSources().stream().map(RuleDataSource::getFilter).collect(Collectors.toList());
         }
         this.ruleTemplateId = rule.getTemplate().getId();
         this.templateName = rule.getTemplate().getName();
         this.ruleType = rule.getRuleType();
         this.hiveDataSource = new ArrayList<>();
-        for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
-            // If type equals to data source
-            hiveDataSource.add(new HiveDataSourceDetail(ruleDataSource.getClusterName(), ruleDataSource.getDbName(), ruleDataSource.getTableName()));
+        if (CollectionUtils.isNotEmpty(rule.getRuleDataSources())) {
+            for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
+                String tableName = ruleDataSource.getTableName();
+                if (StringUtils.isEmpty(tableName)) {
+                    continue;
+                }
+                // If type equals to data source
+                hiveDataSource.add(new HiveDataSourceDetail(ruleDataSource.getClusterName(), ruleDataSource.getDbName(), tableName));
+            }
         }
+
     }
 
     public Long getRuleId() {

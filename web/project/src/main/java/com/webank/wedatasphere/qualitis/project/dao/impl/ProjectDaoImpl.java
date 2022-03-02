@@ -66,7 +66,7 @@ public class ProjectDaoImpl implements ProjectDao {
 
     @Override
     public Project findById(Long projectId) {
-        return projectRepository.findById(projectId).orElse(null);
+        return projectRepository.findByOwnId(projectId);
     }
 
     @Override

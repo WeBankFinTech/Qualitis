@@ -17,13 +17,17 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -34,6 +38,10 @@ public class CustomRuleDetailResponse {
     private Long ruleId;
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("rule_detail")
+    private String ruleDetail;
+    @JsonProperty("cn_name")
+    private String ruleCnName;
     @JsonProperty("output_name")
     private String outputName;
     @JsonProperty("save_mid_table")
@@ -53,12 +61,47 @@ public class CustomRuleDetailResponse {
     private String clusterName;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+    @JsonProperty("context_service")
+    private boolean contextService;
+    @JsonProperty("cs_id")
+    private String csId;
     @JsonProperty("abort_on_failure")
     private Boolean abortOnFailure;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("create_time")
+    private String createTime;
+    @JsonProperty("modify_user")
+    private String modifyUser;
+    @JsonProperty("modify_time")
+    private String modifyTime;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
+    @JsonProperty("rule_metric_id")
+    private Long ruleMetricId;
+    @JsonProperty("rule_metric_name")
+    private String ruleMetricName;
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+    @JsonProperty("sql_check_area")
+    private String sqlCheckArea;
+    @JsonProperty("specify_static_startup_param")
+    private Boolean specifyStaticStartupParam;
+    @JsonProperty("static_startup_param")
+    private String staticStartupParam;
+
+    @JsonProperty("linkis_datasoure_id")
+    private Long linkisDataSourceId;
+    @JsonProperty("linkis_datasoure_version_id")
+    private Long linkisDataSourceVersionId;
+    @JsonProperty("linkis_datasource_name")
+    private String linkisDataSourceName;
 
     public CustomRuleDetailResponse(Rule customRule) {
         this.ruleId = customRule.getId();
         this.ruleName = customRule.getName();
+        this.ruleCnName = customRule.getCnName();
+        this.ruleDetail = customRule.getDetail();
         this.outputName = customRule.getOutputName();
         this.saveMidTable = customRule.getTemplate().getSaveMidTable();
         this.functionType = customRule.getFunctionType();
@@ -69,10 +112,51 @@ public class CustomRuleDetailResponse {
         this.alarmVariable = new ArrayList<>();
         this.ruleGroupId = customRule.getRuleGroup().getId();
         this.abortOnFailure = customRule.getAbortOnFailure();
-        for (AlarmConfig alarmConfig : customRule.getAlarmConfigs()) {
-            this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
+        this.createUser = customRule.getCreateUser();
+        this.createTime = customRule.getCreateTime();
+        this.modifyUser = customRule.getModifyUser();
+        this.modifyTime = customRule.getModifyTime();
+        // 根据contextService是否为true，决定页面是否开启上游表的显示
+        if (StringUtils.isNotBlank(customRule.getCsId())) {
+            contextService = true;
+        } else {
+            contextService = false;
         }
-        this.clusterName = customRule.getRuleDataSources().iterator().next().getClusterName();
+        for (AlarmConfig alarmConfig : customRule.getAlarmConfigs()) {
+            this.alarmVariable.add(new AlarmConfigResponse(alarmConfig, RuleTypeEnum.CUSTOM_RULE.getCode()));
+        }
+        if (CollectionUtils.isNotEmpty(customRule.getRuleDataSources())) {
+            RuleDataSource originalRuleDataSource = customRule.getRuleDataSources().stream()
+                .filter(
+                    ruleDataSource -> (ruleDataSource.getDatasourceIndex() != null && ruleDataSource.getDatasourceIndex().equals(-1))
+                        || StringUtils.isNotBlank(ruleDataSource.getTableName())).iterator().next();
+            this.clusterName = originalRuleDataSource.getClusterName();
+            this.proxyUser = originalRuleDataSource.getProxyUser();
+
+            this.linkisDataSourceId = originalRuleDataSource.getLinkisDataSourceId();
+            this.linkisDataSourceName = originalRuleDataSource.getLinkisDataSourceName();
+            this.linkisDataSourceVersionId = originalRuleDataSource.getLinkisDataSourceVersionId();
+        }
+        this.specifyStaticStartupParam = customRule.getSpecifyStaticStartupParam();
+        this.deleteFailCheckResult = customRule.getDeleteFailCheckResult();
+        this.sqlCheckArea = customRule.getTemplate().getMidTableAction();
+        this.staticStartupParam = customRule.getStaticStartupParam();
+    }
+
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 
     public Long getRuleId() {
@@ -89,6 +173,14 @@ public class CustomRuleDetailResponse {
 
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
     }
 
     public String getOutputName() {
@@ -171,6 +263,22 @@ public class CustomRuleDetailResponse {
         this.ruleGroupId = ruleGroupId;
     }
 
+    public boolean isContextService() {
+        return contextService;
+    }
+
+    public void setContextService(boolean contextService) {
+        this.contextService = contextService;
+    }
+
+    public String getCsId() {
+        return csId;
+    }
+
+    public void setCsId(String csId) {
+        this.csId = csId;
+    }
+
     public Boolean getAbortOnFailure() {
         return abortOnFailure;
     }
@@ -179,19 +287,128 @@ public class CustomRuleDetailResponse {
         this.abortOnFailure = abortOnFailure;
     }
 
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public Long getRuleMetricId() {
+        return ruleMetricId;
+    }
+
+    public void setRuleMetricId(Long ruleMetricId) {
+        this.ruleMetricId = ruleMetricId;
+    }
+
+    public String getRuleMetricName() {
+        return ruleMetricName;
+    }
+
+    public void setRuleMetricName(String ruleMetricName) {
+        this.ruleMetricName = ruleMetricName;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public String getSqlCheckArea() {
+        return sqlCheckArea;
+    }
+
+    public void setSqlCheckArea(String sqlCheckArea) {
+        this.sqlCheckArea = sqlCheckArea;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
+    }
+
+    public Long getLinkisDataSourceId() {
+        return linkisDataSourceId;
+    }
+
+    public void setLinkisDataSourceId(Long linkisDataSourceId) {
+        this.linkisDataSourceId = linkisDataSourceId;
+    }
+
+    public Long getLinkisDataSourceVersionId() {
+        return linkisDataSourceVersionId;
+    }
+
+    public void setLinkisDataSourceVersionId(Long linkisDataSourceVersionId) {
+        this.linkisDataSourceVersionId = linkisDataSourceVersionId;
+    }
+
+    public String getLinkisDataSourceName() {
+        return linkisDataSourceName;
+    }
+
+    public void setLinkisDataSourceName(String linkisDataSourceName) {
+        this.linkisDataSourceName = linkisDataSourceName;
+    }
+
     @Override
     public String toString() {
         return "CustomRuleDetailResponse{" +
-                "ruleName='" + ruleName + '\'' +
-                ", outputName='" + outputName + '\'' +
-                ", saveMidTable=" + saveMidTable +
-                ", functionType=" + functionType +
-                ", functionContent='" + functionContent + '\'' +
-                ", fromContent='" + fromContent + '\'' +
-                ", whereContent='" + whereContent + '\'' +
-                ", alarm=" + alarm +
-                ", alarmVariable=" + alarmVariable +
-                ", clusterName='" + clusterName + '\'' +
-                '}';
+            "ruleId=" + ruleId +
+            ", ruleName='" + ruleName + '\'' +
+            ", outputName='" + outputName + '\'' +
+            ", saveMidTable=" + saveMidTable +
+            ", functionType=" + functionType +
+            ", functionContent='" + functionContent + '\'' +
+            ", fromContent='" + fromContent + '\'' +
+            ", whereContent='" + whereContent + '\'' +
+            ", alarm=" + alarm +
+            ", alarmVariable=" + alarmVariable +
+            ", clusterName='" + clusterName + '\'' +
+            ", ruleGroupId=" + ruleGroupId +
+            ", contextService=" + contextService +
+            ", csId='" + csId + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            '}';
     }
 }

@@ -24,13 +24,6 @@ import com.webank.wedatasphere.qualitis.entity.Permission;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import com.webank.wedatasphere.qualitis.dao.PermissionDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,12 +75,12 @@ public class UserSpecPermissionDaoTest {
     UserSpecPermission findByIdEntity = dao.findByUuid(saveEntity.getId());
     assertNotNull(findByIdEntity);
     assertEquals(findByIdEntity.getPermission().getUrl(), saveEntity.getPermission().getUrl());
-    assertEquals(findByIdEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByIdEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
 
     UserSpecPermission findByRoleAndPermissionEntity = dao.findByUserAndPermission(saveUser, savePermission);
     assertNotNull(findByRoleAndPermissionEntity);
     assertEquals(findByRoleAndPermissionEntity.getPermission().getUrl(), saveEntity.getPermission().getUrl());
-    assertEquals(findByRoleAndPermissionEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByRoleAndPermissionEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserSpecPermission> findByRoleEntity = dao.findByUser(saveUser);
@@ -97,7 +90,7 @@ public class UserSpecPermissionDaoTest {
     //根据username查询的数据库对象是否和保存的值一致
     List<UserSpecPermission> findByPermissionEntity = dao.findByPermission(savePermission);
     assertTrue(findByPermissionEntity.size() > 0);
-    assertEquals(findByPermissionEntity.get(0).getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByPermissionEntity.get(0).getUser().getUserName(), saveEntity.getUser().getUserName());
 
     //删除后,是否还能找到对象
     dao.deleteUserSpecPermission(saveEntity);
@@ -110,8 +103,7 @@ public class UserSpecPermissionDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setDepartment("xx部门");
-    user.setUsername("xxx");
+    user.setUserName("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);

@@ -22,33 +22,32 @@ import com.webank.wedatasphere.qualitis.exception.ConvertException;
 import com.webank.wedatasphere.qualitis.exception.DataQualityTaskException;
 import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
 import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
-import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
-import com.webank.wedatasphere.qualitis.exception.ConvertException;
-import com.webank.wedatasphere.qualitis.exception.DataQualityTaskException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
-import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
-import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
-import com.webank.wedatasphere.qualitis.exception.ConvertException;
-import com.webank.wedatasphere.qualitis.exception.DataQualityTaskException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * @author howeye
  */
 public abstract class AbstractTemplateConverter {
-
-
     /**
-     * Convert Task into code that can be executed
+     * Convert Task into code that can be executed.
      * @param dataQualityTask
+     * @param date
+     * @param setFlag
+     * @param execParams
+     * @param runDate
+     * @param clusterType
+     * @param dataSourceMysqlConnect
      * @return
      * @throws ConvertException
      * @throws DataQualityTaskException
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
+     * @throws IOException
+     * @throws UnExpectedRequestException
      */
-    public abstract DataQualityJob convert(DataQualityTask dataQualityTask) throws ConvertException, DataQualityTaskException, RuleVariableNotSupportException, RuleVariableNotFoundException;
-
+    public abstract DataQualityJob convert(DataQualityTask dataQualityTask, Date date, String setFlag, Map<String, String> execParams, String runDate,
+        String clusterType, Map<Long, Map> dataSourceMysqlConnect) throws ConvertException, DataQualityTaskException, RuleVariableNotSupportException, RuleVariableNotFoundException, IOException, UnExpectedRequestException;
 }

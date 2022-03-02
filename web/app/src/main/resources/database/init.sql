@@ -1,54 +1,18 @@
 
 SET FOREIGN_KEY_CHECKS=0;
 
--- ----------------------------
--- Table structure for auth_role_permission
--- ----------------------------
-DROP TABLE IF EXISTS `qualitis_auth_role_permission`;
-CREATE TABLE `qualitis_auth_role_permission` (
-  `role_id` bigint(20) NOT NULL,
-  `permission_id` bigint(20) NOT NULL,
-  KEY `FK5mgu2qwy6vgke5w8ds63it2ni` (`permission_id`),
-  KEY `FKmsro136xvh0q33x68slqluhdf` (`role_id`),
-  CONSTRAINT `FK5mgu2qwy6vgke5w8ds63it2ni` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`),
-  CONSTRAINT `FKmsro136xvh0q33x68slqluhdf` FOREIGN KEY (`role_id`) REFERENCES `qualitis_auth_role` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+--
+-- Table structure for table `qualitis_application`
+--
 
--- ----------------------------
--- Table structure for auth_user_permission
--- ----------------------------
-DROP TABLE IF EXISTS `qualitis_auth_user_permission`;
-CREATE TABLE `qualitis_auth_user_permission` (
-  `user_id` bigint(20) NOT NULL,
-  `permission_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`user_id`,`permission_id`),
-  KEY `FK8d46965lnl53mk5qqxvdky89u` (`permission_id`),
-  CONSTRAINT `FK8d46965lnl53mk5qqxvdky89u` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`),
-  CONSTRAINT `FKbctborxhgbh1e1cw2eq2rej18` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for auth_user_role
--- ----------------------------
-DROP TABLE IF EXISTS `qualitis_auth_user_role`;
-CREATE TABLE `qualitis_auth_user_role` (
-  `user_id` bigint(20) NOT NULL,
-  `role_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`user_id`,`role_id`),
-  KEY `FK2bte4mk8xumyi6mxhjpfqljhk` (`role_id`),
-  CONSTRAINT `FK2bte4mk8xumyi6mxhjpfqljhk` FOREIGN KEY (`role_id`) REFERENCES `qualitis_auth_role` (`id`),
-  CONSTRAINT `FKfxumv6vh4o8pewtsr7lsdn33y` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for qualitis_application
--- ----------------------------
 DROP TABLE IF EXISTS `qualitis_application`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application` (
-  `id` varchar(40) NOT NULL,
+  `id` varchar(80) NOT NULL,
   `abnormal_task_num` int(11) DEFAULT NULL,
   `create_user` varchar(150) DEFAULT NULL,
-  `exception_message` varchar(10000) DEFAULT NULL,
+  `exception_message` text,
   `execute_user` varchar(150) DEFAULT NULL,
   `fail_task_num` int(11) DEFAULT NULL,
   `finish_task_num` int(11) DEFAULT NULL,
@@ -60,13 +24,31 @@ CREATE TABLE `qualitis_application` (
   `status` int(11) DEFAULT NULL,
   `submit_time` varchar(25) DEFAULT NULL,
   `total_task_num` int(11) DEFAULT NULL,
+  `project_id` bigint(20) DEFAULT NULL,
+  `rule_group_id` bigint(20) DEFAULT NULL,
+  `cluster_name` varchar(255) DEFAULT NULL,
+  `execution_param` varchar(255) DEFAULT NULL,
+  `fps_file_id` varchar(255) DEFAULT NULL,
+  `fps_hash` varchar(255) DEFAULT NULL,
+  `filter_partition` varchar(255) DEFAULT NULL,
+  `run_date` varchar(255) DEFAULT NULL,
+  `set_flag` varchar(255) DEFAULT NULL,
+  `startup_param` varchar(255) DEFAULT NULL,
+  `application_comment` int(11) DEFAULT NULL,
+  `project_name` varchar(100) DEFAULT NULL,
+  `rule_group_name` varchar(100) DEFAULT NULL,
+  `rule_datasource` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_application_task
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_application_task`
+--
+
 DROP TABLE IF EXISTS `qualitis_application_task`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application_task` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `begin_time` varchar(25) DEFAULT NULL,
@@ -74,18 +56,28 @@ CREATE TABLE `qualitis_application_task` (
   `end_time` varchar(25) DEFAULT NULL,
   `status` int(11) DEFAULT NULL,
   `submit_address` varchar(255) DEFAULT NULL,
-  `task_remote_id` int(11) DEFAULT NULL,
+  `task_remote_id` bigint(20) DEFAULT NULL,
   `application_id` varchar(40) DEFAULT NULL,
-  `abort_on_failure` bit(1) DEFAULT 0,
+  `abort_on_failure` bit(1) DEFAULT b'0',
+  `task_exec_id` varchar(255) DEFAULT NULL,
+  `task_proxy_user` varchar(255) DEFAULT NULL,
+  `new_progress_time` bigint(20) DEFAULT NULL,
+  `progress` double DEFAULT NULL,
+  `task_comment` int(11) DEFAULT NULL,
+  `running_time` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK8vt8tfuq1jlqofdsl2bfx602d` (`application_id`),
   CONSTRAINT `FK8vt8tfuq1jlqofdsl2bfx602d` FOREIGN KEY (`application_id`) REFERENCES `qualitis_application` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_application_task_datasource
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_application_task_datasource`
+--
+
 DROP TABLE IF EXISTS `qualitis_application_task_datasource`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application_task_datasource` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
@@ -97,29 +89,42 @@ CREATE TABLE `qualitis_application_task_datasource` (
   `rule_id` bigint(20) DEFAULT NULL,
   `table_name` varchar(100) DEFAULT NULL,
   `task_id` bigint(20) DEFAULT NULL,
+  `project_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKeru6qjd5gwkkm1a58g290g18o` (`task_id`),
   CONSTRAINT `FKeru6qjd5gwkkm1a58g290g18o` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_application_task_result
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_application_task_result`
+--
+
 DROP TABLE IF EXISTS `qualitis_application_task_result`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application_task_result` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `application_id` varchar(255) DEFAULT NULL,
   `create_time` varchar(255) DEFAULT NULL,
   `result_type` varchar(255) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
-  `value` double DEFAULT NULL,
+  `value` varchar(128) DEFAULT NULL,
+  `rule_metric_id` bigint(20) DEFAULT NULL,
+  `save_result` bit(1) DEFAULT b'1',
+  `run_date` bigint(20) DEFAULT NULL,
+  `department_code` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_application_task_rule_alarm_config
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_application_task_rule_alarm_config`
+--
+
 DROP TABLE IF EXISTS `qualitis_application_task_rule_alarm_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application_task_rule_alarm_config` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `check_template` int(11) DEFAULT NULL,
@@ -128,15 +133,25 @@ CREATE TABLE `qualitis_application_task_rule_alarm_config` (
   `status` int(11) DEFAULT NULL,
   `threshold` double DEFAULT NULL,
   `task_rule_simple_id` bigint(20) DEFAULT NULL,
+  `output_unit` varchar(500) DEFAULT NULL,
+  `upload_abnormal_value` bit(1) DEFAULT NULL,
+  `upload_rule_metric_value` bit(1) DEFAULT NULL,
+  `rule_metric_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKrhyx3i15dja1ipm81v3biges` (`task_rule_simple_id`),
+  KEY `FK397t89fbiuklmrgmq5qb67ykn` (`rule_metric_id`),
+  CONSTRAINT `FK397t89fbiuklmrgmq5qb67ykn` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKrhyx3i15dja1ipm81v3biges` FOREIGN KEY (`task_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_application_task_rule_simple
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_application_task_rule_simple`
+--
+
 DROP TABLE IF EXISTS `qualitis_application_task_rule_simple`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application_task_rule_simple` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `application_id` varchar(40) DEFAULT NULL,
@@ -151,6 +166,10 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `submit_time` varchar(20) DEFAULT NULL,
   `parent_rule_simple_id` bigint(20) DEFAULT NULL,
   `task_id` bigint(20) DEFAULT NULL,
+  `alert_level` int(11) DEFAULT NULL,
+  `alert_receiver` varchar(255) DEFAULT NULL,
+  `rule_group_name` varchar(255) DEFAULT NULL,
+  `delete_fail_check_result` bit(1) DEFAULT b'1',
   PRIMARY KEY (`id`),
   KEY `FKiciivreqw0dltknemgrqis9tv` (`parent_rule_simple_id`),
   KEY `FK8nr2cvnqp4pg0q2ftp26v0wnw` (`task_id`),
@@ -158,20 +177,28 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   CONSTRAINT `FKiciivreqw0dltknemgrqis9tv` FOREIGN KEY (`parent_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_list
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_list`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_list`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_list` (
   `app_id` varchar(255) NOT NULL,
   `app_token` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`app_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_permission
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_permission`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_permission`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_permission` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `method` varchar(6) DEFAULT NULL,
@@ -179,31 +206,47 @@ CREATE TABLE `qualitis_auth_permission` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_proxy_user
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_proxy_user`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_proxy_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_proxy_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `proxy_user_name` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_role
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_role`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_role` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(15) DEFAULT NULL,
+  `name` varchar(50) DEFAULT NULL,
+  `department_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_d6h6ies9p214yj1lmwkegdcdc` (`name`)
+  UNIQUE KEY `UK_d6h6ies9p214yj1lmwkegdcdc` (`name`),
+  KEY `FK3na1kucq8f675ajtj54onfi6` (`department_id`),
+  CONSTRAINT `FK3na1kucq8f675ajtj54onfi6` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_role_permission
--- ----------------------------
+
+
+--
+-- Table structure for table `qualitis_auth_role_permission`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_role_permission`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_role_permission` (
   `id` varchar(32) NOT NULL,
   `permission_id` bigint(20) DEFAULT NULL,
@@ -215,24 +258,49 @@ CREATE TABLE `qualitis_auth_role_permission` (
   CONSTRAINT `FKs9v745h3b0ekhibqipbj84scv` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_user
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_user`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `chinese_name` varchar(255) DEFAULT NULL,
   `department` varchar(255) DEFAULT NULL,
   `password` varchar(64) DEFAULT NULL,
-  `username` varchar(30) DEFAULT NULL,
+  `user_name` varchar(30) DEFAULT NULL,
+  `department_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`username`)
+  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`username`),
+  KEY `FKg2ayqqmqkqbbvvkehqj7fd6la` (`department_id`),
+  CONSTRAINT `FKg2ayqqmqkqbbvvkehqj7fd6la` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_user_permission
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_department`
+--
+
+DROP TABLE IF EXISTS `qualitis_auth_department`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_auth_department` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_tem0temhxj86cdqpep31q1iaa` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+--
+-- Table structure for table `qualitis_auth_user_permission`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_user_permission`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_user_permission` (
   `id` varchar(32) NOT NULL,
   `permission_id` bigint(20) DEFAULT NULL,
@@ -244,10 +312,14 @@ CREATE TABLE `qualitis_auth_user_permission` (
   CONSTRAINT `FKfh74vev3awmabhwonewr5oogp` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_user_proxy_user
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_user_proxy_user`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_user_proxy_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_user_proxy_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `proxy_user_id` bigint(20) DEFAULT NULL,
@@ -259,10 +331,14 @@ CREATE TABLE `qualitis_auth_user_proxy_user` (
   CONSTRAINT `FKpmln0snv5mkc203umorgcjf05` FOREIGN KEY (`proxy_user_id`) REFERENCES `qualitis_auth_proxy_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_auth_user_role
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_auth_user_role`
+--
+
 DROP TABLE IF EXISTS `qualitis_auth_user_role`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_user_role` (
   `id` varchar(32) NOT NULL,
   `role_id` bigint(20) DEFAULT NULL,
@@ -274,10 +350,36 @@ CREATE TABLE `qualitis_auth_user_role` (
   CONSTRAINT `FKta8a7krobg79tw41od6tdsex0` FOREIGN KEY (`role_id`) REFERENCES `qualitis_auth_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_config_cluster_info
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_alarm_info`
+--
+
+DROP TABLE IF EXISTS `qualitis_alarm_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_alarm_info` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `alarm_level` varchar(1) COLLATE utf8_bin DEFAULT NULL,
+  `alarm_reason` text COLLATE utf8_bin,
+  `alarm_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `alarm_type` int(11) DEFAULT NULL,
+  `application_id` varchar(40) COLLATE utf8_bin DEFAULT NULL,
+  `begin_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `end_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `task_id` int(11) DEFAULT NULL,
+  `username` varchar(50) COLLATE utf8_bin DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
+--
+-- Table structure for table `qualitis_config_cluster_info`
+--
+
 DROP TABLE IF EXISTS `qualitis_config_cluster_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_config_cluster_info` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
@@ -285,14 +387,18 @@ CREATE TABLE `qualitis_config_cluster_info` (
   `hive_server2_address` varchar(100) DEFAULT NULL,
   `linkis_address` varchar(100) DEFAULT NULL,
   `linkis_token` varchar(500) DEFAULT NULL,
-  `meta_store_address` varchar(100) DEFAULT NULL,
+  `skip_data_size` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_config_system
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_config_system`
+--
+
 DROP TABLE IF EXISTS `qualitis_config_system`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_config_system` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key_name` varchar(50) DEFAULT NULL,
@@ -301,10 +407,14 @@ CREATE TABLE `qualitis_config_system` (
   UNIQUE KEY `UK_665kcle6t77m5lbm48gohcyyg` (`key_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_project
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_project`
+--
+
 DROP TABLE IF EXISTS `qualitis_project`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `create_user` varchar(50) DEFAULT NULL,
@@ -319,23 +429,50 @@ CREATE TABLE `qualitis_project` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_project_label
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_project_event`
+--
+
+DROP TABLE IF EXISTS `qualitis_project_event`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_project_event` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `content` varchar(5000) COLLATE utf8_bin DEFAULT NULL,
+  `time` varchar(25) COLLATE utf8_bin DEFAULT NULL,
+  `project_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3yw1cm38kqld5s9xc1l9qdf04` (`project_id`),
+  CONSTRAINT `FK3yw1cm38kqld5s9xc1l9qdf04` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
+--
+-- Table structure for table `qualitis_project_label`
+--
+
 DROP TABLE IF EXISTS `qualitis_project_label`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project_label` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `label_name` varchar(25) not null,
-  `project_id` bigint(20) not null,
+  `label_name` varchar(25) NOT NULL,
+  `project_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
-  CONSTRAINT `UK_project_id_label_name` UNIQUE KEY  (`label_name`, `project_id`),
+  UNIQUE KEY `UK_project_id_label_name` (`label_name`,`project_id`),
+  KEY `FK_qualitis_project_label_project_id` (`project_id`),
   CONSTRAINT `FK_qualitis_project_label_project_id` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_project_user
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_project_user`
+--
+
 DROP TABLE IF EXISTS `qualitis_project_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `permission` int(11) DEFAULT NULL,
@@ -347,10 +484,14 @@ CREATE TABLE `qualitis_project_user` (
   CONSTRAINT `FK383dxni31ohf4rl00v5l981ny` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_rule`
+--
+
 DROP TABLE IF EXISTS `qualitis_rule`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `alarm` bit(1) DEFAULT NULL,
@@ -366,22 +507,40 @@ CREATE TABLE `qualitis_rule` (
   `project_id` bigint(20) DEFAULT NULL,
   `rule_group_id` bigint(20) DEFAULT NULL,
   `template_id` bigint(20) DEFAULT NULL,
-  `abort_on_failure` bit(1) DEFAULT 0,
+  `cs_id` varchar(1000) DEFAULT NULL,
+  `abort_on_failure` bit(1) DEFAULT b'0',
+  `alert` bit(1) DEFAULT NULL,
+  `alert_level` int(11) DEFAULT NULL,
+  `alert_receiver` varchar(255) DEFAULT NULL,
+  `create_time` varchar(25) DEFAULT NULL,
+  `create_user` varchar(50) DEFAULT NULL,
+  `modify_time` varchar(25) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `rule_metric_id` bigint(20) DEFAULT NULL,
+  `rule_metric_name` varchar(48) DEFAULT NULL,
+  `delete_fail_check_result` bit(1) DEFAULT b'1',
+  `specify_static_startup_param` bit(1) DEFAULT NULL,
+  `static_startup_param` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK29l9s1h04gntnqv4eje2f93n4` (`project_id`,`name`),
   KEY `FKltabc4x1omja141lo9la6dg4k` (`parent_rule_id`),
   KEY `FK7hv5yh1en46cfwxkqdmixyrn1` (`rule_group_id`),
   KEY `FKf769w3wjl2ywbue7hft6aq8c4` (`template_id`),
+  KEY `qualitis_rule_project_id_IDX` (`project_id`) USING BTREE,
   CONSTRAINT `FK7hv5yh1en46cfwxkqdmixyrn1` FOREIGN KEY (`rule_group_id`) REFERENCES `qualitis_rule_group` (`id`),
   CONSTRAINT `FK9tcl2mktybw44ue89mk47sejs` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`),
   CONSTRAINT `FKf769w3wjl2ywbue7hft6aq8c4` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`),
   CONSTRAINT `FKltabc4x1omja141lo9la6dg4k` FOREIGN KEY (`parent_rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule_alarm_config
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_rule_alarm_config`
+--
+
 DROP TABLE IF EXISTS `qualitis_rule_alarm_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_alarm_config` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `check_template` int(11) DEFAULT NULL,
@@ -389,17 +548,28 @@ CREATE TABLE `qualitis_rule_alarm_config` (
   `threshold` double DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
   `template_output_meta_id` bigint(20) DEFAULT NULL,
+  `file_output_name` int(11) DEFAULT NULL,
+  `file_output_unit` int(11) DEFAULT NULL,
+  `upload_abnormal_value` bit(1) DEFAULT NULL,
+  `upload_rule_metric_value` bit(1) DEFAULT NULL,
+  `rule_metric_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKh2hr5kere1f15udbtkk7cc97n` (`rule_id`),
   KEY `FKjq2m5wga1kmck2haw1o867un6` (`template_output_meta_id`),
+  KEY `FKe17j5upcwxk0y5o2x3cfhv1rx` (`rule_metric_id`),
+  CONSTRAINT `FKe17j5upcwxk0y5o2x3cfhv1rx` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKh2hr5kere1f15udbtkk7cc97n` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
   CONSTRAINT `FKjq2m5wga1kmck2haw1o867un6` FOREIGN KEY (`template_output_meta_id`) REFERENCES `qualitis_template_output_meta` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule_datasource
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_rule_datasource`
+--
+
 DROP TABLE IF EXISTS `qualitis_rule_datasource`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_datasource` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
@@ -410,15 +580,45 @@ CREATE TABLE `qualitis_rule_datasource` (
   `project_id` bigint(20) DEFAULT NULL,
   `table_name` varchar(100) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
+  `file_delimiter` varchar(255) DEFAULT NULL,
+  `file_header` bit(1) DEFAULT NULL,
+  `file_id` varchar(256) DEFAULT NULL,
+  `file_sheet_name` varchar(255) DEFAULT NULL,
+  `file_table_desc` varchar(255) DEFAULT NULL,
+  `file_type` varchar(255) DEFAULT NULL,
+  `file_uuid` varchar(50) DEFAULT NULL,
+  `proxy_user` varchar(255) DEFAULT NULL,
+  `file_hash_values` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKcbr5lp3b6wuh669qglf3dnc6r` (`rule_id`),
   CONSTRAINT `FKcbr5lp3b6wuh669qglf3dnc6r` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule_datasource_mapping
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_rule_datasource_count`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_datasource_count`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_datasource_count` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `datasource_count` int(11) DEFAULT NULL,
+  `datasource_name` varchar(255) COLLATE utf8_bin DEFAULT NULL,
+  `user_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UKn2rgeii2gfg122j89kgo6qw79` (`user_id`,`datasource_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
+--
+-- Table structure for table `qualitis_rule_datasource_mapping`
+--
+
 DROP TABLE IF EXISTS `qualitis_rule_datasource_mapping`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_datasource_mapping` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `left_column_names` varchar(2000) DEFAULT NULL,
@@ -427,26 +627,21 @@ CREATE TABLE `qualitis_rule_datasource_mapping` (
   `right_column_names` varchar(2000) DEFAULT NULL,
   `right_statement` varchar(3000) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
+  `left_column_types` varchar(2000) DEFAULT NULL,
+  `right_column_types` varchar(2000) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKnooevousm8ai6i1b82407cq4x` (`rule_id`),
   CONSTRAINT `FKnooevousm8ai6i1b82407cq4x` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule_group
--- ----------------------------
-DROP TABLE IF EXISTS `qualitis_rule_group`;
-CREATE TABLE `qualitis_rule_group` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `project_id` bigint(20) DEFAULT NULL,
-  `rule_group_name` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_rule_variable
--- ----------------------------
+--
+-- Table structure for table `qualitis_rule_variable`
+--
+
 DROP TABLE IF EXISTS `qualitis_rule_variable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_variable` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(50) DEFAULT NULL,
@@ -454,7 +649,7 @@ CREATE TABLE `qualitis_rule_variable` (
   `input_action_step` int(11) DEFAULT NULL,
   `origin_value` varchar(100) DEFAULT NULL,
   `table_name` varchar(50) DEFAULT NULL,
-  `value` varchar(500) DEFAULT NULL,
+  `value` varchar(2000) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
   `template_mid_table_input_meta_id` bigint(20) DEFAULT NULL,
   `template_statistics_input_meta_id` bigint(20) DEFAULT NULL,
@@ -467,10 +662,88 @@ CREATE TABLE `qualitis_rule_variable` (
   CONSTRAINT `FKkl4loc3y5qpb618cwglvhyd5h` FOREIGN KEY (`template_statistics_input_meta_id`) REFERENCES `qualitis_template_statistic_input_meta` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_rule_group`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_group`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_group` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `project_id` bigint(20) DEFAULT NULL,
+  `rule_group_name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `qualitis_rule_metric`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_metric`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_metric` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(48) NOT NULL COMMENT '0.14.0 Must be chinese.',
+  `metric_desc` varchar(500) NOT NULL,
+  `sub_system_id` int(11) NOT NULL,
+  `department_name` varchar(30) DEFAULT NULL,
+  `metric_level` int(5) DEFAULT NULL,
+  `create_user` varchar(50) DEFAULT NULL,
+  `create_time` varchar(25) DEFAULT NULL,
+  `modify_time` varchar(25) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `sub_system_name` varchar(100) DEFAULT NULL,
+  `full_cn_name` varchar(100) DEFAULT NULL,
+  `available` bit(1) DEFAULT NULL,
+  `department_code` varchar(255) DEFAULT NULL,
+  `dev_department_name` varchar(255) DEFAULT NULL,
+  `en_code` varchar(255) DEFAULT NULL,
+  `frequency` int(11) DEFAULT NULL,
+  `ops_department_name` varchar(255) DEFAULT NULL,
+  `sub_system_alias` varchar(255) DEFAULT NULL,
+  `type` varchar(255) DEFAULT NULL,
+  `product_id` varchar(255) DEFAULT NULL,
+  `product_name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UNI_RULE_METRIC_name` (`name`),
+  UNIQUE KEY `UNI_RULE_METRIC_EN_CODE` (`en_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric.';
+
+
+--
+-- Table structure for table `qualitis_rule_metric_department_user`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_metric_department_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_metric_department_user` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `department_id` bigint(20) DEFAULT NULL,
+  `user_id` bigint(20) DEFAULT NULL,
+  `rule_metric_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKbkshkfb278fdedgf79eyp30ly` (`department_id`),
+  KEY `FKff1ogtbxi8rv47g850kk5qkc8` (`rule_metric_id`),
+  KEY `FKhuctqjbn90jrpjgkjqnla1hs7` (`user_id`),
+  CONSTRAINT `FKbkshkfb278fdedgf79eyp30ly` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`),
+  CONSTRAINT `FKff1ogtbxi8rv47g850kk5qkc8` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
+  CONSTRAINT `FKhuctqjbn90jrpjgkjqnla1hs7` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric authority.';
+
+
+
+--
+-- Table structure for table `qualitis_template`
+--
+
 DROP TABLE IF EXISTS `qualitis_template`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `action_type` int(11) DEFAULT NULL,
@@ -485,15 +758,27 @@ CREATE TABLE `qualitis_template` (
   `table_num` int(11) DEFAULT NULL,
   `template_type` int(11) DEFAULT NULL,
   `parent_template_id` bigint(20) DEFAULT NULL,
+  `import_export_name` varchar(255) DEFAULT NULL,
+  `template_level` int(11) DEFAULT NULL,
+  `create_user_id` bigint(20) DEFAULT NULL,
+  `modify_user_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKpwhmy0wvpm0ycoifta3nh0fyc` (`parent_template_id`),
+  KEY `FKampr04xxfhfqky18levn4svhb` (`create_user_id`),
+  KEY `FKd8bp8wlgc9rslq4w3o4ha6w3m` (`modify_user_id`),
+  CONSTRAINT `FKampr04xxfhfqky18levn4svhb` FOREIGN KEY (`create_user_id`) REFERENCES `qualitis_auth_user` (`id`),
+  CONSTRAINT `FKd8bp8wlgc9rslq4w3o4ha6w3m` FOREIGN KEY (`modify_user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKpwhmy0wvpm0ycoifta3nh0fyc` FOREIGN KEY (`parent_template_id`) REFERENCES `qualitis_template` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template_mid_table_input_meta
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_template_mid_table_input_meta`
+--
+
 DROP TABLE IF EXISTS `qualitis_template_mid_table_input_meta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_mid_table_input_meta` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `concat_template` varchar(3000) DEFAULT NULL,
@@ -513,10 +798,14 @@ CREATE TABLE `qualitis_template_mid_table_input_meta` (
   CONSTRAINT `FK7antueilfq1itsq2cx29q3xlf` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=30005 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template_output_meta
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_template_output_meta`
+--
+
 DROP TABLE IF EXISTS `qualitis_template_output_meta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_output_meta` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `field_name` varchar(50) DEFAULT NULL,
@@ -526,12 +815,16 @@ CREATE TABLE `qualitis_template_output_meta` (
   PRIMARY KEY (`id`),
   KEY `FKia38171mjfi5ix7esd968c0s5` (`template_id`),
   CONSTRAINT `FKia38171mjfi5ix7esd968c0s5` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template_regexp_expr
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_template_regexp_expr`
+--
+
 DROP TABLE IF EXISTS `qualitis_template_regexp_expr`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_regexp_expr` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key_name` varchar(255) DEFAULT NULL,
@@ -540,10 +833,14 @@ CREATE TABLE `qualitis_template_regexp_expr` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template_statistic_input_meta
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_template_statistic_input_meta`
+--
+
 DROP TABLE IF EXISTS `qualitis_template_statistic_input_meta`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_statistic_input_meta` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `func_name` varchar(5) DEFAULT NULL,
@@ -557,17 +854,56 @@ CREATE TABLE `qualitis_template_statistic_input_meta` (
   CONSTRAINT `FKi1irb2fkjcu16pe7jdwsr7h11` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
 
--- ----------------------------
--- Table structure for qualitis_template_user
--- ----------------------------
+
+--
+-- Table structure for table `qualitis_template_user`
+--
+
 DROP TABLE IF EXISTS `qualitis_template_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) DEFAULT NULL,
   `template_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKp4il6ga20u8v6yoyibplo971i` (`template_id`),
+  KEY `FKajutcl4gouu76xj4kngnb1mv2` (`user_id`),
+  CONSTRAINT `FKajutcl4gouu76xj4kngnb1mv2` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKp4il6ga20u8v6yoyibplo971i` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `qualitis_template_department`
+--
+
+DROP TABLE IF EXISTS `qualitis_template_department`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_template_department` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `department_id` bigint(20) DEFAULT NULL,
+  `template_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3ijoa6qb0b5ckeo9hvob9yqr2` (`department_id`),
+  KEY `FKn96g1wp7cwc4v4f7e4e2229qc` (`template_id`),
+  CONSTRAINT `FK3ijoa6qb0b5ckeo9hvob9yqr2` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`),
+  CONSTRAINT `FKn96g1wp7cwc4v4f7e4e2229qc` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+
+--
+-- Table structure for table `qualitis_bdp_client_history`
+--
+
+DROP TABLE IF EXISTS `qualitis_bdp_client_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_bdp_client_history` (
+  `rule_id` bigint(20) NOT NULL,
+  `template_function` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`rule_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -742,7 +1078,7 @@ insert into qualitis_template_statistic_input_meta(template_id, id, name, func_n
 	values(10, 10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", "*", 1, "Long");
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
 	values(10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", 1);
-insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(2, "-?[0-9]+(\\\\.[0-9])?[0-9]*$");
+insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(2, "^[-+]?\\d+(\\.\\d+)?$");
 
 -- 枚举值检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
@@ -945,6 +1281,49 @@ insert into qualitis_template_statistic_input_meta(template_id, id, name, func_n
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
 	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
 
+-- 跨库全量校验
+insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, template_level)
+	values(20, "{&MULTI-DATABASE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
+	"SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 1);
+
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30910, "{&SOURCE_DATABASE}", 20, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30911, "{&SOURCE_TABLE}", 20, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30912, "{&TARGET_DATABASE}", 20, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30913, "{&TARGET_TABLE}", 20, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
+	values(10010, "{&JOIN_CONDITION}", 20, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement} OR (${left_statement} is null and ${right_statement} is null))");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
+	values(10011, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 20, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
+	values(10012, "{&TARGET_TABLE_COLUMN_IS_NULL}", 20, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30914, "{&SOURCE_GROUP_BY_COLUMNS}", 20, "SOURCE_GROUP_BY_COLUMNS", 22, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${SOURCE_GROUP_BY_COLUMNS}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values(30915, "{&TARGET_GROUP_BY_COLUMNS}", 20, "TARGET_GROUP_BY_COLUMNS", 23, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${TARGET_GROUP_BY_COLUMNS}");
+
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
+	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 10010);
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
+	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 10010);
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
+	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 10010);
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
+	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 10011);
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
+	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 10012);
+
+insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
+	values(20, 25, "", "count", "*", 1, "Long");
+insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
+	values(20, 645, "{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}", "count", 1);
+
+update qualitis_template set template_level = 1;
+
 insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
 
 insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "***REMOVED***");
+

@@ -18,31 +18,30 @@ package com.webank.wedatasphere.qualitis.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 
 /**
  * @author howeye
  */
-public class UsernameRequest {
+public class UserNameRequest {
 
-    private String username;
+    private String userName;
     @JsonProperty("chinese_name")
     private String chineseName;
 
-    public UsernameRequest() {
+    public UserNameRequest() {
     }
 
-    public UsernameRequest(String username, String chineseName) {
-        this.username = username;
+    public UserNameRequest(String username, String chineseName) {
+        this.userName = username;
         this.chineseName = chineseName;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getChineseName() {
@@ -53,8 +52,8 @@ public class UsernameRequest {
         this.chineseName = chineseName;
     }
 
-    public static void checkRequest(UsernameRequest request) throws UnExpectedRequestException {
-        if (request.getUsername() == null || ("").equals(request.getUsername())) {
+    public static void checkRequest(UserNameRequest request) throws UnExpectedRequestException {
+        if (request.getUserName() == null || ("").equals(request.getUserName())) {
             throw new UnExpectedRequestException("Username {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
 

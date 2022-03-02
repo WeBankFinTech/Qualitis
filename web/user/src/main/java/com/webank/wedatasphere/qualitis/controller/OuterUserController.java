@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.UserService;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
