@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Map;
 import java.util.Objects;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -41,9 +42,9 @@ public class RuleVariable {
     private TemplateStatisticsInputMeta templateStatisticsInputMeta;
     @ManyToOne
     private TemplateMidTableInputMeta templateMidTableInputMeta;
-    @Column(length = 500)
+    @Column(name = "value", columnDefinition = "MEDIUMTEXT")
     private String value;
-    @Column(name = "origin_value", length = 100)
+    @Column(name = "origin_value")
     private String originValue;
     @Column(length = 50, name = "cluster_name")
     private String clusterName;

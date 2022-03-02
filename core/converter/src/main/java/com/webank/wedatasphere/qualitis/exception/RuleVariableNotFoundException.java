@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class RuleVariableNotFoundException extends Exception {
-
     public RuleVariableNotFoundException(String message) {
         super(message);
     }

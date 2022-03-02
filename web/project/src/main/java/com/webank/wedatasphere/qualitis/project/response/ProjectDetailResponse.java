@@ -36,14 +36,26 @@ public class ProjectDetailResponse {
     private ProjectDetail projectDetail;
     @JsonProperty("rule_details")
     private List<HiveRuleDetail> ruleDetails;
+    private int total;
 
     public ProjectDetailResponse() {
+    }
+
+    public ProjectDetailResponse(Long notExistsId) {
+        projectDetail = new ProjectDetail();
+        projectDetail.setProjectId(notExistsId);
+    }
+
+    public ProjectDetailResponse(Project project) {
+        projectDetail = new ProjectDetail();
+        projectDetail.setProjectId(project.getId());
     }
 
     public ProjectDetailResponse(Project project, List<Rule> ruleList) {
         projectDetail = new ProjectDetail();
         BeanUtils.copyProperties(project, projectDetail);
         projectDetail.setProjectId(project.getId());
+        projectDetail.setCnName(project.getCnName());
         projectDetail.setProjectName(project.getName());
         projectDetail.setCreateUser(project.getCreateUser());
         Set<ProjectLabel> labelSet = project.getProjectLabels();
@@ -60,6 +72,14 @@ public class ProjectDetailResponse {
                 ruleDetails.add(new HiveRuleDetail(rule));
             }
         }
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
     }
 
     public ProjectDetail getProjectDetail() {

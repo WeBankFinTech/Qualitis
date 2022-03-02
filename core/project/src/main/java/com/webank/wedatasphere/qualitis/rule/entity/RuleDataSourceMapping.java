@@ -44,11 +44,31 @@ public class RuleDataSourceMapping {
     private String leftColumnNames;
     @Column(name = "right_column_names", length = 2000)
     private String rightColumnNames;
+    @Column(name = "left_column_types", length = 2000)
+    private String leftColumnTypes;
+    @Column(name = "right_column_types", length = 2000)
+    private String rightColumnTypes;
 
     @ManyToOne
     private Rule rule;
 
     public RuleDataSourceMapping() {
+    }
+
+    public String getLeftColumnTypes() {
+        return leftColumnTypes;
+    }
+
+    public void setLeftColumnTypes(String leftColumnTypes) {
+        this.leftColumnTypes = leftColumnTypes;
+    }
+
+    public String getRightColumnTypes() {
+        return rightColumnTypes;
+    }
+
+    public void setRightColumnTypes(String rightColumnTypes) {
+        this.rightColumnTypes = rightColumnTypes;
     }
 
     public Long getId() {

@@ -61,7 +61,8 @@ public class ProxyUserController {
         }
     }
 
-    @DELETE
+    @POST
+    @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {

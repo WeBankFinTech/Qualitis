@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
@@ -65,14 +66,10 @@ public class TemplateStatisticsInputMetaServiceImpl implements TemplateStatistic
         Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>();
         TemplateStatisticsInputMeta templateStatisticsInputMeta = new TemplateStatisticsInputMeta();
         templateStatisticsInputMeta.setFuncName(FunctionTypeEnum.getByCode(functionType).getFunction());
-        if (saveMidTable) {
-            templateStatisticsInputMeta.setValue(functionContent);
-        } else {
-            templateStatisticsInputMeta.setValue(templateService.getFunctionAlias(functionType));
-        }
-        templateStatisticsInputMeta.setName(outputName);
-        templateStatisticsInputMeta.setResultType("Long");
+        templateStatisticsInputMeta.setValue(functionContent.replace("-", "_"));
         templateStatisticsInputMeta.setValueType(StatisticsValueTypeEnum.FIXED_VALUE.getCode());
+        templateStatisticsInputMeta.setName(outputName.replace("-", "_"));
+        templateStatisticsInputMeta.setResultType("Long");
         templateStatisticsInputMeta.setTemplate(template);
 
         try {
@@ -80,7 +77,7 @@ public class TemplateStatisticsInputMetaServiceImpl implements TemplateStatistic
             templateStatisticsInputMetas.add(savedTemplateStatisticsInputMeta);
             LOGGER.info("Succeed to save template statistics input_meta, input_meta_id: {}, name: {}", savedTemplateStatisticsInputMeta.getId(), savedTemplateStatisticsInputMeta.getName());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Save template statistics input meta exception.", e);
         }
 
         return templateStatisticsInputMetas;

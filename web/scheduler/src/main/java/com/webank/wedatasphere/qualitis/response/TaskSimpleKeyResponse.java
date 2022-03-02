@@ -24,23 +24,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class TaskSimpleKeyResponse {
 
     @JsonProperty("task_id")
-    private Integer taskId;
+    private Long taskId;
     @JsonProperty("cluster_name")
     private String clusterName;
 
     public TaskSimpleKeyResponse() {
     }
 
-    public TaskSimpleKeyResponse(Integer taskId, String clusterName) {
+    public TaskSimpleKeyResponse(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public TaskSimpleKeyResponse(Long taskId, String clusterName) {
         this.taskId = taskId;
         this.clusterName = clusterName;
     }
 
-    public Integer getTaskId() {
+    public Long getTaskId() {
         return taskId;
     }
 
-    public void setTaskId(Integer taskId) {
+    public void setTaskId(Long taskId) {
         this.taskId = taskId;
     }
 

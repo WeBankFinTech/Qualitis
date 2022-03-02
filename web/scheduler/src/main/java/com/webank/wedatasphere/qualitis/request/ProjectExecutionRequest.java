@@ -19,31 +19,44 @@ package com.webank.wedatasphere.qualitis.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
  * @author howeye
  */
 public class ProjectExecutionRequest {
-
     @JsonProperty("project_id")
     private Long projectId;
-    private String partition;
+
+    @JsonProperty("execution_param")
+    private String executionParam;
     @JsonProperty("execution_user")
     private String executionUser;
     @JsonProperty("create_user")
     private String createUser;
 
+    @JsonProperty("cluster_name")
+    private String clusterName;
+    @JsonProperty("startup_param_name")
+    private String startupParamName;
+    @JsonProperty("set_flag")
+    private String setFlag;
+
+    @JsonProperty("dynamic_partition_bool")
+    private boolean dyNamicPartition;
+    @JsonProperty("dynamic_partition_prefix")
+    private String dyNamicPartitionPrefix;
+    @JsonProperty("bool_async")
+    private boolean async;
     public ProjectExecutionRequest() {
         // Default Constructor
     }
 
-    public String getPartition() {
-        return partition;
+    public String getExecutionParam() {
+        return executionParam;
     }
 
-    public void setPartition(String partition) {
-        this.partition = partition;
+    public void setExecutionParam(String executionParam) {
+        this.executionParam = executionParam;
     }
 
     public Long getProjectId() {
@@ -70,10 +83,58 @@ public class ProjectExecutionRequest {
         this.createUser = createUser;
     }
 
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getStartupParamName() {
+        return startupParamName;
+    }
+
+    public void setStartupParamName(String startupParamName) {
+        this.startupParamName = startupParamName;
+    }
+
+    public String getSetFlag() {
+        return setFlag;
+    }
+
+    public void setSetFlag(String setFlag) {
+        this.setFlag = setFlag;
+    }
+
+    public boolean getDyNamicPartition() {
+        return dyNamicPartition;
+    }
+
+    public void setDyNamicPartition(boolean dyNamicPartition) {
+        this.dyNamicPartition = dyNamicPartition;
+    }
+
+    public String getDyNamicPartitionPrefix() {
+        return dyNamicPartitionPrefix;
+    }
+
+    public void setDyNamicPartitionPrefix(String dyNamicPartitionPrefix) {
+        this.dyNamicPartitionPrefix = dyNamicPartitionPrefix;
+    }
+
+    public boolean getAsync() {
+        return async;
+    }
+
+    public void setAsync(boolean async) {
+        this.async = async;
+    }
+
     public static void checkRequest(ProjectExecutionRequest request) throws UnExpectedRequestException {
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject(request, "Request");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject(request.getProjectId(), "Project_id");
-        com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
+        CommonChecker.checkObject(request, "Request");
+        CommonChecker.checkObject(request.getProjectId(), "Project_id");
         CommonChecker.checkString(request.getCreateUser(), "Create_user");
+        CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
     }
 }

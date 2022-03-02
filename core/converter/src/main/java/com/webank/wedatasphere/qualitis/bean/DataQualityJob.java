@@ -23,9 +23,10 @@ import java.util.List;
  * @author howeye
  */
 public class DataQualityJob {
-
     private List<String> jobCode;
     private Long taskId;
+    private String user;
+    private String startupParam;
 
     public DataQualityJob() {
         jobCode = new ArrayList<>();
@@ -39,12 +40,28 @@ public class DataQualityJob {
         this.jobCode = jobCode;
     }
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     public Long getTaskId() {
         return taskId;
     }
 
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
+    }
+
+    public String getStartupParam() {
+        return startupParam;
+    }
+
+    public void setStartupParam(String startupParam) {
+        this.startupParam = startupParam;
     }
 
     @Override

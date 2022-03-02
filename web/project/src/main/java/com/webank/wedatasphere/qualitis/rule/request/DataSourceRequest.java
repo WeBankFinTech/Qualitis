@@ -26,7 +26,6 @@ import java.util.List;
  * @author howeye
  */
 public class DataSourceRequest {
-
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("db_name")
@@ -37,6 +36,33 @@ public class DataSourceRequest {
     private List<DataSourceColumnRequest> colNames;
     private String filter;
     private Integer datasourceIndex;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
+
+    @JsonProperty("file_id")
+    private String fileId;
+    @JsonProperty("file_table_desc")
+    private String fileTablesDesc;
+    @JsonProperty("file_delimiter")
+    private String fileDelimiter;
+    @JsonProperty("file_type")
+    private String fileType;
+    @JsonProperty("file_header")
+    private Boolean fileHeader;
+    @JsonProperty("file_hash_values")
+    private String fileHashValues;
+
+    @JsonProperty("linkis_datasoure_id")
+    private Long linkisDataSourceId;
+    @JsonProperty("linkis_datasoure_version_id")
+    private Long linkisDataSourceVersionId;
+    @JsonProperty("linkis_datasource_name")
+    private String linkisDataSourceName;
+    @JsonProperty("linkis_datasource_type")
+    private String linkisDataSourceType;
+
+    @JsonProperty("black_list")
+    private Boolean blackList;
 
     public DataSourceRequest() {
         // Default Constructor
@@ -90,26 +116,140 @@ public class DataSourceRequest {
         this.datasourceIndex = datasourceIndex;
     }
 
-    public static void checkRequest(DataSourceRequest request) throws UnExpectedRequestException {
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
+    public String getFileTablesDesc() {
+        return fileTablesDesc;
+    }
+
+    public void setFileTablesDesc(String fileTablesDesc) {
+        this.fileTablesDesc = fileTablesDesc;
+    }
+
+    public String getFileDelimiter() {
+        return fileDelimiter;
+    }
+
+    public void setFileDelimiter(String fileDelimiter) {
+        this.fileDelimiter = fileDelimiter;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Boolean getFileHeader() {
+        return fileHeader;
+    }
+
+    public void setFileHeader(Boolean fileHeader) {
+        this.fileHeader = fileHeader;
+    }
+
+    public Long getLinkisDataSourceId() {
+        return linkisDataSourceId;
+    }
+
+    public void setLinkisDataSourceId(Long linkisDataSourceId) {
+        this.linkisDataSourceId = linkisDataSourceId;
+    }
+
+    public Long getLinkisDataSourceVersionId() {
+        return linkisDataSourceVersionId;
+    }
+
+    public void setLinkisDataSourceVersionId(Long linkisDataSourceVersionId) {
+        this.linkisDataSourceVersionId = linkisDataSourceVersionId;
+    }
+
+    public String getLinkisDataSourceName() {
+        return linkisDataSourceName;
+    }
+
+    public void setLinkisDataSourceName(String linkisDataSourceName) {
+        this.linkisDataSourceName = linkisDataSourceName;
+    }
+
+    public String getLinkisDataSourceType() {
+        return linkisDataSourceType;
+    }
+
+    public void setLinkisDataSourceType(String linkisDataSourceType) {
+        this.linkisDataSourceType = linkisDataSourceType;
+    }
+
+    public static void checkRequest(DataSourceRequest request, boolean cs, boolean fps) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getFilter(), "filter");
         CommonChecker.checkStringLength(request.getFilter(), 1000, "filter");
         CommonChecker.checkString(request.getTableName(), "table_name");
-        CommonChecker.checkString(request.getDbName(), "db_name");
+        if (! (cs || fps)) {
+            CommonChecker.checkString(request.getDbName(), "db_name");
+        }
         CommonChecker.checkString(request.getClusterName(), "cluster_name");
         if (request.getColNames() == null) {
             throw new UnExpectedRequestException("col_names can not be null");
         }
-        DataSourceColumnRequest.checkRequest(request.getColNames());
+        DataSourceColumnRequest.checkRequest(request.getColNames(), fps);
     }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    public String getFileHashValues() {
+        return fileHashValues;
+    }
+
+    public void setFileHashValues(String fileHashValues) {
+        this.fileHashValues = fileHashValues;
+    }
+
+    public Boolean getBlackList() {
+        return blackList;
+    }
+
+    public void setBlackList(Boolean blackList) {
+        this.blackList = blackList;
+    }
+
+    public static void checkRequest(DataSourceRequest request, boolean cs, String desc) throws UnExpectedRequestException {
+        CommonChecker.checkObject(request, desc);
+        CommonChecker.checkString(request.getTableName(), "table_name");
+        if (! cs) {
+            CommonChecker.checkString(request.getDbName(), "db_name");
+        }
+        CommonChecker.checkString(request.getClusterName(), "cluster_name");
+    }
+
     @Override
     public String toString() {
         return "DataSourceRequest{" +
-                "clusterName='" + clusterName + '\'' +
-                ", dbName='" + dbName + '\'' +
-                ", tableName='" + tableName + '\'' +
-                ", colNames=" + colNames +
-                ", filter='" + filter + '\'' +
-                '}';
+            "clusterName='" + clusterName + '\'' +
+            ", dbName='" + dbName + '\'' +
+            ", tableName='" + tableName + '\'' +
+            ", filter='" + filter + '\'' +
+            ", datasourceIndex=" + datasourceIndex +
+            ", fileId='" + fileId + '\'' +
+            ", fileTablesDesc='" + fileTablesDesc + '\'' +
+            ", fileDelimiter='" + fileDelimiter + '\'' +
+            ", fileType='" + fileType + '\'' +
+            ", fileHeader=" + fileHeader +
+            ", proxyUser=" + proxyUser +
+            '}';
     }
 }

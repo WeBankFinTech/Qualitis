@@ -41,11 +41,12 @@ public interface TaskDao {
     Task findById(Long taskId);
 
     /**
-     * Find task by remote id
+     *  Find task by remote id and cluster name.
      * @param remoteTaskId
+     * @param clusterName
      * @return
      */
-    Task findByRemoteTaskId(Integer remoteTaskId);
+    Task findByRemoteTaskIdAndClusterName(Long remoteTaskId, String clusterName);
 
     /**
      * Find task by application
@@ -67,4 +68,15 @@ public interface TaskDao {
      * @return
      */
     List<Task> findByApplicationAndStatusInAndTaskRemoteIdNotNull(Application application, List<Integer> statusList);
+
+    /**
+     * Find with time interval and datasource.
+     * @param startTime
+     * @param endTime
+     * @param clusterName
+     * @param databaseName
+     * @param tableName
+     * @return
+     */
+    List<Task> findWithSubmitTimeAndDatasource(String startTime, String endTime, String clusterName, String databaseName, String tableName);
 }

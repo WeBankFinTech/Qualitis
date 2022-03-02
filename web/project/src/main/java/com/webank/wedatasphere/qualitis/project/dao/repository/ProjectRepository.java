@@ -20,11 +20,19 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
  */
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+    /**
+     * Find project by id
+     * @param id
+     * @return
+     */
+    @Query("select p from Project p where p.id = ?1")
+    Project findByOwnId(Long id);
 
     /**
      * Find project by name

@@ -29,7 +29,7 @@ import java.util.List;
 public class TaskResponse {
 
     @JsonProperty("task_id")
-    private Integer taskId;
+    private Long taskId;
     @JsonProperty("start_time")
     private String startTime;
     @JsonProperty("end_time")
@@ -41,22 +41,22 @@ public class TaskResponse {
     private String clusterId;
 
     public TaskResponse(Task task) {
-        this.taskId = task.getTaskRemoteId();
+        this.taskId = task.getId();
         this.startTime = task.getBeginTime();
         this.endTime = task.getEndTime();
         this.status = task.getStatus();
-        this.clusterId = task.getClusterId();
+        this.clusterId = task.getClusterName();
         this.taskRules = new ArrayList<>();
         for (TaskRuleSimple taskRuleSimple : task.getTaskRuleSimples()) {
             taskRules.add(new TaskRuleResponse(taskRuleSimple, task.getTaskDataSources()));
         }
     }
 
-    public Integer getTaskId() {
+    public Long getTaskId() {
         return taskId;
     }
 
-    public void setTaskId(Integer taskId) {
+    public void setTaskId(Long taskId) {
         this.taskId = taskId;
     }
 

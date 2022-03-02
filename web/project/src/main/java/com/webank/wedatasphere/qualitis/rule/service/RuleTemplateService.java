@@ -16,14 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.rule.service;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
@@ -48,7 +51,7 @@ public interface RuleTemplateService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(PageRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException;
 
     /**
      * Get template meta data information by template id
@@ -109,8 +112,7 @@ public interface RuleTemplateService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(PageRequest request)
-        throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException;
 
     /**
      * Get meta data from multi-table rule template
@@ -130,26 +132,42 @@ public interface RuleTemplateService {
     RuleTemplateResponse addRuleTemplate(AddRuleTemplateRequest request) throws UnExpectedRequestException;
 
     /**
-     * Modify default template.
+     * Modify rule template.
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
      */
     RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
-        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException;
+        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException, PermissionDeniedRequestException;
 
     /**
      * Delete default template.
      * @param templateId
      * @throws UnExpectedRequestException
      */
-    void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException;
+    void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
-     * get rule template detail
+     * Delete file template.
+     * @param templateId
+     * @throws UnExpectedRequestException
+     */
+    void deleteFileRuleTemplate(Long templateId) throws UnExpectedRequestException;
+
+    /**
+     * Get rule template detail.
      * @param templateId
      * @throws UnExpectedRequestException
      * @return
      */
     RuleTemplateResponse getModifyRuleTemplateDetail(Long templateId) throws UnExpectedRequestException;
+
+    /**
+     * Add file template.
+     * @param request
+     * @return
+     */
+    Template addFileTemplate(AddFileRuleRequest request);
 }

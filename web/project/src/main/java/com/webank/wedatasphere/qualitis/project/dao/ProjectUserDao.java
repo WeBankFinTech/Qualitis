@@ -19,7 +19,6 @@ package com.webank.wedatasphere.qualitis.project.dao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
 import com.webank.wedatasphere.qualitis.query.queryqo.DataSourceQo;
-import com.webank.wedatasphere.qualitis.query.queryqo.DataSourceQo;
 
 import java.util.List;
 
@@ -40,7 +39,25 @@ public interface ProjectUserDao {
     List<ProjectUser> findByUsernameAndPermissionAndProjectType(String username, Integer permission, Integer projectType, int page, int size);
 
     /**
-     * Coung project user by userId
+     * Paging find project user by all permission.
+     * @param username
+     * @param projectType
+     * @param page
+     * @param size
+     * @return
+     */
+    List<ProjectUser> findByUsernameAndPermissionAndProjectType(String username, Integer projectType, int page, int size);
+
+    /**
+     * Find project user by userId
+     * @param username
+     * @param permissions
+     * @return
+     */
+    List<Project> findByUsernameAndPermission(String username, List<Integer> permissions);
+
+    /**
+     * Count project user by userId with project type
      * @param username
      * @param permission
      * @param projectType
@@ -49,11 +66,36 @@ public interface ProjectUserDao {
     Long countByUsernameAndPermissionAndProjectType(String username, Integer permission, Integer projectType);
 
     /**
+     * Count project user by userId with all permissions.
+     * @param username
+     * @param projectType
+     * @return
+     */
+    Long countByUsernameAndPermissionAndProjectType(String username, Integer projectType);
+
+    /**
+     * Count project user by userId
+     * @param username
+     * @param permissions
+     * @return
+     */
+    Long countByUsernameAndPermission(String username, List<Integer> permissions);
+
+    /**
      * Find by project user by project
      * @param project
      * @return
      */
     List<ProjectUser> findByProject(Project project);
+
+    /**
+     * Find project user by project with page.
+     * @param project
+     * @param page
+     * @param size
+     * @return
+     */
+    List<ProjectUser> findByProjectPageable(Project project, int page, int size);
 
     /**
      * Find project user by username and permissions
@@ -73,4 +115,11 @@ public interface ProjectUserDao {
      * @param project
      */
     void deleteByProject(Project project);
+
+    /**
+     * Delete project user by project and user name
+     * @param project
+     * @param userName
+     */
+    void deleteByProjectAndUserName(Project project, String userName);
 }

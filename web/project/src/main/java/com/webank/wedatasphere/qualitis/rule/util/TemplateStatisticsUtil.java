@@ -31,7 +31,7 @@ public class TemplateStatisticsUtil {
     }
 
     public static boolean shouldResponse(TemplateStatisticsInputMeta templateStatisticsInputMeta) {
-        if (!templateStatisticsInputMeta.getValueType().equals(StatisticsValueTypeEnum.FIXED_VALUE.getCode())) {
+        if (! templateStatisticsInputMeta.getValueType().equals(StatisticsValueTypeEnum.FIXED_VALUE.getCode())) {
             return true;
         }
         return false;

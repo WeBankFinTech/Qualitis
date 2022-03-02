@@ -42,15 +42,18 @@ public class RuleVariableResponse {
     }
 
     public RuleVariableResponse(RuleVariable ruleVariable) {
-        this.actionStep = ruleVariable.getInputActionStep();
-        if (this.actionStep.equals(InputActionStepEnum.TEMPLATE_INPUT_META.getCode())) {
-            this.inputMetaId = ruleVariable.getTemplateMidTableInputMeta().getId();
-            this.alias = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
-            this.type = ruleVariable.getTemplateMidTableInputMeta().getInputType();
-        } else {
-            this.statisticArgId = ruleVariable.getTemplateStatisticsInputMeta().getId();
+        if (ruleVariable != null) {
+            this.actionStep = ruleVariable.getInputActionStep();
+            if (this.actionStep.equals(InputActionStepEnum.TEMPLATE_INPUT_META.getCode())) {
+                this.inputMetaId = ruleVariable.getTemplateMidTableInputMeta().getId();
+                this.alias = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
+                this.type = ruleVariable.getTemplateMidTableInputMeta().getInputType();
+            } else {
+                this.statisticArgId = ruleVariable.getTemplateStatisticsInputMeta().getId();
+            }
+            this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
         }
-        this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+
     }
 
     public Long getInputMetaId() {

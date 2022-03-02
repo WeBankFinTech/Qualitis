@@ -26,6 +26,8 @@ public class ProjectDetail {
 
     @JsonProperty("project_id")
     private Long projectId;
+    @JsonProperty("cn_name")
+    private String cnName;
     @JsonProperty("project_name")
     private String projectName;
     private String description;
@@ -44,6 +46,14 @@ public class ProjectDetail {
 
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
     }
 
     public String getProjectName() {

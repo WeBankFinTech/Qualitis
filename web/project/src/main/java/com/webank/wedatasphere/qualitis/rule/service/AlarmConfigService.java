@@ -21,12 +21,8 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
 
+import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
 import java.util.List;
 
 /**
@@ -50,11 +46,19 @@ public interface AlarmConfigService {
     void deleteByRule(Rule rule);
 
     /**
-     * Check and save alarm config
+     * Check and save custom alarm config
      * @param requests
      * @param rule
      * @return
+     * @throws UnExpectedRequestException
      */
-    List<AlarmConfig> checkAndSaveCustomAlarmVariable(List<CustomAlarmConfigRequest> requests, Rule rule);
+    List<AlarmConfig> checkAndSaveCustomAlarmVariable(List<CustomAlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException;
 
+    /**Check and save file alarm config
+     *
+     * @param alarmVariable
+     * @param savedRule
+     * @return
+     */
+    List<AlarmConfig> checkAndSaveFileAlarmVariable(List<FileAlarmConfigRequest> alarmVariable, Rule savedRule);
 }

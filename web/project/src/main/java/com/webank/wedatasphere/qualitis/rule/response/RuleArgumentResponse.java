@@ -54,7 +54,7 @@ public class RuleArgumentResponse {
     public RuleArgumentResponse(TemplateStatisticsInputMeta templateStatisticsInputMeta) {
         this.argumentId = templateStatisticsInputMeta.getId();
         this.argumentName = templateStatisticsInputMeta.getName();
-        this.argumentStep = templateStatisticsInputMeta.getValueType();
+        this.argumentType = templateStatisticsInputMeta.getValueType();
         this.argumentStep = InputActionStepEnum.STATISTICS_ARG.getCode();
     }
 

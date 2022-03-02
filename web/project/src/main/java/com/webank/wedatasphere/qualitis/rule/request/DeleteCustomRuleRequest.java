@@ -33,6 +33,10 @@ public class DeleteCustomRuleRequest {
     public DeleteCustomRuleRequest() {
     }
 
+    public DeleteCustomRuleRequest(Long ruleId) {
+        this.ruleId = ruleId;
+    }
+
     public Long getRuleId() {
         return ruleId;
     }

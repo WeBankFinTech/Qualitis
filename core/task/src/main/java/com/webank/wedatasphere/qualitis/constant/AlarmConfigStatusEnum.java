@@ -35,6 +35,15 @@ public enum AlarmConfigStatusEnum {
         this.message = message;
     }
 
+    public static String getMessage(Integer status) {
+        for (AlarmConfigStatusEnum alarmConfigStatusEnum : AlarmConfigStatusEnum.values()) {
+            if (alarmConfigStatusEnum.getCode().equals(status)) {
+                return alarmConfigStatusEnum.getMessage();
+            }
+        }
+        return "Not support status code";
+    }
+
     public Integer getCode() {
         return code;
     }

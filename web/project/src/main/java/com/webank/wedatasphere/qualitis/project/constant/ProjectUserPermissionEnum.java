@@ -19,12 +19,14 @@ package com.webank.wedatasphere.qualitis.project.constant;
 /**
  * @author howeye
  */
-public enum  ProjectUserPermissionEnum {
+public enum ProjectUserPermissionEnum {
     /**
-     * 创建者
+     * 创建者（管理员： 编辑，删除，执行，查看），开发者（编辑），运维者（执行），业务员（查看）
      */
     CREATOR(1, "创建者"),
-    ;
+    DEVELOPER(2, "开发者"),
+    OPERATOR(3, "运维者"),
+    BUSSMAN(4, "业务员");
 
     private Integer code;
     private String message;

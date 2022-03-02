@@ -104,10 +104,6 @@ public class TemplateStatisticsInputMeta {
         this.name = name;
     }
 
-    public Template getTemplate() {
-        return template;
-    }
-
     public void setTemplate(Template template) {
         this.template = template;
     }

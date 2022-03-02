@@ -24,14 +24,13 @@ import java.util.List;
  * @author howeye
  */
 public interface TaskResultDao {
-
     /**
      * Find task result by application id and rule id
      * @param applicationId
      * @param ruleId
      * @return
      */
-    TaskResult findByApplicationIdAndRuleId(String applicationId, Long ruleId);
+    List<TaskResult> findByApplicationAndRule(String applicationId, Long ruleId);
 
     /**
      * Find avg value between create time and rule id
@@ -40,7 +39,7 @@ public interface TaskResultDao {
      * @param ruleId
      * @return
      */
-    Double findAvgByCreateTimeBetweenAndRuleId(String begin, String end, Long ruleId);
+    Double findAvgByCreateTimeBetweenAndRule(String begin, String end, Long ruleId);
 
     /**
      * Find task result by application and rule id in
@@ -48,6 +47,72 @@ public interface TaskResultDao {
      * @param ruleIds
      * @return
      */
-    List<TaskResult> findByApplicationIdAndRuleIdIn(String applicationId, List<Long> ruleIds);
+    List<TaskResult> findByApplicationIdAndRuleIn(String applicationId, List<Long> ruleIds);
 
+    /**
+     * Save file task result.
+     * @param taskResult
+     * @return
+     */
+    TaskResult saveTaskResult(TaskResult taskResult);
+
+    /**
+     * Find rule IDs by rule metric ID.
+     * @param id
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Long> findRuleByRuleMetric(Long id, int page, int size);
+
+    /**
+     * Find values by rule ID and rule metric ID.
+     * @param ruleMetricId
+     * @param page
+     * @param size
+     * @return
+     */
+    List<TaskResult> findValuesByRuleMetric(long ruleMetricId, int page, int size);
+
+    /**
+     * Find avg value by rule ID and rule metric ID.
+     * @param start
+     * @param end
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    Double findAvgByCreateTimeBetweenAndRuleAndRuleMetric(String start, String end, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Find value.
+     * @param applicationId
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    TaskResult find(String applicationId, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Find value.
+     * @param runDate
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    TaskResult find(Long runDate, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Count values.
+     * @param ruleMetricId
+     * @return
+     */
+    int countValuesByRuleMetric(long ruleMetricId);
+
+    /**
+     * Count rules.
+     * @param ruleMetricId
+     * @return
+     */
+    int countRuleByRuleMetric(Long ruleMetricId);
 }

@@ -37,6 +37,9 @@ public class TaskRuleAlarmConfig {
     @Column(name = "output_name", length = 500)
     private String outputName;
 
+    @Column(name = "output_Unit", length = 500)
+    private String outputUnit;
+
     @Column(name = "check_template")
     private Integer checkTemplate;
 
@@ -50,16 +53,32 @@ public class TaskRuleAlarmConfig {
     @ManyToOne
     private TaskRuleSimple taskRuleSimple;
 
+    @ManyToOne
+    private RuleMetric ruleMetric;
+
+    @Column(name = "upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+
+    @Column(name = "upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+
+    @Column(name = "delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
     public TaskRuleAlarmConfig() {
     }
 
     public TaskRuleAlarmConfig(TaskRuleAlarmConfigBean taskRuleAlarmConfigBean, TaskRuleSimple taskRuleSimple) {
         this.outputName = taskRuleAlarmConfigBean.getOutputName();
         this.checkTemplate = taskRuleAlarmConfigBean.getCheckTemplate();
-        this.threshold = taskRuleAlarmConfigBean.getThreshold();
         this.compareType = taskRuleAlarmConfigBean.getCompareType();
+        this.threshold = taskRuleAlarmConfigBean.getThreshold();
         this.taskRuleSimple = taskRuleSimple;
         this.status = AlarmConfigStatusEnum.NOT_CHECK.getCode();
+        this.ruleMetric = taskRuleAlarmConfigBean.getRuleMetric();
+        this.uploadAbnormalValue = taskRuleAlarmConfigBean.getUploadAbnormalValue();
+        this.uploadRuleMetricValue = taskRuleAlarmConfigBean.getUploadRuleMetricValue();
+        this.deleteFailCheckResult = taskRuleAlarmConfigBean.getDeleteFailCheckResult();
     }
 
     public Long getId() {
@@ -76,6 +95,14 @@ public class TaskRuleAlarmConfig {
 
     public void setOutputName(String outputName) {
         this.outputName = outputName;
+    }
+
+    public String getOutputUnit() {
+        return outputUnit;
+    }
+
+    public void setOutputUnit(String outputUnit) {
+        this.outputUnit = outputUnit;
     }
 
     public Integer getCheckTemplate() {
@@ -116,6 +143,38 @@ public class TaskRuleAlarmConfig {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public RuleMetric getRuleMetric() {
+        return ruleMetric;
+    }
+
+    public void setRuleMetric(RuleMetric ruleMetric) {
+        this.ruleMetric = ruleMetric;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
     }
 
     @Override

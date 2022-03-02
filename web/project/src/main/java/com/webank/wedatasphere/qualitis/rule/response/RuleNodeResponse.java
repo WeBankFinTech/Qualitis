@@ -66,6 +66,12 @@ public class RuleNodeResponse {
     @JsonProperty("child_template_templateOutputMeta_object")
     private String childTemplateTemplateOutputMetaObject;
 
+    /**
+     * Rule metric object.
+     */
+    @JsonProperty("rule_metric")
+    private String ruleMetricObject;
+
     public RuleNodeResponse() {}
 
     public String getRuleObject() {
@@ -234,6 +240,14 @@ public class RuleNodeResponse {
 
     public void setChildTemplateTemplateOutputMetaObject(String childTemplateTemplateOutputMetaObject) {
         this.childTemplateTemplateOutputMetaObject = childTemplateTemplateOutputMetaObject;
+    }
+
+    public String getRuleMetricObject() {
+        return ruleMetricObject;
+    }
+
+    public void setRuleMetricObject(String ruleMetricObject) {
+        this.ruleMetricObject = ruleMetricObject;
     }
 
     @Override

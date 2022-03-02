@@ -23,6 +23,8 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author howeye
@@ -31,8 +33,16 @@ public class MultiDataSourceJoinColumnRequest {
 
     @JsonProperty("column_name")
     private String columnName;
+    @JsonProperty("column_type")
+    private String columnType;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiDataSourceJoinColumnRequest.class);
     public MultiDataSourceJoinColumnRequest() {
+    }
+
+    public MultiDataSourceJoinColumnRequest(String columnName, String columnType) {
+        this.columnName = columnName;
+        this.columnType = columnType;
     }
 
     public MultiDataSourceJoinColumnRequest(String columnName) {
@@ -45,6 +55,14 @@ public class MultiDataSourceJoinColumnRequest {
 
     public void setColumnName(String columnName) {
         this.columnName = columnName;
+    }
+
+    public String getColumnType() {
+        return columnType;
+    }
+
+    public void setColumnType(String columnType) {
+        this.columnType = columnType;
     }
 
     public static void checkRequest(MultiDataSourceJoinColumnRequest request) throws UnExpectedRequestException {
@@ -63,5 +81,13 @@ public class MultiDataSourceJoinColumnRequest {
     @Override
     public int hashCode() {
         return Objects.hash(columnName);
+    }
+
+    @Override
+    public String toString() {
+        return "MultiDataSourceJoinColumnRequest{" +
+            "columnName='" + columnName + '\'' +
+            ", columnType='" + columnType + '\'' +
+            '}';
     }
 }
