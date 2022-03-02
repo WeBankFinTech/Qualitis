@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.project.service;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
@@ -40,9 +41,10 @@ public interface WorkflowProjectService {
     /**
      * Get workflow project detail
      * @param projectId
+     * @param pageRequest
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(Long projectId) throws UnExpectedRequestException;
-
+    GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(Long projectId, PageRequest pageRequest)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
 }

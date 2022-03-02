@@ -51,11 +51,6 @@ public class TemplateOutputMetaDaoImpl implements TemplateOutputMetaDao {
     }
 
     @Override
-    public List<TemplateOutputMeta> findByTemplate(Template template) {
-        return templateOutputMetaRepository.findByTemplate(template);
-    }
-
-    @Override
     public void deleteByTemplate(Template templateInDb) {
         templateOutputMetaRepository.deleteByTemplate(templateInDb);
     }

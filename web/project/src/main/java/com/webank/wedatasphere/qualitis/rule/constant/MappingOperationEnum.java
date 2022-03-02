@@ -19,7 +19,7 @@ package com.webank.wedatasphere.qualitis.rule.constant;
 /**
  * @author howeye
  */
-public enum  MappingOperationEnum {
+public enum MappingOperationEnum {
     /**
      * Join Operation Enum
      */

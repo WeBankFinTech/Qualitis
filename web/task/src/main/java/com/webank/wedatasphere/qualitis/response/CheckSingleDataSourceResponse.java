@@ -38,7 +38,8 @@ public class CheckSingleDataSourceResponse {
     public CheckSingleDataSourceResponse() {
     }
 
-    public CheckSingleDataSourceResponse(String database, String table, List<TaskDataSource> taskDataSources, Map<Long, TaskRuleSimple> taskRuleSimpleMap, Map<Long, TaskResult> taskResultMap) {
+    public CheckSingleDataSourceResponse(String database, String table, List<TaskDataSource> taskDataSources, Map<Long, TaskRuleSimple> taskRuleSimpleMap
+            , Map<Long, List<TaskResult>> taskResultMap) {
         this.database = database;
         this.table = table;
         this.checkTableResponse = new ArrayList<>();

@@ -19,9 +19,8 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import org.springframework.beans.BeanUtils;
-
 import java.util.List;
+import org.springframework.beans.BeanUtils;
 
 /**
  * @author howeye
@@ -32,10 +31,20 @@ public class ModifyRuleRequest {
     private Long ruleId;
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("rule_detail")
+    private String ruleDetail;
+    @JsonProperty("cn_name")
+    private String ruleCnName;
     @JsonProperty("rule_template_id")
     private Long ruleTemplateId;
     @JsonProperty("alarm")
     private Boolean alarm;
+    @JsonProperty("alert")
+    private Boolean alert;
+    @JsonProperty("alert_level")
+    private Integer alertLevel;
+    @JsonProperty("alert_receiver")
+    private String alertReceiver;
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
     private List<DataSourceRequest> datasource;
@@ -45,8 +54,18 @@ public class ModifyRuleRequest {
     private long projectId;
     @JsonProperty("project_name")
     private String projectName;
+
+    @JsonProperty("cs_id")
+    private String csId;
     @JsonProperty("abort_on_failure")
     private Boolean abortOnFailure;
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
+    @JsonProperty("specify_static_startup_param")
+    private Boolean specifyStaticStartupParam;
+    @JsonProperty("static_startup_param")
+    private String staticStartupParam;
 
     public ModifyRuleRequest() {
         // Default Constructor
@@ -68,6 +87,22 @@ public class ModifyRuleRequest {
         this.ruleName = ruleName;
     }
 
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
+    }
+
     public Long getRuleTemplateId() {
         return ruleTemplateId;
     }
@@ -82,6 +117,22 @@ public class ModifyRuleRequest {
 
     public void setAlarm(Boolean alarm) {
         this.alarm = alarm;
+    }
+
+    public Boolean getAlert() {
+        return alert;
+    }
+
+    public void setAlert(Boolean alert) {
+        this.alert = alert;
+    }
+
+    public Integer getAlertLevel() {
+        return alertLevel;
+    }
+
+    public void setAlertLevel(Integer alertLevel) {
+        this.alertLevel = alertLevel;
     }
 
     public List<AlarmConfigRequest> getAlarmVariable() {
@@ -108,6 +159,10 @@ public class ModifyRuleRequest {
         this.templateArgumentRequests = templateArgumentRequests;
     }
 
+    public String getCsId() { return csId; }
+
+    public void setCsId(String csId) { this.csId = csId; }
+
     public long getProjectId() {
         return projectId;
     }
@@ -120,7 +175,6 @@ public class ModifyRuleRequest {
         return projectName;
     }
 
-
     public void setProjectName(String projectName) {
         this.projectName = projectName;
     }
@@ -131,6 +185,38 @@ public class ModifyRuleRequest {
 
     public void setAbortOnFailure(Boolean abortOnFailure) {
         this.abortOnFailure = abortOnFailure;
+    }
+
+    public String getAlertReceiver() {
+        return alertReceiver;
+    }
+
+    public void setAlertReceiver(String alertReceiver) {
+        this.alertReceiver = alertReceiver;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
     }
 
     public static void checkRequest(ModifyRuleRequest request) throws UnExpectedRequestException {

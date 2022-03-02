@@ -16,8 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.dao.repository;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
@@ -28,5 +31,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param username
      * @return
      */
-    User findByUsername(String username);
+    User findByUserName(String username);
+
+    /**
+     * Find by department id.
+     * @param department
+     * @return
+     */
+    @Query(value = "select u from User u where u.department = ?1")
+    List<User> findByDepartment(Department department);
+
+    /**
+     * Check template
+     * @param userInDb
+     * @return
+     */
+    @Query(value = "select count(tu.template) from TemplateUser tu where tu.user = ?1")
+    Long checkTemplate(User userInDb);
 }

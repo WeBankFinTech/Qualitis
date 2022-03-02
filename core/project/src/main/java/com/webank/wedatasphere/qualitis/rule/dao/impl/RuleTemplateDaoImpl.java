@@ -16,13 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao.impl;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateRepository;
-import org.aspectj.lang.annotation.AfterReturning;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +52,13 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
+    public List<Template> findAllDefaultTemplateByLevel(Integer level, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return templateRepository.findByLevel(level, pageable).getContent();
+    }
+
+    @Override
     public Long countAllDefaultTemplate() {
         return templateRepository.countByTemplateType(RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode());
     }
@@ -68,19 +74,41 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
-    public List<Template> findAllMultiTemplate(int page, int size) {
+    public List<Template> findAllMultiTemplate(Integer dataSourceTypeCode, int page, int size) {
         Sort sort = new Sort(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return templateRepository.findByTemplateTypeAndParentTemplateIsNull(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(), pageable).getContent();
+        return templateRepository.findByTemplateTypeAndParentTemplateIsNull(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(), dataSourceTypeCode, pageable).getContent();
     }
 
     @Override
-    public Long countAllMultiTemplate() {
-        return templateRepository.countByTemplateTypeAndParentTemplateIsNull(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode());
+    public Long countAllMultiTemplate(Integer dataSourceTypeCode) {
+        return templateRepository.countByTemplateTypeAndParentTemplateIsNull(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(), dataSourceTypeCode);
     }
 
     @Override
     public List<Template> getAllTemplate() {
-        return templateRepository.findAll();
+        return templateRepository.findDefaultAndMultiTemplate();
+    }
+
+    @Override
+    public Template findByName(String name) {
+        return templateRepository.findByName(name);
+    }
+
+    @Override
+    public Template findByImportExportName(String importExportName) {
+        return templateRepository.findByImportExportName(importExportName);
+    }
+
+    @Override
+    public List<Template> findTemplates(Integer level, Integer type, List<Department> departmentList, List<User> userList, Integer dataSourceTypeId, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return templateRepository.findTemplates(level, type, departmentList, userList, dataSourceTypeId, pageable).getContent();
+    }
+
+    @Override
+    public long countTemplates(Integer level, Integer multiSourceTemplateCode, List<Department> departments, List<User> users, Integer dataSourceTypeId) {
+        return templateRepository.countTemplates(level, multiSourceTemplateCode, departments, users, dataSourceTypeId);
     }
 }

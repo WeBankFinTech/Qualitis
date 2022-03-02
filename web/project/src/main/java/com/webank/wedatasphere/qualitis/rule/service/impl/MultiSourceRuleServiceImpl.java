@@ -18,9 +18,12 @@ package com.webank.wedatasphere.qualitis.rule.service.impl;
 
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.adapter.AutoArgumentAdapter;
@@ -30,6 +33,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.*;
 import com.webank.wedatasphere.qualitis.rule.response.MultiRuleDetailResponse;
@@ -37,11 +41,19 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
+import com.webank.wedatasphere.qualitis.submitter.impl.ExecutionManagerImpl;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import java.sql.SQLException;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -57,37 +69,78 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     @Autowired
     private ProjectService projectService;
     @Autowired
-    private RuleTemplateService ruleTemplateService;
-    @Autowired
-    private RuleDao ruleDao;
+    private AlarmConfigService alarmConfigService;
     @Autowired
     private RuleVariableService ruleVariableService;
     @Autowired
-    private AutoArgumentAdapter autoArgumentAdapter;
+    private ProjectEventService projectEventService;
     @Autowired
-    private AlarmConfigService alarmConfigService;
+    private RuleTemplateService ruleTemplateService;
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
     @Autowired
     private RuleDataSourceMappingService ruleDataSourceMappingService;
     @Autowired
+    private RuleDao ruleDao;
+    @Autowired
     private RuleGroupDao ruleGroupDao;
     @Autowired
     private ClusterInfoDao clusterInfoDao;
 
+    @Autowired
+    private AutoArgumentAdapter autoArgumentAdapter;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiSourceRuleServiceImpl.class);
     private static final String MID_TMP_STR = "@#$%^&";
 
+    private HttpServletRequest httpServletRequest;
+    public MultiSourceRuleServiceImpl(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
     @Override
-    @Transactional(rollbackFor = {Exception.class})
-    public GeneralResponse<RuleResponse> addMultiSourceRule(AddMultiSourceRuleRequest request) throws UnExpectedRequestException {
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {Exception.class, SQLException.class, UnExpectedRequestException.class})
+    public GeneralResponse<RuleResponse> addMultiSourceRule(AddMultiSourceRuleRequest request, boolean check)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        return addMultiSourceRuleReal(request, check);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, boolean check)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        return addMultiSourceRuleReal((AddMultiSourceRuleRequest) request, check);
+    }
+
+    private GeneralResponse<RuleResponse> addMultiSourceRuleReal(AddMultiSourceRuleRequest request, boolean check)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         CommonChecker.checkObject(request, "Request");
-
-        AddMultiSourceRuleRequest.checkRequest(request, false);
+        String csId = request.getCsId();
+        boolean cs = false;
+        if (StringUtils.isNotBlank(csId))  {
+            cs = true;
+        }
+        AddMultiSourceRuleRequest.checkRequest(request, false, cs);
+        String loginUser = "";
+        if (request.getLoginUser() != null) {
+            loginUser = request.getLoginUser();
+            LOGGER.info("Recover user[{}] from is adding rule.", loginUser);
+        } else {
+            loginUser = HttpUtils.getUserName(httpServletRequest);
+        }
+        LOGGER.info("Check permission user[{}] who is adding rule.", loginUser);
 
         // Check existence of project
-        Project projectInDb = projectService.checkProjectExistence(request.getProjectId());
+        Project projectInDb = projectService.checkProjectExistence(request.getProjectId(),
+            loginUser);
+        // Check permissions of project
+        if (check) {
+            List<Integer> permissions = new ArrayList<>();
+            permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+            projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+        }
+
         // Check existence of rule name
         ruleService.checkRuleName(request.getRuleName(), projectInDb, null);
         // Check existence of cluster
@@ -97,7 +150,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         }
         // Check existence of id and check if multi-table rule
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
-        if (!templateInDb.getTemplateType().equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
+        if (! templateInDb.getTemplateType().equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
             throw new UnExpectedRequestException("Template id :" + request.getMultiSourceRuleTemplateId() + " {&IS_NOT_A_MULTI_SOURCE_TEMPLATE}");
         }
 
@@ -109,16 +162,21 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
             }
         } else {
             ruleGroup = ruleGroupDao.saveRuleGroup(
-                    new RuleGroup("Group_" + UUID.randomUUID().toString().replace("-", ""), projectInDb.getId()));
+                new RuleGroup("Group_" + UUID.randomUUID().toString().replace("-", ""), projectInDb.getId()));
         }
-
-        Rule savedRule = generateRule(request, projectInDb, false, null, false);
+        String leftUuid = UuidGenerator.generate();
+        String rightUuid = UuidGenerator.generate();
+        Rule savedRule = generateRule(request, projectInDb, false, null, false, cs, leftUuid, rightUuid, loginUser);
         savedRule.setRuleGroup(ruleGroup);
+        savedRule.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
+        if (request.getSpecifyStaticStartupParam() != null && request.getSpecifyStaticStartupParam()) {
+            savedRule.setStaticStartupParam(request.getStaticStartupParam());
+        }
         savedRule = ruleDao.saveRule(savedRule);
         if (templateInDb.getChildTemplate() != null) {
             // Generate child rule
             AddMultiSourceRuleRequest addMultiSourceRuleRequest = generateChildRequest(request, templateInDb.getChildTemplate());
-            Rule childRule = generateRule(addMultiSourceRuleRequest, null, false, null, true);
+            Rule childRule = generateRule(addMultiSourceRuleRequest, null, false, null, true, cs, leftUuid, rightUuid, loginUser);
             childRule.setParentRule(savedRule);
             ruleDao.saveRule(childRule);
         }
@@ -129,20 +187,31 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     }
 
     @Override
-    @Transactional(rollbackFor = {Exception.class})
-    public GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request) throws UnExpectedRequestException {
+    @Transactional(rollbackFor = {UnExpectedRequestException.class, Exception.class})
+    public GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteMultiSourceRequest.checkRequest(request);
-
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
         // Check existence of rule and check if multi-table rule
         Rule ruleInDb = ruleDao.findById(request.getMultiRuleId());
         if (ruleInDb == null) {
             throw new UnExpectedRequestException("rule_id [" + request.getMultiRuleId() + "] {&DOES_NOT_EXIST}");
         }
-        projectService.checkProjectExistence(ruleInDb.getProject().getId());
+        // Check existence of project
+        Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(),
+            loginUser);
+        // Check permissions of project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        projectService.checkProjectPermission(projectInDb, loginUser, permissions);
         if (!ruleInDb.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
             throw new UnExpectedRequestException("rule_id: [" + request.getMultiRuleId() + "]) {&IS_NOT_A_MULTI_TEMPLATE_RULE}");
         }
+        // Update rule count of datasource
+        ruleDataSourceService.updateRuleDataSourceCount(ruleInDb, -1);
+        // Record project event.
+//        projectEventService.record(projectInDb.getId(), loginUser, "delete", "multi source rule[name= " + ruleInDb.getName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
         // Delete rule
         return deleteMultiRuleReal(ruleInDb);
     }
@@ -157,18 +226,44 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
     }
 
     @Override
-    @Transactional(rollbackFor = {Exception.class})
-    public GeneralResponse<RuleResponse> modifyMultiSourceRule(ModifyMultiSourceRequest request) throws UnExpectedRequestException {
+    @Transactional(rollbackFor = {Exception.class, UnExpectedRequestException.class})
+    public GeneralResponse<RuleResponse> modifyMultiSourceRule(ModifyMultiSourceRequest request)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        return modifyRuleDetailReal(request, loginUser);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, SQLException.class, UnExpectedRequestException.class})
+    public GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyMultiSourceRequest modifyRuleRequest, String userName)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        return modifyRuleDetailReal(modifyRuleRequest, userName);
+    }
+
+    private GeneralResponse<RuleResponse> modifyRuleDetailReal(ModifyMultiSourceRequest request, String loginUser)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         CommonChecker.checkObject(request, "request");
-        ModifyMultiSourceRequest.checkRequest(request);
+        String csId = request.getCsId();
+        boolean cs = false;
+        if (StringUtils.isNotBlank(csId))  {
+            cs = true;
+        }
+        ModifyMultiSourceRequest.checkRequest(request, cs);
 
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null) {
             throw new UnExpectedRequestException("rule_id [" + request.getRuleId() + "] {&DOES_NOT_EXIST}");
         }
-        Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId());
+
+        // Check existence of project
+        Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(),
+            loginUser);
+        // Check permissions of project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        projectService.checkProjectPermission(projectInDb, loginUser, permissions);
         if (!ruleInDb.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
             throw new UnExpectedRequestException("rule_id: [" + request.getRuleId() + "]) {&IS_NOT_A_MULTI_TEMPLATE_RULE}");
         }
@@ -191,6 +286,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         // Delete rule datasource by rule
         ruleDataSourceService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all rule_dataSources. rule_id: {}", ruleInDb.getId());
+        // Update rule count of datasource
+        ruleDataSourceService.updateRuleDataSourceCount(ruleInDb, -1);
         // Delete rule datasource mapping by rule
         ruleDataSourceMappingService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all rule_dataSource_mapping. rule_id: {}", ruleInDb.getId());
@@ -206,11 +303,13 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
 
         AddMultiSourceRuleRequest addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
         BeanUtils.copyProperties(request, addMultiSourceRuleRequest);
-        Rule savedRule = generateRule(addMultiSourceRuleRequest, projectInDb, true, ruleInDb, false);
+        String leftUuid = UuidGenerator.generate();
+        String rightUuid = UuidGenerator.generate();
+        Rule savedRule = generateRule(addMultiSourceRuleRequest, projectInDb, true, ruleInDb, false, cs, leftUuid, rightUuid, loginUser);
         if (templateInDb.getChildTemplate() != null) {
             // Generate child rule
             AddMultiSourceRuleRequest childRequest = generateChildRequest(addMultiSourceRuleRequest, templateInDb.getChildTemplate());
-            Rule childRule = generateRule(childRequest, null, false, null, true);
+            Rule childRule = generateRule(childRequest, null, false, null, true, cs, leftUuid, rightUuid, loginUser);
             childRule.setParentRule(savedRule);
             ruleDao.saveRule(childRule);
             LOGGER.info("Succeed to generate child rule");
@@ -218,6 +317,8 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
 
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to modify multi source rule, rule_id: {}", savedRule.getId());
+        // Record project event.
+//        projectEventService.record(savedRule.getProject().getId(), loginUser, "modify", "multi source rule[name= " + savedRule.getName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
         return new GeneralResponse<>("200", "{&MODIFY_MULTI_RULE_SUCCESSFULLY}", response);
     }
 
@@ -231,7 +332,9 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         if (!ruleInDb.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
             throw new UnExpectedRequestException("rule_id: [" + ruleId + "]) {&IS_NOT_A_MULTI_TEMPLATE_RULE}");
         }
-
+        Long projectInDbId = ruleInDb.getProject().getId();
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        projectService.checkProjectExistence(projectInDbId, loginUser);
         MultiRuleDetailResponse multiRuleDetailResponse = new MultiRuleDetailResponse(ruleInDb);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_DETAIL_OF_MULTI_RULE}", multiRuleDetailResponse);
     }
@@ -255,7 +358,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
             List<MultiDataSourceJoinColumnRequest> left = new ArrayList<>();
             List<MultiDataSourceJoinColumnRequest> right = new ArrayList<>();
             for (MultiDataSourceJoinColumnRequest columnRequest : mapping.getLeft()) {
-                if (columnRequest.getColumnName().contains("tmp1")) {
+                if (columnRequest.getColumnName().startsWith("tmp1.")) {
                     if (!left.contains(columnRequest)) {
                         left.add(columnRequest);
                     }
@@ -266,7 +369,7 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
                 }
             }
             for (MultiDataSourceJoinColumnRequest columnRequest : mapping.getRight()) {
-                if (columnRequest.getColumnName().contains("tmp1")) {
+                if (columnRequest.getColumnName().startsWith("tmp1.")) {
                     if (!left.contains(columnRequest)) {
                         left.add(columnRequest);
                     }
@@ -323,41 +426,52 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         return tmp2.replace(MID_TMP_STR, "tmp2");
     }
 
-    private Rule generateRule(AddMultiSourceRuleRequest request, Project projectInDb, Boolean modify, Rule ruleInDb, Boolean isChild)
+    private Rule generateRule(AddMultiSourceRuleRequest request, Project projectInDb, Boolean modify, Rule ruleInDb, Boolean isChild, Boolean cs,
+        String leftUuid, String rightUuid, String loginUser)
         throws UnExpectedRequestException {
         // Check existence of rule and if multi-table rule
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
         if (!templateInDb.getTemplateType().equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
             throw new UnExpectedRequestException("Template id :" + request.getMultiSourceRuleTemplateId() + " {&IS_NOT_A_MULTI_SOURCE_TEMPLATE}");
         }
-
+        String nowDate = ExecutionManagerImpl.PRINT_TIME_FORMAT.format(new Date());
         Rule savedRule;
         if (modify) {
-            ruleInDb.setTemplate(templateInDb);
-            ruleInDb.setRuleTemplateName(templateInDb.getName());
-            ruleInDb.setName(request.getRuleName());
-            ruleInDb.setAlarm(request.getAlarm());
-            ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
-            savedRule = ruleDao.saveRule(ruleInDb);
-            LOGGER.info("Succeed to save rule, rule_id: {}", savedRule.getId());
+            // Rule basic info.
+            savedRule = setBasicInfo(ruleInDb, templateInDb, request, loginUser, nowDate);
         } else {
             // Generate rule and save
             Rule newRule = new Rule();
             newRule.setTemplate(templateInDb);
             newRule.setRuleTemplateName(templateInDb.getName());
+            newRule.setDetail(request.getRuleDetail());
+            newRule.setCnName(request.getRuleCnName());
             newRule.setName(request.getRuleName());
             newRule.setAlarm(request.getAlarm());
             newRule.setProject(projectInDb);
             newRule.setRuleType(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode());
+            newRule.setCsId(request.getCsId());
             newRule.setAbortOnFailure(request.getAbortOnFailure());
+            newRule.setCreateUser(loginUser);
+            newRule.setCreateTime(nowDate);
+            newRule.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
+            newRule.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
+            newRule.setStaticStartupParam(request.getStaticStartupParam());
             savedRule = ruleDao.saveRule(newRule);
-            LOGGER.info("Succeed to save rule, rule_id: {}", savedRule.getId());
         }
-
+        LOGGER.info("Succeed to save rule, rule_id: {}", savedRule.getId());
+        MultiDataSourceConfigRequest left = request.getSource();
+        MultiDataSourceConfigRequest right = request.getTarget();
+        if (StringUtils.isNotBlank(left.getFileId()) && !isChild) {
+            left.setTableName(left.getTableName().concat("_").concat(leftUuid));
+        }
+        if (StringUtils.isNotBlank(right.getFileId()) && !isChild) {
+            right.setTableName(right.getTableName().concat("_").concat(rightUuid));
+        }
         // Generate rule_datasource, rule_variable, rule_alarm_config
         LOGGER.info("Start to generate and save rule_variable.");
         List<RuleVariable> ruleVariables = autoAdaptRequestAndGetRuleVariable(savedRule, templateInDb, request.getClusterName(),
-                request.getSource(), request.getTarget(), request.getMappings(), request.getFilter());
+                left, right, request.getMappings(), request.getFilter());
         List<RuleVariable> savedRuleVariables = ruleVariableService.saveRuleVariable(ruleVariables);
         LOGGER.info("Succeed to save rule_variables, rule_variables: {}", savedRuleVariables);
         List<AlarmConfig> savedAlarmConfigs = new ArrayList<>();
@@ -365,12 +479,13 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
             savedAlarmConfigs  = alarmConfigService.checkAndSaveAlarmVariable(request.getAlarmVariable(), savedRule);
             LOGGER.info("Succeed to save alarm_configs, alarm_configs: {}", savedAlarmConfigs);
         }
-        if (!isChild) {
-            List<DataSourceRequest> dataSourceRequests = generateDataSourceRequest(request.getClusterName(), request.getSource(), request.getTarget());
-            List<RuleDataSource> savedRuleDataSource = ruleDataSourceService.checkAndSaveRuleDataSource(dataSourceRequests, savedRule);
-
+        if (! isChild) {
+            List<DataSourceRequest> dataSourceRequests = generateDataSourceRequest(request.getClusterName(), left, right);
+            List<RuleDataSource> savedRuleDataSource = ruleDataSourceService.checkAndSaveRuleDataSource(dataSourceRequests, savedRule, cs, loginUser);
             LOGGER.info("Succeed to save rule_dataSources, rule_dataSources: {}", savedRuleDataSource);
             savedRule.setRuleDataSources(new HashSet<>(savedRuleDataSource));
+            // Update rule count of datasource
+            ruleDataSourceService.updateRuleDataSourceCount(savedRule, 1);
         }
 
         List<RuleDataSourceMapping> savedRuleDataSourceMappings = ruleDataSourceMappingService.checkAndSaveRuleDataSourceMapping(request.getMappings(), savedRule);
@@ -383,6 +498,23 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         return savedRule;
     }
 
+    private Rule setBasicInfo(Rule ruleInDb, Template templateInDb, AddMultiSourceRuleRequest request, String loginUser, String nowDate) {
+        ruleInDb.setTemplate(templateInDb);
+        ruleInDb.setRuleTemplateName(templateInDb.getName());
+        ruleInDb.setDetail(request.getRuleDetail());
+        ruleInDb.setCnName(request.getRuleCnName());
+        ruleInDb.setName(request.getRuleName());
+        ruleInDb.setAlarm(request.getAlarm());
+        ruleInDb.setCsId(request.getCsId());
+        ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
+        ruleInDb.setModifyUser(loginUser);
+        ruleInDb.setModifyTime(nowDate);
+        ruleInDb.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
+        ruleInDb.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
+        ruleInDb.setStaticStartupParam(request.getStaticStartupParam());
+        return ruleDao.saveRule(ruleInDb);
+    }
+
     private List<DataSourceRequest> generateDataSourceRequest(String clusterName, MultiDataSourceConfigRequest sourceConfig, MultiDataSourceConfigRequest targetConfig) {
         List<DataSourceRequest> dataSourceRequests = new ArrayList<>();
         DataSourceRequest sourceDataSourceRequest = new DataSourceRequest();
@@ -392,6 +524,18 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         sourceDataSourceRequest.setDbName(sourceConfig.getDbName());
         sourceDataSourceRequest.setColNames(new ArrayList<>());
         sourceDataSourceRequest.setDatasourceIndex(0);
+        sourceDataSourceRequest.setFileId(sourceConfig.getFileId());
+        sourceDataSourceRequest.setFileTablesDesc(sourceConfig.getFileTableDesc());
+        sourceDataSourceRequest.setFileDelimiter(sourceConfig.getFileDelimiter());
+        sourceDataSourceRequest.setFileType(sourceConfig.getFileType());
+        sourceDataSourceRequest.setFileHeader(sourceConfig.getFileHeader());
+        sourceDataSourceRequest.setProxyUser(sourceConfig.getProxyUser());
+        sourceDataSourceRequest.setFileHashValues(sourceConfig.getFileHashValues());
+        sourceDataSourceRequest.setLinkisDataSourceId(sourceConfig.getLinkisDataSourceId());
+        sourceDataSourceRequest.setLinkisDataSourceName(sourceConfig.getLinkisDataSourceName());
+        sourceDataSourceRequest.setLinkisDataSourceType(sourceConfig.getLinkisDataSourceType());
+        sourceDataSourceRequest.setLinkisDataSourceVersionId(sourceConfig.getLinkisDataSourceVersionId());
+
 
         DataSourceRequest targetDataSourceRequest = new DataSourceRequest();
         targetDataSourceRequest.setClusterName(clusterName);
@@ -400,6 +544,17 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
         targetDataSourceRequest.setDbName(targetConfig.getDbName());
         targetDataSourceRequest.setColNames(new ArrayList<>());
         targetDataSourceRequest.setDatasourceIndex(1);
+        targetDataSourceRequest.setFileId(targetConfig.getFileId());
+        targetDataSourceRequest.setFileTablesDesc(targetConfig.getFileTableDesc());
+        targetDataSourceRequest.setFileDelimiter(targetConfig.getFileDelimiter());
+        targetDataSourceRequest.setFileType(targetConfig.getFileType());
+        targetDataSourceRequest.setFileHeader(targetConfig.getFileHeader());
+        targetDataSourceRequest.setProxyUser(targetConfig.getProxyUser());
+        targetDataSourceRequest.setFileHashValues(targetConfig.getFileHashValues());
+        targetDataSourceRequest.setLinkisDataSourceId(targetConfig.getLinkisDataSourceId());
+        targetDataSourceRequest.setLinkisDataSourceName(targetConfig.getLinkisDataSourceName());
+        targetDataSourceRequest.setLinkisDataSourceType(targetConfig.getLinkisDataSourceType());
+        targetDataSourceRequest.setLinkisDataSourceVersionId(targetConfig.getLinkisDataSourceVersionId());
 
         dataSourceRequests.add(sourceDataSourceRequest);
         dataSourceRequests.add(targetDataSourceRequest);
@@ -421,4 +576,12 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
 
         return ruleVariables;
     }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, SQLException.class, UnExpectedRequestException.class})
+    public GeneralResponse<RuleResponse> addMultiSourceRuleForUpload(AddMultiSourceRuleRequest request,
+        boolean check) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        return addMultiSourceRuleReal(request, check);
+    }
+
 }

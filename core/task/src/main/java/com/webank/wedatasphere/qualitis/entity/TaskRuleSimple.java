@@ -18,9 +18,12 @@ package com.webank.wedatasphere.qualitis.entity;
 
 import com.webank.wedatasphere.qualitis.bean.TaskRule;
 import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
-import com.webank.wedatasphere.qualitis.bean.TaskRule;
-import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
 
+import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.FileOutputNameEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,20 +35,29 @@ import java.util.Objects;
 @Entity
 @Table(name = "qualitis_application_task_rule_simple")
 public class TaskRuleSimple {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "rule_name", length = 200)
+    @Column(name = "rule_name", length = 170)
     private String ruleName;
+    @Column(name = "cn_name", length = 170)
+    private String cnName;
+    @Column(name = "template_name", length = 200)
+    private String templateName;
+    @Column(name = "rule_detail", length = 340)
+    private String ruleDetail;
     @Column(name = "rule_id")
     private Long ruleId;
-    @Column(name = "mid_table_name", length = 200)
+    @Column(name = "rule_group_name")
+    private String ruleGroupName;
+    @Column(name = "mid_table_name", length = 300)
     private String midTableName;
     @Column(name = "project_id")
     private Long projectId;
     @Column(name = "project_name", length = 170)
     private String projectName;
+    @Column(name = "project_cn_name", length = 170)
+    private String projectCnName;
     @Column(name = "project_creator", length = 50)
     private String projectCreator;
     @Column(name = "application_id", length = 40)
@@ -70,16 +82,23 @@ public class TaskRuleSimple {
     @Column(name = "rule_type")
     private Integer ruleType;
 
+    @Column(name = "delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
     public TaskRuleSimple() {
     }
 
     public TaskRuleSimple(TaskRule rule, Task task) {
         this.ruleName = rule.getRuleName();
+        this.cnName = rule.getCnName();
         this.ruleId = rule.getRuleId();
+        this.ruleGroupName = rule.getRuleGroupName();
+        this.templateName = rule.getTemplateName();
         this.task = task;
         this.midTableName = rule.getMidTableName();
         this.projectId = rule.getProjectId();
         this.projectName = rule.getProjectName();
+        this.projectCnName = rule.getProjectCnName();
         this.projectCreator = rule.getProjectCreator();
         this.applicationId = task.getApplication().getId();
         this.executeUser = task.getApplication().getExecuteUser();
@@ -89,42 +108,99 @@ public class TaskRuleSimple {
         for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
             this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
         }
+        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
     }
 
     public TaskRuleSimple(TaskRule rule, Task task, Boolean parent, TaskRuleSimple parentRuleSimple) {
+        this.ruleGroupName = rule.getRuleGroupName();
+        this.templateName = rule.getTemplateName();
+        this.ruleDetail = rule.getRuleDetail();
+        this.ruleName = rule.getRuleName();
+        this.cnName = rule.getCnName();
+        this.ruleId = rule.getRuleId();
+        this.applicationId = task.getApplication().getId();
+        this.submitTime = task.getApplication().getSubmitTime();
+        this.executeUser = task.getApplication().getExecuteUser();
+
+        this.projectId = rule.getProjectId();
+        this.projectName = rule.getProjectName();
+        this.projectCnName = rule.getProjectCnName();
+        this.projectCreator = rule.getProjectCreator();
+
+        this.taskRuleAlarmConfigList = new ArrayList<>();
+
         if (parent) {
-            this.ruleName = rule.getRuleName();
-            this.ruleId = rule.getRuleId();
             this.task = task;
-            this.midTableName = rule.getMidTableName().split(",")[0];
-            this.projectId = rule.getProjectId();
-            this.projectName = rule.getProjectName();
-            this.projectCreator = rule.getProjectCreator();
-            this.applicationId = task.getApplication().getId();
-            this.executeUser = task.getApplication().getExecuteUser();
-            this.submitTime = task.getApplication().getSubmitTime();
-            this.taskRuleAlarmConfigList = new ArrayList<>();
             this.ruleType = rule.getRuleType();
+            this.midTableName = rule.getMidTableName();
             for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
                 this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
             }
         } else {
-            this.ruleName = rule.getRuleName();
-            this.ruleId = rule.getChildRuleId();
             this.ruleType = rule.getChildRuleType();
-            this.midTableName = rule.getMidTableName().split(",")[1];
-            this.submitTime = task.getApplication().getSubmitTime();
-            this.taskRuleAlarmConfigList = new ArrayList<>();
+            this.parentRuleSimple = parentRuleSimple;
             for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getChildTaskRuleAlarmConfigsBeans()) {
                 this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
             }
-            this.parentRuleSimple = parentRuleSimple;
-            this.projectId = rule.getProjectId();
-            this.projectName = rule.getProjectName();
-            this.projectCreator = rule.getProjectCreator();
-            this.applicationId = task.getApplication().getId();
-            this.executeUser = task.getApplication().getExecuteUser();
         }
+        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
+    }
+
+    public TaskRuleSimple(Rule rule, Task task) {
+        this.ruleName = rule.getName();
+        this.cnName = rule.getCnName();
+        this.ruleDetail = rule.getDetail();
+        this.templateName = rule.getTemplate().getName();
+
+        this.task = task;
+        this.ruleId = rule.getId();
+        this.projectId = rule.getProject().getId();
+        this.projectName = rule.getProject().getName();
+        this.projectCnName = rule.getProject().getCnName();
+        this.applicationId = task.getApplication().getId();
+        this.projectCreator = rule.getProject().getCreateUser();
+        this.executeUser = task.getApplication().getExecuteUser();
+        this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
+        this.submitTime = task.getApplication().getSubmitTime();
+        this.ruleType = rule.getRuleType();
+    }
+
+    public TaskRuleSimple(Rule rule, Task task, String localeStr) {
+        this.ruleName = rule.getName();
+        this.cnName = rule.getCnName();
+        this.ruleDetail = rule.getDetail();
+        this.templateName = rule.getTemplate().getName();
+
+        this.task = task;
+        this.ruleId = rule.getId();
+        this.projectId = rule.getProject().getId();
+        this.projectName = rule.getProject().getName();
+        this.projectCnName = rule.getProject().getCnName();
+        this.applicationId = task.getApplication().getId();
+        this.projectCreator = rule.getProject().getCreateUser();
+        this.executeUser = task.getApplication().getExecuteUser();
+        this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
+        this.submitTime = task.getApplication().getSubmitTime();
+        this.taskRuleAlarmConfigList = new ArrayList<>();
+        for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
+            TaskRuleAlarmConfig taskRuleAlarmConfig = new TaskRuleAlarmConfig();
+            taskRuleAlarmConfig.setOutputName(FileOutputNameEnum.getFileOutputName(alarmConfig.getFileOutputName(), localeStr));
+            if (alarmConfig.getFileOutputUnit() != null) {
+                taskRuleAlarmConfig.setOutputUnit(FileOutputUnitEnum.fileOutputUnit(alarmConfig.getFileOutputUnit()));
+            }
+            taskRuleAlarmConfig.setCheckTemplate(alarmConfig.getCheckTemplate());
+            taskRuleAlarmConfig.setCompareType(alarmConfig.getCompareType());
+            taskRuleAlarmConfig.setThreshold(alarmConfig.getThreshold());
+            taskRuleAlarmConfig.setTaskRuleSimple(this);
+            taskRuleAlarmConfig.setRuleMetric(alarmConfig.getRuleMetric());
+            taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_CHECK.getCode());
+            taskRuleAlarmConfig.setUploadAbnormalValue(alarmConfig.getUploadAbnormalValue());
+            taskRuleAlarmConfig.setUploadRuleMetricValue(alarmConfig.getUploadRuleMetricValue());
+            taskRuleAlarmConfig.setDeleteFailCheckResult(alarmConfig.getDeleteFailCheckResult());
+
+            this.taskRuleAlarmConfigList.add(taskRuleAlarmConfig);
+        }
+        this.ruleType = rule.getRuleType();
     }
 
     public Long getId() {
@@ -143,12 +219,44 @@ public class TaskRuleSimple {
         this.ruleName = ruleName;
     }
 
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
+    }
+
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
+    }
+
     public Long getRuleId() {
         return ruleId;
     }
 
     public void setRuleId(Long ruleId) {
         this.ruleId = ruleId;
+    }
+
+    public String getRuleGroupName() {
+        return ruleGroupName;
+    }
+
+    public void setRuleGroupName(String ruleGroupName) {
+        this.ruleGroupName = ruleGroupName;
     }
 
     public String getMidTableName() {
@@ -173,6 +281,14 @@ public class TaskRuleSimple {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getProjectCnName() {
+        return projectCnName;
+    }
+
+    public void setProjectCnName(String projectCnName) {
+        this.projectCnName = projectCnName;
     }
 
     public Task getTask() {
@@ -210,7 +326,6 @@ public class TaskRuleSimple {
     public List<TaskRuleAlarmConfig> getTaskRuleAlarmConfigList() {
         return taskRuleAlarmConfigList;
     }
-
     public void setTaskRuleAlarmConfigList(List<TaskRuleAlarmConfig> taskRuleAlarmConfigList) {
         this.taskRuleAlarmConfigList = taskRuleAlarmConfigList;
     }
@@ -245,6 +360,14 @@ public class TaskRuleSimple {
 
     public void setRuleType(Integer ruleType) {
         this.ruleType = ruleType;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
     }
 
     @Override

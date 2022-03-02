@@ -26,6 +26,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -52,12 +53,25 @@ public class MultiDataSourceJoinConfigRequest {
         String[] leftColumnNames = ruleDataSourceMapping.getLeftColumnNames().split(",");
         String[] rightColumnNames = ruleDataSourceMapping.getRightColumnNames().split(",");
 
-        for (String tmp : leftColumnNames) {
-            this.left.add(new MultiDataSourceJoinColumnRequest(tmp));
+        if (StringUtils.isNotBlank(ruleDataSourceMapping.getLeftColumnTypes()) && StringUtils.isNotBlank(ruleDataSourceMapping.getRightColumnTypes())) {
+            String[] leftColumnTypes = ruleDataSourceMapping.getLeftColumnTypes().split("\\|");
+            String[] rightColumnTypes = ruleDataSourceMapping.getRightColumnTypes().split("\\|");
+
+            for (int i = 0; i < leftColumnNames.length && i < leftColumnTypes.length; i ++) {
+                this.left.add(new MultiDataSourceJoinColumnRequest(leftColumnNames[i], leftColumnTypes[i]));
+            }
+            for (int j = 0; j < rightColumnNames.length && j < rightColumnTypes.length; j ++) {
+                this.right.add(new MultiDataSourceJoinColumnRequest(rightColumnNames[j], rightColumnTypes[j]));
+            }
+        } else {
+            for (int i = 0; i < leftColumnNames.length; i ++) {
+                this.left.add(new MultiDataSourceJoinColumnRequest(leftColumnNames[i], ""));
+            }
+            for (int j = 0; j < rightColumnNames.length; j ++) {
+                this.right.add(new MultiDataSourceJoinColumnRequest(rightColumnNames[j], ""));
+            }
         }
-        for (String tmp : rightColumnNames) {
-            this.right.add(new MultiDataSourceJoinColumnRequest(tmp));
-        }
+
     }
 
     public String getLeftStatement() {
@@ -109,17 +123,17 @@ public class MultiDataSourceJoinConfigRequest {
         Boolean rightColumnChooseFlag = false;
         for (MultiDataSourceJoinColumnRequest multiDataSourceJoinColumnRequest : request.getLeft()) {
             MultiDataSourceJoinColumnRequest.checkRequest(multiDataSourceJoinColumnRequest);
-            if (multiDataSourceJoinColumnRequest.getColumnName().contains("tmp1")) {
+            if (multiDataSourceJoinColumnRequest.getColumnName().startsWith("tmp1.")) {
                 leftColumnChooseFlag = true;
-            } else if (multiDataSourceJoinColumnRequest.getColumnName().contains("tmp2")) {
+            } else if (multiDataSourceJoinColumnRequest.getColumnName().startsWith("tmp2.")) {
                 rightColumnChooseFlag = true;
             }
         }
         for (MultiDataSourceJoinColumnRequest multiDataSourceJoinColumnRequest : request.getRight()) {
             MultiDataSourceJoinColumnRequest.checkRequest(multiDataSourceJoinColumnRequest);
-            if (multiDataSourceJoinColumnRequest.getColumnName().contains("tmp1")) {
+            if (multiDataSourceJoinColumnRequest.getColumnName().startsWith("tmp1.")) {
                 leftColumnChooseFlag = true;
-            } else if (multiDataSourceJoinColumnRequest.getColumnName().contains("tmp2")) {
+            } else if (multiDataSourceJoinColumnRequest.getColumnName().startsWith("tmp2.")) {
                 rightColumnChooseFlag = true;
             }
         }

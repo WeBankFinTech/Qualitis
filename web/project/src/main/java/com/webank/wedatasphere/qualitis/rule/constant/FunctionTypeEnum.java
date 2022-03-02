@@ -20,7 +20,7 @@ package com.webank.wedatasphere.qualitis.rule.constant;
  * @author howeye
  */
 
-public enum  FunctionTypeEnum {
+public enum FunctionTypeEnum {
     /**
      * Function Enum
      */

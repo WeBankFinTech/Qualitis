@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.metadata.request;
  * @author howeye
  */
 public class GetTableByUserAndDbRequest {
-
     private String loginUser;
     private Integer startIndex;
     private Integer pageSize;

@@ -82,12 +82,12 @@ public class ProjectLabel {
         if (this == o) {return true;}
         if (o == null || getClass() != o.getClass()) {return false;}
         ProjectLabel that = (ProjectLabel) o;
-        return Objects.equals(id, that.id);
+        return Objects.equals(labelName, that.labelName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(labelName);
     }
 
     @Override

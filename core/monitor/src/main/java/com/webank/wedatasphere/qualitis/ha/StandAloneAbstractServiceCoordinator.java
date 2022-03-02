@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "ha.enable", havingValue = "false")
 public class StandAloneAbstractServiceCoordinator extends AbstractServiceCoordinator {
-
     @Override
     public void init() {
         // No need to init

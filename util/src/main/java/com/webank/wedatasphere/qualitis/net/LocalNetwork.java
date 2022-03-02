@@ -23,6 +23,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author howeye
@@ -30,6 +32,7 @@ import java.util.List;
 public class LocalNetwork {
 
     private static final String WINDOWS_PREFIX = "win";
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalNetwork.class);
 
     private LocalNetwork() {
         // Default Contructor
@@ -67,7 +70,7 @@ public class LocalNetwork {
                 }
                 input.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error("LocalNetwor:getLocalIpByFirstNetCard exception.", e.getMessage());
             }
 
             if (processList.size() == 1) {

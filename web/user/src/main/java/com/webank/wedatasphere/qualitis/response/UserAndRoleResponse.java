@@ -16,18 +16,28 @@
 
 package com.webank.wedatasphere.qualitis.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
  * @author howeye
  */
 public class UserAndRoleResponse {
-
+    @JsonProperty("login_random")
+    private Integer loginRandom;
     private List<String> roles;
     private String username;
 
     public UserAndRoleResponse() {
         // Default Constructor
+    }
+
+    public Integer getLoginRandom() {
+        return loginRandom;
+    }
+
+    public void setLoginRandom(Integer loginRandom) {
+        this.loginRandom = loginRandom;
     }
 
     public List<String> getRoles() {

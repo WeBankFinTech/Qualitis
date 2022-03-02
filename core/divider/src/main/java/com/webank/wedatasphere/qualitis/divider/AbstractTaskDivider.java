@@ -18,9 +18,9 @@ package com.webank.wedatasphere.qualitis.divider;
 
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.exception.ArgumentException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
-import com.webank.wedatasphere.qualitis.exception.ArgumentException;
 
 import java.util.Date;
 import java.util.List;
@@ -29,20 +29,21 @@ import java.util.List;
  * @author howeye
  */
 public abstract class AbstractTaskDivider {
-
-
     /**
-     * Divided rules into multi-task
+     * Divided rules into multi-task.
      * @param rules
      * @param applicationId
      * @param createTime
      * @param partition
      * @param date
      * @param database
+     * @param user
      * @param threshold
      * @return
      * @throws ArgumentException
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
      */
-    public abstract List<DataQualityTask> divide(List<Rule> rules, String applicationId, String createTime, String partition, Date date, String database, Integer threshold) throws ArgumentException;
-
+    public abstract List<DataQualityTask> divide(List<Rule> rules, String applicationId, String createTime, String partition, Date date,
+        String database, String user, Integer threshold) throws ArgumentException, UnExpectedRequestException, MetaDataAcquireFailedException;
 }

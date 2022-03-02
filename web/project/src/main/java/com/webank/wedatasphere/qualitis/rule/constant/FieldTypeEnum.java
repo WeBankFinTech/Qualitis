@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * @author howeye
  */
-public enum  FieldTypeEnum {
+public enum FieldTypeEnum {
     /**
      * 数值类型
      */

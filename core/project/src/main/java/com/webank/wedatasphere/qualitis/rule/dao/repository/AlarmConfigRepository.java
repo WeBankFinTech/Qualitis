@@ -31,4 +31,6 @@ public interface AlarmConfigRepository extends JpaRepository<AlarmConfig, Long> 
      * @param rule
      */
     void deleteByRule(Rule rule);
+
+
 }

@@ -47,7 +47,8 @@ public class TemplateMidTableUtil {
          if (!templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD.getCode()) &&
                 !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.TABLE.getCode()) &&
                 !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.DATABASE.getCode()) &&
-                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_CONCAT.getCode())) {
+                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_CONCAT.getCode()) &&
+                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_REPLACE_NULL_CONCAT.getCode())) {
             return true;
         }
         return false;

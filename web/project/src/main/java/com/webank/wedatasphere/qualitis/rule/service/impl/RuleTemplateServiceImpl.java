@@ -16,43 +16,72 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
+import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
+import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.UserRole;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RoleDefaultTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateLevelEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateActionTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateDataSourceTypeDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateDepartmentDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateUserDao;
+import com.webank.wedatasphere.qualitis.rule.dao.UserRuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateDepartment;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateUser;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
+import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateMidTableInputMetaRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateOutputMetaRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateStatisticsInputMetaRequest;
+import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMidTableInputMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateOutputMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateStatisticsInputMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.dao.UserRuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
-import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
-import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
+import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,18 +89,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 /**
  * @author howeye
  */
 @Service
 public class RuleTemplateServiceImpl implements RuleTemplateService {
-
+    @Autowired
+    private RuleMetricDao ruleMetricDao;
     @Autowired
     private RuleTemplateDao ruleTemplateDao;
 
@@ -99,6 +123,27 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     @Autowired
     private RuleService ruleService;
 
+    @Autowired
+    private DepartmentDao departmentDao;
+
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private UserRoleDao userRoleDao;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
+    private TemplateDepartmentDao templateDepartmentDao;
+
+    @Autowired
+    private TemplateDataSourceTypeDao templateDataSourceTypeDao;
+
+    @Autowired
+    private TemplateUserDao templateUserDao;
+
     private HttpServletRequest httpServletRequest;
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleTemplateServiceImpl.class);
 
@@ -122,7 +167,11 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         response.setTotal(total);
         List<RuleTemplateResponse> responseList = new ArrayList<>();
         for (Template template : templates) {
-            responseList.add(new RuleTemplateResponse(template));
+            RuleTemplateResponse ruleTemplateResponse = new RuleTemplateResponse(template);
+            List<Integer> types = templateDataSourceTypeDao.findByTemplate(template).stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(
+                Collectors.toList());
+            ruleTemplateResponse.setDatasourceType(types);
+            responseList.add(ruleTemplateResponse);
         }
         response.setData(responseList);
 
@@ -131,19 +180,123 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     }
 
     @Override
-    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(PageRequest request) throws UnExpectedRequestException {
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public Template addCustomTemplate(AddCustomRuleRequest request) {
+        Template newTemplate = new Template();
+        newTemplate.setName(request.getProjectId() + "_" + request.getRuleName() + "_template");
+        newTemplate.setSaveMidTable(request.getSaveMidTable());
+        String sqlCheckArea = request.getSqlCheckArea();
+        if (StringUtils.isNotBlank(sqlCheckArea)) {
+            newTemplate.setMidTableAction(sqlCheckArea);
+            newTemplate.setTemplateType(RuleTemplateTypeEnum.CUSTOM.getCode());
+            newTemplate.setActionType(TemplateActionTypeEnum.SQL.getCode());
+            Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
+            LOGGER.info("Succeed to save custom template, template_id: {}", savedTemplate.getId());
+            // Generate statistics input meta by rule metric
+            Set<String> ruleMetricCodeSet = request.getAlarmVariable().stream().map(CustomAlarmConfigRequest::getRuleMetricEnCode).collect(Collectors.toSet());
+            Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>(ruleMetricCodeSet.size());
+            Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>(ruleMetricCodeSet.size());
+            for (String enCode : ruleMetricCodeSet) {
+                // xx_xx_xx_encode, index is 3.
+                RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
+                templateStatisticsInputMetas.addAll(templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
+                    ruleMetricInDb.getName(), FunctionTypeEnum.MAX_FUNCTION.getCode(), ruleMetricInDb.getName(), true, savedTemplate));
+                templateOutputMetas.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(ruleMetricInDb.getName(),
+                    FunctionTypeEnum.MAX_FUNCTION.getCode(), true, savedTemplate));
+            }
+            savedTemplate.setStatisticAction(templateStatisticsInputMetas);
+            savedTemplate.setTemplateOutputMetas(templateOutputMetas);
+            savedTemplate.setTemplateOutputMetas(templateOutputMetas);
+            return savedTemplate;
+        } else {
+            newTemplate.setMidTableAction(getMidTableAction(request));
+            newTemplate.setTemplateType(RuleTemplateTypeEnum.CUSTOM.getCode());
+            newTemplate.setActionType(TemplateActionTypeEnum.SQL.getCode());
+            Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
+            LOGGER.info("Succeed to save custom template, template_id: {}", savedTemplate.getId());
+
+            Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
+                request.getOutputName(), request.getFunctionType(), request.getFunctionContent(), request.getSaveMidTable(), savedTemplate);
+            savedTemplate.setStatisticAction(templateStatisticsInputMetas);
+
+            Set<TemplateOutputMeta> templateOutputMetas = templateOutputMetaService.getAndSaveTemplateOutputMeta(request.getOutputName(),
+                request.getFunctionType(), request.getSaveMidTable(), savedTemplate);
+            savedTemplate.setTemplateOutputMetas(templateOutputMetas);
+            return savedTemplate;
+        }
+    }
+
+    @Override
+    public void deleteCustomTemplate(Template template) throws UnExpectedRequestException {
+        if (template == null) {
+            throw new UnExpectedRequestException("Template {&DOES_NOT_EXIST}");
+        }
+        if (!template.getTemplateType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())) {
+            throw new UnExpectedRequestException("Template(id:[" + template.getId() + "]) {&IS_NOT_A_CUSTOM_TEMPLATE}");
+        }
+        List<TemplateDataSourceType> templateDataSourceTypes = templateDataSourceTypeDao.findByTemplate(template);
+        for (TemplateDataSourceType templateDataSourceType : templateDataSourceTypes) {
+            templateDataSourceTypeDao.delete(templateDataSourceType);
+        }
+        ruleTemplateDao.deleteTemplate(template);
+    }
+
+    @Override
+    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException {
         // Check Arguments
-        PageRequest.checkRequest(request);
+        TemplatePageRequest.checkRequest(request);
 
         int size = request.getSize();
         int page = request.getPage();
-        List<Template> templates = ruleTemplateDao.findAllDefaultTemplate(page, size);
-        long total = ruleTemplateDao.countAllDefaultTemplate();
+        String dataSourceType = request.getDataSourceType();
+        Integer dataSourceTypeCode = TemplateDataSourceTypeEnum.getCode(dataSourceType);
+
+        List<User> users = new ArrayList<>();
+        List<Template> templates;
+        List<Department> departments = new ArrayList<>();
+        long total = 0;
+        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+        Integer roleType = roleService.getRoleType(userRoles);
+        if (roleType.equals(RoleDefaultTypeEnum.ADMIN.getCode())) {
+            templates = ruleTemplateDao.findAllDefaultTemplate(page, size);
+            total = ruleTemplateDao.countAllDefaultTemplate();
+
+        } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())) {
+            for (UserRole userRole : userRoles) {
+                Department department = userRole.getRole().getDepartment();
+                if (department != null) {
+                    departments.add(department);
+                    List<User> userList = userDao.findByDepartment(department);
+                    users.addAll(userList);
+                }
+            }
+
+            templates = ruleTemplateDao.findTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode, page, size);
+            total = ruleTemplateDao.countTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode);
+
+        } else {
+            Department department = userInDb.getDepartment();
+            if (department != null) {
+                departments.add(department);
+            }
+            users.add(userInDb);
+            templates = ruleTemplateDao.findTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode, page, size);
+            total = ruleTemplateDao.countTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode);
+        }
         GetAllResponse<RuleTemplateResponse> response = new GetAllResponse<>();
         response.setTotal(total);
         List<RuleTemplateResponse> responseList = new ArrayList<>();
         for (Template template : templates) {
-            responseList.add(new RuleTemplateResponse(template));
+            RuleTemplateResponse ruleTemplateResponse = new RuleTemplateResponse(template);
+            List<Integer> types = templateDataSourceTypeDao.findByTemplate(template).stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(
+                Collectors.toList());
+            ruleTemplateResponse.setDatasourceType(types);
+            responseList.add(ruleTemplateResponse);
         }
         response.setData(responseList);
 
@@ -162,8 +315,9 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         // Find input meta data by template
         List<TemplateMidTableInputMeta> templateMidTableInputMetas = templateMidTableInputMetaDao.findByRuleTemplate(templateInDb);
         List<TemplateOutputMeta> templateOutputMetas = templateOutputMetaDao.findByRuleTemplate(templateInDb);
-
-        TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateMidTableInputMetas, templateOutputMetas);
+        List<Integer> types = templateDataSourceTypeDao.findByTemplate(templateInDb).stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(
+            Collectors.toList());
+        TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateMidTableInputMetas, templateOutputMetas, types);
 
         LOGGER.info("Succeed to get rule_template. rule_template_id: {}", ruleTemplateId);
         return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
@@ -186,52 +340,14 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     public Template checkRuleTemplate(Long ruleTemplateId) throws UnExpectedRequestException {
         Template template =  ruleTemplateDao.findById(ruleTemplateId);
         if (template == null) {
-            throw new UnExpectedRequestException("rule_template_id {&DOES_NOT_EXIST}");
+            throw new UnExpectedRequestException("Rule template {&DOES_NOT_EXIST}");
         }
         return template;
     }
 
-
-    @Override
-    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public Template addCustomTemplate(AddCustomRuleRequest request) {
-        Template newTemplate = new Template();
-        newTemplate.setName(request.getProjectId() + "_" + request.getRuleName() + "_template");
-        newTemplate.setDatasourceType(TemplateDataSourceTypeEnum.HIVE.getCode());
-        newTemplate.setSaveMidTable(request.getSaveMidTable());
-        newTemplate.setMidTableAction(getMidTableAction(request));
-        newTemplate.setTemplateType(RuleTemplateTypeEnum.CUSTOM.getCode());
-        newTemplate.setActionType(TemplateActionTypeEnum.SQL.getCode());
-        Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
-        LOGGER.info("Succeed to save custom template, template_id: {}", savedTemplate.getId());
-
-        Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
-                request.getOutputName(), request.getFunctionType(), request.getFunctionContent(), request.getSaveMidTable(), savedTemplate);
-        savedTemplate.setStatisticAction(templateStatisticsInputMetas);
-
-        Set<TemplateOutputMeta> templateOutputMetas = templateOutputMetaService.getAndSaveTemplateOutputMeta(request.getOutputName(),
-                request.getFunctionType(), request.getSaveMidTable(), savedTemplate);
-        savedTemplate.setTemplateOutputMetas(templateOutputMetas);
-
-        return savedTemplate;
-    }
-
     private String getMidTableAction(AddCustomRuleRequest request) {
         StringBuilder sb = new StringBuilder("SELECT ");
-        if (request.getFunctionContent().equals("*")) {
-            sb.append(request.getFunctionContent());
-        } else {
-            sb.append(request.getFunctionContent()).append(" AS ").append(getFunctionAlias(request.getFunctionType()));
-        }
-//
-//        if (request.getSaveMidTable()) {
-//        } else {
-//            sb.append(FunctionTypeEnum.getByCode(request.getFunctionType()).getFunction())
-//                    .append("(")
-//                    .append(request.getFunctionContent())
-//                    .append(") AS ")
-//                    .append(getFunctionAlias(request.getFunctionType()));
-//        }
+        sb.append(request.getFunctionContent());
         sb.append(" FROM ").append(request.getFromContent()).append(" WHERE ").append("${filter}");
         // Check SQL grammar
         String sql = sb.toString();
@@ -241,18 +357,6 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     @Override
     public String getFunctionAlias(Integer code) {
         return "my" + FunctionTypeEnum.getByCode(code).getFunction();
-    }
-
-    @Override
-    public void deleteCustomTemplate(Template template) throws UnExpectedRequestException {
-        if (template == null) {
-            throw new UnExpectedRequestException("Template {&DOES_NOT_EXIST}");
-        }
-        if (!template.getTemplateType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())) {
-            throw new UnExpectedRequestException("Template(id:[" + template.getId() + "]) {&IS_NOT_A_CUSTOM_TEMPLATE}");
-        }
-
-        ruleTemplateDao.deleteTemplate(template);
     }
 
     @Override
@@ -275,20 +379,63 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
      * @return
      */
     @Override
-    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(
-        PageRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException {
         // Check Arguments
-        PageRequest.checkRequest(request);
+        TemplatePageRequest.checkRequest(request);
 
         int size = request.getSize();
         int page = request.getPage();
-        List<Template> templates = ruleTemplateDao.findAllMultiTemplate(page, size);
-        long total = ruleTemplateDao.countAllMultiTemplate();
+        String dataSourceType = request.getDataSourceType();
+        Integer dataSourceTypeCode = TemplateDataSourceTypeEnum.getCode(dataSourceType);
+
+        List<User> users = new ArrayList<>(1);
+        List<Department> departments = new ArrayList<>(1);
+
+        List<Template> templates;
+        long total = 0;
+        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+        Integer roleType = roleService.getRoleType(userRoles);
+        if (roleType.equals(RoleDefaultTypeEnum.ADMIN.getCode())) {
+            templates = ruleTemplateDao.findAllMultiTemplate(dataSourceTypeCode, page, size);
+            total = ruleTemplateDao.countAllMultiTemplate(dataSourceTypeCode);
+
+        } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())) {
+            for (UserRole userRole : userRoles) {
+                Department department = userRole.getRole().getDepartment();
+                if (department != null) {
+                    departments.add(department);
+                    List<User> userList = userDao.findByDepartment(department);
+                    users.addAll(userList);
+                }
+            }
+
+            templates = ruleTemplateDao.findTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode, page, size);
+            total = ruleTemplateDao.countTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode);
+
+        } else {
+            Department department = userInDb.getDepartment();
+            if (department != null) {
+                departments.add(department);
+            }
+            users.add(userInDb);
+            templates = ruleTemplateDao.findTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode, page, size);
+            total = ruleTemplateDao.countTemplates(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode(), RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(),
+                departments.size() == 0 ? null : departments, users.size() == 0 ? null : users, dataSourceTypeCode);
+        }
+
         GetAllResponse<RuleTemplateResponse> response = new GetAllResponse<>();
         response.setTotal(total);
         List<RuleTemplateResponse> responseList = new ArrayList<>();
         for (Template template : templates) {
-            responseList.add(new RuleTemplateResponse(template));
+            RuleTemplateResponse ruleTemplateResponse = new RuleTemplateResponse(template);
+            List<Integer> types = templateDataSourceTypeDao.findByTemplate(template).stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(
+                Collectors.toList());
+            ruleTemplateResponse.setDatasourceType(types);
+            responseList.add(ruleTemplateResponse);
         }
         response.setData(responseList);
 
@@ -303,8 +450,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
      * @throws UnExpectedRequestException
      */
     @Override
-    public GeneralResponse<TemplateMetaResponse> getRuleMultiTemplateMeta(Long ruleTemplateId)
-        throws UnExpectedRequestException {
+    public GeneralResponse<TemplateMetaResponse> getRuleMultiTemplateMeta(Long ruleTemplateId) throws UnExpectedRequestException {
         // Find rule template by rule template id
         Template templateInDb = ruleTemplateDao.findById(ruleTemplateId);
         if (null == templateInDb) {
@@ -317,10 +463,11 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         if (templateInDb.getChildTemplate() != null) {
             templateOutputMetas.addAll(templateOutputMetaDao.findByRuleTemplate(templateInDb.getChildTemplate()));
         }
+        List<Integer> types = templateDataSourceTypeDao.findByTemplate(templateInDb).stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(
+            Collectors.toList());
+        TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateOutputMetas, types);
 
-        TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateOutputMetas);
-
-        LOGGER.info("Succeed to get rule_template. rule_template_id: {}", ruleTemplateId);
+        LOGGER.info("Succeed to get rule_template, rule template id: {}", ruleTemplateId);
         return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
     }
 
@@ -340,16 +487,59 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         newTemplate.setTableNum(request.getTableNum());
         newTemplate.setFieldNum(request.getFieldNum());
         newTemplate.setActionType(request.getActionType());
-        newTemplate.setDatasourceType(request.getDatasourceType());
         newTemplate.setMidTableAction(request.getMidTableAction());
         newTemplate.setSaveMidTable(request.getSaveMidTable());
         newTemplate.setShowSql(request.getMidTableAction());
         newTemplate.setTemplateType(request.getTemplateType());
+        newTemplate.setImportExportName(UuidGenerator.generate());
+        // Save create user info.
+        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        newTemplate.setCreateUser(userInDb);
 
         Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
+        for (Integer type : request.getDatasourceType()) {
+            TemplateDataSourceType templateDataSourceType = new TemplateDataSourceType(type, savedTemplate);
+            templateDataSourceTypeDao.save(templateDataSourceType);
+        }
         LOGGER.info("Succeed to save rule template, template_id: {}", savedTemplate.getId());
+        // Determine the template level and save association table.
+        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+        Integer roleType = roleService.getRoleType(userRoles);
+        // Save department template
+        if (roleType.equals(RoleDefaultTypeEnum.ADMIN.getCode())) {
+            savedTemplate.setLevel(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode());
+        } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())){
+            savedTemplate.setLevel(RuleTemplateLevelEnum.DEPARTMENT_TEMPLATE.getCode());
+            saveTemplateDepartment(ruleTemplateDao.saveTemplate(savedTemplate), userRoles);
+        } else {
+            savedTemplate.setLevel(RuleTemplateLevelEnum.PERSONAL_TEMPLATE.getCode());
+            saveTemplateUser(userInDb, ruleTemplateDao.saveTemplate(savedTemplate));
+        }
+
+        // Save template info.
         createAndSaveTemplateInfo(savedTemplate, request);
         return new RuleTemplateResponse(savedTemplate);
+    }
+
+    private void saveTemplateDepartment(Template template, List<UserRole> userRoles) {
+        for (UserRole temp : userRoles) {
+            Department department = temp.getRole().getDepartment();
+            if (department != null) {
+                TemplateDepartment templateDepartment = new TemplateDepartment();
+                templateDepartment.setDepartment(department);
+                templateDepartment.setTemplate(template);
+                templateDepartmentDao.saveDepartmentTemplate(templateDepartment);
+                LOGGER.info("Succeed to save department template.");
+            }
+        }
+    }
+
+    private void saveTemplateUser(User user, Template template) {
+        TemplateUser templateUser = new TemplateUser();
+        templateUser.setUser(user);
+        templateUser.setTemplate(template);
+        templateUserDao.saveTemplateUser(templateUser);
+        LOGGER.info("Succeed to save user template.");
     }
 
     private void createAndSaveTemplateInfo(Template savedTemplate, AddRuleTemplateRequest request) {
@@ -408,43 +598,158 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
-        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException {
-        AddRuleTemplateRequest addRuleTemplateRequest = ModifyRuleTemplateRequest.checkRequest(request, "modifyDefaultRuleTemplateRequest");
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        AddRuleTemplateRequest addRuleTemplateRequest = ModifyRuleTemplateRequest.checkRequest(request);
         // Check template existence
         Template templateInDb = checkRuleTemplate(request.getTemplateId());
+        // Check user info.
+        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+        Integer roleType = roleService.getRoleType(userRoles);
+        if (roleType.equals(RoleDefaultTypeEnum.PROJECTOR.getCode())) {
+            LOGGER.info("The projector is going to modify template.");
+            if (templateInDb.getLevel().intValue() != RuleTemplateLevelEnum.PERSONAL_TEMPLATE.getCode()) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+            if (! userInDb.equals(templateInDb.getCreateUser())) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+        } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())){
+            LOGGER.info("The department admin is going to modify template.");
+            if (templateInDb.getLevel().intValue() == RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode()) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+            List<User> createUsers = new ArrayList<>();
+            for (UserRole userRole : userRoles) {
+                Department department = userRole.getRole().getDepartment();
+                if (department != null) {
+                    List<User> userList = userDao.findByDepartment(department);
+                    createUsers.addAll(userList);
+                }
+            }
+            if (! createUsers.contains(templateInDb.getCreateUser())) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+        } else {
+            LOGGER.info("The system admin is going to modify template.");
+        }
         // delete output meta
         templateOutputMetaService.deleteByTemplate(templateInDb);
         // delete mid_table input meta
         templateMidTableInputMetaService.deleteByTemplate(templateInDb);
         // delete statistics input meta
         templateStatisticsInputMetaService.deleteByTemplate(templateInDb);
+        // delete template type relationship
+        templateDataSourceTypeDao.deleteByTemplate(templateInDb);
         // Save template.
+        if (! templateInDb.getName().equals(request.getTemplateName())) {
+            checkTemplateName(request.getTemplateName());
+        }
+        templateInDb.setName(request.getTemplateName());
         templateInDb.setClusterNum(request.getClusterNum());
         templateInDb.setDbNum(request.getDbNum());
         templateInDb.setTableNum(request.getTableNum());
         templateInDb.setFieldNum(request.getFieldNum());
         templateInDb.setActionType(request.getActionType());
-        templateInDb.setDatasourceType(request.getDatasourceType());
+
         templateInDb.setMidTableAction(request.getMidTableAction());
         templateInDb.setSaveMidTable(request.getSaveMidTable());
         templateInDb.setShowSql(request.getMidTableAction());
         templateInDb.setTemplateType(request.getTemplateType());
-
+        templateInDb.setModifyUser(userInDb);
         Template savedTemplate = ruleTemplateDao.saveTemplate(templateInDb);
+        List<TemplateDataSourceType> templateDataSourceTypes = templateDataSourceTypeDao.findByTemplate(savedTemplate);
+        List<Integer> templateDataSourceTypeIntegers = templateDataSourceTypes.stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(Collectors.toList());
+        for (Integer type : request.getDatasourceType()) {
+            if (! templateDataSourceTypeIntegers.contains(type)) {
+                TemplateDataSourceType templateDataSourceType = new TemplateDataSourceType(type, savedTemplate);
+                templateDataSourceTypeDao.save(templateDataSourceType);
+            }
+
+        }
         LOGGER.info("Succeed to save rule template, template_id: {}", savedTemplate.getId());
-
-
+        // Save template info.
         createAndSaveTemplateInfo(savedTemplate, addRuleTemplateRequest);
         return new RuleTemplateResponse(savedTemplate);
     }
 
     @Override
-    public void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException {
+    public void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check template existence
         Template templateInDb = checkRuleTemplate(templateId);
+        // Check operator permission
+        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+        Integer roleType = roleService.getRoleType(userRoles);
+        if (roleType.equals(RoleDefaultTypeEnum.PROJECTOR.getCode())) {
+            LOGGER.info("The projector is going to delete template.");
+            if (templateInDb.getLevel().intValue() != RuleTemplateLevelEnum.PERSONAL_TEMPLATE.getCode()) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+            if (userInDb.getId() != (templateInDb.getCreateUser().getId())) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+        } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())){
+            LOGGER.info("The department admin is going to delete template.");
+            if (templateInDb.getLevel().intValue() == RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode()) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+            List<User> createUsers = new ArrayList<>();
+            for (UserRole userRole : userRoles) {
+                Department department = userRole.getRole().getDepartment();
+                if (department != null) {
+                    List<User> userList = userDao.findByDepartment(department);
+                    createUsers.addAll(userList);
+                }
+            }
+            boolean exist = false;
+            for (User user : createUsers) {
+                if (user.getId() == templateInDb.getCreateUser().getId()) {
+                    exist = true;
+                    break;
+                }
+            }
+            if (! exist) {
+                throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+            }
+        } else {
+            if (templateInDb.getLevel().equals(RuleTemplateLevelEnum.DEFAULT_TEMPLATE.getCode())) {
+                if (templateInDb.getCreateUser() == null || ! userInDb.getUserName().equals(templateInDb.getCreateUser().getUserName())) {
+                    throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
+                }
+            }
+            LOGGER.info("The system admin is going to delete template.");
+        }
+
         // Check rules of template
         ruleService.checkRuleOfTemplate(templateInDb);
+        // Delete 'Templatedepartment' or 'TemplateUser'
+        clearTemplateUser(templateInDb);
+
+        List<TemplateDataSourceType> templateDataSourceTypes = templateDataSourceTypeDao.findByTemplate(templateInDb);
+        for (TemplateDataSourceType templateDataSourceType : templateDataSourceTypes) {
+            templateDataSourceTypeDao.delete(templateDataSourceType);
+        }
+
         ruleTemplateDao.deleteTemplate(templateInDb);
+    }
+
+    @Override
+    public void deleteFileRuleTemplate(Long templateId) throws UnExpectedRequestException {
+        // Check template existence
+        Template templateInDb = checkRuleTemplate(templateId);
+        ruleTemplateDao.deleteTemplate(templateInDb);
+        List<TemplateDataSourceType> templateDataSourceTypes = templateDataSourceTypeDao.findByTemplate(templateInDb);
+        for (TemplateDataSourceType templateDataSourceType : templateDataSourceTypes) {
+            templateDataSourceTypeDao.delete(templateDataSourceType);
+        }
+    }
+
+    private void clearTemplateUser(Template templateInDb) {
+        TemplateUser templateUser = templateUserDao.findByTemplate(templateInDb);
+        if (templateUser != null) {
+            templateUserDao.delete(templateUser);
+        }
     }
 
     @Override
@@ -456,7 +761,8 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         response.setDbNum(templateInDb.getDbNum());
         response.setTableNum(templateInDb.getTableNum());
         response.setFieldNum(templateInDb.getFieldNum());
-        response.setDatasourceType(templateInDb.getDatasourceType());
+        List<TemplateDataSourceType> templateDataSourceTypes = templateDataSourceTypeDao.findByTemplate(templateInDb);
+        response.setDatasourceType(templateDataSourceTypes.stream().map(TemplateDataSourceType::getDataSourceTypeId).collect(Collectors.toList()));
         response.setActionType(templateInDb.getActionType());
         response.setMidTableAction(templateInDb.getMidTableAction());
         response.setSaveMidTable(templateInDb.getSaveMidTable());
@@ -489,4 +795,16 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         response.setTemplateStatisticsInputMetaResponses(statisticsInputMetaResponses);
         return response;
     }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class}, propagation = Propagation.REQUIRED)
+    public Template addFileTemplate(AddFileRuleRequest request) {
+        Template newTemplate = new Template();
+        newTemplate.setName(request.getProjectId() + "_" + request.getRuleName() + "_template");
+        newTemplate.setTemplateType(RuleTemplateTypeEnum.FILE_COUSTOM.getCode());
+        Template savedTemplate = ruleTemplateDao.saveTemplate(newTemplate);
+        LOGGER.info("Succeed to save file custom template, template_id: {}", savedTemplate.getId());
+        return savedTemplate;
+    }
+
 }

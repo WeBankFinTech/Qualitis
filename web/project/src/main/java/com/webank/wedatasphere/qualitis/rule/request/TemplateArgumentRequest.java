@@ -27,10 +27,10 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  */
 public class TemplateArgumentRequest {
 
-    @JsonProperty("argument_step")
-    private Integer argumentStep;
     @JsonProperty("argument_id")
     private Long argumentId;
+    @JsonProperty("argument_step")
+    private Integer argumentStep;
     @JsonProperty("argument_value")
     private String argumentValue;
     @JsonProperty("argument_cluster")
@@ -42,6 +42,12 @@ public class TemplateArgumentRequest {
 
     public TemplateArgumentRequest() {
         // Default Constructor
+    }
+
+    public TemplateArgumentRequest(Long argumentId, Integer argumentStep, String argumentValue) {
+        this.argumentId = argumentId;
+        this.argumentStep = argumentStep;
+        this.argumentValue = argumentValue;
     }
 
     public Integer getArgumentStep() {

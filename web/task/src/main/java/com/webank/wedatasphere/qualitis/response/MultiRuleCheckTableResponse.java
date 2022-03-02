@@ -26,6 +26,7 @@ import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.collections.CollectionUtils;
 
 /**
  * @author howeye
@@ -43,7 +44,7 @@ public class MultiRuleCheckTableResponse {
     public MultiRuleCheckTableResponse() {
     }
 
-    public MultiRuleCheckTableResponse(TaskRuleSimple taskRuleSimple, Map<Long, TaskResult> resultMap) {
+    public MultiRuleCheckTableResponse(TaskRuleSimple taskRuleSimple, Map<Long, List<TaskResult>> resultMap) {
         this.ruleName = taskRuleSimple.getRuleName();
         this.checkAlarmVariables = new ArrayList<>();
         this.result = new ArrayList<>();
@@ -58,15 +59,13 @@ public class MultiRuleCheckTableResponse {
                 this.checkAlarmVariables.add(checkAlarmVariable);
             }
         }
-
-        TaskResult taskResult = resultMap.get(taskRuleSimple.getRuleId());
-        this.result.add(new MultiRuleResultResponse(taskResult, 0));
-        this.saveTable.add(new MultiRuleSaveTableResponse(taskRuleSimple.getMidTableName(), 0));
-        if (taskRuleSimple.getChildRuleSimple() != null) {
-            TaskResult childTaskResult = resultMap.get(taskRuleSimple.getChildRuleSimple().getRuleId());
-            this.result.add(new MultiRuleResultResponse(childTaskResult, 1));
-            this.saveTable.add(new MultiRuleSaveTableResponse(taskRuleSimple.getChildRuleSimple().getMidTableName(), 1));
+        List<TaskResult> taskResults = resultMap.get(taskRuleSimple.getRuleId());
+        if (CollectionUtils.isNotEmpty(taskResults)) {
+            TaskResult taskResult = taskResults.iterator().next();
+            this.result.add(new MultiRuleResultResponse(taskResult, 0));
+            this.saveTable.add(new MultiRuleSaveTableResponse(taskRuleSimple.getMidTableName(), 0));
         }
+
     }
 
     public String getRuleName() {

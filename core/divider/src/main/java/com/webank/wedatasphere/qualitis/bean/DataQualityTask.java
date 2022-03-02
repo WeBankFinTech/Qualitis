@@ -30,13 +30,14 @@ import java.util.stream.Collectors;
  * @author howeye
  */
 public class DataQualityTask {
-
     private String applicationId;
     private Integer taskType;
     private List<RuleTaskDetail> ruleTaskDetails;
     private String createTime;
     private String partition;
     private Long taskId;
+    private String user;
+    private String startupParam;
 
     public DataQualityTask() {
     }
@@ -67,6 +68,14 @@ public class DataQualityTask {
         this.createTime = createTime;
         this.partition = partition;
         this.ruleTaskDetails = ruleTaskDetails;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public Long getTaskId() {
@@ -117,15 +126,24 @@ public class DataQualityTask {
         this.ruleTaskDetails = ruleTaskDetails;
     }
 
+    public String getStartupParam() {
+        return startupParam;
+    }
+
+    public void setStartupParam(String startupParam) {
+        this.startupParam = startupParam;
+    }
+
     @Override
     public String toString() {
         return "DataQualityTask{" +
-                "applicationId='" + applicationId + '\'' +
-                ", taskType=" + taskType +
-                ", ruleTaskDetails=" + ruleTaskDetails +
-                ", createTime='" + createTime + '\'' +
-                ", partition='" + partition + '\'' +
-                ", taskId='" + taskId + '\'' +
-                '}';
+            "applicationId='" + applicationId + '\'' +
+            ", taskType=" + taskType +
+            ", ruleTaskDetails=" + ruleTaskDetails +
+            ", createTime='" + createTime + '\'' +
+            ", partition='" + partition + '\'' +
+            ", taskId=" + taskId +
+            ", user='" + user + '\'' +
+            '}';
     }
 }

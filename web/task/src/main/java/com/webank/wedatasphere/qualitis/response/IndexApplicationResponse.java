@@ -21,9 +21,6 @@ import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 import org.springframework.beans.BeanUtils;
 
 import java.util.ArrayList;
@@ -39,8 +36,10 @@ public class IndexApplicationResponse {
 
   @JsonProperty("application_id")
   private String applicationId;
-  @JsonProperty("project_names")
-  private String projectNames;
+  @JsonProperty("project_name")
+  private String projectName;
+  @JsonProperty("task_group_name")
+  private String taskName;
   @JsonProperty("submit_time")
   private String submitTime;
   private Integer status;
@@ -52,7 +51,6 @@ public class IndexApplicationResponse {
   private Integer notPassTaskNum;
   @JsonProperty("total_task_num")
   private Integer totalTaskNum;
-
   private List<TaskResponse> task;
   @JsonProperty("exception_message")
   private String exceptionMessage;
@@ -64,14 +62,15 @@ public class IndexApplicationResponse {
     BeanUtils.copyProperties(application, this);
     this.applicationId = application.getId();
     this.task = new ArrayList<>();
-    Set<String> projects = new HashSet<>();
+    Set<String> projectGroupNames = new HashSet<>();
     for (Task tmpTask : tasks) {
       for (TaskRuleSimple taskRuleSimple : tmpTask.getTaskRuleSimples()) {
-        projects.add(taskRuleSimple.getProjectName());
+        this.projectName = taskRuleSimple.getProjectName();
+        this.taskName = taskRuleSimple.getRuleGroupName();
+        break;
       }
       this.task.add(new TaskResponse(tmpTask));
     }
-    this.projectNames = String.join(",", projects);
   }
 
   public String getApplicationId() {
@@ -82,12 +81,20 @@ public class IndexApplicationResponse {
     this.applicationId = applicationId;
   }
 
-  public String getProjectNames() {
-    return projectNames;
+  public String getProjectName() {
+    return projectName;
   }
 
-  public void setProjectNames(String projectNames) {
-    this.projectNames = projectNames;
+  public void setProjectName(String projectName) {
+    this.projectName = projectName;
+  }
+
+  public String getTaskName() {
+    return taskName;
+  }
+
+  public void setTaskName(String taskName) {
+    this.taskName = taskName;
   }
 
   public String getSubmitTime() {

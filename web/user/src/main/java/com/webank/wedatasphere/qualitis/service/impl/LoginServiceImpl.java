@@ -17,31 +17,34 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.ImmutableMap;
+import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.entity.Permission;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.LoginFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.ws.rs.core.Context;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.ws.rs.core.Context;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author howeye
@@ -52,6 +55,9 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private UserDao userDao;
 
+    @Autowired
+    private FrontEndConfig frontEndConfig;
+
     public LoginServiceImpl(@Context HttpServletRequest httpRequest) {
         this.httpRequest = httpRequest;
     }
@@ -59,7 +65,11 @@ public class LoginServiceImpl implements LoginService {
     @Context
     private HttpServletRequest httpRequest;
 
+    private static final SecureRandom secureRandom = new SecureRandom();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginServiceImpl.class);
+
+    private static final SimpleDateFormat SDF =new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public GeneralResponse<?> localLogin(LocalLoginRequest request) throws LoginFailedException, UnExpectedRequestException {
@@ -68,13 +78,49 @@ public class LoginServiceImpl implements LoginService {
 
         String username = request.getUsername();
         String password = request.getPassword();
-        if (localLogin(username, password)) {
-            addToSession(username, httpRequest);
-            LOGGER.info("Succeed to login. user: {}, current_user: {}", username, username);
-            return new GeneralResponse<>("200", "{&LOGIN_SUCCESS}", null);
+        long currentLoginTime = System.currentTimeMillis();
+
+        User userInDb = userDao.findByUsername(username);
+        if (userInDb == null) {
+            throw new LoginFailedException("{&USER_NOT_EXIST}");
+        }
+        if (userInDb.getLockTime() != null && (currentLoginTime - userInDb.getLockTime()) / (1000 * 60) < 10) {
+            String lockTime = SDF.format(new Date(userInDb.getLockTime()));
+            LOGGER.info("Login locked. user: {}, lock time: {}", username, lockTime);
+            throw new LoginFailedException("{&LOGIN_LOCKED}" + lockTime);
         }
 
-        throw new LoginFailedException("{&LOGIN_FAILED}");
+        if (localLogin(userInDb, password)) {
+            addToSession(username, httpRequest);
+            clearErrorLoginRecord(userInDb);
+            userDao.saveUser(userInDb);
+            LOGGER.info("Succeed to login. user: {}, current_user: {}", username, username);
+            return new GeneralResponse<>("200", "{&LOGIN_SUCCESS}", null);
+        } else {
+            // Login failed in first time.
+            if (userInDb.getLoginErrorTime() == null || userInDb.getLoginErrorCount() == null) {
+                userInDb.setLoginErrorTime(currentLoginTime);
+                userInDb.setLoginErrorCount(1);
+            } else {
+                // Check error count in 5 minutes decide to lock
+                boolean consecutiveError = (currentLoginTime - userInDb.getLoginErrorTime()) / (1000 * 60) < 5;
+                if (consecutiveError) {
+                    userInDb.setLoginErrorCount(userInDb.getLoginErrorCount() + 1);
+                    if (userInDb.getLoginErrorCount() >= 5) {
+                        userInDb.setLockTime(currentLoginTime);
+                    }
+                } else {
+                    userInDb.setLoginErrorTime(currentLoginTime);
+                    userInDb.setLoginErrorCount(1);
+                }
+            }
+            userDao.saveUser(userInDb);
+            throw new LoginFailedException("{&LOGIN_FAILED}" + (5 - userInDb.getLoginErrorCount()));
+        }
+    }
+
+    private void clearErrorLoginRecord(User userInDb) {
+        userInDb.setLoginErrorCount(0);
     }
 
     @Override
@@ -87,23 +133,21 @@ public class LoginServiceImpl implements LoginService {
 
         Cookie[] cookies = httpServletRequest.getCookies();
         // Clear cookies.
-        for (Cookie cookie : cookies) {
-            String cookieName = cookie.getName ();
-            if ("JSESSIONID".equals (cookieName)) {
-                cookieName = cookieName.replace("\r", "");
-                cookieName = cookieName.replace("\n", "");
-                Cookie newCookie = new Cookie(cookieName, null);
-                newCookie.setSecure(true);
-                newCookie.setHttpOnly(true);
-                newCookie.setMaxAge (0);
-                newCookie.setPath ("/");
-                httpServletResponse.addCookie(newCookie);
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                String cookieName = cookie.getName();
+                if ("JSESSIONID".equals(cookieName)) {
+                    cookieName = cookieName.replace("\r", "").replace("\n", "");
+                    Cookie newCookie = new Cookie(cookieName, null);
+                    newCookie.setSecure(true);
+                    newCookie.setMaxAge(0);
+                    newCookie.setPath("/");
+                    httpServletResponse.addCookie(newCookie);
+                }
             }
         }
-
         LOGGER.info("Succeed to logout, user: {}, current_user: {}", username, username);
-        String ip = httpServletRequest.getLocalAddr();
-        String logoutUrl = "http://" + ip + ":8090/#/home";
+        String logoutUrl = frontEndConfig.getDomainName() + "/#/home";
         httpServletResponse.sendRedirect(logoutUrl);
         return new GeneralResponse<>("200", "{&LOGOUT_SUCCESSFULLY}", null);
     }
@@ -114,12 +158,13 @@ public class LoginServiceImpl implements LoginService {
         User userInDb = userDao.findByUsername(username);
         addUserToSession(userInDb, httpServletRequest);
         addPermissionsToSession(userInDb, httpServletRequest);
+        addRandomToSession(httpServletRequest);
     }
 
     private void addUserToSession(User userInDb, HttpServletRequest httpServletRequest) {
         // Put user information into session
         HttpSession session = httpServletRequest.getSession();
-        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUsername());
+        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUserName());
         session.setAttribute("user", userMap);
     }
 
@@ -141,11 +186,13 @@ public class LoginServiceImpl implements LoginService {
         session.setAttribute("permissions", userAllPermission);
     }
 
-    private boolean localLogin(String username, String password) {
-        User userInDb = userDao.findByUsername(username);
-        if (userInDb == null) {
-            return false;
-        }
+    private void addRandomToSession(HttpServletRequest httpServletRequest) {
+        // Put permissions into session
+        HttpSession session = httpServletRequest.getSession();
+        session.setAttribute("loginRandom", secureRandom.nextInt(10000));
+    }
+
+    private boolean localLogin(User userInDb, String password) {
         return password.equals(userInDb.getPassword());
     }
 

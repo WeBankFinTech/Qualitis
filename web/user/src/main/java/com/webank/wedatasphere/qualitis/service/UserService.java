@@ -16,23 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
-import com.webank.wedatasphere.qualitis.exception.UserFoundDuplicateException;
-import com.webank.wedatasphere.qualitis.exception.UserNotFoundException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.user.AddUserResponse;
 import com.webank.wedatasphere.qualitis.response.user.UserResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
-import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
-import com.webank.wedatasphere.qualitis.request.user.UserRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-
 import javax.management.relation.RoleNotFoundException;
 
 /**
@@ -90,5 +83,11 @@ public interface UserService {
      */
     void autoAddUser(String username) throws RoleNotFoundException;
 
-
+    /**
+     * Modify user department
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<?> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException;
 }

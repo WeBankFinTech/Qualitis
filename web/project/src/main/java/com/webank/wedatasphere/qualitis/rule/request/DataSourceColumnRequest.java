@@ -55,11 +55,19 @@ public class DataSourceColumnRequest {
         // 默认构造函数
     }
 
+    public DataSourceColumnRequest(String columnName, String dataType) {
+        this.columnName = columnName;
+        this.dataType = dataType;
+    }
 
-    public static void checkRequest(List<DataSourceColumnRequest> requests) throws UnExpectedRequestException {
+    public static void checkRequest(List<DataSourceColumnRequest> requests, boolean fps) throws UnExpectedRequestException {
         for (DataSourceColumnRequest request : requests){
             CommonChecker.checkString(request.getColumnName(), "column_name");
-            CommonChecker.checkString(request.getDataType(), "data_type");
+            if (fps) {
+                continue;
+            } else {
+                CommonChecker.checkString(request.getDataType(), "data_type");
+            }
         }
     }
 }

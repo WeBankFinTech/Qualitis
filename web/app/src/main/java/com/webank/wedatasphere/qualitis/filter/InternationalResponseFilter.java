@@ -18,24 +18,14 @@ package com.webank.wedatasphere.qualitis.filter;
 
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.parser.LocaleParser;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import org.apache.commons.lang.LocaleUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.web.servlet.support.RequestContextUtils;
-
+import java.io.IOException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.ext.Provider;
-import java.io.IOException;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author howeye

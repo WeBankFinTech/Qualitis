@@ -33,6 +33,10 @@ public class DeleteRuleRequest {
         // Default Constructor
     }
 
+    public DeleteRuleRequest(Long ruleId) {
+        this.ruleId = ruleId;
+    }
+
     public Long getRuleGroupId() {
         return ruleGroupId;
     }

@@ -39,19 +39,17 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
-
     @GET
     @Path("detail/{task_id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getTaskDetail(@PathParam("task_id")Integer taskId) throws UnExpectedRequestException {
+    public GeneralResponse<?> getTaskDetail(@PathParam("task_id")Long taskId) throws UnExpectedRequestException {
         try {
             return taskService.getTaskDetail(taskId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get task detail. task_id: {}, caused by: {}", taskId.toString().replace("\r", "").replace("\n", ""),
-                e.getMessage().replace("\r", "").replace("\n", ""), e);
+            LOGGER.error("Failed to get task detail. task_id: {}, caused by: {}", taskId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_TASK_DETAIL}"+ e.getMessage() + ".", null);
         }
     }

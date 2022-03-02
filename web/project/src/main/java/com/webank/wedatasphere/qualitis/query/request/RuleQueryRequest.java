@@ -27,6 +27,8 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 public class RuleQueryRequest {
 
   private String cluster;
+  @JsonProperty("datasource_id")
+  private Long datasourceId;
   private String db;
   private String table;
   private String column;
@@ -38,6 +40,8 @@ public class RuleQueryRequest {
   private int size;
 
   public RuleQueryRequest() {
+    this.page = 0;
+    this.size = 15;
   }
 
   public RuleQueryRequest(String user) {
@@ -50,6 +54,14 @@ public class RuleQueryRequest {
 
   public void setCluster(String cluster) {
     this.cluster = cluster;
+  }
+
+  public Long getDatasourceId() {
+    return datasourceId;
+  }
+
+  public void setDatasourceId(Long datasourceId) {
+    this.datasourceId = datasourceId;
   }
 
   public String getDb() {

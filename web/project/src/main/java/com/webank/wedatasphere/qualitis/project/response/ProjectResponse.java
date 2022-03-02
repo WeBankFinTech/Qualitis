@@ -30,6 +30,8 @@ public class ProjectResponse {
     private Long projectId;
     @JsonProperty("project_name")
     private String projectName;
+    @JsonProperty("cn_name")
+    private String cnName;
     private String description;
     @JsonProperty("project_label")
     private Set<String> projectLabel;
@@ -47,6 +49,7 @@ public class ProjectResponse {
 
     public ProjectResponse(Project project) {
         this.projectId = project.getId();
+        this.cnName = project.getCnName();
         this.projectName = project.getName();
         this.description = project.getDescription();
         this.createTime = project.getCreateTime();
@@ -77,6 +80,14 @@ public class ProjectResponse {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
     }
 
     public String getCreateUser() {

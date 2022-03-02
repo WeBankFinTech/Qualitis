@@ -58,8 +58,8 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
      * @param user
      * @return
      */
-    @Query(value = "select new map(ds.clusterName as cluster_name, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 group by ds.clusterName, ds.dbName, ds.tableName")
-    List<Map<String, String>> findProjectDsByUser(String user);
+    @Query(value = "select new map(ds.clusterName as cluster_name, ds.linkisDataSourceId as datasource_id, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds where exists (select pu.id from ProjectUser pu where pu.project.id = ds.projectId and pu.userName = ?1)")
+    List<Map<String, Object>> findProjectDsByUser(String user);
 
     /**
      * Paging query rule data source
@@ -67,11 +67,11 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
      * @param pageable
      * @return
      */
-    @Query(value = "select new map(ds.clusterName as cluster_name, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 group by ds.clusterName, ds.dbName, ds.tableName")
-    Page<Map<String, String>> findProjectDsByUser(String user, Pageable pageable);
+    @Query(value = "select new map(ds.clusterName as cluster_name, ds.linkisDataSourceId as datasource_id, ds.dbName as db_name, ds.tableName as table_name, ds.proxyUser as proxy_user) from RuleDataSource ds where exists (select pu.id from ProjectUser pu where pu.project.id = ds.projectId and pu.userName = ?1)")
+    Page<Map<String, Object>> findProjectDsByUser(String user, Pageable pageable);
 
     /**
-     * Find rules related with cluster name, database name ,table name, column name.
+     * Query rule data source
      * @param clusterName
      * @param dbName
      * @param tableName
@@ -83,6 +83,31 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
     List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user);
 
     /**
+     * Find rules related with cluster name, database name ,table name, column name.
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param colName
+     * @param user
+     * @param pageable
+     * @return
+     */
+    @Query(value = "select DISTINCT ds.rule from RuleDataSource ds, ProjectUser u where ds.clusterName = ?1 and ds.dbName = ?2 and ds.tableName = ?3 and ds.colName like ?4 and ds.projectId = u.project and u.userName = ?5")
+    Page<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user, Pageable pageable);
+
+    /**
+     * Find rules related with cluster name, database name ,table name, column name.
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param colName
+     * @param user
+     * @return
+     */
+    @Query(value = "select count(DISTINCT ds.rule) from RuleDataSource ds, ProjectUser u where ds.clusterName = ?1 and ds.dbName = ?2 and ds.tableName = ?3 and ds.colName like ?4 and ds.projectId = u.project and u.userName = ?5")
+    int countRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user);
+
+    /**
      * Filter rule datasource
      * @param user
      * @param clusterName
@@ -90,8 +115,8 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
      * @param tableName
      * @return
      */
-    @Query(value = "select new map(ds.clusterName as cluster_name, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 and ds.clusterName like ?2 and ds.dbName like ?3 and ds.tableName like ?4 group by ds.clusterName, ds.dbName, ds.tableName")
-    List<Map<String, String>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName);
+    @Query(value = "select new map(ds.clusterName as cluster_name, ds.linkisDataSourceId as datasource_id, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 and ds.clusterName like ?2 and ds.dbName like ?3 and ds.tableName like ?4 group by ds.clusterName, ds.dbName, ds.tableName")
+    List<Map<String, Object>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName);
 
     /**
      * Filter rule datasource pageable.
@@ -102,6 +127,28 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
      * @param pageable
      * @return
      */
-    @Query(value = "select new map(ds.clusterName as cluster_name, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 and ds.clusterName like ?2 and ds.dbName like ?3 and ds.tableName like ?4 group by ds.clusterName, ds.dbName, ds.tableName")
-    Page<Map<String, String>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName, Pageable pageable);
+    @Query(value = "select new map(ds.clusterName as cluster_name, ds.linkisDataSourceId as datasource_id, ds.dbName as db_name, ds.tableName as table_name) from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 and ds.clusterName like ?2 and ds.dbName like ?3 and ds.tableName like ?4 group by ds.clusterName, ds.dbName, ds.tableName")
+    Page<Map<String, Object>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName, Pageable pageable);
+
+    /**
+     * Find cols' name.
+     * @param user
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @return
+     */
+    @Query(value = "select ds.colName from RuleDataSource ds, ProjectUser u where ds.projectId = u.project and u.userName = ?1 and ds.clusterName = ?2 and ds.dbName = ?3 and ds.tableName = ?4")
+    List<String> findColsByUser(String user, String clusterName, String dbName, String tableName);
+
+    /**
+     * Find all datasources by user.
+     * @param user
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @return
+     */
+    @Query(value = "select ds from RuleDataSource ds, ProjectUser u where ds.projectId = u.project.id and u.userName = ?1 and ds.clusterName = ?2 and ds.dbName = ?3 and ds.tableName = ?4")
+    List<RuleDataSource> findDatasourcesByUser(String user, String clusterName, String dbName, String tableName);
 }
