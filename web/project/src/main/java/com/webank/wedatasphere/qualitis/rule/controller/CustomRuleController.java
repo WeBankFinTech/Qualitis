@@ -17,17 +17,16 @@
 package com.webank.wedatasphere.qualitis.rule.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
+import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.slf4j.Logger;
@@ -46,25 +45,32 @@ public class CustomRuleController {
     @Autowired
     private CustomRuleService customRuleService;
 
+    @Autowired
+    private ProjectEventService projectEventService;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleController.class);
 
-    @PUT
+    private HttpServletRequest httpServletRequest;
+    public CustomRuleController(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
+    @POST
+    @Path("add")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> addCustomRule(AddCustomRuleRequest request) throws UnExpectedRequestException {
         try {
+            // Record project event.
+//            String loginUser = HttpUtils.getUserName(httpServletRequest);
+//            projectEventService.record(request.getProjectId(), loginUser, "add", "custom rule[name= " + request.getRuleName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
             return customRuleService.addCustomRule(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
-        } catch (SemanticException e) {
-            LOGGER.error("Failed to get db and table from sql. Database and table must be written as follow: [db.table]. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_DB_AND_TABLE_FROM_SQL}", null);
-        } catch (ParseException e) {
-            LOGGER.error("Failed to parse sql. please check your sql. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_PARSE_SQL}", null);
+            LOGGER.error(e.getMessage(), e);
+	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to add custom rule, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_CUSTOM_RULE}" + e.getMessage(), null);
+            LOGGER.error("Failed to add custom rule, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_CUSTOM_RULE}", null);
         }
     }
 
@@ -74,17 +80,19 @@ public class CustomRuleController {
      * @return
      * @throws UnExpectedRequestException
      */
-    @DELETE
+    @POST
+    @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException {
         try {
             return customRuleService.deleteCustomRule(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to delete custom rule, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_CUSTOM_RULE} ,caused by:" + e.getMessage(), null);
+            LOGGER.error("Failed to delete custom rule, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_CUSTOM_RULE}", null);
         }
     }
 
@@ -101,11 +109,11 @@ public class CustomRuleController {
         try {
             return customRuleService.getCustomRuleDetail(ruleId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get custom rule detail, rule_id: {}, caused by: {}", ruleId.toString().replace("\r", "").replace("\n", ""),
-                e.getMessage().replace("\r", "").replace("\n", ""), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_CUSTOM_RULE_DETAIL}, id: " + ruleId + " caused by: " + e.getMessage(), null);
+            LOGGER.error("Failed to get custom rule detail, rule_id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_CUSTOM_RULE_DETAIL}", null);
         }
     }
 
@@ -116,24 +124,19 @@ public class CustomRuleController {
      * @throws UnExpectedRequestException
      */
     @POST
+    @Path("modify")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> modifyCustomRule(ModifyCustomRuleRequest request) throws UnExpectedRequestException {
         try {
             return customRuleService.modifyCustomRule(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
-        } catch (SemanticException e) {
-            LOGGER.error("Failed to get db and table from sql. Database and table must be written as follow: [db.table]. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_DB_AND_TABLE_FROM_SQL}", null);
-        } catch (ParseException e) {
-            LOGGER.error("Failed to parse sql. please check your sql. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_PARSE_SQL}", null);
+            LOGGER.error(e.getMessage(), e);
+	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to modify custom rule, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_CUSTOM_RULE},caused by: " + e.getMessage(), null);
+            LOGGER.error("Failed to modify custom rule, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_CUSTOM_RULE}", null);
         }
     }
-
 
 }

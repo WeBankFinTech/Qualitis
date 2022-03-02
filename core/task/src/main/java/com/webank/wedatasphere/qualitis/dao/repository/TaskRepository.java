@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.entity.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
@@ -43,10 +44,23 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByApplicationAndStatusInAndTaskRemoteIdNotNull(Application application, List<Integer> statusList);
 
     /**
-     * Find task by remote id
+     * Find task by remote id and cluster name
      * @param taskRemoteId
+     * @param clusterName
      * @return
      */
-    Task findByTaskRemoteId(Integer taskRemoteId);
+    Task findByTaskRemoteIdAndClusterName(Long taskRemoteId, String clusterName);
 
+    /**
+     * Find with time interval.
+     *
+     * @param start
+     * @param end
+     * @param clusterName
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    @Query(value = "SELECT t FROM Task t INNER JOIN TaskDataSource tds ON (t = tds.task) WHERE t.beginTime BETWEEN ?1 AND ?2 and (tds.clusterName = ?3 and tds.databaseName = ?4 and (LENGTH(?5) = 0 or tds.tableName = ?5))")
+    List<Task> findWithSubmitTimeAndDatasource(String start, String end, String clusterName, String startTime, String endTime);
 }

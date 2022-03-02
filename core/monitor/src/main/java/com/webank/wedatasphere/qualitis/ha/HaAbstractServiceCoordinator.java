@@ -21,9 +21,6 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "ha.enable", havingValue = "true")
 public class HaAbstractServiceCoordinator extends AbstractServiceCoordinator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(HaAbstractServiceCoordinator.class);
-
     @Autowired
     private ZkConfig zkConfig;
 
@@ -33,6 +30,8 @@ public class HaAbstractServiceCoordinator extends AbstractServiceCoordinator {
     private String lockPath;
     private InterProcessLock lock;
     private boolean lockFlag = false;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HaAbstractServiceCoordinator.class);
 
     @Override
     public void init() {
@@ -60,8 +59,12 @@ public class HaAbstractServiceCoordinator extends AbstractServiceCoordinator {
             lockFlag = false;
             try {
                 lock.release();
+            } catch (IllegalMonitorStateException e) {
+                LOGGER.error("Failed to release lock of zookeeper.");
+                LOGGER.error(e.getMessage(), e);
             } catch (Exception e) {
-                LOGGER.error("Failed to release lock of zookeeper", e);
+                LOGGER.error("Failed to release lock of zookeeper.");
+                LOGGER.error(e.getMessage(), e);
             }
         }
     }

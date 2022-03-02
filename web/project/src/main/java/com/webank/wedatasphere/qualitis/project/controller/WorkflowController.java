@@ -61,14 +61,13 @@ public class WorkflowController {
     @GET
     @Path("detail/{projectId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(@PathParam("projectId") Long projectId) throws UnExpectedRequestException {
+    public GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(@PathParam("projectId") Long projectId, PageRequest pageRequest) throws UnExpectedRequestException {
         try {
-            return workflowProjectService.getWorkflowProjectDetail(projectId);
+            return workflowProjectService.getWorkflowProjectDetail(projectId, pageRequest);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get workflow project detail, project_id: {}, caused by: {}", projectId.toString().replace("\r", "")
-                .replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""), e);
+            LOGGER.error("Failed to get workflow project detail, project_id: {}, caused by: {}", projectId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
         }
     }

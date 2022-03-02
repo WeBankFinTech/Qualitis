@@ -45,6 +45,10 @@ public class MultiRuleDetailResponse {
     private Long ruleId;
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("rule_detail")
+    private String ruleDetail;
+    @JsonProperty("cn_name")
+    private String ruleCnName;
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("multi_source_rule_template_id")
@@ -61,22 +65,43 @@ public class MultiRuleDetailResponse {
     private Boolean alarm;
     @JsonProperty("alarm_variable")
     private List<AlarmConfigResponse> alarmVariable;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("create_time")
+    private String createTime;
+    @JsonProperty("modify_user")
+    private String modifyUser;
+    @JsonProperty("modify_time")
+    private String modifyTime;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+    @JsonProperty("cs_id")
+    private String csId;
     @JsonProperty("abort_on_failure")
     private Boolean abortOnFailure;
 
-
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+    @JsonProperty("specify_static_startup_param")
+    private Boolean specifyStaticStartupParam;
+    @JsonProperty("static_startup_param")
+    private String staticStartupParam;
     public MultiRuleDetailResponse() {
     }
 
     public MultiRuleDetailResponse(Rule rule) {
         this.ruleId = rule.getId();
         this.ruleName = rule.getName();
+        this.ruleDetail = rule.getDetail();
+        this.ruleCnName = rule.getCnName();
         this.clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
         this.multiSourceRuleTemplateId = rule.getTemplate().getId();
         this.ruleTemplateName = rule.getRuleTemplateName();
         this.ruleGroupId = rule.getRuleGroup().getId();
+        this.createUser = rule.getCreateUser();
+        this.createTime = rule.getCreateTime();
+        this.modifyUser = rule.getModifyUser();
+        this.modifyTime = rule.getModifyTime();
 
         this.source = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 0);
         this.target = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 1);
@@ -104,6 +129,9 @@ public class MultiRuleDetailResponse {
                 this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
             }
         }
+        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
+        this.specifyStaticStartupParam = rule.getSpecifyStaticStartupParam();
+        this.staticStartupParam = rule.getStaticStartupParam();
     }
 
     public Long getRuleGroupId() {
@@ -120,6 +148,22 @@ public class MultiRuleDetailResponse {
 
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
+    }
+
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
     }
 
     public String getClusterName() {
@@ -202,11 +246,75 @@ public class MultiRuleDetailResponse {
         this.ruleTemplateName = ruleTemplateName;
     }
 
+    public String getCsId() {
+        return csId;
+    }
+
+    public void setCsId(String csId) {
+        this.csId = csId;
+    }
+
     public Boolean getAbortOnFailure() {
         return abortOnFailure;
     }
 
     public void setAbortOnFailure(Boolean abortOnFailure) {
         this.abortOnFailure = abortOnFailure;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
     }
 }

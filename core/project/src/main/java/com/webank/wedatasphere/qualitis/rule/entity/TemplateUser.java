@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.webank.wedatasphere.qualitis.entity.User;
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -32,8 +33,8 @@ public class TemplateUser {
 
     @ManyToOne
     private Template template;
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne
+    private User user;
 
     public TemplateUser() {
         // Default Constructor
@@ -55,12 +56,12 @@ public class TemplateUser {
         this.template = template;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     @Override

@@ -29,11 +29,36 @@ import java.util.List;
 public interface RuleDao {
 
     /**
+     * Count by project
+     * @param project
+     * @return
+     */
+    int countByProject(Project project);
+
+    /**
      * Find rule by project
      * @param project
      * @return
      */
     List<Rule> findByProject(Project project);
+
+    /**
+     * Find by project with page.
+     * @param project
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Rule> findByProjectWithPage(Project project, int page, int size);
+
+    /**
+     * Find by rule metric ID with page.
+     * @param ruleMetricId
+     * @param page
+     * @param size
+     * @return
+     */
+//    List<Rule> findByRuleMetricWithPage(Long ruleMetricId, int page, int size);
 
     /**
      * Find rule by project
@@ -62,6 +87,12 @@ public interface RuleDao {
      * @param rule
      */
     void deleteRule(Rule rule);
+
+    /**
+     * Delete all rules
+     * @param rules
+     */
+    void deleteAllRule(List<Rule> rules);
 
     /**
      * Find rules by ids

@@ -17,7 +17,6 @@
 package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 
@@ -25,6 +24,8 @@ import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.annotations.NotFound;
 
 /**
  * @author howeye
@@ -33,24 +34,34 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_rule", uniqueConstraints = @UniqueConstraint(columnNames = {"project_id", "name"}))
 public class Rule {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "cs_id", length = 512)
+    private String csId;
 
     @ManyToOne
     @JsonIgnore
     private Template template;
 
-    @Column(length = 170)
+    @Column(length = 128)
     private String name;
+
+    @Column(name = "cn_name", length = 128)
+    private String cnName;
+
+    @Column(length = 340)
+    private String detail;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
+    @NotFound(action= NotFoundAction.IGNORE)
     private Set<RuleDataSource> ruleDataSources;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
+    @NotFound(action= NotFoundAction.IGNORE)
     private Set<RuleDataSourceMapping> ruleDataSourceMappings;
 
     @Column(name = "alarm")
@@ -61,10 +72,12 @@ public class Rule {
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
+    @NotFound(action= NotFoundAction.IGNORE)
     private Set<AlarmConfig> alarmConfigs;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JsonIgnore
+    @NotFound(action= NotFoundAction.IGNORE)
     private Set<RuleVariable> ruleVariables;
 
     @OneToOne(mappedBy = "parentRule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
@@ -96,6 +109,22 @@ public class Rule {
     @Column(name = "abort_on_failure")
     private Boolean abortOnFailure;
 
+    @Column(name = "create_user", length = 50)
+    private String createUser;
+    @Column(name = "create_time", length = 25)
+    private String createTime;
+    @Column(name = "modify_user", length = 50)
+    private String modifyUser;
+    @Column(name = "modify_time", length = 25)
+    private String modifyTime;
+    @Column(name = "delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
+
+    @Column(name = "specify_static_startup_param")
+    private Boolean specifyStaticStartupParam;
+    @Column(name = "static_startup_param")
+    private String staticStartupParam;
+
     @ManyToOne
     @JsonIgnore
     private RuleGroup ruleGroup;
@@ -112,6 +141,10 @@ public class Rule {
         this.id = id;
     }
 
+    public String getCsId() { return csId; }
+
+    public void setCsId(String csId) { this.csId = csId; }
+
     public Template getTemplate() {
         return template;
     }
@@ -126,6 +159,22 @@ public class Rule {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getDetail() {
+        return detail;
+    }
+
+    public void setDetail(String detail) {
+        this.detail = detail;
     }
 
     public Set<RuleDataSource> getRuleDataSources() {
@@ -264,6 +313,62 @@ public class Rule {
         this.abortOnFailure = abortOnFailure;
     }
 
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {return true;}
@@ -280,21 +385,21 @@ public class Rule {
     @Override
     public String toString() {
         return "Rule{" +
-                "id=" + id +
-                ", template=" + template.getName() +
-                ", name='" + name + '\'' +
-                ", ruleDataSources=" + ruleDataSources +
-                ", alarm=" + alarm +
-                ", ruleType=" + ruleType +
-                ", alarmConfigs=" + alarmConfigs +
-                ", ruleVariables=" + ruleVariables +
-                ", project=" + project +
-                ", ruleTemplateName='" + ruleTemplateName + '\'' +
-                ", functionType=" + functionType +
-                ", functionContent='" + functionContent + '\'' +
-                ", fromContent='" + fromContent + '\'' +
-                ", whereContent='" + whereContent + '\'' +
-                ", outputName='" + outputName + '\'' +
-                '}';
+            "id=" + id +
+            ", csId='" + csId + '\'' +
+            ", template=" + template +
+            ", name='" + name + '\'' +
+            ", alarm=" + alarm +
+            ", ruleType=" + ruleType +
+            ", project=" + project +
+            ", ruleTemplateName='" + ruleTemplateName + '\'' +
+            ", functionType=" + functionType +
+            ", functionContent='" + functionContent + '\'' +
+            ", fromContent='" + fromContent + '\'' +
+            ", whereContent='" + whereContent + '\'' +
+            ", outputName='" + outputName + '\'' +
+            ", abortOnFailure=" + abortOnFailure +
+            ", ruleGroup=" + ruleGroup +
+            '}';
     }
 }

@@ -23,7 +23,7 @@ public class AddRuleTemplateRequest {
     @JsonProperty("field_num")
     private Integer fieldNum;
     @JsonProperty("datasource_type")
-    private Integer datasourceType;
+    private List<Integer> datasourceType;
     @JsonProperty("action_type")
     private Integer actionType;
 
@@ -43,11 +43,10 @@ public class AddRuleTemplateRequest {
     private List<TemplateStatisticsInputMetaRequest> templateStatisticsInputMetaRequests;
 
     public AddRuleTemplateRequest() {
-        datasourceType = TemplateDataSourceTypeEnum.HIVE.getCode();
         actionType = TemplateActionTypeEnum.SQL.getCode();
     }
 
-    public AddRuleTemplateRequest(String templateName, Integer datasourceType, Integer actionType, Boolean saveMidTable,
+    public AddRuleTemplateRequest(String templateName, List<Integer> datasourceType, Integer actionType, Boolean saveMidTable,
         String midTableAction) {
         this.templateName = templateName;
         this.datasourceType = datasourceType;
@@ -96,11 +95,11 @@ public class AddRuleTemplateRequest {
         this.fieldNum = fieldNum;
     }
 
-    public Integer getDatasourceType() {
+    public List<Integer> getDatasourceType() {
         return datasourceType;
     }
 
-    public void setDatasourceType(Integer datasourceType) {
+    public void setDatasourceType(List<Integer> datasourceType) {
         this.datasourceType = datasourceType;
     }
 

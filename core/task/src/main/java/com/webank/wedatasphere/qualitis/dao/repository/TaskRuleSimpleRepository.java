@@ -54,4 +54,12 @@ public interface TaskRuleSimpleRepository extends JpaRepository<TaskRuleSimple, 
      * @return
      */
     List<TaskRuleSimple> findByTask(Task task);
+
+    /**
+     * Count yesterday num.
+     * @param ruleId
+     * @return
+     */
+    @Query(value = "select trs from TaskRuleSimple trs where to_days(now()) - to_days(trs.submitTime) = 1 and trs.ruleId = ?1")
+    List<TaskRuleSimple> findBetweenYesterday(Long ruleId);
 }

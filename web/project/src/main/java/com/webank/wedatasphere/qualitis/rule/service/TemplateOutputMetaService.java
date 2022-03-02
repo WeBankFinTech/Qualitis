@@ -48,6 +48,8 @@ public interface TemplateOutputMetaService {
      */
     Set<TemplateOutputMeta> getAndSaveTemplateOutputMeta(String outputName, Integer functionType, Boolean saveMidTable, Template template);
 
+
+
     /**
      * Delete output meta by template
      * @param templateInDb

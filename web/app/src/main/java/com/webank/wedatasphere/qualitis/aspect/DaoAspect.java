@@ -80,6 +80,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "ruleTemplateAspect()", returning = "object")
     public void ruleTemplateAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -90,6 +93,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "templateMidTableInputMetaAspect()", returning = "object")
     public void templateMidTableInputMetaAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -100,6 +106,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "templateStatisticsInputMetaAspect()", returning = "object")
     public void templateStatisticsInputMetaAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -110,6 +119,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "templateOutputMetaAspect()", returning = "object")
     public void templateOutputMetaAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -120,6 +132,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "ruleAspect()", returning = "object")
     public void ruleAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -130,6 +145,9 @@ public class DaoAspect {
     @AfterReturning(pointcut = "projectAspect()", returning = "object")
     public void projectAspectAfter(JoinPoint joinPoint, Object object) throws InvocationTargetException, IllegalAccessException {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return;
+        }
         HttpServletRequest request = attributes.getRequest();
         String localeStr = request.getHeader("Content-Language");
         if (object != null) {
@@ -141,7 +159,9 @@ public class DaoAspect {
         Class objectClass = object.getClass();
         if (object instanceof Iterable || objectClass.isArray()) {
             for (Object obj : (Iterable<? extends Object>) object) {
-                replaceMessage(obj, localeStr);
+                if (obj != null) {
+                    replaceMessage(obj, localeStr);
+                }
             }
         } else {
             for (Method method : objectClass.getMethods()) {

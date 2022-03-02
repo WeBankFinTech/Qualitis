@@ -28,19 +28,13 @@ import com.webank.wedatasphere.qualitis.response.IndexApplicationResponse;
 import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
 import com.webank.wedatasphere.qualitis.service.IndexService;
 import com.webank.wedatasphere.qualitis.util.DateUtils;
-
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
-import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.request.IndexRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
-import com.webank.wedatasphere.qualitis.service.IndexService;
-import com.webank.wedatasphere.qualitis.util.DateUtils;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -49,14 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author v_wblwyan
@@ -74,8 +60,7 @@ public class IndexServiceImpl implements IndexService {
   private TaskDao taskDao;
 
   @Override
-  public IndexApplicationTodayResponse getTodaySubmitApplications(String username,
-                                                                  PageRequest pageRequest) {
+  public IndexApplicationTodayResponse getTodaySubmitApplications(String username, PageRequest pageRequest) {
     // Find applications submitted today
     String today = DateFormatUtils.format(new Date(), DATE_FORMAT_PATTERN);
     List<Application> applications = getUserApplications(username, today, pageRequest);
@@ -151,23 +136,19 @@ public class IndexServiceImpl implements IndexService {
   }
 
   private long countUserSuccApplications(String username, String date) {
-    return countUserApplications(username, date,
-                                         new Integer[] {ApplicationStatusEnum.FINISHED.getCode()});
+    return countUserApplications(username, date, new Integer[] {ApplicationStatusEnum.FINISHED.getCode()});
   }
 
   private long countUserFailApplications(String username, String date) {
-    return countUserApplications(username, date, new Integer[] {
-        ApplicationStatusEnum.FAILED.getCode()});
+    return countUserApplications(username, date, new Integer[] {ApplicationStatusEnum.FAILED.getCode()});
   }
 
   private long countUserFailCheckApplications(String username, String date) {
-    return countUserApplications(username, date, new Integer[] {
-        ApplicationStatusEnum.NOT_PASS.getCode()});
+    return countUserApplications(username, date, new Integer[] {ApplicationStatusEnum.NOT_PASS.getCode()});
   }
 
   private long countUserApplications(String username, String date, Integer[] appStatus) {
-    return applicationDao.countApplicationByUserAndSubmitTimeBetweenAndStatusIn(username,
-            date + " 00:00:00", date + " 23:59:59", appStatus);
+    return applicationDao.countApplicationByUserAndSubmitTimeBetweenAndStatusIn(username, date + " 00:00:00", date + " 23:59:59", appStatus);
   }
 
   /**

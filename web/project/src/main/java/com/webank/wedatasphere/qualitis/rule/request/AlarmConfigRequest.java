@@ -21,10 +21,6 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 
 /**
  * @author howeye
@@ -39,10 +35,26 @@ public class AlarmConfigRequest {
     private Integer compareType;
     private Double threshold;
 
+    @JsonProperty("rule_metric_en_code")
+    private String ruleMetricEnCode;
+
+    @JsonProperty("upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+    @JsonProperty("upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+
+
     private static final Integer MAX_THRESHOLD_VALUE = 10000;
 
     public AlarmConfigRequest() {
         // Default Constructor
+    }
+
+    public AlarmConfigRequest(Long outputMetaId, Integer checkTemplate, Integer compareType, Double threshold) {
+        this.outputMetaId = outputMetaId;
+        this.checkTemplate = checkTemplate;
+        this.compareType = compareType;
+        this.threshold = threshold;
     }
 
     public Long getOutputMetaId() {
@@ -75,6 +87,30 @@ public class AlarmConfigRequest {
 
     public void setCompareType(Integer compareType) {
         this.compareType = compareType;
+    }
+
+    public String getRuleMetricEnCode() {
+        return ruleMetricEnCode;
+    }
+
+    public void setRuleMetricEnCode(String ruleMetricEnCode) {
+        this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
     }
 
     public static void checkRequest(AlarmConfigRequest request) throws UnExpectedRequestException {

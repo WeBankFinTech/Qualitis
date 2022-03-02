@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -32,4 +33,10 @@ public interface RuleGroupRepository extends JpaRepository<RuleGroup, Long> {
      */
     RuleGroup findByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId);
 
+    /**
+     * Find rule group list by project id
+     * @param projectId
+     * @return
+     */
+    List<RuleGroup> findByProjectId(Long projectId);
 }

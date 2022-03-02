@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class ClusterInfoNotConfigException extends Exception{
-
     public ClusterInfoNotConfigException(String message) {
         super(message);
     }

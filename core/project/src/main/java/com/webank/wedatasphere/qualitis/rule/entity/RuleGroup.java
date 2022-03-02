@@ -42,6 +42,9 @@ public class RuleGroup {
     @OneToMany(mappedBy = "ruleGroup", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private List<Rule> rules;
 
+    @Column(name = "version")
+    private String version;
+
     public RuleGroup() {
     }
 
@@ -80,5 +83,21 @@ public class RuleGroup {
 
     public void setRuleGroupName(String ruleGroupName) {
         this.ruleGroupName = ruleGroupName;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    @Override
+    public String toString() {
+        return "RuleGroup{" +
+            "id=" + id +
+            ", ruleGroupName='" + ruleGroupName + '\'' +
+            '}';
     }
 }

@@ -34,10 +34,19 @@ public class GetUserTableByDbIdRequest {
     private String clusterName;
     @JsonProperty("db_name")
     private String dbName;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
 
     public GetUserTableByDbIdRequest() {
         startIndex = DEFAULT_START_INDEX;
         pageSize = DEFAULT_PAGE_SIZE;
+    }
+
+    public GetUserTableByDbIdRequest(Integer startIndex, Integer pageSize, String clusterName, String dbName) {
+        this.startIndex = startIndex;
+        this.pageSize = pageSize;
+        this.clusterName = clusterName;
+        this.dbName = dbName;
     }
 
     public Integer getStartIndex() {
@@ -70,5 +79,13 @@ public class GetUserTableByDbIdRequest {
 
     public void setDbName(String dbName) {
         this.dbName = dbName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 }

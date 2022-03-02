@@ -34,8 +34,8 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
     @ExcelProperty(value = "Rule Name", index = 2)
     private String ruleName;
 
-    @ExcelProperty(value = "Check Column", index = 3)
-    private String outputName;
+    @ExcelProperty(value = "Rule Chinese Name", index = 3)
+    private String ruleCnName;
 
     @ExcelProperty(value = "Save Not Pass Verification Data", index = 4)
     private Boolean saveMidTable;
@@ -43,38 +43,87 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
     @ExcelProperty(value = "Cluster", index = 5)
     private String clusterName;
 
-    @ExcelProperty(value = "Function", index = 6)
+    @ExcelProperty(value = "Proxy User", index = 6)
+    private String proxyUser;
+
+    @ExcelProperty(value = "Data Source ID", index = 7)
+    private String linkisDataSourceId;
+
+    @ExcelProperty(value = "Data Source Name", index = 8)
+    private String linkisDataSourceName;
+
+    @ExcelProperty(value = "Data Source Type", index = 9)
+    private String linkisDataSourceType;
+
+    @ExcelProperty(value = "Function", index = 10)
     private String functionName;
 
-    @ExcelProperty(value = "Function Content", index = 7)
+    @ExcelProperty(value = "Function Content", index = 11)
     private String functionContent;
 
-    @ExcelProperty(value = "From Content", index = 8)
+    @ExcelProperty(value = "From Content", index = 12)
     private String fromContent;
 
-    @ExcelProperty(value = "Where Content", index = 9)
+    @ExcelProperty(value = "Where Content", index = 13)
     private String whereContent;
 
-    @ExcelProperty(value = "Verification Check Column", index = 10)
+    @ExcelProperty(value = "Check Column", index = 14)
+    private String outputName;
+
+    @ExcelProperty(value = "Verification Check Column", index = 15)
     private String alarmCheckName;
 
-    @ExcelProperty(value = "Verification Template", index = 11)
+    @ExcelProperty(value = "Verification Template", index = 16)
     private String checkTemplateName;
 
-    @ExcelProperty(value = "Verification Compare Type", index = 12)
+    @ExcelProperty(value = "Verification Compare Type", index = 17)
     private String compareType;
 
-    @ExcelProperty(value = "Verification Threshold", index = 13)
+    @ExcelProperty(value = "Verification Threshold", index = 18)
     private String threshold;
 
-    @ExcelProperty(value = "AbortOnFailure", index = 14)
+    @ExcelProperty(value = "AbortOnFailure", index = 19)
     private Boolean abortOnFailure;
+
+    @ExcelProperty(value = "Create User", index = 20)
+    private String createUser;
+    @ExcelProperty(value = "Create Time", index = 21)
+    private String createTime;
+    @ExcelProperty(value = "Modify User", index = 22)
+    private String modifyUser;
+    @ExcelProperty(value = "Modify Time", index = 23)
+    private String modifyTime;
+
+    @ExcelProperty(value = "Rule Metric Name", index = 24)
+    private String ruleMetricName;
+    @ExcelProperty(value = "Rule Metric En Code", index = 25)
+    private String ruleMetricEnCode;
+    @ExcelProperty(value = "Upload Rule Metric Value", index = 26)
+    private Boolean uploadRuleMetricValue;
+    @ExcelProperty(value = "Upload Abnormal Value", index = 27)
+    private Boolean uploadAbnormalValue;
+
+    @ExcelProperty(value = "delete_fail_check_result", index = 28)
+    private Boolean deleteFailCheckResult;
+    @ExcelProperty(value = "Specify Static Startup Param", index = 29)
+    private Boolean specifyStaticStartupParam;
+    @ExcelProperty(value = "Static Startup Param", index = 30)
+    private String staticStartupParam;
+
+    @ExcelProperty(value = "Sql Check Area", index = 31)
+    private String sqlCheckArea;
+    @ExcelProperty(value = "Rule Detail", index = 32)
+    private String ruleDetail;
 
     public ExcelCustomRuleByProject() {
     }
 
-    public ExcelCustomRuleByProject(ExcelCustomRuleByProject excelTemplateRule) {
-        BeanUtils.copyProperties(excelTemplateRule, this);
+    public ExcelCustomRuleByProject(String ruleName) {
+        this.ruleName = ruleName;
+    }
+
+    public ExcelCustomRuleByProject(ExcelCustomRuleByProject excelCustomRuleByProject) {
+        BeanUtils.copyProperties(excelCustomRuleByProject, this);
     }
 
     public String getProjectName() {
@@ -85,6 +134,14 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
         this.projectName = projectName;
     }
 
+    public String getRuleGroupName() {
+        return ruleGroupName;
+    }
+
+    public void setRuleGroupName(String ruleGroupName) {
+        this.ruleGroupName = ruleGroupName;
+    }
+
     public String getRuleName() {
         return ruleName;
     }
@@ -93,12 +150,20 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
         this.ruleName = ruleName;
     }
 
-    public String getOutputName() {
-        return outputName;
+    public String getRuleCnName() {
+        return ruleCnName;
     }
 
-    public void setOutputName(String outputName) {
-        this.outputName = outputName;
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
+    public Boolean getSaveMidTable() {
+        return saveMidTable;
+    }
+
+    public void setSaveMidTable(Boolean saveMidTable) {
+        this.saveMidTable = saveMidTable;
     }
 
     public String getClusterName() {
@@ -107,6 +172,38 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    public String getLinkisDataSourceId() {
+        return linkisDataSourceId;
+    }
+
+    public void setLinkisDataSourceId(String linkisDataSourceId) {
+        this.linkisDataSourceId = linkisDataSourceId;
+    }
+
+    public String getLinkisDataSourceName() {
+        return linkisDataSourceName;
+    }
+
+    public void setLinkisDataSourceName(String linkisDataSourceName) {
+        this.linkisDataSourceName = linkisDataSourceName;
+    }
+
+    public String getLinkisDataSourceType() {
+        return linkisDataSourceType;
+    }
+
+    public void setLinkisDataSourceType(String linkisDataSourceType) {
+        this.linkisDataSourceType = linkisDataSourceType;
     }
 
     public String getFunctionName() {
@@ -141,6 +238,14 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
         this.whereContent = whereContent;
     }
 
+    public String getOutputName() {
+        return outputName;
+    }
+
+    public void setOutputName(String outputName) {
+        this.outputName = outputName;
+    }
+
     public String getAlarmCheckName() {
         return alarmCheckName;
     }
@@ -173,28 +278,116 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
         this.threshold = threshold;
     }
 
-    public Boolean getSaveMidTable() {
-        return saveMidTable;
-    }
-
-    public void setSaveMidTable(Boolean saveMidTable) {
-        this.saveMidTable = saveMidTable;
-    }
-
-    public String getRuleGroupName() {
-        return ruleGroupName;
-    }
-
-    public void setRuleGroupName(String ruleGroupName) {
-        this.ruleGroupName = ruleGroupName;
-    }
-
     public Boolean getAbortOnFailure() {
         return abortOnFailure;
     }
 
     public void setAbortOnFailure(Boolean abortOnFailure) {
         this.abortOnFailure = abortOnFailure;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public String getRuleMetricName() {
+        return ruleMetricName;
+    }
+
+    public void setRuleMetricName(String ruleMetricName) {
+        this.ruleMetricName = ruleMetricName;
+    }
+
+    public String getRuleMetricEnCode() {
+        return ruleMetricEnCode;
+    }
+
+    public void setRuleMetricEnCode(String ruleMetricEnCode) {
+        this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
+    }
+
+    public String getSqlCheckArea() {
+        return sqlCheckArea;
+    }
+
+    public void setSqlCheckArea(String sqlCheckArea) {
+        this.sqlCheckArea = sqlCheckArea;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
     }
 
     @Override
@@ -204,17 +397,9 @@ public class ExcelCustomRuleByProject extends BaseRowModel {
             ", ruleGroupName='" + ruleGroupName + '\'' +
             ", ruleName='" + ruleName + '\'' +
             ", outputName='" + outputName + '\'' +
-            ", saveMidTable=" + saveMidTable +
             ", clusterName='" + clusterName + '\'' +
-            ", functionName='" + functionName + '\'' +
-            ", functionContent='" + functionContent + '\'' +
-            ", fromContent='" + fromContent + '\'' +
-            ", whereContent='" + whereContent + '\'' +
-            ", alarmCheckName='" + alarmCheckName + '\'' +
-            ", checkTemplateName='" + checkTemplateName + '\'' +
-            ", compareType='" + compareType + '\'' +
-            ", threshold='" + threshold + '\'' +
-            ", abortOnFailure=" + abortOnFailure +
+            ", createUser='" + createUser + '\'' +
+            ", createTime='" + createTime + '\'' +
             '}';
     }
 }

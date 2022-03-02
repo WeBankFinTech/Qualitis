@@ -20,7 +20,9 @@ package com.webank.wedatasphere.qualitis.metadata.request;
  * @author howeye
  */
 public class GetClusterByUserRequest {
-
+    /**
+     * Clust list in UI
+     */
     private String loginUser;
     private Integer startIndex;
     private Integer pageSize;

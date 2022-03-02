@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author allenzhou
  */
 public class CsTableInfoDetail {
-
     @JsonProperty("table_name")
     private String tableName;
     @JsonProperty("context_Key")

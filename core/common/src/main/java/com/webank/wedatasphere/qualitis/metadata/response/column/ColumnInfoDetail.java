@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class ColumnInfoDetail {
-
     @JsonProperty("column_name")
     private String fieldName;
     @JsonProperty("data_type")
@@ -31,7 +30,7 @@ public class ColumnInfoDetail {
      * Extended attributes, displayed as data source rule query.
      */
     @JsonProperty("column_length")
-    private int columnLen;
+    private Integer columnLen;
     @JsonProperty("column_alias")
     private String columnAlias;
     @JsonProperty("column_comment")
@@ -40,6 +39,8 @@ public class ColumnInfoDetail {
     private Boolean isPrimary;
     @JsonProperty("is_partition")
     private Boolean isPartitionField;
+    @JsonProperty("rule_count")
+    private Integer ruleCount;
 
     public ColumnInfoDetail() {
         // Default Constructor
@@ -66,11 +67,11 @@ public class ColumnInfoDetail {
         this.dataType = dataType;
     }
 
-    public int getColumnLen() {
+    public Integer getColumnLen() {
         return columnLen;
     }
 
-    public void setColumnLen(int columnLen) {
+    public void setColumnLen(Integer columnLen) {
         this.columnLen = columnLen;
     }
 
@@ -104,5 +105,21 @@ public class ColumnInfoDetail {
 
     public void setPartitionField(Boolean partitionField) {
         isPartitionField = partitionField;
+    }
+
+    public Integer getRuleCount() {
+        return ruleCount;
+    }
+
+    public void setRuleCount(Integer ruleCount) {
+        this.ruleCount = ruleCount;
+    }
+
+    @Override
+    public String toString() {
+        return "ColumnInfoDetail{" +
+            "fieldName='" + fieldName + '\'' +
+            ", dataType='" + dataType + '\'' +
+            '}';
     }
 }

@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
-import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
 
 /**
  * @author howeye
@@ -38,7 +37,7 @@ public class AddUserProxyUserResponse {
 
     public AddUserProxyUserResponse(UserProxyUser userProxyUser) {
         this.userProxyUserId = userProxyUser.getId();
-        this.username = userProxyUser.getUser().getUsername();
+        this.username = userProxyUser.getUser().getUserName();
         this.proxyUserName = userProxyUser.getProxyUser().getProxyUserName();
     }
 

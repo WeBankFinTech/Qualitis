@@ -29,6 +29,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -43,12 +44,13 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(length = 30, unique = true)
-    private String username;
+    @Column(name = "user_name", length = 30, unique = true)
+    private String userName;
     @Column(length = 64)
     private String password;
     private String chineseName;
-    private String department;
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Department department;
 
     @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
     @JoinTable(name = "qualitis_auth_user_role",
@@ -71,6 +73,13 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
     private Set<UserProxyUser> userProxyUsers;
 
+    @Column(name = "lock_time")
+    private Long lockTime;
+    @Column(name = "login_error_time")
+    private Long loginErrorTime;
+    @Column(name = "login_error_count")
+    private Integer loginErrorCount;
+
     public User() {
         // Default Constructor
     }
@@ -83,12 +92,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getPassword() {
@@ -139,11 +148,11 @@ public class User {
         this.chineseName = chineseName;
     }
 
-    public String getDepartment() {
+    public Department getDepartment() {
         return department;
     }
 
-    public void setDepartment(String department) {
+    public void setDepartment(Department department) {
         this.department = department;
     }
 
@@ -153,5 +162,29 @@ public class User {
 
     public void setUserProxyUsers(Set<UserProxyUser> userProxyUsers) {
         this.userProxyUsers = userProxyUsers;
+    }
+
+    public Long getLockTime() {
+        return lockTime;
+    }
+
+    public void setLockTime(Long lockTime) {
+        this.lockTime = lockTime;
+    }
+
+    public Long getLoginErrorTime() {
+        return loginErrorTime;
+    }
+
+    public void setLoginErrorTime(Long loginErrorTime) {
+        this.loginErrorTime = loginErrorTime;
+    }
+
+    public Integer getLoginErrorCount() {
+        return loginErrorCount;
+    }
+
+    public void setLoginErrorCount(Integer loginErrorCount) {
+        this.loginErrorCount = loginErrorCount;
     }
 }

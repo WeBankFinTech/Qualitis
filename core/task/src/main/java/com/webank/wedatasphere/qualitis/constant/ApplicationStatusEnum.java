@@ -19,7 +19,7 @@ package com.webank.wedatasphere.qualitis.constant;
 /**
  * @author howeye
  */
-public enum  ApplicationStatusEnum {
+public enum ApplicationStatusEnum {
 
     /**
      * application status enum

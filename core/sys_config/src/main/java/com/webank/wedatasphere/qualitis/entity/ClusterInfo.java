@@ -45,6 +45,9 @@ public class ClusterInfo {
     @JsonProperty("linkis_token")
     private String linkisToken;
 
+    @Column(name = "skip_data_size")
+    private String skipDataSize;
+
     public ClusterInfo() {
         // Default Constructor
     }
@@ -87,5 +90,13 @@ public class ClusterInfo {
 
     public void setLinkisToken(String linkisToken) {
         this.linkisToken = linkisToken;
+    }
+
+    public String getSkipDataSize() {
+        return skipDataSize;
+    }
+
+    public void setSkipDataSize(String skipDataSize) {
+        this.skipDataSize = skipDataSize;
     }
 }

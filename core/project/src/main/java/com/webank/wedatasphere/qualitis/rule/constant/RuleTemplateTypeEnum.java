@@ -24,10 +24,12 @@ public enum RuleTemplateTypeEnum {
      * 1 Single Table verification template
      * 2 Custom template
      * 3 Multi-table verification template
+     * 4 File custom template
      */
     SINGLE_SOURCE_TEMPLATE(1, "单表模版"),
     CUSTOM(2, "自定义模版"),
-    MULTI_SOURCE_TEMPLATE(3, "跨表模版");
+    MULTI_SOURCE_TEMPLATE(3, "跨表模版"),
+    FILE_COUSTOM(4, "文件自定义模版");
 
     private Integer code;
     private String message;

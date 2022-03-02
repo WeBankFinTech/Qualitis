@@ -43,16 +43,15 @@ public class JobController {
     private static final Logger LOGGER = LoggerFactory.getLogger(JobController.class);
 
     @GET
-    @Path("log/{clusterId}/{taskId}")
+    @Path("log/{clusterName}/{taskId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getJobLog(@PathParam("clusterId")String clusterId, @PathParam("taskId")Integer taskId) throws UnExpectedRequestException {
+    public GeneralResponse<?> getJobLog(@PathParam("clusterName")String clusterName, @PathParam("taskId")Long taskId) throws UnExpectedRequestException {
         try {
-            return jobService.getTaskLog(taskId, clusterId);
+            return jobService.getTaskLog(taskId, clusterName);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to find task log. task_id: {}, cluster_id: {}, caused by: {}", taskId.toString().replace("\r", "").replace("\n", ""),
-                clusterId.replace("\r", "").replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""));
+            LOGGER.error("Failed to find task log. task_id: {}, cluster_name: {}, caused by: {}", taskId, clusterName, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_TASK_LOG}", null);
         }
     }

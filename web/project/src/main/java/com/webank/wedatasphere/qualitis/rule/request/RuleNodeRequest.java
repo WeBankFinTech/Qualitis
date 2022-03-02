@@ -1,73 +1,48 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
-import org.codehaus.jackson.annotate.JsonProperty;
-
 /**
  * @author allenzhou
  */
 public class RuleNodeRequest {
-    @JsonProperty("ruleObject")
     private String ruleObject;
-    @JsonProperty("templateObject")
     private String templateObject;
-    @JsonProperty("ruleGroupObject")
     private String ruleGroupObject;
-    @JsonProperty("ruleDataSourcesObject")
     private String ruleDataSourcesObject;
-    @JsonProperty("ruleDataSourceMappingsObject")
     private String ruleDataSourceMappingsObject;
-    @JsonProperty("alarmConfigsObject")
     private String alarmConfigsObject;
-    @JsonProperty("ruleVariablesObject")
     private String ruleVariablesObject;
 
     /**
      * Template.
      */
-    @JsonProperty("templateTemplateStatisticsInputMetaObject")
     private String templateTemplateStatisticsInputMetaObject;
-    @JsonProperty("templateTemplateMidTableInputMetaObject")
     private String templateTemplateMidTableInputMetaObject;
-    @JsonProperty("templateTemplateOutputMetaObject")
     private String templateTemplateOutputMetaObject;
 
     /**
      * Project info.
      */
-    @JsonProperty("projectId")
     private String projectId;
-    @JsonProperty("projectName")
     private String projectName;
-    @JsonProperty("userName")
     private String userName;
 
-    @JsonProperty("newProjectId")
     private String newProjectId;
 
     /**
      * Child rule.
      */
-    @JsonProperty("childRuleObject")
     private String childRuleObject;
-    @JsonProperty("childTemplateObject")
     private String childTemplateObject;
-    @JsonProperty("childRuleDataSourcesObject")
     private String childRuleDataSourcesObject;
-    @JsonProperty("childRuleDataSourceMappingsObject")
     private String childRuleDataSourceMappingsObject;
-    @JsonProperty("childAlarmConfigsObject")
     private String childAlarmConfigsObject;
-    @JsonProperty("childRuleVariablesObject")
     private String childRuleVariablesObject;
 
     /**
      * Child template info.
      */
-    @JsonProperty("childTemplateTemplateStatisticsInputMetaObject")
     private String childTemplateTemplateStatisticsInputMetaObject;
-    @JsonProperty("childTemplateTemplateMidTableInputMetaObject")
     private String childTemplateTemplateMidTableInputMetaObject;
-    @JsonProperty("childTemplateTemplateOutputMetaObject")
     private String childTemplateTemplateOutputMetaObject;
 
     public String getRuleObject() {
@@ -256,4 +231,32 @@ public class RuleNodeRequest {
         this.userName = userName;
     }
 
+    @Override
+    public String toString() {
+        return "RuleNodeRequest{" +
+            "ruleObject='" + ruleObject + '\'' +
+            ", templateObject='" + templateObject + '\'' +
+            ", ruleGroupObject='" + ruleGroupObject + '\'' +
+            ", ruleDataSourcesObject='" + ruleDataSourcesObject + '\'' +
+            ", ruleDataSourceMappingsObject='" + ruleDataSourceMappingsObject + '\'' +
+            ", alarmConfigsObject='" + alarmConfigsObject + '\'' +
+            ", ruleVariablesObject='" + ruleVariablesObject + '\'' +
+            ", templateTemplateStatisticsInputMetaObject='" + templateTemplateStatisticsInputMetaObject + '\'' +
+            ", templateTemplateMidTableInputMetaObject='" + templateTemplateMidTableInputMetaObject + '\'' +
+            ", templateTemplateOutputMetaObject='" + templateTemplateOutputMetaObject + '\'' +
+            ", projectId='" + projectId + '\'' +
+            ", projectName='" + projectName + '\'' +
+            ", userName='" + userName + '\'' +
+            ", newProjectId='" + newProjectId + '\'' +
+            ", childRuleObject='" + childRuleObject + '\'' +
+            ", childTemplateObject='" + childTemplateObject + '\'' +
+            ", childRuleDataSourcesObject='" + childRuleDataSourcesObject + '\'' +
+            ", childRuleDataSourceMappingsObject='" + childRuleDataSourceMappingsObject + '\'' +
+            ", childAlarmConfigsObject='" + childAlarmConfigsObject + '\'' +
+            ", childRuleVariablesObject='" + childRuleVariablesObject + '\'' +
+            ", childTemplateTemplateStatisticsInputMetaObject='" + childTemplateTemplateStatisticsInputMetaObject + '\'' +
+            ", childTemplateTemplateMidTableInputMetaObject='" + childTemplateTemplateMidTableInputMetaObject + '\'' +
+            ", childTemplateTemplateOutputMetaObject='" + childTemplateTemplateOutputMetaObject + '\'' +
+            '}';
+    }
 }

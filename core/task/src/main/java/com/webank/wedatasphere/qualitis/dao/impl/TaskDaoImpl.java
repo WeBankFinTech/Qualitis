@@ -20,7 +20,6 @@ import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskRepository;
 import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -46,8 +45,8 @@ public class TaskDaoImpl implements TaskDao {
     }
 
     @Override
-    public Task findByRemoteTaskId(Integer remoteTaskId) {
-        return repository.findByTaskRemoteId(remoteTaskId);
+    public Task findByRemoteTaskIdAndClusterName(Long remoteTaskId, String clusterName) {
+        return repository.findByTaskRemoteIdAndClusterName(remoteTaskId, clusterName);
     }
 
     @Override
@@ -63,5 +62,11 @@ public class TaskDaoImpl implements TaskDao {
     @Override
     public List<Task> findByApplicationAndStatusInAndTaskRemoteIdNotNull(Application application, List<Integer> statusList) {
         return repository.findByApplicationAndStatusInAndTaskRemoteIdNotNull(application, statusList);
+    }
+
+    @Override
+    public List<Task> findWithSubmitTimeAndDatasource(String startTime, String endTime, String clusterName, String databaseName,
+        String tableName) {
+        return repository.findWithSubmitTimeAndDatasource(startTime, endTime, clusterName, databaseName, tableName);
     }
 }

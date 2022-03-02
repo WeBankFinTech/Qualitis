@@ -46,6 +46,9 @@ public class Role {
     @OneToMany(mappedBy = "role", cascade = CascadeType.REMOVE)
     private List<RolePermission> rolePermissionList;
 
+    @OneToOne(fetch = FetchType.EAGER)
+    private Department department;
+
     public Role() {
         // Default Constructor
     }
@@ -88,6 +91,14 @@ public class Role {
 
     public void setRolePermissionList(List<RolePermission> rolePermissionList) {
         this.rolePermissionList = rolePermissionList;
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     @Override

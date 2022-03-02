@@ -25,6 +25,8 @@ public class RoleAddRequest {
 
     @JsonProperty("role_name")
     private String roleName;
+    @JsonProperty("department_name")
+    private String departmentName;
 
     public RoleAddRequest() {
         // Default Constructor
@@ -36,6 +38,14 @@ public class RoleAddRequest {
 
     public void setRoleName(String roleName) {
         this.roleName = roleName;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 
     @Override
