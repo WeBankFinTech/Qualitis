@@ -22,7 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class RoleModifyRequest {
-
+    @JsonProperty("department_name")
+    private String departmentName;
     @JsonProperty("role_name")
     private String roleName;
     @JsonProperty("role_id")
@@ -30,6 +31,14 @@ public class RoleModifyRequest {
 
     public RoleModifyRequest() {
         // Default Constructor
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 
     public String getRoleName() {
@@ -51,8 +60,9 @@ public class RoleModifyRequest {
     @Override
     public String toString() {
         return "RoleModifyRequest{" +
-                "roleName='" + roleName + '\'' +
-                ", roleId=" + roleId +
-                '}';
+            "departmentName='" + departmentName + '\'' +
+            ", roleName='" + roleName + '\'' +
+            ", roleId=" + roleId +
+            '}';
     }
 }

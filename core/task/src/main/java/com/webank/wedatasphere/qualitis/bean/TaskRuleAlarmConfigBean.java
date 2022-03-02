@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.bean;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+
 /**
  * @author howeye
  */
@@ -25,6 +27,10 @@ public class TaskRuleAlarmConfigBean {
     private Integer checkTemplate;
     private Double threshold;
     private Integer compareType;
+    private RuleMetric ruleMetric;
+    private Boolean uploadRuleMetricValue;
+    private Boolean uploadAbnormalValue;
+    private Boolean deleteFailCheckResult;
 
     public TaskRuleAlarmConfigBean() {
     }
@@ -59,5 +65,37 @@ public class TaskRuleAlarmConfigBean {
 
     public void setCompareType(Integer compareType) {
         this.compareType = compareType;
+    }
+
+    public RuleMetric getRuleMetric() {
+        return ruleMetric;
+    }
+
+    public void setRuleMetric(RuleMetric ruleMetric) {
+        this.ruleMetric = ruleMetric;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
     }
 }

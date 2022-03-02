@@ -17,30 +17,39 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.collections.CollectionUtils;
 
 /**
  * @author howeye
  */
 public class ApplicationTaskResponse {
-
     @JsonProperty("application_id")
     private String applicationId;
+    @JsonProperty("application_status")
+    private Integer applicationStatus;
     @JsonProperty("task")
     private List<TaskSimpleResponse> taskSimpleResponses;
 
-    public ApplicationTaskResponse() {
+    public ApplicationTaskResponse(Application application, List<Task> tasks) {
+        this.applicationId = application.getId();
+        this.applicationStatus = application.getStatus();
+        this.taskSimpleResponses = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(tasks)) {
+            for (Task task : tasks) {
+                this.taskSimpleResponses.add(new TaskSimpleResponse(task));
+            }
+        }
+
     }
 
-    public ApplicationTaskResponse(List<Task> tasks) {
-        this.taskSimpleResponses = new ArrayList<>();
-        for (Task task : tasks) {
-            this.taskSimpleResponses.add(new TaskSimpleResponse(task));
-            this.applicationId = task.getApplication().getId();
-        }
+    public ApplicationTaskResponse(Application application) {
+        this.applicationId = application.getId();
+        this.applicationStatus = application.getStatus();
     }
 
     public String getApplicationId() {
@@ -49,6 +58,14 @@ public class ApplicationTaskResponse {
 
     public void setApplicationId(String applicationId) {
         this.applicationId = applicationId;
+    }
+
+    public Integer getApplicationStatus() {
+        return applicationStatus;
+    }
+
+    public void setApplicationStatus(Integer applicationStatus) {
+        this.applicationStatus = applicationStatus;
     }
 
     public List<TaskSimpleResponse> getTaskSimpleResponses() {

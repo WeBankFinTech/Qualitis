@@ -18,8 +18,14 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import javax.persistence.*;
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 /**
  * @author howeye
@@ -28,7 +34,6 @@ import java.util.Objects;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @Table(name = "qualitis_rule_datasource")
 public class RuleDataSource {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,9 +43,10 @@ public class RuleDataSource {
     private String dbName;
     @Column(name = "table_name", length = 100)
     private String tableName;
-    @Column(name = "col_name", length = 500)
+    @Column(name = "col_name", columnDefinition = "MEDIUMTEXT")
     private String colName;
-
+    @Column(name = "black_col_name")
+    private Boolean blackColName;
     @Column(name = "project_id", length = 20)
     private Long projectId;
 
@@ -53,6 +59,22 @@ public class RuleDataSource {
     @Column(name = "datasource_index")
     private Integer datasourceIndex;
 
+    @Column(name = "proxy_user")
+    private String proxyUser;
+
+    @Column(name = "linkis_datasoure_id")
+    private Long linkisDataSourceId;
+    @Column(name = "linkis_datasoure_version_id")
+    private Long linkisDataSourceVersionId;
+
+    @Column(name = "linkis_datasource_name")
+    private String linkisDataSourceName;
+    /**
+     * datasource type, such as hive, mysql, kafka
+     */
+    @Column(name = "datasource_type")
+    private Integer datasourceType;
+
     public RuleDataSource() {
         // Default Constructor
     }
@@ -60,13 +82,18 @@ public class RuleDataSource {
     public RuleDataSource(RuleDataSource ruleDataSource) {
         this.id = ruleDataSource.getId();
         this.clusterName = ruleDataSource.getClusterName();
-        this.dbName = ruleDataSource.getDbName();
         this.tableName = ruleDataSource.getTableName();
         this.colName = ruleDataSource.getColName();
+        this.blackColName = ruleDataSource.getBlackColName();
+        this.dbName = ruleDataSource.getDbName();
         this.projectId = ruleDataSource.getProjectId();
-        this.rule = ruleDataSource.getRule();
         this.filter = ruleDataSource.getFilter();
+        this.rule = ruleDataSource.getRule();
         this.datasourceIndex = ruleDataSource.getDatasourceIndex();
+        this.linkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
+        this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
+        this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
+        this.datasourceType = ruleDataSource.getDatasourceType();
     }
 
     public Long getId() {
@@ -109,6 +136,14 @@ public class RuleDataSource {
         this.colName = colName;
     }
 
+    public Boolean getBlackColName() {
+        return blackColName;
+    }
+
+    public void setBlackColName(Boolean blackColName) {
+        this.blackColName = blackColName;
+    }
+
     public String getFilter() {
         return filter;
     }
@@ -141,6 +176,46 @@ public class RuleDataSource {
         this.datasourceIndex = datasourceIndex;
     }
 
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    public Long getLinkisDataSourceId() {
+        return linkisDataSourceId;
+    }
+
+    public void setLinkisDataSourceId(Long linkisDataSourceId) {
+        this.linkisDataSourceId = linkisDataSourceId;
+    }
+
+    public Long getLinkisDataSourceVersionId() {
+        return linkisDataSourceVersionId;
+    }
+
+    public void setLinkisDataSourceVersionId(Long linkisDataSourceVersionId) {
+        this.linkisDataSourceVersionId = linkisDataSourceVersionId;
+    }
+
+    public String getLinkisDataSourceName() {
+        return linkisDataSourceName;
+    }
+
+    public void setLinkisDataSourceName(String linkisDataSourceName) {
+        this.linkisDataSourceName = linkisDataSourceName;
+    }
+
+    public Integer getDatasourceType() {
+        return datasourceType;
+    }
+
+    public void setDatasourceType(Integer datasourceType) {
+        this.datasourceType = datasourceType;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {return true;}
@@ -152,5 +227,20 @@ public class RuleDataSource {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "RuleDataSource{" +
+            "id=" + id +
+            ", clusterName='" + clusterName + '\'' +
+            ", dbName='" + dbName + '\'' +
+            ", tableName='" + tableName + '\'' +
+            ", colName='" + colName + '\'' +
+            ", projectId=" + projectId +
+            ", filter='" + filter + '\'' +
+            ", datasourceIndex=" + datasourceIndex +
+            ", proxyUser=" + proxyUser +
+            '}';
     }
 }

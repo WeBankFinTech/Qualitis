@@ -44,6 +44,7 @@ import com.webank.wedatasphere.qualitis.job.MonitorManager;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.JobService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,35 +77,26 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public GeneralResponse<?> getTaskLog(Integer taskId, String clusterId) throws UnExpectedRequestException {
-        Task task = taskDao.findByRemoteTaskId(taskId);
+    public GeneralResponse<?> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException {
+        Task task = taskDao.findById(taskId);
         if (task == null) {
             throw new UnExpectedRequestException("{&JOB_ID_DOES_NOT_EXIST}");
         }
 
-        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(clusterId);
+        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(clusterName);
         if (clusterInfo == null) {
-            throw new UnExpectedRequestException("{&CLUSTER} : [" + clusterId + "] {&DOES_NOT_EXIST}");
-        }
-
-        Long userId = HttpUtils.getUserId(httpServletRequest);
-        User user = userDao.findById(userId);
-
-        // Check if current user has permissions getting logs of this job
-        String createUser = task.getApplication().getCreateUser();
-        Boolean flag = createUser.equals(user.getUsername());
-        if (!flag) {
-            throw new UnExpectedRequestException("{&USER_HAS_NO_PERMISSION_TO_ACCESS_THE_LOG_OF_TASK}, id: " + taskId);
+            throw new UnExpectedRequestException("Cluster info {&DOES_NOT_EXIST}");
         }
 
         LogResult logResult;
+        String proxyUser = task.getTaskProxyUser();
         try {
-            logResult = monitorManager.getTaskPartialLog(taskId, 0, task.getApplication().getExecuteUser(), clusterInfo.getLinkisAddress(), clusterId);
+            logResult = monitorManager.getTaskPartialLog(task.getTaskRemoteId(), 0, StringUtils.isNotBlank(proxyUser) ? proxyUser : task.getApplication().getExecuteUser(), clusterInfo.getLinkisAddress(), clusterName);
         } catch (LogPartialException | ClusterInfoNotConfigException e) {
             throw new UnExpectedRequestException(e.getMessage());
         }
 
-        LOGGER.info("Succeed to get task log, task_id: {}, cluster_id: {}", taskId, clusterId);
+        LOGGER.info("Succeed to get task log, task_id: {}, cluster_id: {}", taskId, clusterName);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", logResult.getLog());
     }
 }

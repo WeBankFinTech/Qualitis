@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 
 import java.util.List;
@@ -40,6 +42,15 @@ public interface RuleTemplateDao {
     List<Template> findAllDefaultTemplate(int page, int size);
 
     /**
+     * Find template by rule template level
+     * @param level
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Template> findAllDefaultTemplateByLevel(Integer level, int page, int size);
+
+    /**
      * Count all default template
      * @return
      */
@@ -60,21 +71,64 @@ public interface RuleTemplateDao {
 
     /**
      * Find all multi-table verification template
+     *
+     * @param dataSourceTypeCode
      * @param page
      * @param size
      * @return
      */
-    List<Template> findAllMultiTemplate(int page, int size);
+    List<Template> findAllMultiTemplate(Integer dataSourceTypeCode, int page, int size);
 
     /**
      * Count all multi-table template
      * @return
+     * @param dataSourceTypeCode
      */
-    Long countAllMultiTemplate();
+    Long countAllMultiTemplate(Integer dataSourceTypeCode);
 
     /**
      * Find all template
      * @return
      */
     List<Template> getAllTemplate();
+
+    /**
+     * Find template by name
+     * @param name
+     * @return
+     */
+    Template findByName(String name);
+
+    /**
+     * Find template by import export name
+     * @param importExportName
+     * @return
+     */
+    Template findByImportExportName(String importExportName);
+
+    /**
+     * Find templates.
+     * @param level
+     * @param type
+     * @param departmentList
+     * @param userList
+     * @param dataSourceTypeCode
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Template> findTemplates(Integer level, Integer type, List<Department> departmentList, List<User> userList,
+        Integer dataSourceTypeCode, int page, int size);
+
+    /**
+     * Count templates.
+     * @param code
+     * @param multiSourceTemplateCode
+     * @param departments
+     * @param users
+     * @param dataSourceTypeCode
+     * @return
+     */
+    long countTemplates(Integer code, Integer multiSourceTemplateCode, List<Department> departments, List<User> users,
+        Integer dataSourceTypeCode);
 }

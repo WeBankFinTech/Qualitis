@@ -24,11 +24,12 @@ import com.webank.wedatasphere.qualitis.entity.Role;
  * @author howeye
  */
 public class RoleResponse {
-
     @JsonProperty("role_id")
     private long roleId;
     @JsonProperty("role_name")
     private String roleName;
+    @JsonProperty("department_name")
+    private String departmentName;
 
     public RoleResponse() {
         // Default Constructor
@@ -37,6 +38,7 @@ public class RoleResponse {
     public RoleResponse(Role role) {
         this.roleId = role.getId();
         this.roleName = role.getName();
+        this.departmentName = role.getDepartment() == null ? "" :role.getDepartment().getName();
     }
 
     public long getRoleId() {
@@ -55,11 +57,20 @@ public class RoleResponse {
         this.roleName = roleName;
     }
 
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
     @Override
     public String toString() {
         return "RoleResponse{" +
-                "roleId=" + roleId +
-                ", roleName='" + roleName + '\'' +
-                '}';
+            "roleId=" + roleId +
+            ", roleName='" + roleName + '\'' +
+            ", departmentName='" + departmentName + '\'' +
+            '}';
     }
 }

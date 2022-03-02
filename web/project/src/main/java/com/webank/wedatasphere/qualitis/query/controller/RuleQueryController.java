@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.query.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
@@ -29,6 +30,7 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,7 +137,7 @@ public class RuleQueryController {
 
             DataInfo<RuleQueryDataSource> dataInfo = new DataInfo<>();
             // Get total records
-            List<RuleQueryDataSource> allRuleDataSource = ruleQueryService.filter(null, HttpUtils.getUserName(request), "%", "%", "%", true);
+            List<RuleQueryDataSource> allRuleDataSource = ruleQueryService.filter(null, user, "%", "%", "%", true);
             dataInfo.setTotalCount(allRuleDataSource == null ? 0 : allRuleDataSource.size());
 
             dataInfo.setContent(results);
@@ -153,11 +155,23 @@ public class RuleQueryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> columns(RuleQueryRequest param, @Context HttpServletRequest request) {
         // Get login user
-        String user = HttpUtils.getUserName(request);
+        String loginUser = HttpUtils.getUserName(request);
+        String proxyUser = param.getUser();
+        if (StringUtils.isNotBlank(proxyUser) && proxyUser != loginUser) {
+            loginUser = proxyUser;
+        }
         try {
-            List<ColumnInfoDetail> results = ruleQueryService.getColumnsByTableName(param.getCluster(), param.getDb(), param.getTable(), user);
+            List<ColumnInfoDetail> results = ruleQueryService.getColumnsByTableName(param.getCluster(), param.getDatasourceId(), param.getDb(), param.getTable(), loginUser);
+            List<String> cols = ruleQueryService.findCols(param.getCluster(), param.getDb(), param.getTable(), loginUser);
+            if (results == null || ! ruleQueryService.compareDataSource(cols, results)) {
+                throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
+            }
             LOG.info("[My DataSource] Succeed to query table columns. The column number of results:{}", results == null ? 0 : results.size());
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
+        } catch (MetaDataAcquireFailedException e) {
+            return new GeneralResponse<>("400", e.getMessage(), null);
+        }  catch (UnExpectedRequestException e) {
+            return new GeneralResponse<>("400", e.getMessage(), null);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to query table columns, internal error", e);
             return new GeneralResponse<>("500", e.getMessage(), null);
@@ -170,14 +184,12 @@ public class RuleQueryController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> rules(RuleQueryRequest param, @Context HttpServletRequest request) {
         // Get login user
-        String user = HttpUtils.getUserName(request);
+        String loginUser = HttpUtils.getUserName(request);
         try {
             param.checkRequest();
-            DataInfo<HiveRuleDetail> dataInfo = new DataInfo<>();
-            List<HiveRuleDetail> results = ruleQueryService.getRulesByColumn(param.getCluster(), param.getDb(), param.getTable(), param.getColumn(), user);
-            LOG.info("[My DataSource] Succeed to query table columns. The column number of results:{}", results == null ? 0 : results.size());
-            dataInfo.setContent(results);
-            dataInfo.setTotalCount(results == null ? 0 : results.size());
+            DataInfo<HiveRuleDetail> dataInfo = ruleQueryService.getRulesByColumn(param.getCluster(), param.getDb(), param.getTable()
+                , "%" + param.getColumn() + "%", loginUser, param.getPage(), param.getSize());
+
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
         } catch (UnExpectedRequestException e) {
             LOG.error("[My DataSource] Failed to query table columns, request error", e);

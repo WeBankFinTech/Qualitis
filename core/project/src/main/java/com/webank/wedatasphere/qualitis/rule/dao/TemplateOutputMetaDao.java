@@ -48,13 +48,6 @@ public interface TemplateOutputMetaDao {
     TemplateOutputMeta saveTemplateOutputMeta(TemplateOutputMeta templateOutputMeta);
 
     /**
-     * Find TemplateOutputMeta By Template
-     * @param template
-     * @return
-     */
-    List<TemplateOutputMeta> findByTemplate(Template template);
-
-    /**
      * Delete output meta by template
      * @param templateInDb
      */

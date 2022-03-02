@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class ClusterInfoDetail {
-
     @JsonProperty("source_type")
     private String sourceType;
     @JsonProperty("cluster_name")

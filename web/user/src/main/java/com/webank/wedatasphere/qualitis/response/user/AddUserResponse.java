@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.response.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.User;
 
 /**
  * @author howeye
@@ -31,7 +30,7 @@ public class AddUserResponse {
     private String password;
     @JsonProperty("chinese_name")
     private String chineseName;
-    private String department;
+    private String departmentName;
 
     public AddUserResponse() {
         // Default Constructor
@@ -39,9 +38,9 @@ public class AddUserResponse {
 
     public AddUserResponse(User user, String password) {
         this.userId = user.getId();
-        this.username = user.getUsername();
+        this.username = user.getUserName();
         this.password = password;
-        this.department = user.getDepartment();
+        this.departmentName = user.getDepartment() != null ? user.getDepartment().getName() : "";
         this.chineseName = user.getChineseName();
     }
 
@@ -77,11 +76,11 @@ public class AddUserResponse {
         this.chineseName = chineseName;
     }
 
-    public String getDepartment() {
-        return department;
+    public String getDepartmentName() {
+        return departmentName;
     }
 
-    public void setDepartment(String department) {
-        this.department = department;
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 }

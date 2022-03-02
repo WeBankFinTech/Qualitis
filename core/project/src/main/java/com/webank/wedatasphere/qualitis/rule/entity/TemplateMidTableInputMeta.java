@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -72,6 +73,7 @@ public class TemplateMidTableInputMeta {
 
 
     @ManyToOne
+    @JsonIgnore
     private TemplateMidTableInputMeta parent;
 
     @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
@@ -127,6 +129,14 @@ public class TemplateMidTableInputMeta {
 
     public void setReplaceByRequest(Boolean replaceByRequest) {
         this.replaceByRequest = replaceByRequest;
+    }
+
+    public TemplateMidTableInputMeta getParent() {
+        return parent;
+    }
+
+    public void setParent(TemplateMidTableInputMeta parent) {
+        this.parent = parent;
     }
 
     public Set<TemplateMidTableInputMeta> getChildren() {

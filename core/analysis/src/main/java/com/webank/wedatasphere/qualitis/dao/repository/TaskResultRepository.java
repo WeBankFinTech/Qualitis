@@ -17,24 +17,23 @@
 package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
-import java.util.List;
 
 /**
  * @author howeye
  */
 public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
-
     /**
      * Find task result by application and ruls
      * @param applicationId
      * @param ruleId
      * @return
      */
-    TaskResult findByApplicationIdAndRuleId(String applicationId, Long ruleId);
+    List<TaskResult> findByApplicationIdAndRuleId(String applicationId, Long ruleId);
 
     /**
      * Find value avg from begin time and end time
@@ -44,7 +43,19 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @return
      */
     @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3")
-    Double findAvgByCreateTimeBetweenAndRuleId(String begin, String end, Long ruleId);
+    Double findAvgByCreateTimeBetween(String begin, String end, Long ruleId);
+
+
+    /**
+     * Find avg value by rule ID and rule metric ID.
+     * @param begin
+     * @param end
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (t.ruleMetricId = ?4)")
+    Double findAvgByCreateTimeBetween(String begin, String end, Long ruleId, Long ruleMetricId);
 
     /**
      * Find task result by application and rule id
@@ -53,4 +64,58 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @return
      */
     List<TaskResult> findByApplicationIdAndRuleIdIn(String applicationId, List<Long> ruleIds);
+
+    /**
+     * Find rule IDs by rule metric ID.
+     * @param id
+     * @param pageable
+     * @return
+     */
+    @Query(value = "SELECT tr.ruleId from TaskResult tr where tr.ruleMetricId = ?1")
+    Page<Long> findRuleByRuleMetricId(Long id, Pageable pageable);
+
+    /**
+     * Find values by rule ID and rule metric ID.
+     * @param ruleMetricId
+     * @param pageable
+     * @return
+     */
+    @Query(value = "SELECT tr from TaskResult tr where tr.ruleMetricId = ?1")
+    Page<TaskResult> findValuesByRuleAndRuleMetric(long ruleMetricId, Pageable pageable);
+
+    /**
+     * Find value.
+     * @param applicationId
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    @Query(value = "SELECT tr from TaskResult tr where tr.applicationId = ?1 and tr.ruleId = ?2 and tr.ruleMetricId = ?3")
+    TaskResult findValue(String applicationId, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Find value with run date.
+     * @param runDate
+     * @param ruleId
+     * @param ruleMetricId
+     * @return
+     */
+    @Query(value = "SELECT tr from TaskResult tr where tr.runDate = ?1 and tr.ruleId = ?2 and tr.ruleMetricId = ?3")
+    TaskResult findWithRunDate(Long runDate, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Count values.
+     * @param ruleMetricId
+     * @return
+     */
+    @Query(value = "SELECT count(tr.id) from TaskResult tr where tr.ruleMetricId = ?1")
+    int countValuesByRuleMetric(long ruleMetricId);
+
+    /**
+     * Count rules.
+     * @param ruleMetricId
+     * @return
+     */
+    @Query(value = "SELECT count(tr.ruleId) from TaskResult tr where tr.ruleMetricId = ?1")
+    int countRulesByRuleMetric(Long ruleMetricId);
 }

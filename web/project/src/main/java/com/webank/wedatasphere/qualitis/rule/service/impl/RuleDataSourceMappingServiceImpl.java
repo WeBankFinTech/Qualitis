@@ -47,7 +47,7 @@ public class RuleDataSourceMappingServiceImpl implements RuleDataSourceMappingSe
 
     @Override
     @Transactional(rollbackFor = {Exception.class})
-    public List<RuleDataSourceMapping> checkAndSaveRuleDataSourceMapping(List<MultiDataSourceJoinConfigRequest> mappings, Rule rule) {
+    public List<RuleDataSourceMapping>  checkAndSaveRuleDataSourceMapping(List<MultiDataSourceJoinConfigRequest> mappings, Rule rule) {
         List<RuleDataSourceMapping> result = new ArrayList<>();
         for (MultiDataSourceJoinConfigRequest mapping : mappings) {
             RuleDataSourceMapping ruleDataSourceMapping = new RuleDataSourceMapping();
@@ -57,8 +57,12 @@ public class RuleDataSourceMappingServiceImpl implements RuleDataSourceMappingSe
 
             ruleDataSourceMapping.setLeftColumnNames(String.join(",", mapping.getLeft().stream()
                     .map(MultiDataSourceJoinColumnRequest::getColumnName).collect(Collectors.toList())));
+            ruleDataSourceMapping.setLeftColumnTypes(String.join("|", mapping.getLeft().stream()
+                .map(MultiDataSourceJoinColumnRequest::getColumnType).collect(Collectors.toList())));
             ruleDataSourceMapping.setRightColumnNames(String.join(",", mapping.getRight().stream()
                     .map(MultiDataSourceJoinColumnRequest::getColumnName).collect(Collectors.toList())));
+            ruleDataSourceMapping.setRightColumnTypes(String.join("|", mapping.getRight().stream()
+                .map(MultiDataSourceJoinColumnRequest::getColumnType).collect(Collectors.toList())));
             ruleDataSourceMapping.setRule(rule);
 
             RuleDataSourceMapping savedRuleDataSourceMapping = ruleDataSourceMappingDao.saveRuleDataSourceMapping(ruleDataSourceMapping);

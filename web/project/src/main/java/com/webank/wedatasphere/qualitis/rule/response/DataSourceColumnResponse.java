@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 
 /**
  * @author howeye
@@ -33,10 +34,10 @@ public class DataSourceColumnResponse {
     }
 
     public DataSourceColumnResponse(String colType) {
-        String[] result = colType.split(":");
-        this.columnName = result[0];
-        if(result.length > 1){
-            this.dataType = result[1];
+        int index = colType.indexOf(SpecCharEnum.COLON.getValue());
+        if(index > 0){
+            this.columnName = colType.substring(0, index);
+            this.dataType = colType.substring(index + 1);
         }
     }
 

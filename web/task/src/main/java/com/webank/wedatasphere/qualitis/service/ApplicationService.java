@@ -17,10 +17,13 @@
 package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.request.FilterAdvanceRequest;
 import com.webank.wedatasphere.qualitis.request.FilterDataSourceRequest;
 import com.webank.wedatasphere.qualitis.request.FilterProjectRequest;
 import com.webank.wedatasphere.qualitis.request.FilterStatusRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.UploadResultRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.FilterDataSourceRequest;
@@ -28,6 +31,8 @@ import com.webank.wedatasphere.qualitis.request.FilterProjectRequest;
 import com.webank.wedatasphere.qualitis.request.FilterStatusRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import java.io.IOException;
+import java.net.MalformedURLException;
 
 /**
  * @author howeye
@@ -75,4 +80,22 @@ public interface ApplicationService {
      * @return
      */
     GeneralResponse<?> filterApplicationId(String applicationId);
+
+    /**
+     * Upload datasource analysis result. such as: rules, check, task result value.
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     * @throws IOException
+     */
+    GeneralResponse<?> uploadDataSourceAnalysisResult(UploadResultRequest request)
+        throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
+
+    /**
+     * Advance filter applications.
+     * @param request
+     * @return
+     */
+    GeneralResponse<?> filterAdvanceApplication(FilterAdvanceRequest request);
 }

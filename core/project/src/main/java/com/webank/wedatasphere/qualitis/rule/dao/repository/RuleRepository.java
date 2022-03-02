@@ -19,16 +19,25 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
  */
 public interface RuleRepository extends JpaRepository<Rule, Long> {
+
+    /**
+     * Count rule by project
+     * @param project
+     * @return
+     */
+    @Query(value = "SELECT COUNT(qr.id) from Rule qr where qr.project = ?1")
+    int countByProject(Project project);
 
     /**
      * Find rule by project
@@ -50,4 +59,13 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @return
      */
     List<Rule> findByTemplate(Template templateInDb);
+
+    /**
+     * Find by project with page.
+     * @param project
+     * @param pageable
+     * @return
+     */
+    Page<Rule> findByProject(Project project, Pageable pageable);
+
 }

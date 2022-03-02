@@ -16,32 +16,57 @@
 
 package com.webank.wedatasphere.qualitis.rule.service;
 
+import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
+import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
-import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+import java.util.List;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
  */
 public interface RuleService {
 
-
     /**
      * Add rule
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws ClusterInfoNotConfigException
+     * @throws TaskNotExistException
      */
-    GeneralResponse<RuleResponse> addRule(AddRuleRequest request) throws UnExpectedRequestException;
+    GeneralResponse<RuleResponse> addRule(AddRuleRequest request)
+        throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+
+    /**
+     * Add rule for bdp-client
+     * @param request
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, String loginUser)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Add uuid with table name
+     * @param datasources
+     */
+    void addUuid(List<DataSourceRequest> datasources);
 
     /**
      * Delete rule
@@ -49,7 +74,7 @@ public interface RuleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException;
+    GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete rule real
@@ -64,8 +89,10 @@ public interface RuleService {
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws ClusterInfoNotConfigException
+     * @throws TaskNotExistException
      */
-    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request) throws UnExpectedRequestException;
+    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * 根据ruleId获取rule详情
@@ -74,22 +101,6 @@ public interface RuleService {
      * @throws UnExpectedRequestException
      */
     GeneralResponse<RuleDetailResponse> getRuleDetail(Long ruleId) throws UnExpectedRequestException;
-
-    /**
-     * 根据规则组，使用json序列化，导出rule及其相关对象
-     * @param ruleGroupId
-     * @return
-     * @throws UnExpectedRequestException
-     */
-    GeneralResponse<RuleNodeResponse> exportRuleByGroupId(Long ruleGroupId) throws UnExpectedRequestException;
-
-    /**
-     * 使用json反序列化，导入rule及其相关对象
-     * @param ruleObject
-     * @return
-     * @throws UnExpectedRequestException
-     */
-    GeneralResponse<RuleResponse> importRule(RuleNodeRequest ruleObject) throws UnExpectedRequestException;
 
     /**
      * Check rule name unique exclude ruleId
@@ -106,4 +117,25 @@ public interface RuleService {
      * @throws UnExpectedRequestException
      */
     void checkRuleOfTemplate(Template templateInDb)  throws UnExpectedRequestException;
+
+    /**
+     * Add rule in one transaction for upload.
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws ClusterInfoNotConfigException
+     * @throws TaskNotExistException
+     */
+    GeneralResponse<RuleResponse> addRuleForUpload(AddRuleRequest request)
+        throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+
+    /**
+     * Modify rule in one transaction for upload.
+     * @param modifyRuleRequest
+     * @param userName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyRuleRequest modifyRuleRequest, String userName)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
 }

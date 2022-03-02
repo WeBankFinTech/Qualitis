@@ -16,13 +16,34 @@
 
 package com.webank.wedatasphere.qualitis.metadata.exception;
 
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+
 /**
  * @author v_wblwyan
  * @date 2018-12-07
  */
 public class MetaDataAcquireFailedException extends Exception {
+    private Integer status;
 
     public MetaDataAcquireFailedException(String message) {
         super(message);
+        this.status = 400;
+    }
+
+    public MetaDataAcquireFailedException(String message, Integer status) {
+        super(message);
+        this.status = status;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public GeneralResponse<?> getResponse() {
+        return new GeneralResponse<>(this.status + "", getMessage(), null);
     }
 }

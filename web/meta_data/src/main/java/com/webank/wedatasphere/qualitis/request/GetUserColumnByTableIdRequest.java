@@ -36,10 +36,30 @@ public class GetUserColumnByTableIdRequest {
     private String dbName;
     @JsonProperty("table_name")
     private String tableName;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
+
+    private String loginUser;
 
     public GetUserColumnByTableIdRequest() {
         startIndex = DEFAULT_START_INDEX;
         pageSize = DEFAULT_PAGE_SIZE;
+    }
+
+    public GetUserColumnByTableIdRequest(Integer startIndex, Integer pageSize, String clusterName, String dbName, String tableName) {
+        this.startIndex = startIndex;
+        this.pageSize = pageSize;
+        this.clusterName = clusterName;
+        this.dbName = dbName;
+        this.tableName = tableName;
+    }
+
+    public String getLoginUser() {
+        return loginUser;
+    }
+
+    public void setLoginUser(String loginUser) {
+        this.loginUser = loginUser;
     }
 
     public Integer getStartIndex() {
@@ -80,5 +100,13 @@ public class GetUserColumnByTableIdRequest {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 }

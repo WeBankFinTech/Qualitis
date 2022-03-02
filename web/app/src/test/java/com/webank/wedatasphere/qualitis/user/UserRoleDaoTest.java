@@ -24,13 +24,6 @@ import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import com.webank.wedatasphere.qualitis.dao.RoleDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
-import com.webank.wedatasphere.qualitis.entity.Role;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserRole;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,18 +77,18 @@ public class UserRoleDaoTest {
     //保存到数据库的对象是否和保存的值一致
     UserRole findByIdEntity = dao.findByUuid(saveEntity.getId());
     assertNotNull(findByIdEntity);
-    assertEquals(findByIdEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByIdEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
     assertEquals(findByIdEntity.getRole().getName(), saveEntity.getRole().getName());
 
     UserRole findByUserAndRoleEntity = dao.findByUserAndRole(saveUser, saveRole);
     assertNotNull(findByUserAndRoleEntity);
-    assertEquals(findByUserAndRoleEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByUserAndRoleEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
     assertEquals(findByUserAndRoleEntity.getRole().getName(), saveEntity.getRole().getName());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserRole> findByRoleEntity = dao.findByRole(saveRole);
     assertTrue(findByRoleEntity.size() > 0);
-    assertEquals(findByRoleEntity.get(0).getUser().getUsername(), saveEntity.getUser().getUsername());
+    assertEquals(findByRoleEntity.get(0).getUser().getUserName(), saveEntity.getUser().getUserName());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserRole> findByUserEntity = dao.findByUser(saveUser);
@@ -121,8 +114,7 @@ public class UserRoleDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setDepartment("xx部门");
-    user.setUsername("xxx");
+    user.setUserName("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);

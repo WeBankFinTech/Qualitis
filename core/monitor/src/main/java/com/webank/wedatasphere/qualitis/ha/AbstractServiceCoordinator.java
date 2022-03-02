@@ -4,7 +4,6 @@ package com.webank.wedatasphere.qualitis.ha;
  * @author howeye
  */
 public abstract class AbstractServiceCoordinator {
-
     /**
      * Do some init work
      */

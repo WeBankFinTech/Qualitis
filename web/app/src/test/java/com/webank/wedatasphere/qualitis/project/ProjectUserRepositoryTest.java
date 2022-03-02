@@ -16,31 +16,21 @@
 
 package com.webank.wedatasphere.qualitis.project;
 
-import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
-import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectRepository;
-import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectUserRepository;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectRepository;
 import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectUserRepository;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author v_wblwyan

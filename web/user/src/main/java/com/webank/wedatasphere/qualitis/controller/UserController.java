@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
@@ -118,6 +119,21 @@ public class UserController {
         } catch (Exception e) {
             LOGGER.error("Failed to find all users, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(), e.getMessage(), username, e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_USERS}", null);
+        }
+    }
+
+    @POST
+    @Path("admin/user/modify_department")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<?> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException {
+        try {
+            return userService.modifyDepartment(request);
+        } catch (UnExpectedRequestException e) {
+            throw  new UnExpectedRequestException(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to modify department, request: {}, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_DEPARTMENT}", null);
         }
     }
 

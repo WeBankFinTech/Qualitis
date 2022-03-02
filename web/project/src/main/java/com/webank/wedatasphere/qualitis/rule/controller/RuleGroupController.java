@@ -22,6 +22,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleGroupRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleGroupResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
@@ -52,7 +53,7 @@ public class RuleGroupController {
     @Path("/{rule_group_id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getRuleIdByRule(@PathParam("rule_group_id")Long ruleGroupId) throws UnExpectedRequestException {
+    public GeneralResponse<?> getRuleByRuleGroupId(@PathParam("rule_group_id")Long ruleGroupId) throws UnExpectedRequestException {
         try {
             // 查看ruleGroup是否存在
             RuleGroup ruleGroupInDb = ruleGroupDao.findById(ruleGroupId);
@@ -66,11 +67,33 @@ public class RuleGroupController {
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to get rules by rule group id. rule_group_id: {}, caused by: {}", ruleGroupId.toString().replace("\r", "")
-                .replace("\n", ""), e.getMessage().replace("\r", "").replace("\n", ""), e);
+            LOGGER.error("Failed to get rules by rule group id. rule_group_id: {}, caused by: {}", ruleGroupId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULES_BY_RULE_GROUP}", null);
         }
     }
 
-
+    @POST
+    @Path("/modify")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<?> modifyRuleGroupById(ModifyRuleGroupRequest modifyRuleGroupRequest) throws UnExpectedRequestException {
+        try {
+            // 查看ruleGroup是否存在
+            modifyRuleGroupRequest.checkRequest();
+            RuleGroup ruleGroupInDb = ruleGroupDao.findById(modifyRuleGroupRequest.getRuleGroupId());
+            if (ruleGroupInDb == null) {
+                throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", modifyRuleGroupRequest.getRuleGroupId()));
+            }
+            ruleGroupInDb.setRuleGroupName(modifyRuleGroupRequest.getRuleGroupName());
+            ruleGroupDao.saveRuleGroup(ruleGroupInDb);
+            return new GeneralResponse<>("200", "Succeed to modify rule group name by rule group id",
+                null);
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to modify rule group name by rule group id. rule_group_id: {}, caused by: {}", modifyRuleGroupRequest.getRuleGroupId()
+                , e.getMessage());
+            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_GROUP_NAME}", null);
+        }
+    }
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.parser;
 
+import com.webank.wedatasphere.qualitis.LocalConfig;
 import org.apache.commons.lang.LocaleUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -33,34 +34,45 @@ import java.util.regex.Pattern;
  */
 @Component
 public class LocaleParser {
-
     private static final Pattern KEY_WORD_PATTERN = Pattern.compile("\\{&.*?}");
-    private static final String ZH_CN_1 = "zh-CN";
-    private static final String ZH_CN_2 = "zh_CN";
+    private static final String EN = "en";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LocaleParser.class);
 
     @Autowired
     private MessageSource messageSource;
+    @Autowired
+    private LocalConfig localConfig;
 
     public String replacePlaceHolderByLocale(String message, String localeStr) {
+        if (StringUtils.isBlank(message)) {
+            return "";
+        }
         Locale locale;
         try {
-            locale = LocaleUtils.toLocale(localeStr);
-        } catch (Exception e) {
-            LOGGER.warn("Failed to get locale: {}, set according to actual parameters", localeStr.replace("\r", "").replace("\n", ""));
-            if (ZH_CN_1.equals(localeStr) || ZH_CN_2.equals(localeStr)) {
-                locale = Locale.CHINA;
+            if (StringUtils.isNotBlank(localeStr)) {
+                locale = LocaleUtils.toLocale(localeStr);
             } else {
-                locale = Locale.US;
+                if (localConfig.getLocal() != null) {
+                    if (localConfig.getLocal().equals(EN)) {
+                        locale = Locale.US;
+                    } else {
+                        locale = Locale.CHINA;
+                    }
+                } else {
+                    locale = Locale.CHINA;
+                }
             }
-        }
-        if (StringUtils.isBlank(localeStr)) {
-            LOGGER.warn("Failed to get locale: {}, set to default en_US", localeStr.replace("\r", "").replace("\n", ""));
-            locale = Locale.US;
-        }
-        if (!locale.equals(Locale.US) && !locale.equals(Locale.CHINA)) {
-            LOGGER.warn("Does not support locale: {}, set to default en_US", localeStr.replace("\r", "").replace("\n", ""));
-            locale = Locale.US;
+        } catch (Exception e) {
+            if (localConfig.getLocal() != null) {
+                if (localConfig.getLocal().equals(EN)) {
+                    locale = Locale.US;
+                } else {
+                    locale = Locale.CHINA;
+                }
+            } else {
+                locale = Locale.CHINA;
+            }
         }
         Matcher m = KEY_WORD_PATTERN.matcher(message);
         try {

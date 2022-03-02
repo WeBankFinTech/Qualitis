@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class ConvertException extends Exception {
-
     public ConvertException(String message) {
         super(message);
     }

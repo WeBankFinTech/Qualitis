@@ -47,6 +47,12 @@ public class ProjectUser {
     public ProjectUser() {
     }
 
+    public ProjectUser(Integer permission, Project project, String userName) {
+        this.permission = permission;
+        this.project = project;
+        this.userName = userName;
+    }
+
     public ProjectUser(Integer permission, Project project, String userName, String userFullName) {
         this.permission = permission;
         this.project = project;

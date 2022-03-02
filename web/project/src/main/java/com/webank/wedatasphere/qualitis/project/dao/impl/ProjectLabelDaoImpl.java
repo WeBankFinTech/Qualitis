@@ -17,8 +17,8 @@ public class ProjectLabelDaoImpl implements ProjectLabelDao {
     private ProjectLabelRepository projectLabelRepository;
 
     @Override
-    public void saveAll(Iterable<ProjectLabel> ProjectLabels) {
-        projectLabelRepository.saveAll(ProjectLabels);
+    public void saveAll(Iterable<ProjectLabel> projectLabels) {
+        projectLabelRepository.saveAll(projectLabels);
     }
 
     @Override
