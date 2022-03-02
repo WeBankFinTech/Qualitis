@@ -42,6 +42,7 @@
                     <Wb-select v-model="status" @on-change="changeStatus">
                         <Wb-option v-for="item in statusList" :key="item.status" :value="item.status" :label="item.type" />
                     </Wb-select>
+
                 </Cell>
                 <Cell v-if="searchType===3" span="4" offset="1">
                     <div>{{ $t('common.number') }}</div>
@@ -79,6 +80,7 @@
             </Row>
         </div>
     </pageContainer>
+
 </template>
 <script type="text/ecmascript-6">
     import { sizeList } from 'assets/js/sizeList';
@@ -371,6 +373,7 @@
                         }else {
                             return ''
                         }
+
                     }
                 })
             },
@@ -443,7 +446,8 @@
         .idlink {
             color: #2db7f5;
         }
-        ::v-deep .ui-table {
+
+        /deep/ .ui-table {
             overflow: auto;
         }
     }
