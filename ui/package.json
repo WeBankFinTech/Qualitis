@@ -42,5 +42,6 @@
     "chart.js": "^2.9.4",
     "vue-chartjs": "^3.5.1"
   },
+
   "gitHead": "357575247bde6d1d24a8d2e11d2bfe7adbe6abd6"
 }

@@ -50,6 +50,7 @@
 
 import { getUserRole, sha256 } from "assets/js/utils";
 import bus from '../bus';
+
     export default {
         FesData() {
             return {

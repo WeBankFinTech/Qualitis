@@ -9,4 +9,4 @@ CREATE TABLE `qualitis_project_label` (
   PRIMARY KEY (`id`),
   CONSTRAINT `UK_project_id_label_name` UNIQUE KEY  (`label_name`, `project_id`),
   CONSTRAINT `FK_qualitis_project_label_project_id` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
- )
+)

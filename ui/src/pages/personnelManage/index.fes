@@ -278,6 +278,7 @@
                         chinese_name: this.chinese_name,
                         department: this.department
                     }
+
                     if (valid) {
                         this.FesApi.fetch(
                             "api/v1/admin/user",

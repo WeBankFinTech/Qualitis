@@ -5,6 +5,7 @@ export default function() {
         // dqm 登录后检查登录并设置登录信息
         if (from.path === '/home') return next();
         if (to.path === '/home') return next();
+
         this.FesApi.fetch("api/v1/projector/role", "get").then(({roles,username}) => {
             if(Array.isArray(roles)){
                 roles = roles.map(item => item.toLowerCase())

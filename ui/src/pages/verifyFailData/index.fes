@@ -303,6 +303,7 @@
     .ruleTag:not(:last-child) {
         margin-right: 8px;
     }
+
     .ruleTag:not(:last-child)::after {
         content: ",";
     }
@@ -315,6 +316,7 @@
     .unVerified {
         background-color: #656060;
     }
+
     .field{
         position: relative;
         border: none;

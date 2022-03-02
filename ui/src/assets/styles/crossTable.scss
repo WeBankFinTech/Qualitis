@@ -89,7 +89,7 @@
             .no-border{
                 border: 1px solid #d7dde4;
                 border-top: none;
-            }
+
         }
         .map-col {
             width: 92%;
@@ -97,7 +97,9 @@
         .custom-input {
             width: 72%;
         }
+
         ::v-deep
+
         textarea {
             min-height: 44px;
         }
@@ -123,4 +125,6 @@
     .determine {
         margin-right: 20px;
     }
+
 }
+
