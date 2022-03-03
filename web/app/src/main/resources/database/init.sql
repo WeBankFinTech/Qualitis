@@ -274,7 +274,7 @@ CREATE TABLE `qualitis_auth_user` (
   `user_name` varchar(30) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`username`),
+  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`user_name`),
   KEY `FKg2ayqqmqkqbbvvkehqj7fd6la` (`department_id`),
   CONSTRAINT `FKg2ayqqmqkqbbvvkehqj7fd6la` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
@@ -909,7 +909,7 @@ CREATE TABLE `qualitis_bdp_client_history` (
 
 -- -------------------------- 插入数据库预先数据 -------------------------
 -- 管理员账户
-insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "管理员", "管理员");
+insert into qualitis_auth_user(id, user_name, password, chinese_name, department) values(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "管理员", "管理员");
 -- 管理员角色
 insert into qualitis_auth_role(id, name) values(1, "ADMIN");
 insert into qualitis_auth_role(id, name) values(2, "PROJECTOR");
@@ -1281,7 +1281,7 @@ insert into qualitis_template_statistic_input_meta(template_id, id, name, func_n
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
 	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
 
--- 跨库全量校验
+-- 跨表全量校验
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, template_level)
 	values(20, "{&MULTI-DATABASE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
 	"SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 1);
