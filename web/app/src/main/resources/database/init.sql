@@ -1,5 +1,50 @@
+-- MySQL dump 10.13  Distrib 5.7.35, for Win64 (x86_64)
+--
+-- Host: 192.168.0.120    Database: qualitis
+-- ------------------------------------------------------
+-- Server version	5.7.33
 
-SET FOREIGN_KEY_CHECKS=0;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `qualitis_alarm_info`
+--
+
+DROP TABLE IF EXISTS `qualitis_alarm_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_alarm_info` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `alarm_level` varchar(1) COLLATE utf8_bin DEFAULT NULL,
+  `alarm_reason` text COLLATE utf8_bin,
+  `alarm_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `alarm_type` int(11) DEFAULT NULL,
+  `application_id` varchar(40) COLLATE utf8_bin DEFAULT NULL,
+  `begin_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `end_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
+  `task_id` int(11) DEFAULT NULL,
+  `username` varchar(50) COLLATE utf8_bin DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_alarm_info`
+--
+
+LOCK TABLES `qualitis_alarm_info` WRITE;
+/*!40000 ALTER TABLE `qualitis_alarm_info` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_alarm_info` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application`
@@ -40,7 +85,16 @@ CREATE TABLE `qualitis_application` (
   `rule_datasource` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application`
+--
+
+LOCK TABLES `qualitis_application` WRITE;
+/*!40000 ALTER TABLE `qualitis_application` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application_task`
@@ -69,7 +123,16 @@ CREATE TABLE `qualitis_application_task` (
   KEY `FK8vt8tfuq1jlqofdsl2bfx602d` (`application_id`),
   CONSTRAINT `FK8vt8tfuq1jlqofdsl2bfx602d` FOREIGN KEY (`application_id`) REFERENCES `qualitis_application` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application_task`
+--
+
+LOCK TABLES `qualitis_application_task` WRITE;
+/*!40000 ALTER TABLE `qualitis_application_task` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application_task` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application_task_datasource`
@@ -90,11 +153,21 @@ CREATE TABLE `qualitis_application_task_datasource` (
   `table_name` varchar(100) DEFAULT NULL,
   `task_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
+  `datasource_type` int(11) DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `FKeru6qjd5gwkkm1a58g290g18o` (`task_id`),
   CONSTRAINT `FKeru6qjd5gwkkm1a58g290g18o` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application_task_datasource`
+--
+
+LOCK TABLES `qualitis_application_task_datasource` WRITE;
+/*!40000 ALTER TABLE `qualitis_application_task_datasource` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application_task_datasource` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application_task_result`
@@ -116,7 +189,16 @@ CREATE TABLE `qualitis_application_task_result` (
   `department_code` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application_task_result`
+--
+
+LOCK TABLES `qualitis_application_task_result` WRITE;
+/*!40000 ALTER TABLE `qualitis_application_task_result` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application_task_result` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application_task_rule_alarm_config`
@@ -137,13 +219,23 @@ CREATE TABLE `qualitis_application_task_rule_alarm_config` (
   `upload_abnormal_value` bit(1) DEFAULT NULL,
   `upload_rule_metric_value` bit(1) DEFAULT NULL,
   `rule_metric_id` bigint(20) DEFAULT NULL,
+  `delete_fail_check_result` bit(1) DEFAULT b'0',
   PRIMARY KEY (`id`),
   KEY `FKrhyx3i15dja1ipm81v3biges` (`task_rule_simple_id`),
   KEY `FK397t89fbiuklmrgmq5qb67ykn` (`rule_metric_id`),
   CONSTRAINT `FK397t89fbiuklmrgmq5qb67ykn` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKrhyx3i15dja1ipm81v3biges` FOREIGN KEY (`task_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application_task_rule_alarm_config`
+--
+
+LOCK TABLES `qualitis_application_task_rule_alarm_config` WRITE;
+/*!40000 ALTER TABLE `qualitis_application_task_rule_alarm_config` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application_task_rule_alarm_config` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_application_task_rule_simple`
@@ -156,7 +248,7 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `application_id` varchar(40) DEFAULT NULL,
   `execute_user` varchar(20) DEFAULT NULL,
-  `mid_table_name` varchar(200) DEFAULT NULL,
+  `mid_table_name` varchar(300) DEFAULT NULL,
   `project_creator` varchar(50) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `project_name` varchar(170) DEFAULT NULL,
@@ -170,13 +262,50 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `alert_receiver` varchar(255) DEFAULT NULL,
   `rule_group_name` varchar(255) DEFAULT NULL,
   `delete_fail_check_result` bit(1) DEFAULT b'1',
+  `template_name` varchar(200) DEFAULT NULL,
+  `rule_detail` varchar(340) DEFAULT NULL,
+  `cn_name` varchar(128) DEFAULT NULL,
+  `project_cn_name` varchar(170) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKiciivreqw0dltknemgrqis9tv` (`parent_rule_simple_id`),
   KEY `FK8nr2cvnqp4pg0q2ftp26v0wnw` (`task_id`),
   CONSTRAINT `FK8nr2cvnqp4pg0q2ftp26v0wnw` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`),
   CONSTRAINT `FKiciivreqw0dltknemgrqis9tv` FOREIGN KEY (`parent_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_application_task_rule_simple`
+--
+
+LOCK TABLES `qualitis_application_task_rule_simple` WRITE;
+/*!40000 ALTER TABLE `qualitis_application_task_rule_simple` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_application_task_rule_simple` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_auth_department`
+--
+
+DROP TABLE IF EXISTS `qualitis_auth_department`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_auth_department` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_tem0temhxj86cdqpep31q1iaa` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_auth_department`
+--
+
+LOCK TABLES `qualitis_auth_department` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_department` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_auth_department` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_list`
@@ -190,7 +319,17 @@ CREATE TABLE `qualitis_auth_list` (
   `app_token` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`app_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_list`
+--
+
+LOCK TABLES `qualitis_auth_list` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_list` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_list` VALUES ('linkis_id','a33693de51');
+/*!40000 ALTER TABLE `qualitis_auth_list` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_permission`
@@ -205,7 +344,17 @@ CREATE TABLE `qualitis_auth_permission` (
   `url` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_permission`
+--
+
+LOCK TABLES `qualitis_auth_permission` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_permission` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_permission` VALUES (1,'GET','/qualitis/**'),(2,'POST','/qualitis/**'),(3,'DELETE','/qualitis/**'),(4,'PUT','/qualitis/**'),(5,'GET','/qualitis/api/v1/projector/**'),(6,'POST','/qualitis/api/v1/projector/**'),(7,'DELETE','/qualitis/api/v1/projector/**'),(8,'PUT','/qualitis/api/v1/projector/**');
+/*!40000 ALTER TABLE `qualitis_auth_permission` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_proxy_user`
@@ -219,7 +368,16 @@ CREATE TABLE `qualitis_auth_proxy_user` (
   `proxy_user_name` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_proxy_user`
+--
+
+LOCK TABLES `qualitis_auth_proxy_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_proxy_user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_auth_proxy_user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_role`
@@ -237,8 +395,17 @@ CREATE TABLE `qualitis_auth_role` (
   KEY `FK3na1kucq8f675ajtj54onfi6` (`department_id`),
   CONSTRAINT `FK3na1kucq8f675ajtj54onfi6` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_role`
+--
 
+LOCK TABLES `qualitis_auth_role` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_role` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_role` VALUES (1,'ADMIN',NULL),(2,'PROJECTOR',NULL);
+/*!40000 ALTER TABLE `qualitis_auth_role` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_role_permission`
@@ -257,7 +424,17 @@ CREATE TABLE `qualitis_auth_role_permission` (
   CONSTRAINT `FKjricuk1yv825s34s0cy10x3ns` FOREIGN KEY (`role_id`) REFERENCES `qualitis_auth_role` (`id`),
   CONSTRAINT `FKs9v745h3b0ekhibqipbj84scv` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_role_permission`
+--
+
+LOCK TABLES `qualitis_auth_role_permission` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_role_permission` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_role_permission` VALUES ('5932425efdfe49949587f51a54e0afaa',5,2),('5932425efdfe49949587f51a54e0afab',6,2),('5932425efdfe49949587f51a54e0afac',7,2),('5932425efdfe49949587f51a54e0afad',8,2),('5932425efdfe49949587f51a54e0affb',1,1),('5932425efdfe49949587f51a54e0affc',2,1),('5932425efdfe49949587f51a54e0affd',3,1),('5932425efdfe49949587f51a54e0affe',4,1);
+/*!40000 ALTER TABLE `qualitis_auth_role_permission` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_user`
@@ -273,26 +450,25 @@ CREATE TABLE `qualitis_auth_user` (
   `password` varchar(64) DEFAULT NULL,
   `user_name` varchar(30) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
+  `lock_time` bigint(20) DEFAULT NULL,
+  `login_error_time` bigint(20) DEFAULT NULL,
+  `login_error_count` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`username`),
+  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`user_name`),
   KEY `FKg2ayqqmqkqbbvvkehqj7fd6la` (`department_id`),
   CONSTRAINT `FKg2ayqqmqkqbbvvkehqj7fd6la` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `qualitis_auth_department`
+-- Dumping data for table `qualitis_auth_user`
 --
 
-DROP TABLE IF EXISTS `qualitis_auth_department`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `qualitis_auth_department` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_tem0temhxj86cdqpep31q1iaa` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+LOCK TABLES `qualitis_auth_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_user` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_user` VALUES (1,'管理员','管理员','8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918','admin',NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `qualitis_auth_user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_user_permission`
@@ -311,7 +487,16 @@ CREATE TABLE `qualitis_auth_user_permission` (
   CONSTRAINT `FK6yvgd2emno63qw1ecnxl77ipa` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKfh74vev3awmabhwonewr5oogp` FOREIGN KEY (`permission_id`) REFERENCES `qualitis_auth_permission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_user_permission`
+--
+
+LOCK TABLES `qualitis_auth_user_permission` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_user_permission` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_auth_user_permission` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_user_proxy_user`
@@ -330,7 +515,16 @@ CREATE TABLE `qualitis_auth_user_proxy_user` (
   CONSTRAINT `FKjrpgawp7y8srylpamisntf34y` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKpmln0snv5mkc203umorgcjf05` FOREIGN KEY (`proxy_user_id`) REFERENCES `qualitis_auth_proxy_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_auth_user_proxy_user`
+--
+
+LOCK TABLES `qualitis_auth_user_proxy_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_user_proxy_user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_auth_user_proxy_user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_auth_user_role`
@@ -349,29 +543,40 @@ CREATE TABLE `qualitis_auth_user_role` (
   CONSTRAINT `FKeifs7mfg3qs5igw023vta8e7b` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKta8a7krobg79tw41od6tdsex0` FOREIGN KEY (`role_id`) REFERENCES `qualitis_auth_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `qualitis_alarm_info`
+-- Dumping data for table `qualitis_auth_user_role`
 --
 
-DROP TABLE IF EXISTS `qualitis_alarm_info`;
+LOCK TABLES `qualitis_auth_user_role` WRITE;
+/*!40000 ALTER TABLE `qualitis_auth_user_role` DISABLE KEYS */;
+INSERT INTO `qualitis_auth_user_role` VALUES ('5932425efdfe49949587f51a54e0affa',1,1);
+/*!40000 ALTER TABLE `qualitis_auth_user_role` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_bdp_client_history`
+--
+
+DROP TABLE IF EXISTS `qualitis_bdp_client_history`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `qualitis_alarm_info` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `alarm_level` varchar(1) COLLATE utf8_bin DEFAULT NULL,
-  `alarm_reason` text COLLATE utf8_bin,
-  `alarm_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
-  `alarm_type` int(11) DEFAULT NULL,
-  `application_id` varchar(40) COLLATE utf8_bin DEFAULT NULL,
-  `begin_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
-  `end_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
-  `task_id` int(11) DEFAULT NULL,
-  `username` varchar(50) COLLATE utf8_bin DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+CREATE TABLE `qualitis_bdp_client_history` (
+  `rule_id` bigint(20) NOT NULL,
+  `template_function` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_bdp_client_history`
+--
+
+LOCK TABLES `qualitis_bdp_client_history` WRITE;
+/*!40000 ALTER TABLE `qualitis_bdp_client_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_bdp_client_history` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_config_cluster_info`
@@ -390,7 +595,16 @@ CREATE TABLE `qualitis_config_cluster_info` (
   `skip_data_size` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_config_cluster_info`
+--
+
+LOCK TABLES `qualitis_config_cluster_info` WRITE;
+/*!40000 ALTER TABLE `qualitis_config_cluster_info` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_config_cluster_info` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_config_system`
@@ -406,7 +620,17 @@ CREATE TABLE `qualitis_config_system` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_665kcle6t77m5lbm48gohcyyg` (`key_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_config_system`
+--
+
+LOCK TABLES `qualitis_config_system` WRITE;
+/*!40000 ALTER TABLE `qualitis_config_system` DISABLE KEYS */;
+INSERT INTO `qualitis_config_system` VALUES (1,'save_database_pattern','${USERNAME}_ind');
+/*!40000 ALTER TABLE `qualitis_config_system` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_project`
@@ -426,9 +650,19 @@ CREATE TABLE `qualitis_project` (
   `user_department` varchar(50) DEFAULT NULL,
   `modify_user` varchar(50) DEFAULT NULL,
   `modify_time` varchar(25) DEFAULT NULL,
+  `cn_name` varchar(170) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_project`
+--
+
+LOCK TABLES `qualitis_project` WRITE;
+/*!40000 ALTER TABLE `qualitis_project` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_project` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_project_event`
@@ -439,14 +673,29 @@ DROP TABLE IF EXISTS `qualitis_project_event`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project_event` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `content` varchar(5000) COLLATE utf8_bin DEFAULT NULL,
-  `time` varchar(25) COLLATE utf8_bin DEFAULT NULL,
-  `project_id` bigint(20) DEFAULT NULL,
+  `content` varchar(5000) NOT NULL,
+  `time` varchar(25) DEFAULT NULL,
+  `project_id` bigint(20) NOT NULL,
+  `event_type` int(11) DEFAULT NULL,
+  `field` varchar(50) DEFAULT NULL,
+  `before_modify` varchar(200) DEFAULT NULL,
+  `after_modify` varchar(200) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `execute_user` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK3yw1cm38kqld5s9xc1l9qdf04` (`project_id`),
   CONSTRAINT `FK3yw1cm38kqld5s9xc1l9qdf04` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_project_event`
+--
+
+LOCK TABLES `qualitis_project_event` WRITE;
+/*!40000 ALTER TABLE `qualitis_project_event` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_project_event` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_project_label`
@@ -464,7 +713,16 @@ CREATE TABLE `qualitis_project_label` (
   KEY `FK_qualitis_project_label_project_id` (`project_id`),
   CONSTRAINT `FK_qualitis_project_label_project_id` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_project_label`
+--
+
+LOCK TABLES `qualitis_project_label` WRITE;
+/*!40000 ALTER TABLE `qualitis_project_label` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_project_label` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_project_user`
@@ -481,9 +739,19 @@ CREATE TABLE `qualitis_project_user` (
   `project_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK383dxni31ohf4rl00v5l981ny` (`project_id`),
+  KEY `user_name` (`user_name`),
   CONSTRAINT `FK383dxni31ohf4rl00v5l981ny` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_project_user`
+--
+
+LOCK TABLES `qualitis_project_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_project_user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_project_user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule`
@@ -521,6 +789,8 @@ CREATE TABLE `qualitis_rule` (
   `delete_fail_check_result` bit(1) DEFAULT b'1',
   `specify_static_startup_param` bit(1) DEFAULT NULL,
   `static_startup_param` varchar(255) DEFAULT NULL,
+  `cn_name` varchar(128) DEFAULT NULL,
+  `detail` varchar(340) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK29l9s1h04gntnqv4eje2f93n4` (`project_id`,`name`),
   KEY `FKltabc4x1omja141lo9la6dg4k` (`parent_rule_id`),
@@ -532,7 +802,16 @@ CREATE TABLE `qualitis_rule` (
   CONSTRAINT `FKf769w3wjl2ywbue7hft6aq8c4` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`),
   CONSTRAINT `FKltabc4x1omja141lo9la6dg4k` FOREIGN KEY (`parent_rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule`
+--
+
+LOCK TABLES `qualitis_rule` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_alarm_config`
@@ -553,6 +832,7 @@ CREATE TABLE `qualitis_rule_alarm_config` (
   `upload_abnormal_value` bit(1) DEFAULT NULL,
   `upload_rule_metric_value` bit(1) DEFAULT NULL,
   `rule_metric_id` bigint(20) DEFAULT NULL,
+  `delete_fail_check_result` bit(1) DEFAULT b'0',
   PRIMARY KEY (`id`),
   KEY `FKh2hr5kere1f15udbtkk7cc97n` (`rule_id`),
   KEY `FKjq2m5wga1kmck2haw1o867un6` (`template_output_meta_id`),
@@ -561,7 +841,16 @@ CREATE TABLE `qualitis_rule_alarm_config` (
   CONSTRAINT `FKh2hr5kere1f15udbtkk7cc97n` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
   CONSTRAINT `FKjq2m5wga1kmck2haw1o867un6` FOREIGN KEY (`template_output_meta_id`) REFERENCES `qualitis_template_output_meta` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_alarm_config`
+--
+
+LOCK TABLES `qualitis_rule_alarm_config` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_alarm_config` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_alarm_config` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_datasource`
@@ -573,7 +862,7 @@ DROP TABLE IF EXISTS `qualitis_rule_datasource`;
 CREATE TABLE `qualitis_rule_datasource` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
-  `col_name` varchar(500) DEFAULT NULL,
+  `col_name` mediumtext,
   `datasource_index` int(11) DEFAULT NULL,
   `db_name` varchar(100) DEFAULT NULL,
   `filter` varchar(3200) DEFAULT NULL,
@@ -589,11 +878,25 @@ CREATE TABLE `qualitis_rule_datasource` (
   `file_uuid` varchar(50) DEFAULT NULL,
   `proxy_user` varchar(255) DEFAULT NULL,
   `file_hash_values` varchar(200) DEFAULT NULL,
+  `black_col_name` bit(1) DEFAULT b'1',
+  `linkis_datasoure_id` bigint(20) DEFAULT NULL,
+  `datasource_type` int(11) DEFAULT '1',
+  `linkis_datasoure_version_id` bigint(20) DEFAULT NULL,
+  `linkis_datasource_name` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKcbr5lp3b6wuh669qglf3dnc6r` (`rule_id`),
   CONSTRAINT `FKcbr5lp3b6wuh669qglf3dnc6r` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_datasource`
+--
+
+LOCK TABLES `qualitis_rule_datasource` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_datasource` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_datasource` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_datasource_count`
@@ -610,7 +913,16 @@ CREATE TABLE `qualitis_rule_datasource_count` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `UKn2rgeii2gfg122j89kgo6qw79` (`user_id`,`datasource_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_datasource_count`
+--
+
+LOCK TABLES `qualitis_rule_datasource_count` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_datasource_count` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_datasource_count` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_datasource_mapping`
@@ -633,35 +945,16 @@ CREATE TABLE `qualitis_rule_datasource_mapping` (
   KEY `FKnooevousm8ai6i1b82407cq4x` (`rule_id`),
   CONSTRAINT `FKnooevousm8ai6i1b82407cq4x` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `qualitis_rule_variable`
+-- Dumping data for table `qualitis_rule_datasource_mapping`
 --
 
-DROP TABLE IF EXISTS `qualitis_rule_variable`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `qualitis_rule_variable` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `cluster_name` varchar(50) DEFAULT NULL,
-  `db_name` varchar(50) DEFAULT NULL,
-  `input_action_step` int(11) DEFAULT NULL,
-  `origin_value` varchar(100) DEFAULT NULL,
-  `table_name` varchar(50) DEFAULT NULL,
-  `value` varchar(2000) DEFAULT NULL,
-  `rule_id` bigint(20) DEFAULT NULL,
-  `template_mid_table_input_meta_id` bigint(20) DEFAULT NULL,
-  `template_statistics_input_meta_id` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FKgvkh60999kiv1hfc5qtr2b7rt` (`rule_id`),
-  KEY `FK9cipdyq5a9xmwfdvybhcw2i8d` (`template_mid_table_input_meta_id`),
-  KEY `FKkl4loc3y5qpb618cwglvhyd5h` (`template_statistics_input_meta_id`),
-  CONSTRAINT `FK9cipdyq5a9xmwfdvybhcw2i8d` FOREIGN KEY (`template_mid_table_input_meta_id`) REFERENCES `qualitis_template_mid_table_input_meta` (`id`),
-  CONSTRAINT `FKgvkh60999kiv1hfc5qtr2b7rt` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
-  CONSTRAINT `FKkl4loc3y5qpb618cwglvhyd5h` FOREIGN KEY (`template_statistics_input_meta_id`) REFERENCES `qualitis_template_statistic_input_meta` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+LOCK TABLES `qualitis_rule_datasource_mapping` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_datasource_mapping` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_datasource_mapping` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_group`
@@ -674,9 +967,19 @@ CREATE TABLE `qualitis_rule_group` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `project_id` bigint(20) DEFAULT NULL,
   `rule_group_name` varchar(100) DEFAULT NULL,
+  `version` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_group`
+--
+
+LOCK TABLES `qualitis_rule_group` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_group` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_group` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_metric`
@@ -705,14 +1008,26 @@ CREATE TABLE `qualitis_rule_metric` (
   `frequency` int(11) DEFAULT NULL,
   `ops_department_name` varchar(255) DEFAULT NULL,
   `sub_system_alias` varchar(255) DEFAULT NULL,
-  `type` varchar(255) DEFAULT NULL,
+  `type` int(11) DEFAULT NULL,
   `product_id` varchar(255) DEFAULT NULL,
   `product_name` varchar(255) DEFAULT NULL,
+  `buss_code` int(11) DEFAULT NULL,
+  `buss_custom` varchar(100) DEFAULT NULL,
+  `cn_name` varchar(512) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UNI_RULE_METRIC_name` (`name`),
   UNIQUE KEY `UNI_RULE_METRIC_EN_CODE` (`en_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric.';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_metric`
+--
+
+LOCK TABLES `qualitis_rule_metric` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_metric` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_metric` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_rule_metric_department_user`
@@ -734,8 +1049,78 @@ CREATE TABLE `qualitis_rule_metric_department_user` (
   CONSTRAINT `FKff1ogtbxi8rv47g850kk5qkc8` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKhuctqjbn90jrpjgkjqnla1hs7` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric authority.';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_rule_metric_department_user`
+--
 
+LOCK TABLES `qualitis_rule_metric_department_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_metric_department_user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_metric_department_user` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_rule_metric_type_config`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_metric_type_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_metric_type_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `cn_name` varchar(50) DEFAULT NULL,
+  `en_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_rule_metric_type_config`
+--
+
+LOCK TABLES `qualitis_rule_metric_type_config` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_metric_type_config` DISABLE KEYS */;
+INSERT INTO `qualitis_rule_metric_type_config` VALUES (1,'一般指标','general-metric'),(2,'一般校验指标','general-check-metric'),(3,'一般业务指标','general-busi-check'),(4,'一般IT指标','IT-metric'),(5,'一级指标','1-level-metric'),(6,'二级指标','2-level-metric'),(7,'自定义分类','custom-metric');
+/*!40000 ALTER TABLE `qualitis_rule_metric_type_config` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_rule_variable`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_variable`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_variable` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `cluster_name` varchar(50) DEFAULT NULL,
+  `db_name` varchar(50) DEFAULT NULL,
+  `input_action_step` int(11) DEFAULT NULL,
+  `origin_value` varchar(500) DEFAULT NULL,
+  `table_name` varchar(500) DEFAULT NULL,
+  `value` mediumtext,
+  `rule_id` bigint(20) DEFAULT NULL,
+  `template_mid_table_input_meta_id` bigint(20) DEFAULT NULL,
+  `template_statistics_input_meta_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKgvkh60999kiv1hfc5qtr2b7rt` (`rule_id`),
+  KEY `FK9cipdyq5a9xmwfdvybhcw2i8d` (`template_mid_table_input_meta_id`),
+  KEY `FKkl4loc3y5qpb618cwglvhyd5h` (`template_statistics_input_meta_id`),
+  CONSTRAINT `FK9cipdyq5a9xmwfdvybhcw2i8d` FOREIGN KEY (`template_mid_table_input_meta_id`) REFERENCES `qualitis_template_mid_table_input_meta` (`id`),
+  CONSTRAINT `FKgvkh60999kiv1hfc5qtr2b7rt` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
+  CONSTRAINT `FKkl4loc3y5qpb618cwglvhyd5h` FOREIGN KEY (`template_statistics_input_meta_id`) REFERENCES `qualitis_template_statistic_input_meta` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_rule_variable`
+--
+
+LOCK TABLES `qualitis_rule_variable` WRITE;
+/*!40000 ALTER TABLE `qualitis_rule_variable` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_rule_variable` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template`
@@ -748,7 +1133,6 @@ CREATE TABLE `qualitis_template` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `action_type` int(11) DEFAULT NULL,
   `cluster_num` int(11) DEFAULT NULL,
-  `datasource_type` int(11) DEFAULT NULL,
   `db_num` int(11) DEFAULT NULL,
   `field_num` int(11) DEFAULT NULL,
   `mid_table_action` varchar(5000) DEFAULT NULL,
@@ -769,8 +1153,72 @@ CREATE TABLE `qualitis_template` (
   CONSTRAINT `FKampr04xxfhfqky18levn4svhb` FOREIGN KEY (`create_user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKd8bp8wlgc9rslq4w3o4ha6w3m` FOREIGN KEY (`modify_user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKpwhmy0wvpm0ycoifta3nh0fyc` FOREIGN KEY (`parent_template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2150 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_template`
+--
+
+LOCK TABLES `qualitis_template` WRITE;
+/*!40000 ALTER TABLE `qualitis_template` DISABLE KEYS */;
+INSERT INTO `qualitis_template` VALUES (1,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} is null)','{&NULL_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} is null)',1,1,NULL,NULL,1,NULL,NULL),(2,1,1,1,-1,'select * from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)','{&PRIMARY_KEY_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)',1,1,NULL,NULL,1,NULL,NULL),(3,1,1,1,0,'select count(*) as myCount from ${db}.${table} where ${filter}','{&TABLE_RECORD_NUMBER_VERIFICATION}',_binary '\0','select count(*) from ${db}.${table} where ${filter}',1,1,NULL,NULL,1,NULL,NULL),(4,1,1,1,1,'select avg(${field}) as myAvg from ${db}.${table} where ${filter}','{&AVERAGE_VALUE_VERIFICATION}',_binary '\0','select avg(${field}) from ${db}.${table} where ${filter}',1,1,NULL,NULL,1,NULL,NULL),(5,1,1,1,1,'select sum(${field}) as mySum from ${db}.${table} where ${filter}','{&SUM_VALUE_VERIFICATION}',_binary '\0','select sum(${field}) from ${db}.${table} where ${filter}',1,1,NULL,NULL,1,NULL,NULL),(6,1,1,1,1,'select max(${field}) as myMax from ${db}.${table} where ${filter}','{&MAX_VALUE_VERIFICATION}',_binary '\0','select max(${field}) from ${db}.${table} where ${filter}',1,1,NULL,NULL,1,NULL,NULL),(7,1,1,1,1,'select min(${field}) as myMin from ${db}.${table} where ${filter}','{&MIN_VALUE_VERIFICATION}',_binary '\0','select min(${field}) from ${db}.${table} where ${filter}',1,1,NULL,NULL,1,NULL,NULL),(8,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')','{&REGEXP_EXPRESSION_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')',1,1,NULL,NULL,1,NULL,NULL),(9,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')','{&DATE_FORMAT_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')',1,1,NULL,NULL,1,NULL,NULL),(10,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')','{&NUMBER_FORMAT_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')',1,1,NULL,NULL,1,NULL,NULL),(11,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)','{&ENUM_VALUE_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)',1,1,NULL,NULL,1,NULL,NULL),(12,1,1,1,0,'select * from ${db}.${table} where (${filter}) and (not (${filter2}))','{&NUMBER_RANGE_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (not (${filter2}))',1,1,NULL,NULL,1,NULL,NULL),(13,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')','{&IDENTITY_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp \'${regexp}\')',1,1,NULL,NULL,1,NULL,NULL),(14,1,1,1,0,'select * from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )','{&LOGIC_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )',1,1,NULL,NULL,1,NULL,NULL),(15,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (trim(${field}) = \'\' )','{&EMPTY_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (trim(${field}) = \'\' )',1,1,NULL,NULL,1,NULL,NULL),(16,1,1,1,1,'select * from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = \'\' )','{&NULL_AND_EMPTY_VERIFICATION}',_binary '','select count(*) from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = \'\' )',1,1,NULL,NULL,1,NULL,NULL),(17,1,1,2,0,'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )','{&MULTI-TABLE_ACCURACY_VERIFICATION}',_binary '','SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )',2,3,NULL,NULL,1,NULL,NULL),(18,1,1,2,0,'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )','{&MULTI-TABLE_ACCURACY_VERIFICATION_CHILD_TEMPLATE}',_binary '','SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )',2,3,17,NULL,1,NULL,NULL),(19,1,1,2,0,'SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}','{&MULTI-TABLE_COMMON_VERIFICATION}',_binary '','SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}',2,3,NULL,NULL,1,NULL,NULL),(20,1,1,2,0,'SELECT tmp1.* FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )','{&MULTI-DATABASE_ACCURACY_VERIFICATION}',_binary '','SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )',2,3,NULL,NULL,1,NULL,NULL),(2149,1,1,1,-1,'select ${field_replace_null_concat} from ${db}.${table} where ${filter}','{&PRIMARY_LINE_VERIFICATION}',_binary '\0','select max(md5_count) from (select md5(${field_replace_null_concat}) as md5, count(1) as md5_count from ${db}.${table} where ${filter}) tmp where ${filter} group by tmp.md5 having count(*) > 1',1,1,NULL,NULL,1,NULL,NULL);
+/*!40000 ALTER TABLE `qualitis_template` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_template_datasource_type`
+--
+
+DROP TABLE IF EXISTS `qualitis_template_datasource_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_template_datasource_type` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) DEFAULT NULL,
+  `data_source_type_id` int(5) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `template_id` (`template_id`,`data_source_type_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_template_datasource_type`
+--
+
+LOCK TABLES `qualitis_template_datasource_type` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_datasource_type` DISABLE KEYS */;
+INSERT INTO `qualitis_template_datasource_type` VALUES (1,1,1),(2,1,2),(41,1,3),(3,2,1),(4,2,2),(42,2,3),(5,3,1),(6,3,2),(43,3,3),(7,4,1),(8,4,2),(44,4,3),(9,5,1),(10,5,2),(45,5,3),(11,6,1),(12,6,2),(46,6,3),(13,7,1),(14,7,2),(47,7,3),(15,8,1),(16,8,2),(48,8,3),(17,9,1),(18,9,2),(49,9,3),(19,10,1),(20,10,2),(50,10,3),(21,11,1),(22,11,2),(51,11,3),(23,12,1),(24,12,2),(52,12,3),(25,13,1),(26,13,2),(53,13,3),(27,14,1),(28,14,2),(54,14,3),(29,15,1),(30,15,2),(55,15,3),(31,16,1),(32,16,2),(56,16,3),(33,17,1),(34,17,2),(57,17,3),(35,18,1),(36,18,2),(58,18,3),(37,19,1),(38,19,2),(59,19,3),(39,20,1),(40,20,2),(60,20,3),(61,2149,1),(62,2149,2),(63,2149,3);
+/*!40000 ALTER TABLE `qualitis_template_datasource_type` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `qualitis_template_department`
+--
+
+DROP TABLE IF EXISTS `qualitis_template_department`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_template_department` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `department_id` bigint(20) DEFAULT NULL,
+  `template_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK3ijoa6qb0b5ckeo9hvob9yqr2` (`department_id`),
+  KEY `FKn96g1wp7cwc4v4f7e4e2229qc` (`template_id`),
+  CONSTRAINT `FK3ijoa6qb0b5ckeo9hvob9yqr2` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`),
+  CONSTRAINT `FKn96g1wp7cwc4v4f7e4e2229qc` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `qualitis_template_department`
+--
+
+LOCK TABLES `qualitis_template_department` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_department` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_template_department` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template_mid_table_input_meta`
@@ -796,8 +1244,18 @@ CREATE TABLE `qualitis_template_mid_table_input_meta` (
   KEY `FK7antueilfq1itsq2cx29q3xlf` (`template_id`),
   CONSTRAINT `FK15rlx42bkg7syh6apwnsss18r` FOREIGN KEY (`parent_id`) REFERENCES `qualitis_template_mid_table_input_meta` (`id`),
   CONSTRAINT `FK7antueilfq1itsq2cx29q3xlf` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30005 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=31394 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_template_mid_table_input_meta`
+--
+
+LOCK TABLES `qualitis_template_mid_table_input_meta` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_mid_table_input_meta` DISABLE KEYS */;
+INSERT INTO `qualitis_template_mid_table_input_meta` VALUES (10000,'(${left_statement} ${operation} ${right_statement})',NULL,10,'{&JOIN_CONDITION}','mapping_argument','{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}',NULL,_binary '\0',NULL,17),(10001,'${source_column} IS NULL',NULL,10,'{&SOURCE_TABLE_COLUMN_IS_NULL}','source_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}',NULL,_binary '\0',NULL,17),(10002,'${target_column} IS NULL',NULL,10,'{&TARGET_TABLE_COLUMN_IS_NULL}','target_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}',NULL,_binary '\0',NULL,17),(10010,'(${left_statement} ${operation} ${right_statement} OR (${left_statement} is null and ${right_statement} is null))',NULL,10,'{&JOIN_CONDITION}','mapping_argument','{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}',NULL,_binary '\0',NULL,20),(10011,'${source_column} IS NULL',NULL,10,'{&SOURCE_TABLE_COLUMN_IS_NULL}','source_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}',NULL,_binary '\0',NULL,20),(10012,'${target_column} IS NULL',NULL,10,'{&TARGET_TABLE_COLUMN_IS_NULL}','target_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}',NULL,_binary '\0',NULL,20),(20000,'(${left_statement} ${operation} ${right_statement})',NULL,10,'{&JOIN_OPERATION}','mapping_argument','{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}',NULL,_binary '\0',NULL,18),(20001,'${source_column} IS NULL',NULL,10,'{&SOURCE_TABLE_COLUMN_IS_NULL}','source_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}',NULL,_binary '\0',NULL,18),(20002,'${target_column} IS NULL',NULL,10,'{&TARGET_TABLE_COLUMN_IS_NULL}','target_column_is_null','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}',NULL,_binary '\0',NULL,18),(30000,'(${left_statement} ${operation} ${right_statement})',NULL,10,'{&JOIN_OPERATION}','mapping_argument','{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}',NULL,_binary '\0',NULL,19),(30005,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,1),(30006,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,1),(30007,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,1),(30008,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,2),(30009,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,2),(30010,NULL,NULL,6,'{&FIELD_CONCAT}','field_concat','{&REPLACE_PLACEHOLDER_IN_SQL}${field_concat}',NULL,_binary '\0',NULL,2),(30011,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,3),(30012,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,3),(30013,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,4),(30014,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,4),(30015,NULL,1,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,4),(30016,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,5),(30017,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,5),(30018,NULL,1,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,5),(30019,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,6),(30020,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,6),(30021,NULL,1,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,6),(30022,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,7),(30023,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,7),(30024,NULL,1,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,7),(30025,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,8),(30026,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,8),(30027,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,8),(30028,NULL,NULL,7,'{&REGEXP_EXPRESSION}','regexp','{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&PLEASE_TYPE_IN_REGEXP_EXPRESSION}',NULL,_binary '',NULL,8),(30029,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,9),(30030,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,9),(30031,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,9),(30032,NULL,NULL,7,'{&DATE_FORMAT}','regexp','{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&CHOOSE_APPROPRIATE}',1,_binary '\0',NULL,9),(30033,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,10),(30034,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,10),(30035,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,10),(30036,NULL,NULL,7,'{&NUMBER_FORMAT_REGEXP_EXPRESSION}','regexp','{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}',2,_binary '\0',NULL,10),(30037,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,11),(30038,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,11),(30039,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,11),(30040,NULL,NULL,8,'{&ENUM_VALUE}','list','{&REPLACE_PLACEHOLDER_IN_SQL}${list},示例:\'1,2,3,4\'',NULL,_binary '\0',NULL,11),(30041,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,12),(30042,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,12),(30043,NULL,NULL,1,'{&NUMBER_RANGE}','filter2','{&REPLACE_PLACEHOLDER_IN_SQL}${filter2}，{&PLEASE_TYPE_IN_NUMBER_RANGE}',NULL,_binary '\0',NULL,12),(30044,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,13),(30045,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,13),(30046,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,13),(30047,NULL,NULL,7,'{&IDENTITY_REGEXP_EXPRESSION}','regexp','{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}',3,_binary '\0',NULL,13),(30048,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,14),(30049,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,14),(30050,NULL,NULL,9,'{&PRE_CONDITION}','condition1','{&REPLACE_PLACEHOLDER_IN_SQL}${condition1},{&PLEASE_TYPE_IN_PRE_CONDITION}',NULL,_binary '\0',NULL,14),(30051,NULL,NULL,9,'{&POST_CONDITION}','condition2','{&REPLACE_PLACEHOLDER_IN_SQL}${condition2}，{&PLEASE_TYPE_IN_POST_CONDITION}',NULL,_binary '\0',NULL,14),(30052,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,15),(30053,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,15),(30054,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,15),(30055,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,16),(30056,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,16),(30057,NULL,NULL,4,'{&FIELD}','field','{&REPLACE_PLACEHOLDER_IN_SQL}${field}',NULL,_binary '\0',NULL,16),(30058,NULL,NULL,11,'{&SOURCE_DATABASE}','source_db','{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}',NULL,_binary '\0',NULL,17),(30059,NULL,NULL,12,'{&SOURCE_TABLE}','source_table','{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}',NULL,_binary '\0',NULL,17),(30060,NULL,NULL,13,'{&TARGET_DATABASE}','target_db','{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}',NULL,_binary '\0',NULL,17),(30061,NULL,NULL,14,'{&TARGET_TABLE}','target_table','{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}',NULL,_binary '\0',NULL,17),(30062,NULL,NULL,15,'{&JOIN_LEFT_EXPRESSION}','left_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}',NULL,_binary '\0',10000,NULL),(30063,NULL,NULL,16,'{&JOIN_OPERATION}','operation','{&REPLACE_PLACEHOLDER_IN_SQL}${operation}',NULL,_binary '\0',10000,NULL),(30064,NULL,NULL,17,'{&JOIN_RIGHT_EXPRESSION}','right_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}',NULL,_binary '\0',10000,NULL),(30065,NULL,NULL,18,'{&JOIN_LEFT_FILED}','source_column','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}',NULL,_binary '\0',10001,NULL),(30066,NULL,NULL,19,'{&JOIN_RIGHT_FILED}','target_column','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}',NULL,_binary '\0',10002,NULL),(30067,NULL,NULL,11,'{&SOURCE_DATABASE}','source_db','{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}',NULL,_binary '\0',NULL,18),(30068,NULL,NULL,12,'{&SOURCE_TABLE}','source_table','{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}',NULL,_binary '\0',NULL,18),(30069,NULL,NULL,13,'{&TARGET_DATABASE}','target_db','{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}',NULL,_binary '\0',NULL,18),(30070,NULL,NULL,14,'{&TARGET_TABLE}','target_table','{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}',NULL,_binary '\0',NULL,18),(30071,NULL,NULL,15,'{&JOIN_LEFT_EXPRESSION}','left_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}',NULL,_binary '\0',20000,NULL),(30072,NULL,NULL,16,'{&JOIN_OPERATION}','operation','{&REPLACE_PLACEHOLDER_IN_SQL}${operation}',NULL,_binary '\0',20000,NULL),(30073,NULL,NULL,17,'{&JOIN_RIGHT_EXPRESSION}','right_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}',NULL,_binary '\0',20000,NULL),(30074,NULL,NULL,18,'{&JOIN_LEFT_FILED}','source_column','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}',NULL,_binary '\0',20001,NULL),(30075,NULL,NULL,19,'{&JOIN_RIGHT_FILED}','target_column','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}',NULL,_binary '\0',20002,NULL),(30076,NULL,NULL,11,'{&SOURCE_DATABASE}','source_db','{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}',NULL,_binary '\0',NULL,19),(30077,NULL,NULL,12,'{&SOURCE_TABLE}','source_table','{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}',NULL,_binary '\0',NULL,19),(30078,NULL,NULL,13,'{&TARGET_DATABASE}','target_db','{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}',NULL,_binary '\0',NULL,19),(30079,NULL,NULL,14,'{&TARGET_TABLE}','target_table','{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}',NULL,_binary '\0',NULL,19),(30080,NULL,NULL,9,'{&FILTER_IN_RESULT}','filter','{&REPLACE_PLACEHOLDER_IN_SQL}${filter}',NULL,_binary '\0',NULL,19),(30081,NULL,NULL,15,'{&JOIN_LEFT_EXPRESSION}','left_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}',NULL,_binary '\0',30000,NULL),(30082,NULL,NULL,16,'{&JOIN_OPERATION}','operation','{&REPLACE_PLACEHOLDER_IN_SQL}${operation}',NULL,_binary '\0',30000,NULL),(30083,NULL,NULL,17,'{&JOIN_RIGHT_EXPRESSION}','right_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}',NULL,_binary '\0',30000,NULL),(30910,NULL,NULL,11,'{&SOURCE_DATABASE}','source_db','{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}',NULL,_binary '\0',NULL,20),(30911,NULL,NULL,12,'{&SOURCE_TABLE}','source_table','{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}',NULL,_binary '\0',NULL,20),(30912,NULL,NULL,13,'{&TARGET_DATABASE}','target_db','{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}',NULL,_binary '\0',NULL,20),(30913,NULL,NULL,14,'{&TARGET_TABLE}','target_table','{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}',NULL,_binary '\0',NULL,20),(30914,NULL,NULL,22,'{&SOURCE_GROUP_BY_COLUMNS}','SOURCE_GROUP_BY_COLUMNS','{&REPLACE_PLACEHOLDER_IN_SQL}${SOURCE_GROUP_BY_COLUMNS}',NULL,_binary '\0',NULL,20),(30915,NULL,NULL,23,'{&TARGET_GROUP_BY_COLUMNS}','TARGET_GROUP_BY_COLUMNS','{&REPLACE_PLACEHOLDER_IN_SQL}${TARGET_GROUP_BY_COLUMNS}',NULL,_binary '\0',NULL,20),(30916,NULL,NULL,15,'{&JOIN_LEFT_EXPRESSION}','left_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}',NULL,_binary '\0',10010,NULL),(30917,NULL,NULL,16,'{&JOIN_OPERATION}','operation','{&REPLACE_PLACEHOLDER_IN_SQL}${operation}',NULL,_binary '\0',10010,NULL),(30918,NULL,NULL,17,'{&JOIN_RIGHT_EXPRESSION}','right_statement','{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}',NULL,_binary '\0',10010,NULL),(30919,NULL,NULL,18,'{&JOIN_LEFT_FILED}','source_column','{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}',NULL,_binary '\0',10011,NULL),(30920,NULL,NULL,19,'{&JOIN_RIGHT_FILED}','target_column','{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}',NULL,_binary '\0',10012,NULL),(31391,NULL,NULL,5,'{&DATABASE}','db','{&REPLACE_PLACEHOLDER_IN_SQL}${db}',NULL,_binary '\0',NULL,2149),(31392,NULL,NULL,3,'{&TABLE}','table','{&REPLACE_PLACEHOLDER_IN_SQL}${table}',NULL,_binary '\0',NULL,2149),(31393,NULL,NULL,24,'{&FIELD_REPLACE_NULL_CONCAT}','field_replace_null_concat','{&REPLACE_PLACEHOLDER_IN_SQL}${field_replace_null_concat}',NULL,_binary '\0',NULL,2149);
+/*!40000 ALTER TABLE `qualitis_template_mid_table_input_meta` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template_output_meta`
@@ -815,8 +1273,18 @@ CREATE TABLE `qualitis_template_output_meta` (
   PRIMARY KEY (`id`),
   KEY `FKia38171mjfi5ix7esd968c0s5` (`template_id`),
   CONSTRAINT `FKia38171mjfi5ix7esd968c0s5` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2106 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_template_output_meta`
+--
+
+LOCK TABLES `qualitis_template_output_meta` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_output_meta` DISABLE KEYS */;
+INSERT INTO `qualitis_template_output_meta` VALUES (1,'count',1,'{&RECORD_NUMBER_OF_NULL}',1),(2,'count',1,'{&PRIMARY_KEY_MULTIPLE_NUMBER}',2),(3,'max',1,'{&TABLE_RECORD_NUMBER}',3),(4,'max',1,'{&AVERAGE_VALUE}',4),(5,'max',1,'{&SUM_VALUE}',5),(6,'max',1,'{&MAX_VALUE}',6),(7,'max',1,'{&MIN_VALUE}',7),(8,'count',1,'{&MISMATCH_RECORD_NUMBER}',8),(9,'count',1,'{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}',9),(10,'count',1,'{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}',10),(11,'count',1,'{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}',11),(12,'count',1,'{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}',12),(13,'count',1,'{&MISMATCH_IDENTITY_RECORD_NUMBER}',13),(14,'count',1,'{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}',14),(15,'count',1,'{&NULL_AND_EMPTY_RECORD_NUMBER}',15),(16,'count',1,'{&NULL_AND_EMPTY_RECORD_NUMBER}',16),(17,'count',1,'{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}',17),(18,'count',1,'{&DIFFERENT_RECORD_BETWEEN_TARGET_AND_SOURCE_TABLE}',18),(19,'count',1,'{&NOT_PASS_VERIFICATION_RECORD_NUMBER}',19),(645,'count',1,'{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}',20),(2105,'max',1,'{&LINE_REPEAT_MAX_NUMBER}',2149);
+/*!40000 ALTER TABLE `qualitis_template_output_meta` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template_regexp_expr`
@@ -829,10 +1297,20 @@ CREATE TABLE `qualitis_template_regexp_expr` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key_name` varchar(255) DEFAULT NULL,
   `regexp_type` int(11) DEFAULT NULL,
-  `regexp_value` varchar(255) DEFAULT NULL,
+  `regexp_value` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_template_regexp_expr`
+--
+
+LOCK TABLES `qualitis_template_regexp_expr` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_regexp_expr` DISABLE KEYS */;
+INSERT INTO `qualitis_template_regexp_expr` VALUES (6,'yyyyMMdd',1,'^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)$'),(7,'yyyy-MM-dd',1,'^(?:(?!0000)[0-9]{4}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$'),(8,'yyyyMMddHH',1,'^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)([01][0-9]|2[0-3])$'),(9,NULL,2,'^[-+]?\\d+(\\.\\d+)?$'),(10,NULL,3,'^[1-9][0-9]{5}(18|19|20)[0-9]{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)[0-9]{3}[0-9Xx]$');
+/*!40000 ALTER TABLE `qualitis_template_regexp_expr` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template_statistic_input_meta`
@@ -852,8 +1330,18 @@ CREATE TABLE `qualitis_template_statistic_input_meta` (
   PRIMARY KEY (`id`),
   KEY `FKi1irb2fkjcu16pe7jdwsr7h11` (`template_id`),
   CONSTRAINT `FKi1irb2fkjcu16pe7jdwsr7h11` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2092 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `qualitis_template_statistic_input_meta`
+--
+
+LOCK TABLES `qualitis_template_statistic_input_meta` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_statistic_input_meta` DISABLE KEYS */;
+INSERT INTO `qualitis_template_statistic_input_meta` VALUES (4,'max','{&AVERAGE_VALUE}','Long','myAvg',1,4),(5,'max','{&SUM_VALUE}','Long','mySum',1,5),(6,'max','{&MAX_VALUE}','Long','myMax',1,6),(7,'max','{&MIN_VALUE}','Long','myMin',1,7),(8,'count','{&MISMATCH_RECORD_NUMBER}','Long','*',1,8),(9,'count','{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}','Long','*',1,9),(10,'count','{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}','Long','*',1,10),(11,'count','{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}','Long','*',1,11),(12,'count','{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}','Long','*',1,12),(13,'count','{&MISMATCH_IDENTITY_RECORD_NUMBER}','Long','*',1,13),(14,'count','{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}','Long','*',1,14),(16,'count','{&NULL_AND_EMPTY_RECORD_NUMBER}','Long','*',1,16),(17,'count','','Long','*',1,17),(18,'count','','Long','*',1,18),(19,'count','','Long','*',1,19),(20,'count','{&RECORD_NUMBER_OF_NULL}','Long','*',1,1),(21,'count','{&PRIMARY_KEY_MULTIPLE_NUMBER}','Long','*',1,2),(22,'max','{&TABLE_RECORD_NUMBER}','Long','myCount',1,3),(23,'count','{&NULL_AND_EMPTY_RECORD_NUMBER}','Long','*',1,15),(25,'count','','Long','*',1,20),(2091,'max','{&LINE_REPEAT_MAX_NUMBER}','Long','md5_count',1,2149);
+/*!40000 ALTER TABLE `qualitis_template_statistic_input_meta` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `qualitis_template_user`
@@ -872,458 +1360,28 @@ CREATE TABLE `qualitis_template_user` (
   CONSTRAINT `FKajutcl4gouu76xj4kngnb1mv2` FOREIGN KEY (`user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKp4il6ga20u8v6yoyibplo971i` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
---
--- Table structure for table `qualitis_template_department`
---
-
-DROP TABLE IF EXISTS `qualitis_template_department`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `qualitis_template_department` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `department_id` bigint(20) DEFAULT NULL,
-  `template_id` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `FK3ijoa6qb0b5ckeo9hvob9yqr2` (`department_id`),
-  KEY `FKn96g1wp7cwc4v4f7e4e2229qc` (`template_id`),
-  CONSTRAINT `FK3ijoa6qb0b5ckeo9hvob9yqr2` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`),
-  CONSTRAINT `FKn96g1wp7cwc4v4f7e4e2229qc` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `qualitis_bdp_client_history`
+-- Dumping data for table `qualitis_template_user`
 --
 
-DROP TABLE IF EXISTS `qualitis_bdp_client_history`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `qualitis_bdp_client_history` (
-  `rule_id` bigint(20) NOT NULL,
-  `template_function` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`rule_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+LOCK TABLES `qualitis_template_user` WRITE;
+/*!40000 ALTER TABLE `qualitis_template_user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `qualitis_template_user` ENABLE KEYS */;
+UNLOCK TABLES;
 
+--
+-- Dumping routines for database 'qualitis'
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
--- -------------------------- 插入数据库预先数据 -------------------------
--- 管理员账户
-insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "管理员", "管理员");
--- 管理员角色
-insert into qualitis_auth_role(id, name) values(1, "ADMIN");
-insert into qualitis_auth_role(id, name) values(2, "PROJECTOR");
--- 管理员权限
-insert into qualitis_auth_permission(id, url, method) values(1, "/qualitis/**", "GET"), (2, "/qualitis/**", "POST"), (3, "/qualitis/**", "DELETE"), (4, "/qualitis/**", "PUT");
-insert into qualitis_auth_permission(id, url, method) values(5, "/qualitis/api/v1/projector/**", "GET"), (6, "/qualitis/api/v1/projector/**", "POST"), (7, "/qualitis/api/v1/projector/**", "DELETE"), (8, "/qualitis/api/v1/projector/**", "PUT");
-insert into qualitis_auth_user_role(id, user_id, role_id) values("5932425efdfe49949587f51a54e0affa", 1, 1);
-insert into qualitis_auth_role_permission(id, role_id, permission_id) values("5932425efdfe49949587f51a54e0affb", 1, 1), ("5932425efdfe49949587f51a54e0affc", 1, 2), ("5932425efdfe49949587f51a54e0affd", 1, 3), ("5932425efdfe49949587f51a54e0affe", 1, 4);
-insert into qualitis_auth_role_permission(id, role_id, permission_id) values("5932425efdfe49949587f51a54e0afaa", 2, 5), ("5932425efdfe49949587f51a54e0afab", 2, 6), ("5932425efdfe49949587f51a54e0afac", 2, 7), ("5932425efdfe49949587f51a54e0afad", 2, 8);
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- 规则模版
-
--- 字段非空检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(1, "{&NULL_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} is null)", 1, 1, true,
-	      "select count(*) from ${db}.${table} where (${filter}) and (${field} is null)");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 1, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 1, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 1, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(1, "{&RECORD_NUMBER_OF_NULL}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(1, 1, "{&RECORD_NUMBER_OF_NULL}", "count", 1);
-
--- 主键检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(2, "{&PRIMARY_KEY_VERIFICATION}", 1, 1, 1, -1, 1, "select * from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)", 1, 1, true,
-	      "select count(*) from ${db}.${table} where ${filter} and (${field_concat}) in (select ${field_concat} from ${db}.${table} where ${filter} group by ${field_concat} having count(*) > 1)");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 2, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 2, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD_CONCAT}", 2, "field_concat", 6, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field_concat}");
-insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(2, "{&PRIMARY_KEY_MULTIPLE_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(2, 2, "{&PRIMARY_KEY_MULTIPLE_NUMBER}", "count", 1);
-
--- 表行数检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(3, "{&TABLE_RECORD_NUMBER_VERIFICATION}", 1, 1, 1, 0, 1, "select count(*) as myCount from ${db}.${table} where ${filter}", 1, 1, false,
-	        "select count(*) from ${db}.${table} where ${filter}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 3, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 3, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_statistic_input_meta(template_id, name, func_name, value, value_type, result_type)
-	values(3, "{&TABLE_RECORD_NUMBER}", "max", "myCount", 1, "Long");
-insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(3, 3, "{&TABLE_RECORD_NUMBER}", "max", 1);
-
--- 平均值检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(4, "{&AVERAGE_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select avg(${field}) as myAvg from ${db}.${table} where ${filter}", 1, 1, false,
-	      "select avg(${field}) from ${db}.${table} where ${filter}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 4, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 4, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 4, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(4, 4, "{&AVERAGE_VALUE}", "max", "myAvg", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(4, "{&AVERAGE_VALUE}", "max", 1);
-
--- 总和检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(5, "{&SUM_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select sum(${field}) as mySum from ${db}.${table} where ${filter}", 1, 1, false,
-	      "select sum(${field}) from ${db}.${table} where ${filter}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 5, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 5, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 5, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(5, 5, "{&SUM_VALUE}", "max", "mySum", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(5, "{&SUM_VALUE}", "max", 1);
-
--- 最大值检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(6, "{&MAX_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select max(${field}) as myMax from ${db}.${table} where ${filter}", 1, 1, false,
-	"select max(${field}) from ${db}.${table} where ${filter}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 6, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 6, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 6, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(6, 6, "{&MAX_VALUE}", "max", "myMax", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(6, "{&MAX_VALUE}", "max", 1);
-
--- 最小值检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(7, "{&MIN_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select min(${field}) as myMin from ${db}.${table} where ${filter}", 1, 1, false,
-	"select min(${field}) from ${db}.${table} where ${filter}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 7, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 7, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 7, "field", 4, 1, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(7, 7, "{&MIN_VALUE}", "max", "myMin", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(7, "{&MIN_VALUE}", "max", 1);
-
--- 正则表达式检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(8, "{&REGEXP_EXPRESSION_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 8, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 8, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 8, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&REGEXP_EXPRESSION}", 8, "regexp", 7, null, true, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&PLEASE_TYPE_IN_REGEXP_EXPRESSION}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(8, 8, "{&MISMATCH_RECORD_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(8, "{&MISMATCH_RECORD_NUMBER}", "count", 1);
-
--- 时间格式检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(9, "{&DATE_FORMAT_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 9, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 9, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 9, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATE_FORMAT}", 9, "regexp", 7, null, false, 1, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp},{&CHOOSE_APPROPRIATE}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(9, 9, "{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(9, "{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}", "count", 1);
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMdd", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyy-MM-dd", 1, "^(?:(?!0000)[0-9]{4}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMddHH", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)([01][0-9]|2[0-3])$");
-
--- 数值格式检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(10, "{&NUMBER_FORMAT_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 10, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 10, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 10, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&NUMBER_FORMAT_REGEXP_EXPRESSION}", 10, "regexp", 7, null, false, 2, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(10, 10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(10, "{&RECORD_NUMBER_OF_MISMATCH_NUMBER_FORMAT}", "count", 1);
-insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(2, "^[-+]?\\d+(\\.\\d+)?$");
-
--- 枚举值检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(11, "{&ENUM_VALUE_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not in ( ${list} ) or ${field} is null)");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 11, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 11, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 11, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&ENUM_VALUE}", 11, "list", 8, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${list},示例:'1,2,3,4'");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(11, 11, "{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(11, "{&RECORD_NUMBER_OF_NOT_IN_ENUM_VALUE}", "count", 1);
-
--- 数值范围检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(12, "{&NUMBER_RANGE_VERIFICATION}", 1, 1, 1, 0, 1, "select * from ${db}.${table} where (${filter}) and (not (${filter2}))", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (not (${filter2}))");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 12, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 12, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&NUMBER_RANGE}", 12, "filter2", 1, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${filter2}，{&PLEASE_TYPE_IN_NUMBER_RANGE}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(12, 12, "{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(12, "{&RECORD_NUMBER_OF_NOT_NUMBER_RANGE}", "count", 1);
-
--- 身份证检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(13, "{&IDENTITY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} not regexp '${regexp}')");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 13, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 13, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 13, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&IDENTITY_REGEXP_EXPRESSION}", 13, "regexp", 7, null, false, 3, "{&REPLACE_PLACEHOLDER_IN_SQL}${regexp}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(13, 13, "{&MISMATCH_IDENTITY_RECORD_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(13, "{&MISMATCH_IDENTITY_RECORD_NUMBER}", "count", 1);
-insert into qualitis_template_regexp_expr(regexp_type, regexp_value) values(3, "^[1-9][0-9]{5}(18|19|20)[0-9]{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)[0-9]{3}[0-9Xx]$");
-
--- 逻辑类检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(14, "{&LOGIC_VERIFICATION}", 1, 1, 1, 0, 1, "select * from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and ( (${condition1}) and not (${condition2}) )");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 14, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 14, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&PRE_CONDITION}", 14, "condition1", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${condition1},{&PLEASE_TYPE_IN_PRE_CONDITION}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&POST_CONDITION}", 14, "condition2", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${condition2}，{&PLEASE_TYPE_IN_POST_CONDITION}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(14, 14, "{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(14, "{&RECORD_NUMBER_OF_MISMATCH_LOGIC_VERIFICATION}", "count", 1);
-
--- 空字符串检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(15, "{&EMPTY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (trim(${field}) = '' )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (trim(${field}) = '' )");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 15, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 15, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 15, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(15, id, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(15, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", 1);
-
--- 空值或空字符串检测
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(16, "{&NULL_AND_EMPTY_VERIFICATION}", 1, 1, 1, 1, 1, "select * from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )", 1, 1, true,
-	"select count(*) from ${db}.${table} where (${filter}) and (${field} is null or trim(${field}) = '' )");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&DATABASE}", 16, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TABLE}", 16, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FIELD}", 16, "field", 4, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field}");
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(16, 16, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(16, "{&NULL_AND_EMPTY_RECORD_NUMBER}", "count", 1);
-
--- 跨表模版
--- 跨表准确性校验
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(17, "{&MULTI-TABLE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 17, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 17, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 17, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 17, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10000, "{&JOIN_CONDITION}", 17, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10001, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 17, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10002, "{&TARGET_TABLE_COLUMN_IS_NULL}", 17, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 10000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 10000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 10000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 10001);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 10002);
-
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(17, 17, "", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(17, "{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}", "count", 1);
-
--- 附属模版
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, parent_template_id)
-	values(18, "{&MULTI-TABLE_ACCURACY_VERIFICATION_CHILD_TEMPLATE}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 17);
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 18, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 18, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 18, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 18, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20000, "{&JOIN_OPERATION}", 18, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20001, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 18, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(20002, "{&TARGET_TABLE_COLUMN_IS_NULL}", 18, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 20000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 20000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 20000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 20001);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 20002);
-
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(18, 18, "", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(18, "{&DIFFERENT_RECORD_BETWEEN_TARGET_AND_SOURCE_TABLE}", "count", 1);
-
-
--- 跨表通用校验
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
-	values(19, "{&MULTI-TABLE_COMMON_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT * FROM ${source_db}.${source_table} WHERE ${filter_left}) tmp1 LEFT JOIN (SELECT * FROM ${target_db}.${target_table} WHERE ${filter_right}) tmp2 ON ${mapping_argument} WHERE ${filter}");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_DATABASE}", 19, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&SOURCE_TABLE}", 19, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_DATABASE}", 19, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&TARGET_TABLE}", 19, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(30000, "{&JOIN_OPERATION}", 19, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement})");
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values("{&FILTER_IN_RESULT}", 19, "filter", 9, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${filter}");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 30000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 30000);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 30000);
-
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(19, 19, "", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
-	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
-
--- 跨库全量校验
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, template_level)
-	values(20, "{&MULTI-DATABASE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 1);
-
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30910, "{&SOURCE_DATABASE}", 20, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30911, "{&SOURCE_TABLE}", 20, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30912, "{&TARGET_DATABASE}", 20, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30913, "{&TARGET_TABLE}", 20, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10010, "{&JOIN_CONDITION}", 20, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement} OR (${left_statement} is null and ${right_statement} is null))");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10011, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 20, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10012, "{&TARGET_TABLE_COLUMN_IS_NULL}", 20, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30914, "{&SOURCE_GROUP_BY_COLUMNS}", 20, "SOURCE_GROUP_BY_COLUMNS", 22, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${SOURCE_GROUP_BY_COLUMNS}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30915, "{&TARGET_GROUP_BY_COLUMNS}", 20, "TARGET_GROUP_BY_COLUMNS", 23, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${TARGET_GROUP_BY_COLUMNS}");
-
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 10010);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 10010);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 10010);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 10011);
-insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 10012);
-
-insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
-	values(20, 25, "", "count", "*", 1, "Long");
-insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
-	values(20, 645, "{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}", "count", 1);
-
-update qualitis_template set template_level = 1;
-
-insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
-
-insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "a33693de51");
-
+-- Dump completed on 2022-03-03 23:00:41
