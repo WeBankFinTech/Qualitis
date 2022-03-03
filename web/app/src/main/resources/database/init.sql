@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS `qualitis_application`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_application` (
-  `id` varchar(80) NOT NULL,
+  `id` varchar(40) NOT NULL,
   `abnormal_task_num` int(11) DEFAULT NULL,
   `create_user` varchar(150) DEFAULT NULL,
   `exception_message` text,
@@ -26,18 +26,16 @@ CREATE TABLE `qualitis_application` (
   `total_task_num` int(11) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `rule_group_id` bigint(20) DEFAULT NULL,
-  `cluster_name` varchar(255) DEFAULT NULL,
-  `execution_param` varchar(255) DEFAULT NULL,
-  `fps_file_id` varchar(255) DEFAULT NULL,
-  `fps_hash` varchar(255) DEFAULT NULL,
-  `filter_partition` varchar(255) DEFAULT NULL,
-  `run_date` varchar(255) DEFAULT NULL,
-  `set_flag` varchar(255) DEFAULT NULL,
-  `startup_param` varchar(255) DEFAULT NULL,
   `application_comment` int(11) DEFAULT NULL,
   `project_name` varchar(100) DEFAULT NULL,
+  `cluster_name` varchar(100) DEFAULT NULL,
+  `startup_param` varchar(2000) DEFAULT NULL,
   `rule_group_name` varchar(100) DEFAULT NULL,
-  `rule_datasource` varchar(300) DEFAULT NULL,
+  `rule_datasource` varchar(3000) DEFAULT NULL,
+  `execution_param` varchar(255) DEFAULT NULL,
+  `set_flag` varchar(2000) DEFAULT NULL,
+  `run_date` varchar(25) DEFAULT NULL,
+  `filter_partition` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -59,12 +57,12 @@ CREATE TABLE `qualitis_application_task` (
   `task_remote_id` bigint(20) DEFAULT NULL,
   `application_id` varchar(40) DEFAULT NULL,
   `abort_on_failure` bit(1) DEFAULT b'0',
-  `task_exec_id` varchar(255) DEFAULT NULL,
-  `task_proxy_user` varchar(255) DEFAULT NULL,
-  `new_progress_time` bigint(20) DEFAULT NULL,
-  `progress` double DEFAULT NULL,
   `task_comment` int(11) DEFAULT NULL,
   `running_time` bigint(20) DEFAULT NULL,
+  `task_exec_id` varchar(255) DEFAULT NULL,
+  `task_proxy_user` varchar(50) DEFAULT NULL,
+  `new_progress_time` bigint(20) DEFAULT NULL,
+  `progress` double DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK8vt8tfuq1jlqofdsl2bfx602d` (`application_id`),
   CONSTRAINT `FK8vt8tfuq1jlqofdsl2bfx602d` FOREIGN KEY (`application_id`) REFERENCES `qualitis_application` (`id`)
@@ -90,6 +88,7 @@ CREATE TABLE `qualitis_application_task_datasource` (
   `table_name` varchar(100) DEFAULT NULL,
   `task_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
+  `datasource_type` int(11) DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `FKeru6qjd5gwkkm1a58g290g18o` (`task_id`),
   CONSTRAINT `FKeru6qjd5gwkkm1a58g290g18o` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`)
@@ -110,10 +109,10 @@ CREATE TABLE `qualitis_application_task_result` (
   `result_type` varchar(255) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
   `value` varchar(128) DEFAULT NULL,
+  `run_date` bigint(20) DEFAULT NULL,
   `rule_metric_id` bigint(20) DEFAULT NULL,
   `save_result` bit(1) DEFAULT b'1',
-  `run_date` bigint(20) DEFAULT NULL,
-  `department_code` varchar(255) DEFAULT NULL,
+  `department_code` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -133,14 +132,13 @@ CREATE TABLE `qualitis_application_task_rule_alarm_config` (
   `status` int(11) DEFAULT NULL,
   `threshold` double DEFAULT NULL,
   `task_rule_simple_id` bigint(20) DEFAULT NULL,
-  `output_unit` varchar(500) DEFAULT NULL,
-  `upload_abnormal_value` bit(1) DEFAULT NULL,
-  `upload_rule_metric_value` bit(1) DEFAULT NULL,
   `rule_metric_id` bigint(20) DEFAULT NULL,
+  `upload_abnormal_value` bit(1) DEFAULT b'0',
+  `upload_rule_metric_value` bit(1) DEFAULT b'0',
+  `delete_fail_check_result` bit(1) DEFAULT b'0',
+  `output_unit` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKrhyx3i15dja1ipm81v3biges` (`task_rule_simple_id`),
-  KEY `FK397t89fbiuklmrgmq5qb67ykn` (`rule_metric_id`),
-  CONSTRAINT `FK397t89fbiuklmrgmq5qb67ykn` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKrhyx3i15dja1ipm81v3biges` FOREIGN KEY (`task_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -156,7 +154,7 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `application_id` varchar(40) DEFAULT NULL,
   `execute_user` varchar(20) DEFAULT NULL,
-  `mid_table_name` varchar(200) DEFAULT NULL,
+  `mid_table_name` varchar(300) DEFAULT NULL,
   `project_creator` varchar(50) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `project_name` varchar(170) DEFAULT NULL,
@@ -166,16 +164,18 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `submit_time` varchar(20) DEFAULT NULL,
   `parent_rule_simple_id` bigint(20) DEFAULT NULL,
   `task_id` bigint(20) DEFAULT NULL,
-  `alert_level` int(11) DEFAULT NULL,
-  `alert_receiver` varchar(255) DEFAULT NULL,
-  `rule_group_name` varchar(255) DEFAULT NULL,
+  `template_name` varchar(200) DEFAULT NULL,
+  `rule_detail` varchar(340) DEFAULT NULL,
   `delete_fail_check_result` bit(1) DEFAULT b'1',
+  `cn_name` varchar(128) DEFAULT NULL,
+  `project_cn_name` varchar(170) DEFAULT NULL,
+  `rule_group_name` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKiciivreqw0dltknemgrqis9tv` (`parent_rule_simple_id`),
   KEY `FK8nr2cvnqp4pg0q2ftp26v0wnw` (`task_id`),
   CONSTRAINT `FK8nr2cvnqp4pg0q2ftp26v0wnw` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`),
   CONSTRAINT `FKiciivreqw0dltknemgrqis9tv` FOREIGN KEY (`parent_rule_simple_id`) REFERENCES `qualitis_application_task_rule_simple` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 
 
 --
@@ -204,7 +204,7 @@ CREATE TABLE `qualitis_auth_permission` (
   `method` varchar(6) DEFAULT NULL,
   `url` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -233,11 +233,8 @@ CREATE TABLE `qualitis_auth_role` (
   `name` varchar(50) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_d6h6ies9p214yj1lmwkegdcdc` (`name`),
-  KEY `FK3na1kucq8f675ajtj54onfi6` (`department_id`),
-  CONSTRAINT `FK3na1kucq8f675ajtj54onfi6` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-
+  UNIQUE KEY `UK_d6h6ies9p214yj1lmwkegdcdc` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -269,15 +266,16 @@ DROP TABLE IF EXISTS `qualitis_auth_user`;
 CREATE TABLE `qualitis_auth_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `chinese_name` varchar(255) DEFAULT NULL,
-  `department` varchar(255) DEFAULT NULL,
   `password` varchar(64) DEFAULT NULL,
   `user_name` varchar(30) DEFAULT NULL,
+  `lock_time` bigint(20) DEFAULT NULL,
+  `login_error_count` int(11) DEFAULT NULL,
+  `login_error_time` bigint(20) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
+  `department` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`user_name`),
-  KEY `FKg2ayqqmqkqbbvvkehqj7fd6la` (`department_id`),
-  CONSTRAINT `FKg2ayqqmqkqbbvvkehqj7fd6la` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+  UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`user_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -289,10 +287,11 @@ DROP TABLE IF EXISTS `qualitis_auth_department`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_auth_department` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
+  `name` varchar(30) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_tem0temhxj86cdqpep31q1iaa` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+  UNIQUE KEY `UK_department_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 --
 -- Table structure for table `qualitis_auth_user_permission`
@@ -405,7 +404,7 @@ CREATE TABLE `qualitis_config_system` (
   `value` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_665kcle6t77m5lbm48gohcyyg` (`key_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -426,6 +425,7 @@ CREATE TABLE `qualitis_project` (
   `user_department` varchar(50) DEFAULT NULL,
   `modify_user` varchar(50) DEFAULT NULL,
   `modify_time` varchar(25) DEFAULT NULL,
+  `cn_name` varchar(170) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -439,13 +439,19 @@ DROP TABLE IF EXISTS `qualitis_project_event`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project_event` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `content` varchar(5000) COLLATE utf8_bin DEFAULT NULL,
-  `time` varchar(25) COLLATE utf8_bin DEFAULT NULL,
-  `project_id` bigint(20) DEFAULT NULL,
+  `content` varchar(5000) NOT NULL,
+  `time` varchar(25) DEFAULT NULL,
+  `project_id` bigint(20) NOT NULL,
+  `event_type` int(11) DEFAULT NULL,
+  `field` varchar(50) DEFAULT NULL,
+  `before_modify` varchar(200) DEFAULT NULL,
+  `after_modify` varchar(200) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `execute_user` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK3yw1cm38kqld5s9xc1l9qdf04` (`project_id`),
   CONSTRAINT `FK3yw1cm38kqld5s9xc1l9qdf04` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -457,7 +463,7 @@ DROP TABLE IF EXISTS `qualitis_project_label`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_project_label` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `label_name` varchar(25) NOT NULL,
+  `label_name` varchar(255) NOT NULL,
   `project_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_project_id_label_name` (`label_name`,`project_id`),
@@ -481,6 +487,7 @@ CREATE TABLE `qualitis_project_user` (
   `project_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK383dxni31ohf4rl00v5l981ny` (`project_id`),
+  KEY `user_name` (`user_name`),
   CONSTRAINT `FK383dxni31ohf4rl00v5l981ny` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -498,7 +505,7 @@ CREATE TABLE `qualitis_rule` (
   `from_content` varchar(3010) DEFAULT NULL,
   `function_content` varchar(3010) DEFAULT NULL,
   `function_type` int(11) DEFAULT NULL,
-  `name` varchar(170) DEFAULT NULL,
+  `name` varchar(128) DEFAULT NULL,
   `output_name` varchar(170) DEFAULT NULL,
   `rule_template_name` varchar(180) DEFAULT NULL,
   `rule_type` int(11) DEFAULT NULL,
@@ -509,24 +516,20 @@ CREATE TABLE `qualitis_rule` (
   `template_id` bigint(20) DEFAULT NULL,
   `cs_id` varchar(1000) DEFAULT NULL,
   `abort_on_failure` bit(1) DEFAULT b'0',
-  `alert` bit(1) DEFAULT NULL,
-  `alert_level` int(11) DEFAULT NULL,
-  `alert_receiver` varchar(255) DEFAULT NULL,
-  `create_time` varchar(25) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL,
+  `create_time` varchar(25) DEFAULT NULL,
   `modify_time` varchar(25) DEFAULT NULL,
   `modify_user` varchar(50) DEFAULT NULL,
-  `rule_metric_id` bigint(20) DEFAULT NULL,
-  `rule_metric_name` varchar(48) DEFAULT NULL,
   `delete_fail_check_result` bit(1) DEFAULT b'1',
-  `specify_static_startup_param` bit(1) DEFAULT NULL,
-  `static_startup_param` varchar(255) DEFAULT NULL,
+  `specify_static_startup_param` bit(1) DEFAULT b'0',
+  `detail` varchar(340) DEFAULT NULL,
+  `cn_name` varchar(128) DEFAULT NULL,
+  `static_startup_param` varchar(2000) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK29l9s1h04gntnqv4eje2f93n4` (`project_id`,`name`),
   KEY `FKltabc4x1omja141lo9la6dg4k` (`parent_rule_id`),
   KEY `FK7hv5yh1en46cfwxkqdmixyrn1` (`rule_group_id`),
   KEY `FKf769w3wjl2ywbue7hft6aq8c4` (`template_id`),
-  KEY `qualitis_rule_project_id_IDX` (`project_id`) USING BTREE,
   CONSTRAINT `FK7hv5yh1en46cfwxkqdmixyrn1` FOREIGN KEY (`rule_group_id`) REFERENCES `qualitis_rule_group` (`id`),
   CONSTRAINT `FK9tcl2mktybw44ue89mk47sejs` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`),
   CONSTRAINT `FKf769w3wjl2ywbue7hft6aq8c4` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`),
@@ -548,16 +551,15 @@ CREATE TABLE `qualitis_rule_alarm_config` (
   `threshold` double DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
   `template_output_meta_id` bigint(20) DEFAULT NULL,
+  `rule_metric_id` bigint(20) DEFAULT NULL,
+  `upload_abnormal_value` bit(1) DEFAULT b'0',
+  `upload_rule_metric_value` bit(1) DEFAULT b'0',
+  `delete_fail_check_result` bit(1) DEFAULT b'0',
   `file_output_name` int(11) DEFAULT NULL,
   `file_output_unit` int(11) DEFAULT NULL,
-  `upload_abnormal_value` bit(1) DEFAULT NULL,
-  `upload_rule_metric_value` bit(1) DEFAULT NULL,
-  `rule_metric_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKh2hr5kere1f15udbtkk7cc97n` (`rule_id`),
   KEY `FKjq2m5wga1kmck2haw1o867un6` (`template_output_meta_id`),
-  KEY `FKe17j5upcwxk0y5o2x3cfhv1rx` (`rule_metric_id`),
-  CONSTRAINT `FKe17j5upcwxk0y5o2x3cfhv1rx` FOREIGN KEY (`rule_metric_id`) REFERENCES `qualitis_rule_metric` (`id`),
   CONSTRAINT `FKh2hr5kere1f15udbtkk7cc97n` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
   CONSTRAINT `FKjq2m5wga1kmck2haw1o867un6` FOREIGN KEY (`template_output_meta_id`) REFERENCES `qualitis_template_output_meta` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -573,22 +575,19 @@ DROP TABLE IF EXISTS `qualitis_rule_datasource`;
 CREATE TABLE `qualitis_rule_datasource` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
-  `col_name` varchar(500) DEFAULT NULL,
+  `col_name` mediumtext,
   `datasource_index` int(11) DEFAULT NULL,
   `db_name` varchar(100) DEFAULT NULL,
   `filter` varchar(3200) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `table_name` varchar(100) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
-  `file_delimiter` varchar(255) DEFAULT NULL,
-  `file_header` bit(1) DEFAULT NULL,
-  `file_id` varchar(256) DEFAULT NULL,
-  `file_sheet_name` varchar(255) DEFAULT NULL,
-  `file_table_desc` varchar(255) DEFAULT NULL,
-  `file_type` varchar(255) DEFAULT NULL,
-  `file_uuid` varchar(50) DEFAULT NULL,
-  `proxy_user` varchar(255) DEFAULT NULL,
-  `file_hash_values` varchar(200) DEFAULT NULL,
+  `proxy_user` varchar(20) DEFAULT NULL,
+  `black_col_name` bit(1) DEFAULT b'1',
+  `linkis_datasoure_id` bigint(20) DEFAULT NULL,
+  `datasource_type` int(11) DEFAULT '1',
+  `linkis_datasoure_version_id` bigint(20) DEFAULT NULL,
+  `linkis_datasource_name` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKcbr5lp3b6wuh669qglf3dnc6r` (`rule_id`),
   CONSTRAINT `FKcbr5lp3b6wuh669qglf3dnc6r` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
@@ -604,12 +603,12 @@ DROP TABLE IF EXISTS `qualitis_rule_datasource_count`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_datasource_count` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `datasource_count` int(11) DEFAULT NULL,
-  `datasource_name` varchar(255) COLLATE utf8_bin DEFAULT NULL,
-  `user_id` bigint(20) DEFAULT NULL,
+  `datasource_name` varchar(500) NOT NULL,
+  `datasource_count` int(11) NOT NULL DEFAULT '1',
+  `user_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UKn2rgeii2gfg122j89kgo6qw79` (`user_id`,`datasource_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+  UNIQUE KEY `qualitis_rule_datasouce_count_UN` (`user_id`,`datasource_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -647,9 +646,9 @@ CREATE TABLE `qualitis_rule_variable` (
   `cluster_name` varchar(50) DEFAULT NULL,
   `db_name` varchar(50) DEFAULT NULL,
   `input_action_step` int(11) DEFAULT NULL,
-  `origin_value` varchar(100) DEFAULT NULL,
-  `table_name` varchar(50) DEFAULT NULL,
-  `value` varchar(2000) DEFAULT NULL,
+  `origin_value` varchar(500) DEFAULT NULL,
+  `table_name` varchar(500) DEFAULT NULL,
+  `value` mediumtext,
   `rule_id` bigint(20) DEFAULT NULL,
   `template_mid_table_input_meta_id` bigint(20) DEFAULT NULL,
   `template_statistics_input_meta_id` bigint(20) DEFAULT NULL,
@@ -674,6 +673,7 @@ CREATE TABLE `qualitis_rule_group` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `project_id` bigint(20) DEFAULT NULL,
   `rule_group_name` varchar(100) DEFAULT NULL,
+  `version` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -687,10 +687,10 @@ DROP TABLE IF EXISTS `qualitis_rule_metric`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_metric` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(48) NOT NULL COMMENT '0.14.0 Must be chinese.',
-  `metric_desc` varchar(500) NOT NULL,
-  `sub_system_id` int(11) NOT NULL,
-  `department_name` varchar(30) DEFAULT NULL,
+  `name` varchar(512) NOT NULL,
+  `metric_desc` varchar(100) NOT NULL,
+  `sub_system_id` int(20) DEFAULT NULL,
+  `dev_department_name` varchar(30) DEFAULT NULL,
   `metric_level` int(5) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL,
   `create_time` varchar(25) DEFAULT NULL,
@@ -698,18 +698,20 @@ CREATE TABLE `qualitis_rule_metric` (
   `modify_user` varchar(50) DEFAULT NULL,
   `sub_system_name` varchar(100) DEFAULT NULL,
   `full_cn_name` varchar(100) DEFAULT NULL,
-  `available` bit(1) DEFAULT NULL,
-  `department_code` varchar(255) DEFAULT NULL,
-  `dev_department_name` varchar(255) DEFAULT NULL,
-  `en_code` varchar(255) DEFAULT NULL,
-  `frequency` int(11) DEFAULT NULL,
-  `ops_department_name` varchar(255) DEFAULT NULL,
-  `sub_system_alias` varchar(255) DEFAULT NULL,
-  `type` varchar(255) DEFAULT NULL,
+  `type` int(11) DEFAULT '0' COMMENT '0.14.0 The classification of rule metric is usually based on a more detailed division of subsystem info.',
+  `en_code` varchar(50) NOT NULL DEFAULT '' COMMENT '0.14.0 En code meaning.',
+  `available` bit(1) DEFAULT b'0' COMMENT '0.14.0 Availability in use.',
+  `ops_department_name` varchar(30) DEFAULT NULL COMMENT '0.14.0 Department was split into two departments whick are dev and ops.',
+  `frequency` int(11) DEFAULT NULL COMMENT '0.14.0',
+  `department_code` varchar(25) DEFAULT NULL,
+  `department_name` varchar(255) DEFAULT NULL,
   `product_id` varchar(255) DEFAULT NULL,
   `product_name` varchar(255) DEFAULT NULL,
+  `buss_code` int(5) DEFAULT NULL,
+  `buss_custom` varchar(100) DEFAULT NULL,
+  `cn_name` varchar(512) NOT NULL,
+  `sub_system_alias` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UNI_RULE_METRIC_name` (`name`),
   UNIQUE KEY `UNI_RULE_METRIC_EN_CODE` (`en_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric.';
 
@@ -736,6 +738,20 @@ CREATE TABLE `qualitis_rule_metric_department_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Created in version qualitis-0.12.0 to manage rule metric authority.';
 
 
+--
+-- Table structure for table `qualitis_rule_metric_type_config`
+--
+
+DROP TABLE IF EXISTS `qualitis_rule_metric_type_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_rule_metric_type_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `cn_name` varchar(50) DEFAULT NULL,
+  `en_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 --
 -- Table structure for table `qualitis_template`
@@ -748,7 +764,6 @@ CREATE TABLE `qualitis_template` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `action_type` int(11) DEFAULT NULL,
   `cluster_num` int(11) DEFAULT NULL,
-  `datasource_type` int(11) DEFAULT NULL,
   `db_num` int(11) DEFAULT NULL,
   `field_num` int(11) DEFAULT NULL,
   `mid_table_action` varchar(5000) DEFAULT NULL,
@@ -758,18 +773,15 @@ CREATE TABLE `qualitis_template` (
   `table_num` int(11) DEFAULT NULL,
   `template_type` int(11) DEFAULT NULL,
   `parent_template_id` bigint(20) DEFAULT NULL,
-  `import_export_name` varchar(255) DEFAULT NULL,
-  `template_level` int(11) DEFAULT NULL,
   `create_user_id` bigint(20) DEFAULT NULL,
   `modify_user_id` bigint(20) DEFAULT NULL,
+  `template_level` int(11) DEFAULT '1',
+  `import_export_name` varchar(40) DEFAULT NULL,
+  `datasource_type` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKpwhmy0wvpm0ycoifta3nh0fyc` (`parent_template_id`),
-  KEY `FKampr04xxfhfqky18levn4svhb` (`create_user_id`),
-  KEY `FKd8bp8wlgc9rslq4w3o4ha6w3m` (`modify_user_id`),
-  CONSTRAINT `FKampr04xxfhfqky18levn4svhb` FOREIGN KEY (`create_user_id`) REFERENCES `qualitis_auth_user` (`id`),
-  CONSTRAINT `FKd8bp8wlgc9rslq4w3o4ha6w3m` FOREIGN KEY (`modify_user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKpwhmy0wvpm0ycoifta3nh0fyc` FOREIGN KEY (`parent_template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -796,7 +808,7 @@ CREATE TABLE `qualitis_template_mid_table_input_meta` (
   KEY `FK7antueilfq1itsq2cx29q3xlf` (`template_id`),
   CONSTRAINT `FK15rlx42bkg7syh6apwnsss18r` FOREIGN KEY (`parent_id`) REFERENCES `qualitis_template_mid_table_input_meta` (`id`),
   CONSTRAINT `FK7antueilfq1itsq2cx29q3xlf` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30005 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -829,9 +841,9 @@ CREATE TABLE `qualitis_template_regexp_expr` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key_name` varchar(255) DEFAULT NULL,
   `regexp_type` int(11) DEFAULT NULL,
-  `regexp_value` varchar(255) DEFAULT NULL,
+  `regexp_value` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -852,7 +864,7 @@ CREATE TABLE `qualitis_template_statistic_input_meta` (
   PRIMARY KEY (`id`),
   KEY `FKi1irb2fkjcu16pe7jdwsr7h11` (`template_id`),
   CONSTRAINT `FKi1irb2fkjcu16pe7jdwsr7h11` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -882,15 +894,28 @@ DROP TABLE IF EXISTS `qualitis_template_department`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_template_department` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `id` bigint(32) NOT NULL,
   `department_id` bigint(20) DEFAULT NULL,
   `template_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `FK3ijoa6qb0b5ckeo9hvob9yqr2` (`department_id`),
-  KEY `FKn96g1wp7cwc4v4f7e4e2229qc` (`template_id`),
-  CONSTRAINT `FK3ijoa6qb0b5ckeo9hvob9yqr2` FOREIGN KEY (`department_id`) REFERENCES `qualitis_auth_department` (`id`),
-  CONSTRAINT `FKn96g1wp7cwc4v4f7e4e2229qc` FOREIGN KEY (`template_id`) REFERENCES `qualitis_template` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+  UNIQUE KEY `UK_department_template` (`department_id`,`template_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
+-- Table structure for table `qualitis_template_datasource_type`
+--
+
+DROP TABLE IF EXISTS `qualitis_template_datasource_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `qualitis_template_datasource_type` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) DEFAULT NULL,
+  `data_source_type_id` int(5) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `template_id` (`template_id`,`data_source_type_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
@@ -1281,49 +1306,114 @@ insert into qualitis_template_statistic_input_meta(template_id, id, name, func_n
 insert into qualitis_template_output_meta(template_id, output_name, field_name, field_type)
 	values(19, "{&NOT_PASS_VERIFICATION_RECORD_NUMBER}", "count", 1);
 
--- 跨表全量校验
-insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql, template_level)
+-- 跨库全量校验
+insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, datasource_type, mid_table_action, template_type, action_type, save_mid_table, show_sql)
 	values(20, "{&MULTI-DATABASE_ACCURACY_VERIFICATION}", 1, 2, 2, 0, 1, "SELECT tmp1.* FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 3, 1, true,
-	"SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )", 1);
+	"SELECT count(tmp1.*) FROM (SELECT ${SOURCE_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${source_db}.${source_table} WHERE ${filter_left} group by ${SOURCE_GROUP_BY_COLUMNS}) tmp1 LEFT JOIN (SELECT ${TARGET_GROUP_BY_COLUMNS}, count(1) as qualitis_mul_db_accuracy_num FROM ${target_db}.${target_table} WHERE ${filter_right} group by ${TARGET_GROUP_BY_COLUMNS}) tmp2 ON ${mapping_argument} WHERE ( NOT (${source_column_is_null}) AND (${target_column_is_null}) )");
 
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30910, "{&SOURCE_DATABASE}", 20, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30911, "{&SOURCE_TABLE}", 20, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30912, "{&TARGET_DATABASE}", 20, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30913, "{&TARGET_TABLE}", 20, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&SOURCE_DATABASE}", 20, "source_db", 11, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_db}");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&SOURCE_TABLE}", 20, "source_table", 12, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_table}");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&TARGET_DATABASE}", 20, "target_db", 13, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_db}");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&TARGET_TABLE}", 20, "target_table", 14, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_table}");
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10010, "{&JOIN_CONDITION}", 20, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement} OR (${left_statement} is null and ${right_statement} is null))");
+	values(40000, "{&JOIN_CONDITION}", 20, "mapping_argument", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${mapping_argument}", "(${left_statement} ${operation} ${right_statement} OR (${left_statement} is null and ${right_statement} is null))");
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10011, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 20, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
+	values(40011, "{&SOURCE_TABLE_COLUMN_IS_NULL}", 20, "source_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column_is_null}", "${source_column} IS NULL");
 insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, concat_template)
-	values(10012, "{&TARGET_TABLE_COLUMN_IS_NULL}", 20, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30914, "{&SOURCE_GROUP_BY_COLUMNS}", 20, "SOURCE_GROUP_BY_COLUMNS", 22, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${SOURCE_GROUP_BY_COLUMNS}");
-insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
-	values(30915, "{&TARGET_GROUP_BY_COLUMNS}", 20, "TARGET_GROUP_BY_COLUMNS", 23, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${TARGET_GROUP_BY_COLUMNS}");
+	values(40012, "{&TARGET_TABLE_COLUMN_IS_NULL}", 20, "target_column_is_null", 10, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column_is_null}", "${target_column} IS NULL");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&SOURCE_GROUP_BY_COLUMNS}", 20, "SOURCE_GROUP_BY_COLUMNS", 22, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${SOURCE_GROUP_BY_COLUMNS}");
+insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description)
+	values("{&TARGET_GROUP_BY_COLUMNS}", 20, "TARGET_GROUP_BY_COLUMNS", 23, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${TARGET_GROUP_BY_COLUMNS}");
 
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 10010);
+	values("{&JOIN_LEFT_EXPRESSION}", null, "left_statement", 15, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${left_statement}", 40000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 10010);
+	values("{&JOIN_OPERATION}", null, "operation", 16, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${operation}", 40000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 10010);
+	values("{&JOIN_RIGHT_EXPRESSION}", null, "right_statement", 17, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${right_statement}", 40000);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 10011);
+	values("{&JOIN_LEFT_FILED}", null, "source_column", 18, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${source_column}", 40011);
 insert into qualitis_template_mid_table_input_meta(name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description, parent_id)
-	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 10012);
+	values("{&JOIN_RIGHT_FILED}", null, "target_column", 19, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${target_column}", 40012);
 
 insert into qualitis_template_statistic_input_meta(template_id, id, name, func_name, value, value_type, result_type)
 	values(20, 25, "", "count", "*", 1, "Long");
 insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type)
 	values(20, 645, "{&DIFFERENT_RECORD_BETWEEN_SOURCE_AND_TARGET_TABLE}", "count", 1);
 
+
+-- 行数据重复校验
+insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, mid_table_action, template_type, action_type, save_mid_table, show_sql) values (2149, "{&PRIMARY_LINE_VERIFICATION}", 1, 1, 1, -1, "select ${field_replace_null_concat} from ${db}.${table} where ${filter}", 1, 1, false, "select max(md5_count) from (select md5(${field_replace_null_concat}) as md5, count(1) as md5_count from ${db}.${table} where ${filter}) tmp where ${filter} group by tmp.md5 having count(*) > 1");
+
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description) values (31391, "{&DATABASE}", 2149, "db", 5, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${db}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description) values (31392, "{&TABLE}", 2149, "table", 3, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${table}");
+insert into qualitis_template_mid_table_input_meta(id, name, template_id, placeholder, input_type, field_type, replace_by_request, regexp_type, placeholder_description) values (31393, "{&FIELD_REPLACE_NULL_CONCAT}", 2149, "field_replace_null_concat", 24, null, false, null, "{&REPLACE_PLACEHOLDER_IN_SQL}${field_replace_null_concat}");
+
+insert into qualitis_template_statistic_input_meta(id, template_id, name, func_name, value, value_type, result_type) values(2091, 2149, "{&LINE_REPEAT_MAX_NUMBER}", "max", "md5_count", 1, "Long");
+insert into qualitis_template_output_meta(template_id, id, output_name, field_name, field_type) values(2149, 2105, "{&LINE_REPEAT_MAX_NUMBER}", "max", 1);
+
 update qualitis_template set template_level = 1;
+
+
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(1,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(1,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(2,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(2,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(3,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(3,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(4,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(4,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(5,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(5,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(6,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(6,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(7,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(7,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(8,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(8,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(9,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(9,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(10,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(10,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(11,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(11,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(12,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(12,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(13,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(13,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(14,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(14,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(15,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(15,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(16,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(16,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(17,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(17,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(18,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(18,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(19,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(19,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(20,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(20,2);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(2149,1);
+insert into `qualitis_template_datasource_type` (`template_id`, `data_source_type_id`) values(2149,2);
+
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("一般指标", "general-metric");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("一般校验指标", "general-check-metric");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("一般业务指标", "general-busi-check");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("一般IT指标", "IT-metric");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("一级指标", "1-level-metric");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("二级指标", "2-level-metric");
+insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("自定义分类", "custom-metric");
 
 insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
 
 insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "***REMOVED***");
+
+
 
