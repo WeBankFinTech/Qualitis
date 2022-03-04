@@ -103,7 +103,7 @@ linkis:
       datasource_table: metadatamanager/tables/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}
       datasource_column: metadatamanager/columns/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}/table/{DATA_SOURCE_TABLE}
       dpm_server: xx
-      dpm_port: xx
+      dpm_port: 00
       dpm_inf: xx
       dpm_systemAppId: xx
       dpm_systemAppKey: xx
@@ -135,4 +135,4 @@ cmdb:
 
 ldap:
   ip: xx
-  port: xx
+  port: 00
