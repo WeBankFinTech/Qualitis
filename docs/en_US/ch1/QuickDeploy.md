@@ -71,8 +71,7 @@ username: "admin"
 password: "admin"  
 
 ### 5.2 Configuration
-Click on "Configuration" -> "Cluster Configuration" to add cluster.  
-![系统配置](../../../images/en_US/ch1/NewCluster.png)  
+Click on "Configuration" -> "Cluster Configuration" to add cluster.
 Type in the configuration information below:    
 Cluster name(The name of Hadoop cluster)  
 Cluster type
