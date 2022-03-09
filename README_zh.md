@@ -38,9 +38,10 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 ![](/images/zh_CN/ch1/相似系统对比图.png)
 
 ## 文档列表
-[快速搭建手册](快速搭建手册——单机版.md)  
-[架构设计文档](架构设计文档.md)  
-[用户手册](用户手册.md)  
+[快速搭建手册](/docs/zh_CN/ch1/快速搭建手册——单机版.md)  
+[架构设计文档](/docs/zh_CN/ch1/架构设计文档.md)  
+[用户手册](/docs/zh_CN/ch1/用户手册.md)  
+[升级指南](/docs/zh_CN/ch1/升级指南.md)  
 <br/>
 
 ## Architecture
