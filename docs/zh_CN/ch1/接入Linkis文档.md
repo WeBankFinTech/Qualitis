@@ -29,3 +29,5 @@ cd $SPARK_HOME/jars
 在Linkis Token中填入'QUALITIS-AUTH'  
 如下图所示：  
 ![](../../../images/zh_CN/ch1/规则配置样例.png)
+
+注意集群类型的写法，如果你已部署linkis 1.x以上版本，集群类型加个1.0后缀，如BDAP_CLUSTER1.0，否则可以不写后缀，或者写0.9，以帮助区分不同版本的linkis。

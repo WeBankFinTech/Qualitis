@@ -16,12 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
+import com.webank.wedatasphere.qualitis.exception.JobKillException;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.request.GroupListExecutionRequest;
+import com.webank.wedatasphere.qualitis.request.KillApplicationsRequest;
 import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
 import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
 
 /**
  * @author howeye
@@ -31,17 +35,52 @@ public interface ExecutionService {
     /**
      * Execute project job
      * @param request
+     * @param code
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> projectExecution(ProjectExecutionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<?> projectExecution(ProjectExecutionRequest request, Integer code)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Execute rule job
      * @param request
+     * @param code
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<?> ruleListExecution(RuleListExecutionRequest request, Integer code)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Kill job
+     * @param applicationId
+     * @param executionUser
+     * @return
+     * @throws JobKillException
+     * @throws ClusterInfoNotConfigException
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<?> killApplication(String applicationId, String executionUser)
+        throws JobKillException, ClusterInfoNotConfigException, UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Execute rule group job
+     * @param request
+     * @param code
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> ruleListExecution(RuleListExecutionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<?> ruleGroupListExecution(GroupListExecutionRequest request, Integer code)
+        throws UnExpectedRequestException;
 
+    /**
+     * Batch kill.
+     * @param request
+     * @throws JobKillException
+     * @throws ClusterInfoNotConfigException
+     * @throws UnExpectedRequestException
+     */
+    void killApplications(KillApplicationsRequest request);
 }

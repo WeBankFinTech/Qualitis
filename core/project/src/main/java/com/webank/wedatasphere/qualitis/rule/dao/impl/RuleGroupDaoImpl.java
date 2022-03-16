@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleGroupRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleGroupRepository;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -51,5 +52,10 @@ public class RuleGroupDaoImpl implements RuleGroupDao {
     @Override
     public RuleGroup findByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId) {
         return ruleGroupRepository.findByRuleGroupNameAndProjectId(ruleGroupName, projectId);
+    }
+
+    @Override
+    public List<RuleGroup> findByProjectId(Long projectId) {
+        return ruleGroupRepository.findByProjectId(projectId);
     }
 }

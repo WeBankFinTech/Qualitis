@@ -17,7 +17,6 @@
 package com.webank.wedatasphere.qualitis.entity;
 
 import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
 
 import javax.persistence.*;
 
@@ -57,9 +56,32 @@ public class Application {
     private Integer status;
     @Column(name = "rule_size")
     private Integer ruleSize;
-
-    @Column(name = "exception_message", length = 10000)
+    @Column(name = "project_id")
+    private Long projectId;
+    @Column(name = "project_name")
+    private String projectName;
+    @Column(name = "rule_group_id")
+    private Long ruleGroupId;
+    @Column(name = "rule_group_name")
+    private String ruleGroupName;
+    @Column(name = "rule_datasource")
+    private String ruleDatesource;
+    @Column(name = "exception_message", columnDefinition = "TEXT")
     private String exceptionMessage;
+    @Column(name = "filter_partition")
+    private String partition;
+    @Column(name = "cluster_name")
+    private String clusterName;
+    @Column(name = "startup_param")
+    private String startupParam;
+    @Column(name = "execution_param")
+    private String executionParam;
+    @Column(name = "set_flag")
+    private String setFlag;
+    @Column(name = "run_date")
+    private String runDate;
+    @Column(name = "application_comment")
+    private Integer applicationComment;
 
     /**
      * Using saved db to save data that not pass verification
@@ -75,20 +97,36 @@ public class Application {
         this.status = ApplicationStatusEnum.SUCCESSFUL_CREATE_APPLICATION.getCode();
     }
 
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
+
+    public Long getRuleGroupId() {
+        return ruleGroupId;
+    }
+
+    public void setRuleGroupId(Long ruleGroupId) {
+        this.ruleGroupId = ruleGroupId;
+    }
+
     public void addSuccessJobNum() {
-        this.finishTaskNum++;
+        this.finishTaskNum ++;
     }
 
     public void addFailJobNum() {
-        this.failTaskNum++;
+        this.failTaskNum ++;
     }
 
     public void addNotPassTaskNum() {
-        this.notPassTaskNum++;
+        this.notPassTaskNum ++;
     }
 
     public void addAbnormalTaskNum() {
-        this.abnormalTaskNum++;
+        this.abnormalTaskNum ++;
     }
 
     public void resetTask() {
@@ -209,6 +247,30 @@ public class Application {
         this.savedDb = savedDb;
     }
 
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getRuleGroupName() {
+        return ruleGroupName;
+    }
+
+    public void setRuleGroupName(String ruleGroupName) {
+        this.ruleGroupName = ruleGroupName;
+    }
+
+    public String getRuleDatesource() {
+        return ruleDatesource;
+    }
+
+    public void setRuleDatesource(String ruleDatesource) {
+        this.ruleDatesource = ruleDatesource;
+    }
+
     public String getCreateUser() {
         return createUser;
     }
@@ -217,24 +279,77 @@ public class Application {
         this.createUser = createUser;
     }
 
+    public String getPartition() {
+        return partition;
+    }
+
+    public void setPartition(String partition) {
+        this.partition = partition;
+    }
+
+    public String getStartupParam() {
+        return startupParam;
+    }
+
+    public void setStartupParam(String startupParam) {
+        this.startupParam = startupParam;
+    }
+
+    public String getExecutionParam() {
+        return executionParam;
+    }
+
+    public void setExecutionParam(String executionParam) {
+        this.executionParam = executionParam;
+    }
+
+    public String getSetFlag() {
+        return setFlag;
+    }
+
+    public void setSetFlag(String setFlag) {
+        this.setFlag = setFlag;
+    }
+
+    public String getRunDate() {
+        return runDate;
+    }
+
+    public void setRunDate(String runDate) {
+        this.runDate = runDate;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public Integer getApplicationComment() {
+        return applicationComment;
+    }
+
+    public void setApplicationComment(Integer taskComment) {
+        this.applicationComment = taskComment;
+    }
+
     @Override
     public String toString() {
         return "Application{" +
-                "id='" + id + '\'' +
-                ", submitTime='" + submitTime + '\'' +
-                ", finishTime='" + finishTime + '\'' +
-                ", invokeType=" + invokeType +
-                ", finishTaskNum=" + finishTaskNum +
-                ", failTaskNum=" + failTaskNum +
-                ", notPassTaskNum=" + notPassTaskNum +
-                ", abnormalTaskNum=" + abnormalTaskNum +
-                ", totalTaskNum=" + totalTaskNum +
-                ", executeUser='" + executeUser + '\'' +
-                ", createUser='" + createUser + '\'' +
-                ", status=" + status +
-                ", ruleSize=" + ruleSize +
-                ", exceptionMessage='" + exceptionMessage + '\'' +
-                ", savedDb='" + savedDb + '\'' +
-                '}';
+            "id='" + id + '\'' +
+            ", submitTime='" + submitTime + '\'' +
+            ", finishTime='" + finishTime + '\'' +
+            ", invokeType=" + invokeType +
+            ", finishTaskNum=" + finishTaskNum +
+            ", failTaskNum=" + failTaskNum +
+            ", notPassTaskNum=" + notPassTaskNum +
+            ", abnormalTaskNum=" + abnormalTaskNum +
+            ", totalTaskNum=" + totalTaskNum +
+            ", executeUser='" + executeUser + '\'' +
+            ", createUser='" + createUser + '\'' +
+            ", status=" + status +
+            '}';
     }
 }

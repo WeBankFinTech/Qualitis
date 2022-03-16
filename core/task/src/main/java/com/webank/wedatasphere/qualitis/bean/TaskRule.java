@@ -22,9 +22,12 @@ import java.util.List;
  * @author howeye
  */
 public class TaskRule {
-
-    private String ruleName;
     private Long ruleId;
+    private String ruleName;
+    private String cnName;
+    private String ruleDetail;
+    private String templateName;
+    private String ruleGroupName;
     private Integer ruleType;
     private Long childRuleId;
     private Integer childRuleType;
@@ -33,9 +36,11 @@ public class TaskRule {
     private List<TaskRuleDataSource> childTaskRuleDataSourceList;
     private Long projectId;
     private String projectName;
+    private String projectCnName;
     private String projectCreator;
     private List<TaskRuleAlarmConfigBean> taskRuleAlarmConfigBeans;
     private List<TaskRuleAlarmConfigBean> childTaskRuleAlarmConfigsBeans;
+    private Boolean deleteFailCheckResult;
 
     public TaskRule() {
         // Default Constructor
@@ -49,12 +54,44 @@ public class TaskRule {
         this.ruleName = ruleName;
     }
 
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
+    }
+
     public Long getRuleId() {
         return ruleId;
     }
 
     public void setRuleId(Long ruleId) {
         this.ruleId = ruleId;
+    }
+
+    public String getRuleGroupName() {
+        return ruleGroupName;
+    }
+
+    public void setRuleGroupName(String ruleGroupName) {
+        this.ruleGroupName = ruleGroupName;
     }
 
     public List<TaskRuleDataSource> getTaskRuleDataSourceList() {
@@ -87,6 +124,14 @@ public class TaskRule {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getProjectCnName() {
+        return projectCnName;
+    }
+
+    public void setProjectCnName(String projectCnName) {
+        this.projectCnName = projectCnName;
     }
 
     public List<TaskRuleAlarmConfigBean> getTaskRuleAlarmConfigBeans() {
@@ -143,5 +188,13 @@ public class TaskRule {
 
     public void setChildRuleType(Integer childRuleType) {
         this.childRuleType = childRuleType;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
     }
 }

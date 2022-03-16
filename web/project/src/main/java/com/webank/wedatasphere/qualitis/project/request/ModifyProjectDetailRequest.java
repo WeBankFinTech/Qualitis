@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.project.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import java.util.List;
 import java.util.Set;
 import org.springframework.beans.BeanUtils;
 
@@ -25,15 +26,18 @@ import org.springframework.beans.BeanUtils;
  * @author howeye
  */
 public class ModifyProjectDetailRequest {
-
     @JsonProperty("project_id")
     private Long projectId;
     @JsonProperty("project_name")
     private String projectName;
-    private String description;
+    @JsonProperty("cn_name")
+    private String cnName;
     private String username;
+    private String description;
     @JsonProperty("project_label")
     private Set<String> projectLabelStrs;
+    @JsonProperty("project_authorize_users")
+    private List<AuthorizeProjectUserRequest> authorizeProjectUserRequests;
 
     public ModifyProjectDetailRequest() {
         // Default Constructor
@@ -53,6 +57,14 @@ public class ModifyProjectDetailRequest {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
     }
 
     public String getDescription() {
@@ -77,6 +89,15 @@ public class ModifyProjectDetailRequest {
 
     public void setProjectLabelStrs(Set<String> projectLabelStrs) {
         this.projectLabelStrs = projectLabelStrs;
+    }
+
+    public List<AuthorizeProjectUserRequest> getAuthorizeProjectUserRequests() {
+        return authorizeProjectUserRequests;
+    }
+
+    public void setAuthorizeProjectUserRequests(
+        List<AuthorizeProjectUserRequest> authorizeProjectUserRequests) {
+        this.authorizeProjectUserRequests = authorizeProjectUserRequests;
     }
 
     public static void checkRequest(ModifyProjectDetailRequest request) throws UnExpectedRequestException {

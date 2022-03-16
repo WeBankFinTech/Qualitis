@@ -20,6 +20,7 @@ logging:
 server:
   port: 8090
   connection-timeout: 6000000 # 600s
+  # error page
   error:
     whitelabel:
       enabled: false

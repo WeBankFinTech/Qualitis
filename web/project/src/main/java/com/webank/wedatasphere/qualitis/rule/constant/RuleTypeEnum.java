@@ -25,7 +25,8 @@ public enum RuleTypeEnum {
      */
     SINGLE_TEMPLATE_RULE(1, "Single Template rule"),
     CUSTOM_RULE(2, "Custom rule"),
-    MULTI_TEMPLATE_RULE(3, "Multi Template rule")
+    MULTI_TEMPLATE_RULE(3, "Multi Template rule"),
+    FILE_TEMPLATE_RULE(4, "File Template rule")
     ;
 
     private Integer code;

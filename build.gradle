@@ -36,6 +36,11 @@ buildscript {
       url "http://maven.aliyun.com/nexus/content/groups/public/"
     }
   }
+
+  dependencies {
+    classpath 'net.sf.proguard:proguard-gradle:6.2.0'
+    classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.15.RELEASE'
+  }
 }
 
 dependencies {
@@ -91,7 +96,7 @@ distributions {
         fileMode = 0755
       }
       into { "doc" } {
-        from "web/app/src/main/doc"
+        from "docs"
         dirMode = 0755
         fileMode = 0644
       }
@@ -130,20 +135,23 @@ subprojects {
 
 configurations.all {
   resolutionStrategy {
-    force 'org.springframework:spring-aop:5.1.15.RELEASE'
-    force 'org.springframework:spring-aspects:5.1.15.RELEASE'
-    force 'org.springframework:spring-beans:5.1.15.RELEASE'
-    force 'org.springframework:spring-context:5.1.15.RELEASE'
-    force 'org.springframework:spring-core:5.1.15.RELEASE'
-    force 'org.springframework:spring-expressions:5.1.15.RELEASE'
-    force 'org.springframework:spring-jcl:5.1.15.RELEASE'
-    force 'org.springframework:spring-jdbc:5.1.15.RELEASE'
-    force 'org.springframework:spring-orm:5.1.15.RELEASE'
-    force 'org.springframework:spring-test:5.1.15.RELEASE'
-    force 'org.springframework:spring-tx:5.1.15.RELEASE'
-    force 'org.springframework:spring-web:5.1.15.RELEASE'
-    force 'org.springframework:spring-webmvc:5.1.15.RELEASE'
+    force 'org.springframework:spring-aop:5.1.18.RELEASE'
+    force 'org.springframework:spring-aspects:5.1.18.RELEASE'
+    force 'org.springframework:spring-beans:5.1.18.RELEASE'
+    force 'org.springframework:spring-context:5.1.18.RELEASE'
+    force 'org.springframework:spring-core:5.1.18.RELEASE'
+    force 'org.springframework:spring-expressions:5.1.18.RELEASE'
+    force 'org.springframework:spring-jcl:5.1.18.RELEASE'
+    force 'org.springframework:spring-jdbc:5.1.18.RELEASE'
+    force 'org.springframework:spring-orm:5.1.18.RELEASE'
+    force 'org.springframework:spring-test:5.1.18.RELEASE'
+    force 'org.springframework:spring-tx:5.1.18.RELEASE'
+    force 'org.springframework:spring-web:5.1.18.RELEASE'
+    force 'org.springframework:spring-webmvc:5.1.18.RELEASE'
+    force 'org.apache.logging.log4j:log4j-slf4j-impl:2.16.0'
   }
+  exclude group: 'log4j', module: 'log4j'
+  exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
 }
 
 apply from: "profile.gradle"

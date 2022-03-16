@@ -5,13 +5,14 @@
             <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
             <span class="breadcrumb-item-separator">/</span>
             <span class="breadcrumb-item-link">{{ $t('optionManagePage.authorityManagement') }}</span>
-        </div>
-        <roleper-table class="border1px" />
-        <userspec-table class="border1px" />
-        <userrole-table class="border1px" />
-        <role-table class="border1px" />
-        <permission-table class="border1px" />
-    </Row>
+            </div>
+            <roleper-table class="border1px" />
+            <userspec-table class="border1px" />
+            <userrole-table class="border1px" />
+            <role-table :department_name_list="departmentNameList" class="border1px" />
+            <department-table class="border1px" @listData="departmentListData" />
+            <permission-table class="border1px" />
+        </Row>
     </pageContainer>
 </template>
 <style scoped>
@@ -32,13 +33,25 @@
     import permissionTable from "./components/permissionTable.fes";
     import userroleTable from "./components/userroleTable.fes";
     import userspecTable from "./components/userspecTable.fes";
+    import departmentTable from "./components/departmentTable.fes";
     import pageContainer from '../../components/template'
 
     export default {
         FesHeader: true,
         FesLeft: false,
+        FesData() {
+            return {
+                departmentNameList: []
+            };
+        },
         methods:{
-
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
+            departmentListData(e) {
+              this.departmentNameList = e || [];
+            }
         },
         components: {
             roleTable,
@@ -46,7 +59,8 @@
             permissionTable,
             userroleTable,
             userspecTable,
-            pageContainer
+            pageContainer,
+            departmentTable
         }
     }
 </script>

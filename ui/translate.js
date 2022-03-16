@@ -28,7 +28,7 @@ function translateReq(text, cb) {
                 'pragma': 'no-cache',
                 'proxy-Connection': 'keep-alive',
                 'upgrade-insecure-requests': 1,
-                'cookie': 'OUTFOX_SEARCH_USER_ID=-1618593213@127.0.0.1; OUTFOX_SEARCH_USER_ID_NCOO=1383392327.7494588; _ga=GA1.2.1485522253.1539140851; P_INFO=10000000000|1545711281|1|youdaonote|00&99|null&null&null#gud&440300#10#0|&0||10000000000; SESSION_FROM_COOKIE=www.baidu.com',
+                'cookie': 'OUTFOX_SEARCH_USER_ID=-1618593213@10.168.8.76; OUTFOX_SEARCH_USER_ID_NCOO=1383392327.7494588; _ga=GA1.2.1485522253.1539140851; P_INFO=15109269782|1545711281|1|youdaonote|00&99|null&null&null#gud&440300#10#0|&0||15109269782; SESSION_FROM_COOKIE=www.baidu.com',
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36'
             }
     },

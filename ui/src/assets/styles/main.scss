@@ -109,13 +109,21 @@
 }
 .flex {
     display: flex;
+
+    &.justify-end {
+        justify-content: flex-end;
+    }
+
+    &.align-center {
+        align-items: center;
+    }
 }
 .pointer {
     cursor: pointer;
 }
 .loading-layout {
     position: absolute;
-    top: 30%;
+    top: 50%;
     left: 50%;
     height: 70px !important;
     width: 70px !important;
@@ -133,4 +141,14 @@
     position: absolute;
     bottom: 10px;
     right: 0;
+}
+
+.table-pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    .table-pagination-total {
+        margin-right: 10px;
+    }
 }

@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class DbInfoDetail {
-
     @JsonProperty("db_name")
     private String dbName;
 
@@ -41,5 +40,4 @@ public class DbInfoDetail {
     public void setDbName(String dbName) {
         this.dbName = dbName;
     }
-
 }

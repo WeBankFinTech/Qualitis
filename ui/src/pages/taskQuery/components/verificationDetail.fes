@@ -1,0 +1,399 @@
+<template>
+    <div class="verification-detail">
+        <div class="summary-list">
+            <div class="summary-item">
+                <span>{{ $t('common.cluster') }}：</span>
+                <span>{{ taskDetail.cluster_name }}</span>
+            </div>
+            <div class="summary-item">
+                <span>{{ $t('verifyFailData.notPassBase') }}：</span>
+                <span>{{ taskDetail.saved_db }}</span>
+            </div>
+            <div class="summary-item">
+                <ul class="status-list">
+                    <li class="status-item color-status">
+                        <span>{{ $t('common.failCheck') }}</span>
+                        <span>{{ failed_check_task_num }}</span>
+                    </li>
+                    <li class="status-item color-status">
+                        <span>{{ $t('common.byCheck') }}</span>
+                        <span>{{ finished_task_num }}</span>
+                    </li>
+                    <li class="status-item color-status">
+                        <span>{{ $t('verifyFailData.notCheck') }}</span>
+                        <span>{{ failed_task_num }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div>
+            <div v-if="single.length > 0">
+                <div v-for="(item, i) in single" :key="i" span="24" class="mt20">
+                    <Panel :title="$t('verifyFailData.singleTableCheck')">
+                        <div class="taskSource">{{ $t('verifyFailData.database') }}{{ item.database }}， {{ $t('verifyFailData.dataTable') }}{{ item.table }}</div>
+                        <Wb-table :data="item.check_table" border :no-data-text="$t('common.noData')">
+                            <Column prop="rule_name" :name="`${$t('common.technicalRegulation')}：`" width="20%" :component="ruleNameComp" />
+                            <Column :component="fieldComponent" prop="columns" :name="$t('common.parityField')" width="15%" />
+                            <Column prop="alarm_variable" :component="ruleComponent" :name="$t('common.ruleTemplate')" width="20%" />
+                            <Column prop="result" :name="$t('verifyFailData.actualResult')" width="10%" />
+                            <Column prop="save_table" :name="$t('verifyFailData.notPassTable')" width="35%" />
+                        </Wb-table>
+                    </Panel>
+                </div>
+            </div>
+            <div v-if="custom.length > 0">
+                <div v-for="(item, i) in custom" :key="i" span="24" class="mt20">
+                    <Panel :title="$t('verifyFailData.customTableCheck')">
+                        <div class="taskSource">{{ $t('common.checkDataSource') }}：{{ item.from_content }}</div>
+                        <Wb-table :data="item.check_table" border :no-data-text="$t('common.noData')">
+                            <Column prop="rule_name" :name="`${$t('common.technicalRegulation')}：`" width="20%" :component="ruleNameComp" />
+                            <Column :component="fieldComponent" prop="columns" :name="$t('common.parityField')" width="15%" />
+                            <Column prop="alarm_variable" :component="ruleComponent" :name="$t('common.ruleTemplate')" width="20%" />
+                            <Column prop="result" :name="$t('verifyFailData.actualResult')" width="10%" />
+                            <Column prop="save_table" :name="$t('verifyFailData.notPassTable')" width="35%" />
+                        </Wb-table>
+                    </Panel>
+                </div>
+            </div>
+            <div v-if="multiple.length > 0">
+                <div v-for="(item, i) in multiple" :key="i" span="24" class="mt20">
+                    <Panel :title="$t('verifyFailData.acrossCheck')">
+                    <div v-for="k in item.datasource" :key="k.index" class="taskSource">{{ $t('verifyFailData.database') }}{{ k.db_name }}，{{ $t('verifyFailData.dataTable') }}{{ k.table_name }}</div>
+                    <Wb-table :data="item.check_table" border :no-data-text="$t('common.noData')">
+                        <Column prop="rule_name" :name="`${$t('common.technicalRegulation')}：`" width="20%" :component="ruleNameComp" />
+                        <Column prop="alarm_variable" :component="ruleComponent" :name="$t('common.ruleTemplate')" width="20%" />
+                        <Column prop="result" :name="$t('verifyFailData.actualResult')" :component="actualComponent" width="10%" />
+                        <Column prop="save_table" :name="$t('verifyFailData.notPassTable')" :component="failedComponent" width="35%" />
+                    </Wb-table>
+                    </Panel>
+                </div>
+            </div>
+            <div v-if="file.length > 0">
+                <div v-for="(item, i) in file" :key="i" span="24" class="mt20">
+                    <Panel :title="$t('addGroupTechniqueRule.documentVerification')">
+                        <div class="taskSource">{{ $t('verifyFailData.database') }}{{ item.database }}， {{ $t('verifyFailData.dataTable') }}{{ item.table }}</div>
+                        <Wb-table :data="item.check_table" border :no-data-text="$t('common.noData')">
+                            <Column prop="rule_name" :name="`${$t('common.technicalRegulation')}：`" width="20%" :component="ruleNameComp" />
+                            <Column :component="fieldComponent" prop="columns" :name="$t('common.parityField')" width="15%" />
+                            <Column prop="alarm_variable" :component="ruleComponent" :name="$t('common.ruleTemplate')" width="20%" />
+                            <Column prop="result" :name="$t('verifyFailData.actualResult')" width="10%" />
+                            <Column prop="save_table" :name="$t('verifyFailData.notPassTable')" width="35%" />
+                        </Wb-table>
+                    </Panel>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+import Vue from 'vue';
+export default {
+    props: {
+        applicationId: {
+            type: [String, Number],
+            required: true
+        },
+        taskId: {
+            type: [String, Number],
+            required: true
+        }
+    },
+    FesData() {
+        return {
+            failed_check_task_num: 0,
+            finished_task_num: 0,
+            failed_task_num: 0,
+            taskDetail: {},
+            single: [],
+            multiple: [],
+            custom: [],
+            file: [],
+        };
+    },
+    FesReady() {
+        this.init();
+    },
+    methods: {
+        ruleNameComp: function(trData) {
+            const that = this;
+            return new Vue({
+                render: function(h) {
+                    return h('span', {
+                        class: ['cursor'],
+                        on: {
+                            click: function() {
+                                that.$emit('on-rule-name-click', trData);
+                            }
+                        }
+                    }, trData.rule_name);
+                }
+            });
+        },
+        fieldComponent: function (trData) {
+            const columns = trData.columns || [];
+            return new Vue({
+                data () {
+                    return {
+                        field: columns,
+                        option: {
+                            direction: 'bottom',
+                            align: 'center',
+                            component: new Vue({
+                                data () {
+                                    return {
+                                        list: columns,
+                                    }
+                                },
+                                render: function (createElement) {
+                                    return createElement('div', {
+                                        style: {
+                                            width: '1000px',
+                                            wordBreak: 'break-all'
+                                        }
+                                    }, this.list.map(function name(item) {
+                                        return createElement('p', {}, item)
+                                    }))
+                                }
+                            })
+                        },
+                    }
+                },
+                render: function (createElement) {
+                    return createElement('span', {
+                        class: {
+                            'field': true
+                        },
+                        directives: [
+                            {
+                                name: 'tooltip',
+                                value: this.option,
+                            }
+                        ],
+                    }, this.field[0])
+                }
+            })
+        },
+        ruleComponent: function (trData) {
+            const that = this;
+            return new Vue({
+                FesReady: function() {
+                    this.init()
+                },
+                data () {
+                    return {
+                        alarm_variable: [],
+                        alarmArr: []
+                    }
+                },
+                methods: {
+                    init() {
+                        this.alarm_variable = trData.alarm_variable;
+                        this.formatArr()
+                    },
+                    formatCompareType(compareType) {
+                        let flag = '';
+                        switch(compareType) {
+                            case 1:
+                                flag = '=';
+                                break;
+                            case 2:
+                                flag = '>';
+                                break;
+                            case 3:
+                                flag = '<';
+                                break;
+                            case 4:
+                                flag = '≥';
+                                break;
+                            case 5:
+                                flag = '≤';
+                                break;
+                            case 6:
+                                flag = '≠';
+                                break;
+                            default:
+                                break;
+                        }
+                        return flag;
+                    },
+                    formatArr() {
+                        let tem = '';
+                        this.alarmArr = this.alarm_variable.map((item)=> {
+                            switch (item.check_template) {
+                                case 1:
+                                    tem = `${that.$t('common.monthlyFluctuation')}${item.threshold}%`;
+                                    break;
+                                case 2:
+                                    tem = `${that.$t('common.weeklyFluctuation')}${item.threshold}%`;
+                                    break;
+                                case 3:
+                                    tem = `${that.$t('common.daillyFluctuation')}${item.threshold}%`;
+                                    break;
+                                case 4:
+                                    tem = `${that.$t('common.thresholdValue')}${this.formatCompareType(item.compare_type)}${item.threshold}`;
+                                    break;
+                                case 5:
+                                    tem = `${that.$t('common.yearCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 6:
+                                    tem = `${that.$t('common.halfYearCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 7:
+                                    tem = `${that.$t('common.seasonCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 8:
+                                    tem = `${that.$t('common.monthCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 9:
+                                    tem = `${that.$t('common.weekCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 10:
+                                    tem = `${that.$t('common.dayCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 11:
+                                    tem = `${that.$t('common.hourCircleCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                case 12:
+                                    tem = `${that.$t('common.monthSameCompare')}${this.formatCompareType(item.compare_type)}${item.threshold}%`;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            return {
+                                tem,
+                                status:item.status
+                            };
+                        })
+                    },
+                },
+                render: function (createElement) {
+                    return createElement('div', {
+                        class: {
+                            verificationRule: this.alarmArr.length > 1
+                        }
+                    }, this.alarmArr.map(function(item) {
+                        return createElement('span', {
+                            class: {
+                                ruleTag: true,
+                                pass: item.status == 1,
+                                unPass: item.status == 2,
+                                unVerified: item.status == 3
+                            }
+                        }, `${item.tem}   `)
+                    }))
+                }
+            })
+        },
+        actualComponent: function (trData) {
+            return new Vue({
+                data() {
+                    return {
+                        result: trData.result
+                    }
+                },
+                render: function (createElement) {
+                    return createElement('div', this.result.map(function (z) {
+                        return createElement ('p', {}, `${z.value} `)
+                    }))
+                }
+            })
+        },
+        failedComponent: function (trData) {
+            return new Vue({
+                data() {
+                    return {
+                        save_table: trData.save_table
+                    }
+                },
+                render: function (createElement) {
+                    return createElement('div', this.save_table.map(function (save) {
+                        return createElement ('p', {}, `${save.mid_table_name}`)
+                    }))
+                }
+            })
+        },
+        init() {
+            const applicationMapping = this.FesFesx.get('task_info_map');
+            if (!applicationMapping) return;
+            this.application = applicationMapping[this.applicationId];
+            if (!this.application) return;
+            this.failed_check_task_num = this.application.failed_check_task_num;
+            this.finished_task_num = this.application.finished_task_num;
+            this.failed_task_num = this.application.failed_task_num;
+            this.FesApi.fetch(`api/v1/projector/application/task/detail/${this.taskId}`,{
+            }, 'get').then((res) => {
+                this.taskDetail = res;
+                this.single = res.check_datasource.single || [];
+                this.multiple = res.check_datasource.multiple || [];
+                this.custom = res.check_datasource.custom || [];
+                this.file = res.check_datasource.file || [];
+                this.multiple = this.multiple.map((item) => {
+                    let check_table = item.check_table;
+                    if (Array.isArray(check_table)) {
+                        check_table = check_table.map(subItem => {
+                            return {
+                                result: this.sortArrayByIndex(subItem.result),
+                                rule_name: subItem.rule_name,
+                                alarm_variable: subItem.alarm_variable,
+                                save_table: this.sortArrayByIndex(subItem.save_table)
+                            };
+                        });
+                    }
+                    return {
+                        check_table,
+                        datasource: this.sortArrayByIndex(item.datasource),
+                    };
+                });
+            });
+        },
+        sortArrayByIndex(arr) {
+            if (!Array.isArray(arr)) return arr;
+            return arr.sort((a, b) => {
+                return a.index - b.index;
+            });
+        }
+    }
+}
+</script>
+<style lang="scss" scoped>
+@import "../../../assets/styles/variables";
+.verification-detail {
+    margin-top: 10px;
+    .summary-list {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        height: 98px;
+        border: 1px solid #e3e8ee;
+        .summary-item {
+            margin: 0 20px;
+        }
+        .status-list {
+            display: flex;
+            align-items: center;
+        }
+        .color-status {
+            margin-right: 20px;
+            padding: 4px 4px;
+            height: 24px;
+            line-height: 16px;
+            color: #fff;
+            background-color: #e20e0e;
+        }
+        .color-status:nth-last-child(2) {
+            background-color: $success-color;
+        }
+        .color-status:last-child {
+            background-color: #656060;
+        }
+    }
+}
+/deep/
+.ui-table {
+    overflow: auto;
+}
+/deep/
+.field + .ui-tooltip {
+    left: 160px !important;
+}
+</style>

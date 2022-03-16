@@ -1,0 +1,104 @@
+<template>
+    <div class="executation-config-detail">
+        <!-- 切换集群 -->
+        <el-form-item
+            prop="cluster_name"
+            style="width: 50%;"
+            :label="`${$t('common.switchCluster')}：`">
+            <el-select v-model="data.cluster_name">
+                <el-option
+                    v-for="item of clusterList"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value" />
+            </el-select>
+        </el-form-item>
+        <!-- 执行参数
+        <FormItem :label="$t('common.executeParams')" prop="startup_param_name">
+            <WbInput v-model="data.startup_param_name" :placeholder="$t('common.pleaseEnter')" />
+        </FormItem>
+        -->
+        <!-- 执行参数 -->
+        <el-form-item
+            prop="engine_reuse"
+            :label="`${$t('common.engineReuse')}：`">
+            <el-switch v-model="data.engine_reuse" />
+        </el-form-item>
+        <el-form-item :label="`${$t('common.executeParams')}：`" prop="startup_param_name">
+            <ExecutationParamSetting v-model="data.startup_param_name" :parameter-name-list="parameterNameList" />
+        </el-form-item>
+    </div>
+</template>
+<script>
+import ExecutationParamSetting from './components/executationParamSetting';
+export default {
+    name: 'executation-dynamic-engine-config',
+    components: {
+        ExecutationParamSetting
+    },
+    props: {
+        data: {
+            type: Object,
+            required: true
+        }
+    },
+    FesData() {
+        return {
+            clusterList: [],
+            parameterNameList: [
+                {
+                    label: 'YARN队列名',
+                    value: 'wds.linkis.rm.yarnqueue',
+                    default: ''
+                },
+                {
+                    label: 'YARN队列实例最大个数',
+                    value: 'wds.linkis.rm.yarnqueue.instance.max',
+                    default: '30'
+                },
+                {
+                    label: '队列CPU使用上限',
+                    value: 'wds.linkis.rm.yarnqueue.cores.max',
+                    default: '150'
+                },
+                {
+                    label: '队列内存使用上限',
+                    value: 'wds.linkis.rm.yarnqueue.memory.max',
+                    default: '300G'
+                },
+                {
+                    label: 'Driver内存使用上限',
+                    value: 'wds.linkis.rm.client.memory.max',
+                    default: '20G'
+                },
+                {
+                    label: 'Driver核心个数上限',
+                    value: 'wds.linkis.rm.client.core.max',
+                    default: '10'
+                },
+                {
+                    label: '引擎最大并发数',
+                    value: 'wds.linkis.rm.instance',
+                    default: '10'
+                }
+            ]
+        };
+    },
+    FesReady() {
+        this.getClusterList();
+    },
+    methods: {
+        async getClusterList() {
+            try {
+                const { optional_clusters } = await this.FesApi.fetch('/api/v1/projector/meta_data/cluster', {}, 'post');
+                if (Array.isArray(optional_clusters)) {
+                    this.clusterList = optional_clusters.map(item => ({ label: item, value: item }));
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    }
+};
+</script>
+<style lang="scss" scoped></style>

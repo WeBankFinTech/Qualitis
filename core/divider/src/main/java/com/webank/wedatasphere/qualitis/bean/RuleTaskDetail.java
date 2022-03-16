@@ -22,7 +22,6 @@ import com.webank.wedatasphere.qualitis.rule.entity.Rule;
  * @author howeye
  */
 public class RuleTaskDetail {
-
     private Rule rule;
     private String midTableName;
 

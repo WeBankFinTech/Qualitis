@@ -18,8 +18,8 @@ package com.webank.wedatasphere.qualitis.dao.impl;
 
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.repository.UserRepository;
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,7 +44,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUserName(username);
     }
 
     @Override
@@ -74,5 +74,14 @@ public class UserDaoImpl implements UserDao {
         return userRepository.findAll();
     }
 
+    @Override
+    public List<User> findByDepartment(Department departmentInDb) {
+        return userRepository.findByDepartment(departmentInDb);
+    }
+
+    @Override
+    public boolean checkTemplate(User userInDb) {
+        return userRepository.checkTemplate(userInDb) <= 0;
+    }
 
 }

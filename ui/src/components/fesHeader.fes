@@ -1,7 +1,7 @@
 <template>
-    <div class="global-header">
+    <div v-if="!FesFesx.IS_HIDE_HEADER" class="global-header">
         <div class="logo-container">
-            <img src="../assets/images/logo.png">
+            <img src="../assets/images/logo.svg">
         </div>
         <div class="user-info">
             <Dropdown v-if="simulationUser" :data="logoutList" @on-choose="clickItem">
@@ -46,221 +46,201 @@
         </modal>
     </div>
 </template>
+
 <script>
 
 import { getUserRole, sha256 } from "assets/js/utils";
 import bus from '../bus';
-    export default {
-        FesData() {
-            return {
-                name: '',
-                role: '',
-                userName: '',
-                simulaUser: false,
-                userData: [],
-                ruleSize: {
-                    page: 0,
-                    size: 500
-                },
-                simulationUser: false,
-                oldPassword: '',
-                newPassword: '',
-                confirmPassword: '',
-                logoutList: [{
-                    content: this.$t('fesHeader.exitUser'),
-                    key: 'simulationUserLogout'
-                }],
-                passwordValidate: {
-                    oldPassword: [{required: true, message: '不能为空'}],
-                    newPassword: [{required: true, message: '不能为空'}],
-                    confirmPassword: [{required: true, message: '不能为空'}]
-                }
-            };
-        },
-        computed: {
-            adminTag() {
-                return this.role === '管理员' ? true : false
+export default {
+    FesData() {
+        return {
+            name: '',
+            role: '',
+            userName: '',
+            simulaUser: false,
+            userData: [],
+            ruleSize: {
+                page: 0,
+                size: 500
             },
-            saveSimulated() {
-                //被模拟用户信息
-                return this.FesStorage.get('simulatedUser')
-            },
-            ruleValidate() {
-                return {
-                    userName: [{require:true, message: this.$t('common.notEmpty')}]
-                }
-            },
-            operateList() {
-                if (this.adminTag) {
-                    return [
-                        {
-                            content: this.$t('fesHeader.language'),
-                            key: 'change'
-                        },
-                        {
-                            content: this.$t('fesHeader.changePassword'),
-                            key: 'password'
-                        },
-                        {
-                            content: this.$t('fesHeader.signOut'),
-                            key: 'logout'
-                        }
-                    ]
-                }else {
-                    return [
-                        {
-                            content: this.$t('fesHeader.simulatedUser'),
-                            key: 'user'
-                        },
-                        {
-                            content: this.$t('fesHeader.language'),
-                            key: 'change'
-                        },
-                        {
-                            content: this.$t('fesHeader.changePassword'),
-                            key: 'password'
-                        },
-                        {
-                            content: this.$t('fesHeader.signOut'),
-                            key: 'logout'
-                        }
-                    ]
-                }
+            operateList: [],
+            simulationUser: false,
+            logoutList: [{
+                content: this.$t('fesHeader.exitUser'),
+                key: 'simulationUserLogout'
+            }],
+            oldPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+            passwordValidate: {
+                oldPassword: [{required: true, message: '不能为空'}],
+                newPassword: [{required: true, message: '不能为空'}],
+                confirmPassword: [{required: true, message: '不能为空'}]
             }
+        };
+    },
+    computed: {
+        adminTag() {
+            return this.role === '管理员' ? true : false
         },
-        FesReady: function(){
-            this.init();
-            bus.$on('LOGIN', () => {
-                this.init();
-            });
+        saveSimulated() {
+            //被模拟用户信息
+            return this.FesStorage.get('simulatedUser')
         },
-        methods: {
-            init() {
-               let timer =  setInterval(() => {
-                   this.name = this.FesApp.get("FesUserName");
-                   this.role = this.FesApp.get("FesRoleName");
-                   if (this.name || this.role) {
-                       clearInterval(timer);
-                   }
-                }, 1000);
-                if (this.saveSimulated) {
-                    this.userName = this.saveSimulated;
-                    this.simulationUser = true;
-                }
-            },
-            clickItem(item) {
-                switch (item.key) {
-                    case 'user':
-                        this.analogUser();
-                        break;
-                    case 'change':
-                        this.languageSwitching();
-                        break;
-                    case 'logout':
-                        this.logout();
-                        break;
-                    case 'simulationUserLogout':
-                        this.exitUser();
-                        break;
-                    case 'password':
-                        this.changePassword();
-                        break;
-                    default:
-                        break;
-                }
-            },
-            analogUser() {
-                //模拟用户(管理员权限)
-                this.FesApi.fetch('api/v1/admin/user/all', this.ruleSize, 'post').then((res)=> {
-                    this.userData = res.data;
-                })
-                this.$refs.userForm.show();
-            },
-            exitUser() {
-                //退出模拟用户
-                let role = this.FesStorage.get('firstRole');
-                this.$Message.confirm(this.$t('common.ok'), `${this.$t('message.user')}${this.userName}`).then(index=> {
-                    if (index === 0) {
-                        this.FesApi.fetch('api/v1/admin/transfer_user/exit', 'get').then(()=> {
-                            this.simulationUser = false;
-                            this.FesStorage.remove('simulatedUser');
-                            this.getRole();
-                            this.FesApp.setRole(role);
-                            this.$Toast.success(this.$t('toastSuccess.simulatedOut'));
-                        })
-                    }
-                })
-            },
-            cancel(ref) {
-                this.$refs.[ref].hide();
-            },
-            submit() {
-                if (!this.userName) return this.$Toast.warn(this.$t('fesHeader.selectUser'));
-                this.FesApi.fetch(`api/v1/admin/transfer_user/${this.userName}`, 'get').then(()=>{
-                    this.simulaUser = true;
-                    this.$refs.userForm.hide();
-                    this.simulationUser = true;
-                    this.FesStorage.set('simulatedUser', this.userName);
-                    this.getRole();
-                    this.$Toast.success(this.$t('toastSuccess.simulatedUser'));
-                })
-            },
-            getRole() {
-                getUserRole(this);
-            },
-            logout() {
-                let url = `${this.FesEnv.api || window.location.origin}/api/v1/logout`;
-                this.FesApp.setRole('unLogin')
-                this.FesStorage.remove('userLogin', false);
-                if(url) { // 如果是sso登录的，那么点击退出时需要用sso退出链接来退出sso登录
-                    this.FesStorage.set('redirect_to_um_login', null);
-                    window.location.href = url;
-                }
-                this.FesStorage.remove('simulatedUser');
-                this.FesStorage.remove('firstRole');
-                this.FesFesx.set('userRole', '');
-                this.FesApp.set("FesRoleName", '');
-                this.FesApp.set("FesUserName", '');
-            },
-            languageSwitching() {
-                let language = this.FesFesx.get('currentLanguage')
-                if (language === 'zh-cn') {
-                    this.FesApp.setLocale('en')
-                    this.FesFesx.set('currentLanguage', 'en')
-                    this.FesFesx.set('Language', 'en_US')
-                } else {
-                    this.FesApp.setLocale('zh-cn')
-                    this.FesFesx.set('currentLanguage', 'zh-cn')
-                    this.FesFesx.set('Language', 'zh_CN')
-                }
-                this.FesApi.setHeader({
-                    'Content-Language': this.FesFesx.get('Language')
-                })
-                location.reload()
-            },
-            changePassword() {
-                this.$refs['passwordForm'].show()
-            },
-            confirmChangePassword() {
-                this.$refs['password'].validate(valid=> {
-                    if (valid) {
-                        let {oldPassword, newPassword, confirmPassword} = this;
-                        if (newPassword !== confirmPassword) {
-                            return this.$Toast.warn(this.$t('fesHeader.checkPassword'))
-                        }
-                        let params = {
-                            old_password: sha256(oldPassword),
-                            new_password: sha256(newPassword)
-                        }
-                        this.FesApi.fetch('/api/v1/projector/user/modify_password', params , 'post' ).then(()=> {
-                            this.$Toast.success(this.$t('toastSuccess.editSuccess'));
-                            this.cancel('passwordForm');
-                        })
-                    }
-                })
+        ruleValidate() {
+            return {
+                userName: [{require:true, message: this.$t('common.notEmpty')}]
             }
         }
+    },
+    FesReady: function(){
+        this.init();
+        bus.$on('LOGIN', () => {
+            this.init();
+        });
+    },
+    methods: {
+        init() {
+            this.name = this.FesApp.get("FesUserName") || 'NULL';
+            this.role = this.FesApp.get("FesRoleName") ||'NUll';
+            this.getOperateList(this.role === "管理员")
+            if (this.saveSimulated) {
+                this.userName = this.saveSimulated;
+                this.simulationUser = true;
+            }
+        },
+        //获取权限显示菜单
+        getOperateList(e) {
+            let list = [
+            { content: this.$t('fesHeader.language'), key: 'change' },
+            { content: this.$t('fesHeader.changePassword'), key: 'password' },
+            { content: this.$t('fesHeader.signOut'), key: 'logout' }
+            ]
+            if (e) {
+            list.unshift({ content: this.$t('fesHeader.simulatedUser'), key: 'user' })
+            }
+            this.operateList.push(...list);
+        },
+        clickItem(item) {
+            switch (item.key) {
+                case 'user':
+                    this.analogUser();
+                    break;
+                case 'change':
+                    this.languageSwitching();
+                    break;
+                case 'password':
+                    this.changePassword();
+                    break;
+                case 'logout':
+                    this.logout();
+                    break;
+                case 'simulationUserLogout':
+                    this.exitUser();
+                    break;
+                default:
+                    break;
+            }
+        },
+        analogUser() {
+            //模拟用户(管理员权限)
+            this.FesApi.fetch('api/v1/admin/user/all', this.ruleSize, 'post').then((res)=> {
+                this.userData = res.data;
+            })
+            this.$refs.userForm.show();
+        },
+        exitUser() {
+            //退出模拟用户
+            let role = this.FesStorage.get('firstRole');
+            this.$Message.confirm(this.$t('common.ok'), `${this.$t('message.user')}${this.userName}`).then(index=> {
+                if (index === 0) {
+                    this.FesApi.fetch('api/v1/admin/transfer_user/exit', 'get').then(()=> {
+                        this.simulationUser = false;
+                        this.FesStorage.remove('simulatedUser');
+                        this.getRole();
+                        this.FesApp.setRole(role);
+                        this.$Toast.success(this.$t('toastSuccess.simulatedOut'));
+                    })
+                }
+            })
+        },
+        cancel(refName) {
+            this.$refs[refName].hide();
+        },
+        submit() {
+            if (!this.userName) return this.$Toast.warn(this.$t('fesHeader.selectUser'));
+            this.FesApi.fetch(`api/v1/admin/transfer_user/${this.userName}`, 'get').then(()=>{
+                this.simulaUser = true;
+                this.$refs.userForm.hide();
+                this.simulationUser = true;
+                this.FesStorage.set('simulatedUser', this.userName);
+                this.getRole();
+                this.$Toast.success(this.$t('toastSuccess.simulatedUser'));
+            })
+        },
+        getRole() {
+            getUserRole(this);
+        },
+        logout() {
+            const loginRandom = this.FesStorage.get('loginRandom');
+            const url = `${this.FesEnv.api || window.location.origin}/api/v1/logout?loginRandom=${loginRandom}`;
+            this.FesApp.setRole('unLogin')
+            this.FesStorage.remove('userLogin', false);
+            if(url) { // 如果是sso登录的，那么点击退出时需要用sso退出链接来退出sso登录
+                this.FesStorage.set('redirect_to_um_login', null);
+                window.location.href = url;
+            }
+            this.FesStorage.remove('simulatedUser');
+            this.FesStorage.remove('firstRole');
+            this.FesStorage.remove('paginationProjects');
+            this.FesStorage.remove('flowPaginationProjects');
+            this.FesStorage.remove('paginationRuleQuery');
+            this.FesStorage.remove('paginationRuleTemplateList');
+            this.FesStorage.remove('multiPaginationRuleTemplateList');
+            this.FesStorage.remove('paginationProjectsList');
+            this.FesStorage.remove("paginationProjectsTabType");
+            this.FesStorage.remove('indicatorsQuery');
+            this.FesFesx.set('userRole', '');
+            this.FesApp.set("FesRoleName", '');
+            this.FesApp.set("FesUserName", '');
+        },
+        languageSwitching() {
+            let language = this.FesFesx.get('currentLanguage')
+            if (language === 'zh-cn') {
+                this.FesApp.setLocale('en')
+                this.FesFesx.set('currentLanguage', 'en')
+                this.FesFesx.set('Language', 'en_US')
+            } else {
+                this.FesApp.setLocale('zh-cn')
+                this.FesFesx.set('currentLanguage', 'zh-cn')
+                this.FesFesx.set('Language', 'zh_CN')
+            }
+            this.FesApi.setHeader({
+                'Content-Language': this.FesFesx.get('Language')
+            })
+            location.reload()
+        },
+        changePassword() {
+            this.$refs['passwordForm'].show()
+        },
+        confirmChangePassword() {
+            this.$refs['password'].validate((valid) => {
+                if (!valid) return;
+                const { oldPassword, newPassword, confirmPassword } = this;
+                if (newPassword !== confirmPassword) {
+                    return this.$Toast.warn(this.$t('fesHeader.checkPassword'));
+                }
+                this.FesApi.fetch('/api/v1/projector/user/modify_password',  {
+                    old_password: sha256(oldPassword),
+                    new_password: sha256(newPassword)
+                }, 'post' ).then(()=> {
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                    this.cancel('passwordForm');
+                });
+            })
+        }
     }
+};
 </script>
 
 <style scoped lang="scss">
@@ -294,6 +274,13 @@ import bus from '../bus';
     }
 
     .userModal {
+        /deep/
+        .ui-modal-body {
+            height: 300px;
+        }
+    }
+
+    .userModal {
         ::v-deep
         .ui-modal-body {
             height: 300px;
@@ -308,9 +295,9 @@ import bus from '../bus';
     .global-header {
         .wb-dropdown-menu {
             top: calc(100% + 2px) !important;
-            left: -50px;
+            left: -28px;
             padding: 0 !important;
-            width: calc(100% + 88px);
+            width: calc(100% + 56px);
 
             .wb-dropdown-menu-item {
                 padding: 0;

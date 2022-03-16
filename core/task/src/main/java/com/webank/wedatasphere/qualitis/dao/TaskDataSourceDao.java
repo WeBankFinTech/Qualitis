@@ -20,6 +20,7 @@ import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -27,20 +28,34 @@ import java.util.List;
 public interface TaskDataSourceDao {
 
     /**
-     * Find task datasource by user
-     * @param username
+     * Paging find task datasource by creator and datasource.
+     * @param createUser
+     * @param clusteName
+     * @param databaseName
+     * @param tableName
      * @param page
      * @param size
      * @return
      */
-    List<TaskDataSource> findByUser(String username, Integer page, Integer size);
+    List<TaskDataSource> findByCreateUserAndDatasource(String createUser, String clusteName, String databaseName, String tableName, int page
+        , int size);
 
     /**
-     * Count task datasource by user
+     * Counting find task datasource by creator and datasource.
+     * @param username
+     * @param clusteName
+     * @param databaseName
+     * @param tableName
+     * @return
+     */
+    Long countByCreateUserAndDatasource(String username, String clusteName, String databaseName, String tableName);
+
+    /**
+     * Find task datasource by user
      * @param username
      * @return
      */
-    int countByUser(String username);
+    List<Map<String, String>> findByUser(String username);
 
     /**
      * Find task datasource by user and datasource(cluster, database, table)

@@ -20,9 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 
 /**
  * @author howeye
@@ -34,6 +31,18 @@ public class CustomAlarmConfigRequest {
     @JsonProperty("compare_type")
     private Integer compareType;
     private Double threshold;
+
+
+    @JsonProperty("rule_metric_en_code")
+    private String ruleMetricEnCode;
+
+    @JsonProperty("upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+    @JsonProperty("upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+
+    @JsonProperty("delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
 
     public CustomAlarmConfigRequest() {
     }
@@ -62,6 +71,38 @@ public class CustomAlarmConfigRequest {
         this.threshold = threshold;
     }
 
+    public String getRuleMetricEnCode() {
+        return ruleMetricEnCode;
+    }
+
+    public void setRuleMetricEnCode(String ruleMetricEnCode) {
+        this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
     public static void checkRequest(CustomAlarmConfigRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkCheckTemplate(request.getCheckTemplate());
@@ -69,5 +110,6 @@ public class CustomAlarmConfigRequest {
             CommonChecker.checkCompareType(request.getCompareType());
         }
         CommonChecker.checkObject(request.getThreshold(), "Threshold");
+        CommonChecker.checkObject(request.getRuleMetricEnCode(), "Rule Metric");
     }
 }

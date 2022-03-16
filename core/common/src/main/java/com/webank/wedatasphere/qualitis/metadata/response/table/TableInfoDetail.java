@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class TableInfoDetail {
-
     @JsonProperty("table_name")
     private String tableName;
     @JsonProperty("table_desc")

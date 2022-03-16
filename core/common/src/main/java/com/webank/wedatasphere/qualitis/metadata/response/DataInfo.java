@@ -22,7 +22,6 @@ import java.util.List;
  * @author howeye
  */
 public class DataInfo<T> {
-
     private int totalCount;
     private List<T> content;
 

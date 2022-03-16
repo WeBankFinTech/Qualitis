@@ -1,0 +1,287 @@
+<template>
+    <Row class="mt20 mb20">
+        <div>
+            <Wb-button class="m10" type="primary" @click="addDepartment">{{ $t('common.add') }}</Wb-button>
+        </div>
+        <Cell span="24" class="tableTitle">
+            <p>{{ $t('optionManagePage.departmentManagement') }}</p>
+        </Cell>
+        <Cell span="24" class="loading-content">
+            <Wb-table :data="departmentData" border :no-data-text="$t('common.noData')">
+                <Column prop="department_id" :name="$t('optionManagePage.departmentID')" width="150px" />
+                <Column prop="department_name" :name="$t('optionManagePage.departmentName')" :component="departmentChild" />
+                <Column :name="$t('common.operate')" :component="operationComponent" width="300px" />
+            </Wb-table>
+            <div class="flex mt10">
+                <Pagination class="m10" :size-list="sizeList" :size="pagination.size"
+                    :current="pagination.current" :total="pagination.total"
+                    @on-change="changePage" />
+            </div>
+            <modal ref="department" :title="$t('optionManagePage.departmentManagement')">
+                <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.departmentName')" prop="department_name">
+                        <Wb-input v-model="department_name" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('department')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="submit">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <modal ref="departmentReviseForm" :title="$t('optionManagePage.editDepartmentManagement')">
+                <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
+                    <Form-item :label="$t('optionManagePage.departmentName')" prop="reviseDepartmentName">
+                        <Wb-input v-model="reviseDepartmentName" />
+                    </Form-item>
+                    <div class="submit-button-container fr mb10">
+                        <WbButton class="submit-button mr10" @click="cancel('departmentReviseForm')">
+                            {{ $t('common.cancel') }}
+                        </WbButton>
+                        <WbButton type="primary" class="submit-button" @click="save">
+                            {{ $t('common.ok') }}
+                        </WbButton>
+                    </div>
+                </Wb-form>
+            </modal>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </Cell>
+    </Row>
+</template>
+<script>
+    import Vue from 'vue';
+    import { isIE } from 'assets/js/utils.js';
+    import { sizeList } from 'assets/js/sizeList';
+    export default {
+        FesReady: function () {
+            this.init();
+        },
+        data() {
+            let that = this;
+            return {
+                departmentData: [],
+                department_name: "",
+                reviseDepartmentId: "",
+                reviseDepartmentName: "",
+                pagination: {
+                    size: 5,
+                    current: 1,
+                    total: 0
+                },
+                sizeList,
+                showLoading: true,
+                departmentChild: function (trData, tdData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                tdDepartmentName: tdData,
+                                newtdDepartmentName: "",
+                                inputShowControler: '',
+                                trData
+                            }
+                        },
+                        methods: {
+                            editDepartmentName() {
+                                this.newtdDepartmentName = this.tdDepartmentName;
+                                this.inputShowControler = true;
+                            },
+                            update() {
+                                if (this.tdDepartmentName == this.newtdDepartmentName) return this.initData();
+                                that.$Message.confirm(that.$t('optionManagePage.modifyDepartmentName'), that.$t('optionManagePage.confirmDepartmentName')).then(index => {
+                                    if (index === 0) {
+                                        let newdepartmentData = {
+                                            department_name: this.newtdDepartmentName,
+                                            department_id: trData.department_id
+                                        };
+                                        this.saveAsk(newdepartmentData)
+                                    }else {
+                                        this.initData()
+                                    }
+                                })
+                            },
+                            saveAsk(data) {
+                                that.FesApi.fetch('api/v1/admin/department/modify', data).then(() => {
+                                    that.$Toast.success(that.$t('toastSuccess.editSuccess'))
+                                    that.init()
+                                })
+                            },
+                            initData() {
+                                this.inputShowControler = false;
+                                this.newtdDepartmentName = null;
+                            }
+                        },
+                        render: function(createElement) {
+                            let _that = this;
+                            function showTag() {
+                                if (!_that.inputShowControler) {
+                                    return createElement('a', {
+                                        on: {
+                                            click: _that.editDepartmentName
+                                        }
+                                    }, _that.tdDepartmentName)
+                                } else {
+                                    return createElement('wb-input', {
+                                        props: {
+                                            value: _that.newtdDepartmentName
+                                        },
+                                        on: {
+                                            'on-blur': _that.update,
+                                            input: function (value) {
+                                                _that.newtdDepartmentName = value
+                                            }
+                                        }
+                                    })
+                                }
+                            }
+                            return createElement('div', {}, [showTag()])
+                        }
+                    })
+                },
+                operationComponent: function(trData) {
+                    return new Vue({
+                        data() {
+                            return {
+                                trData,
+                                deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
+                            }
+                        },
+                        methods: {
+                            editAction() {
+                                that.reviseDepartmentId = trData.department_id;
+                                that.reviseDepartmentName = trData.department_name;
+                                that.$refs.departmentReviseForm.show();
+                            },
+                            deleteAction() {
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('optionManagePage.deleteCurrentDepartment', {name: trData.department_name})}`).then(index=> {
+                                    if (index === 0) {
+                                        that.FesApi.fetch(`api/v1/admin/department/delete/${trData.department_id}`).then(() => {
+                                                that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
+                                                that.pagination.current = 1;
+                                                that.init();
+                                            })
+                                    }
+                                })
+                            },
+                        },
+                        render: function (createElement) {
+                            let arr = [
+                                {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '',
+                                }, {
+                                    text: this.deleteText,
+                                    handle: this.deleteAction,
+                                    color: 'rgb(245, 34, 45)',
+                                }
+                            ]
+                            return createElement("div", arr.map(function(item){
+                                return createElement('a', {
+                                    on: {
+                                        click: function(event) {
+                                            event.preventDefault();
+                                            item.handle()
+                                        }
+                                    },
+                                    style: {
+                                        'margin-right': '10px',
+                                        'color': item.color
+                                    }
+                                },item.text)
+                            }))
+                        }
+                    })
+                }
+            }
+        },
+        computed: {
+            action() {
+                return [{
+                    text: this.$t('common.delete'),
+                    func: function (trData) {
+                        this.FesApi.fetch(`api/v1/admin/department/delete/${trData.department_id}`).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.deleteSuccess'))
+                            this.pagination.current = 1;
+                            this.init();
+                        })
+                    }
+                }, {
+                    text: this.$t('common.edit'),
+                    func: function (trData) {
+                        isIE();
+                        this.reviseDepartmentId = trData.department_id;
+                        this.reviseDepartmentName = trData.department_name;
+                        this.$refs.departmentReviseForm.show();
+                    }
+                }]
+            },
+            ruleValidate() {
+                return {
+                    department_name: [{ required: true, message: this.$t('common.notEmpty')}],
+                    reviseDepartmentName: [{ required:true, message: this.$t("common.notEmpty")}]
+                }
+            }
+        },
+        methods: {
+            init() {
+                this.FesApi.fetch('api/v1/admin/department/all', {
+                    page: this.pagination.current - 1,
+                    size: this.pagination.size
+                }).then((result) => {
+                    this.showLoading = false;
+                    this.departmentData = result.data;
+                    this.$emit('listData', result.data)
+                    this.pagination.total = Math.ceil(result.total / this.pagination.size);
+                })
+            },
+            addDepartment() {
+                isIE();
+                this.$refs.department.show()
+            },
+            submit() {
+                if (this.department_name) {
+                    this.FesApi.fetch('api/v1/admin/department/add', {
+                        department_name: this.department_name
+                    }).then(() => {
+                        this.$refs.department.hide();
+                        this.$Toast.success(this.$t('toastSuccess.addSuccess'));
+                        this.pagination.current = 1;
+                        this.init();
+                    })
+                }
+            },
+            save() {
+                let newdepartmentData = {};
+                newdepartmentData.department_id = this.reviseDepartmentId;
+                newdepartmentData.department_name = this.reviseDepartmentName;
+                this.FesApi.fetch('api/v1/admin/department/modify', newdepartmentData).then(() => {
+                    this.$refs.departmentReviseForm.hide();
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'))
+                    this.init();
+                })
+            },
+            changePage({
+                current,
+                size
+            }) {
+                this.pagination.current = current;
+                this.pagination.size = size;
+                this.FesApi.fetch('api/v1/admin/department/all', {
+                    page: current - 1,
+                    size: this.pagination.size
+                }).then((result) => {
+                    this.departmentData = result.data;
+                    this.pagination.total = Math.ceil(result.total / this.pagination.size);
+                })
+            },
+            cancel(ref) {
+                this.$refs[ref].hide()
+            }
+        }
+    }
+
+</script>

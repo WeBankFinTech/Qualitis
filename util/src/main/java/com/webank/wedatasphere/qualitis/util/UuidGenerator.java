@@ -16,19 +16,30 @@
 
 package com.webank.wedatasphere.qualitis.util;
 
+import java.security.SecureRandom;
 import java.util.UUID;
 
 /**
  * @author howeye
  */
 public class UuidGenerator {
+    private static SecureRandom secureRandom;
+    static {
+        secureRandom = new SecureRandom();
+    }
 
     private UuidGenerator() {
-        // Default Constructor
+        secureRandom = new SecureRandom();
     }
 
     public static String generate() {
         return UUID.randomUUID().toString().replace("-", "");
     }
-
+    public static String generateRandom(int count) {
+        StringBuffer randomNumberSeq = new StringBuffer();
+        for (int i = 0; i < count; i ++) {
+            randomNumberSeq.append(secureRandom.nextInt(10) + "");
+        }
+        return randomNumberSeq.toString();
+    }
 }

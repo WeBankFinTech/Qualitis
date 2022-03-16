@@ -22,13 +22,27 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
  * @author howeye
  */
 public class UnExpectedRequestException extends Exception {
+    private Integer status;
 
     public UnExpectedRequestException(String message) {
         super(message);
+        status = 400;
+    }
+
+    public UnExpectedRequestException(String message, Integer status) {
+        super(message);
+        this.status = status;
     }
 
     public GeneralResponse<?> getResponse() {
-        return new GeneralResponse<>("400", getMessage(), null);
+        return new GeneralResponse<>(this.status + "", getMessage(), null);
     }
 
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
 }

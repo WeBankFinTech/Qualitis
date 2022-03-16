@@ -19,7 +19,7 @@ package com.webank.wedatasphere.qualitis.project.constant;
 /**
  * @author howeye
  */
-public enum  ProjectTypeEnum {
+public enum ProjectTypeEnum {
     /**
      * Type of project
      */

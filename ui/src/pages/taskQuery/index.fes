@@ -1,107 +1,372 @@
 <template>
     <pageContainer>
         <div class="task-container">
-            <Row class="operate">
+            <div class="operate">
                 <div class="breadcrumb-container mb10">
                     <span class="breadcrumb-item-link">{{ $t('taskQuery.taskQuery') }}</span>
                 </div>
-                <Cell span="4">
-                    <div>{{ $t('taskQuery.searchCriteria0') }}</div>
-                    <Wb-select v-model="searchType">
-                        <Wb-option v-for="(item,index) in searchTypeList" :key="item" :value="index" :label="item" />
-                    </Wb-select>
-                </Cell>
-                <Cell v-if="searchType === 0" span="4" offset="1">
-                    <div>{{ $t('common.projectName') }}</div>
-                    <Wb-select v-model="proj.project_name" filterable @on-change="chooseProj">
-                        <Wb-option v-for="(item,index) in projList" :key="index" :value="item.project_name" :label="item.project_name" :title="item.project_name" />
-                    </Wb-select>
-                </Cell>
-                <div v-if="searchType===1" class="datasource">
-                    <Cell span="4" offset="1">
-                        <div>{{ $t('common.dataSource') }}</div>
-                        <Wb-select v-model="cluster.name" filterable @on-change="chooseDatasource">
-                            <Wb-option v-for="(item,index) in dataSource" :key="index" :value="item.cluster_name" :label="item.cluster_name" />
+                <Row>
+                    <Cell span="3">
+                        <div>{{ $t('taskQuery.searchCriteria0') }}</div>
+                        <Wb-select v-model="searchType" :clearable="false">
+                            <Wb-option v-for="item in searchTypeList" :key="item.value" :value="item.value" :label="item.label" />
                         </Wb-select>
                     </Cell>
-                    <Cell span="4" offset="1">
-                        <div>{{ $t('common.databaseList') }}</div>
-                        <Wb-select v-model="db.database_name" filterable @on-change="changeDb">
-                            <Wb-option v-for="(item,index) in cluster.database" :key="index" :value="item.database_name" :label="item.database_name" />
-                        </Wb-select>
+                    <Cell v-if="searchType === '0'" span="3" class="mg-left">
+                        <div>{{ $t('common.projectName') }}</div>
+                        <Wb-select
+                            v-model="advanceQuery.project_id"
+                            filterable
+                            options-text-name="project_name"
+                            options-value-name="project_id"
+                            :options="projList"
+                            @click.native="getProjs" />
                     </Cell>
-                    <Cell span="4" offset="1">
-                        <div>{{ $t('common.tableList') }}</div>
-                        <Wb-select v-model="table" filterable>
-                            <Wb-option v-for="item in db.table" :key="item" :value="item" :label="item" />
-                        </Wb-select>
-                    </Cell>
-                </div>
-                <Cell v-if="searchType===2" span="4" offset="1">
-                    <div>{{ $t('taskQuery.status') }}</div>
-                    <Wb-select v-model="status" @on-change="changeStatus">
-                        <Wb-option v-for="item in statusList" :key="item.status" :value="item.status" :label="item.type" />
-                    </Wb-select>
-                </Cell>
-                <Cell v-if="searchType===3" span="4" offset="1">
-                    <div>{{ $t('common.number') }}</div>
-                    <wb-input v-model="application_id" />
-                </Cell>
-                <Cell span="4" offset="1" style="margin-top:20px;">
-                    <div>
-                        <Wb-button type="primary" class="searchBtn" @click="search">{{ $t('taskQuery.search') }}</Wb-button>
+                    <div v-if="searchType === '1'" class="datasource">
+                        <Cell span="3" class="mg-left">
+                            <div>{{ $t('common.dataSource') }}</div>
+                            <Wb-select
+                                v-model="advanceQuery.cluster_name"
+                                filterable
+                                clearable>
+                                <Wb-option
+                                    v-for="(item,index) in dataSource"
+                                    :key="index"
+                                    :value="item.cluster_name"
+                                    :label="item.cluster_name"
+                                    @click.native="chooseDatasource(item.cluster_name)" />
+                            </Wb-select>
+                        </Cell>
+                        <Cell span="3" class="mg-left">
+                            <div>{{ $t('common.databaseList') }}</div>
+                            <Wb-select
+                                v-model="advanceQuery.database_name"
+                                filterable
+                                clearable>
+                                <Wb-option
+                                    v-for="(item,index) in cluster.database"
+                                    :key="index"
+                                    :value="item.database_name"
+                                    :label="item.database_name"
+                                    @click.native="chooseDb(item.database_name)" />
+                            </Wb-select>
+                        </Cell>
+                        <Cell span="3" class="mg-left">
+                            <div>{{ $t('common.tableLibst') }}</div>
+                            <Wb-select v-model="advanceQuery.table" filterable clearable>
+                                <Wb-option v-for="item in db.table" :key="item" :value="item" :label="item" />
+                            </Wb-select>
+                        </Cell>
                     </div>
-                </Cell>
-            </Row>
-            <Row>
-                <Cell span="24" class="taskTable p20">
-                    <Wb-table :data="taskData" border :no-data-text="$t('common.noData')" @on-td-click="goToDetail">
-                        <Column prop="application_id" width="15%" :name="$t('common.number')" classes="idlink" />
-                        <Column classes="pointer" prop="projects" width="16%" :filter="formatProjects" :name="$t('common.projectName')" />
-                        <Column classes="pointer" prop="rule_size" width="4%" :name="$t('taskQuery.ruleNumber')" />
-                        <Column classes="pointer" prop="table_name" width="16%" :component="component" :filter="formatTable" :name="$t('common.tableList')" />
-                        <Column classes="pointer" prop="start_time" width="12%" :name="$t('taskQuery.submissionTime')" />
-                        <Column classes="pointer" prop="end_time" width="12%" :name="$t('taskQuery.endTime')" />
-                        <Column classes="pointer" prop="status" width="7%" :filter="formatStatus" :name="$t('taskQuery.status')" />
-                        <Column classes="pointer" prop="status" width="13%" :filter="formatSuccessful" :name="$t('taskQuery.taskCheck')" />
-                        <Column classes="pointer" prop="invoke_type" width="5%" :filter="formatInvoke" :name="$t('taskQuery.scheduling')" />
-                    </Wb-table>
-                    <Pagination :size-list="sizeList" :current="taskPagination.page" :size="taskPagination.size"
-                        :total="listTotal" class="pt20"
+                    <Cell v-if="searchType === '2'" span="3" class="mg-left">
+                        <div>{{ $t('taskQuery.status') }}</div>
+                        <Wb-select v-model="advanceQuery.selected_status" clearable>
+                            <Wb-option v-for="item in statusList" :key="item.value" :value="item.value" :label="item.label" />
+                        </Wb-select>
+                    </Cell>
+                    <Cell v-if="searchType === '3'" span="3" class="mg-left">
+                        <div>{{ $t('common.number') }}</div>
+                        <wb-input v-model="advanceQuery.application_id" clearable />
+                    </Cell>
+                    <Cell v-if="searchType === '4'" span="3" class="mg-left">
+                        <div>{{ $t('taskQuery.exceptionRemark') }}</div>
+                        <WbSelect
+                            v-model="advanceQuery.comment_type"
+                            clearable
+                            @on-change="changeComment">
+                            <WbOption
+                                v-for="item in remarkList"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </WbSelect>
+                    </Cell>
+                    <Cell :span="searchType === '1' ? 11 : 17" offset="1" class="mg-left" style="margin-top: 18px;">
+                        <Wb-button type="primary" class="searchBtn mg-left" @click="search">{{ $t('taskQuery.search') }}</Wb-button>
+                        <Wb-button type="primary" class="searchBtn mg-left" @click="showAdvanceSearch">{{ $t('taskQuery.advanceSearch') }}</Wb-button>
+                        <Wb-button type="primary" class="searchBtn mg-left" @click="clearCache">{{ $t('common.reset') }}</Wb-button>
+                        <Wb-button type="success" class="searchBtn mg-left" @click="dataQualitisAnalysisPre">{{ $t('taskQuery.dataQualitisAnalysis') }}</Wb-button>
+                        <Wb-button type="warn" class="searchBtn mg-left" @click="reexecution">{{ $t('taskQuery.reexecution') }}</Wb-button>
+                        <Wb-button type="warn" class="searchBtn mg-left" @click="stopBatch">{{ $t('common.stop') }}</Wb-button>
+                    </Cell>
+                </Row>
+            </div>
+            <div class="taskTable p20">
+                <Wb-table ref="taskTable" :data="taskData" border :no-data-text="$t('common.noData')">
+                    <Column type="selection" width="60px" :disabled="canSelectRow" />
+                    <Column prop="application_id" align="left" :name="$t('common.number')" classes="idlink" />
+                    <Column prop="project_name" align="left" :name="$t('common.projectName')" />
+                    <Column prop="task_group_name" align="left" :name="$t('common.taskName')" />
+                    <Column prop="table_name" align="left" :component="component" :filter="formatTable" :name="$t('common.tableLibst')" />
+                    <Column prop="partition" align="left" :name="$t('common.partition')" />
+                    <Column prop="start_time" align="left" :name="$t('taskQuery.submissionTime')" />
+                    <Column prop="end_time" align="left" :name="$t('taskQuery.endTime')" />
+                    <Column prop="status" align="left" :component="statusComponent" :name="$t('taskQuery.status')" />
+                    <Column prop="comment" align="left" :filter="commentFilter" :name="$t('taskQuery.remark')" />
+                    <Column prop="invoke_type" align="left" :filter="formatInvoke" :name="$t('taskQuery.scheduling')" />
+                    <Column classes="stopColor" align="left" width="60px" :component="operation" :name="$t('common.operate')" />
+                </Wb-table>
+                <div class="table-pagination pt20">
+                    <span class="table-pagination-total">{{ $t('common.pageinfo', { total: taskTotal, pageTotal: taskPagination.total }) }}</span>
+                    <Pagination
+                        :current="taskPagination.page"
+                        :size="taskPagination.size"
+                        :total="taskPagination.total"
+                        :size-list="sizeList"
+                        :show-quick-jumper="true"
                         @on-change="changeTableListPage" />
-                    <div v-if="loading === 0 && taskData.length<1" class="nodata">
-                        <span class="text">{{ $t('taskQuery.selectSearchCriteria') }}</span>
-                    </div>
-                    <div v-if="loading === 1" class="nodata">
-                        <Loading v-show="loading === 1" />
-                    </div>
-                </Cell>
-            </Row>
+                </div>
+                <!-- <div v-if="loading === 0 && taskData.length<1" class="nodata">
+                    <span class="text">{{ $t('taskQuery.selectSearchCriteria') }}</span>
+                </div>
+                <div v-if="loading === 1" class="nodata">
+                    <Loading v-show="loading === 1" />
+                </div> -->
+            </div>
+        </div>
+        <modal
+            ref="reexecutionModal"
+            :title="executationConfigTitle"
+            :width="1000"
+            @on-close="clearConfigData">
+            <MyExecutationConfig
+                ref="executationConfigRef"
+                :is-reexecute="true"
+                :user-data="userConfig"
+                :engine-data="engineConfig"
+                :condition-data="conditionConfig"
+                :spark-data="sparkConfig"
+                @on-update-title="executationConfigTitle = $event" />
+            <div class="btn-list">
+                <Wb-button type="ghost" @click="cancel">{{ $t('taskQuery.cancel') }}</Wb-button>
+                <Wb-button ref="submitButton" type="primary" class="mg-left" @click="reexecutionSubmit('batch')">{{ $t('taskQuery.confirmation') }}</Wb-button>
+            </div>
+        </modal>
+        <modal
+            ref="advanceQueryModal"
+            width="400"
+            :title="$t('taskQuery.advanceSearch')">
+            <WbForm
+                ref="advanceQueryForm"
+                :label-width="70">
+                <FormItem :label="$t('common.number')" prop="application_id">
+                    <WbInput v-model="advanceQuery.application_id" clearable :placeholder="$t('common.pleaseEnter')" />
+                </FormItem>
+                <FormItem :label="$t('common.projectName')" prop="projectName">
+                    <Wb-select
+                        v-model="advanceQuery.project_id"
+                        filterable
+                        options-text-name="project_name"
+                        options-value-name="project_id"
+                        :options="projList"
+                        @click.native="getProjs" />
+                </FormItem>
+                <FormItem :label="$t('taskQuery.status')" prop="status">
+                    <Wb-select v-model="advanceQuery.selected_status" clearable>
+                        <Wb-option v-for="item in statusList" :key="item.value" :value="item.value" :label="item.label" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem
+                    v-show="advanceQuery.selected_status && remarkListForAdvanceQuery.length > 0"
+                    prop="comment_type"
+                    :label="$t('taskQuery.exceptionRemark')">
+                    <WbSelect
+                        v-model="advanceQuery.comment_type"
+                        clearable>
+                        <WbOption
+                            v-for="item in remarkListForAdvanceQuery"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </WbSelect>
+                </FormItem>
+                <FormItem :label="$t('common.dataSource')" props="cluster_name">
+                    <Wb-select
+                        v-model="advanceQuery.cluster_name"
+                        filterable
+                        clearable>
+                        <Wb-option
+                            v-for="(item,index) in dataSource"
+                            :key="index"
+                            :value="item.cluster_name"
+                            :label="item.cluster_name"
+                            @click.native="chooseDatasource(item.cluster_name)" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem :label="$t('common.databaseList')" props="database_name">
+                    <Wb-select
+                        v-model="advanceQuery.database_name"
+                        filterable>
+                        <Wb-option
+                            v-for="(item,index) in cluster.database"
+                            :key="index"
+                            :value="item.database_name"
+                            :label="item.database_name"
+                            @click.native="chooseDb(item.database_name)" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem :label="$t('common.tableLibst')" props="table">
+                    <Wb-select v-model="advanceQuery.table" filterable clearable>
+                        <Wb-option v-for="item in db.table" :key="item" :value="item" :label="item" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem :label="$t('common.timeRange')" prop="timeRangeOfAdvanceQuery">
+                    <Wb-input-date-picker
+                        v-model="timeRangeOfAdvanceQuery"
+                        clearable
+                        model="range"
+                        format="YYYY-MM-DD HH:mm:ss"
+                        :placeholder="$t('common.pleaseSelect')" />
+                </FormItem>
+                <div class="my-btn-list">
+                    <Wb-button type="primary" class="w100 btn-item" @click="advanceSearch">{{ $t('taskQuery.search') }}</Wb-button>
+                    <WbButton type="primary" class="w100 btn-item" @click="reExecute">{{ $t('taskQuery.reexecution') }}</WbButton>
+                </div>
+            </WbForm>
+        </modal>
+        <!-- 数据质量分析表单弹窗 -->
+        <Modal
+            ref="dataQualitisAnalysisModal"
+            :title="$t('taskQuery.dataQualitisAnalysis')"
+            :width="430">
+            <p style="text-align: right;">{{ $t('taskQuery.exportTips') }}</p>
+            <WbForm
+                ref="dataQualitisAnalysisForm"
+                :rule="dataQualitisAnalysisFormRule"
+                :label-width="120">
+                <FormItem
+                    :label="$t('common.dataSource')"
+                    :rule="[{ required: true, message: $t('common.notEmpty') }]"
+                    props="cluster_name">
+                    <Wb-select
+                        v-model="advanceQuery.cluster_name"
+                        filterable
+                        clearable>
+                        <Wb-option
+                            v-for="item in dataSource"
+                            :key="item.cluster_name"
+                            :label="item.cluster_name"
+                            :value="item.cluster_name"
+                            @click.native="chooseDatasource(item.cluster_name)" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem
+                    :label="$t('common.databaseList')"
+                    :rule="[{ required: true, message: $t('common.notEmpty') }]"
+                    props="database_name">
+                    <Wb-select
+                        v-model="advanceQuery.database_name"
+                        filterable
+                        clearable>
+                        <Wb-option
+                            v-for="item in cluster.database"
+                            :key="item.database_name"
+                            :label="item.database_name"
+                            :value="item.database_name"
+                            @click.native="chooseDb(item.database_name)" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem
+                    :label="$t('common.tableLibst')"
+                    :rule="[{ required: false, message: $t('common.notEmpty') }]"
+                    props="table">
+                    <Wb-select
+                        v-model="advanceQuery.table"
+                        filterable
+                        clearable>
+                        <Wb-option
+                            v-for="item in db.table"
+                            :key="item"
+                            :label="item"
+                            :value="item" />
+                    </Wb-select>
+                </FormItem>
+                <FormItem :label="$t('common.timeRange')" prop="timeRange">
+                    <Wb-input-date-picker
+                        v-model="timeRange"
+                        clearable
+                        model="range"
+                        format="YYYY-MM-DD HH:mm:ss"
+                        :placeholder="$t('common.pleaseSelect')" />
+                </FormItem>
+                <FormItem :label="$t('common.status')" prop="status_conditions">
+                    <CheckboxGroup v-model="dataQualitisAnalysisFormModel.status_conditions">
+                        <Checkbox
+                            v-for="item of stateList"
+                            :key="item.value"
+                            :value="item.value"
+                            :label="item.label" />
+                    </CheckboxGroup>
+                </FormItem>
+                <FormItem :label="$t('taskQuery.filePath')" prop="hdfs_path">
+                    <WbInput v-model="dataQualitisAnalysisFormModel.hdfs_path" :placeholder="$t('taskQuery.filePathDemo')" />
+                </FormItem>
+                <div class="my-btn-list">
+                    <WbButton
+                        type="primary"
+                        class="btn-item"
+                        @click="generate">{{ $t('common.generate') }}</WbButton>
+                    <WbButton class="btn-item" @click="reset">{{ $t('common.reset') }}</WbButton>
+                </div>
+            </WbForm>
+        </Modal>
+        <div v-show="isLoading" class="mask">
+            <Loading class="loading-layout" />
         </div>
     </pageContainer>
 </template>
 <script type="text/ecmascript-6">
-    import { sizeList } from 'assets/js/sizeList';
     import Vue from 'vue';
+    import { format } from 'date-fns';
+    import { sizeList } from 'assets/js/sizeList';
     import pageContainer from '../../components/template';
+    import MyExecutationConfig from '../../components/myExecutationConfig';
     export default {
         FesHeader: true,
         FesLeft: false,
         components: {
-            pageContainer
+            pageContainer,
+            MyExecutationConfig
         },
         FesSyncData: {},
         FesReady: function() {
             this.init();
+
+            window.addEventListener('beforeunload', this.clearCache);
+        },
+        FesBeforeDestroy(){
+            window.removeEventListener('beforeunload', this.clearCache);
         },
         data() {
+            const that = this;
+            const timeRangeValidator = (rule, value, cb) => {
+                if (this.dataQualitisAnalysisFormModel.start_time && this.dataQualitisAnalysisFormModel.end_time) {
+                    cb();
+                } else {
+                    cb(new Error(this.$t('common.notEmpty')));
+                }
+            };
             return {
+                isLoading: false,
+                executationConfigTitle: '',
+                // 高级查询起止时间
+                timeRangeOfAdvanceQuery: [],
+                advanceQuery: {
+                    application_id: '',
+                    project_name: '',
+                    selected_status: '0',
+                    comment_type: '',
+                    cluster_name: '',
+                    database_name: '',
+                    table: ''
+                },
                 loading: 0, // 0 初始 1请求 2 已经加载
                 projList: [],
                 dataSource: [],
                 taskData: [],
                 status: null,
-                searchType: 2,
+                searchMode: 1, // 查询模式: 普通查询、高级查询
+                searchType: '2',
                 projPagination: {
                     total: 0,
                     size: 5000,
@@ -109,91 +374,435 @@
                 },
                 dataPagination:{
                     total: 0,
-                    size: 200,
+                    size: 50000,
                     page: 1
                 },
+                taskTotal: 0,
                 taskPagination: {
                     total: 0,
                     size: 15,
                     page: 1
                 },
-                proj: {
-                    project_name:"",
-                    project_id:""
-                },
-                cluster: {name: null, database:[]},
-                db: { database_name: null, table: []},
-                table: "",
+                cluster: {cluster_name: '', database: []},
+                db: { database_name: '', table: []},
                 component: this.createDbComp,
-                application_id: null,
-                sizeList
+                sizeList,
+                // 执行用户配置
+                userConfig: {
+                    // 执行用户
+                    execution_user: ''
+                },
+                // 引擎配置
+                engineConfig: {
+                    // 切换集群
+                    cluster_name: '',
+                    // 引擎复用
+                    engine_reuse: false,
+                    // 执行参数
+                    startup_param_name: ''
+                },
+                // 过滤条件配置
+                conditionConfig: {
+                    // 变量替换
+                    execution_param: ''
+                },
+                // SPARK配置
+                sparkConfig: {
+                    set_flag: ''
+                },
+                // 数据质量分析弹窗表单的 起止时间
+                timeRange: [],
+                // 数据质量分析弹窗表单对象
+                dataQualitisAnalysisFormModel: {
+                    start_time: '',
+                    end_time: '',
+                    status_conditions: ['1', '2', '3'],
+                    hdfs_path: ''
+                },
+                // 数据质量分析弹窗表单校验规则
+                dataQualitisAnalysisFormRule: {
+                    cluster_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    database_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    table: [
+                        { required: false, message: this.$t('common.notEmpty') }
+                    ],
+                    timeRange: [
+                        { required: true, message: this.$t('common.notEmpty') },
+                        { validator: timeRangeValidator }
+                    ],
+                    status_conditions: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    hdfs_path: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ]
+                },
+                stateList: [
+                    {
+                        label: this.$t('common.byCheck'),
+                        value: '1'
+                    },
+                    {
+                        label: this.$t('common.failCheck'),
+                        value: '2'
+                    },
+                    {
+                        label: this.$t('taskQuery.failure'),
+                        value: '3'
+                    }
+                ],
+                // 通过，未通过，失败，初始化失败，参数错误 不允许 停止运行
+                stateListOfNotStop: ['4', '7', '8', '9', '11'],
+                // 异常备注列表
+                remarkList: [
+                    {
+                        label: this.$t('taskQuery.metaApiException'),
+                        value: '9-11'
+                    },
+                    {
+                        label: this.$t('taskQuery.DataPermissionException'),
+                        value: '7-1'
+                    },
+                    {
+                        label: this.$t('taskQuery.QueuePermissionException'),
+                        value: '7-2',
+                    },
+                    {
+                        label: this.$t('taskQuery.memoryException'),
+                        value: '7-3'
+                    },
+                    {
+                        label: this.$t('taskQuery.syntaxException'),
+                        value: '7-4'
+                    },
+                    {
+                        label: this.$t('taskQuery.requestEngineException'),
+                        value: '7-5'
+                    },
+                    {
+                        label: this.$t('taskQuery.unknownException'),
+                        value: '7-6'
+                    },
+                    {
+                        label: this.$t('taskQuery.timeoutException'),
+                        value: '7-12'
+                    },
+                    {
+                        label: this.$t('taskQuery.inconsistentData'),
+                        value: '8-7'
+                    },
+                    {
+                        label: this.$t('taskQuery.leftTableEmpty'),
+                        value: '8-8'
+                    },
+                    {
+                        label: this.$t('taskQuery.rightTableEmpty'),
+                        value: '8-13'
+                    },
+                    {
+                        label: this.$t('taskQuery.verifySuccess'),
+                        value: '4-9'
+                    },
+                    {
+                        label: this.$t('taskQuery.allTableEmpty'),
+                        value: '4-10'
+                    }
+                ],
+                statusComponent: function (tr){
+                    let statusItem = that.formatStatus(tr.status);
+                    return new Vue({
+                        data() {
+                            return {}
+                        },
+                        methods: {},
+                        render: function (h) {
+                            return h('div', {
+                                style: {
+                                    color: statusItem.color,
+                                }
+                            }, statusItem.label);
+                        }
+                    });
+                },
+                editList: [],
+                editType: 'one',
+                data: [
+                    {
+                        key: '1',
+                        content: this.$t('taskQuery.stop')
+                    },
+                    {
+                        key: '2',
+                        content: this.$t('taskQuery.reexecution')
+                    },
+                    {
+                        key: '4',
+                        content: this.$t('taskQuery.viewLog')
+                    },
+                    {
+                        key: '3',
+                        content: this.$t('taskQuery.stateDetails')
+                    }
+                ],
+                operation(trData){
+                    const parent = this;
+                    return new Vue({
+                        render(h) {
+                            // const btnComp = h('WbButton', {
+                            //     props: {
+                            //         type: 'primary'
+                            //     }
+                            // }, parent.$t('common.operate'));
+                            const btnComp = h('div', {
+                                class: ['cursor'],
+                                style: {
+                                    padding: '6px',
+                                    borderRadius: '2px',
+                                    // background: '#f5f7fa'
+                                }
+                            }, [
+                                h('img', {
+                                    attrs: {
+                                        src: 'static/icon-shudian.svg',
+                                        width: '24px',
+                                        height: '24px',
+                                        alt: parent.$t('common.operate'),
+                                        title: parent.$t('common.operate')
+                                    }
+                                })
+                            ]);
+                            let data = parent.data;
+                            // 通过，未通过，失败，初始化失败，参数错误 状态 不显示停止运行按钮
+                            if (that.stateListOfNotStop.includes(trData.status)) {
+                                data = data.filter(item => item.key !== '1');
+                            }
+                            return h('Dropdown', {
+                                class: ['task-query-dropdown'],
+                                props: {
+                                    data: data,
+                                    trigger: 'click'
+                                },
+                                on: {
+                                    'on-choose': ({key}) => {
+                                        if (key === '1'){
+                                            parent.tableStop(trData);
+                                        } else if (key === '2') {
+                                            // parent.$set(parent.userConfig, 'execution_user', trData.execute_user || '');
+                                            // parent.$set(parent.engineConfig, 'cluster_name', trData.cluster_name || '');
+                                            // parent.$set(parent.engineConfig, 'startup_param_name', trData.startup_param || '');
+                                            // parent.$set(parent.conditionConfig, 'execution_param', trData.execution_param || '');
+                                            // parent.$set(parent.sparkConfig, 'set_flag', trData.set_flag || '');
+                                            parent.$refs.reexecutionModal.show()
+                                            parent.editList = [trData];
+                                            parent.editType = 'one';
+                                            // parent.reexecutionSubmit([trData],'one');
+                                        } else if (key === '3') {
+                                            parent.goToDetail(trData);
+                                        } else {
+                                            parent.goToLog(trData);
+                                        }
+                                    }
+                                }
+                            }, [btnComp]);
+                        }
+                    })
+                },
+                // 表格操作的停止按钮
+                // action: [{
+                //     text: this.$t('common.stop'),
+                //     func: function (data) {
+                //         if(!data.kill_option) return this.$Toast.error(this.$t('common.notRole'));
+                //         this.$Message.confirm(this.$t('common.prompt'), this.$t('common.stopTip', { name: data.application_id })).then((index) => {
+                //           if(index === 0) {
+                //             this.FesApi.fetch(`api/v1/projector/execution/application/kill/${data.application_id}`, {}, {
+                //                 method: "get",
+                //                 resultFormat: {
+                //                       successCode : "200",
+                //                       codePath : "code",
+                //                       messagePath : "message",
+                //                       resultPath : "*"
+                //                 }}).then((res) => {
+                //                 // this.$Toast.success(this.$t('common.successfulOperate'))
+                //                 if(res.code === '200') {
+                //                     this.$Toast.success(res.message)
+                //                 } else {
+                //                     this.$Toast.error(res.message)
+                //                 }
+                //                 this.init();
+                //             })
+                //           }
+                //       })
+                //     }
+                // }],
             };
         },
         computed:{
-            listTotal() {
-                return this.taskPagination.total ? Math.ceil(this.taskPagination.total/this.taskPagination.size) : 0;
-            },
             searchTypeList() {
-                return [this.$t('common.project'),this.$t('common.dataSource'), this.$t('taskQuery.status'), this.$t('common.number')]
+                return [
+                    { label: this.$t('common.project'), value: '0' },
+                    { label: this.$t('common.dataSource'), value: '1' },
+                    { label: this.$t('taskQuery.status'), value: '2' },
+                    { label: this.$t('common.number'), value: '3' },
+                    { label: this.$t('taskQuery.exceptionRemark'), value: '4' }
+                ];
             },
             statusList() {
                 return [
                     {
-                        type: this.$t('taskQuery.all'),
-                        status: 0,
+                        label: this.$t('taskQuery.all'),
+                        value: '0',
+                        color: "#444"
                     },
                     {
-                        type: this.$t('taskQuery.submitted'),
-                        status: 1,
+                        label: this.$t('taskQuery.submitted'),
+                        value: '1',
+                        color:"#3399ff"
                     },
                     {
-                        type: this.$t('taskQuery.inTheOperation'),
-                        status: 3,
+                        label: this.$t('taskQuery.parameterError'),
+                        value: '11',
+                        color: "#ff5500"
                     },
                     {
-                        type: this.$t('common.byCheck'),
-                        status: 4,
+                        label: this.$t('taskQuery.tasksFailed'),
+                        value: '9',
+                        color: "#ff5500"
                     },
                     {
-                        type: this.$t('taskQuery.failure'),
-                        status: 7,
+                        label: this.$t('taskQuery.tasksSuccessfully'),
+                        value: '10',
+                        color: "#3399ff"
                     },
                     {
-                        type: this.$t('common.failCheck'),
-                        status: 8,
+                        label: this.$t('taskQuery.inTheOperation'),
+                        value: '3',
+                        color: "#3399ff"
                     },
                     {
-                        type: this.$t('taskQuery.tasksFailed'),
-                        status: 9,
+                        label: this.$t('common.byCheck'),
+                        value: '4',
+                        color: "#33d684"
                     },
                     {
-                        type: this.$t('taskQuery.tasksSuccessfully'),
-                        status: 10,
+                        label: this.$t('common.failCheck'),
+                        value: '8',
+                        color: "#ff9900"
                     },
                     {
-                        type: this.$t('taskQuery.parameterError'),
-                        status: 11,
+                        label: this.$t('taskQuery.failure'),
+                        value: '7',
+                        color: "#ff5500"
                     }
                 ]
+            },
+            remarkListForAdvanceQuery() {
+                const selected_status = this.advanceQuery.selected_status;
+                return this.remarkList.filter(item => selected_status !== '' && item.value.startsWith(selected_status));
+            }
+        },
+        watch: {
+            timeRange: {
+                immediate: true,
+                deep: true,
+                handler(value) {
+                    if (Array.isArray(value)) {
+                        if (value.length === 0) {
+                            this.dataQualitisAnalysisFormModel.start_time = '';
+                            this.dataQualitisAnalysisFormModel.end_time = '';
+                        } else if (value.length === 2) {
+                            this.dataQualitisAnalysisFormModel.start_time = format(new Date(value[0]), 'yyyy-MM-dd HH:mm:ss');
+                            this.dataQualitisAnalysisFormModel.end_time = format(new Date(value[1]), 'yyyy-MM-dd HH:mm:ss');
+                        }
+                    } else {
+                        this.dataQualitisAnalysisFormModel.start_time = '';
+                        this.dataQualitisAnalysisFormModel.end_time = '';
+                    }
+                }
+            },
+            timeRangeOfAdvanceQuery: {
+                immediate: true,
+                deep: true,
+                handler(value) {
+                    if (Array.isArray(value)) {
+                        if (value.length === 0) {
+                            this.advanceQuery.start_time = '';
+                            this.advanceQuery.end_time = '';
+                        } else if (value.length === 2) {
+                            this.advanceQuery.start_time = format(new Date(value[0]), 'yyyy-MM-dd HH:mm:ss');
+                            this.advanceQuery.end_time = format(new Date(value[1]), 'yyyy-MM-dd HH:mm:ss');
+                        }
+                    } else {
+                        this.advanceQuery.start_time = '';
+                        this.advanceQuery.end_time = '';
+                    }
+                }
             }
         },
         methods: {
+            tableStop(data){
+                // 通过，未通过，失败，初始化失败，参数错误 状态 不能停止运行
+                if (this.stateListOfNotStop.includes(data.status)) return;
+                if(!data.kill_option) return this.$Toast.error(this.$t('common.notRole'));
+                    this.$Message.confirm(this.$t('common.prompt'), this.$t('common.stopTip', { name: data.application_id })).then((index) => {
+                    if(index === 0) {
+                        this.FesApi.fetch(`api/v1/projector/execution/application/kill/${data.application_id}/${data.execute_user}`, {}, {
+                            method: "get",
+                            resultFormat: {
+                                successCode : "200",
+                                codePath : "code",
+                                messagePath : "message",
+                                resultPath : "*"
+                            }}).then((res) => {
+                            // this.$Toast.success(this.$t('common.successfulOperate'))
+                            if(res.code === '200') {
+                                this.$Toast.success(res.message)
+                            } else {
+                                this.$Toast.error(res.message)
+                            }
+                            this.init();
+                        })
+                    }
+                })
+            },
             fetchData(action, params = {}, method = "get")  {
                 return this.FesApi.fetch(`api/v1/projector/${action}`, params,  method).catch(() => {
                     return this.loading = 2;
                 });
             },
-            init() {
-                this.getDatasourceList();
-                this.getProjs();
-                this.search();
+            async init() {
+                let state = sessionStorage.getItem('STATE_OF_TASK_QUERY');
+                this.isLoading = true;
+                if (state) {
+                    state = JSON.parse(state);
+                    this.searchMode = state.searchMode;
+                    this.searchType = state.searchType;
+                    this.advanceQuery = state.advanceQuery;
+                    this.taskPagination = state.taskPagination;
+                    await this.getDatasourceList();
+                    this.chooseDatasource(this.advanceQuery.cluster_name, false);
+                    this.chooseDb(this.advanceQuery.database_name, false);
+                    if (this.searchMode === 1) {
+                        this.search();
+                    } else if (this.searchMode === 2) {
+                        this.advanceSearch();
+                    } else {
+                        this.search();
+                    }
+                } else {
+                    this.search();
+                    this.getDatasourceList();
+                }
             },
             async getProjs() {
                 let params =  {
                     size: this.projPagination.size,
                     page: this.projPagination.page - 1
                 }
-                let { total, data } = await this.fetchData("project/all", params, 'post');
+                let { total, data } = await this.fetchData("project/util/all", params, 'post');
                 this.projPagination.total = total;
                 this.projList = Array.isArray(data) ? data: [];
             },
@@ -205,18 +814,25 @@
                 let data = await this.fetchData("application/datasource", params, 'post');
                 this.dataPagination.total =  data.total;
                 this.dataSource = Array.isArray(data) ? data : [];
+                this.dataSource = this.dataSource.filter(item => item.cluster_name);
             },
-            async filterAction( action, params, method = "post" ){
+            async filterAction( action, params, method = "post", callback) {
                 this.loading = 1;
+                this.isLoading = true;
                 let {total, data} =  await this.fetchData(action, params, method);
-                this.taskPagination.total = total || 0;
+                this.taskTotal = total;
+                this.taskPagination.total = Math.ceil(total / this.taskPagination.size);
                 this.taskData = Array.isArray(data) ? data : [];
+                this.taskData = this.taskData.map(item => Object.assign({}, item, {status: String(item.status)}));
                 this.loading = 2;
-            },
-            changeStatus(value) {
-                this.status = value;
+                this.isLoading = false;
+                if (callback instanceof Function) callback();
+                this.$refs.advanceQueryModal.hide();
             },
             search() {
+                if (this.searchMode === 2) {
+                    this.taskPagination.page = 1;
+                }
                 let url = "" ;
                 let errs = [];
                 let params = {
@@ -224,90 +840,118 @@
                     page: this.taskPagination.page - 1
                 };
                 switch (this.searchType) {
-                    case 0:
+                    case '0':
                         url = "application/filter/project";
-                        if (this.proj.project_id) {
-                            params.project_id = this.proj.project_id
+                        if (this.advanceQuery.project_id) {
+                            params.project_id = this.advanceQuery.project_id;
                         } else {
                             errs.push(this.$t('taskQuery.selectProject0'));
                         }
                         break;
-                    case 1:
+                    case '1':
                         url = "application/filter/datasource"
-                        if(this.cluster.name) {
-                            params.cluster_name = this.cluster.name;
+                        if(this.advanceQuery.cluster_name) {
+                            params.cluster_name = this.advanceQuery.cluster_name;
                         }
-                        if(this.db.database_name) {
-                            params.database_name = this.db.database_name;
+                        if(this.advanceQuery.database_name) {
+                            params.database_name = this.advanceQuery.database_name;
                         }
-                        if(this.table) {
-                            params.table_name = this.table;
+                        if(this.advanceQuery.table) {
+                            params.table_name = this.advanceQuery.table;
+                            params.table = this.advanceQuery.table;
                         }
                         break;
-                    case 2:
+                    case '2':
                         url = "application/filter/status"
-                        if (this.status) {
-                            params.status = this.status
+                        if (this.advanceQuery.selected_status !== undefined && this.advanceQuery.selected_status !== '') {
+                            params.status = this.advanceQuery.selected_status;
+                            params.selected_status = this.advanceQuery.selected_status;
+                        }
+                        if (this.advanceQuery.selected_status === '0') {
+                            params.status = '';
+                            params.selected_status = '';
+                        } else {
+                            params.status = Number.parseInt(params.status);
+                            params.selected_status = Number.parseInt(params.selected_status);
                         }
                         break;
-                    case 3:
+                    case '3':
                         url = "application/filter/application_id";
-                        if (this.application_id) {
+                        if (this.advanceQuery.application_id) {
                             params = {
-                                application_id: this.application_id
+                                application_id: this.advanceQuery.application_id
                             }
                         }
                         break;
+                    case '4': {
+                        url = "application/filter/status";
+                        const data = this.advanceQuery.comment_type.split('-');
+                        if (data.length < 2) {
+                            errs.push(this.$t('taskQuery.searchCriteria'));
+                            break;
+                        }
+                        params.status = Number.parseInt(data[0]);
+                        params.selected_status = Number.parseInt(data[0]);
+                        params.comment_type = Number.parseInt(data[1]);
+                        break;
+                    }
                     default:
-                    errs.push(this.$t('taskQuery.searchCriteria'));
+                        errs.push(this.$t('taskQuery.searchCriteria'));
                         break;
                 }
-                if (this.searchType === 3 && !this.application_id) {
+                if (this.searchType === '3' && !this.advanceQuery.application_id) {
                     return this.$Toast.warn(this.$t('taskQuery.inputNumber'));
                 }
                 if (errs.length) {
                     return errs.forEach(err => this.$Toast.warn(err))
                 }
-                this.filterAction(url, params);
-            },
-            // 选择项目
-            chooseProj(value) {
-                if (value) {
-                    this.proj = Object.assign({},this.projList.find(item=> item.project_name === value));
-                }
+                this.filterAction(url, params, 'post', () => {
+                    this.searchMode = 1;
+                    this.writeState({searchMode: this.searchMode});
+                });
             },
             // 选择数据源
-            chooseDatasource(c) {
-                let cluster = this.dataSource.find(item => item.cluster_name === c);
-                this.cluster.database = [];
-                if(cluster) {
-                    this.cluster.database = cluster.database;
+            chooseDatasource(c, clear = true) {
+                const cluster = this.dataSource.find(item => item.cluster_name === c);
+                if (cluster) {
+                    this.cluster.cluster_name = cluster.cluster_name || '';
+                    this.cluster.database = cluster.database || [];
+                } else {
+                    this.cluster.cluster_name = '';
+                    this.cluster.database = [];
                 }
-                this.db = { database_name: null, table: []};
+                if (clear) {
+                    this.advanceQuery.database_name = '';
+                    this.advanceQuery.table = '';
+                    this.db = { database_name: null, table: []};
+                }
             },
-            changeDb(db) {
-                let database = this.cluster.database.find(item => item.database_name === db);
-                this.db.table = [];
+            // 选择数据库
+            chooseDb(value, clear = true) {
+                const database = this.cluster.database.find(item => item.database_name === value);
                 if (database) {
                     this.db.table = database.table || [];
+                } else {
+                    this.db.table = [];
                 }
-                this.table = "";
-            },
-            formatProjects(data) {
-                return data.join(',');
+                if (clear) {
+                    this.advanceQuery.table = '';
+                }
             },
             formatStatus( data ) {
-                return this.statusList.find((item)=> item.status === data).type
+                return this.statusList.find((item)=> item.value === data);
             },
             formatInvoke( data ){
                 let invoke = {
                     1: this.$t('taskQuery.interfaceScheduling'),
-                    2: this.$t('taskQuery.timeSchedule')
+                    2: this.$t('taskQuery.timeSchedule'),
+                    3: this.$t('taskQuery.workFlow')
                 }
                 return invoke[ data ];
             },
-            formatSuccessful( data, trData ){
-                return `${trData.finished_task_num}/${trData.failed_task_num}/${trData.failed_check_task_num}`;
+            commentFilter(value) {
+                const target = this.remarkList.find(item => item.value.split('-')[1] === value);
+                return target ? target.label : value;
             },
             formatTable( data, trData ){
                 return `${trData.database_name}.${trData.table_name}`
@@ -357,9 +1001,18 @@
                     },
                     render: function (createElement) {
                         if (this.dbtable.length) {
-                            return createElement('span', {
+                            return createElement('div', {
+                                domProps: {
+                                    title: `${this.dbtable[0].db_name}.${this.dbtable[0].table_name}`
+                                },
                                 class: {
                                     datasourceopt: true
+                                },
+                                style: {
+                                    width: '200px',
+                                    overflowX: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
                                 },
                                 directives: [
                                     {
@@ -369,7 +1022,18 @@
                                 ],
                             },`${this.dbtable[0].db_name}.${this.dbtable[0].table_name}` )
                         }else {
-                            return ''
+                            const options = {
+                                domProps: {
+                                    title: trData.application_rule_datasource
+                                },
+                                style: {
+                                    width: '200px',
+                                    overflowX: 'hidden',
+                                    whiteSpace: 'nowrap',
+                                    textOverflow: 'ellipsis'
+                                }
+                            };
+                            return createElement('div', options, trData.application_rule_datasource);
                         }
                     }
                 })
@@ -379,12 +1043,37 @@
                     page: current,
                     size
                 });
-                this.search();
-            },
-            goToDetail(trData,id) {
-                if (trData.application_id === id) {
-                    return;
+                switch (this.searchMode) {
+                    case 1:
+                        this.search();
+                        break;
+                    case 2:
+                        this.advanceSearch();
+                        break;
+                    default:
+                        this.search();
                 }
+            },
+            // 选择异常备注
+            changeComment(value) {
+                const data = value.split('-');
+                const selected_status = data[0];
+                if (selected_status && this.advanceQuery.selected_status !== selected_status) {
+                    this.advanceQuery.selected_status = selected_status;
+                }
+            },
+            goToDetail(trData) {
+                this.FesFesx.set("task_info_map", {
+                    [trData.application_id]: trData
+                });
+                this.$router.push({
+                    path: "/taskQuery/verificationDetails",
+                    query: {
+                        id: trData.application_id
+                    }
+                });
+            },
+            goToLog(trData) {
                 this.FesFesx.set("task_info_map", {
                     [trData.application_id]: trData
                 });
@@ -394,14 +1083,235 @@
                         id: trData.application_id
                     }
                 });
+            },
+            canSelectRow() {
+                // 不做限制
+                // return trData.status != 7;
+            },
+            reexecution(){
+                let selectedList = this.$refs.taskTable.getSelected();
+                if (selectedList.length < 1){
+                    return this.$Toast.warn(this.$t('taskQuery.reexecutionWarn'));
+                }
+                this.$refs.reexecutionModal.show();
+                this.editType = 'batch';
+            },
+            dataQualitisAnalysisPre() {
+                this.$refs.dataQualitisAnalysisModal.show();
+            },
+            cancel() {
+                this.$refs.reexecutionModal.close();
+            },
+            clearConfigData() {
+                this.editList = [];
+                this.$set(this.userConfig, 'execution_user', '');
+                this.$set(this.engineConfig, 'cluster_name', '');
+                this.$set(this.engineConfig, 'engine_reuse', false);
+                this.$set(this.engineConfig, 'startup_param_name', '');
+                this.$set(this.conditionConfig, 'execution_param', '');
+                this.$set(this.sparkConfig, 'set_flag', '');
+            },
+            advanceSearch() {
+                if (this.searchMode === 1) {
+                    this.taskPagination.page = 1;
+                }
+                const advanceQuery = this.advanceQuery;
+                const commentData = advanceQuery.comment_type.split('-');
+                const selected_status = advanceQuery.selected_status === '0' ? '' : advanceQuery.selected_status;
+                let comment_type = '';
+                if (commentData.length === 2) {
+                    comment_type = commentData[1];
+                }
+                advanceQuery.table_name = advanceQuery.table;
+                advanceQuery.status = advanceQuery.selected_status;
+                advanceQuery.size = this.taskPagination.size;
+                advanceQuery.page = this.taskPagination.page - 1;
+                this.filterAction('application/filter/advance', Object.assign({}, advanceQuery, {
+                    status: Number.parseInt(selected_status),
+                    selected_status: Number.parseInt(selected_status),
+                    comment_type: Number.parseInt(comment_type)
+                }), 'post', () => {
+                    this.searchMode = 2;
+                    this.writeState({searchMode: this.searchMode});
+                });
+                this.isLoading = true;
+            },
+            async reExecute() {
+                const advanceQuery = this.advanceQuery;
+                const commentData = advanceQuery.comment_type.split('-');
+                let comment_type = '';
+                if (commentData.length === 2) {
+                    comment_type = commentData[1];
+                }
+                advanceQuery.table_name = advanceQuery.table;
+                advanceQuery.status = advanceQuery.selected_status;
+                advanceQuery.page = 0;
+                // 重拉写死50000条任务
+                advanceQuery.size = 50000;
+                const {data} =  await this.fetchData('application/filter/advance', Object.assign({}, advanceQuery, {
+                    comment_type
+                }), 'post');
+                if (Array.isArray(data) && data.length > 0) {
+                    this.editList = data;
+                    this.$refs.advanceQueryModal.hide();
+                    this.$refs.reexecutionModal.show();
+                    this.editType = 'one';
+                } else {
+                    this.$Toast.warn(this.$t('taskQuery.reexecutionWarn'));
+                }
+            },
+            showAdvanceSearch() {
+                this.$refs.advanceQueryModal.show();
+            },
+            reexecutionSubmit(){
+                // 批量
+                let list = [];
+                if (this.editType == 'batch'){
+                    list = this.$refs.taskTable.getSelected();
+                } else {
+                    list = this.editList;
+                }
+                this.reexecutionFn(list)
+            },
+            reexecutionFn(selectedList) {
+                this.$refs.executationConfigRef.validate(isValid => {
+                    if (!isValid) return;
+                    const ruleGroupList = selectedList.map(item => {
+                        return {
+                            group_id: item.group_id,
+                            cluster_name: item.cluster_name,
+                            execution_user: item.execute_user,
+                            execution_param: item.execution_param,
+                            create_user: item.create_user,
+                            partition: item.partition,
+                            fps_file_id: item.fps_file_id,
+                            fps_hash: item.fps_hash,
+                            startup_param_name: item.startup_param,
+                            set_flag: item.set_flag,
+                            run_date: item.run_date
+                        };
+                    });
+                    const engineReuse = this.engineConfig.engine_reuse;
+                    let startupParamName = this.engineConfig.startup_param_name;
+                    startupParamName = startupParamName === ''
+                        ? `engine_reuse=${engineReuse}`
+                        : `${startupParamName};engine_reuse=${engineReuse}`;
+                    const params = {
+                        rule_group_list: ruleGroupList,
+                        execution_user: this.userConfig.execution_user,
+                        cluster_name: this.engineConfig.cluster_name,
+                        startup_param_name: startupParamName,
+                        execution_param: this.conditionConfig.execution_param,
+                        set_flag: this.sparkConfig.set_flag,
+                    };
+                    this.FesApi.fetch(
+                        'api/v1/projector/execution/group',
+                        params,
+                        {
+                            button:this.$refs.submitButton
+                        },
+                        'post'
+                    ).then(() => {
+                        this.clearCache();
+                        this.search();
+                        this.cancel();
+                        this.$Toast.success(this.$t('taskQuery.sumbitSuccess'));
+                    });
+                });
+            },
+            writeState(state) {
+                const data = Object.assign({
+                    searchMode: this.searchMode,
+                    searchType: this.searchType,
+                    advanceQuery: this.advanceQuery,
+                    taskPagination: this.taskPagination
+                }, state);
+                sessionStorage.setItem('STATE_OF_TASK_QUERY', JSON.stringify(data));
+            },
+            // 数据质量分析导出
+            generate() {
+                const clusterName = this.advanceQuery.cluster_name;
+                const dbName = this.advanceQuery.database_name;
+                if (!clusterName) {
+                    this.$Toast.error(this.$t('common.pleaseSelectPlus', {fieldName: this.$t('common.dataSource')}));
+                    return;
+                } else if (!dbName) {
+                    this.$Toast.error(this.$t('common.pleaseSelectPlus', {fieldName: this.$t('common.databaseList')}));
+                    return;
+                }
+                this.$refs.dataQualitisAnalysisForm.validate(isValid => {
+                    if (!isValid) return;
+                    const params = Object.assign({}, this.dataQualitisAnalysisFormModel, {
+                        cluster_name: this.advanceQuery.cluster_name,
+                        database_name: this.advanceQuery.database_name,
+                        table_name: this.advanceQuery.table
+                    });
+                    this.FesApi.fetch('/api/v1/projector/application/upload', params, 'post').then(() => {
+                        this.$Toast.success(this.$t('taskQuery.exportSuccessTips', {path: this.dataQualitisAnalysisFormModel.hdfs_path}));
+                    }).catch(error => {
+                        // this.$Toast.error(this.$t('taskQuery.exportFailedTips', {reason: error.message}));
+                        console.error(error);
+                    }).finally(() => {
+                        this.isLoading = false;
+                    });
+                    this.isLoading = true;
+                });
+            },
+            reset() {
+                Object.entries(this.dataQualitisAnalysisFormModel).forEach(([key, value]) => {
+                    this.dataQualitisAnalysisFormModel[key] = Array.isArray(value) ? [] : '';
+                });
+                this.advanceQuery.cluster_name = '';
+                this.advanceQuery.database_name = '';
+                this.advanceQuery.table = '';
+                this.timeRange = [];
+                this.$refs.dataQualitisAnalysisForm.resetFields();
+            },
+            clearCache() {
+                this.searchMode = 1;
+                this.searchType = '2';
+                this.taskData = [];
+                this.taskPagination.page = 1;
+                Object.entries(this.advanceQuery).forEach(([key, value]) => {
+                    this.advanceQuery[key] = Array.isArray(value) ? [] : '';
+                });
+                this.advanceQuery.status = '0';
+                this.advanceQuery.selected_status = '0';
+                sessionStorage.removeItem('STATE_OF_TASK_QUERY');
+                this.search();
+            },
+            stopBatch() {
+                const selectedRows = this.$refs.taskTable.getSelected();
+                if (selectedRows.length === 0) {
+                    this.$Toast.warn(this.$t('common.selectOne'));
+                    return;
+                }
+                const application_ids = selectedRows.map(item => item.application_id);
+                this.FesApi.fetch('/api/v1/projector/execution/application/batch/kill', {
+                    application_ids
+                }, {
+                    button: this.$refs.stopBatchBtnRef
+                }).then(() => {
+                    this.$Toast.success(this.$t('common.stopSuccess'));
+                    this.search();
+                }).finally(() => {
+                    this.isLoading = false;
+                });
+                this.isLoading = true;
             }
         }
     };
 </script>
 
 <style scoped lang="scss">
+.w100 {
+    width: 100px;
+}
     .task-container {
         width: 100%;
+    }
+    /deep/.stopColor .ui-table-action .ui-table-action-text {
+      color: red!important;
     }
     .filterForm {
         display: flex;
@@ -443,7 +1353,7 @@
         .idlink {
             color: #2db7f5;
         }
-        ::v-deep .ui-table {
+        /deep/ .ui-table {
             overflow: auto;
         }
     }
@@ -481,5 +1391,42 @@
         vertical-align: top;
         font-size: 14px;
         margin-left:5px;
+    }
+    .mg-left{
+        margin-left: 10px;
+    }
+    .btn-list {
+        text-align: right;
+    }
+    .my-btn-list {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .btn-item {
+            margin-right: 20px;
+
+            &:last-of-type {
+                margin-right: 0;
+            }
+        }
+    }
+    .mask {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255,255,255,0.1);
+        z-index: 9999;
+    }
+    /deep/
+    .wb-dropdown {
+        &.task-query-dropdown {
+            .wb-dropdown-menu {
+                left: 0;
+                transform: translateX(-25%) !important;
+            }
+        }
     }
 </style>

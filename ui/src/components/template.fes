@@ -1,7 +1,7 @@
 <template>
     <div class="leftmenu-content-layout">
         <div class="page-container">
-            <LeftMenuPage ref="leftMenu" class="menu-container" :items="items" :default-active="defaultActive" />
+            <LeftMenu ref="leftMenu" :items="items" :default-active="defaultActive" />
             <div class="template-page">
                 <slot />
             </div>
@@ -15,14 +15,13 @@
         FesLeft: false,
         FesData() {
             return {
-                toggle: false,
                 defaultActive: '0',
             };
         },
         FesCreated () {
             const path = this.$route.path;
             for (let i = 0; i < this.items.length; i++) {
-                if (path === '/taskDetail') {
+                if (['/taskDetail', '/verifyFailData', '/taskQuery/verificationDetails', '/taskQuery/ruleDetails'].includes(path)) {
                     this.defaultActive = '4'
                     return;
                 }
@@ -48,15 +47,23 @@
                             }
                         }
                     }
+                }  else if (Array.isArray(this.items[i].items) && this.items[i].items.length > 0) {
+                    for (let j = 0; j < this.items[i].items.length; j++) {
+                        if (this.items[i].items[j].path === path) {
+                            this.defaultActive = this.items[i].name;
+                            break;
+                        }
+                    }
                 }
             }
         },
         computed: {
             adminRole() {
-                return this.FesFesx.get('userRole') === 'admin' ? true  : false;
+                return this.FesFesx.get('userRole') && this.FesFesx.get('userRole').indexOf('admin') > -1 ? true : false;
             },
             items() {
-                let arr = [{
+                let arr = [
+                    {
                         icon: 'static/over-view.png',
                         title: this.$t('dashboard.dashboard'),
                         path: '/dashboard',
@@ -64,24 +71,32 @@
                         subItems: []
                     },
                     {
+                        title: this.$t('myProject.myProject'),
+                        path: '/myProject/projects',
+                        name: '1',
+                        icon: "static/project.png",
+                        subItems: [],
+                        items: [
+                            {
+                                path: '/myProject/projects/list',
+                            },
+                            {
+                                path: '/addGroupTechniqueRule'
+                            }
+                        ]
+                    },
+                    {
+                        icon: 'static/index-management.svg',
+                        title: this.$t('indexManagement.title'),
+                        path: '/metricManagement',
+                        name: '8',
+                        subItems: []
+                    },
+                    {
                         icon: "static/rule-config.png",
                         title: this.$t('projects.projects'),
                         path: '/myProject',
                         subItems: [
-                            {
-                                title: this.$t('myProject.myProject'),
-                                path: '/myProject/projects',
-                                name: '1',
-                                icon: "static/project.png",                               
-                                items: [
-                                    {
-                                        path: '/myProject/projects/list',
-                                    },
-                                    {
-                                        path: '/addGroupTechniqueRule'
-                                    }
-                                ]
-                            },
                             {
                                 title: this.$t('ruleQuery.ruleQuery'),
                                 path: '/ruleQuery',
@@ -103,7 +118,6 @@
                                         path: '/ruleTemplateList/detail'
                                     }
                                 ]
-
                             }
                         ]
                     },
@@ -113,59 +127,70 @@
                         path: '/taskQuery',
                         name: '4',
                         subItems: []
-                    },
-                ]
+                    }
+                ];
                 if (this.adminRole) {
-                    arr.push(
-                        {
-                            icon: 'static/system-config.png',
-                            title: this.$t('configureParameter.configureParameter'),
-                            path: '/',
-                            subItems: [
-                                {
-                                    title: this.$t('configureParameter.configureParameter'),
-                                    path: '/configureParameter',
-                                    name: '5',
-                                    icon: "static/sub-system.png",
-                                    items: []
+                    arr.push({
+                        icon: 'static/system-config.png',
+                        title: this.$t('configureParameter.configureParameter'),
+                        path: '/',
+                        subItems: [
+                            {
+                                title: this.$t('configureParameter.configureParameter'),
+                                path: '/configureParameter',
+                                name: '5',
+                                icon: "static/sub-system.png",
+                                items: []
 
-                                },
-                                {
-                                    title: this.$t('personnelManage.personnelManage'),
-                                    path: '/personnelManage',
-                                    name: '6',
-                                    icon: "static/people-config.png",
-                                    items: [
-                                        {
-                                            path: '/personnelManage/groupUser'
-                                        }
-                                    ]
+                            },
+                            {
+                                title: this.$t('personnelManage.personnelManage'),
+                                path: '/personnelManage',
+                                name: '6',
+                                icon: "static/people-config.png",
+                                items: [
+                                    {
+                                        path: '/personnelManage/groupUser'
+                                    }
+                                ]
 
-                                },
-                                {
-                                    title: this.$t('optionManage.optionManage'),
-                                    path: '/optionManage',
-                                    name: '7',
-                                    icon: "static/authorith-management.png",
-                                    items: []
-                                }
-                            ]
-                        }
-                    )
+                            },
+                            {
+                                title: this.$t('optionManage.optionManage'),
+                                path: '/optionManage',
+                                name: '7',
+                                icon: "static/authorith-management.png",
+                                items: []
+                            }
+                        ]
+                    });
+                }
+                arr = arr.concat([
+                    {
+                        icon: 'static/icon-engine.svg',
+                        title: this.$t('configureParameter.engineConfiguration'),
+                        name: '9',
+                        path: '/engineConfiguration',
+                        subItems: []
+                    }
+                ]);
+                return arr;
             }
-            return arr
         }
     }
-}
 </script>
 
 <style scoped lang="scss">
     .leftmenu-content-layout {
+        height: 100%;
         .page-container {
             display: flex;
             height: 100%;
             .template-page {
-                width: 100%;
+                flex: 1 1 auto;
+                height: 100%;
+                overflow-y: auto;
+                position: relative;
             }
         }
     }

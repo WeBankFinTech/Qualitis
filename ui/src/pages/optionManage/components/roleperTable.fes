@@ -90,7 +90,7 @@
                                 newtdRoleId: null,
                                 inputShowControler: '',
                                 trData
-                           };
+                            };
                         },
                         methods: {
                             editRoleId() {
@@ -246,7 +246,7 @@
                                             "api/v1/admin/role_permission/delete",
                                             { uuid: trData.uuid }
                                         ).then(() => {
-                                            that.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                                            that.$Toast.success(that.$t('toastSuccess.deleteSuccess'));
                                             that.pagination.current = 1;
                                             that.init();
                                         });

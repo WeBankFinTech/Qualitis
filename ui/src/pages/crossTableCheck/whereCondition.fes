@@ -1,6 +1,11 @@
 <template>
     <div class="mapSource filter">
         <Tabs>
+            <Tab :label="$t('crossTableCheck.customEdit')">
+                <div class="table-main self-edit">
+                    <input id="whereExpression" v-model.lazy="currentValue" class="filter-input">
+                </div>
+            </Tab>
             <Tab :label="$t('crossTableCheck.serviceMenuEditing')">
                 <div class="table-main">
                     <span class="table-title" :title="sourceTableName">
@@ -10,7 +15,7 @@
                         <div class="scale">
                             <Wb-input v-model="sourceField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', sourceField,'leftFilterCol','sourceColumnList')" />
                             <div :class="['col-content',{'no-border': leftFilterCol && leftFilterCol.length}]">
-                                <ul class="ulList col-list" @click="condition">           
+                                <ul class="ulList col-list" @click="condition">
                                     <li v-for="(item, i) in leftFilterCol" :key="i" :data-name="`tmp1.${item.column_name}`" data-tag="source" data-arrow="left">{{ `${item.column_name}(${item.data_type})` }}</li>
                                 </ul>
                             </div>
@@ -30,7 +35,7 @@
                         <div class="scale">
                             <Wb-input v-model="targetField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', targetField, 'rightFilterCol', 'targetColumnList')" />
                             <div :class="['col-content',{'no-border': rightFilterCol && rightFilterCol.length}]">
-                                <ul class="ulList col-list" @click="condition">           
+                                <ul class="ulList col-list" @click="condition">
                                     <li v-for="(item, i) in rightFilterCol" :key="i" :data-name="`tmp2.${item.column_name}`" data-tag="target" data-arrow="right">{{ `${item.column_name}(${item.data_type})` }}</li>
                                 </ul>
                             </div>
@@ -88,11 +93,6 @@
                     <input id="whereExpression" v-model.lazy="currentValue" class="filter-input">
                 </div>
             </Tab>
-            <Tab :label="$t('crossTableCheck.customEdit')">
-                <div class="table-main self-edit">
-                    <input id="whereExpression" v-model.lazy="currentValue" class="filter-input">
-                </div>
-            </Tab>
         </Tabs>
         <div class="button-action">
             <WbButton type="primary" class="submitbtn determine" @click="$emit('determine', currentValue)">
@@ -104,6 +104,8 @@
         </div>
     </div>
 </template>
+
+
 <script>
     export default {
         props: {
@@ -139,7 +141,7 @@
         watch: {
           expressCondition(val) {
               this.currentValue = val;
-          }  
+          }
         },
         data() {
             return {
@@ -149,7 +151,7 @@
                 statisticalFun: [' sum ', ' avg ', ' count ', ' max ', ' min '],
                 calculateList: [' + ', ' - ', ' * ', ' / ', ' ( ', ' ) ', ' = ', ' != '],
                 keyWord: ['group by ', ' limit ', ' order by ', ' not ', ' and ', ' or ', ' in '],
-                
+
             }
         },
         computed: {
@@ -157,11 +159,11 @@
                 return  [
                     {
                         text: `${(this.$t('crossTableCheck.actualDate'))}`,
-                        value: 'ds=${yyyyMMdd}'
+                        value: 'ds=${run_date}'
                     },
                     {
                         text: `${this.$t('common.beforeDays')}`,
-                        value: 'ds=${yyyyMMdd}-N'
+                        value: 'ds=${run_date-N}'
                     }]
             }
         },
@@ -197,6 +199,7 @@
         }
     }
 </script>
+
 <style lang="scss" scoped>
     @import '../../assets/styles/crossTable';
     .self-edit {

@@ -22,7 +22,6 @@ import java.io.Serializable;
  * @author howeye
  */
 public class GeneralResponse<T> implements Serializable {
-
     private String code;
     private String message;
     private T data;

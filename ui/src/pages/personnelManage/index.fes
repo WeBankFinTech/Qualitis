@@ -41,7 +41,10 @@
                         <Wb-input v-model="chinese_name" />
                     </Form-item>
                     <Form-item :label="$t('personnelManagePage.department')" prop="department">
-                        <Wb-input v-model="department" />
+                        <wb-select v-model="department">
+                            <wb-option v-for="item in departmentList" :key="item.department_id" :value="item.department_id">{{ item.department_name }}</wb-option>
+                            <wb-option v-if="departmentList.length <= 0" :value="'No Data'" :disabled="true">No Data</wb-option>
+                        </wb-select>
                     </Form-item>
                     <div class="submit-button-container fr mb10">
                         <WbButton class="submit-button mr10" @click="cancel('userModal')">
@@ -68,6 +71,21 @@
                     </div>
                 </Wb-form>
             </modal>
+            <modal ref="upDateDepartment"
+                :title="$t('fesHeader.department')"
+                :close-on-click-shadow="false">
+                <Wb-form>
+                    <Form-item :label="$t('fesHeader.department')">
+                        <Wb-select v-model="upDateDepartmentValue">
+                            <wb-option v-for="item in departmentList" :key="item.department_id" :value="item.department_name">{{ item.department_name }}</wb-option>
+                            <wb-option v-if="departmentList.length <= 0" :value="'No Data'" :disabled="true">No Data</wb-option>
+                        </Wb-select>
+                    </Form-item>
+                    <Form-item>
+                        <Wb-button type="primary" @click="submitUpdateDepartment">提交</Wb-button>
+                    </Form-item>
+                </Wb-form>
+            </modal>
         </Row>
     </pageContainer>
 </template>
@@ -92,6 +110,10 @@
         data() {
             const that = this;
             return {
+                departmentList: [], // 部门列表
+                upDateDepartmentValue: "", // 默认或选择的部门
+                upDateDepartmentUser: "", // 选择的用户id
+                userBeforDepartment: "", // 存储用户更改之前的部门
                 userList: [],
                 username: "",
                 staffList: [],
@@ -120,6 +142,7 @@
                             return {
                                 trData,
                                 deleteText: that.$t('common.delete'),
+                                editText: that.$t('common.edit'),
                             }
                         },
                         methods: {
@@ -134,15 +157,26 @@
                                         });
                                     }
                                 })
-                            }
+                            },
+                            editAction() {
+                                // departmentList部门列表为公用，所以做判断当次是否已经请求过
+                                that.upDateDepartmentValue = that.userBeforDepartment = trData.department;
+                                that.upDateDepartmentUser = trData.user_id;
+                                that.$refs.upDateDepartment.show();
+                            },
                         },
                         render: function (createElement) {
                             let arr = [
                                 {
+                                    text: this.editText,
+                                    handle: this.editAction,
+                                    color: '#3399ff',
+                                },
+                                {
                                     text: this.deleteText,
                                     handle: this.deleteAction,
                                     color: 'rgb(245, 34, 45)',
-                                }
+                                },
                             ]
                             return createElement("div", arr.map(function(item){
                                 return createElement('a', {
@@ -175,16 +209,8 @@
                             deleteAction() {
                                 that.$Message.confirm(that.$t('common.prompt'), `${that.$t('personnelManagePage.deleteProxyUser', {name: trData.proxy_user_name})}`).then(index=>{
                                     if (index === 0) {
-                                        that.FesApi.fetch("/api/v1/admin/proxy_user", {
-                                        }, {
-                                            data: {
-                                                proxy_user_id: trData.proxy_user_id
-                                            },
-                                            method: 'delete',
-                                            headers: {
-                                                'content-type': 'application/json'
-                                            }
-
+                                        that.FesApi.fetch("api/v1/admin/proxy_user/delete", {
+                                            proxy_user_id: trData.proxy_user_id
                                         }).then(() => {
                                             that.$Toast.success(that.$t('toastSuccess.deleteSuccess'))
                                             that.init();
@@ -270,6 +296,15 @@
             async init() {
                 this.initUserList();
                 this.initGroupList();
+                this.initDepartmentList();
+            },
+            initDepartmentList() {
+              this.FesApi.fetch("api/v1/admin/department/all", {
+                    page: 0,
+                    size: 999
+                }).then((res) => {
+                    this.departmentList = res.data;
+                });
             },
             submit() {
                 this.$refs.userForm.validate(valid => {
@@ -398,7 +433,23 @@
             },
             cancel(ref) {
                 this.$refs[ref].hide()
-            }
+            },
+            // 更新个人部门信息
+            submitUpdateDepartment() {
+              if(this.upDateDepartmentValue === this.userBeforDepartment) return this.$Toast.warn(this.$t('toastSuccess.noEdit'))
+              this.FesApi.fetch("api/v1/admin/user/modify_department", {
+                  user_id: this.upDateDepartmentUser,
+                  department_name: this.upDateDepartmentValue
+              }).then(() => {
+                  this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                  this.$refs.upDateDepartment.close();
+                  this.init();
+              });
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
         }
     };
 
@@ -410,10 +461,13 @@
         font-size: 17px;
     }
     .user-modal {
-        ::v-deep
+        /deep/
         .ui-modal-body {
             height: 250px;
         }
+    }
+    /deep/ .ui-modal-dialog {
+        overflow: initial;
     }
     .submit-contaniner {
         position: absolute;

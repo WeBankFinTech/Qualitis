@@ -27,7 +27,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 public class GetTaskLogRequest {
 
     @JsonProperty("task_id")
-    private Integer taskId;
+    private Long taskId;
     @JsonProperty("create_user")
     private String createUser;
     @JsonProperty("cluster_name")
@@ -37,11 +37,11 @@ public class GetTaskLogRequest {
         // Default Constructor
     }
 
-    public Integer getTaskId() {
+    public Long getTaskId() {
         return taskId;
     }
 
-    public void setTaskId(Integer taskId) {
+    public void setTaskId(Long taskId) {
         this.taskId = taskId;
     }
 

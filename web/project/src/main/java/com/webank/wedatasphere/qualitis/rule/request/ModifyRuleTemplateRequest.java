@@ -25,7 +25,7 @@ public class ModifyRuleTemplateRequest {
     @JsonProperty("field_num")
     private Integer fieldNum;
     @JsonProperty("datasource_type")
-    private Integer datasourceType;
+    private List<Integer> datasourceType;
     @JsonProperty("action_type")
     private Integer actionType;
 
@@ -48,7 +48,7 @@ public class ModifyRuleTemplateRequest {
     }
 
     public ModifyRuleTemplateRequest(Long templateId, String templateName, Integer clusterNum, Integer dbNum, Integer tableNum,
-        Integer fieldNum, Integer datasourceType, Integer actionType, Boolean saveMidTable, String midTableAction) {
+        Integer fieldNum, List<Integer> datasourceType, Integer actionType, Boolean saveMidTable, String midTableAction) {
         this.templateId = templateId;
         this.templateName = templateName;
         this.clusterNum = clusterNum;
@@ -61,8 +61,8 @@ public class ModifyRuleTemplateRequest {
         this.midTableAction = midTableAction;
     }
 
-    public static AddRuleTemplateRequest checkRequest(ModifyRuleTemplateRequest request, String modifyDefaultRuleTemplateRequest)
-        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException {
+    public static AddRuleTemplateRequest checkRequest(ModifyRuleTemplateRequest request)
+        throws UnExpectedRequestException {
         CommonChecker.checkObject(request.getTemplateId(), "templateId");
         AddRuleTemplateRequest addRuleTemplateRequest = new AddRuleTemplateRequest();
         BeanUtils.copyProperties(request, addRuleTemplateRequest);
@@ -118,11 +118,11 @@ public class ModifyRuleTemplateRequest {
         this.fieldNum = fieldNum;
     }
 
-    public Integer getDatasourceType() {
+    public List<Integer> getDatasourceType() {
         return datasourceType;
     }
 
-    public void setDatasourceType(Integer datasourceType) {
+    public void setDatasourceType(List<Integer> datasourceType) {
         this.datasourceType = datasourceType;
     }
 

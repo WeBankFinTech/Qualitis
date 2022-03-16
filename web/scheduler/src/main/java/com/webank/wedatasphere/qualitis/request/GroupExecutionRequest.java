@@ -24,14 +24,29 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  * @author howeye
  */
 public class GroupExecutionRequest {
-
     @JsonProperty("group_id")
     private Long groupId;
-    private String partition;
+    @JsonProperty("execution_param")
+    private String executionParam;
     @JsonProperty("execution_user")
     private String executionUser;
     @JsonProperty("create_user")
     private String createUser;
+    @JsonProperty("node_name")
+    private String nodeName;
+
+    @JsonProperty("cluster_name")
+    private String clusterName;
+    @JsonProperty("startup_param_name")
+    private String startupParamName;
+    @JsonProperty("set_flag")
+    private String setFlag;
+    @JsonProperty("dynamic_partition_bool")
+    private boolean dyNamicPartition;
+    @JsonProperty("dynamic_partition_prefix")
+    private String dyNamicPartitionPrefix;
+    @JsonProperty("bool_async")
+    private boolean async;
 
     public GroupExecutionRequest() {
     }
@@ -44,12 +59,12 @@ public class GroupExecutionRequest {
         this.groupId = groupId;
     }
 
-    public String getPartition() {
-        return partition;
+    public String getExecutionParam() {
+        return executionParam;
     }
 
-    public void setPartition(String partition) {
-        this.partition = partition;
+    public void setExecutionParam(String executionParam) {
+        this.executionParam = executionParam;
     }
 
     public String getExecutionUser() {
@@ -66,6 +81,62 @@ public class GroupExecutionRequest {
 
     public void setCreateUser(String createUser) {
         this.createUser = createUser;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getStartupParamName() {
+        return startupParamName;
+    }
+
+    public void setStartupParamName(String startupParamName) {
+        this.startupParamName = startupParamName;
+    }
+
+    public String getSetFlag() {
+        return setFlag;
+    }
+
+    public void setSetFlag(String setFlag) {
+        this.setFlag = setFlag;
+    }
+
+    public boolean getDyNamicPartition() {
+        return dyNamicPartition;
+    }
+
+    public void setDyNamicPartition(boolean dyNamicPartition) {
+        this.dyNamicPartition = dyNamicPartition;
+    }
+
+    public String getDyNamicPartitionPrefix() {
+        return dyNamicPartitionPrefix;
+    }
+
+    public void setDyNamicPartitionPrefix(String dyNamicPartitionPrefix) {
+        this.dyNamicPartitionPrefix = dyNamicPartitionPrefix;
+    }
+
+    public boolean getAsync() {
+        return async;
+    }
+
+    public void setAsync(boolean async) {
+        this.async = async;
     }
 
     public static void checkRequest(GroupExecutionRequest request) throws UnExpectedRequestException {

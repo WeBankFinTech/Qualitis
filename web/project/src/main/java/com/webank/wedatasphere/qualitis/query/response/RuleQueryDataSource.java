@@ -10,6 +10,9 @@ public class RuleQueryDataSource {
     @JsonProperty("cluster_name")
     private String clusterName;
 
+    @JsonProperty("datasource_id")
+    private String datasourceId;
+
     @JsonProperty("db_name")
     private String dbName;
 
@@ -18,6 +21,9 @@ public class RuleQueryDataSource {
 
     @JsonProperty("table_commit")
     private String tableCommit;
+
+    @JsonProperty("proxy_user")
+    private String proxyUser;
 
     public RuleQueryDataSource() {
     }
@@ -28,6 +34,14 @@ public class RuleQueryDataSource {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public String getDatasourceId() {
+        return datasourceId;
+    }
+
+    public void setDatasourceId(String datasourceId) {
+        this.datasourceId = datasourceId;
     }
 
     public String getDbName() {
@@ -54,13 +68,22 @@ public class RuleQueryDataSource {
         this.tableCommit = tableCommit;
     }
 
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
     @Override
     public String toString() {
         return "RuleQueryDataSource{" +
-            "clusterName=" + clusterName +
+            "clusterName='" + clusterName + '\'' +
             ", dbName='" + dbName + '\'' +
-            ", tableName=" + tableName +
+            ", tableName='" + tableName + '\'' +
             ", tableCommit='" + tableCommit + '\'' +
+            ", proxyUser='" + proxyUser + '\'' +
             '}';
     }
 }

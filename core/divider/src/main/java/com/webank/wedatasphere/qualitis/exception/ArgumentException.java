@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class ArgumentException extends Exception {
-
     public ArgumentException(String message) {
         super(message);
     }
