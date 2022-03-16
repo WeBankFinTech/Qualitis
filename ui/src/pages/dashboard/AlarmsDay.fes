@@ -1,0 +1,78 @@
+<template>
+    <Row class="all-wrapper p20 alarm-table">
+        <Cell span="24">
+            <Wb-table :data="list" border class="mt20" :no-data-text="$t('common.noData')">
+                <Column prop="alarm_level" align="left" :filter="formatLevel" :name="$t('dashboard.level')" width="10%" />
+                <Column prop="alarm_reason" align="left" :name="$t('dashboard.reason')" class="reason" width="35%" :component="component" />
+                <Column prop="application_id" align="left" :name="$t('dashboard.number')" width="19%" />
+                <Column prop="application_begin_time" align="left" :name="$t('dashboard.startTime')" width="18%" />
+                <Column prop="application_end_time" align="left" :name="$t('dashboard.endTime')" width="18%" />
+            </Wb-table>
+        </Cell>
+    </Row>
+</template>
+<script type="text/ecmascript-6">
+import Vue from "vue";
+    export default {
+        FesHeader: false,
+        FesLeft: true,
+        FesReady: function () {},
+        props: {
+            list: Array,
+        },
+        data() {
+            return {
+                levelList: [" ", "CRITICAL","MAJOR","MINOR","WARNING","INFO"],
+                component: this.createReason,
+            }
+        },
+        methods: {
+            formatLevel(data) {
+                return this.levelList[data]
+            },
+            createReason (trData) {
+                return new Vue({
+                    data: function () {
+                        let reason = trData.alarm_reason;
+                        return {
+                            reason,
+                            option: {
+                                direction: 'right',
+                                align: "center",
+                                component: new Vue({
+                                    data: function () {
+                                        return {
+                                            list: trData.alarm_reason,
+                                        }
+                                    },
+                                    template: "<div style='background: #e3e8ee;'>{{list}}</div>"
+                                })
+                            }
+
+                        }
+                    },
+                    template: "<p v-tooltip='option' class='alarmReason'>{{reason}}</p>"
+                })
+            }
+        }
+    }
+</script>
+
+<style>
+    .alarm-table {
+        padding-left: 0;
+    }
+    .alarm-table .ui-cell, .ui-cell-span-24 .ui-table-swap .ui-table{
+        table-layout:fixed;
+    }
+    .alarm-table .ui-table-swap .ui-table .ui-table-tbody tr .col_2 p:first-child {
+        text-overflow: ellipsis;
+        -moz-text-overflow: ellipsis;
+        -webkit-line-clamp: 5;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .alarmReason {
+        position: relative;
+    }
+</style>

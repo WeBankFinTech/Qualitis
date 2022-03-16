@@ -1,0 +1,57 @@
+<template>
+    <div class="executation-config-detail">
+        <!-- 执行用户 -->
+        <el-form-item
+            prop="execution_user"
+            :label="`${$t('common.runUser')}：`"
+            :style="{width: '50%'}">
+            <el-select v-model="data.execution_user">
+                <el-option
+                    v-for="item in userList"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value" />
+            </el-select>
+        </el-form-item>
+    </div>
+</template>
+<script>
+export default {
+    name: 'executation-user-config',
+    props: {
+        data: {
+            type: Object,
+            required: true
+        }
+    },
+    FesData() {
+        return {
+            userList: []
+        };
+    },
+    FesReady() {
+        this.getUserList();
+    },
+    methods: {
+        async getUserList() {
+            const group = await this.getUsrGroup();
+            const user = this.FesStorage.get('simulatedUser') || this.FesApp.get("FesUserName");
+            if(Array.isArray(user)) {
+                this.userList = [].concat(user);
+            } else {
+                this.userList.push(user);
+            }
+            if(Array.isArray(group)) {
+                this.userList = this.userList.concat(group);
+            } else if (!this.FesUtil.isPlainObject(group)) {
+                this.userList.push(group);
+            }
+            this.userList = _.uniq(this.userList).map(item => ({ label: item, value: item }));
+        },
+        getUsrGroup() {
+            return this.FesApi.fetch("/api/v1/projector/proxy_user", {}, "get");
+        }
+    }
+};
+</script>
+<style lang="scss" scoped></style>

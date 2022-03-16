@@ -1,0 +1,100 @@
+<template>
+    <Row class="my-ui-row">
+        <Cell span="4">
+            <div class="flex-box">
+                <span class="label">{{ $t('dataSourceManagement.dataSourceName') }}: </span>
+                <WbInput
+                    v-model="formModel.dataSourceName"
+                    icon="search"
+                    clearable
+                    :placeholder="$t('dataSourceManagement.dataSourceName')"
+                    @on-enter="() => $emit('on-search')" />
+            </div>
+        </Cell>
+        <Cell span="6">
+            <div class="flex-box">
+                <span class="label">{{ $t('dataSourceManagement.dataSourceType') }}: </span>
+                <WbSelect
+                    v-model="formModel.dataSourceType"
+                    filterable
+                    clearable
+                    :placeholder="$t('common.pleaseSelect')">
+                    <WbOption
+                        v-for="item in dataSourceTypes"
+                        :key="item.id"
+                        :label="item.name"
+                        :value="item.id" />
+                </WbSelect>
+            </div>
+        </Cell>
+        <Cell
+            v-for="item in operations"
+            :key="item.text"
+            span="3"
+            class="my-ui-cell">
+            <WbButton :type="item.type" @click="item.handler">{{ item.text }}</WbButton>
+        </Cell>
+    </Row>
+</template>
+<script>
+export default {
+    props: {
+        formModel: {
+            type: Object,
+            required: true
+        },
+        dataSourceTypes: {
+            type: Array,
+            required: true
+        }
+    },
+    FesData() {
+        return {
+            operations: [
+                {
+                    type: 'primary',
+                    text: this.$t('common.search'),
+                    handler: () => {
+                        this.$emit('on-search', this.formModel);
+                    }
+                },
+                {
+                    type: 'primary',
+                    text: this.$t('dataSourceManagement.addDataSource'),
+                    handler: () => {
+                        this.$emit('on-add');
+                    }
+                },
+                // {
+                //     type: '',
+                //     text: this.$t('dataSourceManagement.exportDataSourceBatch'),
+                //     handler: () => {
+                //         this.$emit('on-export-batch');
+                //     }
+                // },
+                // {
+                //     type: '',
+                //     text: this.$t('dataSourceManagement.importDataSourceBatch'),
+                //     handler: () => {
+                //         this.$emit('on-import-batch');
+                //     }
+                // }
+            ]
+        }
+    },
+    FesReady() {},
+    methods: {}
+};
+</script>
+<style lang="scss" scoped>
+.ui-row.my-ui-row {
+    display: flex;
+    align-items: center;
+    .ui-cell {
+        height: 100%;
+        &.my-ui-cell {
+            text-align: center;
+        }
+    }
+}
+</style>

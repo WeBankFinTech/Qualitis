@@ -1,0 +1,116 @@
+<template>
+    <ul class="category-list">
+        <li
+            v-for="(types, classifier) in dataSourceCategoryMap"
+            :key="classifier"
+            class="category-item">
+            <p class="category-title">{{ classifier }}</p>
+            <ul class="type-list">
+                <li
+                    v-for="dataSourceType in types"
+                    :key="dataSourceType.id"
+                    class="type-item"
+                    @click="selectDataSourceType(dataSourceType)">
+                    <img
+                        class="type-img"
+                        :src="dataSourceType.icon">
+                    <span class="type-name">{{ dataSourceType.name }}</span>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</template>
+<script>
+export default {
+    props: {
+        dataSourceTypes: {
+            type: Array,
+            required: true
+        }
+    },
+    watch: {
+        dataSourceTypes: {
+            immediate: true,
+            deep: false,
+            handler(arr) {
+                if (!Array.isArray(arr)) return;
+                const map = {};
+                let temp = {}
+                let classifier = '';
+                for (let i = 0; i < arr.length; i++) {
+                    temp = arr[i];
+                    classifier = temp.classifier;
+                    if (!map[classifier]) {
+                        map[classifier] = [];
+                    }
+                    map[classifier].push(temp);
+                }
+                this.dataSourceCategoryMap = map;
+            }
+        }
+    },
+    FesData() {
+        return {
+            dataSourceCategoryMap: {}
+        };
+    },
+    methods: {
+        selectDataSourceType(dataSourceType) {
+            this.$emit('on-select-data-source-type', dataSourceType);
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.category-list {
+    overflow-y: auto;
+    .category-item {
+        margin-bottom: 16px;
+        .category-title {
+            margin-bottom: 10px;
+            padding-left: 12px;
+            height: 22px;
+            line-height: 22px;
+            font-size: 16px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.85);
+            border-left: 3px solid #2d8cf0;
+        }
+        .type-list {
+            display: flex;
+            .type-item {
+                position: relative;
+                margin: 0 12px 0 20px;
+                width: 140px;
+                height: 96px;
+                text-align: center;
+                background-color: #fff;
+                box-shadow: 0 0 6px 0 rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                .type-img {
+                    display: block;
+                    margin-top: 10px;
+                    width: 140px;
+                    height: 86px;
+                    border-style: none;
+                    -webkit-tap-highlight-color: transparent;
+                }
+                .type-name {
+                    position: absolute;
+                    left: 0;
+                    bottom: 0;
+                    padding: 4px;
+                    width: 100%;
+                    height: 30px;
+                    line-height: 22px;
+                    font-size: 12px;
+                    color: #515a6e;
+                }
+                &:hover {
+                    box-shadow: 0 0 6px 0 rgba(0, 154, 176, 0.6);
+                }
+            }
+        }
+    }
+}
+</style>

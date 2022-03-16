@@ -1,6 +1,6 @@
 <template>
-    <div class="left-menu" :class="{'slideOutLeft':toggle === true,'slideInLeft':toggle === false}">
-        <WbMenu :class="{'fadeOut':toggle === true,'fadeIn':toggle === false}" :active-name.sync="activeName" :auto-close="false" @select="select">
+    <div class="left-menu" :class="{'slideOutLeft': isClose === true, 'slideInLeft': isClose === false}">
+        <WbMenu v-show="!isClose" :class="{'fadeOut': isClose === true,'fadeIn': isClose === false}" :active-name.sync="activeName" :auto-close="false" @select="select">
             <div v-for="(item) in items" :key="item.name">
                 <WbMenuItem v-if="item.subItems.length === 0" :name="item.name" class="menu-item">
                     <img :src="item.icon" class="title-icon">{{ item.title }}
@@ -12,8 +12,8 @@
                 </WbSubMenu>
             </div>
         </WbMenu>
-        <div class="toggle" :class="{'close': toggle}" @click="toggleBtn">
-            <Icon :type="toggle ? 'double-right' : 'double-left'" class="icon" size="10" />
+        <div class="toggle" :class="{'close': isClose}" @click="toggleBtn">
+            <Icon :type="isClose ? 'double-right' : 'double-left'" class="icon" size="10" />
         </div>
     </div>
 </template>
@@ -33,16 +33,7 @@
         FesData() {
             return {
                 activeName: this.defaultActive,
-                toggle: null
-            }
-        },
-        computed: {
-            isScroll() {
-                if (this.toggle === true) {
-                    return false;
-                } else {
-                    return true;
-                }
+                isClose: null
             }
         },
         watch: {
@@ -83,7 +74,7 @@
                 this.changePath(name);
             },
             toggleBtn () {
-                this.toggle = !this.toggle
+                this.isClose = !this.isClose
             }
         }
     }
@@ -94,6 +85,7 @@
     @import '../assets/styles/mixins';
 
     .left-menu {
+        flex: 0 0 180px;
         border-right: 1px solid $border-color;
         position: relative;
         background-color: #fff;
@@ -121,10 +113,8 @@
         }
 
         .close {
-            position: absolute;
-            left: 0;
-            top: 6px;
-            background: #fff;
+            right: 20px;
+            transform: translateX(50%);
         }
     }
     .title-menu-min{
@@ -146,11 +136,11 @@
     }
     @keyframes slideOutLeft {
         from {
-            width: 210px;
+            flex-basis: 180px;
         }
 
         to {
-            width: 0;
+            flex-basis: 40px;
         }
 
     }
@@ -165,10 +155,10 @@
 
     @keyframes slideInLeft {
         from {
-            width: 0;
+            flex-basis: 40px;
         }
         to {
-            width: 210px;
+            flex-basis: 180px;
         }
     }
 
@@ -228,12 +218,6 @@
 <style lang="scss">
     @import '../assets/styles/variables';
     @import '../assets/styles/mixins';
-    .left-menu {
-        position: fixed !important;
-        top: 48px !important;;
-        left: 0 !important;;
-        width: 210px !important;;
-    }
     // 给当前选择的item高亮
     .left-menu .ui-menu .menu-item.ui-menu-item-actived {
         background: #f2f7ff;
@@ -252,7 +236,7 @@
     }
     // 清除掉每一个item的右边框
     .left-menu .menu-item {
-        font-size: 14px;
+        font-size: 16px;
         border-right: none;
     }
     // 清除掉每一个item的右边框
@@ -262,6 +246,6 @@
     // 清除掉有subItem的title的右边框
     .left-menu .ui-menu .submenu .ui-menu-submenu-title {
         border-right: none;
-        font-size: 14px;
+        font-size: 16px;
     }
 </style>

@@ -10,6 +10,7 @@
             <Wb-table :data="roleData" border :no-data-text="$t('common.noData')">
                 <Column prop="role_id" :name="$t('optionManagePage.roleID')" width="150px" />
                 <Column prop="role_name" :name="$t('optionManagePage.characterName')" :component="roleChild" />
+                <Column prop="department_name" :name="$t('optionManagePage.departmentName')" width="150px" />
                 <Column :name="$t('common.operate')" :component="operationComponent" width="300px" />
             </Wb-table>
             <div class="flex mt10">
@@ -21,6 +22,11 @@
                 <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
                     <Form-item :label="$t('optionManagePage.characterName')" prop="addRoleName">
                         <Wb-input v-model="addRoleName" />
+                    </Form-item>
+                    <Form-item :label="$t('optionManagePage.departmentName')" prop="addDepartmentName">
+                        <wb-select v-model="department_name">
+                            <wb-option v-for="item in department_name_list" :key="item.department_id" :value="item.department_name">{{ item.department_name }}</wb-option>
+                        </wb-select>
                     </Form-item>
                     <div class="submit-button-container fr mb10">
                         <WbButton class="submit-button mr10" @click="cancel('roleForm')">
@@ -36,6 +42,11 @@
                 <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="130">
                     <Form-item :label="$t('optionManagePage.characterName')" prop="reviseRoleName">
                         <Wb-input v-model="reviseRoleName" />
+                    </Form-item>
+                    <Form-item :label="$t('optionManagePage.departmentName')" prop="addDepartmentName">
+                        <wb-select v-model="department_name">
+                            <wb-option v-for="item in department_name_list" :key="item.department_id" :value="item.department_name">{{ item.department_name }}</wb-option>
+                        </wb-select>
                     </Form-item>
                     <div class="submit-button-container fr mb10">
                         <WbButton class="submit-button mr10" @click="cancel('roleReviseForm')">
@@ -56,6 +67,12 @@
     import { isIE } from 'assets/js/utils.js';
     import { sizeList } from 'assets/js/sizeList';
     export default {
+        props: {
+            department_name_list: {
+                type: Array,
+                default:() => []
+            }
+        },
         FesReady: function () {
             this.init();
         },
@@ -66,6 +83,7 @@
                 addRoleName: "",
                 reviseRoleId: "",
                 reviseRoleName: "",
+                department_name: "",
                 pagination: {
                     size: 5,
                     current: 1,
@@ -153,6 +171,7 @@
                             editAction() {
                                 that.reviseRoleId = trData.role_id;
                                 that.reviseRoleName = trData.role_name;
+                                that.department_name = trData.department_name;
                                 that.$refs.roleReviseForm.show();
                             },
                             deleteAction() {
@@ -248,7 +267,8 @@
             submit() {
                 if (!this.addRoleName == "") {
                     this.FesApi.fetch('api/v1/admin/role', {
-                        role_name: this.addRoleName
+                        role_name: this.addRoleName,
+                        department_name: this.department_name,
                     }, 'put').then(() => {
                         this.$refs.roleForm.hide();
                         this.$Toast.success(this.$t('toastSuccess.addSuccess'));
@@ -261,6 +281,7 @@
                 let newTrData = {};
                 newTrData.role_id = this.reviseRoleId;
                 newTrData.role_name = this.reviseRoleName;
+                newTrData.department_name = this.department_name;
                 this.FesApi.fetch('api/v1/admin/role', newTrData, ).then(() => {
                     this.$refs.roleReviseForm.hide();
                     this.$Toast.success(this.$t('toastSuccess.editSuccess'))
@@ -288,3 +309,9 @@
     }
 
 </script>
+<style lang="scss" scoped>
+    /deep/ .ui-modal-dialog {
+        overflow: initial;
+    }
+</style>
+
