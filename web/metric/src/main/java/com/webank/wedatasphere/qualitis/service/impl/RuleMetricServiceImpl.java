@@ -210,8 +210,6 @@ public class RuleMetricServiceImpl implements RuleMetricService {
       if (ruleMetricDepartmentUser != null) {
         LOGGER.info("Rule metric[{}] will be delete.", ruleMetricInDb.toString());
         ruleMetricDepartmentUserDao.delete(ruleMetricDepartmentUser);
-      } else {
-        throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
       }
     } else if (roleType.equals(RoleDefaultTypeEnum.DEPARTMENT_ADMIN.getCode())) {
       LOGGER.info("DEPARTMENT_ADMIN will delete rule metric.");
@@ -298,7 +296,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
 
       RuleMetricDepartmentUser ruleMetricDepartmentUser = ruleMetricDepartmentUserDao.findByRuleMetric(ruleMetricInDb);
       if (ruleMetricDepartmentUser != null && managedDepartment.contains(ruleMetricDepartmentUser.getDepartment())) {
-        LOGGER.info("Rule metric[{}] comes from department: {}", ruleMetricInDb.toString(), ruleMetricDepartmentUser.getDepartment().getName());
+        LOGGER.info("Rule metric[{}]", ruleMetricInDb.toString());
       } else {
         throw new PermissionDeniedRequestException("User {&HAS_NO_PERMISSION_TO_ACCESS}", 403);
       }

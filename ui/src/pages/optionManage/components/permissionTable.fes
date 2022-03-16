@@ -225,3 +225,8 @@
         }
     }
 </script>
+<style lang="scss" scoped>
+    /deep/ .ui-modal-dialog {
+        overflow: initial;
+    }
+</style>
