@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.dao;
 
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import java.util.List;
 
 /**
  * @author howeye
@@ -52,4 +53,10 @@ public interface RuleGroupDao {
      */
     RuleGroup findByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId);
 
+    /**
+     * Find rule group list by project id
+     * @param projectId
+     * @return
+     */
+    List<RuleGroup> findByProjectId(Long projectId);
 }

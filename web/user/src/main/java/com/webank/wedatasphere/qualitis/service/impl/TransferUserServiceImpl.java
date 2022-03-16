@@ -22,11 +22,6 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.TransferUserService;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.service.TransferUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -58,7 +53,7 @@ public class TransferUserServiceImpl implements TransferUserService {
             throw new UnExpectedRequestException("ProxyUser: " + user + " {&DOES_NOT_EXIST}");
         }
 
-        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUsername());
+        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUserName());
         HttpSession httpSession = httpServletRequest.getSession();
         httpSession.setAttribute("proxyUser", userMap);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_TRANSFER_TO_PROXYUSER}", null);

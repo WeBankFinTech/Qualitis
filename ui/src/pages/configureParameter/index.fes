@@ -262,10 +262,15 @@
             },
             cancel() {
                 this.$refs['clusterForm'].hide()
-            }
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
         }
     };
 </script>
+
 <style scoped lang="scss">
     .adr {
         display: inline-block;
@@ -278,7 +283,7 @@
     }
     .adr-wrapper {
         display: flex;
-        ::v-deep
+        /deep/
         .ui-form-item{
             width: 700px;
             margin-left: 20px;
@@ -287,6 +292,7 @@
             height: 35px;
         }
     }
+
     .parameter-input {
         width: 50%;
         margin-right: 40px;

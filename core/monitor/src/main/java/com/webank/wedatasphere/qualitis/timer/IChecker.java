@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.timer;
 
 import com.webank.wedatasphere.qualitis.bean.JobChecker;
+import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.bean.JobChecker;
 
@@ -24,21 +25,19 @@ import com.webank.wedatasphere.qualitis.bean.JobChecker;
  * @author howeye
  */
 public interface IChecker {
-
     /**
      * Check status of task
      * @param jobChecker
      * @throws ClusterInfoNotConfigException
      */
-    void checkTaskStatus(JobChecker jobChecker) throws ClusterInfoNotConfigException;
+    void checkTaskStatus(JobChecker jobChecker);
 
     /**
      * Check if last job
-     * @param applicationId
+     * @param applicationInDb
      * @param finish
      * @param isPass
      * @param isNotExist
      */
-    void checkIfLastJob(String applicationId, boolean finish, boolean isPass, boolean isNotExist);
-
+    void checkIfLastJob(Application applicationInDb, boolean finish, boolean isPass, boolean isNotExist);
 }

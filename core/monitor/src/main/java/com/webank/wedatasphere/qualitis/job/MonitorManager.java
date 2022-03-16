@@ -24,13 +24,12 @@ import com.webank.wedatasphere.qualitis.bean.LogResult;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
+import java.util.Map;
 
 /**
  * @author howeye
  */
 public interface MonitorManager {
-
-
     /**
      * Get task status
      * @param taskId
@@ -41,7 +40,7 @@ public interface MonitorManager {
      * @throws TaskNotExistException
      * @throws ClusterInfoNotConfigException
      */
-    String getTaskStatus(Integer taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException;
+    Map<String, Object> getTaskStatus(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException;
 
 
     /**
@@ -55,6 +54,6 @@ public interface MonitorManager {
      * @throws LogPartialException
      * @throws ClusterInfoNotConfigException
      */
-    LogResult getTaskPartialLog(Integer taskId, Integer begin, String user, String remoteAddress, String clusterName) throws LogPartialException, ClusterInfoNotConfigException;
+    LogResult getTaskPartialLog(Long taskId, Integer begin, String user, String remoteAddress, String clusterName) throws LogPartialException, ClusterInfoNotConfigException;
 
 }

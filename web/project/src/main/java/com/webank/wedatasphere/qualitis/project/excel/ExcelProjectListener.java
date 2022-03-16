@@ -21,6 +21,7 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelCustomRule;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelMultiTemplateRule;
+import com.webank.wedatasphere.qualitis.rule.excel.ExcelTemplateFileRule;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelTemplateRule;
 import org.springframework.beans.BeanUtils;
 
@@ -32,9 +33,11 @@ import java.util.*;
 public class ExcelProjectListener extends AnalysisEventListener {
 
     private List<ExcelProject> excelProjectContent = new ArrayList<>();
-    private Map<String, Map<String, List<ExcelTemplateRule>>> excelRuleContent = new HashMap<>(4);
-    private Map<String, Map<String, List<ExcelCustomRule>>> excelCustomRuleContent = new HashMap<>(4);
-    private Map<String, Map<String, List<ExcelMultiTemplateRule>>> excelMultiRuleContent = new HashMap<>(4);
+    private List<ExcelRuleMetric> excelMetricContent = new ArrayList<>();
+    private Map<String, Map<String, List<ExcelTemplateRuleByProject>>> excelRuleContent = new HashMap<>(4);
+    private Map<String, Map<String, List<ExcelCustomRuleByProject>>> excelCustomRuleContent = new HashMap<>(4);
+    private Map<String, Map<String, List<ExcelMultiTemplateRuleByProject>>> excelMultiRuleContent = new HashMap<>(4);
+    private Map<String, Map<String, List<ExcelTemplateFileRuleByProject>>> templateFileExcelContent = new HashMap<>(4);
 
     @Override
     public void invoke(Object object, AnalysisContext context) {
@@ -42,54 +45,56 @@ public class ExcelProjectListener extends AnalysisEventListener {
             ExcelTemplateRuleByProject excelTemplateRuleByProject = (ExcelTemplateRuleByProject) object;
             String projectName = excelTemplateRuleByProject.getProjectName();
             String ruleName = excelTemplateRuleByProject.getRuleName();
-            if (!excelRuleContent.containsKey(projectName)) {
-                Map<String, List<ExcelTemplateRule>> tmpMap = new HashMap<>(8);
-                List<ExcelTemplateRule> tmpList = new ArrayList<>();
-                ExcelTemplateRule tmp = new ExcelTemplateRule();
+            if (! excelRuleContent.containsKey(projectName)) {
+                Map<String, List<ExcelTemplateRuleByProject>> tmpMap = new HashMap<>(8);
+                List<ExcelTemplateRuleByProject> tmpList = new ArrayList<>();
+                ExcelTemplateRuleByProject tmp = new ExcelTemplateRuleByProject();
                 BeanUtils.copyProperties(object, tmp);
                 tmpList.add(tmp);
                 tmpMap.put(ruleName, tmpList);
                 excelRuleContent.put(projectName, tmpMap);
             } else {
-                Map<String, List<ExcelTemplateRule>> tmpMap = excelRuleContent.get(projectName);
-                if (!tmpMap.containsKey(ruleName)) {
-                    List<ExcelTemplateRule> tmpList = new ArrayList<>();
-                    ExcelTemplateRule tmp = new ExcelTemplateRule();
+                Map<String, List<ExcelTemplateRuleByProject>> tmpMap = excelRuleContent.get(projectName);
+                if (! tmpMap.containsKey(ruleName)) {
+                    List<ExcelTemplateRuleByProject> tmpList = new ArrayList<>();
+                    ExcelTemplateRuleByProject tmp = new ExcelTemplateRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                     tmpMap.put(ruleName, tmpList);
                 } else {
-                    List<ExcelTemplateRule> tmpList = tmpMap.get(ruleName);
-                    ExcelTemplateRule tmp = new ExcelTemplateRule();
+                    List<ExcelTemplateRuleByProject> tmpList = tmpMap.get(ruleName);
+                    ExcelTemplateRuleByProject tmp = new ExcelTemplateRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                 }
             }
         } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.PROJECT_NAME)) {
             excelProjectContent.add((ExcelProject) object);
+        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.RULE_METRIC_NAME)) {
+            excelMetricContent.add((ExcelRuleMetric) object);
         } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.CUSTOM_RULE_NAME)) {
             ExcelCustomRuleByProject excelCustomRuleByProject = (ExcelCustomRuleByProject) object;
             String projectName = excelCustomRuleByProject.getProjectName();
             String ruleName = excelCustomRuleByProject.getRuleName();
-            if (!excelCustomRuleContent.containsKey(projectName)) {
-                Map<String, List<ExcelCustomRule>> tmpMap = new HashMap<>(8);
-                List<ExcelCustomRule> tmpList = new ArrayList<>();
-                ExcelCustomRule tmp = new ExcelCustomRule();
+            if (! excelCustomRuleContent.containsKey(projectName)) {
+                Map<String, List<ExcelCustomRuleByProject>> tmpMap = new HashMap<>(8);
+                List<ExcelCustomRuleByProject> tmpList = new ArrayList<>();
+                ExcelCustomRuleByProject tmp = new ExcelCustomRuleByProject();
                 BeanUtils.copyProperties(object, tmp);
                 tmpList.add(tmp);
                 tmpMap.put(ruleName, tmpList);
                 excelCustomRuleContent.put(projectName, tmpMap);
             } else {
-                Map<String, List<ExcelCustomRule>> tmpMap = excelCustomRuleContent.get(projectName);
+                Map<String, List<ExcelCustomRuleByProject>> tmpMap = excelCustomRuleContent.get(projectName);
                 if (!tmpMap.containsKey(ruleName)) {
-                    List<ExcelCustomRule> tmpList = new ArrayList<>();
-                    ExcelCustomRule tmp = new ExcelCustomRule();
+                    List<ExcelCustomRuleByProject> tmpList = new ArrayList<>();
+                    ExcelCustomRuleByProject tmp = new ExcelCustomRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                     tmpMap.put(ruleName, tmpList);
                 } else {
-                    List<ExcelCustomRule> tmpList = tmpMap.get(ruleName);
-                    ExcelCustomRule tmp = new ExcelCustomRule();
+                    List<ExcelCustomRuleByProject> tmpList = tmpMap.get(ruleName);
+                    ExcelCustomRuleByProject tmp = new ExcelCustomRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                 }
@@ -98,25 +103,52 @@ public class ExcelProjectListener extends AnalysisEventListener {
             ExcelMultiTemplateRuleByProject excelMultiTemplateRuleByProject = (ExcelMultiTemplateRuleByProject) object;
             String projectName = excelMultiTemplateRuleByProject.getProjectName();
             String ruleName = excelMultiTemplateRuleByProject.getRuleName();
-            if (!excelMultiRuleContent.containsKey(projectName)) {
-                Map<String, List<ExcelMultiTemplateRule>> tmpMap = new HashMap<>(8);
-                List<ExcelMultiTemplateRule> tmpList = new ArrayList<>();
-                ExcelMultiTemplateRule tmp = new ExcelMultiTemplateRule();
+            if (! excelMultiRuleContent.containsKey(projectName)) {
+                Map<String, List<ExcelMultiTemplateRuleByProject>> tmpMap = new HashMap<>(8);
+                List<ExcelMultiTemplateRuleByProject> tmpList = new ArrayList<>();
+                ExcelMultiTemplateRuleByProject tmp = new ExcelMultiTemplateRuleByProject();
                 BeanUtils.copyProperties(object, tmp);
                 tmpList.add(tmp);
                 tmpMap.put(ruleName, tmpList);
                 excelMultiRuleContent.put(projectName, tmpMap);
             } else {
-                Map<String, List<ExcelMultiTemplateRule>> tmpMap = excelMultiRuleContent.get(projectName);
+                Map<String, List<ExcelMultiTemplateRuleByProject>> tmpMap = excelMultiRuleContent.get(projectName);
                 if (!tmpMap.containsKey(ruleName)) {
-                    List<ExcelMultiTemplateRule> tmpList = new ArrayList<>();
-                    ExcelMultiTemplateRule tmp = new ExcelMultiTemplateRule();
+                    List<ExcelMultiTemplateRuleByProject> tmpList = new ArrayList<>();
+                    ExcelMultiTemplateRuleByProject tmp = new ExcelMultiTemplateRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                     tmpMap.put(ruleName, tmpList);
                 } else {
-                    List<ExcelMultiTemplateRule> tmpList = tmpMap.get(ruleName);
-                    ExcelMultiTemplateRule tmp = new ExcelMultiTemplateRule();
+                    List<ExcelMultiTemplateRuleByProject> tmpList = tmpMap.get(ruleName);
+                    ExcelMultiTemplateRuleByProject tmp = new ExcelMultiTemplateRuleByProject();
+                    BeanUtils.copyProperties(object, tmp);
+                    tmpList.add(tmp);
+                }
+            }
+        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.TEMPLATE_FILE_RULE_NAME)) {
+            ExcelTemplateFileRuleByProject excelTemplateFileRuleByProject = (ExcelTemplateFileRuleByProject) object;
+            String projectName = excelTemplateFileRuleByProject.getProjectName();
+            String ruleName = excelTemplateFileRuleByProject.getRuleName();
+            if (! templateFileExcelContent.containsKey(projectName)) {
+                Map<String, List<ExcelTemplateFileRuleByProject>> tmpMap = new HashMap<>(8);
+                List<ExcelTemplateFileRuleByProject> tmpList = new ArrayList<>();
+                ExcelTemplateFileRuleByProject tmp = new ExcelTemplateFileRuleByProject();
+                BeanUtils.copyProperties(object, tmp);
+                tmpList.add(tmp);
+                tmpMap.put(ruleName, tmpList);
+                templateFileExcelContent.put(projectName, tmpMap);
+            } else {
+                Map<String, List<ExcelTemplateFileRuleByProject>> tmpMap = templateFileExcelContent.get(projectName);
+                if (!tmpMap.containsKey(ruleName)) {
+                    List<ExcelTemplateFileRuleByProject> tmpList = new ArrayList<>();
+                    ExcelTemplateFileRuleByProject tmp = new ExcelTemplateFileRuleByProject();
+                    BeanUtils.copyProperties(object, tmp);
+                    tmpList.add(tmp);
+                    tmpMap.put(ruleName, tmpList);
+                } else {
+                    List<ExcelTemplateFileRuleByProject> tmpList = tmpMap.get(ruleName);
+                    ExcelTemplateFileRuleByProject tmp = new ExcelTemplateFileRuleByProject();
                     BeanUtils.copyProperties(object, tmp);
                     tmpList.add(tmp);
                 }
@@ -133,15 +165,23 @@ public class ExcelProjectListener extends AnalysisEventListener {
         return excelProjectContent;
     }
 
-    public Map<String, Map<String, List<ExcelTemplateRule>>> getExcelRuleContent() {
+    public List<ExcelRuleMetric> getExcelMetricContent() {
+        return excelMetricContent;
+    }
+
+    public Map<String, Map<String, List<ExcelTemplateRuleByProject>>> getExcelRuleContent() {
         return excelRuleContent;
     }
 
-    public Map<String, Map<String, List<ExcelCustomRule>>> getExcelCustomRuleContent() {
+    public Map<String, Map<String, List<ExcelCustomRuleByProject>>> getExcelCustomRuleContent() {
         return excelCustomRuleContent;
     }
 
-    public Map<String, Map<String, List<ExcelMultiTemplateRule>>> getExcelMultiRuleContent() {
+    public Map<String, Map<String, List<ExcelMultiTemplateRuleByProject>>> getExcelMultiRuleContent() {
         return excelMultiRuleContent;
+    }
+
+    public Map<String, Map<String, List<ExcelTemplateFileRuleByProject>>> getTemplateFileExcelContent() {
+        return templateFileExcelContent;
     }
 }

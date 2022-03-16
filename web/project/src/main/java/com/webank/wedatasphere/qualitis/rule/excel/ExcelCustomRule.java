@@ -67,11 +67,78 @@ public class ExcelCustomRule extends BaseRowModel {
     @ExcelProperty(value = "AbortOnFailure", index = 13)
     private Boolean abortOnFailure;
 
+    @ExcelProperty(value = "Alert", index = 14)
+    private Boolean alert;
+    @ExcelProperty(value = "Alert Level", index = 15)
+    private String alertLevel;
+    @ExcelProperty(value = "Alert Receivers", index = 16)
+    private String alertReceivers;
+
+    @ExcelProperty(value = "Create User", index = 17)
+    private String createUser;
+    @ExcelProperty(value = "Create Time", index = 18)
+    private String createTime;
+    @ExcelProperty(value = "Modify User", index = 19)
+    private String modifyUser;
+    @ExcelProperty(value = "Modify Time", index = 20)
+    private String modifyTime;
+
+    @ExcelProperty(value = "Fps File Id", index = 21)
+    private String fileId;
+    @ExcelProperty(value = "Fps File Desc", index = 22)
+    private String fileTableDesc;
+    @ExcelProperty(value = "File Delimiter", index = 23)
+    private String fileDelimiter;
+    @ExcelProperty(value = "Fps File Type", index = 24)
+    private String fileType;
+    @ExcelProperty(value = "File Header", index = 25)
+    private Boolean fileHeader;
+    @ExcelProperty(value = "File Database", index = 26)
+    private String fileDb;
+    @ExcelProperty(value = "File Table", index = 27)
+    private String fileTable;
+    @ExcelProperty(value = "Proxy User", index = 28)
+    private String proxyUser;
+    @ExcelProperty(value = "Fps File Hash Value", index = 29)
+    private String fpsHashValue;
+    @ExcelProperty(value = "Rule Metric En Code", index = 30)
+    private String ruleMetricEnCode;
+    @ExcelProperty(value = "Rule Metric Name", index = 31)
+    private String ruleMetricName;
+    @ExcelProperty(value = "delete_fail_check_result", index = 32)
+    private Boolean deleteFailCheckResult;
+    @ExcelProperty(value = "Specify Static Startup Param", index = 33)
+    private Boolean specifyStaticStartupParam;
+    @ExcelProperty(value = "Static Startup Param", index = 34)
+    private String staticStartupParam;
+    @ExcelProperty(value = "Upload Rule Metric Value", index = 35)
+    private Boolean uploadRuleMetricValue;
+    @ExcelProperty(value = "Upload Abnormal Value", index = 36)
+    private Boolean uploadAbnormalValue;
+    @ExcelProperty(value = "Sql Check Area", index = 37)
+    private String sqlCheckArea;
+
     public ExcelCustomRule() {
     }
 
     public ExcelCustomRule(ExcelCustomRule excelTemplateRule) {
         BeanUtils.copyProperties(excelTemplateRule, this);
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 
     public String getRuleName() {
@@ -186,6 +253,182 @@ public class ExcelCustomRule extends BaseRowModel {
         this.abortOnFailure = abortOnFailure;
     }
 
+    public Boolean getAlert() {
+        return alert;
+    }
+
+    public void setAlert(Boolean alert) {
+        this.alert = alert;
+    }
+
+    public String getAlertLevel() {
+        return alertLevel;
+    }
+
+    public void setAlertLevel(String alertLevel) {
+        this.alertLevel = alertLevel;
+    }
+
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
+    public String getFileTableDesc() {
+        return fileTableDesc;
+    }
+
+    public void setFileTableDesc(String fileTableDesc) {
+        this.fileTableDesc = fileTableDesc;
+    }
+
+    public String getFileDelimiter() {
+        return fileDelimiter;
+    }
+
+    public void setFileDelimiter(String fileDelimiter) {
+        this.fileDelimiter = fileDelimiter;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Boolean getFileHeader() {
+        return fileHeader;
+    }
+
+    public void setFileHeader(Boolean fileHeader) {
+        this.fileHeader = fileHeader;
+    }
+
+    public String getAlertReceivers() {
+        return alertReceivers;
+    }
+
+    public void setAlertReceivers(String alertReceivers) {
+        this.alertReceivers = alertReceivers;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public String getFileDb() {
+        return fileDb;
+    }
+
+    public void setFileDb(String fileDb) {
+        this.fileDb = fileDb;
+    }
+
+    public String getFileTable() {
+        return fileTable;
+    }
+
+    public void setFileTable(String fileTable) {
+        this.fileTable = fileTable;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public String getRuleMetricEnCode() {
+        return ruleMetricEnCode;
+    }
+
+    public void setRuleMetricEnCode(String ruleMetricEnCode) {
+        this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public String getRuleMetricName() {
+        return ruleMetricName;
+    }
+
+    public void setRuleMetricName(String ruleMetricName) {
+        this.ruleMetricName = ruleMetricName;
+    }
+
+    public Boolean getSpecifyStaticStartupParam() {
+        return specifyStaticStartupParam;
+    }
+
+    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
+        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    }
+
+    public String getStaticStartupParam() {
+        return staticStartupParam;
+    }
+
+    public void setStaticStartupParam(String staticStartupParam) {
+        this.staticStartupParam = staticStartupParam;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public String getSqlCheckArea() {
+        return sqlCheckArea;
+    }
+
+    public void setSqlCheckArea(String sqlCheckArea) {
+        this.sqlCheckArea = sqlCheckArea;
+    }
+
     @Override
     public String toString() {
         return "ExcelCustomRule{" +
@@ -203,6 +446,30 @@ public class ExcelCustomRule extends BaseRowModel {
             ", compareType='" + compareType + '\'' +
             ", threshold='" + threshold + '\'' +
             ", abortOnFailure=" + abortOnFailure +
+            ", alert=" + alert +
+            ", alertLevel='" + alertLevel + '\'' +
+            ", alertReceivers='" + alertReceivers + '\'' +
+            ", createUser='" + createUser + '\'' +
+            ", createTime='" + createTime + '\'' +
+            ", modifyUser='" + modifyUser + '\'' +
+            ", modifyTime='" + modifyTime + '\'' +
+            ", fileId='" + fileId + '\'' +
+            ", fileTableDesc='" + fileTableDesc + '\'' +
+            ", fileDelimiter='" + fileDelimiter + '\'' +
+            ", fileType='" + fileType + '\'' +
+            ", fileHeader=" + fileHeader +
+            ", fileDb='" + fileDb + '\'' +
+            ", fileTable='" + fileTable + '\'' +
+            ", proxyUser='" + proxyUser + '\'' +
+            ", fpsHashValue='" + fpsHashValue + '\'' +
+            ", ruleMetricId='" + ruleMetricEnCode + '\'' +
+            ", ruleMetricName='" + ruleMetricName + '\'' +
+            ", deleteFailCheckResult=" + deleteFailCheckResult +
+            ", specifyStaticStartupParam=" + specifyStaticStartupParam +
+            ", staticStartupParam='" + staticStartupParam + '\'' +
+            ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+            ", uploadAbnormalValue=" + uploadAbnormalValue +
+            ", sqlCheckArea='" + sqlCheckArea + '\'' +
             '}';
     }
 }

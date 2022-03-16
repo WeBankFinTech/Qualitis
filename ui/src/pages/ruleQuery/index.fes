@@ -3,8 +3,6 @@
         <div class="all-wrapper">
             <Row class="operate">
                 <div class="breadcrumb-container mb10">
-                    <span class="breadcrumb">{{ $t('projects.projects') }}</span>
-                    <span class="breadcrumb-item-separator">/</span>
                     <span class="breadcrumb-item-link">{{ $t('ruleQuery.ruleQuery') }}</span>
                 </div>
                 <Cell span="4">
@@ -21,9 +19,13 @@
                 </Cell>
                 <Cell span="4" offset="1">
                     <div>{{ $t('ruleQueryPage.dataTableName') }}</div>
-                    <Wb-select v-model="tableName" filterable :disabled="disableTable">
-                        <wb-option v-for="(d,i) in tableList" :key="i" :value="d.table_name">{{ d.table_name }}</wb-option>
-                    </Wb-select>
+                    <WbSelect
+                        v-model="tableName"
+                        filterable
+                        options-text-name="table_name"
+                        options-value-name="table_name"
+                        :disabled="disableTable"
+                        :options="tableList" />
                 </Cell>
                 <Cell span="4" offset="1" style="margin-top: 15px;">
                     <Wb-input v-model="filterTableName" :placeholder="`${$t('ruleQueryPage.filterTable')}`" :disabled="disableFilter">
@@ -42,7 +44,10 @@
                         <Column prop="table_name" :name="$t('common.table')" classes="pointerTag" />
                         <Column prop="table_commit" :name="$t('common.description')" />
                     </Wb-table>
-                    <Pagination class="pt20" :size-list="sizeList" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                    <div class="table-pagination pt20">
+                        <span class="table-pagination-total">{{ $t('common.pageinfo', { total: projectListTotal, pageTotal: pagination.total }) }}</span>
+                        <Pagination :size-list="sizeList" :current="pagination.page" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                    </div>
                 </Cell>
             </Row>
             <Loading v-show="showLoading" class="loading-layout" />
@@ -56,7 +61,14 @@
         FesHeader: true,
         FesLeft: false,
         FesReady: function () {
-            this.init()
+          // 拿本地缓存页码
+            let paginationRuleQuery = this.FesStorage.get("paginationRuleQuery");
+            this.pagination = Object.assign(this.pagination, paginationRuleQuery || {});
+            if(paginationRuleQuery) {
+              this.search()
+            } else {
+              this.init()
+            }
             this.loadCluster()
         },
         components: {
@@ -74,6 +86,7 @@
                 typeData: "",
                 showLoading: true,
                 filterTableName: '',
+                projectListTotal: 0,
                 pagination: {
                     page: 1,
                     size: 15,
@@ -84,18 +97,28 @@
         },
         computed: {
             disableFilter() {
-                return this.tableName.length>0 ? true : false; 
+                return this.tableName.length>0 ? true : false;
             },
             disableTable() {
-                return this.filterTableName.length>0 ? true : false; 
+                return this.filterTableName.length>0 ? true : false;
             }
+        },
+        beforeRouteLeave (to, from, next) {
+            // 离开组件时将页码存储下来
+            if(to.path === '/ruleQuery/projectId') {
+                this.FesStorage.set("paginationRuleQuery", this.pagination)
+            } else {
+                this.FesStorage.remove('paginationRuleQuery');
+            }
+            next()
         },
         methods: {
             init() {
                 this.FesApi.fetch("api/v1/projector/query/all", {
                     page: this.pagination.page - 1,
                     size: this.pagination.size
-                }).then(res=> {              
+                }).then(res=> {
+                    this.projectListTotal = res.totalCount;
                     this.projectList = Array.isArray(res.content) ? res.content : [];
                     this.pagination.total = Math.ceil(res.totalCount/this.pagination.size);
                 }).finally(()=> {
@@ -183,11 +206,12 @@
                     params.table = this.tableName;
                 }
                 if (this.filterTableName) {
-                    params.table = `%${this.filterTableName}%`;   
+                    params.table = `%${this.filterTableName}%`;
                 }
                 params.page = this.pagination.page-1;
                 params.size = this.pagination.size;
                 this.FesApi.fetch('api/v1/projector/query/query', params, 'post').then((result) => {
+                    this.projectListTotal = result.totalCount;
                     this.projectList = Array.isArray(result.content) ? result.content : [];
                     this.pagination.total = Math.ceil(result.totalCount/this.pagination.size);
                     this.$Toast.success(this.$t('toastSuccess.search'));
@@ -200,6 +224,7 @@
                     path: `/ruleQuery/projectId`,
                     query: {
                         cluster: trData.cluster_name,
+                        dataSourceId: trData.datasource_id,
                         dbName: trData.db_name,
                         tableName: trData.table_name,
                     }
@@ -218,6 +243,10 @@
                 this.pagination.page = current;
                 this.pagination.size = size;
                 this.search();
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
             },
         }
     }

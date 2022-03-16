@@ -2,11 +2,9 @@
     <pageContainer>
         <Row class="all-wrapper p20">
             <div class="breadcrumb-container mb10">
-                <span class="breadcrumb">{{ $t('projects.projects') }}</span>
-                <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb-item-link">{{ $t('ruleTemplate.ruleTemplate') }}</span>
             </div>
-            <Cell v-if="userRole" span="1" class="flex pb20">
+            <Cell span="1" class="flex pb20">
                 <Wb-button type="primary" class="mr10" @click="deleteAction">
                     <Icon type="delete" size="14" />
                     {{ $t('common.delete') }}
@@ -19,21 +17,33 @@
                 <Tabs v-model="tabType">
                     <Tab :label="$t('ruleTemplatelist.baseTemplate')" name="1">
                         <Wb-table ref="listTable" :data="list" border :no-data-text="$t('common.noData')">
-                            <Column v-if="userRole" type="selection" />
+                            <Column type="selection" width="60px" />
                             <Column prop="template_id" :name="$t('ruleTemplatelist.templateId')" />
-                            <Column prop="template_name" width="40%" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column prop="template_name" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column prop="datasource_type" :name="$t('ruleTemplatelist.dataSourceType')" :filter="dataSourceTypeFilter" />
+                            <Column prop="template_type" :name="$t('ruleTemplatelist.templateType')" :filter="templateTypeFilter" />
+                            <Column prop="save_mid_table" :name="$t('ruleTemplatelist.saveData')" :filter="booleanFilter" />
                             <Column :name="$t('common.detail')" :component="operationComponent" />
                         </Wb-table>
-                        <Pagination v-if="tabType ==='1'" class="pt20" :size-list="sizeList" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                        <div class="table-pagination pt20">
+                            <span class="table-pagination-total">{{ $t('common.pageinfo', { total: listTotal, pageTotal: pagination.total }) }}</span>
+                            <Pagination v-if="tabType ==='1'" :size-list="sizeList" :current="pagination.page" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                        </div>
                     </Tab>
                     <Tab :label="$t('ruleTemplatelist.multiTableTemplate')" name="2">
                         <Wb-table ref="multiTable" :data="multiData" border :no-data-text="$t('common.noData')">
-                            <Column v-if="userRole" type="selection" />
+                            <Column type="selection" width="60px" />
                             <Column prop="template_id" :name="$t('ruleTemplatelist.templateId')" />
-                            <Column prop="template_name" width="40%" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column prop="template_name" :name="`${$t('ruleTemplatelist.templateName')}`" />
+                            <Column prop="datasource_type" :name="$t('ruleTemplatelist.dataSourceType')" :filter="dataSourceTypeFilter" />
+                            <Column prop="template_type" :name="$t('ruleTemplatelist.templateType')" :filter="templateTypeFilter" />
+                            <Column prop="save_mid_table" :name="$t('ruleTemplatelist.saveData')" :filter="booleanFilter" />
                             <Column :name="$t('common.operate')" :component="operationComponent" />
                         </Wb-table>
-                        <Pagination v-if="tabType ==='2'" class="pt20" :size-list="sizeList" :page="multiPagination.page" :size="multiPagination.size" :total="multiPagination.total" @on-change="changePage" />
+                        <div class="table-pagination pt20">
+                            <span class="table-pagination-total">{{ $t('common.pageinfo', { total: multiTotal, pageTotal: multiPagination.total }) }}</span>
+                            <Pagination v-if="tabType ==='2'" :size-list="sizeList" :current="multiPagination.page" :page="multiPagination.page" :size="multiPagination.size" :total="multiPagination.total" @on-change="changePage" />
+                        </div>
                     </Tab>
                 </Tabs>
             </Cell>
@@ -44,7 +54,7 @@
                     <Cell span="11">
                         <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]"
                             :label="`${$t('ruleTemplatelist.templateName')}`" prop="name">
-                            <WbInput v-model="name" :placeholder="$t('common.pleaseEnter')"  :disabled="edit" />
+                            <WbInput v-model="name" :disabled="edit" :placeholder="$t('common.pleaseEnter')" />
                         </FormItem>
                     </Cell>
                     <Cell span="11" offset="1">
@@ -72,8 +82,8 @@
                         </Form-item>
                     </Cell>
                     <Cell span="11" offset="1">
-                         <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="$t('ruleTemplatelist.dataSourceType')" prop="sourceType">
-                            <WbSelect v-model="sourceType">
+                        <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="$t('ruleTemplatelist.dataSourceType')" prop="sourceType">
+                            <WbSelect v-model="sourceType" multiple>
                                 <WbOption v-for="(item, index) in sourceList" :key="index" :value="item.key" :label="item.value" />
                             </WbSelect>
                         </FormItem>
@@ -87,7 +97,7 @@
                             </WbSelect>
                         </FormItem>
                     </Cell>
-                     <Cell span="11" offset="1">
+                    <Cell span="11" offset="1">
                         <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('label.statisticalFunction')}`" prop="func_name">
                             <WbInput v-model="func_name" :placeholder="$t('common.pleaseEnter')" />
                         </FormItem>
@@ -184,7 +194,7 @@
                     <WbButton class="submit-button mr10" @click="cancel">
                         {{ $t('common.cancel') }}
                     </WbButton>
-                    <WbButton type="primary" class="submit-button" @click="submit">
+                    <WbButton ref="addBtn" type="primary" class="submit-button" @click="submit">
                         {{ $t('common.ok') }}
                     </WbButton>
                 </div>
@@ -197,12 +207,27 @@
     import { sizeList } from 'assets/js/sizeList';
     import pageContainer from '../../components/template';
     import Vue from 'vue';
+    const DATASOURCE_TYPE_MAPPING = {
+        1: 'hive',
+        2: 'mysql',
+        3: 'tdsql',
+        4: 'kafka'
+    };
+    const TEMPLATE_TYPE_MAPPING = {
+        1: 'SQL',
+        2: 'Java',
+        3: 'Scala',
+        4: 'Python'
+    };
     export default {
         FesHeader: true,
         FesLeft: false,
         FesData: {},
         FesSyncData: {},
         FesReady: function () {
+            // 拿本地缓存页码
+            this.pagination = Object.assign(this.pagination, this.FesStorage.get("paginationRuleTemplateList") || {});
+            this.multiPagination = Object.assign(this.multiPagination, this.FesStorage.get("multiPaginationRuleTemplateList") || {});
             this.init()
         },
         components: {
@@ -211,12 +236,14 @@
         data() {
             const that = this;
             return {
+                listTotal: 0,
                 list: [],
                 pagination: {
                     page: 1,
                     size: 15,
                     total: 0
                 },
+                multiTotal: 0,
                 multiPagination: {
                     page: 1,
                     size: 15,
@@ -248,7 +275,7 @@
                 dbName: '',
                 tableName: '',
                 field: '',
-                sourceType: '', //数据源类型
+                sourceType: [], //数据源类型
                 func_name: '',
                 template_id: '',
                 parseFormatList: [{
@@ -286,8 +313,11 @@
                     value: 'MYSQL',
                     key: 2
                 }, {
-                    value: 'KAFKA',
+                    value: 'TDSQL',
                     key: 3
+                }, {
+                    value: 'KAFKA',
+                    key: 4
                 }],
                 statisticalFun: [
                     {
@@ -371,6 +401,9 @@
                 },{
                     value: this.$t('ruleTemplatelist.postcondition'),
                     code: 21
+                }, {
+                    value: this.$t('ruleTemplatelist.replaceEmptyFieldAndJoin'),
+                    code: 24
                 }],
                 templateItem: [
                     {
@@ -407,7 +440,7 @@
                         methods: {
                             async editAction() {
                                 that.edit = true;
-                                await that.FesApi.fetch(`api/v1/admin/rule_template/modify/detail/${trData.template_id}`, {}, 'get').then((res)=> {
+                                await that.FesApi.fetch(`api/v1/projector/rule_template/modify/detail/${trData.template_id}`, {}, 'get').then((res)=> {
                                     let {
                                         template_id,
                                         template_name,
@@ -451,11 +484,20 @@
                                 })
                             },
                             deleteAction() {
-                                if (trData.template_id < 20) return that.$Toast.warn(that.$t('ruleTemplatelist.notDeleteTemplate'));
+                                const roles = this.FesFesx.get('userRole') || [];
+                                const isAdmin = roles.includes('admin');
+                                const userName = this.FesApp.get('FesUserName');
+                                // 非管理员用户，不能删除 template_level 为 1 的模板，(内置模板)
+                                const flag1 = !isAdmin && trData.template_level === 1;
+                                // 管理员用户，不能删除 template_level 为 1 并且 (没有创建用户的模板 或者 创建用户不是本人) 的模板（内置模板）
+                                const flag2 = isAdmin && trData.template_level === 1 && (!trData.creator || trData.creator !== userName);
+                                if (flag1 || flag2) return that.$Toast.warn(that.$t('ruleTemplatelist.notDeleteTemplate'));
                                 that.$Message.confirm(that.$t('common.prompt'), `${that.$t('ruleTemplatelist.deleteTemplate', {name: trData.template_name})}`).then(index=> {
                                     if (index === 0) {
-                                        that.FesApi.fetch(`api/v1/admin/rule_template/default/delete/${trData.template_id}`, {}, 'post').then(()=> {
+                                        that.FesApi.fetch(`api/v1/projector/rule_template/default/delete/${trData.template_id}`, {}, 'post').then(()=> {
                                             that.$Toast.success(that.$t('toastSuccess.deleteSuccess'));
+                                            if(that.list.length <= 1) that.pagination.page = that.pagination.page - 1;
+                                            if(that.multiData.length <= 1) that.multiPagination.page = that.multiPagination.page - 1;
                                             that.init()
                                         })
                                     }
@@ -472,18 +514,23 @@
                             }
                         },
                         render: function (createElement) {
-                            let role = this.FesFesx.get('userRole') === 'admin' ? true : false;
+                            // let userRole = this.FesFesx.get('userRole') || [];
+                            // let role = userRole.some((i) => {
+                            //     return i.match('admin')
+                            // })
                             let arr = [
                                 {
                                     text: this.editText,
                                     handle: this.editAction,
                                     color: '',
-                                    admin: role
+                                    // admin: role
+                                    admin: true
                                 }, {
                                     text: this.deleteText,
                                     handle: this.deleteAction,
                                     color: 'rgb(245, 34, 45)',
-                                    admin: role
+                                    // admin: role
+                                    admin: true
                                 }, {
                                     text: this.detailText,
                                     handle: this.toDetail,
@@ -521,8 +568,22 @@
                 return this.edit === true ? this.$t('common.edit') : this.$t('common.addTo')
             },
             userRole() {
-                return this.FesFesx.get('userRole') === 'admin' ? true : false;
+                let userRole = this.FesFesx.get('userRole') || [];
+                return userRole.some((i) => {
+                    return i.match('admin')
+                })
             }
+        },
+        beforeRouteLeave (to, from, next) {
+            // 离开组件时将页码存储下来
+            if(to.path === '/ruleTemplateList/detail') {
+                this.FesStorage.set("paginationRuleTemplateList", this.pagination);
+                this.FesStorage.set("multiPaginationRuleTemplateList", this.multiPagination);
+            } else {
+                this.FesStorage.remove('paginationRuleTemplateList');
+                this.FesStorage.remove('multiPaginationRuleTemplateList');
+            }
+            next()
         },
         methods: {
             init() {
@@ -535,6 +596,7 @@
                     size: this.pagination.size
                 });
                 this.showLoading = false;
+                this.listTotal = total;
                 this.list = data;
                 this.pagination.total = Math.ceil(total/this.pagination.size);
             },
@@ -545,8 +607,21 @@
                     size: this.multiPagination.size
                 })
                 let total = result.total;
+                this.multiTotal = total;
                 this.multiData = result.data;
                 this.multiPagination.total = Math.ceil(total/this.multiPagination.size);
+            },
+            dataSourceTypeFilter(value) {
+                if (!value) return value;
+                const tempData = Array.isArray(value) ? value : [value];
+                return tempData.map((item) => DATASOURCE_TYPE_MAPPING[item] || item).join(', ');
+            },
+            templateTypeFilter(value) {
+                return TEMPLATE_TYPE_MAPPING[value] || value;
+            },
+            booleanFilter(value) {
+                if (value === undefined || value === null) return '';
+                return value ? this.$t('common.yes') : this.$t('common.no');
             },
             changePage({current, size}) {
                 if(this.tabType === '1'){
@@ -583,8 +658,10 @@
                 let params = {ruleTemplateIdList: ids};
                 this.$Message.confirm(this.$t('common.prompt'), `${this.$t('ruleTemplatelist.deleteTemplate', {name})}`).then(index=> {
                     if (index === 0) {
-                        this.FesApi.fetch(`/api/v1/admin/rule_template/delete/all`, params, 'post').then(()=> {
+                        this.FesApi.fetch(`/api/v1/projector/rule_template/delete/all`, params, 'post').then(()=> {
                             this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                            if(this.list.length <= 1) this.pagination.page = this.pagination.page - 1;
+                            if(this.multiData.length <= 1) this.multiPagination.page = this.multiPagination.page - 1;
                             this.init()
                         })
                     }
@@ -604,7 +681,7 @@
                     dbName: '',
                     tableName: '',
                     field: '',
-                    sourceType: '',
+                    sourceType: [],
                     formatValue: '',
                     saveTable: false,
                     templateSql: '',
@@ -681,14 +758,14 @@
                         }
                         let url = '', mes = '';
                         if (this.edit) {
-                            url = 'api/v1/admin/rule_template/default/modify';
+                            url = 'api/v1/projector/rule_template/default/modify';
                             params.template_id = template_id;
                             mes = this.$t('toastSuccess.editSuccess')
                         }else {
-                            url = 'api/v1/admin/rule_template/default/add';
+                            url = 'api/v1/projector/rule_template/default/add';
                             mes = this.$t('toastSuccess.addSuccess')
                         }
-                        this.FesApi.fetch(url, params, 'post').then(()=> {
+                        this.FesApi.fetch(url, params, {method: 'post', button: this.$refs.addBtn}).then(()=> {
                             this.cancel();
                             this.$Toast.success(mes)
                             this.init();
@@ -713,7 +790,11 @@
             },
             remove() {
 
-            }
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
         }
     };
 </script>
@@ -747,7 +828,7 @@
         }
     }
     .select-container {
-        ::v-deep
+        /deep/
         .ui-select-dropdown {
             max-height: 120px !important;
         }

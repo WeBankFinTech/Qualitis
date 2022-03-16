@@ -21,8 +21,6 @@ import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectUserReposi
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
 import com.webank.wedatasphere.qualitis.query.queryqo.DataSourceQo;
-import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
-import com.webank.wedatasphere.qualitis.query.queryqo.DataSourceQo;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -51,13 +49,42 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
     }
 
     @Override
+    public List<ProjectUser> findByUsernameAndPermissionAndProjectType(String username, Integer projectType, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return projectUserRepository.findByUserNameAndPermissionAndProjectType(username, projectType, pageable).getContent();
+    }
+
+    @Override
+    public List<Project> findByUsernameAndPermission(String username, List<Integer> permissions) {
+        return projectUserRepository.findByUserNameAndPermissions(username, permissions);
+    }
+
+    @Override
     public Long countByUsernameAndPermissionAndProjectType(String username, Integer permission, Integer projectType) {
         return projectUserRepository.countByUserNameAndPermissionAndProjectType(username, permission, projectType);
     }
 
     @Override
+    public Long countByUsernameAndPermissionAndProjectType(String username, Integer projectType) {
+        return projectUserRepository.countByUserNameAndPermissionAndProjectType(username, projectType);
+    }
+
+    @Override
+    public Long countByUsernameAndPermission(String username, List<Integer> permissions) {
+        return projectUserRepository.countByUserNameAndPermission(username, permissions);
+    }
+
+    @Override
     public List<ProjectUser> findByProject(Project project) {
         return projectUserRepository.findByProject(project);
+    }
+
+    @Override
+    public List<ProjectUser> findByProjectPageable(Project project, int page, int size) {
+        Sort sort = new Sort(Sort.Direction.ASC, "userName");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return projectUserRepository.findByProject(project, pageable).getContent();
     }
 
     @Override
@@ -68,7 +95,7 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
                 predicates.add(cb.equal(root.get("userName"), param.getUser()));
             }
             if (param.getUserType() != null && param.getUserType().length > 0) {
-                predicates.add(root.get("permission").in(param.getUserType()));
+                predicates.add(root.get("permission").in((Object[]) param.getUserType()));
             }
             Predicate[] p = new Predicate[predicates.size()];
             query.where(cb.and(predicates.toArray(p)));
@@ -85,5 +112,10 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
     @Override
     public void deleteByProject(Project project) {
         projectUserRepository.deleteByProject(project);
+    }
+
+    @Override
+    public void deleteByProjectAndUserName(Project project, String userName) {
+        projectUserRepository.deleteByProjectAndUserName(project, userName);
     }
 }

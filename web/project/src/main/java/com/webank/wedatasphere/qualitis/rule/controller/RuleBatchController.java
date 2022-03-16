@@ -22,11 +22,6 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -56,16 +51,18 @@ public class RuleBatchController {
     @Path("download")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> downloadRules(DownloadRuleRequest downloadRuleRequest, @Context HttpServletResponse response) throws UnExpectedRequestException {
+    public GeneralResponse<?> downloadRules(DownloadRuleRequest downloadRuleRequest, @Context HttpServletResponse response)
+        throws UnExpectedRequestException, WriteExcelException {
         try {
             return ruleBatchService.downloadRules(downloadRuleRequest, response);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (WriteExcelException e) {
-            LOGGER.error("Failed to write rules, caused by : {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_WRITE_RULES}", null);
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         }catch (Exception e) {
-            LOGGER.error("Failed to download rules, caused by: {}", e.getMessage(), e);
+            LOGGER.error("Failed to download rules, caused by system error: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DOWNLOAD_RULES}", null);
         }
     }
@@ -76,23 +73,24 @@ public class RuleBatchController {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public GeneralResponse<?> uploadRules(@FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileDisposition,
                                           @PathParam("projectId") Long projectId)
-            throws UnExpectedRequestException {
+        throws UnExpectedRequestException, MetaDataAcquireFailedException {
         try {
             return ruleBatchService.uploadRules(fileInputStream, fileDisposition, projectId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (MetaDataAcquireFailedException e) {
-            LOGGER.error("Failed to get cluster mapping, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         }  catch (SemanticException e) {
-            LOGGER.error("Failed to get db and table from sql. Database and table must be written as follow: [db.table]. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_DB_AND_TABLE_FROM_SQL}", null);
+            LOGGER.error(e.getMessage(), e);
+            throw new UnExpectedRequestException("{&FAILED_TO_GET_DB_AND_TABLE_FROM_SQL}");
         } catch (ParseException e) {
-            LOGGER.error("Failed to parse sql. please check your sql. caused by: {}, ", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_PARSE_SQL}", null);
+            LOGGER.error(e.getMessage(), e);
+            throw new UnExpectedRequestException("{&FAILED_TO_PARSE_SQL}");
         } catch (Exception e) {
-            LOGGER.error("Failed to upload rules, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_UPLOAD_RULES}, caused by " + e.getMessage(), null);
+            LOGGER.error("Failed to upload rules, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_UPLOAD_RULES}", null);
         }
     }
 

@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class DataQualityTaskException extends Exception {
-
     public DataQualityTaskException(String message) {
         super(message);
     }

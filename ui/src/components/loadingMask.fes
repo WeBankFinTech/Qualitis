@@ -1,0 +1,62 @@
+<template>
+    <div v-if="show" :class="{'mask-wrap':mask}">
+        <div v-if="text" class="loading wrap">
+            <p v-if="text" class="text">{{ text }}</p><Loading size="36px" />
+        </div>
+        <Loading v-else class="loading" size="50px" />
+    </div>
+</template>
+
+<script>
+// 我是左侧菜单下方的自定义内容
+// 请勿删除fesLeft.fes
+export default {
+    props: {
+        show: {
+            type: Boolean,
+            default: false
+        },
+        mask: {
+            type: Boolean,
+            default: true
+        },
+        text: {
+            type: String,
+            default: ''
+        }
+    },
+    data() {
+        return {}
+    }
+}
+</script>
+
+<style scoped>
+.mask-wrap{
+    width:100%;
+    height: 100%;
+    position: fixed;
+    top: 0px;
+    left:0px;
+    background: rgba(0,0,0,0.5);
+    z-index: 1001;
+}
+.loading{
+    position: absolute;
+    top:50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+}
+.wrap {
+    background: #fff;
+    width: 200px;
+    height: 150px;
+    text-align: center;
+    border-radius: 4px;
+}
+.text {
+    margin: 20px;
+    font-size: 14px;
+}
+</style>

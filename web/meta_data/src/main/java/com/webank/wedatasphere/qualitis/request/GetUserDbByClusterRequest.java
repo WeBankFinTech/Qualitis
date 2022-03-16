@@ -32,6 +32,8 @@ public class GetUserDbByClusterRequest {
     private Integer pageSize;
     @JsonProperty("cluster_name")
     private String clusterName;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
 
     public GetUserDbByClusterRequest() {
         startIndex = DEFAULT_START_INDEX;
@@ -60,5 +62,13 @@ public class GetUserDbByClusterRequest {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 }

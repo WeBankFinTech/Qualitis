@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.dao;
 
-import com.webank.wedatasphere.qualitis.entity.Role;
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.Role;
 
 import java.util.List;
@@ -66,4 +66,18 @@ public interface RoleDao {
      * @return
      */
     long countAll();
+
+    /**
+     * Find by department.
+     * @return
+     * @param departmentInDb
+     */
+    Role findByDepartment(Department departmentInDb);
+
+    /**
+     * Check template.
+     * @return
+     * @param roleInDb
+     */
+    boolean checkTemplate(Role roleInDb);
 }

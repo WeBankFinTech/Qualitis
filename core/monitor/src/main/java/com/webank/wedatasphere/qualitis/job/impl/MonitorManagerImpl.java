@@ -22,7 +22,7 @@ import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
-import com.webank.wedatasphere.qualitis.job.MonitorManager;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,17 +31,16 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class MonitorManagerImpl implements MonitorManager {
-
     @Autowired
     private AbstractJobSubmitter abstractJobSubmitter;
 
     @Override
-    public String getTaskStatus(Integer taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
-        return abstractJobSubmitter.getTaskStatus(taskId, user, remoteAddress, clusterName);
+    public Map<String, Object> getTaskStatus(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
+        return abstractJobSubmitter.getTaskStatusAndProgressAndErrCode(taskId, user, remoteAddress, clusterName);
     }
 
     @Override
-    public LogResult getTaskPartialLog(Integer taskId, Integer begin, String user, String remoteAddress, String clusterName) throws LogPartialException, ClusterInfoNotConfigException {
+    public LogResult getTaskPartialLog(Long taskId, Integer begin, String user, String remoteAddress, String clusterName) throws LogPartialException, ClusterInfoNotConfigException {
         return abstractJobSubmitter.getJobPartialLog(taskId, begin, user, remoteAddress, clusterName);
     }
 }

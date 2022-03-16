@@ -21,14 +21,14 @@ import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -41,19 +41,21 @@ public class CheckTableResponse {
     private List<String> columnNames;
     @JsonProperty("alarm_variable")
     private List<CheckAlarmVariable> checkAlarmVariables;
-    private Double result;
+    private String result;
     @JsonProperty("save_table")
     private String saveTable;
 
-    public CheckTableResponse() {
-    }
-
-    public CheckTableResponse(TaskDataSource taskDataSource, Map<Long, TaskRuleSimple> taskRuleSimpleMap, Map<Long, TaskResult> taskResultMap) {
+    public CheckTableResponse(TaskDataSource taskDataSource, Map<Long, TaskRuleSimple> taskRuleSimpleMap, Map<Long, List<TaskResult>> taskResultMap) {
         Long ruleId = taskDataSource.getRuleId();
         this.ruleName = taskRuleSimpleMap.get(ruleId).getRuleName();
-        this.columnNames = Arrays.asList(taskDataSource.getColName().split(","));
-        TaskResult taskResult = taskResultMap.get(ruleId);
-        this.result = taskResult == null? null : taskResult.getValue();
+        String col = taskDataSource.getColName();
+        if (StringUtils.isNotBlank(col)) {
+            this.columnNames = Arrays.asList(col.split(","));
+        }
+        List<TaskResult> taskResults = taskResultMap.get(ruleId);
+        if (CollectionUtils.isNotEmpty(taskResults)) {
+            this.result = taskResults.stream().map(TaskResult::getValue).map(value -> value == null ? "0 " : value + " ").collect(Collectors.joining());
+        }
         this.saveTable = taskRuleSimpleMap.get(ruleId).getMidTableName();
         this.checkAlarmVariables = new ArrayList<>();
         for (TaskRuleAlarmConfig taskRuleAlarmConfig : taskRuleSimpleMap.get(ruleId).getTaskRuleAlarmConfigList()) {
@@ -86,11 +88,11 @@ public class CheckTableResponse {
         this.checkAlarmVariables = checkAlarmVariables;
     }
 
-    public Double getResult() {
+    public String getResult() {
         return result;
     }
 
-    public void setResult(Double result) {
+    public void setResult(String result) {
         this.result = result;
     }
 

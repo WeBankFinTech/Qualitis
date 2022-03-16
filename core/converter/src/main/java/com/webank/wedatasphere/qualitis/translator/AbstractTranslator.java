@@ -20,37 +20,36 @@ import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
 import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 
+import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author howeye
  */
 public abstract class AbstractTranslator {
-
-
     /**
-     * Generate persistence statement
+     * Generate persistence statement.
      * @param ruleId
+     * @param ruleMetricMaps
      * @param templateStatisticsInputMetas
      * @param applicationId
      * @param ruleVariables
      * @param createTime
      * @param count
+     * @param runDate
      * @return
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
      */
-    public abstract List<String> persistenceTranslate(Long ruleId, Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables,
-                                                      String createTime, Integer count) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
+    public abstract List<String> persistenceTranslate(Long ruleId, Map<String, Long> ruleMetricMaps,
+        Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables,
+        String createTime, Integer count, String runDate) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
 
     /**
-     * Generate initial statement
+     * Generate initial statement.
      * @return
      */
     public abstract List<String> getInitSentence();

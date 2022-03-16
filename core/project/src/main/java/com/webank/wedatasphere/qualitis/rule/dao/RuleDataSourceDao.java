@@ -64,7 +64,7 @@ public interface RuleDataSourceDao {
      * @param user
      * @return
      */
-    List<Map<String, String>> findProjectDsByUser(String user);
+    List<Map<String, Object>> findProjectDsByUser(String user);
 
     /**
      * Paging query rule datasource
@@ -73,7 +73,7 @@ public interface RuleDataSourceDao {
      * @param size
      * @return
      */
-    List<Map<String, String>> findProjectDsByUser(String user, int page, int size);
+    List<Map<String, Object>> findProjectDsByUser(String user, int page, int size);
 
     /**
      * Find rules related with cluster name, database name ,table name, column name.
@@ -87,6 +87,30 @@ public interface RuleDataSourceDao {
     List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user);
 
     /**
+     * Paging rules related with cluster name, database name ,table name, column name.
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param colName
+     * @param user
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user, int page, int size);
+
+    /**
+     * Count.
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @param colName
+     * @param user
+     * @return
+     */
+    int countRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user);
+
+    /**
      * Filter rule datasource
      * @param user
      * @param clusterName
@@ -94,7 +118,7 @@ public interface RuleDataSourceDao {
      * @param tableName
      * @return
      */
-    List<Map<String, String>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName);
+    List<Map<String, Object>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName);
 
     /**
      * Filter rule datasource pageable.
@@ -106,5 +130,32 @@ public interface RuleDataSourceDao {
      * @param size
      * @return
      */
-    List<Map<String, String>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size);
+    List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size);
+
+    /**
+     * Save rule datasource
+     * @param newRuleDataSource
+     * @return
+     */
+    RuleDataSource saveRuleDataSource(RuleDataSource newRuleDataSource);
+
+    /**
+     * Find cols' name.
+     * @param user
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @return
+     */
+    List<String> findColsByUser(String user, String clusterName, String dbName, String tableName);
+
+    /**
+     * Find all datasources by user.
+     * @param user
+     * @param clusterName
+     * @param dbName
+     * @param tableName
+     * @return
+     */
+    List<RuleDataSource> findDatasourcesByUser(String user, String clusterName, String dbName, String tableName);
 }

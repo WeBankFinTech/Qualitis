@@ -24,13 +24,13 @@ import com.webank.wedatasphere.qualitis.entity.TaskResult;
 public class MultiRuleResultResponse {
 
     private Integer index;
-    private Double value;
+    private String value;
 
     public MultiRuleResultResponse() {
     }
 
     public MultiRuleResultResponse(TaskResult taskResult, Integer index) {
-        this.value = taskResult == null? null : taskResult.getValue();
+        this.value = taskResult == null ? null : taskResult.getValue();
         this.index = index;
     }
 
@@ -42,11 +42,11 @@ public class MultiRuleResultResponse {
         this.index = index;
     }
 
-    public Double getValue() {
+    public String getValue() {
         return value;
     }
 
-    public void setValue(Double value) {
+    public void setValue(String value) {
         this.value = value;
     }
 }

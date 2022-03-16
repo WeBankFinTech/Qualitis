@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.response.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.User;
 
 /**
  * @author howeye
@@ -30,7 +29,8 @@ public class UserResponse {
     private String username;
     @JsonProperty("chinese_name")
     private String chineseName;
-    private String department;
+    @JsonProperty("department")
+    private String departmentName;
 
     public UserResponse() {
         // Default Constructor
@@ -38,9 +38,9 @@ public class UserResponse {
 
     public UserResponse(User user) {
         this.userId = user.getId();
-        this.username = user.getUsername();
+        this.username = user.getUserName();
         this.chineseName = user.getChineseName();
-        this.department = user.getDepartment();
+        this.departmentName = user.getDepartment() != null ? user.getDepartment().getName() : "";
     }
 
     public Long getUserId() {
@@ -67,21 +67,21 @@ public class UserResponse {
         this.chineseName = chineseName;
     }
 
-    public String getDepartment() {
-        return department;
+    public String getDepartmentName() {
+        return departmentName;
     }
 
-    public void setDepartment(String department) {
-        this.department = department;
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
     }
 
     @Override
     public String toString() {
         return "UserResponse{" +
-                "userId=" + userId +
-                ", username='" + username + '\'' +
-                ", chineseName='" + chineseName + '\'' +
-                ", department='" + department + '\'' +
-                '}';
+            "userId=" + userId +
+            ", username='" + username + '\'' +
+            ", chineseName='" + chineseName + '\'' +
+            ", departmentName='" + departmentName + '\'' +
+            '}';
     }
 }

@@ -13,16 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// web sub_project dependencies
-project(':web/analysis') {
-  archivesBaseName = 'web_analysis'
-
-  dependencies{
-
-  }
-}
-
 project(':web/app') {
   archivesBaseName = 'web_app'
 
@@ -37,15 +27,15 @@ project(':web/app') {
   dependencies {
     compile libs.springBootStarter
     compile libs.springBootStarterWeb
+    compile libs.springBootStarterParent
     compile libs.springBootStarterJersey
     compile libs.springBootStarterJetty
     compile libs.springBootStarterLog4j2
     compile libs.springBootStarterTest
     compile libs.springBootStarterAop
-    compile libs.dssAppJointAuth
-//    compile (libs.springAop) {
-//      force = true
-//    }
+//    compile libs.dssAppJointAuth
+    compile libs.dssSso
+    compile libs.dssSpringSso
     compile libs.springAop
     compile libs.springAspects
     compile libs.springBeans
@@ -62,20 +52,22 @@ project(':web/app') {
     compile libs.jacksonDatabind
     compile libs.jacksonAnnotations
     compile libs.fastJson
-    compile libs.log4j
     compile libs.dom4j
     compile libs.apiUtil
     compile libs.nettyAll
     compile libs.nettyTransport
     compile libs.derby
-    compile libs.zookeeper
+    compile (libs.zookeeper) {
+      exclude group: 'org.slf4j'
+      exclude group: 'log4j'
+    }
     compile libs.log4jCore
     compile project(':web/user')
     compile project(':web/sys_config')
     compile project(':web/meta_data')
     compile project(':web/project')
     compile project(':web/scheduler')
-    compile project(':web/staff')
+    compile project(':web/metric')
   }
 }
 
@@ -87,9 +79,9 @@ project(':web/meta_data') {
     compile libs.springBootStarterJersey
     compile libs.commonsLang
 
-    compile project(":core/meta_data")
     compile project(':web/common')
     compile project(':web/project')
+    compile project(":core/meta_data")
   }
 }
 
@@ -112,6 +104,24 @@ project(':web/project') {
   }
 }
 
+project(':web/metric') {
+  archivesBaseName = 'web_metric'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.commonsLang
+    compile libs.jerseyMediaMultipart
+    compile libs.easyExcel
+
+    compile project(":web/user")
+    compile project(":web/meta_data")
+    compile project(":core/metric")
+  }
+}
+
 project(':web/scheduler') {
   archivesBaseName = 'web_scheduler'
 
@@ -119,12 +129,13 @@ project(':web/scheduler') {
     compile libs.springBootStarter
     compile libs.springBootStarterJersey
     compile libs.commonsLang
-
-    compile project(':web/common')
-    compile project(':web/project')
     compile project(':web/task')
-    compile project(':core/scheduler')
+    compile project(':web/common')
+    compile project(':web/metric')
+    compile project(':web/project')
     compile project(':core/monitor')
+    compile project(':web/meta_data')
+    compile project(':core/scheduler')
     compile project(':util')
   }
 }
@@ -149,11 +160,13 @@ project(':web/task') {
   archivesBaseName = 'web_task'
 
   dependencies{
-    compile libs.springBootStarter
     compile libs.springBootStarterJersey
-
-    compile project(":web/project")
+    compile libs.springBootStarter
+//    compile libs.dssAppJointAuth
+    compile libs.httpClient
+    compile libs.httpMime
     compile project(':core/task')
+    compile project(":web/project")
     compile project(':core/monitor')
   }
 }
@@ -167,22 +180,16 @@ project(':web/user') {
     compile libs.springBootStarterDataJpa
     compile libs.mysqlConnectorJava
     compile libs.commonsLang
+    compile libs.opendjCore
+    compile libs.opendjGrizzly
+    compile libs.forgerockUtil
+    compile libs.i18nCore
+    compile libs.i18nSlf4j
+    compile libs.zip4j
     compile project(':util')
     compile project(':web/common')
     compile project(':core/user')
-  }
-}
-
-project(':web/staff') {
-  archivesBaseName = 'web_staff'
-
-  dependencies {
-    compile libs.springBootStarter
-    compile libs.springBootStarterJersey
-    compile libs.commonsLang
-
-    compile project(":core/user")
-    compile project(':web/common')
+    compile project(':core/project')
   }
 }
 
@@ -209,6 +216,7 @@ project(':core/converter') {
 
   dependencies{
     compile project(':core/divider')
+    compile project(':util')
   }
 }
 
@@ -225,7 +233,17 @@ project(':core/common') {
       exclude group: 'com.sun.jersey'
       exclude group: 'com.sun.jersey.contribs'
       exclude group: 'javax.xml.bind'
+      exclude group: 'log4j'
+
+      configurations {
+        compile.exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
+        compile.exclude group: 'com.google.protobuf', module: 'protobuf-java'
+        compile.exclude group: 'io.netty', module: 'netty'
+      }
     }
+
     compile (libs.hiveExec) {
       exclude group: 'org.apache.commons'
       exclude group: 'commons-lang'
@@ -234,6 +252,13 @@ project(':core/common') {
       exclude group: 'com.sun.jersey'
       exclude group: 'com.sun.jersey.contribs'
       exclude group: 'javax.xml.bind'
+      exclude group: 'log4j'
+      exclude group: 'org.apache.calcite'
+
+      configurations {
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
+      }
     }
   }
 }
@@ -291,6 +316,19 @@ project(':core/project') {
     compile libs.mysqlConnectorJava
 
     compile project(":core/common")
+    compile project(":core/metric")
+  }
+}
+
+project(':core/metric') {
+  archivesBaseName = 'core_metric'
+
+  dependencies{
+    compile libs.commonsLang
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+
+    compile project(":core/user")
   }
 }
 
@@ -303,12 +341,13 @@ project(':core/scheduler') {
     compile libs.curatorClient
     compile libs.gson
 
-    compile project(':core/divider')
     compile project(':core/converter')
+    compile project(':core/analysis')
     compile project(':core/task')
     compile project(':core/sys_config')
     compile libs.springRetry
     compile libs.aspectJ
+    compile libs.druid
   }
 }
 
@@ -320,6 +359,8 @@ project(':core/task') {
     compile libs.mysqlConnectorJava
 
     compile project(':core/common')
+    compile project(':core/project')
+    compile project(":util")
   }
 }
 
@@ -329,8 +370,12 @@ project(':util') {
   archivesBaseName = 'util'
 
   dependencies{
+    compile libs.commonsLang
     compile libs.guava
-    compile libs.slf4j
+    compile (libs.slf4j) {
+      exclude group: 'log4j'
+    }
+    compile libs.jexl3
   }
 }
 

@@ -3,18 +3,16 @@
         <Row class="all-wrapper p20">
             <Cell span="24">
                 <div class="breadcrumb-container mb10">
-                    <span class="breadcrumb">{{ $t('projects.projects') }}</span>
-                    <span class="breadcrumb-item-separator">/</span>
                     <span class="breadcrumb-item-link">{{ $t('myProject.myProject') }}</span>
                 </div>
                 <div>
-                    <Wb-button type="primary" class="mr10" @click="addNewProj"><Icon type="plus" size="14" />
+                    <Wb-button :disabled="showLoading" type="primary" class="mr10" @click="addNewProj"><Icon type="plus" size="14" />
                         {{ $t('common.newProject') }}
                     </Wb-button>
-                    <Wb-button class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importProject') }}
+                    <Wb-button :disabled="showLoading" class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importProject') }}
                         <input ref="projectFile" class="fileInput" type="file" accept=".xlsx" @change="importFile">
                     </Wb-button>
-                    <WbButton v-show="projectList.length" type="warn" class="mr10" @click="exportExcel">
+                    <WbButton v-show="projectList.length" :disabled="showLoading" type="warn" class="mr10" @click="exportExcel">
                         <Icon type="download" size="14" />
                         {{ $t('myProject.downloadProject') }}
                     </WbButton>
@@ -22,125 +20,157 @@
                 <Tabs v-model="tabType" class="mt20">
                     <Tab :label="$t('myProject.ordinaryProject')" name="1">
                         <Wb-table ref="projectTable" :data="projectList" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-td-click="toDetail">
-                            <Column type="selection" />
-                            <Column prop="project_id" :name="$t('label.projectId')" />
-                            <Column prop="project_name" :name="$t('common.projectName')" classes="pointerTag" />
-                            <Column prop="description" :name="$t('common.description')" />
-                            <Column prop="project_label" :name="$t('myProject.label')" :filter="formatLabel" />
-                            <Column prop="create_user" :name="$t('common.founder')" />
-                            <Column prop="create_time" :name="$t('common.createTime')" />
-                            <Column prop="modify_user" :name="$t('common.modifier')" />
-                            <Column prop="modify_time" :name="$t('common.changeTheTime')" />
-                            <Column :name="$t('common.operate')" :component="operationComponent" />
+                            <Column type="selection" width="60px" />
+                            <Column prop="project_id" align="left" :name="$t('label.projectId')" />
+                            <Column prop="project_name" :name="$t('common.projectEnName')" classes="pointerTag" align="left" />
+                            <Column prop="cn_name" :name="$t('common.projectCnName')" align="left" />
+                            <Column prop="description" align="left" :name="$t('common.description')" />
+                            <Column prop="project_label" align="left" width="200px" :name="$t('myProject.label')" :filter="formatLabel" :component="projectLabelComp" />
+                            <Column prop="create_user" align="left" :name="$t('common.founder')" />
+                            <Column prop="create_time" align="left" :name="$t('common.createTime')" />
+                            <Column prop="modify_user" align="left" :name="$t('common.modifier')" />
+                            <Column prop="modify_time" align="left" :name="$t('common.changeTheTime')" />
+                            <Column align="left" :name="$t('common.operate')" :component="operationComponent" />
                         </Wb-table>
-                        <Pagination v-if="tabType ==='1'" :size-list="sizeList" :current="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                        <div class="table-pagination">
+                            <span class="table-pagination-total">{{ $t('common.pageinfo', {total: dataTotal, pageTotal: pagination.total}) }}</span>
+                            <Pagination v-if="tabType ==='1'" :size-list="sizeList" :current="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                        </div>
                     </Tab>
                     <Tab :label="$t('myProject.workflowProject')" name="2">
                         <Wb-table ref="flowProjectTable" :data="flowData" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-td-click="flowProject">
-                            <Column type="selection" />
-                            <Column prop="project_id" :name="$t('label.projectId')" />
-                            <Column prop="project_name" :name="$t('common.projectName')" classes="pointerTag" />
-                            <Column prop="description" :name="$t('common.description')" />
-                            <Column prop="project_label" :name="$t('myProject.label')" :filter="formatLabel" />
-                            <Column prop="create_user" :name="$t('common.founder')" />
-                            <Column prop="create_time" :name="$t('common.createTime')" />
-                            <Column prop="modify_user" :name="$t('common.modifier')" />
-                            <Column prop="modify_time" :name="$t('common.changeTheTime')" />
-                            <Column :name="$t('common.operate')" :action="flowOperation" />
+                            <!-- <Column type="selection" width="60px" /> -->
+                            <Column prop="project_id" align="left" :name="$t('label.projectId')" />
+                            <Column prop="project_name" :name="$t('common.projectEnName')" classes="pointerTag" align="left" />
+                            <Column prop="cn_name" :name="$t('common.projectCnName')" align="left" />
+                            <Column prop="description" align="left" :name="$t('common.description')" />
+                            <Column prop="project_label" align="left" width="200px" :name="$t('myProject.label')" :filter="formatLabel" :component="projectLabelComp" />
+                            <Column prop="create_user" align="left" :name="$t('common.founder')" />
+                            <Column prop="create_time" align="left" :name="$t('common.createTime')" />
+                            <Column prop="modify_user" align="left" :name="$t('common.modifier')" />
+                            <Column prop="modify_time" align="left" :name="$t('common.changeTheTime')" />
                         </Wb-table>
-                        <Pagination v-if="tabType ==='2'" :size-list="sizeList" :current="flowPagination.page" :size="flowPagination.size" :total="flowPagination.total" @on-change="changePage" />
+                        <div class="table-pagination">
+                            <span class="table-pagination-total">{{ $t('common.pageinfo', {total: flowTotal, pageTotal: flowPagination.total}) }}</span>
+                            <Pagination v-if="tabType ==='2'" :size-list="sizeList" :current="flowPagination.page" :size="flowPagination.size" :total="flowPagination.total" @on-change="changePage" />
+                        </div>
                     </Tab>
-                    <div class="project-mes" slot="action" :data-title="`${$t('projects.projectHint')}`">
-                        <icon type="question-circle-o" size="20" />
-                    </div>
                 </Tabs>
-                <Loading v-show="showLoading" class="loading-layout" />
             </Cell>
-            <Modal ref="executionUser" :title="$t('common.runUser')" class="execution-modal">
-                <Wb-form ref="form" :rule="userValidate" :label-width="100">
-                    <FormItem :label="$t('common.runUser')" prop="executor_user">
-                        <WbSelect v-model="executor_user">
-                            <WbOption v-for="(usr,index) in users" :key="index" :value="usr">
-                                {{ usr }}
-                            </WbOption>
-                        </WbSelect>
-                    </FormItem>
-                    <Form-item :label="`${$t('common.condition')}：`" prop="filterCondition">
-                        <wb-input v-model="filterCondition" :placeholder="$t('common.pleaseEnter')" />
-                    </Form-item>
-                    <div class="button-container fr">
-                        <WbButton class="mr10" @click="cancle('executionUser')">
-                            {{ $t('common.cancel') }}
-                        </WbButton>
-                        <WbButton ref="doSave" type="primary" @click="submit">
-                            {{ $t('common.ok') }}
-                        </WbButton>
-                    </div>
-                </Wb-form>
-            </Modal>
-            <Modal ref="addProjectModal" :title="$t('myProject.addOrdinaryProject')" class="project-modal">
-                <Wb-form ref="projectForm" :rule="ruleValidate" :label-width="150">
-                    <Form-item :label="$t('common.projectName')" prop="project_name">
-                        <WbInput v-model="project_name" :maxlength="50" :placeholder="$t('common.pleaseEnter')" />
-                    </Form-item>
-                    <Form-item :label="`${$t('label.projectIntro')}：`" prop="description">
-                        <WbInput v-model="description" :maxlength="500" type="textarea" :placeholder="$t('common.pleaseEnter')" />
-                    </Form-item>
-                    <Form-item :label="`${$t('common.itemTag')}：`">
-                        <div :class="{'mb10' :tagList.length}">
-                            <span v-for="(item, index) in tagList" :key="index" class="labelTag">
-                                {{ item }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
-                            </span>
-                        </div>
-                        <div>
-                            <Wb-button v-if="!inputShowControler" type="ghost" @click="editTag">{{ $t('common.addTag') }}</Wb-button>
-                            <WbInput v-else v-model="newLabel" :placeholder="$t('common.pleaseEnter')" @on-blur="addTag" />
-                        </div>
-                    </Form-item>
-                    <div class="fr">
-                        <Wb-button type="primary" @click="submitPorject">{{ $t('common.ok') }}</Wb-button>
-                    </div>
-                </Wb-form>
-            </Modal>
         </Row>
+        <Modal
+            ref="executionUser"
+            class="execution-modal"
+            :title="executationConfigTitle"
+            :width="1000"
+            @on-close="clearConfigData">
+            <MyExecutationConfig
+                ref="executationConfigRef"
+                :user-data="userConfig"
+                :engine-data="engineConfig"
+                :condition-data="conditionConfig"
+                :spark-data="sparkConfig"
+                @on-update-title="executationConfigTitle = $event" />
+            <div class="button-container fr">
+                <WbButton class="mr10" @click="cancle('executionUser')">
+                    {{ $t('common.cancel') }}
+                </WbButton>
+                <WbButton ref="doSave" type="primary" @click="submit">
+                    {{ $t('common.ok') }}
+                </WbButton>
+            </div>
+        </Modal>
+        <Modal ref="addProjectModal" :title="$t('myProject.addOrdinaryProject')" class="project-modal">
+            <Wb-form ref="projectForm" :rule="ruleValidate" :label-width="FesFesx.isEn ? 160 : 150">
+                <Form-item :label="`${$t('common.projectEnName')}: `" prop="project_name">
+                    <WbInput v-model="project_name" :maxlength="64" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <Form-item :label="`${$t('common.projectCnName')}: `" prop="cn_name">
+                    <WbInput v-model="cn_name" :maxlength="128" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <Form-item :label="`${$t('label.projectIntro')}：`" prop="description">
+                    <WbInput v-model="description" :maxlength="500" type="textarea" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <Form-item :label="`${$t('common.itemTag')}：`">
+                    <div :class="{'mb10' :tagList.length}">
+                        <span v-for="(item, index) in tagList" :key="index" class="labelTag">
+                            {{ item }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
+                        </span>
+                    </div>
+                    <div>
+                        <Wb-button v-if="!inputShowControler" type="ghost" @click="editTag">{{ $t('common.addTag') }}</Wb-button>
+                        <WbInput v-else v-model="newLabel" :placeholder="$t('common.pleaseEnter')" @on-blur="addTag" />
+                    </div>
+                </Form-item>
+                <div class="fr">
+                    <Wb-button type="primary" @click="submitPorject">{{ $t('common.ok') }}</Wb-button>
+                </div>
+            </Wb-form>
+        </Modal>
+        <div v-show="showLoading" class="mask">
+            <Loading class="loading-layout" />
+        </div>
     </pageContainer>
 </template>
 <script type="text/ecmascript-6">
-    import { isIE, forceDownload } from 'assets/js/utils';
+    import Vue from 'vue';
+    import {
+        isIE,
+        forceDownload
+    } from 'assets/js/utils';
+    import { COMMON_REG } from '../../../assets/js/const';
     import { sizeList } from 'assets/js/sizeList';
     import pageContainer from '../../../components/template';
-    import Vue from 'vue';
+    import MyExecutationConfig from '../../../components/myExecutationConfig';
+    import { buildTooltipCellComponent } from '../../../assets/js/utils';
     export default {
         FesHeader: true,
         FesLeft: false,
         FesData: {},
         FesSyncData: {},
         FesReady: function () {
-            this.init()
+            // 拿本地缓存页码
+            this.pagination = Object.assign(this.pagination, this.FesStorage.get("paginationProjects") || {});
+            this.tabType = this.FesStorage.get("paginationProjectsTabType") || '1';
+            this.flowPagination = Object.assign(this.flowPagination, this.FesStorage.get("flowPaginationProjects") || {});
+            // 强制更改tabs的样式ui-tabs-header-swap
+            this.$nextTick(() => {
+                let uiTabsHeaderSwap = window.document.getElementsByClassName('ui-tabs-header-swap');
+                uiTabsHeaderSwap = uiTabsHeaderSwap[0];
+                let template = `<div class="uiTabsHeaderSwap-project-mes" data-title="${this.$t('projects.projectHint')}">
+                                    <i class="ui-icon ui-icon-question-circle-o" style="font-size: 20px;"></i>
+                                </div>`;
+                let _tdom=document.createElement("div");
+                _tdom.innerHTML = template;
+                uiTabsHeaderSwap.appendChild(_tdom);
+            });
+            this.init();
         },
         components: {
-            pageContainer
+            pageContainer,
+            MyExecutationConfig
         },
         data() {
             const that = this;
             return {
+                executationConfigTitle: '',
                 projectList: [],
                 pagination: {
                     page: 1,
                     size: 15,
                     total: 0
                 },
+                dataTotal: 0,
+                flowTotal: 0,
                 sizeList,
-                showLoading: true,
+                showLoading: false,
                 delete: '',
                 shortStaffList: [],
                 staffList: [],
-                filterCondition: '',
                 project_id: '',
                 project_name: '',
+                cn_name: '',
                 description: '',
-                executor_user: [],
-                users: [],
                 tabType: '1',
                 flowData: [],
                 flowPagination: {
@@ -152,6 +182,9 @@
                 label: "",
                 newLabel: "",
                 tagList: [],
+                projectLabelComp(row) {
+                    return buildTooltipCellComponent(Vue, row, 'project_label', {direction: 'bottom', filter: this.formatLabel});
+                },
                 operationComponent: function (trData) {
                     return new Vue({
                         data() {
@@ -195,78 +228,75 @@
                             }))
                         }
                     })
+                },
+                // 执行用户配置
+                userConfig: {
+                    // 执行用户
+                    execution_user: ''
+                },
+                // 引擎配置
+                engineConfig: {
+                    // 切换集群
+                    cluster_name: '',
+                    // 引擎复用
+                    engine_reuse: false,
+                    // 执行参数
+                    startup_param_name: ''
+                },
+                // 过滤条件配置
+                conditionConfig: {
+                    // 是否动态分区
+                    dynamic_partition_bool: false,
+                    // 顶层分区
+                    dynamic_partition_prefix: '',
+                    // 变量替换
+                    execution_param: ''
+                },
+                // SPARK配置
+                sparkConfig: {
+                    set_flag: ''
                 }
             }
         },
         computed: {
-            operation() {
-                return [
-                    {
-                        text: this.$t('common.delete'),
-                        func: function (trData) {
-                            this.deleteProject(trData);
-                        }
-                    },
-                    {
-                        text: this.$t('common.executeTask'),
-                        func: function (trData) {
-                            this.project_id = trData.project_id;
-                            this.$refs.executionUser.show();
-                        }
-                    }
-                ];
-            },
-            flowOperation() {
-                return [
-                    {
-                        text: this.$t('common.executeTask'),
-                        func: function (trData) {
-                            this.project_id = trData.project_id;
-                            this.$refs.executionUser.show();
-                        }
-                    }
-                ]
-            },
             ruleValidate() {
                 return {
                     project_name: [
-                        { required: true, message: this.$t('common.notEmpty') }
+                        { required: true, message: this.$t('common.notEmpty') },
+                        { pattern: COMMON_REG.EN_NAME, message: this.$t('myProject.projectEnNameRegTips') }
+                    ],
+                    cn_name: [
+                        { required: false, message: this.$t('common.notEmpty') },
+                        { pattern: COMMON_REG.CN_NAME, message: this.$t('myProject.projectCnNameRegTips') }
                     ],
                     description: [
-                        { required: true, message: this.$t('common.notEmpty') },
+                        { required: true, message: this.$t('common.notEmpty') }
                     ]
                 }
-            },
-            userValidate() {
-                    return {
-                        executor_user: [
-                            { required: true, message: this.$t('common.notEmpty') }
-                        ],
-                    }
-                },
+            }
         },
         async mounted() {
-            let group = await this.getUsrGroup();
-            let user = this.FesStorage.get('simulatedUser') || this.FesApp.get("FesUserName");
-            if(Array.isArray(user)) {
-                this.users = [].concat(user)
+        },
+        beforeRouteLeave (to, from, next) {
+            // 离开组件时将页码存储下来
+            if(to.path === '/myProject/projects/list') {
+                this.FesStorage.set("paginationProjects", this.pagination);
+                this.FesStorage.set("flowPaginationProjects", this.flowPagination);
+                this.FesStorage.set("paginationProjectsTabType", this.tabType);
             } else {
-                this.users = [ user ]
+                this.FesStorage.remove("paginationProjects");
+                this.FesStorage.remove("flowPaginationProjects");
+                this.FesStorage.remove("paginationProjectsTabType");
             }
-            if(Array.isArray(group)) {
-                this.users = this.users.concat(group)
-            } else if (!this.FesUtil.isPlainObject(group)) {
-                this.users.push(group);
-            }
-            this.users = _.uniq(this.users);
+            next()
         },
         methods: {
-            init() {
-                this.getData();
-                this.getFlowData()
-            },
-            getUsrGroup() {
-                return this.FesApi.fetch("/api/v1/projector/proxy_user", {}, "get");
+            async init() {
+                this.showLoading = true;
+                await this.getData();
+                await this.getFlowData()
+                this.showLoading = false;
+
             },
             toDetail(val, td, index) {
                 if (index === 2) {
@@ -279,7 +309,7 @@
                 }
             },
             flowProject(val, td, index) {
-                if (index === 2) {
+                if (index === 1) {
                     this.$router.push({
                         path: '/myProject/projects/list',
                         query: {
@@ -290,22 +320,27 @@
                 }
             },
             async getData() {
+                this.showLoading = true;
                 let { data, total } = await this.FesApi.fetch("api/v1/projector/project/all", {
                     page: this.pagination.page - 1,
                     size: this.pagination.size
                 });
-                this.showLoading = false;
+
                 this.projectList = Array.isArray(data) ? data : [];
                 this.pagination.total = Math.ceil(total/this.pagination.size);
+                this.dataTotal = total;
+                this.showLoading = false;
             },
             async getFlowData() {
+                this.showLoading = true;
                 let { data, total } = await this.FesApi.fetch("api/v1/projector/project/workflow/all", {
                     page: this.flowPagination.page - 1,
                     size: this.flowPagination.size
                 });
-                this.showLoading = false;
+                this.flowTotal = total;
                 this.flowData = Array.isArray(data) ? data : [];
                 this.flowPagination.total = Math.ceil(total/this.flowPagination.size);
+                this.showLoading = false;
             },
             addNewProj () {
                 this.resetForm();
@@ -314,6 +349,7 @@
             resetForm() {
                 Object.assign(this, {
                     project_name: '',
+                    cn_name: '',
                     description: '',
                     tagList: []
                 })
@@ -350,9 +386,9 @@
                 isIE();
                 let selectProject = [];
                 if (this.tabType === '1') {
-                     selectProject = this.$refs.projectTable.getSelected();
+                    selectProject = this.$refs.projectTable.getSelected();
                 }else {
-                     selectProject = this.$refs.flowProjectTable.getSelected();
+                    selectProject = this.$refs.flowProjectTable.getSelected();
                 }
                 if (selectProject.length === 0 ) {
                     this.$Toast.error(this.$t('toastError.selectFile'));
@@ -388,50 +424,80 @@
                 })
             },
             async deleteProject(data) {
+                // 只有项目创建者能删除
+                if (data.create_user !== this.FesApp.get("FesUserName")) {
+                    this.$Toast.warn(this.$t('common.canNotDeleteProjectOfOthers'));
+                    return;
+                }
                 let index = await this.$Message.confirm(`${this.$t('common.prompt')}`, `${this.$t('myProject.deleteProject', {name: data.project_name})}`)
                 if (index === 0) {
                     await this.FesApi.fetch("api/v1/projector/project/delete", {
                         project_id: data.project_id
                     });
                     this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
-                    this.pagination.page = 1;
+                    if(this.projectList.length <= 1) this.pagination.page = this.pagination.page - 1;
                     this.getData();
                 }
             },
             cancle(ref) {
                 this.$refs[ref].hide();
             },
+            clearConfigData() {
+                this.$set(this.userConfig, 'execution_user', '');
+                this.$set(this.engineConfig, 'cluster_name', '');
+                this.$set(this.engineConfig, 'engine_reuse', false);
+                this.$set(this.engineConfig, 'startup_param_name', '');
+                this.$set(this.conditionConfig, 'dynamic_partition_bool', false);
+                this.$set(this.conditionConfig, 'dynamic_partition_prefix', '');
+                this.$set(this.conditionConfig, 'execution_param', '');
+                this.$set(this.sparkConfig, 'set_flag', '');
+            },
             submit() {
-                this.$refs.form.validate(valid => {
-                    if (!valid) return;
-                    let create_user = this.FesApp.get("FesUserName");
-                    let params = {
+                this.$refs.executationConfigRef.validate(isValid => {
+                    if (!isValid) return;
+                    const create_user = this.FesApp.get("FesUserName");
+                    const engineReuse = this.engineConfig.engine_reuse;
+                    let startupParamName = this.engineConfig.startup_param_name;
+                    startupParamName = startupParamName === ''
+                        ? `engine_reuse=${engineReuse}`
+                        : `${startupParamName};engine_reuse=${engineReuse}`;
+                    const params = {
                         create_user,
                         project_id: this.project_id,
-                        partition: this.filterCondition,
-                        execution_user: this.executor_user
-                    }
+                        cluster_name: this.engineConfig.cluster_name,
+                        startup_param_name: startupParamName,
+                        set_flag: this.sparkConfig.set_flag,
+                        dynamic_partition_bool: this.conditionConfig.dynamic_partition_bool,
+                        dynamic_partition_prefix: this.conditionConfig.dynamic_partition_prefix,
+                        execution_param: this.conditionConfig.execution_param,
+                        execution_user: this.userConfig.execution_user,
+                    };
                     this.FesApi.fetch('api/v1/projector/execution/project', params,{
-                        button:this.$refs.doSave,//防止重复请求
+                        button:this.$refs.doSave // 防止重复请求
                     }).then(() => {
                         this.$Toast.success(this.$t('toastSuccess.executeSuccess'));
-                        this.cancle('executionUser')
+                        this.cancle('executionUser');
                     });
-                })
+                });
             },
             submitPorject() {
                 this.$refs.projectForm.validate(valid=> {
                     if (!valid) return
-                    let { project_name, description} = this;
+                    let { project_name, cn_name, description} = this;
                     let params = {
                         project_name,
+                        cn_name,
                         description,
                         project_label: this.tagList
                     }
                     this.FesApi.fetch('api/v1/projector/project', params, 'put').then(()=> {
                         this.$Toast.success(this.$t('toastSuccess.addSuccess'));
                         this.cancle("addProjectModal")
-                        this.pagination.page = 1;
+                        // 添加则跳转最后一页
+                        let total = this.dataTotal + 1;
+                        let currentPageTotal = Math.ceil(total/this.pagination.size);
+                        this.pagination.page = currentPageTotal;
+                        this.pagination.total = currentPageTotal;
                         this.getData();
                     })
                 })
@@ -462,11 +528,24 @@
                 if (value) {
                     return value.toString()
                 }
-            }
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
         }
     };
 </script>
 <style scoped lang="scss">
+    .mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255,255,255,0.1);
+      z-index: 9999;
+    }
     .projectBtn {
         margin-right: 4px;
     }
@@ -480,9 +559,9 @@
     }
     .execution-modal,
     .project-modal {
-        ::v-deep
+        /deep/
         .ui-modal-body {
-            min-height: 300px;
+            min-height: 360px;
         }
     }
     .submit-button {
@@ -490,6 +569,12 @@
         left: 50%;
         bottom: 10px;
         transform: translate(-50%);
+    }
+    /deep/ .ui-tabs-header-container {
+        overflow: initial!important;
+        .ui-tabs-header-swap {
+          position: relative;
+        }
     }
     .labelTag {
         display: inline-block;
@@ -515,13 +600,18 @@
         right: 0;
         bottom: 10px;
     }
-    .project-mes {
+</style>
+
+<style lang="scss">
+    .uiTabsHeaderSwap-project-mes {
         position: absolute;
-        top: 0;
-        left: 320px;
-        margin-left: 10px;
+        top: 50%;
+        right: -20px;
+        transform: translateY(-50%);
+        z-index: 9999;
+
     }
-    .project-mes:hover:after {
+    .uiTabsHeaderSwap-project-mes:hover:after {
         content: attr(data-title);
         position: absolute;
         top: 30px;
@@ -537,9 +627,6 @@
         white-space: pre-wrap;
         font-size: 14px;
     }
-</style>
-
-<style lang="scss">
     .projectId span{
         cursor: pointer;
         color: #3399ff !important;

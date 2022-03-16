@@ -20,7 +20,6 @@ import com.webank.wedatasphere.qualitis.rule.dao.UserRuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.UserRuleTemplateRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateUser;
-import com.webank.wedatasphere.qualitis.rule.dao.UserRuleTemplateDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

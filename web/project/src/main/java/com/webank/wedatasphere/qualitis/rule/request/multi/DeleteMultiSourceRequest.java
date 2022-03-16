@@ -27,10 +27,14 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  */
 public class DeleteMultiSourceRequest {
 
-    @JsonProperty("multi_rule_id")
+    @JsonProperty("rule_id")
     private Long multiRuleId;
 
     public DeleteMultiSourceRequest() {
+    }
+
+    public DeleteMultiSourceRequest(Long multiRuleId) {
+        this.multiRuleId = multiRuleId;
     }
 
     public Long getMultiRuleId() {

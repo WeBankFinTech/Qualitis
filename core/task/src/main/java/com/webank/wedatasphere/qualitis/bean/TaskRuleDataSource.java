@@ -21,15 +21,27 @@ package com.webank.wedatasphere.qualitis.bean;
  */
 public class TaskRuleDataSource {
 
+    private Long projectId;
     private Long ruleId;
+
     private String clusterName;
     private String databaseName;
     private String tableName;
     private String colName;
+
     private Integer datasourceIndex;
+    private Integer datasourceType;
 
     public TaskRuleDataSource() {
         // Default Constructor
+    }
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 
     public Long getRuleId() {
@@ -78,5 +90,13 @@ public class TaskRuleDataSource {
 
     public void setDatasourceIndex(Integer datasourceIndex) {
         this.datasourceIndex = datasourceIndex;
+    }
+
+    public Integer getDatasourceType() {
+        return datasourceType;
+    }
+
+    public void setDatasourceType(Integer datasourceType) {
+        this.datasourceType = datasourceType;
     }
 }

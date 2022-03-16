@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -37,12 +38,30 @@ public class AlarmConfig {
     @ManyToOne
     private TemplateOutputMeta templateOutputMeta;
 
+    @Column(name = "file_output_name")
+    private Integer fileOutputName;
+
+    @Column(name = "file_output_unit")
+    private Integer fileOutputUnit;
+
     @Column(name = "check_template")
     private Integer checkTemplate;
 
     private Double threshold;
     @Column(name = "compare_type")
     private Integer compareType;
+
+    @ManyToOne
+    private RuleMetric ruleMetric;
+
+    @Column(name = "upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+
+    @Column(name = "upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+
+    @Column(name = "delete_fail_check_result")
+    private Boolean deleteFailCheckResult;
 
     public AlarmConfig() {
         // Default Constructor
@@ -62,6 +81,22 @@ public class AlarmConfig {
 
     public void setRule(Rule rule) {
         this.rule = rule;
+    }
+
+    public Integer getFileOutputName() {
+        return fileOutputName;
+    }
+
+    public void setFileOutputName(Integer fileOutputName) {
+        this.fileOutputName = fileOutputName;
+    }
+
+    public Integer getFileOutputUnit() {
+        return fileOutputUnit;
+    }
+
+    public void setFileOutputUnit(Integer fileOutputUnit) {
+        this.fileOutputUnit = fileOutputUnit;
     }
 
     public Integer getCheckTemplate() {
@@ -96,6 +131,38 @@ public class AlarmConfig {
         this.compareType = compareType;
     }
 
+    public RuleMetric getRuleMetric() {
+        return ruleMetric;
+    }
+
+    public void setRuleMetric(RuleMetric ruleMetric) {
+        this.ruleMetric = ruleMetric;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Boolean getDeleteFailCheckResult() {
+        return deleteFailCheckResult;
+    }
+
+    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
+        this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {return true;}
@@ -112,12 +179,14 @@ public class AlarmConfig {
     @Override
     public String toString() {
         return "AlarmConfig{" +
-                "id=" + id +
-                ", rule=" + rule.getId() +
-                ", templateOutputMeta=" + templateOutputMeta.getOutputName() +
-                ", checkTemplate=" + checkTemplate +
-                ", threshold=" + threshold +
-                ", compareType=" + compareType +
-                '}';
+            "id=" + id +
+            ", rule=" + rule +
+            ", templateOutputMeta=" + templateOutputMeta +
+            ", fileOutputName=" + fileOutputName +
+            ", fileOutputUnit=" + fileOutputUnit +
+            ", checkTemplate=" + checkTemplate +
+            ", threshold=" + threshold +
+            ", compareType=" + compareType +
+            '}';
     }
 }

@@ -20,7 +20,6 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class TaskNotExistException extends Exception {
-
     public TaskNotExistException(String message) {
         super(message);
     }

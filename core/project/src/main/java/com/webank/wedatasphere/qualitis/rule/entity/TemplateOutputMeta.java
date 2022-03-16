@@ -35,7 +35,6 @@ public class TemplateOutputMeta {
     private Long id;
 
     @ManyToOne
-    @JsonBackReference
     private Template template;
 
     @Column(length = 150, name = "output_name", updatable = false)

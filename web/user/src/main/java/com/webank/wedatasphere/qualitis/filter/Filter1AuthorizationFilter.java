@@ -19,6 +19,7 @@ package com.webank.wedatasphere.qualitis.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
 import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
+import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.Permission;
 import com.webank.wedatasphere.qualitis.entity.User;
@@ -46,18 +47,17 @@ import java.util.stream.Collectors;
  * @author howeye
  */
 public class Filter1AuthorizationFilter implements Filter {
-
+    @Autowired
+    private FrontEndConfig frontEndConfig;
     @Autowired
     private AuthFilterUrlConfig authFilterUrlConfig;
 
     @Autowired
     private UserDao userDao;
-
-    @Autowired
-    private LoginService loginService;
-
     @Autowired
     private UserService userService;
+    @Autowired
+    private LoginService loginService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Filter1AuthorizationFilter.class);
 
@@ -88,7 +88,7 @@ public class Filter1AuthorizationFilter implements Filter {
         AntPathMatcher matcher = new AntPathMatcher();
         for (String uploadUrl : uploadUrlList) {
             if (matcher.match(uploadUrl, requestUrl)) {
-                filterChain.doFilter(request,  response);
+                filterChain.doFilter(request, response);
                 return;
             }
         }
@@ -99,13 +99,34 @@ public class Filter1AuthorizationFilter implements Filter {
             return;
         }
         HttpSession session = requestWrapper.getSession();
-        if (!permitUrlList.contains(requestUrl)) {
+        if (! permitUrlList.contains(requestUrl)) {
             Object permissionObj = session.getAttribute("permissions");
             Object user = session.getAttribute("user");
             if (null == permissionObj || null == user) {
-                // Redirect to login page
-                LOGGER.info("User does not login, it will redirect to local login page");
-                writeRedirectHome(response);
+                String username = request.getRemoteUser();
+                if (username == null) {
+                    // Redirect to login page
+                    LOGGER.info("Can not get username from sso, it will redirect to local login page");
+                    writeRedirectHome(response);
+                } else {
+                    // 查询数据库，看用户是否存在
+                    User userInDb = userDao.findByUsername(username);
+                    if (userInDb != null) {
+                        // 放入session
+                        loginService.addToSession(username, request);
+                        ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage());
+                    } else {
+                        // 自动创建用户
+                        LOGGER.warn("user: {}, do not exist, trying to create user", username);
+                        try {
+                            userService.autoAddUser(username);
+                            loginService.addToSession(username, request);
+                            ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage());
+                        } catch (RoleNotFoundException e) {
+                            LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);
+                        }
+                    }
+                }
                 return;
             }
 
@@ -113,26 +134,22 @@ public class Filter1AuthorizationFilter implements Filter {
             String method = requestWrapper.getMethod();
             if (!checkPermission(requestUrl, method, permissions)) {
                 writeForbidden("no permissions", response);
-                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", user.toString().replace("\r", "").replace("\n", ""),
-                    requestWrapper.getRequestURI().replace("\r", "").replace("\n", ""));
+                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", user, requestWrapper.getRequestURI());
                 return;
             }
         }
         Object user = session.getAttribute("user");
-        LOGGER.info("User: {} succeed to access url: {}", user.toString().replace("\r", "").replace("\n", ""),
-            requestWrapper.getRequestURI().replace("\r", "").replace("\n", ""));
+        LOGGER.info("User: {} succeed to access url: {}", user, requestWrapper.getRequestURI());
         filterChain.doFilter(requestWrapper, response);
     }
 
     private void printReceiveLog(HttpServletRequest request) throws IOException {
         String requestUrl = request.getRequestURI();
         if (RequestMethod.GET.name().equalsIgnoreCase(request.getMethod())) {
-            LOGGER.info("Receive request:[{}], method:[{}]", requestUrl.replace("\r", "").replace("\n", ""),
-                request.getMethod().replace("\r", "").replace("\n", ""));
+            LOGGER.info("Receive request:[{}], method:[{}]", requestUrl, request.getMethod());
         } else {
             String body = CharStreams.toString(request.getReader());
-            LOGGER.info("Receive request:[{}], method:[{}], body:\n{}", requestUrl.replace("\r", "").replace("\n", ""),
-                request.getMethod().replace("\r", "").replace("\n", ""), body.replace("\r", "").replace("\n", ""));
+            LOGGER.info("Receive request:[{}], method:[{}], body:\n{}", requestUrl, request.getMethod(), body);
         }
     }
 

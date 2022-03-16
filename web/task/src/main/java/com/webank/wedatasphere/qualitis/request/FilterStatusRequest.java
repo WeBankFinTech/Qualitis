@@ -16,8 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.request;
 
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 
@@ -27,6 +26,8 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 public class FilterStatusRequest {
 
     private Integer status;
+    @JsonProperty("comment_type")
+    private Integer commentType;
     private Integer page;
     private Integer size;
 
@@ -41,6 +42,14 @@ public class FilterStatusRequest {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getCommentType() {
+        return commentType;
+    }
+
+    public void setCommentType(Integer commentType) {
+        this.commentType = commentType;
     }
 
     public Integer getPage() {
@@ -61,6 +70,9 @@ public class FilterStatusRequest {
 
     public static void checkRequest(FilterStatusRequest request) throws UnExpectedRequestException {
         if (request.getStatus() != null) {
+            if (request.getStatus().intValue() == 0) {
+                return;
+            }
             for (ApplicationStatusEnum t : ApplicationStatusEnum.values()) {
                 if (t.getCode().equals(request.getStatus())) {
                     return;

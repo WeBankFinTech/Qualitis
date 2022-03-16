@@ -28,11 +28,11 @@ import java.util.*;
  * @author howeye
  */
 public class HiveSqlParser {
+    private static final Integer DB_AND_TABLE_LENGTH = 2;
 
     private Map<String, List<String>> dbAndTableMap = new HashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HiveSqlParser.class);
-    private static final Integer DB_AND_TABLE_LENGTH = 2;
 
     public Map<String, List<String>> checkSelectSqlAndGetDbAndTable(String sql) throws ParseException, SemanticException {
         ParseDriver pd = new ParseDriver();
@@ -96,8 +96,4 @@ public class HiveSqlParser {
         }
     }
 
-    public static void main(String[] args) throws SemanticException, ParseException {
-        HiveSqlParser hiveSqlParser = new HiveSqlParser();
-        System.out.println(hiveSqlParser.checkSelectSqlAndGetDbAndTable("select a from db1.table1 where ds=10"));
-    }
 }

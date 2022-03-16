@@ -10,9 +10,9 @@ import java.util.List;
 public interface ProjectLabelDao {
     /**
      * Save all project labels
-     * @param ProjectLabels
+     * @param projectLabels
      */
-    void saveAll(Iterable<ProjectLabel> ProjectLabels);
+    void saveAll(Iterable<ProjectLabel> projectLabels);
 
     /**
      * Find by project label by project

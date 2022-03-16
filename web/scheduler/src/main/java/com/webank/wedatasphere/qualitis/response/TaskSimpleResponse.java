@@ -25,7 +25,7 @@ import com.webank.wedatasphere.qualitis.entity.Task;
 public class TaskSimpleResponse {
 
     @JsonProperty("task_id")
-    private Integer taskId;
+    private Long taskId;
     @JsonProperty("task_status")
     private Integer taskStatus;
     @JsonProperty("cluster_name")
@@ -39,15 +39,15 @@ public class TaskSimpleResponse {
     public TaskSimpleResponse(Task task) {
         this.taskId = task.getTaskRemoteId();
         this.taskStatus = task.getStatus();
-        this.clusterName = task.getClusterId();
-        this.abortOnFailure = task.isAbortOnFailure();
+        this.clusterName = task.getClusterName();
+        this.abortOnFailure = task.getAbortOnFailure();
     }
 
-    public Integer getTaskId() {
+    public Long getTaskId() {
         return taskId;
     }
 
-    public void setTaskId(Integer taskId) {
+    public void setTaskId(Long taskId) {
         this.taskId = taskId;
     }
 
