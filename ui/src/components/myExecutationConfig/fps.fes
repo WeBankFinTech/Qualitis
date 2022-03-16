@@ -1,0 +1,30 @@
+<template>
+    <div class="executation-config-detail">
+        <!-- FPS文件ID -->
+        <el-form-item
+            prop="fps_file_id"
+            label-width="140px"
+            :label="`FPS${$t('common.fileID')}：`">
+            <el-input v-model="data.fps_file_id" :placeholder="$t('common.pleaseEnter')" />
+        </el-form-item>
+        <!-- FPS文件哈希值 -->
+        <el-form-item
+            prop="fps_hash"
+            label-width="140px"
+            :label="`FPS${$t('common.fileHash')}：`">
+            <el-input v-model="data.fps_hash" :placeholder="$t('common.pleaseEnter')" />
+        </el-form-item>
+    </div>
+</template>
+<script>
+export default {
+    name: 'executation-fps-file-config',
+    props: {
+        data: {
+            type: Object,
+            required: true
+        }
+    }
+};
+</script>
+<style lang="scss" scoped></style>

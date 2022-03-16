@@ -60,9 +60,11 @@ public class LoginController {
         try {
             return loginService.localLogin(request);
         } catch (LoginFailedException e) {
-            throw new LoginFailedException(e.getMessage());
+            LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), null);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_LOGIN}.", null);

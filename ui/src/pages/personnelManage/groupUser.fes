@@ -5,9 +5,9 @@
                 <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
                 <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
-                <span class="breadcrumb">{{ $t('personnelManage.personnelManage') }}</span>
+                <span class="breadcrumb cursor" @click="getRouter('/personnelManage')">{{ $t('personnelManage.personnelManage') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
-                <span class="breadcrumb">{{ $t('personnelManagePage.userGroupManagement') }}</span>
+                <span class="breadcrumb cursor" @click="getRouter('/personnelManage')">{{ $t('personnelManagePage.userGroupManagement') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb-item-link">{{ $t('personnelManagePage.proxyUserDetail') }}</span>
             </div>
@@ -23,7 +23,7 @@
             </Cell>
             <modal ref="userModal" :title="$t('personnelManagePage.addMembers')">
                 <Wb-form ref="userForm" :label-width="100" :rule="ruleValidate">
-                    <Form-item :label="$t('personnelManagePage.userName')" :rule="username" prop="username">
+                    <Form-item :label="$t('personnelManagePage.userName')" prop="username">
                         <Wb-input v-model="username" />
                     </Form-item>
                     <div class="submit-button-container fr mb10">
@@ -136,7 +136,7 @@
                 this.$refs['userForm'].validate(valid => {
                     let { proxyUserName } = this.$route.query;
                     let params = {
-                        proxy_user_name: proxyUserName, 
+                        proxy_user_name: proxyUserName,
                         username: this.username
                     };
                     if (valid) {
@@ -184,7 +184,11 @@
                         });
                     }
                 })
-            }
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
         }
     };
 

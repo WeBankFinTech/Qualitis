@@ -1,0 +1,63 @@
+<template>
+    <div class="executation-config-detail">
+        <!-- 是否动态分区 -->
+        <el-form-item
+            v-if="!isReexecute"
+            prop="dynamic_partition_bool"
+            label-width="130px"
+            :label="`${$t('common.isDynamicPartition')}：`">
+            <div>
+                <el-switch v-model="data.dynamic_partition_bool" @change="changeDynamicPartitionBool" />
+            </div>
+            <el-input
+                v-if="data.dynamic_partition_bool"
+                v-model="data.dynamic_partition_prefix"
+                style="margin-top: 12px; width: 432px;"
+                :placeholder="$t('common.pleaseEnter') + $t('common.topPartition')" />
+            <MyIconTips :style="{marginTop: data.dynamic_partition_bool ? '20px' : 0}" :content="$t('common.isDynamicPartitionTips')" />
+        </el-form-item>
+        <!-- 变量替换 -->
+        <el-form-item
+            prop="execution_param"
+            label-width="130px"
+            :label="`${$t('common.execution_param')}：`">
+            <ExecutationParamListSetting v-model="data.execution_param" />
+        </el-form-item>
+    </div>
+</template>
+<script>
+import ExecutationParamListSetting from './components/executationParamListSetting';
+export default {
+    name: 'executation-filter-condition-config',
+    components: {
+        ExecutationParamListSetting
+    },
+    props: {
+        data: {
+            type: Object,
+            required: true
+        },
+        isReexecute: {
+            type: Boolean,
+            required: false,
+            default: false
+        }
+    },
+    FesData() {
+        return {
+            top_partition_backup: ''
+        };
+    },
+    methods: {
+        changeDynamicPartitionBool(value) {
+            if (value) {
+                this.data.dynamic_partition_prefix = this.top_partition_backup;
+            } else {
+                this.top_partition_backup = this.data.dynamic_partition_prefix;
+                this.data.dynamic_partition_prefix = '';
+            }
+        }
+    }
+};
+</script>
+<style lang="scss" scoped></style>

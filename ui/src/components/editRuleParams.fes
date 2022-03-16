@@ -1,0 +1,116 @@
+<template>
+    <div>
+        <!-- 是否制定静态执行参数 -->
+        <template v-if="showStaticParamsConfig">
+            <div>
+                <Checkbox
+                    v-model="specify_static_startup_param"
+                    :label="$t('label.openStaticExecutationParams')"
+                    :disabled="isView"
+                    @on-change="changeSpecifyStaticStartupParam" />
+            </div>
+            <div style="margin-top: 20px;">
+                <FormItem
+                    v-if="specify_static_startup_param"
+                    prop="static_startup_param"
+                    class="static_startup_param"
+                    :label-width="0"
+                    :rule="ruleValidate.static_startup_param">
+                    <WbInput
+                        v-model="static_startup_param"
+                        :disabled="isView" />
+                </FormItem>
+            </div>
+        </template>
+        <div style="margin-top: 20px;">
+            <Checkbox
+                v-model="abort_on_failure"
+                :label="$t('common.openTask')"
+                :disabled="isView" />
+        </div>
+    </div>
+</template>
+<script>
+export default {
+    props: {
+        params: {
+            type: Object,
+            default: ()=>{}
+        },
+        isView: {
+            type: Boolean,
+            default: false
+        },
+        showStaticParamsConfig: {
+            type: Boolean,
+            required: false,
+            default: true
+        }
+    },
+    watch: {
+        params: {
+            immediate: true,
+            deep: true,
+            handler(val) {
+                if (val) {
+                    const {
+                        specify_static_startup_param = false,
+                        static_startup_param = '',
+                        abort_on_failure = false,
+                    } = val;
+                    this.specify_static_startup_param = specify_static_startup_param;
+                    this.static_startup_param = static_startup_param;
+                    this.abort_on_failure = abort_on_failure;
+                    this.static_startup_param_backup = static_startup_param;
+                }
+            }
+        }
+    },
+    FesData(){
+        return {
+            ruleValidate: {
+                static_startup_param: [
+                    {required: false, message: this.$t('common.notEmpty')},
+                    {pattern: /^(([a-zA-Z0-9._]+)=([a-zA-Z0-9._]+)(;))*(([a-zA-Z0-9._]+)=([a-zA-Z0-9._]+))+$/, message: '格式不正确', trigger: ['blur']}
+                ]
+            },
+            abort_on_failure: false,
+            specify_static_startup_param: false, // 是否指定静态执行参数
+            static_startup_param: '', // 静态执行参数
+            static_startup_param_backup: '' // 备份静态执行参数
+        }
+    },
+    methods: {
+        getFormModel() {
+            return {
+                abort_on_failure: this.abort_on_failure,
+                specify_static_startup_param: this.specify_static_startup_param,
+                static_startup_param: this.static_startup_param,
+            };
+        },
+        changeSpecifyStaticStartupParam(value) {
+            if (value) {
+                this.static_startup_param = this.static_startup_param_backup;
+            } else {
+                this.static_startup_param_backup = this.static_startup_param;
+                this.static_startup_param = '';
+            }
+            this.ruleValidate.static_startup_param[0].required = value;
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+/deep/
+.ui-form-item {
+    &.static_startup_param {
+        padding-bottom: 0 !important;
+        .ui-form-content {
+            margin-left: 0 !important;
+        }
+    }
+}
+.inline-field {
+    width: 220px;
+}
+</style>

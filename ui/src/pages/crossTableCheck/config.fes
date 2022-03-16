@@ -1,40 +1,64 @@
 <template>
-    <Panel :title="$t('common.config')">
-        <!-- <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
-            <Wb-switch v-model="dssStream" :disabled="isView" @on-change="$emit('table-change', actionType, 'change')">
-                <span slot="open">{{ $t('common.open') }}</span>
-                <span slot="close">{{ $t('common.close') }}</span>
-            </Wb-switch>
-        </div> -->
-       <div>
-           <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            </p>
-            <Form-item :rule="database" :label="`${$t('crossTableCheck.Database')}：`">
-                <Wb-select v-model="currentDbName" filterable :disabled="isView" @click.native="$emit('load-db', actionType)">
+    <Panel :title="$t('common.config')" style="width: 100%;">
+        <div class="upstreamAndfpsSwitch">
+            <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
+                <Wb-switch v-model="dssStream" :disabled="isView" @on-change="tableChange">
+                    <span slot="open">{{ $t('common.open') }}</span>
+                    <span slot="close">{{ $t('common.close') }}</span>
+                </Wb-switch>
+            </div>
+        </div>
+        <div>
+            <!-- 代理用户 -->
+            <FormItem :label="`${$t('common.proxyUser')}：`" prop="proxyUser">
+                <WbSelect v-model="proxy_user" :disabled="isView" @on-change="$emit('getproxyUser', $event, actionType)">
+                    <WbOption v-for="(usr) in proxyUserList" :key="usr" :value="usr">
+                        {{ usr }}
+                    </WbOption>
+                </WbSelect>
+            </FormItem>
+            <!-- 数据源 -->
+            <FormItem :label="`${$t('common.dataSource')}：`">
+                <WbSelect v-model="linkis_datasoure_id" filterable :disabled="isView" @on-change="selectDataSource" @click.native="clickDataSource">
+                    <WbOption v-for="(dataSource) in dataSources" :key="dataSource.id" :value="dataSource.id">
+                        {{ dataSource.dataSourceName }}
+                    </WbOption>
+                </WbSelect>
+            </FormItem>
+            <FormItem v-show="!dssStream" :rule="!dssStream ? notEmpty : []" prop="currentDbName" :label="`${$t('crossTableCheck.Database')}：`">
+                <!--
+                <Wb-select v-model="currentDbName" filterable :disabled="isView" @on-change="getTableInfo($event, actionType, dssStream)">
                     <wb-option v-for="(w,i) in dbList" :key="i" :value="w.db_name">
                         {{ w.db_name }}
                     </wb-option>
                 </Wb-select>
-            </Form-item>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            </p>
-            <Form-item :rule="table" :label="`${$t('crossTableCheck.sheets')}：`">
-                <Wb-select v-model="currentTableName" filterable :disabled="isView" @click.native="$emit('load-table',currentDbName, actionType, currentTableName, dssStream)">
-                    <wb-option v-for="(w,i) in sourceTable" :key="i" :value="w.table_name">
-                        {{ w.table_name }}
-                    </wb-option>
-                </Wb-select>
-            </Form-item>
-             <span>&nbsp;&nbsp;&nbsp;&nbsp;
-            </span>
-            <Form-item :rule="filter" :label="`${$t('common.condition')}：`">
-                <Wb-input v-model.lazy="currentFilter" :disabled="isView" :maxlength="1000" :rows="3" type="textarea" @click="$emit('filter-action',actionType, currentFilter)" />
-            </Form-item>
+                -->
+                <Wb-select
+                    v-model="currentDbName"
+                    filterable
+                    options-text-name="db_name"
+                    options-value-name="db_name"
+                    :options="dbList"
+                    :disabled="isView"
+                    @on-change="getTableInfo($event, actionType, dssStream)" />
+            </FormItem>
+            <FormItem :rule="notEmpty" prop="currentTableName" :label="`${$t('crossTableCheck.sheets')}：`">
+                <Wb-select
+                    v-model="currentTableName"
+                    filterable
+                    options-text-name="table_name"
+                    options-value-name="table_name"
+                    :options="sourceTable"
+                    :disabled="isView"
+                    @on-change="getTableName"
+                    @click.native="clickLoadTable(actionType, dssStream)" />
+            </FormItem>
+            <FormItem :rule="notEmpty" prop="currentFilter" :label="`${$t('common.condition')}：`">
+                <Wb-input v-model.lazy="currentFilter" :disabled="isView" :maxlength="1000" :rows="3" type="textarea" @click="getCondition" />
+            </FormItem>
         </div>
     </Panel>
 </template>
-
 <script>
     export default {
         props: {
@@ -42,9 +66,21 @@
                 type: Array,
                 default: () => []
             },
+            proxyUserList: {
+                type: Array,
+                default: () => []
+            },
+            dataSources: {
+                type: Array,
+                default: () => []
+            },
             dbList: {
                 type: Array,
                 default: () => []
+            },
+            proxyUser: {
+                type: String,
+                default: '',
             },
             set: {
                 type: String,
@@ -62,6 +98,10 @@
                 type: Boolean,
                 default: false
             },
+            dataSourceId: {
+                type: [String, Number],
+                default: ''
+            },
             dbName: {
                 type: String,
                 default: ''
@@ -74,16 +114,30 @@
                 type: Boolean,
                 default: false
             },
+            templateId: {
+                type: String,
+                default: ''
+            },
+        },
+        FesReady() {
         },
         data() {
             return {
+                proxy_user: "",
+                linkis_datasoure_id: '',
                 currentDbName: '',
                 currentTableName: '',
                 currentFilter:'',
-                dssStream: false
+                dssStream: false,
             }
         },
         watch: {
+            proxyUser(val) {
+                this.proxy_user = val;
+            },
+            dataSourceId(val) {
+                this.linkis_datasoure_id = val;
+            },
             dbName(val) {
                 this.currentDbName = val;
             },
@@ -98,13 +152,7 @@
             }
         },
         computed: {
-            database() {
-                return [{required: true,message: this.$t('common.notEmpty')}]
-            },
-            table() {
-                return [{required: true,message: this.$t('common.notEmpty')}]
-            },
-            filter() {
+            notEmpty() {
                 return [{required: true,message: this.$t('common.notEmpty')}]
             },
             showDSSNode() {
@@ -112,18 +160,50 @@
             },
             upstreamTitle() {
                 return this.dssStream ? this.$t('common.openUpstream') : this.$t('common.closeUpstream');
+            },
+        },
+        methods: {
+            // 触发数据库改变
+            getTableInfo(event, actionType, dssStream) {
+                // 如果为查看模式时数据回填会触发change事件，所以直接返回不触发后续逻辑
+                if(this.isView) return;
+                this.$emit('getTableInfo', event, actionType, dssStream)
+            },
+            // 上游表开启时触发
+            clickLoadTable(actionType, dssStream) {
+                // 如果为查看模式和非上游模式时不触发
+                if(this.isView || !dssStream) return;
+                this.$emit('getTableInfo', "", actionType, dssStream)
+            },
+            // 获取到表名
+            getTableName() {
+                // 如果为查看模式时数据回填会触发change事件，所以直接返回不触发后续逻辑
+                if(this.isView) return;
+                // 如果清空了表名称
+                if(!this.currentTableName) return;
+                this.$emit('getColumnInfo',this.currentTableName , this.currentDbName, this.actionType, this.dssStream)
+            },
+            // 上游表按钮改变时
+            tableChange() {
+                this.$emit('table-change', this.actionType, 'change');
+            },
+            // 点击选择过滤条件
+            getCondition() {
+                if(!this.currentTableName) return this.$Toast.warn(this.$t('toastWarn.cannotBeEmpty'));
+                this.$emit('filter-action',this.actionType, this.currentFilter)
+            },
+            selectDataSource(value) {
+                this.$emit('getDataSourceInfo', value);
+            },
+            clickDataSource() {
+                this.$emit('getDataSources');
             }
         }
     }
 </script>
 
 <style scoped lang="scss">
-    .upstream {
-        position: absolute;
-        top: -30px;
-        right: 3%;
-    }
-    .upstream:hover:after { 
+    .upstream:hover:after {
         content: attr(data-title);
         display: block;
         position: absolute;
@@ -139,5 +219,12 @@
         color: #fff;
         white-space: pre-wrap;
         z-index: 2;
+    }
+    .upstreamAndfpsSwitch {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        top: -30px;
+        right: 20px;
     }
 </style>
