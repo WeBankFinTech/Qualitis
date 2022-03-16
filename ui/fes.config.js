@@ -39,7 +39,7 @@ export default {
         unLogin: ['/home','/dashboard', '/'],
         noauth: ['/dashboard','/home','/taskQuery', '/taskQuery/verificationDetails', '/taskQuery/ruleDetails', '/addTechniqueRule','/ruleQuery','/ruleQuery/*','/taskDetail',
         '/ruleTemplateList','/ruleTemplateList/*','/myProject','/projects/*','/myProject/*','/HelpDocument','/customTechnicalRule',
-        '/crossTableCheck','/verifyFailData', '/addGroupTechniqueRule', '/metricManagement', '/engineConfiguration', '/dataSourceManagement', '/'],
+        '/crossTableCheck','/verifyFailData', '/addGroupTechniqueRule', '/metricManagement', '/engineConfiguration', '/'],
         admin: ['/dashboard','*']
     },
     // map
