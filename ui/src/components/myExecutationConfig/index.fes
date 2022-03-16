@@ -1,0 +1,312 @@
+<template>
+    <div class="executation-config">
+        <ul class="executation-config-menu menu-list">
+            <li
+                v-for="item of menuList"
+                :key="item.title"
+                class="menu-item"
+                :class="{active: item.active}"
+                @click="selectMenu(item)">
+                <p class="menu-title">{{ item.title }}</p>
+                <p v-show="item.active" class="menu-sub-title">{{ item.subTitle }}</p>
+            </li>
+        </ul>
+        <div v-if="currentMenu" class="executation-config-main">
+            <div class="header">
+                <p class="title">{{ currentMenu.title }}</p>
+                <p class="desc">{{ currentMenu.desc }}</p>
+            </div>
+            <div class="component-container">
+                <el-form
+                    ref="formRef"
+                    class="my-form"
+                    label-width="100px"
+                    :model="formModel"
+                    :rules="rule">
+                    <ExecutationUserConfig
+                        v-show="currentMenu.componentName === ExecutationUserConfig.name"
+                        ref="ExecutationUserConfigRef"
+                        :data="userData"
+                        :is-reexecute="isReexecute" />
+                    <DynamicEngineConfig
+                        v-show="currentMenu.componentName === DynamicEngineConfig.name"
+                        ref="DynamicEngineConfigRef"
+                        :data="engineData"
+                        :is-reexecute="isReexecute" />
+                    <FilterConditionConfig
+                        v-show="currentMenu.componentName === FilterConditionConfig.name"
+                        ref="FilterConditionConfigRef"
+                        :data="conditionData"
+                        :is-reexecute="isReexecute" />
+                    <SparkConfig
+                        v-show="currentMenu.componentName === SparkConfig.name"
+                        ref="SparkConfigRef"
+                        :data="sparkData"
+                        :is-reexecute="isReexecute" />
+                </el-form>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+import ExecutationUserConfig from './user';
+import DynamicEngineConfig from './engine';
+import FilterConditionConfig from './condition';
+import SparkConfig from './spark';
+import {
+    executeConfigRepeatValidator,
+    executeConfigDynamicPartitionPrefixValidator
+} from 'assets/js/utils';
+export default {
+    name: 'my-executation-config',
+    FesHeader: false,
+    components: {
+        ExecutationUserConfig,
+        DynamicEngineConfig,
+        FilterConditionConfig,
+        SparkConfig,
+    },
+    props: {
+        userData: {
+            type: Object,
+            required: true
+        },
+        engineData: {
+            type: Object,
+            required: true
+        },
+        conditionData: {
+            type: Object,
+            required: true
+        },
+        sparkData: {
+            type: Object,
+            required: true
+        },
+        isReexecute: {
+            type: Boolean,
+            required: false,
+            default: false
+        },
+        formRule: {
+            type: Object,
+            required: false
+        }
+    },
+    computed: {
+        rule() {
+            let result = this.baseFormRule;
+            if (this.formRule) {
+                result = Object.assign({}, result, this.formRule);
+            }
+            return result;
+        },
+        formModel() {
+            return Object.assign(
+                {},
+                this.userData,
+                this.engineData,
+                this.conditionData,
+                this.sparkData
+            );
+        }
+    },
+    FesData() {
+        return {
+            ExecutationUserConfig,
+            DynamicEngineConfig,
+            FilterConditionConfig,
+            SparkConfig,
+            currentMenu: null,
+            menuList: [
+                {
+                    key: '1',
+                    active: false,
+                    title: this.$t('executationConfig.executationUserConfig'),
+                    subTitle: this.$t('executationConfig.executationUserConfigDesc'),
+                    desc: this.$t('executationConfig.executationUserConfigDesc'),
+                    componentName: ExecutationUserConfig.name,
+                    refName: 'ExecutationUserConfigRef'
+                },
+                {
+                    key: '2',
+                    active: false,
+                    title: this.$t('executationConfig.dynamicEngineConfig'),
+                    subTitle: this.$t('executationConfig.dynamicEngineConfig'),
+                    desc: this.$t('executationConfig.dynamicEngineConfigDesc'),
+                    componentName: DynamicEngineConfig.name,
+                    refName: 'DynamicEngineConfigRef'
+                },
+                {
+                    key: '3',
+                    active: false,
+                    title: this.$t('executationConfig.executationVaribleConfig'),
+                    subTitle: this.$t('executationConfig.executationVaribleConfig'),
+                    desc: this.$t('executationConfig.executationVaribleConfigDesc'),
+                    componentName: FilterConditionConfig.name,
+                    refName: 'FilterConditionConfigRef'
+                },
+                {
+                    key: '5',
+                    active: false,
+                    title: this.$t('executationConfig.sparkConfig'),
+                    subTitle: this.$t('executationConfig.sparkConfig'),
+                    desc: this.$t('executationConfig.sparkConfigDesc'),
+                    componentName: SparkConfig.name,
+                    refName: 'SparkConfigRef'
+                }
+            ],
+            baseFormRule: {
+                execution_user: [
+                    { required: true, message: this.$t('common.notEmpty') }
+                ]
+            }
+        };
+    },
+    FesReady() {
+        this.currentMenu = this.menuList[0];
+        this.updateMenuActiveState(this.currentMenu);
+        this.reportCurrentTitle(this.currentMenu.title);
+    },
+    methods: {
+        selectMenu(menu) {
+            if (menu.key === this.currentMenu.key) return;
+            this.updateMenuActiveState(menu);
+            this.currentMenu = menu;
+            this.reportCurrentTitle(this.currentMenu.title);
+        },
+        updateMenuActiveState(menu) {
+            this.menuList.forEach(item => {
+                item.active = item.key === menu.key;
+            });
+        },
+        executeFunction(handler, ...args) {
+            if (handler instanceof Function) handler(args);
+        },
+        validateBaseFields(errorFieldMap) {
+            const fieldNames = Object.keys(errorFieldMap);
+            for (let i = 0; i < fieldNames.length; i++) {
+                for (let j = 0; j < this.menuList.length; j++) {
+                    const menu = this.menuList[j];
+                    const component = this.$refs[menu.refName];
+                    const dataKeys = Object.keys(component.data);
+                    if (dataKeys.includes(fieldNames[i])) {
+                        this.selectMenu(menu);
+                        return;
+                    }
+                }
+            }
+        },
+        validate(callback) {
+            this.$refs.formRef.validate((...args) => {
+                const isValid = args[0];
+                const errorFieldList = args[1];
+                if (!isValid) {
+                    this.validateBaseFields(errorFieldList);
+                    return;
+                }
+                if (!executeConfigRepeatValidator(this.engineData.startup_param_name)) {
+                    this.$Toast.error('动态引擎配置-执行参数 key值有重复');
+                    return;
+                } else if (!executeConfigRepeatValidator(this.conditionData.execution_param, ';', ':')) {
+                    this.$Toast.error('执行变量配置-变量替换 key值有重复');
+                    return;
+                } else if (!executeConfigRepeatValidator(this.sparkData.set_flag)) {
+                    this.$Toast.error('SPARK配置-配置参数 key值有重复');
+                    return;
+                } else if (this.conditionData.dynamic_partition_bool && this.conditionData.dynamic_partition_prefix && !executeConfigDynamicPartitionPrefixValidator(this.conditionData.dynamic_partition_prefix)) {
+                    this.$Toast.error('顶层分区格式为大小写字母，数字，"_"，"-"组成');
+                    return;
+                }
+                this.executeFunction(callback, ...args);
+            });
+        },
+        reportCurrentTitle(title) {
+            this.$emit('on-update-title', title);
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.executation-config {
+    display: flex;
+    padding: 20px 0;
+    font-size: 14px;
+    color: #333;
+
+    .executation-config-menu {
+        margin-right: 20px;
+    }
+
+    .executation-config-main {
+        padding: 0 15px;
+        flex: 1 1 auto;
+
+        .header {
+            margin-bottom: 10px;
+
+            .title {
+                height: 40px;
+                line-height: 40px;
+                font-size: 18px;
+                font-weight: 500;
+            }
+
+            .desc {
+                height: 20px;
+                line-height: 20px;
+                font-size: 14px;
+            }
+        }
+    }
+
+    .menu-list {
+        width: 300px;
+
+        .menu-item {
+            margin-bottom: 2px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+
+            &:last-of-type {
+                margin-bottom: 0;
+            }
+
+            .menu-title {
+                padding: 0 15px;
+                height: 40px;
+                line-height: 40px;
+                color: #428bca;
+                border-radius: 4px;
+                transition: all 0.1s ease-in-out;
+            }
+            .menu-sub-title {
+                padding-left: 15px;
+                height: 20px;
+                line-height: 20px;
+            }
+
+            &:hover {
+                .menu-title {
+                    color: #2a6496;
+                    background-color: #eee;
+                }
+            }
+
+            &.active {
+                height: 60px;
+                border-right: none;
+
+                .menu-title {
+                    color: #fff;
+                    background-color: #428bca;
+                }
+                .menu-sub-title {
+                    color: #333;
+                }
+            }
+        }
+    }
+}
+</style>

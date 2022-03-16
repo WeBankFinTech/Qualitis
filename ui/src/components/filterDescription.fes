@@ -4,7 +4,6 @@
         <p>{{ $t('filterDescription.example') }}：</p>
         <p>{{ $t('filterDescription.actualDate') }}</p>
         <p>{{ $t('filterDescription.brforeDay') }}</p>
-        <p>{{ $t('filterDescription.support') }}</p>
     </div>
 </template>
 

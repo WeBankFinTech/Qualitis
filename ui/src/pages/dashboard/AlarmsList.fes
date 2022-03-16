@@ -1,12 +1,11 @@
 <template>
     <Row class="all-wrapper p20 task-table">
         <Cell span="24">
-            <Wb-table :data="list" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-tr-click="goToDetail">
-                <Column prop="application_id" :name="$t('alarmsList.applicationId')" />
-                <Column prop="project_names" :name="$t('common.projectName')" />
-                <Column prop="submit_time" :name="$t('alarmsList.executionTime')" />
-                <Column prop="status" :filter="formatStatus" :name="$t('common.status')" />
-                <Column width="25%" prop="finish_task_num" :filter="formatSuccessful" :name="$t('alarmsList.task')" />
+            <Wb-table :data="list" border class="mt20" :no-data-text="$t('common.noData')" @on-tr-click="goToDetail">
+                <Column prop="application_id" align="left" :name="$t('alarmsList.applicationId')" />
+                <Column prop="project_name" align="left" :name="$t('common.projectName')" />
+                <Column prop="submit_time" align="left" width="150px" :name="$t('alarmsList.executionTime')" />
+                <Column prop="status" align="left" width="150px" :filter="formatStatus" :name="$t('common.status')" />
             </Wb-table>
         </Cell>
     </Row>
@@ -37,9 +36,6 @@
             formatStatus(data) {
                 let list = eval('('+ this.statusList + ')');
                 return list[data];
-            },
-            formatSuccessful(data, trData) {
-                return `${this.str}   ${trData.finish_task_num}/${trData.fail_task_num}/${trData.fail_check_task_num}`;
             },
             goToDetail( trData ) {
                 this.FesFesx.set("task_info_map", {

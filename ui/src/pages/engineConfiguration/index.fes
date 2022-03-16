@@ -1,0 +1,238 @@
+<template>
+    <pageContainer>
+        <div class="engine-configuration page">
+            <div class="breadcrumb-container mb10">
+                <span class="breadcrumb-item-link">{{ $t('configureParameter.engineConfiguration') }}</span>
+            </div>
+            <Row>
+                <Cell span="4">
+                    <div class="flex-box">
+                        <span class="label">{{ $t('common.cluster') }}: </span>
+                        <WbSelect
+                            v-model="clusterName"
+                            :placeholder="$t('common.cluster')"
+                            @on-change="selectClusterName">
+                            <WbOption
+                                v-for="item of clusterList"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value" />
+                        </WbSelect>
+                    </div>
+                </Cell>
+                <Cell
+                    v-if="fullTree && fullTree.length > 0"
+                    span="4"
+                    offset="15">
+                    <div class="btn-list">
+                        <WbButton
+                            class="btn-item"
+                            type="primary"
+                            @click="save">{{ $t('common.save') }}</WbButton>
+                    </div>
+                </Cell>
+            </Row>
+            <div class="page">
+                <template v-for="(item, index) in fullTree">
+                    <variable
+                        v-show="item.name !== 'tidb设置' && item.name !== 'spark引擎设置'"
+                        ref="variable"
+                        :key="'varible-' + index"
+                        :variable="item"
+                        :un-valid-msg="unValidMsg" />
+                </template>
+            </div>
+        </div>
+        <LoadingMask :show="loading" :mask="true" />
+    </pageContainer>
+</template>
+<script>
+/**
+ * 引擎配置
+ */
+import pageContainer from '../../components/template';
+import Variable from './components/variable';
+export default {
+    FesHeader: true,
+    FesLeft: false,
+    components: {
+        pageContainer,
+        Variable
+    },
+    FesData() {
+        return {
+            loading: false,
+            clusterName: '',
+            clusterList: [],
+            fullTree: [],
+            unValidMsg: {}
+        }
+    },
+    FesReady: function () {
+        this.getClusterList();
+    },
+    methods: {
+        /**
+         * 获取集群列表
+         */
+        async getClusterList() {
+            try {
+                const { optional_clusters } = await this.FesApi.fetch('/api/v1/projector/meta_data/cluster', {}, 'post');
+                if (Array.isArray(optional_clusters)) {
+                    this.clusterList = optional_clusters.map(item => ({ label: item, value: item }));
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        handleFullTree(dataTree, queueNameTree) {
+            if (Array.isArray(dataTree) && Array.isArray(queueNameTree) && queueNameTree.length > 0) {
+                let queueTree;
+                let queueTree1;
+                let queueTree2;
+                let queueSettings1;
+                let queueSettings2;
+                let index;
+                queueTree1 = queueNameTree[0] || {};
+                queueSettings1 = queueTree1.settings || [];
+                index = dataTree.findIndex(item => item.name === queueTree1.name);
+                queueTree2 = dataTree[index] || {};
+                queueSettings2 = queueTree2.settings || [];
+                queueTree = Object.assign({}, queueTree1, queueTree2, { settings: queueSettings1.concat(queueSettings2) });
+                if (index !== -1) {
+                        return [
+                        ...dataTree.slice(0, index),
+                        queueTree,
+                        ...dataTree.slice(index + 1),
+                    ];
+                } else {
+                    return [
+                        queueTree,
+                        ...dataTree
+                    ];
+                }
+            } else {
+                return dataTree;
+            }
+        },
+        /**
+         * @param String clusterName 集群名
+         * 获取配置列表
+         */
+        async getAppVariable(clusterName) {
+            const params = {
+                'cluster_name': clusterName
+            };
+            try {
+                const res = await this.FesApi.fetch('/api/v1/projector/configuration', params, 'get');
+                const queueNameTree = res.full_tree_queue_name.fullTree;
+                const dataTree =res.fule_tree.fullTree;
+                this.fullTree = this.handleFullTree(dataTree, queueNameTree);
+                this.fullTree.forEach((item) => {
+                    item.settings = this.FesUtil._.orderBy(item.settings, ['level'], ['asc']);
+                    if (item.settings.length) {
+                        item.settings.forEach((set) => {
+                            if (set.validateType === 'OFT') {
+                                set.validateRangeList = this.formatValidateRange(set.validateRange, set.key);
+                            }
+                            if (set.key === 'spark.application.pyFiles' || set.key === 'python.application.pyFiles') {
+                                set.placeholder = '请输入工作空间python包路径（只支持zip）';
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        },
+        /**
+         * 检验集群列表数据
+         */
+        formatValidateRange(value, type) {
+            let formatValue = [];
+            let tmpList = [];
+            try {
+                tmpList = JSON.parse(value);
+            } catch (e) {
+                tmpList = value.slice(1, value.length - 1).split(',');
+            }
+            tmpList.forEach((item) => {
+                formatValue.push({
+                    name: item === 'BLANK' && type === 'pipeline.out.null.type' ? '空字符串' : item,
+                    value: item
+                });
+            });
+            return formatValue;
+        },
+        selectClusterName(clusterName) {
+            this.getAppVariable(clusterName);
+        },
+        /**
+         * 保存最新集群列表数据
+         */
+        save() {
+            this.loading = true;
+            this.FesApi.fetch('/api/v1/projector/configuration', {
+                creator: 'IDE',
+                cluster_name: this.clusterName,
+                full_tree: this.fullTree
+            }).then(() => {
+                this.getAppVariable(this.clusterName);
+                this.unValidMsg = {};
+                this.$Toast.success(this.$t('common.save'));
+            }).catch((err) => {
+                if (err.message) {
+                    let key = '';
+                    let msg = '';
+                    this.fullTree.forEach((item) => {
+                        if (item.settings) {
+                        item.settings.forEach((s) => {
+                            if (s.validateType === 'OFT' && Object.prototype.hasOwnProperty.call(s, 'validateRangeList')) {
+                                delete s.validateRangeList;
+                            }
+                            if (err.message.indexOf(s.key) > -1) {
+                                msg = s.description;
+                                key = s.key;
+                            }
+                        });
+                        }
+                    });
+                    this.unValidMsg = { key, msg };
+                }
+            }).finally(() => {
+                this.loading = false;
+            });
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.page {
+    padding: 20px;
+}
+.engine-configuration {
+    .btn-list {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+
+        .btn-item {
+            margin-right: 6px;
+
+            &:last-of-type {
+                margin-right: 0;
+            }
+        }
+    }
+}
+/deep/
+.flex-box {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    .label {
+        min-width: 90px;
+        text-align: right;
+    }
+}
+</style>

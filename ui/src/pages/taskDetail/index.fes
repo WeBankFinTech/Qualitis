@@ -3,7 +3,7 @@
         <Row class="all-wrapper p20">
             <div class="breadcrumb-container mb10">
                 <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
-                <span class="breadcrumb">{{ $t('taskQuery.taskQuery') }}</span>
+                <span class="breadcrumb cursor" @click="getRouter('/taskQuery')">{{ $t('taskQuery.taskQuery') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb-item-link">{{ $t('taskDetail.taskRule') }}</span>
             </div>
@@ -114,10 +114,16 @@
                 this.$router.push({
                     path: "/verifyFailData",
                     query: {
+                        application_id: this.id,
                         task_id: id
                     }
                 })
-            }
+            },
+            // 面包屑跳转
+            getRouter(e) {
+              this.$router.push({ path: e })
+            },
+
         }
     };
 </script>
@@ -149,18 +155,18 @@
     }
     .detail {
         display: flex;
-        line-height:32px;
-        height:32px;
+        line-height: 40px;
+        height: 40px;
     }
     .lineItem.logArea   {
-        ::v-deep
+        /deep/
         textarea{
             border: none;
             overflow: hidden !important;
         }
     }
     .lineItem.showAllLog  {
-        ::v-deep
+        /deep/
         textarea{
             overflow: hidden;
         }

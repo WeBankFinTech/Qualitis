@@ -102,11 +102,6 @@ linkis:
       datasource_db: metadatamanager/dbs/{DATA_SOURCE_ID}
       datasource_table: metadatamanager/tables/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}
       datasource_column: metadatamanager/columns/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}/table/{DATA_SOURCE_TABLE}
-      dpm_server: xx
-      dpm_port: 00
-      dpm_inf: xx
-      dpm_systemAppId: xx
-      dpm_systemAppKey: xx
   kill_stuck_tasks: true
   kill_stuck_tasks_time: 1800000 # 30 min
   lightweight_query: true
@@ -128,11 +123,7 @@ front_end:
   local: zh_CN
   center: dev
 
-cmdb:
-  host: xx
-  url: xx
-  userAuthKey: xx
-
 ldap:
   ip: xx
   port: 00
+

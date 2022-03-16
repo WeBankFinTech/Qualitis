@@ -7,7 +7,7 @@
                     <Wb-input v-model="sourceField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', sourceField, arrowCol, 'sourceColumnList')" />
                     <div :class="['col-content',{'no-border': filterCol.length}]">
                         <ul class="ulList col-list" @click="handleClick">
-                            <li v-for="(item, i) in filterCol" :key="i" :data-name="item.column_name" :data-tag="dataTag" data-arrow="left">{{ `${item.column_name}(${item.data_type})` }}</li>
+                            <li v-for="(item, i) in filterCol" :key="i" :data-name="`${item.column_name}(${item.data_type})`" :data-tag="dataTag" data-arrow="left">{{ `${item.column_name}(${item.data_type})` }}</li>
                         </ul>
                     </div>
                 </div>
@@ -43,7 +43,7 @@
                     <Wb-input v-model="targetField" :placeholder="$t('crossTableCheck.search0')" @on-change="$emit('search-field', targetField, targetColStr, 'targetColumnList')" />
                     <div :class="['col-content', {'no-border': arrowTargetCol.length}]">
                         <ul class="ulList col-list" @click="handleClick">
-                            <li v-for="(item, i) in arrowTargetCol" :key="i" :data-name="item.column_name" :data-tag="dataTag" data-arrow="right">{{ `${item.column_name}(${item.data_type})` }}</li>
+                            <li v-for="(item, i) in arrowTargetCol" :key="i" :data-name="`${item.column_name}(${item.data_type})`" :data-tag="dataTag" data-arrow="right">{{ `${item.column_name}(${item.data_type})` }}</li>
                         </ul>
                     </div>
                 </div>

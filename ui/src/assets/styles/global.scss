@@ -1,6 +1,9 @@
 
 @import "variables";
 @import "mixins";
+body {
+    font-size: 14px;
+}
 // Warning ：此文件用于覆盖ui-webank默认样式，请谨慎修改
 .layout-left {
     display: none;
@@ -60,9 +63,13 @@
         transform: none;
         max-width: 100%;
         max-height: 100%;
+        overflow: initial;
     }
 }
-
+// 覆盖页面选择页样式
+.ui-page .ui-page-select {
+    width: 100px;
+}
 
 //confirm弹窗
 .ui-message-swap {
@@ -80,7 +87,9 @@
     }
 }
 .breadcrumb-container {
+    position: relative;
     height: 30px;
+    font-size: 14px;
     border-bottom: 1px solid #e8eaec;
     .breadcrumb {
         color: #515a6e;
@@ -95,5 +104,280 @@
     }
     .cursor{
         cursor: pointer;
+    }
+}
+
+// Button
+.ui-button {
+    display: inline-block;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #dcdfe6;
+    color: #606266;
+    -webkit-appearance: none;
+    text-align: center;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    outline: none;
+    margin: 0;
+    -webkit-transition: .1s;
+    transition: .1s;
+    font-weight: 500;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    padding: 12px 20px;
+    font-size: 14px;
+    border-radius: 4px;
+
+    &:focus,
+    &:hover {
+        color: #3399ff;
+        // color: #3e3ea6;
+        border-color: #c5c5e4;
+        background-color: #ececf6;
+    }
+
+    &.ui-button-type-primary {
+        color: #fff;
+        background-color: #3399ff;
+        border-color: #3399ff;
+        // background-color: #3e3ea6;
+        // border-color: #3e3ea6;
+
+        &:focus,
+        &:hover {
+            background-color: #3399ff;
+            border-color: #3399ff;
+            // background: #6565b8;
+            // border-color: #6565b8;
+        }
+    }
+
+    &.ui-button-type-success {
+        color: #fff;
+        background-color: #67c23a;
+        border-color: #67c23a;
+
+        &:focus,
+        &:hover {
+            background: #85ce61;
+            border-color: #85ce61;
+        }
+    }
+
+    &.ui-button-type-warn {
+        color: #fff;
+        background: #ff9900;
+        border-color: #ff9900;
+    }
+
+    &.ui-button-type-info {
+        color: #fff;
+        background: #2db7f5;
+        border-color: #2db7f5;
+    }
+
+    input {
+        cursor: pointer;
+    }
+}
+
+// Pagination
+.ui-page {
+    font-weight: bold;
+    white-space: nowrap;
+
+    .ui-page-prev {
+
+    }
+
+    .ui-page-next {
+
+    }
+
+    .ui-select .ui-select-selection {
+        border-radius: 4px;
+        font-weight: normal;
+
+        .ui-select-selected-value {
+            height: 28px;
+            line-height: 28px;
+        }
+
+        &:focus,
+        &:hover {
+            // border-color: #3e3ea6;
+            border-color: #3399ff;
+        }
+    }
+
+    .ui-page-prev,
+    .ui-page-next,
+    .ui-page-item-jump-next,
+    .ui-page-item {
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        display: inline-block;
+        margin: 0 5px;
+        padding: 0 4px;
+        min-width: 30px;
+        height: 28px;
+        line-height: 28px;
+        vertical-align: top;
+        text-align: center;
+        font-size: 13px;
+        color: #606266;
+        background-color: #f4f4f5;
+        border: none;
+        outline: none;
+        border-radius: 2px;
+        cursor: pointer;
+
+        &.ui-page-item-active {
+            // background-color: #3e3ea6;
+            background-color: #3399ff;
+            color: #fff;
+            cursor: default;
+        }
+    }
+}
+
+// Table
+.ui-table-swap {
+    border-top: none;
+}
+.ui-table {
+    tr {
+        background-color: #fff;
+    }
+
+    .ui-table-thead {
+        color: #909399;
+        font-weight: 500;
+        font-size: 14px;
+        tr {
+            th {
+                height: 32px;
+                line-height: 32px;
+                color: #909399;
+                background-color: #f2f4f7;
+                border: none !important;
+                border-bottom: 1px solid #ebeef5 !important;
+            }
+        }
+    }
+    .ui-table-tbody {
+        tr {
+            height: 70px;
+            transition: background-color .25s ease;
+            td {
+                color: #606266;
+                font-size: 14px;
+                border: none !important;
+                border-bottom: 1px solid #ebeef5 !important;
+            }
+
+            &:nth-child(2n) {
+                background-color: #fafafa;
+            }
+
+            &:hover {
+                background-color: #f5f7fa;
+            }
+        }
+    }
+}
+
+// Form
+.ui-form {
+    .ui-form-item {
+        .ui-form-label {
+            font-size: 14px;
+        }
+    }
+}
+
+.cursor,
+.pointer {
+    cursor: pointer;
+}
+
+//table描述
+.tip-des {
+    width: 400px;
+    color: #657180;
+    background: #fff;
+    padding: 5px 5px;
+    p {
+        white-space:pre-line;
+        word-break: break-all;
+    }
+}
+
+.el-select {
+    width: 100%;
+}
+
+.el-select-dropdown__wrap {
+    .el-select-dropdown__list {
+        .el-select-dropdown__item {
+            padding: 0 16px;
+            height: 30px;
+            line-height: 30px;
+            font-size: 12px;
+            color: #657180;
+            background: #fff;
+            transition: background 0.2s ease-in-out;
+
+            &:hover {
+                background: #f3f3f3;
+            }
+        }
+    }
+}
+
+.el-input {
+
+    &:hover {
+        .el-input__inner {
+            border-color: #409EFF;
+        }
+
+        .el-input__icon {
+            color: #409EFF;
+        }
+    }
+
+    .el-input__inner {
+        height: 30px;
+        line-height: 30px;
+        font-size: 12px;
+        color: #657180;
+    }
+    .el-input__suffix {
+        .el-input__suffix-inner {
+            .el-input__icon {
+                line-height: 30px;
+            }
+            .el-select__caret.el-input__icon.el-icon-arrow-up {
+                font-size: 12px;
+                color: #C0C4CC;
+                transform-origin: 50% 50%;
+                transform: scale(0.8) rotateZ(360deg);
+                transition: transform .3s linear;
+                cursor: pointer;
+                &.is-reverse {
+                    transform: scale(0.8) rotateZ(180deg);
+                }
+                &:before {
+                    content: "\e606" !important;
+                    font-family: iconfont;
+                    box-sizing: border-box;
+                }
+            }
+        }
     }
 }

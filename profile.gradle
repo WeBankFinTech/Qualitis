@@ -253,6 +253,7 @@ project(':core/common') {
       exclude group: 'com.sun.jersey.contribs'
       exclude group: 'javax.xml.bind'
       exclude group: 'log4j'
+      exclude group: 'org.apache.calcite'
 
       configurations {
         compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'

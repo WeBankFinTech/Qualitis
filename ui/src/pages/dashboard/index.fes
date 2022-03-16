@@ -1,41 +1,47 @@
 <template>
     <pageContainer>
-        <Row class="p20">
-            <Cell span="20" offset="2" class="p20 list-status">
-                <div class="task p20">
-                    {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
-                    <span class="green pl20">
-                        {{ todayTask.application_succ_num || 0 }}
-                    </span>/<span class="red">
-                        {{ todayTask.application_fail_num || 0 }}
-                    </span>/<span class="blue">
-                        {{ todayTask.application_fail_check_num || 0 }}
-                    </span>
-                </div>
-                <AlarmsList :list="todayTask.applications" />
-                <Pagination :current="taskPageInfo.page" :size="taskPageInfo.size" :total="taskPageInfo.total" class="pl20 pr20"
-                    @on-change="changeTaskPage" />
-            </Cell>
-
-            <Cell span="20" offset="2" class="chart-cbox">
-                <div class="task-content">
-                    <div class="flex">
-                        <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
-                        <p class="rangeBtn">
-                            <a :class="{'current': taskRange.step_size==7}" @click="changeDateRange('taskChartData',7)">
-                                {{ $t('dashboard.last7Days') }}
-                            </a>
-                        </p>
-                        <p class="rangeBtn">
-                            <a :class="{'current': taskRange.step_size==30}" @click="changeDateRange('taskChartData',30)">
-                                {{ $t('dashboard.last30Days') }}
-                            </a>
-                        </p>
+        <div class="p20">
+            <Row>
+                <Cell span="12" offset="6" class="p20 list-status">
+                    <div class="task p20">
+                        {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
+                        <span class="green pl20">
+                            {{ todayTask.application_succ_num || 0 }}
+                        </span>/<span class="red">
+                            {{ todayTask.application_fail_num || 0 }}
+                        </span>/<span class="blue">
+                            {{ todayTask.application_fail_check_num || 0 }}
+                        </span>
                     </div>
-                    <LineChart :chartdata="taskChartData.chartdata" :options="taskChartData.options" class="mt20" />
-                </div>
-            </Cell>
-        </Row>
+                    <AlarmsList :list="todayTask.applications" />
+                    <Pagination :current="taskPageInfo.page" :size="taskPageInfo.size" :total="taskPageInfo.total" class="pl20 pr20 mt20"
+                        @on-change="changeTaskPage" />
+                </Cell>
+            </Row>
+            <Row style="margin-top: 20px;">
+                <Cell span="12" offset="6">
+                    <div class="task-content">
+                        <div class="flex">
+                            <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
+                            <p class="rangeBtn">
+                                <a :class="{'current': taskRange.step_size==7}" @click="changeDateRange('taskChartData',7)">
+                                    {{ $t('dashboard.last7Days') }}
+                                </a>
+                            </p>
+                            <p class="rangeBtn">
+                                <a :class="{'current': taskRange.step_size==30}" @click="changeDateRange('taskChartData',30)">
+                                    {{ $t('dashboard.last30Days') }}
+                                </a>
+                            </p>
+                        </div>
+                        <LineChart :chartdata="taskChartData.chartdata" :options="taskChartData.options" class="mt20" />
+                    </div>
+                </Cell>
+            </Row>
+        </div>
+        <div v-show="isLoading" class="mask">
+            <Loading class="loading-layout" />
+        </div>
     </pageContainer>
 </template>
 <style>
@@ -48,6 +54,10 @@
 <style scoped>
     .alarm-day, .list-status {
         padding-left: 0
+    }
+    .all-wrapper {
+        max-height: 600px;
+        overflow: auto
     }
     .status,.task {
         text-align: center;
@@ -76,7 +86,14 @@
     }
     .chart-cbox {
         margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
     }
+    .alarm-content, .task-content {
+        height: auto;
+    }
+
     .task-content {
         margin-right: 30px;
     }
@@ -174,7 +191,7 @@
         components: {
             LineChart,
             AlarmsList,
-            pageContainer
+            pageContainer,
         },
         FesReady: function () {
             this.loadTaskTodayData(true);
@@ -186,11 +203,7 @@
         },
         data() {
             return {
-                alarmPageInfo: {
-                    page: 1,
-                    size: 5,
-                    total: 0
-                },
+                isLoading: false,
                 taskPageInfo: {
                     page: 1,
                     size: 5,
@@ -222,10 +235,17 @@
                 return this.FesApi.fetch(`api/v1/projector/application/${action}`, params, method);
             },
             async loadTaskTodayData(init = false, params = this.taskPageInfo) {
-                let data = await this.fetchData("index/application/today", {
-                    page: params.page - 1,
-                    size: params.size
-                }, 'post');
+                this.isLoading = true;
+                let data = {};
+                try {
+                    data = await this.fetchData("index/application/today", {
+                        page: params.page - 1,
+                        size: params.size
+                    }, 'post');
+                } catch (e) {
+                    console.error(e);
+                }
+                this.isLoading = false;
                 this.todayTask = data || {};
                 this.taskPageInfo.total = Math.ceil(data.total_num / this.taskPageInfo.size);
                 if (init) this.changeDateRange('taskChartData');
