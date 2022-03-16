@@ -732,7 +732,12 @@
             "select": "请选择要模拟登录的用户",
             "exitUser": "退出模拟用户",
             "selectUser": "请选择用户",
-            "signOut": "退出登录"
+            "signOut": "退出登录",
+            "changePassword": "修改密码",
+            "oldPassword": "旧密码",
+            "newPassword": "新密码",
+            "confirmPassword": "确认新密码",
+            "checkPassword": "新密码输入不一致"
         },
         "addGroupTechniqueRule": {
             "newCustomRule": "单指标校验",
@@ -756,32 +761,6 @@
             "executationVaribleConfigDesc": "可指定查询过滤条件，也可动态替换查询中的占位符",
             "fpsFileConfigDesc": "可校验最新文件",
             "sparkConfigDesc": "可指定Spark Configuration参数"
-        },
-        "dataSourceManagement": {
-            "title": "数据源管理",
-            "previous": "上一步",
-            "close": "关闭",
-            "finish": "完成",
-            "dataSourceId": "数据源ID",
-            "dataSourceName": "数据源名称",
-            "dataSourceDesc": "数据源描述",
-            "dataSourceType": "数据源类型",
-            "addDataSource": "新增数据源",
-            "editDataSource": "编辑数据源",
-            "reviewDataSource": "查看数据源",
-            "exportDataSourceBatch": "批量导出数据源",
-            "importDataSourceBatch": "批量导入数据源",
-            "expire": "过期",
-            "canUse": "可用",
-            "published": "已发布",
-            "unPublish": "未发布",
-            "canNotPublish": "不可发布",
-            "testConnection": "测试连接",
-            "versionsModalTitle": "新建版本列表",
-            "enterDataSourceName": "请输入数据源名称",
-            "enterDataSourceDesc": "请输入数据源描述",
-            "enterLabels": "请输入标签",
-            "rollbackComment": "从版本 {version} 回滚"
         }
     },
     "en": {
@@ -1518,7 +1497,12 @@
             "select": "Please select the user to simulate",
             "exitUser": "Exit Simulated User",
             "selectUser": "Please select user",
-            "signOut": "Sign out"
+            "signOut": "Sign out",
+            "changePassword": "Change Password",
+            "oldPassword": "old Password",
+            "newPassword": "new Password",
+            "confirmPassword": "Confirm new password",
+            "checkPassword": "The new password input is inconsistent"
         },
         "addGroupTechniqueRule": {
             "newCustomRule": "Single index verification",
@@ -1542,32 +1526,6 @@
             "executationVaribleConfigDesc": "You can specify query filter conditions, and you can also dynamically replace placeholders in the query",
             "fpsFileConfigDesc": "The latest file can be verified",
             "sparkConfigDesc": "Can specify Spark Configuration parameters"
-        },
-        "dataSourceManagement": {
-            "title": "Data Source Management",
-            "previous": "Previous",
-            "close": "Close",
-            "finish": "Finish",
-            "dataSourceId": "ID",
-            "dataSourceName": "Data Source Name",
-            "dataSourceDesc": "Data Source Desc",
-            "dataSourceType": "Data Source Type",
-            "addDataSource": "Add Data Source",
-            "editDataSource": "Edit Data Source",
-            "reviewDataSource": "Review Data Source",
-            "exportDataSourceBatch": "Export Data Source Batch",
-            "importDataSourceBatch": "Import Data Source Batch",
-            "expire": "Expire",
-            "canUse": "Can use",
-            "published": "Published",
-            "unPublish": "Un Publish",
-            "canNotPublish": "Can not publish",
-            "testConnection": "Connection",
-            "versionsModalTitle": "Version List",
-            "enterDataSourceName": "please enter name of dataSource",
-            "enterDataSourceDesc": "please enter desc of dataSource",
-            "enterLabels": "please enter label",
-            "rollbackComment": "Rollback from {version}"
         }
     }
 }

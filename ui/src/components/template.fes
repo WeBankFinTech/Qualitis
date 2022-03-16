@@ -172,13 +172,6 @@
                         name: '9',
                         path: '/engineConfiguration',
                         subItems: []
-                    },
-                    {
-                        icon: 'static/icon-data-source-mgr.svg',
-                        title: this.$t('dataSourceManagement.title'),
-                        name: '10',
-                        path: '/dataSourceManagement',
-                        subItems: []
                     }
                 ]);
                 return arr;

@@ -21,8 +21,26 @@
                     </div>
                 </Form-item>
                 <div class="button-container fr">
-                    <Wb-button type="ghost" class="mr10" @click="cancel">{{ $t('common.cancel') }}</Wb-button>
+                    <Wb-button type="ghost" class="mr10" @click="cancel('userForm')">{{ $t('common.cancel') }}</Wb-button>
                     <Wb-button type="primary" @click="submit">{{ $t('common.ok') }}</Wb-button>
+                </div>
+            </Wb-form>
+        </modal>
+
+        <modal ref="passwordForm" class="userModal" :title="$t('fesHeader.changePassword')">
+            <Wb-form ref="password" :rule="passwordValidate" :label-width="100">
+                <Form-item :label="$t('fesHeader.oldPassword')" prop="oldPassword">
+                    <WbInput v-model="oldPassword" type="password" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <Form-item :label="$t('fesHeader.newPassword')" prop="newPassword">
+                    <WbInput v-model="newPassword" type="password" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <Form-item :label="$t('fesHeader.confirmPassword')" prop="confirmPassword">
+                    <WbInput v-model="confirmPassword" type="password" :placeholder="$t('common.pleaseEnter')" />
+                </Form-item>
+                <div class="button-container fr">
+                    <Wb-button type="ghost" class="mr10" @click="cancel('passwordForm')">{{ $t('common.cancel') }}</Wb-button>
+                    <Wb-button type="primary" @click="confirmChangePassword">{{ $t('common.ok') }}</Wb-button>
                 </div>
             </Wb-form>
         </modal>
@@ -31,7 +49,7 @@
 
 <script>
 
-import { getUserRole } from "assets/js/utils";
+import { getUserRole, sha256 } from "assets/js/utils";
 import bus from '../bus';
 export default {
     FesData() {
@@ -50,7 +68,15 @@ export default {
             logoutList: [{
                 content: this.$t('fesHeader.exitUser'),
                 key: 'simulationUserLogout'
-            }]
+            }],
+            oldPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+            passwordValidate: {
+                oldPassword: [{required: true, message: '不能为空'}],
+                newPassword: [{required: true, message: '不能为空'}],
+                confirmPassword: [{required: true, message: '不能为空'}]
+            }
         };
     },
     computed: {
@@ -87,6 +113,7 @@ export default {
         getOperateList(e) {
             let list = [
             { content: this.$t('fesHeader.language'), key: 'change' },
+            { content: this.$t('fesHeader.changePassword'), key: 'password' },
             { content: this.$t('fesHeader.signOut'), key: 'logout' }
             ]
             if (e) {
@@ -101,6 +128,9 @@ export default {
                     break;
                 case 'change':
                     this.languageSwitching();
+                    break;
+                case 'password':
+                    this.changePassword();
                     break;
                 case 'logout':
                     this.logout();
@@ -134,8 +164,8 @@ export default {
                 }
             })
         },
-        cancel() {
-            this.$refs.userForm.hide();
+        cancel(refName) {
+            this.$refs[refName].hide();
         },
         submit() {
             if (!this.userName) return this.$Toast.warn(this.$t('fesHeader.selectUser'));
@@ -189,6 +219,25 @@ export default {
                 'Content-Language': this.FesFesx.get('Language')
             })
             location.reload()
+        },
+        changePassword() {
+            this.$refs['passwordForm'].show()
+        },
+        confirmChangePassword() {
+            this.$refs['password'].validate((valid) => {
+                if (!valid) return;
+                const { oldPassword, newPassword, confirmPassword } = this;
+                if (newPassword !== confirmPassword) {
+                    return this.$Toast.warn(this.$t('fesHeader.checkPassword'));
+                }
+                this.FesApi.fetch('/api/v1/projector/user/modify_password',  {
+                    old_password: sha256(oldPassword),
+                    new_password: sha256(newPassword)
+                }, 'post' ).then(()=> {
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                    this.cancel('passwordForm');
+                });
+            })
         }
     }
 };
@@ -226,6 +275,13 @@ export default {
 
     .userModal {
         /deep/
+        .ui-modal-body {
+            height: 300px;
+        }
+    }
+
+    .userModal {
+        ::v-deep
         .ui-modal-body {
             height: 300px;
         }
