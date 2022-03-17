@@ -226,7 +226,7 @@
                     </Tab>
                     <Icon
                         slot="action"
-                        type="plus-circle-o"
+                        type="ios-add-circle-outline"
                         color="rgba(51, 153, 255, 0.9)"
                         size="20"
                         @click="addQuaCheck"
@@ -242,7 +242,7 @@
                     :params="ruleParams" />
                 <div class="saveResult pl32">
                     <Checkbox v-model="saveResult" :label="$t('customTechnicalRule.save')" :disabled="pageType=='view'" />
-                    <Icon :data-title="$t('customTechnicalRule.text')" type="question-circle-o" size="20" />
+                    <Icon :data-title="$t('customTechnicalRule.text')" type="ios-help-circle-outline" size="20" />
                 </div>
             </template>
         </myRuleTemplate>

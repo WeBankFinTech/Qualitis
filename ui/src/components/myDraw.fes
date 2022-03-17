@@ -4,7 +4,7 @@
         <div :class="mainClass" :style="mainStyle" class="main">
             <div class="drawer-head">
                 <span v-show="title">{{ title }}</span>
-                <icon v-show="closable" type="close-circle-o" size="20" class="cursor" style="float: right;" @click="closeByButton" />
+                <icon v-show="closable" type="ios-close-circle-outline" size="20" class="cursor" style="float: right;" @click="closeByButton" />
             </div>
             <div class="drawer-body">
                 <slot />

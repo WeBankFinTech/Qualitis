@@ -81,7 +81,7 @@
                                         </WbSelect>
                                     </Cell>
                                     <Cell span="3" offset="1" style="text-align: right;">
-                                        <Wb-button icon="plus" type="primary" @click="add('white')" />
+                                        <Wb-button icon="ios-add" type="primary" @click="add('white')" />
                                     </Cell>
                                 </Row>
                             </FormItem>
@@ -92,7 +92,7 @@
                                         <div class="text">
                                             {{ `${item.key}:${item.value}` }}
                                         </div>
-                                        <icon class="deteleIcon" type="close-circle" size="12" @click="deteleList(index, 'white')" />
+                                        <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleList(index, 'white')" />
                                     </div>
                                 </div>
                             </FormItem>
@@ -137,7 +137,7 @@
                                         <WbInput v-model="blackRight" :disabled="isSameTable" clearable :placeholder="$t('common.filterFields')" />
                                     </Cell>
                                     <Cell span="3" offset="1" style="text-align: right;">
-                                        <Wb-button icon="plus" type="primary" @click="add('black')" />
+                                        <Wb-button icon="ios-add" type="primary" @click="add('black')" />
                                     </Cell>
                                 </Row>
                             </FormItem>
@@ -148,7 +148,7 @@
                                         <div class="text">
                                             {{ `${item.name}` + `:${item.value}` }}
                                         </div>
-                                        <icon class="deteleIcon" type="close-circle" size="12" @click="deteleList(index, 'black')" />
+                                        <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleList(index, 'black')" />
                                     </div>
                                 </div>
                             </FormItem>

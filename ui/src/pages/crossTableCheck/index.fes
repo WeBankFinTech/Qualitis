@@ -213,7 +213,7 @@
                                 <Checkbox v-model="delete_fail_check_result" :label="$t('common.rejectFailedResults')" :disabled="isView" />
                             </div>
                         </Tab>
-                        <Icon v-if="pageType!='view'" slot="action" type="plus-circle-o" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
+                        <Icon v-if="pageType!='view'" slot="action" type="ios-add-circle-outline" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
                 </Tabs>
             </template>
             <!-- 规则执行参数 -->
@@ -268,7 +268,7 @@
         <Modal ref="addMapModal" :title="$t('crossTableCheck.addTheMappingRelationship')" class="add-map-modal" width="1000" :close-on-click-shadow="false" @on-close="mapModalClose">
             <div class="box">
                 <div class="statement">
-                    <span v-for="(item, i) in sourceField" :key="i">{{ item }} <Icon type="close-circle-o" color="#3399ff" size="14" @click.stop="deleteRelation('leftRelations','sqlLeft','sourceStatement',i)" /></span>
+                    <span v-for="(item, i) in sourceField" :key="i">{{ item }} <Icon type="ios-close-circle-outline" color="#3399ff" size="14" @click.stop="deleteRelation('leftRelations','sqlLeft','sourceStatement',i)" /></span>
                 </div>
                 <div class="operation" style="width:150px">
                     <select v-model="operation" class="select">
@@ -278,7 +278,7 @@
                     </select>
                 </div>
                 <div class="statement">
-                    <span v-for="(item, i) in targetField" :key="i">{{ item }} <Icon type="close-circle-o" color="#3399ff" size="14" @click.stop="deleteRelation('rightRelations','sqlRight','targetStatement',i)" /></span>
+                    <span v-for="(item, i) in targetField" :key="i">{{ item }} <Icon type="ios-close-circle-outline" color="#3399ff" size="14" @click.stop="deleteRelation('rightRelations','sqlRight','targetStatement',i)" /></span>
                 </div>
             </div>
             <mapRelation
