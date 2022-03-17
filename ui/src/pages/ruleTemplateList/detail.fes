@@ -2,7 +2,7 @@
     <pageContainer>
         <Row class="all-wrapper rule-template p20">
             <div class="breadcrumb-container mb20">
-                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <icon type="ios-arrow-round-back" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
                 <span class="breadcrumb">{{ $t('projects.projects') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb cursor" @click="getRouter('/ruleTemplateList')">{{ $t('ruleTemplate.ruleTemplate') }}</span>

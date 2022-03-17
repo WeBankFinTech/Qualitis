@@ -37,11 +37,11 @@
                         <Wb-button type="primary" class="mr10" @click="search">{{ $t('common.search') }}</Wb-button>
                         <Wb-button type="primary" class="mr10" @click="showAddModal">{{ $t('indexManagement.addIndicator') }}</Wb-button>
                         <Wb-button class="mr10">
-                            <Icon type="upload" size="14" />{{ $t('indexManagement.import') }}
+                            <Icon type="ios-cloud-upload" size="14" />{{ $t('indexManagement.import') }}
                             <input ref="indexFile" class="fileInput" type="file" accept=".xlsx" @change="importIndex">
                         </Wb-button>
                         <WbButton type="warn" @click="exportIndex">
-                            <Icon type="download" size="14" />
+                            <Icon type="ios-cloud-download" size="14" />
                             {{ $t('indexManagement.export') }}
                         </WbButton>
                     </div>
@@ -206,7 +206,7 @@
             <div class="dialog" />
             <div class="management">
                 <div class="close">
-                    <icon type="close-circle-o" size="20" class="cursor" @click="closeAssociationRule" />
+                    <icon type="ios-close-circle-outline" size="20" class="cursor" @click="closeAssociationRule" />
                 </div>
                 <div class="table-container">
                     <div class="operate-container mb10">

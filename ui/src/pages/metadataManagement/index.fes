@@ -13,7 +13,7 @@
                                 </Wb-select>
                             </Form-item>
                         </div>
-                    
+
                         <div class="author">
                             <Form-item :label="$t('common.databaseList')">
                                 <Wb-select v-model="dbName" filterable @on-change="loadTable(dbName, 'author')">
@@ -23,8 +23,8 @@
                                 </Wb-select>
                             </Form-item>
                         </div>
-                    
-                        <div class="author"> 
+
+                        <div class="author">
                             <Form-item :label="$t('common.tableList')">
                                 <WbSelect v-model="tableName" filterable>
                                     <Wb-option v-for="(w, i) in tableList" :key="i" :value="w.table_name">
@@ -33,7 +33,7 @@
                                 </WbSelect>
                             </Form-item>
                         </div>
-                        <div class="author"> 
+                        <div class="author">
                             <Form-item :label="$t('common.user')">
                                 <Wb-select v-model="userName" filterable>
                                     <Wb-option v-for="(w, i) in userList" :key="i" :value="w.username">
@@ -44,7 +44,7 @@
                         </div>
                     <div class="author">
                         <Wb-button class="submit-button" icon="edit" circle @click="modalShow">{{ $t('metadataManagementPage.authorization') }}</Wb-button>
-                        <Wb-button class="submit-button" icon="reload" circle @click="refresh">{{ $t('common.refresh') }}</Wb-button>
+                        <Wb-button class="submit-button" icon="ios-refresh" circle @click="refresh">{{ $t('common.refresh') }}</Wb-button>
                     </div>
                     </div>
                 </Wb-form>
@@ -64,7 +64,7 @@
                                 </Wb-select>
                             </Form-item>
                         </div>
-                    
+
                         <div class="search">
                             <Form-item :label="$t('common.databaseList')">
                                 <Wb-select v-model="searchDb" @on-change="loadTable(searchDb, 'search')">
@@ -74,7 +74,7 @@
                                 </Wb-select>
                             </Form-item>
                         </div>
-                        
+
                         <div class="search">
                             <Form-item :label="$t('common.tableList')">
                                 <Wb-select v-model="searchTable">
@@ -84,7 +84,7 @@
                                 </Wb-select>
                             </Form-item>
                         </div>
-                        
+
                         <div class="search">
                             <Form-item :label="$t('common.user')">
                                 <Wb-select v-model="searchUser" filterable>
@@ -104,7 +104,7 @@
                             </Form-item>
                         </div>
                         <div class="search">
-                            <WbButton icon="search" circle class="submit-button" @click="searchList">
+                            <WbButton icon="ios-search" circle class="submit-button" @click="searchList">
                                 {{ $t('common.search') }}
                             </WbButton>
                         </div>
@@ -125,7 +125,7 @@
                     :total="pagination.total" class="p20"
                     @on-change="changePage" />
                 <Loading v-show="showLoading" class="loading-layout" />
-            </panel>  
+            </panel>
         </Cell>
 
         <Modal ref="authorization" :title="$t('metadataManagementPage.authorizationInformation')">
@@ -215,7 +215,7 @@
                                     this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
                                     this.changePage({ current:1, size:5 });
                                 })
-                            } 
+                            }
                         })
                     }
                 }]
@@ -252,12 +252,12 @@
                     page: 0,
                     size: 10000
                 }
-                this.FesApi.fetch('api/v1/admin/meta_data_all/db', params, 'post').then(res=> {                   
+                this.FesApi.fetch('api/v1/admin/meta_data_all/db', params, 'post').then(res=> {
                     this.dbList = res.dbs;
                 })
             },
             //加载数据表
-            loadTable(value, type){      
+            loadTable(value, type){
                 if (!value) {
                     return;
                 }
@@ -285,7 +285,7 @@
                     this.tableList = res.tables;
                 })
             },
-            formatType(data) {   
+            formatType(data) {
                 return this.type[data-1];
             },
             modalShow() {
@@ -345,7 +345,7 @@
                     size: this.pagination.size
                 };
                 this.FesApi.fetch('api/v1/admin/meta_data_auth/query', params, 'post').then(res=> {
-                    this.showLoading = false;  
+                    this.showLoading = false;
                     this.$Toast.success(this.$t('toastSuccess.search'));
                     this.pagination.total = Math.ceil(res.total / this.pagination.size);
                     this.authorList = res.data;

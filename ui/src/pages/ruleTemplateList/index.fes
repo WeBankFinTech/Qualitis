@@ -6,10 +6,10 @@
             </div>
             <Cell span="1" class="flex pb20">
                 <Wb-button type="primary" class="mr10" @click="deleteAction">
-                    <Icon type="delete" size="14" />
+                    <Icon type="ios-trash" size="14" />
                     {{ $t('common.delete') }}
                 </Wb-button>
-                <Wb-button type="primary" @click="addRule"><Icon type="plus" size="14" />
+                <Wb-button type="primary" @click="addRule"><Icon type="ios-add" size="14" />
                     {{ $t('common.add') }}
                 </Wb-button>
             </Cell>
@@ -153,7 +153,7 @@
                     </Cell>
                 </Row>
                 <FormItem :rule="[{ required: true, message: $t('common.notEmpty') }]" :label="`${$t('ruleTemplatelist.createIntermediateTable')}`" prop="table" class="intermediate-table">
-                    <Icon :data-title="$t('ruleTemplatelist.tableHint')" type="question-circle-o" color="red" size="20" class="hostSpanTitle" />
+                    <Icon :data-title="$t('ruleTemplatelist.tableHint')" type="ios-help-circle-outline" color="red" size="20" class="hostSpanTitle" />
                     <WbInput v-model="templateSql" :placeholder="$t('common.pleaseEnter')" type="textarea" :rows="2" />
                 </FormItem>
                 <Tabs value="1" style="margin-bottom:60px;" @on-tab-remove="remove">
