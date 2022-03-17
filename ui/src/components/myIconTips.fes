@@ -1,6 +1,6 @@
 <template>
     <div class="ui-icon-tips" :data-title="content">
-        <i class="ui-icon ui-icon-question-circle-o" style="font-size: 20px;" />
+        <i class="ui-icon ui-icon-ios-help-circle-outline" style="font-size: 20px;" />
     </div>
 </template>
 <script>

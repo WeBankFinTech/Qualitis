@@ -25,7 +25,7 @@
                     </WbSelect>
                 </Cell>
                 <Cell span="3" offset="1" style="text-align: right;">
-                    <Wb-button icon="plus" type="primary" @click="add" />
+                    <Wb-button icon="ios-add" type="primary" @click="add" />
                 </Cell>
             </Row>
         </FormItem>
@@ -42,7 +42,7 @@
             <div class="file_table_desc_content">
                 <div v-for="(item, index) in fpsData.file_table_desc" :key="item.column_name" class="file_table_desc_item">
                   {{ `${item.column_name}:${item.data_type}` }}
-                  <icon class="deteleIcon" type="close-circle" size="12" @click="deteleFileTableDesc(index)" />
+                  <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleFileTableDesc(index)" />
                 </div>
             </div>
         </FormItem>

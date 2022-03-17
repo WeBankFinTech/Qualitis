@@ -2,7 +2,7 @@
     <pageContainer>
         <div class="p20">
             <div class="breadcrumb-container mb10">
-                <icon type="arrow-left" class="mr10 cursor" size="16" @click="getRouter('/myProject/projects')" />
+                <icon type="ios-arrow-round-back" class="mr10 cursor" size="16" @click="getRouter('/myProject/projects')" />
                 <span class="breadcrumb cursor" @click="getRouter('/myProject/projects')">{{ $t('myProject.myProject') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb-item-link">{{ $t('addGroupTechniqueRule.projectDetails') }}</span>
@@ -120,16 +120,16 @@
                 <Form-item :label="$t('common.permissions')" prop="permission">
                     <Checkbox-group v-model="permission" @on-change="permissionChange">
                         <Checkbox :value="1">
-                            <Icon type="user" />Admin
+                            <Icon type="ios-person" />Admin
                         </Checkbox>
                         <Checkbox :value="2">
                             <Icon type="windows" />{{ $t('common.edit') }}
                         </Checkbox>
                         <Checkbox :value="3">
-                            <Icon type="desktop" />{{ $t('common.run') }}
+                            <Icon type="ios-desktop" />{{ $t('common.run') }}
                         </Checkbox>
                         <Checkbox :value="4">
-                            <Icon type="eye" />{{ $t('common.view') }}
+                            <Icon type="ios-eye" />{{ $t('common.view') }}
                         </Checkbox>
                     </Checkbox-group>
                 </Form-item>
@@ -175,10 +175,10 @@
             @on-close="handlePermissionPanelDrawClose">
             <Panel :title="$t('common.projectAuthorityManagement')" class="mt30">
                 <div slot="action" class="panelAction">
-                    <Wb-button v-if="isAdmin" title="Add" type="success" class="small-btn" icon="plus" @click="showProjectUserModal">{{ $t('common.addTo') }}</Wb-button>
+                    <Wb-button v-if="isAdmin" title="Add" type="success" class="small-btn" icon="ios-add" @click="showProjectUserModal">{{ $t('common.addTo') }}</Wb-button>
                     <div class="panelActionOpen">
-                        <icon v-if="isShowPermission" type="down-square" size="20" @click="isShowPermission = !isShowPermission" />
-                        <icon v-else type="up-square" size="20" @click="isShowPermission = !isShowPermission" />
+                        <icon v-if="isShowPermission" type="ios-arrow-down" size="20" @click="isShowPermission = !isShowPermission" />
+                        <icon v-else type="ios-arrow-up" size="20" @click="isShowPermission = !isShowPermission" />
                     </div>
                 </div>
                 <Wb-table v-if="isShowPermission" ref="table" :data="permissionData">
@@ -844,6 +844,7 @@
                 })
             },
             taskExecution() {
+                if (!this.$refs.tableRule) return this.$Toast.error('No rule can be executed');
                 const arr = this.$refs.tableRule.map((item)=> {
                     return item.getSelected();
                 });

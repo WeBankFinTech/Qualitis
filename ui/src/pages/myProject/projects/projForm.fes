@@ -19,7 +19,7 @@
                         <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
                             <div>
                                 <span v-for="(item, index) in project_label" :key="index" class="labelTag">
-                                    {{ item }}<Icon v-if="!isEditing" type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
+                                    {{ item }}<Icon v-if="!isEditing" type="ios-close-circle-outline" color="#409eff" size="14" @click.stop="deleteTag(index)" />
                                 </span>
                             </div>
                             <div :style="{marginLeft: project_label.length > 0 ? '12px' : 0, flex: '0 0 164px'}">
@@ -45,25 +45,25 @@
                 <div>
                     <Dropdown v-if="isAdmin || isEdit || isRun || canView" class="mr10" :data="viewHistoryTypes" @on-choose="viewHistory">
                         <WbButton type="primary">
-                            <Icon type="video-camera" size="14" />{{ $t('myProject.history') }}
+                            <Icon type="ios-videocam" size="14" />{{ $t('myProject.history') }}
                         </WbButton>
                     </Dropdown>
                     <WbButton type="primary" class="mr10" @click="viewPermission">
-                        <Icon type="team" size="14" />{{ $t('common.projectPermission') }}
+                        <Icon type="ios-people" size="14" />{{ $t('common.projectPermission') }}
                     </WbButton>
                 </div>
                 <div v-show="!flowTag">
                     <Dropdown v-if="isAdmin || isEdit" :data="dropList" class="mr10" @on-choose="addTeac">
-                        <Wb-button type="primary"><Icon type="plus-circle" size="14" />{{ $t('common.addRule') }}</Wb-button>
+                        <Wb-button type="primary"><Icon type="ios-add-circle" size="14" />{{ $t('common.addRule') }}</Wb-button>
                     </Dropdown>
                     <WbButton v-if="isAdmin || isRun" type="primary" class="mr10" @click="taskExecution">
                         <Icon type="exception" size="14" />{{ $t('myProject.run') }}
                     </WbButton>
-                    <WbButton v-if="isAdmin || isEdit" type="info" class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importRules') }}
+                    <WbButton v-if="isAdmin || isEdit" type="info" class="mr10"><Icon type="ios-cloud-upload" size="14" />{{ $t('myProject.importRules') }}
                         <input ref="technicaFile" class="fileInput" type="file" accept=".xlsx" @change="importFile">
                     </WbButton>
                     <WbButton v-if="technical.length && (isAdmin || isEdit || isRun)" type="warn" @click="exportExcel">
-                        <Icon type="download" size="14" />{{ $t('myProject.DownloadRules') }}
+                        <Icon type="ios-cloud-download" size="14" />{{ $t('myProject.DownloadRules') }}
                     </WbButton>
                 </div>
             </Cell>

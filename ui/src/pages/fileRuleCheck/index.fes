@@ -62,7 +62,7 @@
                                     </WbOption>
                                 </WbSelect>
                                 <div v-show="textShow" :data-title="dbText" class="icon-title">
-                                    <Icon type="question-circle-o" size="18" class="iconTitle" />
+                                    <Icon type="ios-help-circle-outline" size="18" class="iconTitle" />
                                 </div>
                             </FormItem>
                             <FormItem :rule="ruleValidate.table_name" :prop="'s_table_'+index" :label="`${$t('common.table')}：`" class="form-item">
@@ -73,13 +73,13 @@
                                     </WbOption>
                                 </WbSelect>
                                 <div v-show="textShow" :data-title="tableText" class="icon-title">
-                                    <Icon type="question-circle-o" size="18" />
+                                    <Icon type="ios-help-circle-outline" size="18" />
                                 </div>
                             </FormItem>
                             <FormItem :prop="'s_filter_'+index" :label="`${$t('common.partition')}：`">
                                 <WbInput v-model="d.filterData" type="textarea" :placeholder="$t('common.enterPartition', {format1: 'ds=${run_date}', format2: 'ds=${run_date_std}'})" :disabled="isView" :maxlength="1000" :rows="3" @on-input="filterValue(index)" />
                                 <div v-show="textShow" :data-title="filterText" class="icon-title">
-                                    <Icon type="question-circle-o" size="18" />
+                                    <Icon type="ios-help-circle-outline" size="18" />
                                 </div>
                             </FormItem>
                         </div>
@@ -94,13 +94,13 @@
                                     </WbOption>
                                 </WbSelect>
                                 <div v-show="textShow" :data-title="regText[k]" class="icon-title">
-                                    <Icon type="question-circle-o" size="18" />
+                                    <Icon type="ios-help-circle-outline" size="18" />
                                 </div>
                             </FormItem>
                             <FormItem v-else prop="w.argument_value" :label="`${w.argument_name}:`" :rule="[{required: !w.flag,message: $t('common.notEmpty')}]">
                                 <WbInput v-model="w.argument_value" class="regInput" :disabled="isView" @on-input="replaceParameter(k)" />
                                 <div v-show="textShow" :data-title="regText[k]" class="icon-title">
-                                    <Icon type="question-circle-o" size="18" />
+                                    <Icon type="ios-help-circle-outline" size="18" />
                                 </div>
                             </FormItem>
                         </div>
@@ -202,7 +202,7 @@
                             <Checkbox v-model="item.delete_fail_check_result" :label="$t('common.rejectFailedResults')" :disabled="isView" />
                         </div>
                     </Tab>
-                    <Icon v-if="pageType!='view'" slot="action" type="plus-circle-o" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
+                    <Icon v-if="pageType!='view'" slot="action" type="ios-add-circle-outline" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
                 </Tabs>
             </template>
             <!-- 规则执行参数 -->

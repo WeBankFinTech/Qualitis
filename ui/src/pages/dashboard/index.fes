@@ -2,7 +2,7 @@
     <pageContainer>
         <div class="p20">
             <Row>
-                <Cell span="12" offset="6" class="p20 list-status">
+                <Cell span="14" offset="5" class="p20 list-status">
                     <div class="task p20">
                         {{ $t('dashboard.todayPass') }}/{{ $t('dashboard.todayFail') }}/{{ $t('common.failCheck') }}
                         <span class="green pl20">
@@ -19,7 +19,7 @@
                 </Cell>
             </Row>
             <Row style="margin-top: 20px;">
-                <Cell span="12" offset="6">
+                <Cell span="14" offset="5">
                     <div class="task-content">
                         <div class="flex">
                             <WbInputDatePicker v-model="taskRange.range" model="range" class="datepicker" @on-change="changeTaskRange" />
@@ -71,6 +71,10 @@
         line-height: 32px;
         flex: 1;
         padding-left: 20px;
+        & > a {
+            display: inline-block;
+            width: 100%；
+        }
     }
     .current {
         color: #333;

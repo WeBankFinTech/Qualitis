@@ -1,7 +1,7 @@
 <template>
     <div class="executation-param-setting">
         <WbButton
-            icon="plus-circle-o"
+            icon="ios-add-circle-outline"
             :style="{width: '83%'}"
             @click="add" />
         <Row v-show="parameterList.length > 0">
@@ -27,7 +27,7 @@
             <Cell span="3" offset="1">
                 <Icon
                     style="cursor: pointer;"
-                    type="close"
+                    type="ios-close"
                     @click="deleteRow(idx)" />
             </Cell>
         </Row>

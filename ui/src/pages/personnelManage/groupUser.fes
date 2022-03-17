@@ -2,7 +2,7 @@
     <pageContainer>
         <Row class="all-wrapper personManage p20">
             <div class="breadcrumb-container mb10">
-                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <icon type="ios-arrow-round-back" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
                 <span class="breadcrumb">{{ $t('configureParameter.configureParameter') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb cursor" @click="getRouter('/personnelManage')">{{ $t('personnelManage.personnelManage') }}</span>

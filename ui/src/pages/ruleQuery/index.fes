@@ -29,7 +29,7 @@
                 </Cell>
                 <Cell span="4" offset="1" style="margin-top: 15px;">
                     <Wb-input v-model="filterTableName" :placeholder="`${$t('ruleQueryPage.filterTable')}`" :disabled="disableFilter">
-                        <span slot="append" @click="search"><Icon type="search" /></span>
+                        <span slot="append" @click="search"><Icon type="ios-search" /></span>
                     </Wb-input>
                 </Cell>
                 <Cell span="4" offset="1" style="margin-top: 12px;">

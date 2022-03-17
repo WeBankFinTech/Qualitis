@@ -17,7 +17,7 @@
                             <Wb-input v-model="dataMapValue" prop="dataMapValue" width="600px" />
                         </Form-item>
                         <Wb-button type="primary" class="map-button" @click="newDataMap">{{ $t('common.refresh') }}</Wb-button>
-                        <Icon class="question" type="question-circle-o" color="#555" size="22" :title="title" />
+                        <Icon class="question" type="ios-help-circle-outline" color="#555" size="22" :title="title" />
                     </div>
                 </Wb-form>
             </Cell>

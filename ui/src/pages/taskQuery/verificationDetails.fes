@@ -3,7 +3,7 @@
         <div class="verificaton-details p20">
             <div class="breadcrumb-container mb10">
                 <icon
-                    type="arrow-left"
+                    type="ios-arrow-round-back"
                     class="mr10 cursor"
                     size="16"
                     @click="FesApp.router.back()" />
