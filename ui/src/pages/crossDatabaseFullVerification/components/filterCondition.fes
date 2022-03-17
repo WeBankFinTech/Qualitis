@@ -93,7 +93,7 @@
                 </Tab>
                 <Icon
                     slot="action"
-                    type="plus-circle-o"
+                    type="ios-add-circle-outline"
                     color="rgba(51, 153, 255, 0.9)"
                     size="20"
                     class="cursor"
@@ -104,7 +104,7 @@
             <div style="text-align: center;">
                 <Icon
                     slot="action"
-                    type="plus-circle-o"
+                    type="ios-add-circle-outline"
                     color="rgba(51, 153, 255, 0.9)"
                     size="20"
                     class="cursor"

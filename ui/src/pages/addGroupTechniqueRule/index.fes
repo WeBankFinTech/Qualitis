@@ -2,7 +2,7 @@
     <pageContainer v-if="!dssNode">
         <div class="all-wrapper p20">
             <div class="breadcrumb-container mb10">
-                <icon type="arrow-left" class="mr10 cursor" size="16" @click="getRouter('/myProject/projects/list', $route.query.id)" />
+                <icon type="ios-arrow-round-back" class="mr10 cursor" size="16" @click="getRouter('/myProject/projects/list', $route.query.id)" />
                 <span class="breadcrumb cursor" @click="getRouter('/myProject/projects')">{{ $t('myProject.myProject') }}</span>
                 <span class="breadcrumb-item-separator">/</span>
                 <span class="breadcrumb cursor" @click="getRouter('/myProject/projects/list', $route.query.id)">{{ $t('addGroupTechniqueRule.projectDetails') }}</span>
@@ -12,14 +12,14 @@
             <div class="mb20">
                 <template v-if="tableType !== CROSS_DB_VERIFICATION_FULLY_RULE_FLAG">
                     <span v-for="(item, index) in list" :key="index" :class="['ruleTag', {ruleTagActived: active === item.rule_id}]" @click="seeDetails(item)">
-                        {{ item.rule_name }}<Icon v-if="!flow && isEdit" type="close-circle-o" color="#409eff" size="14" @click.stop="deleteRule(item)" />
+                        {{ item.rule_name }}<Icon v-if="!flow && isEdit" type="ios-close-circle-outline" color="#409eff" size="14" style="margin-top: 8px;" @click.stop="deleteRule(item)" />
                     </span>
                     <WbButton v-if="list.length && !flow && isEdit" :class="{'disableEdit':EditDSSUpstream}" :type="EditDSSUpstream ? '' : 'primary'" @click.prevent="editRules">
                         {{ $t('common.editCurrentRules') }}
                     </WbButton>
                     <Dropdown v-if="!flow && isEdit" :data="dropList" class="ml10" @on-choose="addTeac">
                         <Wb-button type="primary">
-                            <Icon type="plus" size="14" class="add-icon" />{{ $t('common.addRule') }}
+                            <Icon type="ios-add" size="14" class="add-icon" />{{ $t('common.addRule') }}
                         </Wb-button>
                     </Dropdown>
                 </template>
@@ -180,11 +180,11 @@
             <div class="mb20">
                 <template v-if="tableType !== CROSS_DB_VERIFICATION_FULLY_RULE_FLAG">
                     <span v-for="(item, index) in list" :key="index" :class="['ruleTag', {ruleTagActived: active === item.rule_id}]" @click="seeDetails(item)">
-                        {{ item.rule_name }}<Icon v-if="isEdit" type="close-circle-o" color="#409eff" size="14" @click.stop="deleteRule(item)" />
+                        {{ item.rule_name }}<Icon v-if="isEdit" type="ios-close-circle-outline" color="#409eff" size="14" @click.stop="deleteRule(item)" />
                     </span>
                     <Dropdown v-if="isEdit" :data="dropList" @on-choose="addTeac">
                         <Wb-button type="primary">
-                            <Icon type="plus" size="14" class="add-icon" />{{ $t('common.addRule') }}
+                            <Icon type="ios-add" size="14" class="add-icon" />{{ $t('common.addRule') }}
                         </Wb-button>
                     </Dropdown>
                     <WbButton v-if="list.length && isEdit" :class="{'disableEdit':EditDSSUpstream}" :type="EditDSSUpstream ? '' : 'primary'" class="ml10" @click.prevent="editRules">

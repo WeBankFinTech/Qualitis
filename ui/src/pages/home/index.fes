@@ -16,7 +16,7 @@
                     <button @click="login">{{ $t('home.login') }}</button>
                 </div>
                 <div v-show="error" class="error">
-                    <Icon type="exclamation-circle" />{{ error }}
+                    <Icon type="ios-alert" />{{ error }}
                 </div>
             </div>
         </div>

@@ -6,14 +6,14 @@
                     <span class="breadcrumb-item-link">{{ $t('myProject.myProject') }}</span>
                 </div>
                 <div>
-                    <Wb-button :disabled="showLoading" type="primary" class="mr10" @click="addNewProj"><Icon type="plus" size="14" />
+                    <Wb-button :disabled="showLoading" type="primary" class="mr10" @click="addNewProj"><Icon type="ios-add" size="14" />
                         {{ $t('common.newProject') }}
                     </Wb-button>
-                    <Wb-button :disabled="showLoading" class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importProject') }}
+                    <Wb-button :disabled="showLoading" class="mr10"><Icon type="ios-cloud-upload" size="14" />{{ $t('myProject.importProject') }}
                         <input ref="projectFile" class="fileInput" type="file" accept=".xlsx" @change="importFile">
                     </Wb-button>
                     <WbButton v-show="projectList.length" :disabled="showLoading" type="warn" class="mr10" @click="exportExcel">
-                        <Icon type="download" size="14" />
+                        <Icon type="ios-cloud-download" size="14" />
                         {{ $t('myProject.downloadProject') }}
                     </WbButton>
                 </div>
@@ -94,7 +94,7 @@
                 <Form-item :label="`${$t('common.itemTag')}：`">
                     <div :class="{'mb10' :tagList.length}">
                         <span v-for="(item, index) in tagList" :key="index" class="labelTag">
-                            {{ item }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
+                            {{ item }}<Icon type="ios-close-circle-outline" color="#409eff" size="14" @click.stop="deleteTag(index)" />
                         </span>
                     </div>
                     <div>
@@ -138,7 +138,7 @@
                 let uiTabsHeaderSwap = window.document.getElementsByClassName('ui-tabs-header-swap');
                 uiTabsHeaderSwap = uiTabsHeaderSwap[0];
                 let template = `<div class="uiTabsHeaderSwap-project-mes" data-title="${this.$t('projects.projectHint')}">
-                                    <i class="ui-icon ui-icon-question-circle-o" style="font-size: 20px;"></i>
+                                    <i class="ui-icon ui-icon-ios-help-circle-outline" style="font-size: 20px;"></i>
                                 </div>`;
                 let _tdom=document.createElement("div");
                 _tdom.innerHTML = template;

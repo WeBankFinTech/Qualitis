@@ -13,7 +13,8 @@
             </div>
         </WbMenu>
         <div class="toggle" :class="{'close': isClose}" @click="toggleBtn">
-            <Icon :type="isClose ? 'double-right' : 'double-left'" class="icon" size="10" />
+            <Icon :type="isClose ? 'ios-arrow-forward' : 'ios-arrow-back'" class="icon" size="10" />
+            <Icon :type="isClose ? 'ios-arrow-forward' : 'ios-arrow-back'" class="icon" size="10" />
         </div>
     </div>
 </template>
