@@ -326,9 +326,10 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     count += 3;
                 }
             }
-
-            sqlList.addAll(getSaveMidTableSentenceSettings());
-            sqlList.addAll(getSaveMidTableSentence(midTableName, count, runDate));
+            if (rule.getTemplate().getSaveMidTable()) {
+                sqlList.addAll(getSaveMidTableSentenceSettings());
+                sqlList.addAll(getSaveMidTableSentence(midTableName, count, runDate));
+            }
         } else {
             // Generate select statement and save into hive database
             RuleDataSource ruleDataSource = rule.getRuleDataSources().stream().filter(dataSource -> dataSource.getDatasourceIndex() == null).iterator().next();
