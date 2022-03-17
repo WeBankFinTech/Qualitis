@@ -119,7 +119,7 @@ public class DateExprReplaceUtil {
                 String[] keys = currentParam.split(SpecCharEnum.MINUS.getValue());
                 int forwayDay = Integer.parseInt(keys[1]);
                 calendar.setTime(date);
-                calendar.add(Calendar.DATE, 0 - forwayDay);
+                calendar.add(Calendar.DATE, 0 - forwayDay - 1);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
             } else {
                 calendar.setTime(date);
