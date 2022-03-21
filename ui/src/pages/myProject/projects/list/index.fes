@@ -844,11 +844,8 @@
                 })
             },
             taskExecution() {
-                if(this.$refs.tableRule){
-                }else{
-                   this.$Toast.error('No rule can be executed')
-                }
-                let arr = this.$refs.tableRule.map((item)=> {
+                if (!this.$refs.tableRule) return this.$Toast.error('No rule can be executed');
+                const arr = this.$refs.tableRule.map((item)=> {
                     return item.getSelected();
                 });
                 this.selectTask = arr.reduce((i, j)=> {

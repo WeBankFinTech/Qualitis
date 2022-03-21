@@ -434,7 +434,7 @@
         "crossTableCheck": {
             "Database": "数据库",
             "alarmReceiver": "告警接收人",
-            "alert_receiver": "直接复制企业微信中英文全名（比如：allenzhou(周玉壮)）即可，多个以英文逗号分隔。",
+            "alert_receiver": "直接复制企业微信中英文全名（比如：xxx）即可，多个以英文逗号分隔。",
             "sheets": "数据表",
             "mapSheets": "数据表",
             "search0": "请输入关键字进行搜索",
@@ -1199,7 +1199,7 @@
         "crossTableCheck": {
             "Database": "Database",
             "alarmReceiver": "Alarm receiver",
-            "alert_receiver": "You can directly copy the full Chinese and English names of wechat enterprises (for example, Allen Zhou, Zhou Yuzhuang)) and separate them with English commas.",
+            "alert_receiver": "You can directly copy the full Chinese and English names of wechat enterprises (eg: xxx) and separate them with English commas.",
             "sheets": "Table",
             "mapSheets": "Table1",
             "search0": "Please enter the keywords to search",
