@@ -119,8 +119,6 @@ public class Filter1AuthorizationFilter implements Filter {
             }
         }
         Object user = session.getAttribute("user");
-        LOGGER.info("User: {} succeed to access url: {}", user.toString().replace("\r", "").replace("\n", ""),
-            requestWrapper.getRequestURI().replace("\r", "").replace("\n", ""));
         filterChain.doFilter(requestWrapper, response);
     }
 
