@@ -39,7 +39,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      * @param name
      * @return
      */
-    Project findByName(String name);
+    List<Project> findByName(String name);
 
     /**
      * Find project by creator
