@@ -16,10 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.project.dao.impl;
 
+
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectRepository;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +41,8 @@ public class ProjectDaoImpl implements ProjectDao {
 
     @Override
     public Project findByName(String name) {
-        return projectRepository.findByName(name);
+        List<Project> projects = projectRepository.findByName(name);
+        return CollectionUtils.isNotEmpty(projects) ? projects.get(0) : null;
     }
 
     @Override
