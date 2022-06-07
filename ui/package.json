@@ -32,14 +32,14 @@
     "devDependencies": {
         "@vue/test-utils": "^1.1.0",
         "@webank/eslint-config-webank": "^0.1.4",
-        "@webank/fes-cli": "^0.4.6",
+        "@webank/fes-cli": "^0.4.0",
+        "babel-plugin-component": "^1.1.1",
         "chai": "^4.2.0",
         "csp-html-webpack-plugin": "^4.0.0",
-        "babel-plugin-component": "^1.1.1",
         "eslint": "^5.8.0",
         "eslint-plugin-vue": "^5.0.0-beta.3",
-        "lint-staged": "^8.1.0",
-        "husky": "^1.2.0"
+        "husky": "^1.2.0",
+        "lint-staged": "^13.0.0"
     },
     "eslintIgnore": [
         "*.min.js"
@@ -51,6 +51,5 @@
         "date-fns": "^2.21.3",
         "element-ui": "^2.15.3",
         "vue-chartjs": "^3.5.1"
-    },
-    "peerDependencies": {}
+    }
 }
