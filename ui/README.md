@@ -8,72 +8,29 @@
     Qualitis基于Spring Boot开发，依赖于Linkis进行数据计算，提供数据质量规则构建，数据质量规则执行，数据质量任务管理，异常数据发现保存等功能。
 
     同时它也提供了金融级数据质量规则资源隔离，资源管控，权限隔离等企业特性，具备高并发，高性能，高可用的大数据质量管理能力。为用户提高工作效率。
-### 负责人
-* PM：xxx
-* 产品：xxx
-* 前端：xxx
-* 后台：xxx
-* 测试：xxx
-* 运维：xxx
 
 ### 业务简介
 ...
 
 ### git地址
 
-http://git.******.com/howeye/bdp-dqm-ui
-
-### 需求文档
-
-http://dpms.******.com/#/product/100194/release/list
-
-### 名词解释
-
-
-### 接口文档
-
-
-### 子系统
-* 前端子系统
-	BDP-DQMUI
-
-### 关联域名
-#### 接口域名
-* ...
-* ...
-
-#### 访问域名
-* http://127.0.0.1:8090/qualitis
-#### cdn域名
-
-
-#### 跳转域名
-
-
-#### 其他相关域名
-* ...
-* ...
-
-### 关联项目
-
+https://github.com/lucaszhu2zgf/Qualitis/tree/master/ui
 
 ## 开发调试
 
 ### 开发环境安装
 * 安装fes3
-* http://h.test-adm.******.com/s/fes-2.0/guide/install.html#%E5%AE%89%E8%A3%85-node
+* https://fesjs.mumblefe.cn/1.0/
 
 ```
 
-	npm install @webank/wnpm -g --registry=http://wnpm.******.com:8001 // 如果已经安装了wnpm则忽略
-
-	npm install @webank/wnpm -g --registry=http://wnpm.******.com:8001
+	npm i @webank/fes-cli -g
 
 ```
 * 项目根目录下执行
 
 ```
-	wnpm i // 安装所需依赖
+	npm i // 安装所需依赖
 
 ```
 
