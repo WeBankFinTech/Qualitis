@@ -84,7 +84,8 @@ public class FileRuleController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteRule(DeleteFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return fileRuleService.deleteRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return fileRuleService.deleteRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;

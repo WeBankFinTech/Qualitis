@@ -243,7 +243,15 @@ project(':core/common') {
         compile.exclude group: 'io.netty', module: 'netty'
       }
     }
-
+    compile('org.apache.commons:commons-compress:1.21'){
+      force = true
+    }
+    compile('org.yaml:snakeyaml:1.26'){
+      force = true
+    }
+    compile('org.hibernate:hibernate-core:5.4.24.Final'){
+      force = true
+    }
     compile (libs.hiveExec) {
       exclude group: 'org.apache.commons'
       exclude group: 'commons-lang'

@@ -29,14 +29,6 @@ import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 
 /**
  * @author howeye
@@ -68,11 +60,12 @@ public interface CustomRuleService {
     /**
      * delete custom rule
      * @param request
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * delete custom rule real

@@ -161,7 +161,7 @@ public class FileRuleServiceImpl implements FileRuleService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteRule(DeleteFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<?> deleteRule(DeleteFileRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteFileRuleRequest.checkRequest(request);
         // Check existence of rule
@@ -170,7 +170,6 @@ public class FileRuleServiceImpl implements FileRuleService {
             throw new UnExpectedRequestException("Rule id [" + request.getRuleId() + "]) {&IS_NOT_A_RULE_WITH_TEMPLATE}");
         }
         ruleDataSourceService.updateRuleDataSourceCount(ruleInDb, -1);
-        String loginUser = HttpUtils.getUserName(httpServletRequest);
         Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(),
             loginUser);
         // Check permissions of project

@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
-import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
@@ -26,9 +25,11 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +80,8 @@ public class RuleController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException {
         try {
-            return ruleService.deleteRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return ruleService.deleteRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;

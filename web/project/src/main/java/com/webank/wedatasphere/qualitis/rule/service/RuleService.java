@@ -71,10 +71,11 @@ public interface RuleService {
     /**
      * Delete rule
      * @param request
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<?> deleteRule(DeleteRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete rule real

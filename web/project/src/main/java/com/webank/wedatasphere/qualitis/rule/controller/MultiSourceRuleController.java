@@ -18,14 +18,13 @@ package com.webank.wedatasphere.qualitis.rule.controller;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.DeleteMultiSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.ModifyMultiSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -35,6 +34,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,7 +92,8 @@ public class MultiSourceRuleController {
     public GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return multiSourceRuleService.deleteMultiSourceRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return multiSourceRuleService.deleteMultiSourceRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;

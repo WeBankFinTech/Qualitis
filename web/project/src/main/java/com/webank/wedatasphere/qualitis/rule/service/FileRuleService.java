@@ -18,18 +18,13 @@ package com.webank.wedatasphere.qualitis.rule.service;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyFileRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
-import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 
 /**
@@ -57,10 +52,11 @@ public interface FileRuleService {
     /**
      * Delete rule
      * @param request
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRule(DeleteFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<?> deleteRule(DeleteFileRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete rule real

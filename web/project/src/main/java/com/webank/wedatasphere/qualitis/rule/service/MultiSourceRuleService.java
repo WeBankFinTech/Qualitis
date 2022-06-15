@@ -62,10 +62,11 @@ public interface MultiSourceRuleService {
     /**
      * Delete multi-table rule
      * @param request
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete multi-table rule real
