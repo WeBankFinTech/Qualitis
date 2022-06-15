@@ -342,7 +342,7 @@ public class ProjectServiceImpl implements ProjectService {
         permissions.add(ProjectUserPermissionEnum.CREATOR.getCode());
         checkProjectPermission(projectInDb, user.getUserName(), permissions);
         List<Rule> rules = ruleDao.findByProject(projectInDb);
-        deleteAllRules(rules);
+        deleteAllRules(rules, request.getUsername());
         // Delete project
         projectDao.deleteProject(projectInDb);
         LOGGER.info("Succeed to delete project. project_id: {}", request.getProjectId());
@@ -498,20 +498,18 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-    private void deleteAllRules(Iterable<Rule> ruleList) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    private void deleteAllRules(Iterable<Rule> ruleList, String username) throws UnExpectedRequestException, PermissionDeniedRequestException {
         for (Rule rule : ruleList) {
             if (rule.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {
-                ruleService.deleteRule(new DeleteRuleRequest(rule.getId()));
+                ruleService.deleteRule(new DeleteRuleRequest(rule.getId()), username);
             } else if (rule.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
-                customRuleService.deleteCustomRule(new DeleteCustomRuleRequest(rule.getId()));
+                customRuleService.deleteCustomRule(new DeleteCustomRuleRequest(rule.getId()), username);
             } else if (rule.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
-                multiSourceRuleService.deleteMultiSourceRule(new DeleteMultiSourceRequest(rule.getId()));
+                multiSourceRuleService.deleteMultiSourceRule(new DeleteMultiSourceRequest(rule.getId()), username);
             } else if (rule.getRuleType().equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
-                fileRuleService.deleteRule(new DeleteFileRuleRequest(rule.getId()));
+                fileRuleService.deleteRule(new DeleteFileRuleRequest(rule.getId()), username);
             }
         }
 
     }
-
-
 }

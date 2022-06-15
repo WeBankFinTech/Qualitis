@@ -188,11 +188,10 @@ public class MultiSourceRuleServiceImpl implements MultiSourceRuleService {
 
     @Override
     @Transactional(rollbackFor = {UnExpectedRequestException.class, Exception.class})
-    public GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request)
+    public GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request, String loginUser)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteMultiSourceRequest.checkRequest(request);
-        String loginUser = HttpUtils.getUserName(httpServletRequest);
         // Check existence of rule and check if multi-table rule
         Rule ruleInDb = ruleDao.findById(request.getMultiRuleId());
         if (ruleInDb == null) {

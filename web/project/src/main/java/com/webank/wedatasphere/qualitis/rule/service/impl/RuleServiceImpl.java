@@ -231,10 +231,9 @@ public class RuleServiceImpl implements RuleService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<?> deleteRule(DeleteRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteRuleRequest.checkRequest(request);
-        String loginUser = HttpUtils.getUserName(httpServletRequest);
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null || ! ruleInDb.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {

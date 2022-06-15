@@ -17,18 +17,17 @@
 package com.webank.wedatasphere.qualitis.rule.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
+
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +85,8 @@ public class CustomRuleController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException {
         try {
-            return customRuleService.deleteCustomRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return customRuleService.deleteCustomRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;

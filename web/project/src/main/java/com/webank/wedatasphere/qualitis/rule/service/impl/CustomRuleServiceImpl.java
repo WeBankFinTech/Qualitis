@@ -251,18 +251,12 @@ public class CustomRuleServiceImpl implements CustomRuleService {
         ruleInDb.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
         ruleInDb.setStaticStartupParam(request.getStaticStartupParam());
     }
-    /**
-     * Delete custom rules, including template of custom rules
-     * @param request
-     * @return
-     * @throws UnExpectedRequestException
-     */
+
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteCustomRuleRequest.checkRequest(request);
-        String loginUser = HttpUtils.getUserName(httpServletRequest);
         // Check existence of rule by ruleId
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null) {
