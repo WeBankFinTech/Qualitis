@@ -35,9 +35,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableRetry
 @EnableAsync
 public class QualitisServer {
-
     public static void main(String[] args) {
         SpringApplication.run(QualitisServer.class, args);
     }
-
 }
