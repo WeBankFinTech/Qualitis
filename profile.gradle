@@ -34,8 +34,14 @@ project(':web/app') {
     compile libs.springBootStarterTest
     compile libs.springBootStarterAop
 //    compile libs.dssAppJointAuth
-    compile libs.dssSso
-    compile libs.dssSpringSso
+    compile (libs.dssSso) {
+      exclude group: 'org.apache.logging.log4j'
+      exclude group: 'org.glassfish.jersey.media'
+    }
+    compile (libs.dssSpringSso) {
+      exclude group: 'org.apache.logging.log4j'
+      exclude group: 'org.glassfish.jersey.media'
+    }
     compile libs.springAop
     compile libs.springAspects
     compile libs.springBeans
