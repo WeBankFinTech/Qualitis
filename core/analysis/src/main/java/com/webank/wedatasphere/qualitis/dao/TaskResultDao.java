@@ -94,15 +94,6 @@ public interface TaskResultDao {
     TaskResult find(String applicationId, Long ruleId, Long ruleMetricId);
 
     /**
-     * Find value.
-     * @param runDate
-     * @param ruleId
-     * @param ruleMetricId
-     * @return
-     */
-    TaskResult find(Long runDate, Long ruleId, Long ruleMetricId);
-
-    /**
      * Count values.
      * @param ruleMetricId
      * @return
