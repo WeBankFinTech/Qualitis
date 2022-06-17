@@ -1,7 +1,7 @@
 spring:
   datasource:
-    username: [your_db_name]
-    password: [your_db_pwd]
+    username: [your_name]
+    password: [your_pwd]
     url: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     driver-class-name: com.mysql.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
@@ -30,8 +30,8 @@ restTemplate:
 task:
   persistent:
     type: jdbc
-    username: [your_db_name]
-    password: [your_db_pwd]
+    username: [your_name]
+    password: [your_pwd]
     address: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     tableName: qualitis_application_task_result
   execute:

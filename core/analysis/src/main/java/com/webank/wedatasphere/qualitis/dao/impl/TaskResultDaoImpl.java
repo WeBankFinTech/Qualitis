@@ -80,11 +80,6 @@ public class TaskResultDaoImpl implements TaskResultDao {
     }
 
     @Override
-    public TaskResult find(Long runDate, Long ruleId, Long ruleMetricId) {
-        return resultRepository.findWithRunDate(runDate, ruleId, ruleMetricId);
-    }
-
-    @Override
     public int countValuesByRuleMetric(long ruleMetricId) {
         return resultRepository.countValuesByRuleMetric(ruleMetricId);
     }
