@@ -603,7 +603,7 @@ DROP TABLE IF EXISTS `qualitis_rule_datasource_count`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `qualitis_rule_datasource_count` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `datasource_name` varchar(500) NOT NULL,
+  `datasource_name` varchar(200) NOT NULL,
   `datasource_count` int(11) NOT NULL DEFAULT '1',
   `user_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
