@@ -16,11 +16,10 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis.project;
 
-import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
-import com.webank.wedatasphere.dss.standard.app.sso.request.SSORequestOperation;
-import com.webank.wedatasphere.dss.standard.app.structure.project.*;
-import org.apache.linkis.httpclient.request.HttpAction;
-import org.apache.linkis.httpclient.response.HttpResult;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectDeletionOperation;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectSearchOperation;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectService;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectUpdateOperation;
 
 /**
  * @author allenzhou@webank.com
@@ -40,28 +39,23 @@ public class QualitisProjectService extends ProjectService {
 
     @Override
     public QualitisProjectCreationOperation createProjectCreationOperation() {
-        SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation = getSSORequestService().createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
-        QualitisProjectCreationOperation qualitisProjectCreationOperation = new QualitisProjectCreationOperation(this, ssoRequestOperation);
-        qualitisProjectCreationOperation.setStructureService(this);
-        return qualitisProjectCreationOperation;
+        return new QualitisProjectCreationOperation();
     }
 
     @Override
     public ProjectUpdateOperation createProjectUpdateOperation() {
-        SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation = getSSORequestService().createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
-        QualitisProjectUpdateOperation qualitisProjectUpdateOperation = new QualitisProjectUpdateOperation(this, ssoRequestOperation);
-        qualitisProjectUpdateOperation.setStructureService(this);
-        return qualitisProjectUpdateOperation;
+        return new QualitisProjectUpdateOperation();
     }
 
     @Override
     public ProjectDeletionOperation createProjectDeletionOperation() {
-        return null;
+        return new QualitisProjectDeletionOperation();
     }
 
     @Override
-    public ProjectUrlOperation createProjectUrlOperation() {
-        return null;
+    protected ProjectSearchOperation createProjectSearchOperation() {
+        return new QualitisProjectSearchOperation();
     }
+
 
 }

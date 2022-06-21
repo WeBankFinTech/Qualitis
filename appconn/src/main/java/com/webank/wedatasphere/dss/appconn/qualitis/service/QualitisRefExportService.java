@@ -17,7 +17,6 @@
 package com.webank.wedatasphere.dss.appconn.qualitis.service;
 
 import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisRefExportOperation;
-import com.webank.wedatasphere.dss.standard.app.development.operation.RefExportOperation;
 import com.webank.wedatasphere.dss.standard.app.development.service.AbstractRefExportService;
 
 /**
@@ -27,8 +26,8 @@ import com.webank.wedatasphere.dss.standard.app.development.service.AbstractRefE
 public class QualitisRefExportService extends AbstractRefExportService {
 
     @Override
-    public RefExportOperation createRefExportOperation() {
-        return new QualitisRefExportOperation(this);
+    public QualitisRefExportOperation createRefExportOperation() {
+        return new QualitisRefExportOperation();
     }
 
 }
