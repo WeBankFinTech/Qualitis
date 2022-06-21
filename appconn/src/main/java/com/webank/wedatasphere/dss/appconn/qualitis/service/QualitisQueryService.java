@@ -16,21 +16,16 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis.service;
 
-import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefQueryOperation;
-import com.webank.wedatasphere.dss.standard.app.development.operation.RefQueryOperation;
 import com.webank.wedatasphere.dss.standard.app.development.service.AbstractRefQueryService;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
-
+import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefQueryOperation;
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
 public class QualitisQueryService extends AbstractRefQueryService {
 
-    DevelopmentService developmentService;
-
     @Override
-    public RefQueryOperation createRefQueryOperation() {
+    public QualitisRefQueryOperation createRefQueryOperation() {
         return new QualitisRefQueryOperation();
     }
 

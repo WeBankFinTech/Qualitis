@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis;
 
-import com.webank.wedatasphere.dss.appconn.qualitis.project.QualitisProjectService;
 import com.webank.wedatasphere.dss.standard.app.structure.AbstractStructureIntegrationStandard;
+import com.webank.wedatasphere.dss.appconn.qualitis.project.QualitisProjectService;
 import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectService;
 
 /**

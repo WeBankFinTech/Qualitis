@@ -21,7 +21,7 @@
   <parent>
     <artifactId>dss</artifactId>
     <groupId>com.webank.wedatasphere.dss</groupId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
     <relativePath>../../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -64,20 +64,33 @@
 
     <dependency>
       <groupId>org.apache.linkis</groupId>
+      <artifactId>linkis-module</artifactId>
+      <version>${linkis.version}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>httpclient</artifactId>
+          <groupId>org.apache.httpcomponents</groupId>
+        </exclusion>
+      </exclusions>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.linkis</groupId>
       <artifactId>linkis-cs-common</artifactId>
       <version>${linkis.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.linkis</groupId>
       <artifactId>linkis-bml-client</artifactId>
-      <version>${linkis.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>gson</artifactId>
           <groupId>com.google.code.gson</groupId>
         </exclusion>
       </exclusions>
+      <groupId>org.apache.linkis</groupId>
+      <version>${linkis.version}</version>
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
@@ -88,8 +101,8 @@
       <version>${linkis.version}</version>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.linkis</groupId>
           <artifactId>linkis-common</artifactId>
+          <groupId>org.apache.linkis</groupId>
         </exclusion>
         <exclusion>
           <artifactId>json4s-jackson_2.11</artifactId>
@@ -105,8 +118,8 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.linkis</groupId>
           <artifactId>linkis-common</artifactId>
+          <groupId>org.apache.linkis</groupId>
         </exclusion>
       </exclusions>
     </dependency>
