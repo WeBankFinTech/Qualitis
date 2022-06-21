@@ -25,15 +25,11 @@ import com.webank.wedatasphere.dss.standard.app.sso.builder.SSOUrlBuilderOperati
  * @date 2021/7/12 15:20
  */
 public class QualitisRefExecutionAction extends AbstractRefExecutionAction implements LongTermRefExecutionAction {
-    private String applicationId;
-
-    private String executionUser;
-
-    private int schedulerId;
-
     private SSOUrlBuilderOperation ssoUrlBuilderOperation;
-
+    private String applicationId;
+    private String executionUser;
     private String workspaceName;
+    private int schedulerId;
 
     public QualitisRefExecutionAction() {
     }

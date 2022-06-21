@@ -17,75 +17,56 @@
 package com.webank.wedatasphere.dss.appconn.qualitis.project;
 
 import com.google.gson.Gson;
+import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
+import com.webank.wedatasphere.dss.appconn.qualitis.utils.AuthorizeUtil;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
-import com.webank.wedatasphere.dss.standard.app.sso.request.SSORequestOperation;
-import com.webank.wedatasphere.dss.standard.app.structure.StructureService;
-import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectRequestRef;
-import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectResponseRef;
+import com.webank.wedatasphere.dss.standard.app.structure.AbstractStructureOperation;
 import com.webank.wedatasphere.dss.standard.app.structure.project.ProjectUpdateOperation;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ref.ProjectUpdateRequestRef;
+import com.webank.wedatasphere.dss.standard.app.structure.project.ref.ProjectUpdateRequestRef.ProjectUpdateRequestRefImpl;
+import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
+import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRefImpl;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.linkis.httpclient.request.HttpAction;
-import org.apache.linkis.httpclient.response.HttpResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
-public class QualitisProjectUpdateOperation implements ProjectUpdateOperation {
+public class QualitisProjectUpdateOperation extends AbstractStructureOperation<ProjectUpdateRequestRefImpl, ResponseRef>
+    implements ProjectUpdateOperation<ProjectUpdateRequestRef.ProjectUpdateRequestRefImpl> {
 
-    private static Logger logger = LoggerFactory.getLogger(QualitisProjectUpdateOperation.class);
-    private SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation;
-    StructureService structureService;
+    private static Logger LOGGER = LoggerFactory.getLogger(QualitisProjectUpdateOperation.class);
 
-    private static final String UPDATE_PROJECT_PATH = "/qualitis/outer/api/v1/project/workflow";
+    private static final String UPDATE_PROJECT_PATH = "qualitis/outer/api/v1/project/workflow";
 
     private String appId = "linkis_id";
     private String appToken = "***REMOVED***";
 
-    public QualitisProjectUpdateOperation(StructureService service, SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation) {
-        this.structureService = service;
-        this.ssoRequestOperation = ssoRequestOperation;
-    }
-
-    private Boolean checkResponse(Map<String, Object> response) {
-        String responseStatus = (String) response.get("code");
-        return HttpStatus.OK.value() == Integer.parseInt(responseStatus);
-    }
-
     @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void setStructureService(StructureService service) {
-        this.structureService = service;
-    }
-
-    private String getBaseUrl(){
-        return structureService.getAppInstance().getBaseUrl();
-    }
-
-    @Override
-    public ProjectResponseRef updateProject(ProjectRequestRef projectRef) throws ExternalOperationFailedException {
-        String url = null;
+    public ResponseRef updateProject(ProjectUpdateRequestRef.ProjectUpdateRequestRefImpl projectRef) throws ExternalOperationFailedException {
+        String url;
         try {
             url = HttpUtils.buildUrI(getBaseUrl(), UPDATE_PROJECT_PATH, appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
         } catch (NoSuchAlgorithmException e) {
-            logger.error("Update Qualitis Project Exception", e);
+            LOGGER.error("Update Qualitis Project Exception", e);
             throw new ExternalOperationFailedException(90176, "Update qualitis project by build url exception", e);
         } catch (URISyntaxException e) {
-            logger.error("Qualitis uri syntax exception.", e);
+            LOGGER.error("Qualitis uri syntax exception.", e);
+            throw new ExternalOperationFailedException(90176, "Update qualitis project by build url exception", e);
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -95,41 +76,45 @@ public class QualitisProjectUpdateOperation implements ProjectUpdateOperation {
 
         Map<String, Object> requestPayLoad = new HashMap<>(4);
 
-        requestPayLoad.put("project_id", projectRef.getId());
-        requestPayLoad.put("project_name", projectRef.getName());
-        requestPayLoad.put("username", projectRef.getCreateBy());
-        requestPayLoad.put("description", projectRef.getDescription());
+        requestPayLoad.put("project_name", projectRef.getDSSProject().getName());
+        requestPayLoad.put("project_id", projectRef.getRefProjectId());
+        requestPayLoad.put("username", projectRef.getDSSProject().getCreateBy());
+        requestPayLoad.put("description", projectRef.getDSSProject().getDescription());
+
+        List<Map<String, Object>> authorizeUsers = AuthorizeUtil.constructAuthorizeUsers(projectRef.getDSSProjectPrivilege().getAccessUsers(), projectRef.getDSSProjectPrivilege().getEditUsers(), projectRef.getDSSProjectPrivilege().getReleaseUsers());
+        requestPayLoad.put("project_authorize_users", authorizeUsers);
 
         HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(requestPayLoad), headers);
 
         Map<String, Object> resMap;
         try {
             RestTemplate restTemplate = new RestTemplate();
-            logger.info("Start to update qualitis project. url: {}, method: {}, body: {}", url, HttpMethod.POST, entity);
+            LOGGER.info("Start to update qualitis project. url: {}, method: {}, body: {}", url, HttpMethod.POST, entity);
             resMap = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST, entity, Map.class).getBody();
         } catch (Exception e) {
-            logger.error("Update Qualitis Project Exception", e);
+            LOGGER.error("Update Qualitis Project Exception", e);
             throw new ExternalOperationFailedException(90176, "Update qualitis project exception", e);
         }
 
         if (! checkResponse(resMap)) {
             String message = (String) resMap.get("message");
             String errorMessage = String.format("Error! Can not add project, exception: %s", message);
-            logger.error(errorMessage);
+            LOGGER.error(errorMessage);
             throw new ExternalOperationFailedException(90176, errorMessage, null);
         }
 
         Integer projectId = (Integer) ((Map<String, Object>) ((Map<String, Object>) resMap.get("data")).get("project_detail")).get("project_id");
-        logger.info("Update qualitis project ID: {}", projectId);
-        QualitisProjectResponseRef qualitisProjectResponseRef;
-        try {
-            qualitisProjectResponseRef = new QualitisProjectResponseRef(gson.toJson(resMap), HttpStatus.OK.value());
-        } catch (Exception e) {
-            throw new ExternalOperationFailedException(90176, "Failed to parse response json", e);
-        }
-        qualitisProjectResponseRef.setAppInstance(structureService.getAppInstance());
-        qualitisProjectResponseRef.setProjectRefId(projectId.longValue());
-        return qualitisProjectResponseRef;
+        LOGGER.info("Update qualitis project ID: {}", projectId);
+        return new ResponseRefImpl(gson.toJson(resMap), HttpStatus.OK.value(), "", resMap);
     }
 
+    private Boolean checkResponse(Map<String, Object> response) {
+        String responseStatus = (String) response.get("code");
+        return HttpStatus.OK.value() == Integer.parseInt(responseStatus);
+    }
+
+    @Override
+    protected String getAppConnName() {
+        return QualitisAppConn.QUALITIS_APPCONN_NAME;
+    }
 }

@@ -16,19 +16,26 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis;
 
-import com.webank.wedatasphere.dss.appconn.qualitis.execution.QualitisExecutionService;
+import com.webank.wedatasphere.dss.standard.app.development.service.*;
 import com.webank.wedatasphere.dss.appconn.qualitis.service.QualitisCrudService;
 import com.webank.wedatasphere.dss.appconn.qualitis.service.QualitisQueryService;
 import com.webank.wedatasphere.dss.appconn.qualitis.service.QualitisRefExportService;
 import com.webank.wedatasphere.dss.appconn.qualitis.service.QualitisRefImportService;
-import com.webank.wedatasphere.dss.standard.app.development.service.*;
+import com.webank.wedatasphere.dss.appconn.qualitis.execution.QualitisExecutionService;
 import com.webank.wedatasphere.dss.standard.app.development.standard.AbstractDevelopmentIntegrationStandard;
+import com.webank.wedatasphere.dss.standard.common.exception.AppStandardErrorException;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
 public class QualitisDevelopmentIntegrationStandard extends AbstractDevelopmentIntegrationStandard {
+
+    @Override
+    public void init() throws AppStandardErrorException {
+        ssoRequestService.createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
+        super.init();
+    }
 
     @Override
     protected RefCRUDService createRefCRUDService() {
