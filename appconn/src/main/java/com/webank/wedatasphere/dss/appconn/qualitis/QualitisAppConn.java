@@ -27,7 +27,7 @@ import org.apache.linkis.common.conf.CommonVars;
  * @date 2021/6/21 14:40
  */
 public class QualitisAppConn extends AbstractOnlySSOAppConn implements ThirdlyAppConn {
-    public static final String QUALITIS_APPCONN_NAME = CommonVars.apply("wds.dss.appconn.qualitis.name", "Qualitis").getValue();
+    public static final String QUALITIS_APPCONN_NAME = CommonVars.apply("wds.dss.appconn.qualitis.name", "qualitis").getValue();
 
     private QualitisDevelopmentIntegrationStandard developmentIntegrationStandard;
     private QualitisStructureIntegrationStandard structureIntegrationStandard;

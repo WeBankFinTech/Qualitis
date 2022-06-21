@@ -20,12 +20,11 @@ import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefCop
 import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefCreationOperation;
 import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefDeletionOperation;
 import com.webank.wedatasphere.dss.appconn.qualitis.ref.operation.QualitisRefUpdateOperation;
-import com.webank.wedatasphere.dss.standard.app.development.operation.RefCopyOperation;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefCreationOperation;
+import com.webank.wedatasphere.dss.standard.app.development.service.AbstractRefCRUDService;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefDeletionOperation;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefUpdateOperation;
-import com.webank.wedatasphere.dss.standard.app.development.service.AbstractRefCRUDService;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
+import com.webank.wedatasphere.dss.standard.app.development.operation.RefCopyOperation;
 
 /**
  * @author allenzhou@webank.com
@@ -33,30 +32,27 @@ import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentS
  */
 public class QualitisCrudService extends AbstractRefCRUDService {
 
-    DevelopmentService developmentService;
-
     @Override
     public RefCreationOperation createRefCreationOperation() {
-        QualitisRefCreationOperation creationOperation = new QualitisRefCreationOperation(developmentService);
+        QualitisRefCreationOperation creationOperation = new QualitisRefCreationOperation();
         return creationOperation;
     }
 
     @Override
     public RefCopyOperation createRefCopyOperation() {
-        QualitisRefCopyOperation copyOperation = new QualitisRefCopyOperation(developmentService);
+        QualitisRefCopyOperation copyOperation = new QualitisRefCopyOperation();
         return copyOperation;
     }
 
     @Override
     public RefUpdateOperation createRefUpdateOperation() {
-        return new QualitisRefUpdateOperation(developmentService);
+        QualitisRefUpdateOperation qualitisRefUpdateOperation = new QualitisRefUpdateOperation();
+        return qualitisRefUpdateOperation;
     }
 
     @Override
     public RefDeletionOperation createRefDeletionOperation() {
-        QualitisRefDeletionOperation deletionOperation = new QualitisRefDeletionOperation(developmentService);
-        deletionOperation.setDevelopmentService(developmentService);
+        QualitisRefDeletionOperation deletionOperation = new QualitisRefDeletionOperation();
         return deletionOperation;
     }
-
 }

@@ -19,34 +19,33 @@ package com.webank.wedatasphere.dss.appconn.qualitis.ref.operation;
 import com.google.gson.Gson;
 import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
+import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisDevelopmentOperation;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefDeletionOperation;
-import com.webank.wedatasphere.dss.standard.app.development.ref.NodeRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
-import com.webank.wedatasphere.dss.standard.app.sso.request.SSORequestOperation;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.RequestRef;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.RefJobContentRequestRefImpl;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.linkis.httpclient.request.HttpAction;
-import org.apache.linkis.httpclient.response.HttpResult;
+import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
 import org.apache.commons.lang.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.*;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
-
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
-public class QualitisRefDeletionOperation implements RefDeletionOperation {
-
-    DevelopmentService developmentService;
-    private SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation;
+public class QualitisRefDeletionOperation extends QualitisDevelopmentOperation<RefJobContentRequestRefImpl, ResponseRef>
+    implements RefDeletionOperation<ThirdlyRequestRef.RefJobContentRequestRefImpl> {
 
     private static final String DELETE_RULE_URL = "/qualitis/outer/api/v1/projector/rule/delete";
     private static final Logger LOGGER = LoggerFactory.getLogger(QualitisRefDeletionOperation.class);
@@ -54,16 +53,17 @@ public class QualitisRefDeletionOperation implements RefDeletionOperation {
     private static String appId = "linkis_id";
     private static String appToken = "***REMOVED***";
 
-    public QualitisRefDeletionOperation(DevelopmentService service){
-        this.developmentService = service;
-        this.ssoRequestOperation = developmentService.getSSORequestService().createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
+    @Override
+    protected String getAppConnName() {
+        return QualitisAppConn.QUALITIS_APPCONN_NAME;
     }
 
     @Override
-    public void deleteRef(RequestRef requestRef) throws ExternalOperationFailedException {
+    public ResponseRef deleteRef(RefJobContentRequestRefImpl requestRef) throws ExternalOperationFailedException {
         // Get rule group info from request.
-        NodeRequestRef nodeRequestRef = (NodeRequestRef) requestRef;
-        Map<String, Object> jobContent = nodeRequestRef.getJobContent();
+        LOGGER.info("Start to get the job content when delete ref.");
+        Map<String, Object> jobContent = requestRef.getRefJobContent();
+        LOGGER.info("The job content when delete ref is:" + jobContent);
         String url;
         try {
             url = HttpUtils.buildUrI(getBaseUrl(), DELETE_RULE_URL, appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
@@ -72,10 +72,11 @@ public class QualitisRefDeletionOperation implements RefDeletionOperation {
             throw new ExternalOperationFailedException(90156, "Construct delete outer url failed when delete.");
         } catch (URISyntaxException e) {
             LOGGER.error("Qualitis uri syntax exception.", e);
-            throw new ExternalOperationFailedException(90156, "Qualitis uri syntax exception.", e);
+            throw new ExternalOperationFailedException(90156, "Construct delete outer url failed when delete.");
         }
-        if (!jobContent.containsKey("ruleGroupId") || jobContent.get("ruleGroupId") == null) {
-            throw new ExternalOperationFailedException(90156, "Rule group ID or username is null when delete.");
+        if (jobContent == null || ! jobContent.containsKey("ruleGroupId") || jobContent.get("ruleGroupId") == null) {
+            LOGGER.info("Rule group ID is null when delete.");
+            return ResponseRef.newExternalBuilder().success();
         }
         Integer ruleGroupId = null;
         if(jobContent.get("ruleGroupId") instanceof Double){
@@ -113,14 +114,6 @@ public class QualitisRefDeletionOperation implements RefDeletionOperation {
             LOGGER.error("Failed to delete rule because of restTemplate exception. Exception is: {}", e);
             throw new ExternalOperationFailedException(90156, "Delete outer url request failed with rest template.");
         }
-    }
-
-    @Override
-    public void setDevelopmentService(DevelopmentService service) {
-        this.developmentService = service;
-    }
-
-    private String getBaseUrl(){
-        return developmentService.getAppInstance().getBaseUrl();
+        return ResponseRef.newExternalBuilder().success();
     }
 }

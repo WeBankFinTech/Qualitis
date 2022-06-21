@@ -17,17 +17,19 @@
 package com.webank.wedatasphere.dss.appconn.qualitis.execution;
 
 import com.google.gson.Gson;
-import com.webank.wedatasphere.dss.appconn.qualitis.constant.QualitisTaskStatusEnum;
+import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
-import com.webank.wedatasphere.dss.standard.app.development.listener.common.AsyncExecutionRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.listener.common.CompletedExecutionResponseRef;
-import com.webank.wedatasphere.dss.standard.app.development.listener.common.RefExecutionAction;
+import com.webank.wedatasphere.dss.appconn.qualitis.constant.QualitisTaskStatusEnum;
 import com.webank.wedatasphere.dss.standard.app.development.listener.common.RefExecutionState;
-import com.webank.wedatasphere.dss.standard.app.development.listener.core.Killable;
+import com.webank.wedatasphere.dss.standard.app.development.listener.common.RefExecutionAction;
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.LongTermRefExecutionOperation;
+import com.webank.wedatasphere.dss.standard.app.development.listener.core.Killable;
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.Procedure;
-import com.webank.wedatasphere.dss.standard.app.development.ref.ExecutionRequestRef;
 import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
+import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef;
+import com.webank.wedatasphere.dss.standard.app.development.listener.ref.RefExecutionRequestRef;
+import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
+import com.webank.wedatasphere.dss.standard.app.development.listener.ref.RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
@@ -35,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.HttpMethod;
-import org.springframework.web.client.RestTemplate;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -44,23 +45,35 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * @author allenzhou@webank.com
- * @date 2021/7/12 15:23
+ * @date 2021/7/12 15:20
  */
-public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation implements Killable, Procedure {
-    private static final String SUBMIT_TASK_PATH = "/qualitis/outer/api/v1/execution";
-    private static final String GET_TASK_STATUS_PATH = "/qualitis/outer/api/v1/application/{applicationId}/status/";
-    private static final String GET_TASK_RESULT_PATH = "/qualitis/outer/api/v1/application/{applicationId}/result/";
-    private static final String KILL_TASK_PATH = "/qualitis/outer/api/v1/execution/application/kill/{applicationId}/{executionUser}";
+public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation<RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef>
+    implements Killable, Procedure {
+    private static final String SUBMIT_TASK_PATH = "qualitis/outer/api/v1/execution";
+    private static final String GET_TASK_STATUS_PATH = "qualitis/outer/api/v1/application/{applicationId}/status/";
+    private static final String GET_TASK_RESULT_PATH = "qualitis/outer/api/v1/application/{applicationId}/result/";
+    private static final String KILL_TASK_PATH = "qualitis/outer/api/v1/execution/application/kill/{applicationId}/{executionUser}";
+    private static final String NODE_NAME_KEY = "nodeName";
+    private static final String RULEGROUPID = "ruleGroupId";
+    private static final String RULE_GROUP_ID = "rule_group_id";
+    private static final String EXECUTION_USER_KEY = "executionUser";
+    private static final String WDS_SUBMIT_USER_KEY = "wds.dss.workflow.submit.user";
 
     private static Logger LOGGER = LoggerFactory.getLogger(QualitisRefExecutionOperation.class);
 
     private String appId = "linkis_id";
     private String appToken = "***REMOVED***";
 
-    private DevelopmentService developmentService;
+    private static final String FILTER = "filter";
+
+    @Override
+    protected String getAppConnName() {
+        return QualitisAppConn.QUALITIS_APPCONN_NAME;
+    }
 
     @Override
     public boolean kill(RefExecutionAction action) {
@@ -107,22 +120,23 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
     }
 
     @Override
-    protected RefExecutionAction submit(ExecutionRequestRef requestRef) {
+    protected RefExecutionAction submit(RefExecutionProjectWithContextRequestRef requestRef) throws ExternalOperationFailedException {
         try {
-            Map jobContent = requestRef.getJobContent();
-            LOGGER.info("Qualitis rule group content: " + new Gson().toJson(requestRef.getJobContent()));
-            String executionUser = String.valueOf(((AsyncExecutionRequestRef) requestRef).getExecutionRequestRefContext().getRuntimeMap().get("wds.dss.workflow.submit.user").toString());
-            String nodeName = "";
-            nodeName = String.valueOf(((AsyncExecutionRequestRef) requestRef).getExecutionRequestRefContext().getRuntimeMap().get("nodeName"));
-            if ("null".equals(nodeName) || StringUtils.isEmpty(nodeName)) {
+            Map jobContent = requestRef.getRefJobContent();
+            Map<String, Object> runtimeMap = requestRef.getExecutionRequestRefContext().getRuntimeMap();
+            LOGGER.info("Qualitis rule group content: " + new Gson().toJson(jobContent));
+            String executionUser = String.valueOf(runtimeMap.get(WDS_SUBMIT_USER_KEY).toString());
+            String realExecutionUser = String.valueOf(runtimeMap.get(EXECUTION_USER_KEY) != null ? runtimeMap.get(EXECUTION_USER_KEY).toString() : "");
+            String nodeName = String.valueOf(runtimeMap.get(NODE_NAME_KEY));
+            if (StringUtils.isEmpty(nodeName)) {
                 nodeName = requestRef.getName();
             }
             LOGGER.info("The node name: " + nodeName);
             String id = "";
-            if (jobContent.get("ruleGroupId") != null) {
-                id = jobContent.get("ruleGroupId").toString();
+            if (jobContent.get(RULEGROUPID) != null) {
+                id = jobContent.get(RULEGROUPID).toString();
             } else {
-                id = jobContent.get("rule_group_id").toString();
+                id = jobContent.get(RULE_GROUP_ID).toString();
             }
             float f = Float.valueOf(id);
 
@@ -139,10 +153,18 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
             Gson gson = new Gson();
 
             Map<String, Object> requestPayLoad = new HashMap<>();
-            requestPayLoad.put("execution_user", executionUser);
+            requestPayLoad.put("execution_user", StringUtils.isNotBlank(realExecutionUser) ? realExecutionUser : executionUser);
             requestPayLoad.put("create_user", executionUser);
             requestPayLoad.put("node_name", nodeName);
             requestPayLoad.put("group_id", groupId);
+
+            LOGGER.info("The execution user: " + (StringUtils.isNotBlank(realExecutionUser) ? realExecutionUser : executionUser));
+            // Get parameters.
+            LOGGER.info("The execution request: " + runtimeMap);
+
+            StringBuffer executionParam = new StringBuffer();
+
+            getVariables(requestRef, runtimeMap, requestPayLoad, executionParam);
 
             HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(requestPayLoad), headers);
 
@@ -176,6 +198,27 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         }
     }
 
+    private void getVariables(RefExecutionProjectWithContextRequestRef requestRef, Map<String, Object> runtimeMap,
+        Map<String, Object> requestPayLoad, StringBuffer executionParam) {
+        if (requestRef.getVariables() != null) {
+            for (String currentKey : requestRef.getVariables().keySet()) {
+                executionParam.append(currentKey).append(":").append(requestRef.getVariables().get(currentKey).toString()).append(";");
+            }
+        }
+
+        if (runtimeMap.get(FILTER) != null) {
+            String userFilter = String.valueOf(runtimeMap.get(FILTER).toString());
+            LOGGER.info("The execution filter: " + userFilter);
+
+            if (StringUtils.isNotBlank(userFilter)) {
+                executionParam.append(userFilter);
+            }
+        }
+
+        requestPayLoad.put("execution_param", executionParam.toString());
+        LOGGER.info("The global variable is: " + executionParam.toString());
+    }
+
     private Boolean checkResponse(Map<String, Object> response) {
         String responseStatus = (String) response.get("code");
         return HttpStatus.OK.value() == Integer.parseInt(responseStatus);
@@ -205,7 +248,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         try {
             url = HttpUtils.buildUrI(getBaseUrl(), GET_TASK_STATUS_PATH.replace("{applicationId}", applicationId), appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.error("Qualitis no signature algor.", e);
+            LOGGER.info("Qualitis no signature algor.", e);
         } catch (URISyntaxException e) {
             LOGGER.error("Qualitis uri syntax exception.", e);
         }
@@ -244,7 +287,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
 
         if (runningCount != 0) {
             return RefExecutionState.Running;
-        } else if (successCount.equals(taskSize)) {
+        } else if (successCount.equals(taskSize) && tasks.size() != 0) {
             return RefExecutionState.Success;
         } else if (failedCount != 0) {
             return RefExecutionState.Failed;
@@ -292,16 +335,16 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
     }
 
     @Override
-    public CompletedExecutionResponseRef result(RefExecutionAction action) {
+    public ExecutionResponseRef result(RefExecutionAction action) {
         if (null == action) {
-            return new QualitisCompletedExecutionResponseRef(RefExecutionState.Failed.getCode(), "Application ID is null.");
+            return ExecutionResponseRef.newBuilder().error();
         }
 
         QualitisRefExecutionAction qualitisRefExecutionAction = (QualitisRefExecutionAction) action;
         String applicationId = qualitisRefExecutionAction.getApplicationId();
 
         if (StringUtils.isEmpty(applicationId)) {
-            return new QualitisCompletedExecutionResponseRef(RefExecutionState.Failed.getCode(), "Application ID is null.");
+            return ExecutionResponseRef.newBuilder().error();
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -313,7 +356,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         try {
             url = HttpUtils.buildUrI(getBaseUrl(), GET_TASK_RESULT_PATH.replace("{applicationId}", applicationId), appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.error("Qualitis no signature algor.", e);
+            LOGGER.info("Qualitis no signature algor.", e);
         } catch (URISyntaxException e) {
             LOGGER.error("Qualitis uri syntax exception.", e);
         }
@@ -346,16 +389,12 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         LOGGER.info(resultMessage);
 
         if (failedNum != 0) {
-            return new QualitisCompletedExecutionResponseRef(RefExecutionState.Failed.getCode(), taskMsg + resultMessage);
+            return ExecutionResponseRef.newBuilder().error();
         } else {
-            return new QualitisCompletedExecutionResponseRef(200, taskMsg + resultMessage);
+            return ExecutionResponseRef.newBuilder().success();
         }
     }
 
-    @Override
-    public void setDevelopmentService(DevelopmentService service) {
-        this.developmentService = service;
-    }
 
     @Override
     public float progress(RefExecutionAction action) {
@@ -365,9 +404,5 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
     @Override
     public String log(RefExecutionAction action) {
         return "";
-    }
-
-    private String getBaseUrl(){
-        return developmentService.getAppInstance().getBaseUrl();
     }
 }

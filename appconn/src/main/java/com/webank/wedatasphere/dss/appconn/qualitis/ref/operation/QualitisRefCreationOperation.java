@@ -16,46 +16,22 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis.ref.operation;
 
-import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefCreationOperation;
-import com.webank.wedatasphere.dss.standard.app.development.ref.CreateRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.ref.NodeRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
-import com.webank.wedatasphere.dss.standard.app.sso.request.SSORequestOperation;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
+import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisDevelopmentOperation;
+import com.webank.wedatasphere.dss.standard.app.development.ref.RefJobContentResponseRef;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.linkis.httpclient.request.HttpAction;
-import org.apache.linkis.httpclient.response.HttpResult;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.DSSJobContentWithContextRequestRef;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
-public class QualitisRefCreationOperation implements RefCreationOperation<CreateRequestRef> {
-
-    DevelopmentService developmentService;
-    private SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation;
-
-    public QualitisRefCreationOperation(DevelopmentService service){
-        this.developmentService = service;
-        this.ssoRequestOperation = developmentService.getSSORequestService().createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
-    }
+public class QualitisRefCreationOperation extends QualitisDevelopmentOperation<ThirdlyRequestRef.DSSJobContentWithContextRequestRef, RefJobContentResponseRef>
+    implements RefCreationOperation<ThirdlyRequestRef.DSSJobContentWithContextRequestRef> {
 
     @Override
-    public ResponseRef createRef(CreateRequestRef requestRef) throws ExternalOperationFailedException {
-        NodeRequestRef qualitisCreateRequestRef = (NodeRequestRef) requestRef;
-        requestRef.setParameter("projectId", qualitisCreateRequestRef.getProjectId());
+    public RefJobContentResponseRef createRef(DSSJobContentWithContextRequestRef requestRef) throws ExternalOperationFailedException {
         return null;
     }
-
-    @Override
-    public void setDevelopmentService(DevelopmentService service) {
-        this.developmentService = service;
-    }
-
-    private String getBaseUrl(){
-        return developmentService.getAppInstance().getBaseUrl();
-    }
-
-
 }

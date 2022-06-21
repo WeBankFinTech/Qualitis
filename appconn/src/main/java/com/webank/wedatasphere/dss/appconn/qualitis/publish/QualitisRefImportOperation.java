@@ -19,22 +19,24 @@ package com.webank.wedatasphere.dss.appconn.qualitis.publish;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
-import com.webank.wedatasphere.dss.appconn.qualitis.ref.entity.QualitisImportResponseRef;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
+import com.webank.wedatasphere.dss.standard.app.development.ref.RefJobContentResponseRef;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefImportOperation;
-import com.webank.wedatasphere.dss.standard.app.development.ref.ImportRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
-import com.webank.wedatasphere.dss.standard.app.sso.request.SSORequestOperation;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.ImportWitContextRequestRefImpl;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.io.IOUtils;
 import org.apache.linkis.bml.client.BmlClient;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.linkis.bml.client.BmlClientFactory;
 import org.apache.linkis.bml.protocol.BmlDownloadResponse;
-import org.apache.linkis.httpclient.request.HttpAction;
-import org.apache.linkis.httpclient.response.HttpResult;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -44,44 +46,30 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
-public class QualitisRefImportOperation implements RefImportOperation<ImportRequestRef> {
+public class QualitisRefImportOperation extends QualitisDevelopmentOperation<ThirdlyRequestRef.ImportWitContextRequestRefImpl, RefJobContentResponseRef>
+    implements RefImportOperation<ThirdlyRequestRef.ImportWitContextRequestRefImpl> {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(QualitisRefImportOperation.class);
 
-    DevelopmentService developmentService;
-    private SSORequestOperation<HttpAction, HttpResult> ssoRequestOperation;
-    private static final String IMPORT_RULE_URL = "/qualitis/outer/api/v1/projector/rule/import";
 
     private String appId = "linkis_id";
     private String appToken = "***REMOVED***";
+
+    private static final String IMPORT_RULE_URL = "qualitis/outer/api/v1/projector/rule/import";
 
     /**
      * Default user for BML download and upload.
      */
     private static final String DEFAULT_USER = "hadoop";
 
-    public QualitisRefImportOperation(DevelopmentService developmentService){
-        this.developmentService = developmentService;
-        this.ssoRequestOperation = developmentService.getSSORequestService().createSSORequestOperation(QualitisAppConn.QUALITIS_APPCONN_NAME);
-    }
-
     @Override
-    public ResponseRef importRef(ImportRequestRef requestRef) throws ExternalOperationFailedException {
-        Map<String, Object> resourceMap = new HashMap<>();
+    public RefJobContentResponseRef importRef(ImportWitContextRequestRefImpl requestRef) throws ExternalOperationFailedException {
+        Map<String, Object> resourceMap = requestRef.getResourceMap();
         LOGGER.info("Import request body" + new Gson().toJson(requestRef));
-        resourceMap.put("resourceId", requestRef.getParameter("resourceId"));
-        resourceMap.put("version", requestRef.getParameter("version"));
         /**
          * BML client download opeartion.
          */
@@ -90,7 +78,7 @@ public class QualitisRefImportOperation implements RefImportOperation<ImportRequ
         ObjectMapper objectMapper = new ObjectMapper();
         String dataJsonString = "";
         try {
-            dataJsonString = IOUtils.toString(bmlDownloadResponse.inputStream());
+            dataJsonString = IOUtils.toString(bmlDownloadResponse.inputStream(), Charset.defaultCharset());
         } catch (IOException e) {
             LOGGER.error("Error with bml download and mapper to json.", e);
         }
@@ -99,14 +87,14 @@ public class QualitisRefImportOperation implements RefImportOperation<ImportRequ
             data = objectMapper.readValue(dataJsonString, Map.class);
             LOGGER.info("BML downloaded data: ", data.toString());
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            LOGGER.error("BML parse error.");
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> ruleGroupInfo;
 
-        data.put("newProjectId", requestRef.getParameter("projectId"));
-        data.put("userName", requestRef.getParameter("user"));
+        data.put("newProjectId", requestRef.getRefProjectId());
+        data.put("userName", requestRef.getUserName());
 
         HttpEntity<Object> entity = new HttpEntity<>(new Gson().toJson(data), headers);
         try {
@@ -132,26 +120,14 @@ public class QualitisRefImportOperation implements RefImportOperation<ImportRequ
                 ruleGroupInfo.put("ruleGroupId", ruleGroupId);
             }
 
-            ResponseRef qualitisImportResponseRef;
-            qualitisImportResponseRef = new QualitisImportResponseRef(ruleGroupInfo, new Gson().toJson(ruleGroupInfo), 200);
-            return qualitisImportResponseRef;
+            return RefJobContentResponseRef.newBuilder().setRefJobContent(ruleGroupInfo).success();
 
         } catch (NoSuchAlgorithmException e) {
             LOGGER.error("Import rule failed.", e);
             throw new ExternalOperationFailedException(90157, "Import qualitis appJoint node exception.", e);
         } catch (URISyntaxException e) {
             LOGGER.error("Qualitis uri syntax exception.", e);
-            throw new ExternalOperationFailedException(90156, "Qualitis uri syntax exception.", e);
+            throw new ExternalOperationFailedException(90157, "Import qualitis appJoint node exception.", e);
         }
     }
-
-    @Override
-    public void setDevelopmentService(DevelopmentService service) {
-        this.developmentService = service;
-    }
-
-    private String getBaseUrl(){
-        return developmentService.getAppInstance().getBaseUrl();
-    }
-
 }

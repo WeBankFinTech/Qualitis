@@ -16,10 +16,14 @@
 
 package com.webank.wedatasphere.dss.appconn.qualitis.utils;
 
-import javax.ws.rs.core.UriBuilder;
+import com.google.gson.Gson;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+import javax.ws.rs.core.UriBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 /**
  * @author allenzhou@webank.com
@@ -31,10 +35,10 @@ public class HttpUtils {
         String signature = getSignature(appId, appToken, nonce, timestamp);
         StringBuffer uriBuffer = new StringBuffer(baseUrl);
         uriBuffer.append(path).append("?")
-                .append("app_id=").append(appId).append("&")
-                .append("nonce=").append(nonce).append("&")
-                .append("timestamp=").append(timestamp).append("&")
-                .append("signature=").append(signature);
+            .append("app_id=").append(appId).append("&")
+            .append("nonce=").append(nonce).append("&")
+            .append("timestamp=").append(timestamp).append("&")
+            .append("signature=").append(signature);
 
         URI uri = new URI(uriBuffer.toString());
         return uri;

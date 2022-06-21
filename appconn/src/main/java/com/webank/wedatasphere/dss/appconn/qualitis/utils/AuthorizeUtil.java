@@ -23,6 +23,7 @@ public class AuthorizeUtil {
         releasePermission.add(QualitisProjectUserPermissionEnum.CREATOR.getCode());
         accessPermission.add(QualitisProjectUserPermissionEnum.BUSSMAN.getCode());
         editPermission.add(QualitisProjectUserPermissionEnum.DEVELOPER.getCode());
+        editPermission.add(QualitisProjectUserPermissionEnum.OPERATOR.getCode());
         editPermission.add(QualitisProjectUserPermissionEnum.BUSSMAN.getCode());
         for (String user : releaseUsers) {
             Map<String, Object> userInfo = new HashMap<>(2);
@@ -30,16 +31,25 @@ public class AuthorizeUtil {
             userInfo.put("project_permissions", releasePermission);
             response.add(userInfo);
         }
-        for (String user : accessUsers) {
-            Map<String, Object> userInfo = new HashMap<>(2);
-            userInfo.put("project_user", user);
-            userInfo.put("project_permissions", accessPermission);
-            response.add(userInfo);
-        }
         for (String user : editUsers) {
+            if (releaseUsers.contains(user)) {
+                continue;
+            }
             Map<String, Object> userInfo = new HashMap<>(2);
             userInfo.put("project_user", user);
             userInfo.put("project_permissions", editPermission);
+            response.add(userInfo);
+        }
+        for (String user : accessUsers) {
+            if (releaseUsers.contains(user)) {
+                continue;
+            }
+            if (editUsers.contains(user)) {
+                continue;
+            }
+            Map<String, Object> userInfo = new HashMap<>(2);
+            userInfo.put("project_user", user);
+            userInfo.put("project_permissions", accessPermission);
             response.add(userInfo);
         }
 
