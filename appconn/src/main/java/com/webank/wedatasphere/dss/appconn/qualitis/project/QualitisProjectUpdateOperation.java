@@ -98,7 +98,7 @@ public class QualitisProjectUpdateOperation extends AbstractStructureOperation<P
 
         if (! checkResponse(resMap)) {
             String message = (String) resMap.get("message");
-            String errorMessage = String.format("Error! Can not add project, exception: %s", message);
+            String errorMessage = String.format("Error! Can not modify project, exception: %s", message);
             LOGGER.error(errorMessage);
             throw new ExternalOperationFailedException(90176, errorMessage, null);
         }
