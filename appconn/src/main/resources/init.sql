@@ -38,17 +38,6 @@ INSERT INTO `dss_appconn_instance`(
             '',
             '#/dashboard');
 
-INSERT INTO `dss_appconn_instance`(
-            `appconn_id`,
-            `label`,
-            `url`,
-            `enhance_json`,
-            `homepage_uri`)
-            VALUES (@dss_appconn_qualitisId,
-            'PROD',
-            'http://APPCONN_INSTALL_IP:APPCONN_INSTALL_PORT/',
-            '',
-            '#/dashboard');
 
 select @dss_qualitis_appconnId:=id from `dss_appconn` WHERE `appconn_name` in ('qualitis');
 
