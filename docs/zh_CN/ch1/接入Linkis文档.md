@@ -15,7 +15,7 @@ QUALITIS-AUTH=*
 ### 修改用户默认提交队列
 1. 在DataSphere Studio中登录Qualitis同名的用户名
 
-2. 进入Linkis管理台 -> 设置 -> yarn队列名中，并设置一个可用的yarn队列；在0.9.1版本中，可在Qualitis-引擎管理直接进行配置
+2. 进入Linkis管理台 -> 设置 -> yarn队列名中，并设置一个可用的yarn队列；
 
 ### 加入MySQL驱动包
 ```
