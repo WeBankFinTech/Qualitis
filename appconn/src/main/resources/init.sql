@@ -38,18 +38,6 @@ INSERT INTO `dss_appconn_instance`(
             '',
             '#/dashboard');
 
-INSERT INTO `dss_appconn_instance`(
-            `appconn_id`,
-            `label`,
-            `url`,
-            `enhance_json`,
-            `homepage_uri`)
-            VALUES (@dss_appconn_qualitisId,
-            'PROD',
-            'http://APPCONN_INSTALL_IP:APPCONN_INSTALL_PORT/',
-            '',
-            '#/dashboard');
-
 select @dss_qualitis_appconnId:=id from `dss_appconn` WHERE `appconn_name` in ('qualitis');
 
 select @qualitis_menuId:=id from `dss_workspace_menu` WHERE `name` in ('数据质量');
@@ -129,6 +117,3 @@ select @dss_qualitis_nodeId:=id from `dss_workflow_node` where `node_type` = 'li
 
 INSERT INTO `dss_workflow_node_to_group` (`node_id`, `group_id`) VALUES (@dss_qualitis_nodeId, 3);
 INSERT INTO `dss_workflow_node_to_ui` (workflow_node_id, ui_id) VALUES (@dss_qualitis_nodeId, 1),(@dss_qualitis_nodeId,3),(@dss_qualitis_nodeId,5),(@dss_qualitis_nodeId,6),(@dss_qualitis_nodeId,35),(@dss_qualitis_nodeId,36);
-
-
-
