@@ -45,7 +45,7 @@ public class QualitisRefQueryOperation extends QualitisDevelopmentOperation<Thir
         String env = qualitisOpenRequestRef.getDSSLabels().stream().filter(dssLabel -> dssLabel instanceof EnvDSSLabel)
             .map(dssLabel -> (EnvDSSLabel) dssLabel).findAny().get().getEnv();
         Long projectId = qualitisOpenRequestRef.getRefProjectId();
-        String redirectUrl = "http://" + host + ":" + port + "/#/projects/rules?workflowProject=true&tpl=newSingleTableRule&projectId=" + projectId + "&ruleGroupId=${ruleGroupId}&nodeId=${nodeId}&contextID=${contextID}&nodeName=${nodeName}";
+        String redirectUrl = "http://" + host + ":" + port + "/#/addGroupTechniqueRule?tableType=1&id=" + projectId + "&ruleGroupId=${ruleGroupId}&nodeId=${nodeId}&contextID=${contextID}&nodeName=${nodeName}";
         return url + "?redirect=" + URLEncoder.encode(redirectUrl + "&env=" + env.toLowerCase(), "UTF-8") + "&dssurl=${dssurl}&cookies=${cookies}";
     }
 

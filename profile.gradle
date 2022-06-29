@@ -35,10 +35,12 @@ project(':web/app') {
     compile libs.springBootStarterAop
 //    compile libs.dssAppJointAuth
     compile (libs.dssSso) {
+      exclude group: 'org.reflections'
       exclude group: 'org.apache.logging.log4j'
       exclude group: 'org.glassfish.jersey.media'
     }
     compile (libs.dssSpringSso) {
+      exclude group: 'org.reflections'
       exclude group: 'org.apache.logging.log4j'
       exclude group: 'org.glassfish.jersey.media'
     }
@@ -256,6 +258,9 @@ project(':core/common') {
       force = true
     }
     compile('org.hibernate:hibernate-core:5.4.24.Final'){
+      force = true
+    }
+    compile('org.reflections:reflections:0.9.10'){
       force = true
     }
     compile (libs.hiveExec) {
