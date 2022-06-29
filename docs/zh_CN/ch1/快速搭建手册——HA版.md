@@ -1,12 +1,12 @@
 # 快速搭建手册
 
 ## 一、基础软件安装
-Gradle (4.9)  
-MySQL (5.5+)  
+Gradle (4.6)  
+MySQL (5.5.x) 
 JDK (1.8.0_141)
 Zookeeper (3.4.9)
 Linkis（0.9.x或1.x), 必装Spark引擎。[如何安装Linkis](https://github.com/WeBankFinTech/Linkis)  
-DataSphereStudio (1.x) 可选. 如果你想使用工作流，必装DataSphereStudio [如何安装DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)
+DataSphereStudio (1.x) 可选. 如果你想使用工作流，必装DataSphereStudio。[如何安装DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)
 
 ## 二、安装包下载
 [下载](https://github.com/WeBankFinTech/Qualitis/releases)
@@ -41,17 +41,31 @@ vim conf/application-dev.yml
 修改以下配置：
 ```
 ## 数据库配置
-spring.datasource.username=
-spring.datasource.password=
-spring.datasource.url=
+server:
+  port: 
 
 ## 数据库配置，和以上一致
-task.persistence.username=
-task.persistence.password=
-task.persistence.address=
+spring:
+    datasource:
+        username:
+        password:
+        url:
+
+## 任务数据库配置，和以上一致
+task:
+  persistent:
+    type: jdbc
+    username:
+    password:
+    address:
 
 ## zk配置
 zk.address=
+
+## 前端主页信息
+front_end:
+  home_page: http://IP:PORT/#/dashboard
+  domain_name: http://IP:PORT
 ```
 并打开HA开关
 ```
