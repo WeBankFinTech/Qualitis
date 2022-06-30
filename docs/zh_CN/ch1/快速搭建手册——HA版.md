@@ -5,7 +5,7 @@ Gradle (4.6)
 MySQL (5.5.x) 
 JDK (1.8.0_141)
 Zookeeper (3.4.9)
-Linkis（0.9.x或1.x), 必装Spark引擎。[如何安装Linkis](https://github.com/WeBankFinTech/Linkis)  
+Linkis（0.9.x或1.x), 必装Spark引擎。[如何安装Linkis](https://github.com/apache/incubator-linkis)  
 DataSphereStudio (1.x) 可选. 如果你想使用工作流，必装DataSphereStudio。[如何安装DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)
 
 ## 二、安装包下载

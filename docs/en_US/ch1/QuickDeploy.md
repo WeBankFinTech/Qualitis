@@ -7,7 +7,7 @@ JDK (1.8.0_141)
 Hadoop (2.7.2)  
 Hive (1.2.1)   
 Zookeeper (3.4.9)  
-Linkis (0.9.1), Spark engine required.[How to install Linkis?](https://github.com/WeBankFinTech/Linkis)  
+Linkis (0.9.1), Spark engine required.[How to install Linkis?](https://github.com/apache/incubator-linkis)  
 DataSphereStudio (0.6.0) Optional. If you want to use workflow, it it required. [How to install DataSphereStudio?](https://github.com/WeBankFinTech/DataSphereStudio)  
 
 ## 2. Download
