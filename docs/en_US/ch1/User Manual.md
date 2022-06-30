@@ -3,7 +3,7 @@
 ## 1. Introduction
 Qualitis is a one-stop data quality management platform that supports quality verification, notification, and management for various datasource. It is used to solve various data quality problems caused by data processing.
 
-Based on Spring Boot, Qualitis analysis quality model by [Linkis](https://github.com/WeBankFinTech/Linkis). It provides functions such as data quality model construction, timing execution, trigger execution, data quality verification, reports of data quality generation and so on.
+Based on Spring Boot, Qualitis analysis quality model by [Linkis](https://github.com/apache/incubator-linkis). It provides functions such as data quality model construction, timing execution, trigger execution, data quality verification, reports of data quality generation and so on.
 
 At the same time, Qualitis provides enterprise-level features of financial-level resource isolation, management, access control and collaborative edition. It is also guaranteed working well under high-concurrency, high-performance and high-availability scenarios.
 
