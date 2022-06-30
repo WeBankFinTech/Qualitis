@@ -73,4 +73,4 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 ![](../../../images/en_US/ch1/ContractUs.png)
 
 ## License
-**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
