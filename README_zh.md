@@ -74,7 +74,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 ![](/images/en_US/ch1/ContractUs.png)
 
 ## License
-**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
 
 ## Tips
 由于Qualitis的前端代码是采用WeBank自研的前端框架FES，但是FES框架目前没有开源，所以Qualitis的前端代码暂不开源。我们会尽快推进Qualitis的前端开源。对此我们感到非常抱歉。
