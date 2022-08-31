@@ -15,6 +15,29 @@
  */
 
 rootProject.name = 'qualitis'
-include 'web/app', 'web/user', 'web/sys_config', 'web/project', 'web/task', 'web/scheduler', 'web/meta_data', 'web/common', 'web/staff',
-        'core/converter', 'core/divider', 'core/common',  'core/monitor', 'core/task', 'core/project',
-        'core/scheduler', 'core/analysis', 'core/metric', 'web/metric', 'util', 'core/user', 'core/sys_config', 'core/meta_data'
+include 'web-app', 'web-user', 'web-sys_config', 'web-project', 'web-task', 'web-scheduler', 'web-meta_data',
+        'web-common', 'web-staff', 'web-metric', 'util', 'core-converter', 'core-divider',
+        'core-common', 'core-monitor', 'core-task', 'core-project', 'core-scheduler', 'core-analysis',
+        'core-metric',   'core-user', 'core-sys_config', 'core-meta_data'
+project(':web-app').projectDir = file('web/app')
+project(':web-user').projectDir = file('web/user')
+project(':web-sys_config').projectDir = file('web/sys_config')
+project(':web-project').projectDir = file('web/project')
+project(':web-task').projectDir = file('web/task')
+project(':web-scheduler').projectDir = file('web/scheduler')
+project(':web-meta_data').projectDir = file('web/meta_data')
+project(':web-common').projectDir = file('web/common')
+project(':web-staff').projectDir = file('web/staff')
+project(':web-metric').projectDir = file('web/metric')
+project(':core-converter').projectDir = file('core/converter')
+project(':core-divider').projectDir = file('core/divider')
+project(':core-common').projectDir = file('core/common')
+project(':core-monitor').projectDir = file('core/monitor')
+project(':core-task').projectDir = file('core/task')
+project(':core-project').projectDir = file('core/project')
+project(':core-scheduler').projectDir = file('core/scheduler')
+project(':core-analysis').projectDir = file('core/analysis')
+project(':core-metric').projectDir = file('core/metric')
+project(':core-user').projectDir = file('core/user')
+project(':core-sys_config').projectDir = file('core/sys_config')
+project(':core-meta_data').projectDir = file('core/meta_data')

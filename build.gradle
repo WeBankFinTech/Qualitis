@@ -17,11 +17,11 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 apply from: "$rootDir/gradle/dependencies.gradle"
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'application'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -33,7 +33,7 @@ buildscript {
   repositories {
     mavenLocal()
     maven {
-      url "http://maven.aliyun.com/nexus/content/groups/public/"
+      url "https://maven.aliyun.com/repository/public"
     }
   }
 
@@ -44,13 +44,13 @@ buildscript {
 }
 
 dependencies {
-  compile project(':web/app')
+  api project(':web-app')
 }
 
 repositories {
   mavenLocal()
   maven {
-    url "http://maven.aliyun.com/nexus/content/groups/public/"
+    url "https://maven.aliyun.com/repository/public"
   }
 }
 
@@ -62,24 +62,26 @@ applicationDefaultJvmArgs =
          '-Dfile.encoding=UTF-8', "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
          "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log"]
 
-tasks.startScripts << {
-  def scriptFile = file "${outputDir}/${applicationName}"
+tasks.startScripts {
+  doLast {
+    def scriptFile = file "${outputDir}/${applicationName}"
 
-  /* Customize classpath */
-  scriptFile.eachLine {
-    line ->
-      if (line.contains('CLASSPATH=\$APP_HOME/lib')) {
-        scriptFile.text = scriptFile.text.replace(line, "CLASSPATH=\${YOUR_CONF_DIR:-\$APP_HOME/conf}:\${APP_HOME}/lib/*")
-        return
-      }
+    /* Customize classpath */
+    scriptFile.eachLine {
+      line ->
+        if (line.contains('CLASSPATH=\$APP_HOME/lib')) {
+          scriptFile.text = scriptFile.text.replace(line, "CLASSPATH=\${YOUR_CONF_DIR:-\$APP_HOME/conf}:\${APP_HOME}/lib/*")
+          return
+        }
+    }
+
+    // custom username and hostname
+    unixScript.text = unixScript.text.replace("MY_USER", '\$USER')
+    unixScript.text = unixScript.text.replace("MY_HOSTNAME", '\$HOSTNAME')
+
+    // custom 'java.library.path'
+    unixScript.text = unixScript.text.replace("HADOOP_COMMON_LIB_NATIVE_DIR", '\${HADOOP_COMMON_LIB_NATIVE_DIR}')
   }
-
-  // custom username and hostname
-  unixScript.text = unixScript.text.replace("MY_USER", '\$USER')
-  unixScript.text = unixScript.text.replace("MY_HOSTNAME", '\$HOSTNAME')
-
-  // custom 'java.library.path'
-  unixScript.text = unixScript.text.replace("HADOOP_COMMON_LIB_NATIVE_DIR", '\${HADOOP_COMMON_LIB_NATIVE_DIR}')
 }
 
 distributions {
@@ -107,15 +109,15 @@ distributions {
 subprojects {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
-  apply plugin: 'java'
-  apply plugin: 'maven'
+  apply plugin: 'java-library'
+  apply plugin: 'maven-publish'
 
   [compileJava, compileTestJava, javadoc]*.options*.encoding = defaultEncoding
 
   repositories {
     mavenLocal()
     maven {
-      url "http://maven.aliyun.com/nexus/content/groups/public/"
+      url "https://maven.aliyun.com/repository/public"
     }
 //     mavenCentral()
   }
@@ -126,10 +128,11 @@ subprojects {
     ]
   }
 
-  task createPom << {
-    pom {
-
-    }.writeTo("$buildDir/pom.xml")
+  task createPom {
+    doLast {
+      pom {
+      }.writeTo("$buildDir/pom.xml")
+    }
   }
 }
 
