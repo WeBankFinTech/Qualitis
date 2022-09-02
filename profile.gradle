@@ -17,22 +17,24 @@ project(':web-app') {
   archivesBaseName = 'web_app'
 
   configurations {
-    compile.exclude module: "spring-boot-starter-tomcat"
-    compile.exclude module: "spring-boot-starter-logging"
-    compile.exclude group: 'commons-logging'
-    compile.exclude module: 'slf4j-log4j12'
-    compile.exclude group: 'org.sonatype.sisu.inject'
+    implementation.exclude module: "spring-boot-starter-tomcat"
+    implementation.exclude module: "spring-boot-starter-logging"
+    api.exclude module: "spring-boot-starter-tomcat"
+    api.exclude module: "spring-boot-starter-logging"
+    api.exclude group: 'commons-logging'
+    api.exclude module: 'slf4j-log4j12'
+    api.exclude group: 'org.sonatype.sisu.inject'
   }
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterWeb
-    api libs.springBootStarterParent
-    api libs.springBootStarterJersey
-    api libs.springBootStarterJetty
-    api libs.springBootStarterLog4j2
-    api libs.springBootStarterTest
-    api libs.springBootStarterAop
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterWeb
+    implementation libs.springBootStarterParent
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterJetty
+    implementation libs.springBootStarterLog4j2
+    implementation libs.springBootStarterTest
+    implementation libs.springBootStarterAop
 //    api libs.dssAppJointAuth
     api (libs.dssSso) {
       exclude group: 'org.reflections'
@@ -83,8 +85,8 @@ project(':web-meta_data') {
   archivesBaseName = 'web_meta_data'
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
     api libs.commonsLang
 
     api project(':web-common')
@@ -97,9 +99,9 @@ project(':web-project') {
   archivesBaseName = 'web_project'
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
     api libs.commonsLang
     api libs.jerseyMediaMultipart
@@ -116,9 +118,9 @@ project(':web-metric') {
   archivesBaseName = 'web_metric'
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
     api libs.commonsLang
     api libs.jerseyMediaMultipart
@@ -134,8 +136,8 @@ project(':web-scheduler') {
   archivesBaseName = 'web_scheduler'
 
   dependencies{
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
     api libs.commonsLang
     api project(':web-task')
     api project(':web-common')
@@ -152,9 +154,9 @@ project(':web-sys_config') {
   archivesBaseName = 'web_sys_config'
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
     api libs.commonsLang
 
@@ -168,8 +170,8 @@ project(':web-task') {
   archivesBaseName = 'web_task'
 
   dependencies{
-    api libs.springBootStarterJersey
-    api libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarter
 //    api libs.dssAppJointAuth
     api libs.httpClient
     api libs.httpMime
@@ -183,9 +185,9 @@ project(':web-user') {
   archivesBaseName = 'web_user'
 
   dependencies{
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
     api libs.commonsLang
     api libs.opendjCore
@@ -205,7 +207,7 @@ project(':web-common') {
   archivesBaseName = 'web_common'
 
   dependencies{
-    api libs.springBootStarterJersey
+    implementation libs.springBootStarterJersey
     api project(':core-common')
   }
 }
@@ -214,7 +216,7 @@ project(':core-analysis') {
   archivesBaseName = 'core_analysis'
 
   dependencies{
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
   }
 }
@@ -232,7 +234,7 @@ project(':core-common') {
   archivesBaseName = 'core_common'
 
   dependencies{
-    api libs.springBootStarterJersey
+    implementation libs.springBootStarterJersey
     api libs.commonsLang
 
     api (libs.hadoopClient) {
@@ -242,27 +244,20 @@ project(':core-common') {
       exclude group: 'com.sun.jersey.contribs'
       exclude group: 'javax.xml.bind'
       exclude group: 'log4j'
+      exclude group: 'ch.qos.reload4j'
 
       configurations {
-        compile.exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
-        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
-        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
-        compile.exclude group: 'com.google.protobuf', module: 'protobuf-java'
-        compile.exclude group: 'io.netty', module: 'netty'
+        api.exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+        api.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        api.exclude group: 'org.mortbay.jetty', module: 'jetty'
+        api.exclude group: 'com.google.protobuf', module: 'protobuf-java'
+        api.exclude group: 'io.netty', module: 'netty'
       }
     }
-    compile('org.apache.commons:commons-compress:1.21'){
-      force = true
-    }
-    compile('org.yaml:snakeyaml:1.26'){
-      force = true
-    }
-    compile('org.hibernate:hibernate-core:5.4.24.Final'){
-      force = true
-    }
-    compile('org.reflections:reflections:0.9.10'){
-      force = true
-    }
+    api('org.apache.commons:commons-compress:1.21')
+    api('org.yaml:snakeyaml:1.26')
+    api('org.hibernate:hibernate-core:5.4.24.Final')
+    api('org.reflections:reflections:0.9.12')
     api (libs.hiveExec) {
       exclude group: 'org.apache.commons'
       exclude group: 'commons-lang'
@@ -275,8 +270,8 @@ project(':core-common') {
       exclude group: 'org.apache.calcite'
 
       configurations {
-        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
-        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
+        api.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        api.exclude group: 'org.mortbay.jetty', module: 'jetty'
       }
     }
   }
@@ -298,11 +293,11 @@ project(':core-meta_data') {
 
   dependencies {
     api libs.commonsLang
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
     api libs.quartz
     api libs.quartzJobs
-    api libs.springBootStarter
+    implementation libs.springBootStarter
 
     api project(":core-common")
     api project(":core-sys_config")
@@ -315,7 +310,7 @@ project(':core-monitor') {
   archivesBaseName = 'core_monitor'
 
   dependencies{
-    api libs.springBootStarter
+    implementation libs.springBootStarter
 
     api project(':core-task')
     api project(':core-scheduler')
@@ -331,7 +326,10 @@ project(':core-project') {
 
   dependencies{
     api libs.commonsLang
-    api libs.springBootStarterDataJpa
+    api (libs.springBootStarterDataJpa) {
+      exclude module: "spring-boot-starter-logging"
+    }
+    api libs.springBootStarterLog4j2
     api libs.mysqlConnectorJava
 
     api project(":core-common")
@@ -344,7 +342,7 @@ project(':core-metric') {
 
   dependencies{
     api libs.commonsLang
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
 
     api project(":core-user")
@@ -374,7 +372,7 @@ project(':core-task') {
   archivesBaseName = 'core_task'
 
   dependencies{
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
 
     api project(':core-common')
@@ -402,7 +400,7 @@ project(':core-user') {
   archivesBaseName = 'core_user'
 
   dependencies{
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
   }
 }
@@ -411,9 +409,9 @@ project(':core-sys_config') {
   archivesBaseName = 'core_sys_config'
 
   dependencies {
-    api libs.springBootStarter
-    api libs.springBootStarterJersey
-    api libs.springBootStarterDataJpa
+    implementation libs.springBootStarter
+    implementation libs.springBootStarterJersey
+    implementation libs.springBootStarterDataJpa
     api libs.mysqlConnectorJava
   }
 }
