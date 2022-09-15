@@ -121,6 +121,7 @@ project(':web/metric') {
     compile libs.commonsLang
     compile libs.jerseyMediaMultipart
     compile libs.easyExcel
+    compile libs.license
 
     compile project(":web/user")
     compile project(":web/meta_data")
