@@ -126,6 +126,7 @@ front_end:
 ldap:
   ip: xx
   port: 00
+  baseDN: XX
 
 
 #License
