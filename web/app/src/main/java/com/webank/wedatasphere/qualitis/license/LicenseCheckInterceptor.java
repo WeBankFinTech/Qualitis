@@ -20,7 +20,6 @@ import javax.ws.rs.ext.Provider;
 /**
  * LicenseCheckInterceptor
  */
-@Provider
 public class LicenseCheckInterceptor implements ContainerRequestFilter {
     private static Logger logger = LogManager.getLogger(LicenseCheckInterceptor.class);
 

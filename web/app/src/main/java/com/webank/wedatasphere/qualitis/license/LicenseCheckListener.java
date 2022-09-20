@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.license;
 
+import com.webank.wedatasphere.qualitis.config.JerseyConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,24 +49,26 @@ public class LicenseCheckListener implements ApplicationListener<ContextRefreshe
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        //root application context 没有parent
-        ApplicationContext context = event.getApplicationContext().getParent();
-        if(context == null){
-            if(StringUtils.isNotBlank(licensePath)){
-                logger.info("++++++++ 开始安装证书 ++++++++");
+        if (JerseyConfig.licenseEnable) {
+            //root application context 没有parent
+            ApplicationContext context = event.getApplicationContext().getParent();
+            if(context == null){
+                if(StringUtils.isNotBlank(licensePath)){
+                    logger.info("++++++++ 开始安装证书 ++++++++");
 
-                LicenseVerifyParam param = new LicenseVerifyParam();
-                param.setSubject(subject);
-                param.setPublicAlias(publicAlias);
-                param.setStorePass(storePass);
-                param.setLicensePath(licensePath);
-                param.setPublicKeysStorePath(publicKeysStorePath);
+                    LicenseVerifyParam param = new LicenseVerifyParam();
+                    param.setSubject(subject);
+                    param.setPublicAlias(publicAlias);
+                    param.setStorePass(storePass);
+                    param.setLicensePath(licensePath);
+                    param.setPublicKeysStorePath(publicKeysStorePath);
 
-                LicenseVerify licenseVerify = new LicenseVerify();
-                //安装证书
-                licenseVerify.install(param);
+                    LicenseVerify licenseVerify = new LicenseVerify();
+                    //安装证书
+                    licenseVerify.install(param);
 
-                logger.info("++++++++ 证书安装结束 ++++++++");
+                    logger.info("++++++++ 证书安装结束 ++++++++");
+                }
             }
         }
     }
