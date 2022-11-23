@@ -35,7 +35,7 @@ INSERT INTO `dss_appconn_instance`(
             VALUES (@dss_appconn_qualitisId,
             'DEV',
             'http://APPCONN_INSTALL_IP:APPCONN_INSTALL_PORT/',
-            '',
+            '{"reqUri":""}',
             '#/dashboard');
 
 select @dss_qualitis_appconnId:=id from `dss_appconn` WHERE `appconn_name` in ('qualitis');
