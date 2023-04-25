@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.config;
 
+import com.webank.wedatasphere.qualitis.license.LicenseCheckInterceptor;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spring.scope.RequestContextFilter;
@@ -33,9 +34,14 @@ public class JerseyConfig extends ResourceConfig {
 
     public static final String APPLICATION_PATH = "/qualitis";
     public static final String RESOURCE_PACKAGE_NAME = "com.webank.wedatasphere.qualitis";
+    //lincense证书开关
+    public static final Boolean licenseEnable = true;
 
     public JerseyConfig() {
         register(RequestContextFilter.class);
+        if (JerseyConfig.licenseEnable) {
+            register(LicenseCheckInterceptor.class);
+        }
         register(MultiPartFeature.class);
         packages(RESOURCE_PACKAGE_NAME);
         property(ServletProperties.FILTER_FORWARD_ON_404, true);

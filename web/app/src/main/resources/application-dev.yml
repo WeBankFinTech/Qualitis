@@ -1,8 +1,8 @@
 spring:
   datasource:
-    username: [your_name]
-    password: [your_pwd]
-    url: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    username: uc_ubs_01
+    password: abc123
+    url: jdbc:mysql://192.168.1.115:3306/qualitis_dev?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     driver-class-name: com.mysql.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
@@ -30,9 +30,9 @@ restTemplate:
 task:
   persistent:
     type: jdbc
-    username: [your_name]
-    password: [your_pwd]
-    address: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    username: uc_ubs_01
+    password: abc123
+    address: jdbc:mysql://192.168.1.115:3306/qualitis_dev?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
     tableName: qualitis_application_task_result
   execute:
     limit_thread: 10
@@ -126,4 +126,14 @@ front_end:
 ldap:
   ip: xx
   port: 00
+  baseDN: XX
+
+
+#License
+license:
+  subject: qualitis_demo
+  publicAlias: publicCert
+  storePass: public_password1234
+  licensePath: D:/license.lic
+  publicKeysStorePath: D:/publicCerts.keystore
 

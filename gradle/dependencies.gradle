@@ -116,6 +116,7 @@ libs += [
     "curatorClient":"org.apache.curator:curator-client:$versions.zkCurator",
     "jerseyMediaMultipart":"org.glassfish.jersey.media:jersey-media-multipart:$versions.jersey",
     "easyExcel":"com.alibaba:easyexcel:$versions.easyExcel",
+    "license":"de.schlichtherle.truelicense:truelicense-core:1.33",
     "springRetry":"org.springframework.retry:spring-retry:$versions.springRetry",
     "aspectJ":"org.aspectj:aspectjweaver:$versions.aspectJ",
     "quartz":"org.quartz-scheduler:quartz:$versions.quartz",

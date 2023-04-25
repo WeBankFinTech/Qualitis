@@ -13,6 +13,8 @@ public class LdapConfig {
     private String ip;
     @Value("${ldap.port}")
     private int port;
+    @Value("${ldap.baseDN}")
+    private String baseDn;
 
     public LdapConfig() {
     }
@@ -27,6 +29,14 @@ public class LdapConfig {
 
     public int getPort() {
         return port;
+    }
+
+    public String getBaseDn() {
+        return baseDn;
+    }
+
+    public void setBaseDn(String baseDn) {
+        this.baseDn = baseDn;
     }
 
     public void setPort(int port) {
