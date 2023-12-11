@@ -1809,9 +1809,9 @@ insert into qualitis_template_output_meta(template_id, id, output_name, field_na
 	values(9,25, "{&MISMATCH_DATE_FORMAT_RECORD_NUMBER}", "count", 1);
 
 -- 时间格式表达式
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMdd", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyy-MM-dd", 1, "^(?:(?!0000)[0-9]{4}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$");
-insert into qualitis_template_regexp_expr(key_name, regexp_type, regexp_value) values("yyyyMMddHH", 1, "^(?:(?!0000)[0-9]{4}(?:(?:0[1-9]|1[0-2])(?:0[1-9]|1[0-9]|2[0-8])|(?:0[13-9]|1[0-2])(?:29|30)|(?:0[13578]|1[02])31)|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)0229)([01][0-9]|2[0-3])$");
+INSERT INTO qualitis_template_regexp_expr (key_name, regexp_type, regexp_value) VALUES('yyyyMMdd', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})(((0[13578]|1[02])(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)(0[1-9]|[12][0-9]|30))|(02(0[1-9]|[1][0-9]|2[0-8]))))|((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[3579][26])00))0229)');
+INSERT INTO qualitis_template_regexp_expr (key_name, regexp_type, regexp_value) VALUES('yyyy-MM-dd', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})-(((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)-(0[1-9]|[12][0-9]|30))|(02-(0[1-9]|[1][0-9]|2[0-8]))))|((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[13579][26])00))-02-29)');
+INSERT INTO qualitis_template_regexp_expr (key_name, regexp_type, regexp_value) VALUES('yyyyMMddHH', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})(((0[13578]|1[02])(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)(0[1-9]|[12][0-9]|30))|(02(0[1-9]|[1][0-9]|2[0-8])))[0-5]{1}[0-9]{1})|(((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[3579][26])00))0229)[0-5]{1}[0-9]{1})');
 
 -- 数值格式检测
 insert into qualitis_template(id, name, cluster_num, db_num, table_num, field_num, mid_table_action, template_type, action_type, save_mid_table, show_sql,en_name)
@@ -2242,13 +2242,8 @@ insert into qualitis_template_default_input_meta(id,type, placeholder, placehold
 insert into qualitis_template_default_input_meta(id,type, placeholder, placeholder_desc, cn_name, en_name, cn_desc, en_desc, support_fields, support_standard, support_new_value) values(32,34, "result_filter", "{&REPLACE_PLACEHOLDER_IN_SQL}${result_filter}", "比对结果过滤条件", "result_filter", "比对结果过滤条件元信息", "result filter info", false, false,false);
 insert into qualitis_template_default_input_meta(id, type, placeholder, placeholder_desc, cn_name, en_name, cn_desc, en_desc, support_fields, support_standard, support_new_value) values(33, 39, "standard_value", "{&REPLACE_PLACEHOLDER_IN_SQL}${standard_value}", "标准值", "standard_value_expression", "标准值元信息", "standard value expression meta info", false, false,false);
 
-INSERT INTO qualitis_template_regexp_expr (id, key_name, regexp_type, regexp_value) VALUES(6, 'yyyyMMdd', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})(((0[13578]|1[02])(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)(0[1-9]|[12][0-9]|30))|(02(0[1-9]|[1][0-9]|2[0-8]))))|((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[3579][26])00))0229)');
-INSERT INTO qualitis_template_regexp_expr (id, key_name, regexp_type, regexp_value) VALUES(7, 'yyyy-MM-dd', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})-(((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)-(0[1-9]|[12][0-9]|30))|(02-(0[1-9]|[1][0-9]|2[0-8]))))|((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[13579][26])00))-02-29)');
-INSERT INTO qualitis_template_regexp_expr (id, key_name, regexp_type, regexp_value) VALUES(8, 'yyyyMMddHH', 1, '(([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})(((0[13578]|1[02])(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)(0[1-9]|[12][0-9]|30))|(02(0[1-9]|[1][0-9]|2[0-8])))[0-5]{1}[0-9]{1})|(((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[3579][26])00))0229)[0-5]{1}[0-9]{1})');
-
 INSERT INTO qualitis_template_naming_conventions (id,major_categories,kind,create_user,create_time,modify_user,modify_time) VALUES (1,'{"en_name":"basics","zh_name":"IT基础","abbreviation":"A"}','[{"en_name":"Fluctuate","zh_name":"波动","abbreviation":"F"},{"en_name":"New","zh_name":"新值","abbreviation":"N"},{"en_name":"Balance","zh_name":"对账","abbreviation":"B"}]',NULL,NULL,NULL,NULL);
 INSERT INTO qualitis_template_naming_conventions (id,major_categories,kind,create_user,create_time,modify_user,modify_time) VALUES (2,'{"en_name":"general_knowledge","zh_name":"IT通识","abbreviation":"B"}','[{"en_name":"Common","zh_name":"常规","abbreviation":"C"},{"en_name":"Anti","zh_name":"反洗钱","abbreviation":"A"},{"en_name":"Regulate","zh_name":"监管报送","abbreviation":"R"}]',NULL,NULL,NULL,NULL);
+
+
 -- dml end
-
-
-
