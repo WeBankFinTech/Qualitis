@@ -1,6 +1,11 @@
-dist/
-node_modules/
-.cache/
-.idea/
+node_modules
 .DS_Store
-dist.zip
+dist
+*.local
+.vscode
+.fes
+.cache
+*.zip
+logs
+.fes-production
+package-lock.json

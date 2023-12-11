@@ -54,13 +54,6 @@ public class RuleQueryDb {
     dataMap.put(ds, data);
   }
 
-  public void addRuleQueryTable(RuleQueryTable data) {
-    tables.add(data);
-    dataMap.put(
-        String.format("%s.%s.%s", data.getClusterName(), data.getDbName(), data.getTableName()),
-        data);
-  }
-
   public String getClusterName() {
     return clusterName;
   }

@@ -12,6 +12,7 @@ public class ProjectRuleResponse {
     private List<Rule> rules;
 
     public ProjectRuleResponse() {
+        // Default Constructor
     }
 
     public ProjectRuleResponse(Project project) {

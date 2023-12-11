@@ -18,18 +18,21 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
-import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
 
 /**
  * @author howeye
  */
-public class UserSpecPermissionResponse {
+public class UserSpecPermissionResponse extends BaseResponse {
 
     private String uuid;
     @JsonProperty("user_id")
     private long userId;
     @JsonProperty("permission_id")
     private long permissionId;
+    @JsonProperty("user_name")
+    private String userName;
+    @JsonProperty("permission_name")
+    private String permissionName;
 
     public UserSpecPermissionResponse() {
         // Default Constructor
@@ -39,6 +42,13 @@ public class UserSpecPermissionResponse {
         this.uuid = userSpecPermission.getId();
         this.userId = userSpecPermission.getUser().getId();
         this.permissionId = userSpecPermission.getPermission().getId();
+        this.userName = userSpecPermission.getUser().getUsername();
+        this.permissionName = userSpecPermission.getPermission().getMethod() + " " + userSpecPermission.getPermission().getUrl();
+
+        this.createTime = userSpecPermission.getCreateTime();
+        this.createUser = userSpecPermission.getCreateUser();
+        this.modifyUser = userSpecPermission.getModifyUser();
+        this.modifyTime = userSpecPermission.getModifyTime();
     }
 
     public String getUuid() {
@@ -63,6 +73,22 @@ public class UserSpecPermissionResponse {
 
     public void setPermissionId(long permissionId) {
         this.permissionId = permissionId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPermissionName() {
+        return permissionName;
+    }
+
+    public void setPermissionName(String permissionName) {
+        this.permissionName = permissionName;
     }
 
     @Override

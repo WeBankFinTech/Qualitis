@@ -8,18 +8,25 @@ public enum SpecCharEnum {
     /**
      * For spec char in columns.
      */
+    RIGHT_BIG_BRACKET("}"),
+    PERIOD_NO_ESCAPE("."),
+    LEFT_BIG_BRACKET("{"),
     LEFT_BRACKET("["),
     RIGHT_BRACKET("]"),
     VERTICAL_BAR("\\|"),
     BOTTOM_BAR("_"),
-    DIVIDER(";"),
     PERIOD("\\."),
-    EQUAL("="),
+    DIVIDER(";"),
     MINUS("-"),
     COMMA(","),
     COLON(":"),
     EMPTY(" "),
-    STAR("*");
+    LINE("\n"),
+    STAR("*"),
+    PERCENT("%"),
+    SLASH("/"),
+    EQUAL("="),
+    DOLLAR("$");
 
     private String value;
 

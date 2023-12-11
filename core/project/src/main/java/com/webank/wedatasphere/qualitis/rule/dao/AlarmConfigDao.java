@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 
 import java.util.List;
@@ -31,5 +32,12 @@ public interface AlarmConfigDao {
      * @return
      */
     List<AlarmConfig> saveAllAlarmConfig(List<AlarmConfig> alarmConfigs);
+
+    /**
+     * Get by rule metric
+     * @param ruleMetric
+     * @return
+     */
+    List<AlarmConfig> getByRuleMetric(RuleMetric ruleMetric);
 
 }

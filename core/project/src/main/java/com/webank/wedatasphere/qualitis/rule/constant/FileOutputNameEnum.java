@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.rule.constant;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,20 +26,17 @@ public enum FileOutputNameEnum {
     /**
      * file count, dir size.
      */
-    FILE_COUNT(1,"文件数", "file count", Arrays.asList(Number.class)),
-    DIR_SIZE(2,"文件目录大小", "dir size", Arrays.asList(Number.class))
-        ;
+    FILE_COUNT(1,"文件数", "file count"),
+    DIR_SIZE(2,"文件目录大小", "dir size");
 
     private Integer code;
     private String zhMessage;
     private String enMessage;
-    private List<Class> classes;
 
-    FileOutputNameEnum(Integer code, String zhMessage, String enMessage, List<Class> classes) {
+    FileOutputNameEnum(Integer code, String zhMessage, String enMessage) {
         this.code = code;
         this.zhMessage = zhMessage;
         this.enMessage = enMessage;
-        this.classes = classes;
     }
 
     public Integer getCode() {
@@ -53,10 +49,6 @@ public enum FileOutputNameEnum {
 
     public String getEnMessage() {
         return enMessage;
-    }
-
-    public List<Class> getClasses() {
-        return classes;
     }
 
     public static String getFileOutputName(Integer code, String local) {

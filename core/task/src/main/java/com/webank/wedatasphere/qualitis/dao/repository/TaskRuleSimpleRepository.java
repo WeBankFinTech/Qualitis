@@ -30,6 +30,14 @@ import java.util.List;
 public interface TaskRuleSimpleRepository extends JpaRepository<TaskRuleSimple, Long> {
 
     /**
+     * Count yesterday num.
+     * @param ruleId
+     * @return
+     */
+    @Query(value = "select trs from TaskRuleSimple trs where to_days(now()) - to_days(trs.submitTime) = 1 and trs.ruleId = ?1")
+    List<TaskRuleSimple> findBetweenYesterday(Long ruleId);
+
+    /**
      * Find task rule simple by creator and project id
      * @param createUser
      * @param projectId
@@ -49,17 +57,18 @@ public interface TaskRuleSimpleRepository extends JpaRepository<TaskRuleSimple, 
     List<Long> countByCreateUserAndProjectId(String createUser, Long projectId);
 
     /**
+     * Find by application and rule
+     * @param applicationId
+     * @param ruleId
+     * @return
+     */
+    @Query(value = "select trs from TaskRuleSimple trs where trs.applicationId = ?1 and trs.ruleId = ?2")
+    TaskRuleSimple findByApplicationAndRule(String applicationId, Long ruleId);
+
+    /**
      * Find task rule simple by task
      * @param task
      * @return
      */
     List<TaskRuleSimple> findByTask(Task task);
-
-    /**
-     * Count yesterday num.
-     * @param ruleId
-     * @return
-     */
-    @Query(value = "select trs from TaskRuleSimple trs where to_days(now()) - to_days(trs.submitTime) = 1 and trs.ruleId = ?1")
-    List<TaskRuleSimple> findBetweenYesterday(Long ruleId);
 }

@@ -19,12 +19,12 @@ package com.webank.wedatasphere.qualitis.encoder;
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import java.math.BigInteger;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -83,7 +83,7 @@ public class Sha256Encoder {
 
     public static String encode(String str) {
         MessageDigest hash;
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         try {
             hash = MessageDigest.getInstance("SHA-256");
             hash.update(str.getBytes("UTF-8"));

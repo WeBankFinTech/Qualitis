@@ -16,31 +16,21 @@
 
 package com.webank.wedatasphere.qualitis.rule.service;
 
-import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
-import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelCustomRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelMultiTemplateRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelTemplateFileRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelTemplateRuleByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelRuleByProject;
+import com.webank.wedatasphere.qualitis.project.request.DiffVariableRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
@@ -48,104 +38,70 @@ import org.springframework.transaction.annotation.Transactional;
 public interface RuleBatchService {
 
     /**
-     * Download rule as excel file
+     * Download rule as excel file.
      * @param downloadRuleRequest
      * @param response
      * @return
      * @throws UnExpectedRequestException
      * @throws IOException
      * @throws WriteExcelException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> downloadRules(DownloadRuleRequest downloadRuleRequest, HttpServletResponse response)
+    GeneralResponse downloadRules(DownloadRuleRequest downloadRuleRequest, HttpServletResponse response)
         throws UnExpectedRequestException, IOException, WriteExcelException, PermissionDeniedRequestException;
 
     /**
-     * Upload rule from excel file
+     * Upload rule from excel file.
      * @param fileInputStream
      * @param formDataContentDisposition
      * @param projectId
      * @return
      * @throws UnExpectedRequestException
      * @throws IOException
-     * @throws MetaDataAcquireFailedException
-     * @throws SemanticException
-     * @throws ParseException
-     * @throws ClusterInfoNotConfigException
-     * @throws TaskNotExistException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> uploadRules(InputStream fileInputStream, FormDataContentDisposition formDataContentDisposition, Long projectId)
-        throws UnExpectedRequestException, IOException, MetaDataAcquireFailedException, SemanticException, ParseException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+    GeneralResponse uploadRules(InputStream fileInputStream, FormDataContentDisposition formDataContentDisposition, Long projectId)
+        throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
+
+    /**
+     * Handle rule
+     * @param rule
+     * @param ruleInDb
+     * @param ruleJsonObject
+     * @param ruleTemplateJsonObject
+     * @param ruleTemplateVisibilityObject
+     * @param projectInDb
+     * @param ruleGroupName
+     * @param newRuleNames
+     * @param diffVariableRequestList
+     * @throws IOException
+     * @throws UnExpectedRequestException
+     */
+    void handleRule(Rule rule, Rule ruleInDb, String ruleJsonObject, String ruleTemplateJsonObject, String ruleTemplateVisibilityObject,
+        Project projectInDb, String ruleGroupName, List<String> newRuleNames
+        , List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException;
 
     /**
      * Get excel template from rules
      * @param rules
-     * @param localeStr
+     * @param diffVariableRequestList
      * @return
-     */
-    List<ExcelTemplateRuleByProject> getTemplateRule(Iterable<Rule> rules, String localeStr);
-
-    /**
-     * Get multi-table rule template from rules
-     * @param rules
-     * @param localeStr
-     * @return
-     */
-    List<ExcelMultiTemplateRuleByProject> getMultiTemplateRule(Iterable<Rule> rules, String localeStr);
-
-    /**
-     * Fil rule
-     * @param rules
-     * @param localeStr
-     * @return
-     */
-    List<ExcelTemplateFileRuleByProject> getFileRule(Iterable<Rule> rules, String localeStr);
-
-    /**
-     * Get cutsom rule template from rule
-     * @param rules
-     * @param localeStr
-     * @return
-     */
-    List<ExcelCustomRuleByProject> getCustomRule(Iterable<Rule> rules, String localeStr);
-
-    /**
-     * Upload rule from excel file for outer
-     * @param fileInputStream
-     * @param fileName
-     * @param userName
-     * @return
-     * @throws UnExpectedRequestException
      * @throws IOException
-     * @throws MetaDataAcquireFailedException
-     * @throws SemanticException
-     * @throws ParseException
-     * @throws ClusterInfoNotConfigException
-     * @throws TaskNotExistException
      */
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    GeneralResponse<?> outerUploadRules(InputStream fileInputStream, String fileName, String userName)
-        throws UnExpectedRequestException, IOException, MetaDataAcquireFailedException, SemanticException, ParseException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+    List<ExcelRuleByProject> getRule(Iterable<Rule> rules,
+        List<DiffVariableRequest> diffVariableRequestList) throws IOException;
 
     /**
-     * Four types rule.
-     * @param rulePartitionedByRuleName
-     * @param customRulePartitionedByRuleName
-     * @param multiRulePartitionedByRuleName
-     * @param fileRulePartitionedByRuleName
-     * @param project
+     * Get and save
+     * @param excelRuleContent
+     * @param projectInDb
+     * @param newRuleNames
      * @param userName
-     * @param aomp
+     * @param diffVariableRequestList
+     * @throws IOException
      * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
-     * @throws SemanticException
-     * @throws ParseException
-     * @throws TaskNotExistException
-     * @throws ClusterInfoNotConfigException
      */
-    void getAndSaveRule(Map<String, List<ExcelTemplateRuleByProject>> rulePartitionedByRuleName,
-        Map<String, List<ExcelCustomRuleByProject>> customRulePartitionedByRuleName,
-        Map<String, List<ExcelMultiTemplateRuleByProject>> multiRulePartitionedByRuleName,
-        Map<String, List<ExcelTemplateFileRuleByProject>> fileRulePartitionedByRuleName,
-        Project project, String userName, boolean aomp)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, SemanticException, ParseException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException;
+    void getAndSaveRule(List<ExcelRuleByProject> excelRuleContent, Project projectInDb, List<String> newRuleNames,
+        String userName, List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException;
+
 }

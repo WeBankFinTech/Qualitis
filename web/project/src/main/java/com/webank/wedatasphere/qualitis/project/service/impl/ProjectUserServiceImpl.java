@@ -1,11 +1,14 @@
 package com.webank.wedatasphere.qualitis.project.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
+import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
+import com.webank.wedatasphere.qualitis.project.constant.SwitchTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -18,18 +21,21 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.management.relation.RoleNotFoundException;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.management.relation.RoleNotFoundException;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author allenzhou
@@ -40,6 +46,8 @@ public class ProjectUserServiceImpl implements ProjectUserService {
     private ProjectEventService projectEventService;
     @Autowired
     private ProjectUserDao projectUserDao;
+    @Autowired
+    private UserRoleDao userRoleDao;
     @Autowired
     private ProjectDao projectDao;
     @Autowired
@@ -71,10 +79,10 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             userService.autoAddUser(projectUser);
         }
         User loginUser = userDao.findById(loginUserId);
-        if (! checkPermission(projectInDb, loginUser.getUserName(), ProjectUserPermissionEnum.CREATOR.getCode())) {
+        if (! checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
             throw new PermissionDeniedRequestException("{&NO_PERMISSION_MODIFYING_PROJECT}", 403);
         }
-        if (loginUser.getUserName().equals(projectUser)) {
+        if (loginUser.getUsername().equals(projectUser)) {
             return null;
         }
         List<Integer> permissions = new ArrayList<>();
@@ -83,14 +91,15 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             LOGGER.info("Success to delete original project user permissions.");
         }
         for (Integer permission : authorizeProjectUserRequest.getProjectPermissions()) {
-            ProjectUser tmp = new ProjectUser(permission, projectInDb, projectUser);
+            ProjectUser tmp = new ProjectUser(permission, projectInDb, projectUser, SwitchTypeEnum.HAND_MOVEMENT.getCode());
             LOGGER.info("User[name={}] get permission[ID={}].", projectUser, permission);
             projectUsers.add(tmp);
             permissions.add(permission);
         }
         projectUserDao.saveAll(projectUsers);
-//        projectEventService.record(projectInDb.getId(), loginUser.getUserName(), "authorized", projectUser, EventTypeEnum.MODIFY_PROJECT.getCode());
-        ProjectUserResponse projectUserResponse = new ProjectUserResponse(projectInDb.getName(), loginUser.getUserName(), projectUser);
+        String authorizedUsernames = projectUsers.stream().map(currProjectUser -> currProjectUser.getUserName()).distinct().collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
+        projectEventService.record(projectInDb, loginUser.getUsername(), "授权 " + authorizedUsernames, OperateTypeEnum.AUTHORIZE_PROJECT);
+        ProjectUserResponse projectUserResponse = new ProjectUserResponse(projectInDb.getName(), loginUser.getUsername(), projectUser);
         projectUserResponse.setPermissions(permissions);
 
         return new GeneralResponse<>("200", "{&SUCCESS_TO_ADD_PROJECT_USER}", projectUserResponse);
@@ -106,11 +115,11 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             throw new UnExpectedRequestException("{&PROJECT}: [ID=" + projectId + "] {&DOES_NOT_EXIST}");
         }
         User loginUser = userDao.findById(loginUserId);
-        if (! checkPermission(projectInDb, loginUser.getUserName(), ProjectUserPermissionEnum.CREATOR.getCode())) {
+        if (! checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
             throw new PermissionDeniedRequestException("{&NO_PERMISSION_MODIFYING_PROJECT}", 403);
         }
         projectUserDao.deleteByProjectAndUserName(projectInDb, request.getProjectUser());
-//        projectEventService.record(projectInDb.getId(), loginUser.getUserName(), "authorized", request.getProjectUser(), EventTypeEnum.MODIFY_PROJECT.getCode());
+        projectEventService.record(projectInDb, loginUser.getUsername(), "回收授权 " + request.getProjectUser(), OperateTypeEnum.UNAUTHORIZE_PROJECT);
         return new GeneralResponse<>("200", "{&DELETE_USER_SUCCESSFULLY}", null);
     }
 
@@ -131,12 +140,13 @@ public class ProjectUserServiceImpl implements ProjectUserService {
         }
         for (ProjectUser currentProjectUser : projectUsers) {
             List<String> userNames = projectUserResponses.stream().map(ProjectUserResponse::getAuthorizedUser).collect(Collectors.toList());
+            String projectCreator = projectInDb.getCreateUser();
             String currentUser = currentProjectUser.getUserName();
             if (userNames.contains(currentUser)) {
                 continue;
             }
-            String projectCreator = projectInDb.getCreateUser();
             ProjectUserResponse projectUserResponse = new ProjectUserResponse(projectInDb.getName(), projectCreator, currentUser);
+            projectUserResponse.setHidden(currentProjectUser.getAutomaticSwitch() != null ? currentProjectUser.getAutomaticSwitch() : Boolean.FALSE);
             List<Integer> permissions = getPermissionList(projectUsers, currentUser);
             projectUserResponse.setPermissions(permissions);
             projectUserResponses.add(projectUserResponse);
@@ -147,8 +157,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
 
     @Override
     public List<Integer> getPermissionList(List<ProjectUser> projectUsers, String userName) {
-        List<Integer> permissions = projectUsers.stream()
-            .filter(projectUser -> projectUser.getUserName().equals(userName)).map(ProjectUser::getPermission).distinct().collect(Collectors.toList());
+        List<Integer> permissions = projectUsers.stream().filter(projectUser -> projectUser.getUserName().equals(userName)).map(ProjectUser::getPermission).distinct().collect(Collectors.toList());
 
         return permissions;
     }
@@ -161,15 +170,14 @@ public class ProjectUserServiceImpl implements ProjectUserService {
     @Override
     public GeneralResponse<List<String>> getAllUsers(PageRequest request, Long projectCreatorId) throws UnExpectedRequestException {
         PageRequest.checkRequest(request);
-        int page = request.getPage();
-        int size = request.getSize();
         User projectCreator = userDao.findById(projectCreatorId);
         if (projectCreator == null) {
-            throw new UnExpectedRequestException("User {&DOES_NOT_EXIST}, name: " + projectCreator.getUserName());
+            throw new UnExpectedRequestException("User {&DOES_NOT_EXIST}, projectCreatorId: " + projectCreatorId);
         }
-        LOGGER.info("Get all users by: " + projectCreator.getUserName());
-        List<User> users = userDao.findAllUser(page, size);
-        return new GeneralResponse<>("200", "{&FIND_ALL_USERS_SUCCESSFULLY}", users.stream().map(User::getUserName).collect(Collectors.toList()));
+        List<Map<String, Object>> userList = userDao.findAllUserIdAndName();
+        List<String> usernameList = userList.stream().filter(Objects::nonNull).map(user -> (String)user.get("username")).collect(Collectors.toList());
+        LOGGER.info("Get all users by: " + projectCreator.getUsername());
+        return new GeneralResponse<>("200", "{&FIND_ALL_USERS_SUCCESSFULLY}", usernameList);
     }
 
 }

@@ -19,11 +19,11 @@ package com.webank.wedatasphere.qualitis.rule.dao.impl;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleGroupRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleGroupRepository;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -50,6 +50,11 @@ public class RuleGroupDaoImpl implements RuleGroupDao {
     }
 
     @Override
+    public void deleteAll(List<RuleGroup> ruleGroups) {
+        ruleGroupRepository.deleteAll(ruleGroups);
+    }
+
+    @Override
     public RuleGroup findByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId) {
         return ruleGroupRepository.findByRuleGroupNameAndProjectId(ruleGroupName, projectId);
     }
@@ -58,4 +63,30 @@ public class RuleGroupDaoImpl implements RuleGroupDao {
     public List<RuleGroup> findByProjectId(Long projectId) {
         return ruleGroupRepository.findByProjectId(projectId);
     }
+
+    @Override
+    public List<Map<String, Object>> findByProject(Long projectId) {
+        return ruleGroupRepository.findByProject(projectId);
+    }
+
+    @Override
+    public List<RuleGroup> findByProjectIdAndExistRule(Long projectId) {
+        return ruleGroupRepository.findByProjectIdAndExistRule(projectId);
+    }
+
+    @Override
+    public List<RuleGroup> findByProjectIdAndNotExistRule(Long projectId) {
+        return ruleGroupRepository.findByProjectIdAndNotExistRule(projectId);
+    }
+
+    @Override
+    public List<RuleGroup> findByIds(List<Long> ruleGroupIds) {
+        return ruleGroupRepository.findAllById(ruleGroupIds);
+    }
+
+    @Override
+    public RuleGroup findLatestVersionByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId) {
+        return ruleGroupRepository.findLatestVersionByRuleGroupNameAndProjectId(ruleGroupName, projectId);
+    }
+
 }

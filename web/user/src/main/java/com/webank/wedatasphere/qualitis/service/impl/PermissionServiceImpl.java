@@ -31,18 +31,8 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.PermissionResponse;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.dao.PermissionDao;
-import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
-import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.RolePermission;
-import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.permission.AddPermissionRequest;
-import com.webank.wedatasphere.qualitis.request.permission.DeletePermissionRequest;
-import com.webank.wedatasphere.qualitis.request.permission.ModifyPermissionRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +84,8 @@ public class PermissionServiceImpl implements PermissionService {
         Permission newPermission = new Permission();
         newPermission.setMethod(method);
         newPermission.setUrl(url);
+        newPermission.setCreateUser(HttpUtils.getUserName(httpServletRequest));
+        newPermission.setCreateTime(DateUtils.now());
         Permission savedPermission = permissionDao.savePermission(newPermission);
 
         LOGGER.info("Succeed to add permission, id: {}, method: {}, url: {}, current_user: {}", savedPermission.getId(), method, url, HttpUtils.getUserName(httpServletRequest));
@@ -102,7 +94,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -129,7 +121,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -145,6 +137,8 @@ public class PermissionServiceImpl implements PermissionService {
 
         permissionInDb.setUrl(url);
         permissionInDb.setMethod(method);
+        permissionInDb.setModifyUser(HttpUtils.getUserName(httpServletRequest));
+        permissionInDb.setModifyTime(DateUtils.now());
         permissionDao.savePermission(permissionInDb);
         LOGGER.info("Succeed to modify permission, permissionId: {}, method: {}, url: {}, current_user: {}", id, method, url, HttpUtils.getUserName(httpServletRequest));
         return new GeneralResponse<>("200", "{&MODIFY_PERMISSION_SUCCESSFULLY}", null);

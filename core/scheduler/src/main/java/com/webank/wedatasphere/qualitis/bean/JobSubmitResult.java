@@ -31,13 +31,13 @@ public class JobSubmitResult {
     public JobSubmitResult() {
     }
 
-    public JobSubmitResult(Long taskId, String jobStatus, String clusterName, String ujesAddress, Long taskRemoteId, String execId) {
+    public JobSubmitResult(Long taskId, String clusterName, String ujesAddress, Long taskRemoteId, String execId) {
+        this.jobStatus = "";
         this.taskId = taskId;
-        this.jobStatus = jobStatus;
+        this.taskExecId = execId;
         this.clusterName = clusterName;
         this.ujesAddress = ujesAddress;
         this.taskRemoteId = taskRemoteId;
-        this.taskExecId = execId;
     }
 
     public Long getTaskId() {

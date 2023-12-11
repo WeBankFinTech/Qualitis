@@ -1,11 +1,11 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-English | [中文](/README_zh.md)  
+English | [中文](docs/zh_CN/ch1/README.md)  
 
 ## Overview
 Qualitis is a data quality management platform that supports quality verification, notification, and management for various datasource. It is used to solve various data quality problems caused by data processing.
 
-Based on Spring Boot, Qualitis submits quality model task to [Linkis](https://github.com/apache/incubator-linkis) platform. It provides functions such as data quality model construction, data quality model execution, data quality verification, reports of data quality generation and so on.
+Based on Spring Boot, Qualitis submits quality model task to [Linkis](https://github.com/WeBankFinTech/Linkis) platform. It provides functions such as data quality model construction, data quality model execution, data quality verification, reports of data quality generation and so on.
 
 At the same time, Qualitis provides enterprise-level features of financial-level resource isolation, management and access control. It is also guaranteed working well under high-concurrency, high-performance and high-availability scenarios.
 
@@ -41,7 +41,7 @@ And it also supports personnel management, access control management, privilege 
 ![](images/en_US/ch1/CompareSimilarSystem.png)
 
 ## Documents
-[Quick Deploy](docs/en_US/ch1/QuickDeploy.md)  
+[Quick Deploy](docs/en_US/ch1/Quick%20Deploy%20Standalone.md)  
 [User Manual](docs/en_US/ch1/User%20Manual.md)  
 [Architecture Design](docs/en_US/ch1/Architecture%20Design.md)  
 <br/>
@@ -72,7 +72,5 @@ If you desire immediate response, please kindly raise issues to us or scan the b
 ![](images/en_US/ch1/ContractUs.png)
 
 ## License
-**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
 
-## Tips
-The front-end code of Qualitis adopts the front-end framework FES self-developed by WeBank. The FES framework is currently open source, and the source code can be downloaded through the ui folder in the root directory. Of course, it can also be used directly by downloading the release. The default front-end compilation package is installed in Qualitis-x.x.x/conf/static.

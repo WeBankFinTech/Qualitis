@@ -24,59 +24,49 @@ import com.alibaba.excel.metadata.BaseRowModel;
  */
 public class ExcelProject extends BaseRowModel {
 
-    @ExcelProperty(value = "Project Name", index = 0)
-    private String projectName;
+    @ExcelProperty(value = "Project Object", index = 0)
+    private String projectObject;
 
-    @ExcelProperty(value = "Project Chinese Name", index = 1)
-    private String projectChName;
+    @ExcelProperty(value = "Project User Object", index = 1)
+    private String projectUserObject;
 
-    @ExcelProperty(value = "Project Description", index = 2)
-    private String projectDescription;
-
-    @ExcelProperty(value = "Project Labels", index = 3)
-    private String projectLabels;
+    @ExcelProperty(value = "Project Label Object", index = 2)
+    private String projectLabelObject;
 
     public ExcelProject() {
         // Default Constructor
     }
 
-    public String getProjectName() {
-        return projectName;
+    public String getProjectObject() {
+        return projectObject;
     }
 
-    public void setProjectName(String projectName) {
-        this.projectName = projectName;
+    public void setProjectObject(String projectObject) {
+        this.projectObject = projectObject;
     }
 
-    public String getProjectChName() {
-        return projectChName;
+    public String getProjectUserObject() {
+        return projectUserObject;
     }
 
-    public void setProjectChName(String projectChName) {
-        this.projectChName = projectChName;
+    public void setProjectUserObject(String projectUserObject) {
+        this.projectUserObject = projectUserObject;
     }
 
-    public String getProjectDescription() {
-        return projectDescription;
+    public String getProjectLabelObject() {
+        return projectLabelObject;
     }
 
-    public void setProjectDescription(String projectDescription) {
-        this.projectDescription = projectDescription;
-    }
-
-    public String getProjectLabels() {
-        return projectLabels;
-    }
-
-    public void setProjectLabels(String projectLabels) {
-        this.projectLabels = projectLabels;
+    public void setProjectLabelObject(String projectLabelObject) {
+        this.projectLabelObject = projectLabelObject;
     }
 
     @Override
     public String toString() {
         return "ExcelProject{" +
-            "projectName='" + projectName + '\'' +
-            ", projectDescription='" + projectDescription + '\'' +
+            "projectObject='" + projectObject + '\'' +
+            ", projectUserObject='" + projectUserObject + '\'' +
+            ", projectLabelObject='" + projectLabelObject + '\'' +
             '}';
     }
 }

@@ -62,7 +62,7 @@ public class UserSpecPermissionDaoImpl implements UserSpecPermissionDao {
 
     @Override
     public List<UserSpecPermission> findAllUserSpecPermission(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return userSpecPermissionRepository.findAll(pageable).getContent();
     }

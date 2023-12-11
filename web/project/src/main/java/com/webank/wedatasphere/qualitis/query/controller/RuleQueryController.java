@@ -20,32 +20,28 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
+import com.webank.wedatasphere.qualitis.project.request.RuleQueryRequest;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
-import com.webank.wedatasphere.qualitis.query.request.RuleQueryRequest;
+import com.webank.wedatasphere.qualitis.query.request.LineageParameterRequest;
 import com.webank.wedatasphere.qualitis.query.request.RulesDeleteRequest;
+import com.webank.wedatasphere.qualitis.query.response.LineageParameterResponse;
 import com.webank.wedatasphere.qualitis.query.response.RuleQueryDataSource;
-import com.webank.wedatasphere.qualitis.query.response.RuleQueryProject;
 import com.webank.wedatasphere.qualitis.query.service.RuleQueryService;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_wblwyan
@@ -63,32 +59,15 @@ public class RuleQueryController {
     @Path("conditions")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> conditions(@Context HttpServletRequest request) {
+    public GeneralResponse<Map<String, Object>> conditions(@Context HttpServletRequest request) {
         // Get login user
         String user = HttpUtils.getUserName(request);
         try {
             Map<String, Object> results = ruleQueryService.conditions(user);
-            LOG.info("[My DataSource] Succeed to the query initial conditions, the result:{}", results);
+            LOG.info("[My DataSource] Succeed to the query initial conditions.");
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to the query initial conditions, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
-        }
-    }
-
-    @GET
-    @Path("init")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> init(@Context HttpServletRequest request) {
-        // Get login user
-        String user = HttpUtils.getUserName(request);
-        try {
-            List<RuleQueryProject> results = ruleQueryService.init(user);
-            LOG.info("[My DataSource] Succeed to query initial results. The number of results:{}", results == null ? 0 : results.size());
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
-        } catch (Exception e) {
-            LOG.error("[My DataSource] Failed to query initial results, internal error", e);
             return new GeneralResponse<>("500", e.getMessage(), null);
         }
     }
@@ -97,25 +76,21 @@ public class RuleQueryController {
     @Path("query")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> query(RuleQueryRequest param, @Context HttpServletRequest request) {
+    public GeneralResponse<DataInfo<RuleQueryDataSource>> query(RuleQueryRequest param, @Context HttpServletRequest request) {
         if (param == null) {
             param = new RuleQueryRequest();
         }
         // Get login user
         param.setUser(HttpUtils.getUserName(request));
+        PageRequest pageRequest = new PageRequest();
+        pageRequest.setPage(param.getPage());
+        pageRequest.setSize(param.getSize());
+        param.convertParameter();
         try {
-            PageRequest pageRequest = new PageRequest();
-            pageRequest.setPage(param.getPage());
-            pageRequest.setSize(param.getSize());
             PageRequest.checkRequest(pageRequest);
-            DataInfo<RuleQueryDataSource> results = new DataInfo<>();
-            List<RuleQueryDataSource> ruleQueryDataSources = ruleQueryService.filter(pageRequest, param.getUser(), param.getCluster(), param.getDb(), param.getTable(),
-                false);
-            results.setContent(ruleQueryDataSources);
-            List<RuleQueryDataSource> allRuleDataSource = ruleQueryService.filter(null, param.getUser(), param.getCluster(), param.getDb(), param.getTable(),
-                true);
-            results.setTotalCount(allRuleDataSource == null ? 0 : allRuleDataSource.size());
-            LOG.info("[My DataSource] Query successfully. The number of results:{}", allRuleDataSource == null ? 0 : allRuleDataSource.size());
+            DataInfo<RuleQueryDataSource> results =  ruleQueryService.filter(pageRequest, param.getUser(), param.getCluster(), param.getDb(), param.getTable(), param.getDatasourceType()
+            , param.getSubSystemId(), param.getTagCode(), param.getDepartmentName(), param.getDevDepartmentName(), param.getEnvName());
+
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
         } catch (Exception e) {
             LOG.error("[My DataSource] Query failed, internal error.", e);
@@ -127,7 +102,7 @@ public class RuleQueryController {
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> all(@Context HttpServletRequest request, PageRequest pageRequest) {
+    public GeneralResponse<DataInfo<RuleQueryDataSource>> all(@Context HttpServletRequest request, PageRequest pageRequest) {
         // Get login user
         String user = HttpUtils.getUserName(request);
         try {
@@ -136,12 +111,12 @@ public class RuleQueryController {
             List<RuleQueryDataSource> results = ruleQueryService.all(user, pageRequest);
 
             DataInfo<RuleQueryDataSource> dataInfo = new DataInfo<>();
-            // Get total records
-            List<RuleQueryDataSource> allRuleDataSource = ruleQueryService.filter(null, user, "%", "%", "%", true);
-            dataInfo.setTotalCount(allRuleDataSource == null ? 0 : allRuleDataSource.size());
+            // Get total
+            int total = ruleQueryService.count(user, "%", "%", "%", null, null, null, null, null, null);
+            dataInfo.setTotalCount(total);
 
             dataInfo.setContent(results);
-            LOG.info("[My DataSource] Succeed to query initial results. The number of results:{}", allRuleDataSource == null ? 0 : allRuleDataSource.size());
+            LOG.info("[My DataSource] Succeed to query initial results. The number of results:{}", total);
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to query initial results, internal error", e);
@@ -153,21 +128,27 @@ public class RuleQueryController {
     @Path("columns")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> columns(RuleQueryRequest param, @Context HttpServletRequest request) {
+    public GeneralResponse<DataInfo<ColumnInfoDetail>> columns(RuleQueryRequest param, @Context HttpServletRequest request) {
         // Get login user
         String loginUser = HttpUtils.getUserName(request);
         String proxyUser = param.getUser();
-        if (StringUtils.isNotBlank(proxyUser) && proxyUser != loginUser) {
+        if (StringUtils.isNotBlank(proxyUser) && !proxyUser.equals(loginUser)) {
             loginUser = proxyUser;
         }
         try {
-            List<ColumnInfoDetail> results = ruleQueryService.getColumnsByTableName(param.getCluster(), param.getDatasourceId(), param.getDb(), param.getTable(), loginUser);
+            List<ColumnInfoDetail> results = ruleQueryService.getColumnsFromMetaService(param.getCluster(), param.getDatasourceId(), param.getDb(), param.getTable(), loginUser);
             List<String> cols = ruleQueryService.findCols(param.getCluster(), param.getDb(), param.getTable(), loginUser);
-            if (results == null || ! ruleQueryService.compareDataSource(cols, results)) {
+            if (CollectionUtils.isEmpty(results) || ! ruleQueryService.compareDataSource(cols, results)) {
                 throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
             }
-            LOG.info("[My DataSource] Succeed to query table columns. The column number of results:{}", results == null ? 0 : results.size());
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
+
+            results = ruleQueryService.filterColumns(results, param);
+
+            DataInfo<ColumnInfoDetail> result = new DataInfo<>();
+            result.setTotalCount(CollectionUtils.isEmpty(results) ? 0 : results.size());
+            result.setContent(results.subList(param.getPage() * param.getSize(), (param.getPage() + 1) * param.getSize() <= result.getTotalCount() ? (param.getPage() + 1) * param.getSize() : result.getTotalCount()));
+            LOG.info("[My DataSource] Succeed to query table columns. The column number of results:{}", result.getTotalCount());
+            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", result);
         } catch (MetaDataAcquireFailedException e) {
             return new GeneralResponse<>("400", e.getMessage(), null);
         }  catch (UnExpectedRequestException e) {
@@ -182,13 +163,14 @@ public class RuleQueryController {
     @Path("rules")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> rules(RuleQueryRequest param, @Context HttpServletRequest request) {
+    public GeneralResponse<DataInfo<HiveRuleDetail>> rules(RuleQueryRequest param, @Context HttpServletRequest request) {
         // Get login user
         String loginUser = HttpUtils.getUserName(request);
         try {
             param.checkRequest();
-            DataInfo<HiveRuleDetail> dataInfo = ruleQueryService.getRulesByColumn(param.getCluster(), param.getDb(), param.getTable()
-                , "%" + param.getColumn() + "%", loginUser, param.getPage(), param.getSize());
+            param.convertParameter();
+            DataInfo<HiveRuleDetail> dataInfo = ruleQueryService.getRulesByCondition(param.getCluster(), param.getDb(), param.getTable()
+                , param.getColumn(), loginUser, param.getRuleTemplateId(), param.getRelationObjectType(), param.getPage(), param.getSize());
 
             return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
         } catch (UnExpectedRequestException e) {
@@ -204,7 +186,7 @@ public class RuleQueryController {
     @Path("rules/delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteRules(RulesDeleteRequest request) {
+    public GeneralResponse deleteRules(RulesDeleteRequest request) {
         try {
             request.checkRequest();
             ruleQueryService.deleteRules(request);
@@ -213,5 +195,38 @@ public class RuleQueryController {
             LOG.error("[My DataSource] Failed to delete table columns' rules, internal error", e);
             return new GeneralResponse<>("500", e.getMessage(), null);
         }
+    }
+
+    @POST
+    @Path("tags")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<DataInfo<Map<String, Object>>> getTagList() {
+        try {
+            DataInfo<Map<String, Object>> dataInfo = ruleQueryService.getTagList();
+            return new GeneralResponse<>("200", "get tag list successfully.", dataInfo);
+        } catch (MetaDataAcquireFailedException e) {
+            LOG.error("[My DataSource] Failed to get table tag, internal error", e);
+            return new GeneralResponse<>("500", e.getMessage(), null);
+        }
+    }
+
+    @POST
+    @Path("lineage/parameter")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<LineageParameterResponse> getLineageParameter(LineageParameterRequest request) {
+        try {
+            request.checkRequest();
+            LineageParameterResponse response = ruleQueryService.getLineageParameter(request);
+            return new GeneralResponse<>("200", "get parameter of lineage successfully.", response);
+        } catch (UnExpectedRequestException e) {
+            LOG.error("[My DataSource] Failed to get parameter of lineage, request error", e);
+            return new GeneralResponse<>("400", e.getMessage(), null);
+        } catch (MetaDataAcquireFailedException e) {
+            LOG.error("[My DataSource] Failed to get parameter of lineage, internal error", e);
+            return new GeneralResponse<>("500", e.getMessage(), null);
+        }
+
     }
 }

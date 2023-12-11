@@ -60,7 +60,7 @@ public class PermissionDaoImpl implements PermissionDao {
 
     @Override
     public List<Permission> findAllPermission(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return permissionRepository.findAll(pageable).getContent();
     }

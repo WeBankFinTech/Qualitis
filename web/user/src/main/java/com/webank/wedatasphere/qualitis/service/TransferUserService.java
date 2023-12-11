@@ -33,12 +33,12 @@ public interface TransferUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> transferUser(String user) throws UnExpectedRequestException;
+    GeneralResponse<Object> transferUser(String user) throws UnExpectedRequestException;
 
     /**
      * Administrator exit the status of simulation
      * @return
      */
-    GeneralResponse<?> exitUser();
+    GeneralResponse<Object> exitUser();
 
 }

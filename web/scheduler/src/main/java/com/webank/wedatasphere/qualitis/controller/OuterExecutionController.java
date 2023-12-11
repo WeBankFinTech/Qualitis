@@ -16,23 +16,40 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
+import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.request.ApplicationQueryRequest;
+import com.webank.wedatasphere.qualitis.request.BatchDeleteRuleRequest;
 import com.webank.wedatasphere.qualitis.request.GeneralExecutionRequest;
+import com.webank.wedatasphere.qualitis.request.GetRuleQueryRequest;
 import com.webank.wedatasphere.qualitis.request.GetTaskLogRequest;
+import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
+import com.webank.wedatasphere.qualitis.timer.RuleLisingCallable;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author howeye
@@ -41,37 +58,61 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class OuterExecutionController {
     @Autowired
     private OuterExecutionService outerExecutionService;
+    @Autowired
+    private RuleDao ruleDao;
+    @Autowired
+    private ProjectDao projectDao;
+    @Autowired
+    private ProjectService projectService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OuterExecutionController.class);
+
+    private HttpServletRequest httpServletRequest;
+
+    public OuterExecutionController(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
+    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(50,
+            Integer.MAX_VALUE,
+            60,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(1000),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.DiscardPolicy());
 
     @POST
     @Path("execution")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> generalExecution(GeneralExecutionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> generalExecution(GeneralExecutionRequest request) {
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
         try {
             if (request.getAsync()) {
                 LOGGER.info("Start to axync run submit application.");
-                new Thread(new Runnable() {
+                POOL.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            outerExecutionService.generalExecution(request);
+                            outerExecutionService.generalExecution(request,loginUser);
                         } catch (UnExpectedRequestException e) {
-                            LOGGER.error(e.getMessage(), e);;
+                            LOGGER.error(e.getMessage(), e);
                         } catch (Exception e) {
                             LOGGER.error("Async failed exception.", e);
                         }
                     }
-                }).start();
+                });
 
                 return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_SUBMIT_TASK}", null);
             } else {
-                return outerExecutionService.generalExecution(request);
+                return outerExecutionService.generalExecution(request,loginUser);
             }
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            throw e;
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        }  catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to dispatch application, caused by: {}. Exception: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}", e);
@@ -81,11 +122,12 @@ public class OuterExecutionController {
     @GET
     @Path("execution/application/kill/{applicationId}/{executionUser}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) throws UnExpectedRequestException {
+    public GeneralResponse killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
         try {
             return outerExecutionService.killApplication(applicationId, executionUser);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to kill application: {}", applicationId, e);
             return new GeneralResponse<>("500", "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
@@ -95,12 +137,12 @@ public class OuterExecutionController {
     @GET
     @Path("application/{applicationId}/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getApplicationStatus(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException{
+    public GeneralResponse getApplicationStatus(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationStatus(applicationId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            throw e;
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
@@ -110,11 +152,12 @@ public class OuterExecutionController {
     @GET
     @Path("application/dynamic/{applicationId}/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getApplicationDynamicStatus(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException{
+    public GeneralResponse getApplicationDynamicStatus(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationDynamicStatus(applicationId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
@@ -124,11 +167,27 @@ public class OuterExecutionController {
     @GET
     @Path("application/{applicationId}/result")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getApplicationResult(@PathParam("applicationId") String applicationId) throws UnExpectedRequestException {
+    public GeneralResponse getApplicationSummary(@PathParam("applicationId") String applicationId) {
         try {
-            return outerExecutionService.getApplicationResult(applicationId);
+            return outerExecutionService.getApplicationSummary(applicationId);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to get result of application: {}", applicationId, e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
+        }
+    }
+
+    @GET
+    @Path("application/{applicationId}/{executionUser}/result_value")
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse getApplicationResultValue(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
+        try {
+            return outerExecutionService.getApplicationResultValue(applicationId, executionUser);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get result of application: {}", applicationId, e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
@@ -139,14 +198,108 @@ public class OuterExecutionController {
     @Path("log")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getTaskLog(GetTaskLogRequest request) throws UnExpectedRequestException {
+    public GeneralResponse getTaskLog(GetTaskLogRequest request) {
         try {
             return outerExecutionService.getTaskLog(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get log of the task: {}, cluster_id: {}", request.getTaskId(), request.getClusterId(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
         }
     }
+
+    @GET
+    @Path("application/{applicationId}/log")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getTaskLog(@PathParam("applicationId") String applicationId) {
+        try {
+            return outerExecutionService.getApplicationLog(applicationId);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to get log of the application: ID={}", applicationId, e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
+        }
+    }
+
+    @POST
+    @Path("query")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse queryJobInfo(ApplicationQueryRequest request) {
+        try {
+            return outerExecutionService.queryJobInfo(request.getJobId());
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to query application by job ID: {}", request.getJobId(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_QUERY_TASK}", e);
+        }
+    }
+
+    @POST
+    @Path("query/application")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse<ApplicationProjectResponse> queryApplications(ApplicationQueryRequest request) {
+        try {
+            return outerExecutionService.queryApplications(request.getJobId());
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), null);
+        } catch (Exception e) {
+            LOGGER.error("Failed to query application by job ID: {}", request.getJobId(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_QUERY_TASK}: " + request.getJobId(), null);
+        }
+    }
+
+    @POST
+    @Path("query/rule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse queryRule(GetRuleQueryRequest request) {
+        try {
+            Future<ProjectDetailResponse> projectDetailResponse = POOL.submit(new RuleLisingCallable(request, ruleDao, projectDao, projectService));
+
+            return new GeneralResponse<>("200", "{&SUCCESS_GET_RULE_QUERY}", projectDetailResponse.get());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get rule query. caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_QUERY}", e.getMessage());
+        }
+    }
+
+    @POST
+    @Path("query/delete/rule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse deleteRule(BatchDeleteRuleRequest request) {
+        try {
+            POOL.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        outerExecutionService.deleteRule(request);
+                    } catch (UnExpectedRequestException e) {
+                        LOGGER.error(e.getMessage(), e);
+                    } catch (PermissionDeniedRequestException e) {
+                        LOGGER.error(e.getMessage(), e);
+                    } catch (Exception e) {
+                        LOGGER.error("Async failed exception.", e);
+                    }
+                }
+            });
+
+            return new GeneralResponse<>("200", "{&SUCCESS_DELETE_RULE_LIST}", null);
+        } catch (Exception e) {
+            LOGGER.error("Failed to delete rule . caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_LIST}", e.getMessage());
+        }
+    }
+
+
 }

@@ -17,15 +17,18 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
-import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.FindClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +52,12 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterInfoServiceImpl.class);
 
+    private HttpServletRequest httpServletRequest;
+
+    public ClusterInfoServiceImpl(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<ClusterInfo> addClusterInfo(AddClusterInfoRequest request) throws UnExpectedRequestException {
@@ -57,7 +68,7 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         String clusterName = request.getClusterName();
         String clusterType = request.getClusterType();
         String linkisAddress = request.getLinkisAddress();
-        String linkisToken = request.getLinkisToken();
+        String hiveUrn = request.getHiveUrn();
         ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
         if (clusterInfoInDb != null) {
             throw new UnExpectedRequestException("cluster name {&ALREADY_EXIST}");
@@ -68,7 +79,13 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         newClusterInfo.setClusterName(clusterName);
         newClusterInfo.setClusterType(clusterType);
         newClusterInfo.setLinkisAddress(linkisAddress);
-        newClusterInfo.setLinkisToken(linkisToken);
+        newClusterInfo.setLinkisToken(request.getLinkisToken());
+        newClusterInfo.setHiveUrn(hiveUrn);
+        newClusterInfo.setWtssJson(request.getWtssJson());
+        newClusterInfo.setJobserverJson(request.getJobserverJson());
+        newClusterInfo.setCreateUser(HttpUtils.getUserName(httpServletRequest));
+        newClusterInfo.setCreateTime(DateUtils.now());
+
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(newClusterInfo);
 
         LOGGER.info("Succeed to add cluster_info, response: {}", savedClusterInfo);
@@ -77,7 +94,7 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
         // 检查参数
         checkRequest(request);
 
@@ -96,7 +113,7 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
         // 检查参数
         checkRequest(request);
 
@@ -115,6 +132,11 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         clusterInfoInDb.setClusterType(clusterType);
         clusterInfoInDb.setLinkisAddress(request.getLinkisAddress());
         clusterInfoInDb.setLinkisToken(request.getLinkisToken());
+        clusterInfoInDb.setHiveUrn(request.getHiveUrn());
+        clusterInfoInDb.setWtssJson(request.getWtssJson());
+        clusterInfoInDb.setJobserverJson(request.getJobserverJson());
+        clusterInfoInDb.setModifyUser(HttpUtils.getUserName(httpServletRequest));
+        clusterInfoInDb.setModifyTime(DateUtils.now());
 
         // 保存clusterInfo
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(clusterInfoInDb);
@@ -142,6 +164,24 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         return new GeneralResponse<>("200", "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
     }
 
+    @Override
+    public GeneralResponse<GetAllResponse<ClusterInfo>> findClusterInfoLikeName(FindClusterInfoRequest request) throws UnExpectedRequestException {
+        List<ClusterInfo> clusterInfos;
+        GetAllResponse<ClusterInfo> response = new GetAllResponse<>();
+        if (StringUtils.isNotBlank(request.getClusterName())) {
+            request.setClusterName("%" + request.getClusterName());
+            clusterInfos = clusterInfoDao.findClusterInfoLikeName(request.getClusterName(), request.getPage(), request.getSize());
+            response.setTotal(clusterInfoDao.countTotalByName("%" + request.getClusterName() + "%"));
+        } else {
+            request.setClusterName("");
+            clusterInfos = clusterInfoDao.findAllClusterInfo(request.getPage(), request.getSize());
+            response.setTotal(clusterInfoDao.countAll());
+        }
+        response.setData(clusterInfos);
+        LOGGER.info("Succeed to find cluster infos");
+        return new GeneralResponse<>("200", "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
+    }
+
     private void checkRequest(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
         if (request == null) {
             throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
@@ -151,6 +191,8 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         checkString(request.getClusterType(), "cluster type");
         checkString(request.getLinkisAddress(), "Ujes_address");
         checkString(request.getLinkisToken(), "Ujes_token");
+        checkString(request.getWtssJson(), "wtss_json");
+        checkString(request.getJobserverJson(), "jobserver_json");
     }
 
     private void checkRequest(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
@@ -168,6 +210,8 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         checkString(request.getClusterType(), "cluster type");
         checkString(request.getLinkisAddress(), "Ujes_address");
         checkString(request.getLinkisToken(), "Ujes_token");
+        checkString(request.getWtssJson(), "wtss_json");
+        checkString(request.getJobserverJson(), "jobserver_json");
     }
 
     private void checkString(String str, String strName) throws UnExpectedRequestException {

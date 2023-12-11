@@ -47,12 +47,13 @@ public abstract class AbstractJobSubmitter {
      * @return
      * @throws JobSubmitException
      * @throws ClusterInfoNotConfigException
+     * @throws Exception
      */
     public abstract JobSubmitResult submitJob(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId,
-        String id, String csId, String nodeName) throws JobSubmitException, ClusterInfoNotConfigException;
+        String id, String csId, String nodeName) throws JobSubmitException, ClusterInfoNotConfigException, Exception;
 
     /**
-     * Submit job to linkis 1.0.
+     * Submit job to linkis 1.0 above.
      * @param code
      * @param engineName
      * @param user
@@ -63,12 +64,14 @@ public abstract class AbstractJobSubmitter {
      * @param nodeName
      * @param startupParam
      * @param engineReUse
+     * @param tenantUserName
      * @return
      * @throws JobSubmitException
      * @throws ClusterInfoNotConfigException
+     * @throws Exception
      */
     public abstract JobSubmitResult submitJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId,
-        String csId, String nodeName, String startupParam, boolean engineReUse) throws JobSubmitException, ClusterInfoNotConfigException;
+        String csId, String nodeName, String startupParam, boolean engineReUse, String tenantUserName) throws JobSubmitException, ClusterInfoNotConfigException, Exception;
 
     /**
      * Kill job
@@ -119,4 +122,19 @@ public abstract class AbstractJobSubmitter {
      */
     public abstract LogResult getJobPartialLog(Long taskId, Integer begin, String user, String remoteAddress, String clusterName) throws LogPartialException, ClusterInfoNotConfigException;
 
+    /**
+     * Shell job
+     * @param code
+     * @param engineName
+     * @param user
+     * @param linkisAddress
+     * @param clusterName
+     * @param taskId
+     * @param startupParam
+     * @param tenantUserName
+     * @return
+     * @throws Exception
+     */
+    public abstract JobSubmitResult submitShellJobNew(String code, String engineName, String user, String linkisAddress, String clusterName, Long taskId, String startupParam, String tenantUserName)
+        throws Exception;
 }

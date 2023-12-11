@@ -20,19 +20,25 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleDataSourceRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.criteria.Predicate;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -49,18 +55,18 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<RuleDataSource> findByRule(Rule rule) {
-        return ruleDataSourceRepository.findByRule(rule);
-    }
-
-    @Override
     public List<RuleDataSource> findByProjectId(Long projectId) {
         return ruleDataSourceRepository.findByProjectId(projectId);
     }
 
     @Override
+    public List<String> findColsByUser(String user, String clusterName, String dbName, String tableName) {
+        return ruleDataSourceRepository.findColsByUser(user, clusterName, dbName, tableName);
+    }
+
+    @Override
     public List<RuleDataSource> findByProjectUser(Long projectId, String cluster, String db,
-        String table) {
+                                                  String table) {
         return ruleDataSourceRepository.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (projectId != null) {
@@ -88,39 +94,41 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<Map<String, Object>> findProjectDsByUser(String user, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+    public List<Map<String, Object>> findProjectDsByUserPage(String user, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleDataSourceRepository.findProjectDsByUser(user, pageable).getContent();
+        return ruleDataSourceRepository.findProjectDsByUserPage(user, pageable).getContent();
     }
 
     @Override
-    public List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user) {
-        return ruleDataSourceRepository.findRuleByDataSource(clusterName, dbName, tableName, colName, user);
-    }
-
-    @Override
-    public List<Rule> findRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+    public List<Rule> findColumnByDataSource(String clusterName, String dbName, String tableName, String colName, String user, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleDataSourceRepository.findRuleByDataSource(clusterName, dbName, tableName, colName, user, pageable).getContent();
+        return ruleDataSourceRepository.findColumnByDataSource(clusterName, dbName, tableName, colName, user, pageable);
     }
 
     @Override
-    public int countRuleByDataSource(String clusterName, String dbName, String tableName, String colName, String user) {
-        return ruleDataSourceRepository.countRuleByDataSource(clusterName, dbName, tableName, colName, user);
+    public List<Map<String, Object>> countRuleCountByGroup(List<String> clusterName, List<String> dbName, List<String> tableNames, String user) {
+        return ruleDataSourceRepository.countRuleCountByGroup(clusterName, dbName, tableNames, user);
     }
 
     @Override
-    public List<Map<String, Object>> filterProjectDsByUser(String user, String clusterName, String dbName, String tableName) {
-        return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName);
+    public List<Map<String, Object>> countRuleCountByGroup(List<String> clusterName, List<String> dbName, List<String> tableNames, List<String> fieldNames, List<String> users) {
+        return ruleDataSourceRepository.countRuleCountByGroup(clusterName, dbName, tableNames, fieldNames, users);
     }
 
     @Override
-    public List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
+    public List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName,
+                                                               Integer datasourceType, Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleDataSourceRepository.filterProjectDsByUser(user, clusterName, dbName, tableName, pageable).getContent();
+        return ruleDataSourceRepository.filterProjectDsByUserPage(user, clusterName, dbName, tableName, datasourceType, subSystemId, departmentName, devDepartmentName, tagCode, envName, pageable);
+    }
+
+    @Override
+    public long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType
+            , Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName) {
+        return ruleDataSourceRepository.countProjectDsByUser(user, clusterName, dbName, tableName, datasourceType, subSystemId, departmentName, devDepartmentName, tagCode, envName);
     }
 
     @Override
@@ -129,13 +137,73 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<String> findColsByUser(String user, String clusterName, String dbName, String tableName) {
-        return ruleDataSourceRepository.findColsByUser(user, clusterName, dbName, tableName);
+    public List<RuleDataSource> findDatasourcesByUser(String user, String clusterName, String dbName, String tableName) {
+        return ruleDataSourceRepository.findDatasourcesByUser(user, clusterName, dbName, tableName);
     }
 
     @Override
-    public List<RuleDataSource> findDatasourcesByUser(String user, String clusterName, String dbName, String tableName) {
-        return ruleDataSourceRepository.findDatasourcesByUser(user, clusterName, dbName, tableName);
+    public List<String> findRuleCreateUserByDataSource(String clusterName, String dbName, String tableName, String userName) {
+        return ruleDataSourceRepository.findRuleCreateUserByDataSource(clusterName, dbName, tableName, userName);
+    }
+
+    @Override
+    public Page<RuleDataSource> findAllWithPage(int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return ruleDataSourceRepository.findAll(pageable);
+    }
+
+    @Override
+    public List<RuleDataSource> findAllTagByUser(String loginUser) {
+        return ruleDataSourceRepository.findTagsByUser(loginUser);
+    }
+
+    @Override
+    public List<RuleDataSource> findByRuleId(List<Long> ruleIds) {
+        return ruleDataSourceRepository.findByRuleId(ruleIds);
+    }
+
+    @Override
+    public List<Long> findRuleGroupIds(Long projectId, String dbName, String tableName) {
+        List<BigInteger> ruleGroupIds = ruleDataSourceRepository.findRuleGroupIds(projectId, dbName, tableName);
+        if (CollectionUtils.isNotEmpty(ruleGroupIds)) {
+            return ruleGroupIds.stream().map(BigInteger::longValue).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void updateLinkisDataSourceName(Long linkisDataSourceId, String linkisDataSourceName) {
+        ruleDataSourceRepository.updateLinkisDataSourceName(linkisDataSourceId, linkisDataSourceName);
+    }
+
+    @Override
+    public void deleteByRule(Rule rule) {
+        ruleDataSourceRepository.deleteByRule(rule);
+    }
+
+    @Override
+    public void deleteByRuleGroup(RuleGroup ruleGroup) {
+        ruleDataSourceRepository.deleteByRuleGroup(ruleGroup);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteByRuleList(List<Rule> rules) {
+        ruleDataSourceRepository.deleteByRuleIn(rules);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteByRuleGroupList(List<RuleGroup> ruleGroups) {
+        ruleDataSourceRepository.deleteByRuleGroupIn(ruleGroups);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void updateMetadataFields(Long id, Long subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName) {
+        ruleDataSourceRepository.updateMetadataFields(id, subSystemId, subSystemName, departmentCode, departmentName, devDepartmentName, tagCode, tagName);
     }
 
 }

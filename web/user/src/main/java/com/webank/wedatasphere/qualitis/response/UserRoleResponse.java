@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
-import com.webank.wedatasphere.qualitis.entity.UserRole;
 
 /**
  * @author howeye
@@ -30,6 +29,19 @@ public class UserRoleResponse {
     private long userId;
     @JsonProperty("role_id")
     private long roleId;
+    @JsonProperty("user_name")
+    private String userName;
+    @JsonProperty("role_name")
+    private String roleName;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("create_time")
+    private String createTime;
+    @JsonProperty("modify_user")
+    private String modifyUser;
+    @JsonProperty("modify_time")
+    private String modifyTime;
+
 
     public UserRoleResponse() {
         // Default Constructor
@@ -39,6 +51,12 @@ public class UserRoleResponse {
         this.uuid = userRole.getId();
         this.userId = userRole.getUser().getId();
         this.roleId = userRole.getRole().getId();
+        this.userName = userRole.getUser().getUsername();
+        this.roleName = userRole.getRole().getName();
+        this.createTime = userRole.getCreateTime();
+        this.createUser = userRole.getCreateUser();
+        this.modifyTime = userRole.getModifyTime();
+        this.modifyUser = userRole.getModifyUser();
     }
 
     public String getUuid() {
@@ -63,6 +81,54 @@ public class UserRoleResponse {
 
     public void setRoleId(long roleId) {
         this.roleId = roleId;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
     }
 
     @Override

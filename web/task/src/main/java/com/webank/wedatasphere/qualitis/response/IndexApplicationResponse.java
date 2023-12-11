@@ -20,13 +20,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author v_wblwyan
@@ -62,12 +60,11 @@ public class IndexApplicationResponse {
     BeanUtils.copyProperties(application, this);
     this.applicationId = application.getId();
     this.task = new ArrayList<>();
-    Set<String> projectGroupNames = new HashSet<>();
     for (Task tmpTask : tasks) {
-      for (TaskRuleSimple taskRuleSimple : tmpTask.getTaskRuleSimples()) {
+      if (CollectionUtils.isNotEmpty(tmpTask.getTaskRuleSimples())) {
+        TaskRuleSimple taskRuleSimple = tmpTask.getTaskRuleSimples().stream().findFirst().get();
         this.projectName = taskRuleSimple.getProjectName();
         this.taskName = taskRuleSimple.getRuleGroupName();
-        break;
       }
       this.task.add(new TaskResponse(tmpTask));
     }

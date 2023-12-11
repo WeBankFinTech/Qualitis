@@ -4,9 +4,10 @@ import com.webank.wedatasphere.qualitis.rule.dao.TemplateDataSourceTypeDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateDataSourceTypeRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -39,6 +40,11 @@ public class TemplateDataSourceTypeDaoImpl implements TemplateDataSourceTypeDao 
     @Override
     public List<TemplateDataSourceType> findByTemplate(Template template) {
         return templateDataSourceTypeRepository.findByTemplate(template);
+    }
+
+    @Override
+    public List<TemplateDataSourceType> findByTemplateIds(List<Long> templateIds) {
+        return templateDataSourceTypeRepository.findByTemplateIds(templateIds);
     }
 
 }

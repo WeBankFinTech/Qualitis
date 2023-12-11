@@ -20,12 +20,12 @@ import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateInputMetaRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import java.util.HashSet;
-import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -56,5 +56,10 @@ public class TemplateMidTableInputMetaDaoImpl implements TemplateMidTableInputMe
     @Override
     public void deleteByTemplate(Template templateInDb) {
         templateInputMetaRepository.deleteByTemplate(templateInDb);
+    }
+
+    @Override
+    public List<Long> findByInputType(Integer type) {
+        return templateInputMetaRepository.findByInputType(type);
     }
 }

@@ -64,7 +64,7 @@ public class RolePermissionDaoImpl implements RolePermissionDao {
 
     @Override
     public List<RolePermission> findAllRolePermission(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "role");
+        Sort sort = Sort.by(Sort.Direction.ASC, "role");
         Pageable pageable = PageRequest.of(page, size, sort);
         return rolePermissionRepository.findAll(pageable).getContent();
     }

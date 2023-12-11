@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.dao.impl;
 
 import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleVariableRepository;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,5 +38,10 @@ public class RuleVariableDaoImpl implements RuleVariableDao {
     @Override
     public List<RuleVariable> saveAllRuleVariable(List<RuleVariable> ruleVariables) {
         return ruleVariableRepository.saveAll(ruleVariables);
+    }
+
+    @Override
+    public List<RuleVariable> findByRule(Rule rule) {
+        return ruleVariableRepository.findByRule(rule);
     }
 }

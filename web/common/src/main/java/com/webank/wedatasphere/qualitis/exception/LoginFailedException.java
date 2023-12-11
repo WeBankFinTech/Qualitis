@@ -28,7 +28,7 @@ public class LoginFailedException extends Exception {
         super(message);
     }
 
-    public GeneralResponse<?> getResponse() {
+    public GeneralResponse<Object> getResponse() {
         return new GeneralResponse<>("401", getMessage(), null);
     }
 

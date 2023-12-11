@@ -16,9 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.rule.constant;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * Enum in checkTemplate of AlarmConfig
  * @author howeye
@@ -28,30 +25,27 @@ public enum CheckTemplateEnum {
      * Monthly, weekly, day and fixed name
      * Ring growth, year on year
      */
-    MONTH_FLUCTUATION(1,"月波动", "Month Fluctuation", Arrays.asList(Number.class)),
-    WEEK_FLUCTUATION(2,"周波动", "Week Fluctuation", Arrays.asList(Number.class)),
-    DAY_FLUCTUATION(3,"日波动", "Daily Fluctuation", Arrays.asList(Number.class)),
-    FIXED_VALUE(4,"固定值", "Fix Value", Arrays.asList(Number.class)),
-    FULL_YEAR_RING_GROWTH(5,"年环比", "Full Year Ring Growth", Arrays.asList(Number.class)),
-    HALF_YEAR_GROWTH(6,"半年环比", "Half Year Ring Growth", Arrays.asList(Number.class)),
-    SEASON_RING_GROWTH(7,"季环比", "Season Ring Growth", Arrays.asList(Number.class)),
-    MONTH_RING_GROWTH(8,"月环比", "Month Ring Growth", Arrays.asList(Number.class)),
-    WEEK_RING_GROWTH(9,"周环比", "Week Ring Growth", Arrays.asList(Number.class)),
-    DAY_RING_GROWTH(10,"日环比", "Day Ring Growth", Arrays.asList(Number.class)),
-    HOUR_RING_GROWTH(11,"时环比", "Hour Ring Growth", Arrays.asList(Number.class)),
-    YEAR_ON_YEAR(12,"月同比", "YEAR ON YEAR", Arrays.asList(Number.class)),
-    ;
+    MONTH_FLUCTUATION(1,"月波动", "Month Fluctuation"),
+    WEEK_FLUCTUATION(2,"周波动", "Week Fluctuation"),
+    DAY_FLUCTUATION(3,"日波动", "Daily Fluctuation"),
+    FIXED_VALUE(4,"固定值", "Fix Value"),
+    FULL_YEAR_RING_GROWTH(5,"年环比", "Full Year Ring Growth"),
+    HALF_YEAR_GROWTH(6,"半年环比", "Half Year Ring Growth"),
+    SEASON_RING_GROWTH(7,"季环比", "Season Ring Growth"),
+    MONTH_RING_GROWTH(8,"月环比", "Month Ring Growth"),
+    WEEK_RING_GROWTH(9,"周环比", "Week Ring Growth"),
+    DAY_RING_GROWTH(10,"日环比", "Day Ring Growth"),
+    HOUR_RING_GROWTH(11,"时环比", "Hour Ring Growth"),
+    YEAR_ON_YEAR(12,"月同比", "YEAR ON YEAR");
 
     private Integer code;
     private String zhMessage;
     private String enMessage;
-    private List<Class> classes;
 
-    CheckTemplateEnum(Integer code, String zhMessage, String enMessage, List<Class> classes) {
+    CheckTemplateEnum(Integer code, String zhMessage, String enMessage) {
         this.code = code;
         this.zhMessage = zhMessage;
         this.enMessage = enMessage;
-        this.classes = classes;
     }
 
     public Integer getCode() {
@@ -64,10 +58,6 @@ public enum CheckTemplateEnum {
 
     public String getEnMessage() {
         return enMessage;
-    }
-
-    public List<Class> getClasses() {
-        return classes;
     }
 
     public static String getCheckTemplateName(Integer code) {

@@ -1,11 +1,12 @@
 package com.webank.wedatasphere.qualitis.request;
 
-import static com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject;
-import static com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+
 import java.util.List;
+
+import static com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject;
+import static com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString;
 
 /**
  * @author allenzhou
@@ -13,13 +14,17 @@ import java.util.List;
 public class MulDbRequest {
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("cn_name")
+    private String cnName;
+    @JsonProperty("rule_detail")
+    private String ruleDetail;
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("project_id")
     private Long projectId;
     @JsonProperty("source_db")
     private String sourceDb;
-    @JsonProperty("source_linkis_datasoure_id")
+    @JsonProperty("source_linkis_datasource_id")
     private Long sourceLinkisDataSourceId;
     @JsonProperty("source_linkis_datasource_name")
     private String sourceLinkisDataSourceName;
@@ -28,12 +33,13 @@ public class MulDbRequest {
 
     @JsonProperty("target_db")
     private String targetDb;
-    @JsonProperty("target_linkis_datasoure_id")
+    @JsonProperty("target_linkis_datasource_id")
     private Long targetLinkisDataSourceId;
     @JsonProperty("target_linkis_datasource_name")
     private String targetLinkisDataSourceName;
     @JsonProperty("target_linkis_datasource_type")
     private String targetLinkisDataSourceType;
+
     @JsonProperty("alert")
     private Boolean alert;
     @JsonProperty("alert_level")
@@ -57,7 +63,51 @@ public class MulDbRequest {
     @JsonProperty("static_startup_param")
     private String staticStartupParam;
 
+    @JsonProperty("execution_parameters_name")
+    private String executionParametersName;
+
+    @JsonProperty("abnormal_proxy_user")
+    private String abnormalProxyUser;
+    @JsonProperty("abnormal_database")
+    private String abnormalDatabase;
+    @JsonProperty("cluster")
+    private String abnormalCluster;
+
+    @JsonProperty("work_flow_name")
+    private String workFlowName;
+    @JsonProperty("work_flow_version")
+    private String workFlowVersion;
+
+    @JsonProperty("upload_rule_metric_value")
+    private Boolean uploadRuleMetricValue;
+    @JsonProperty("upload_abnormal_value")
+    private Boolean uploadAbnormalValue;
+    @JsonProperty("rule_enable")
+    private Boolean ruleEnable;
+    @JsonProperty("union_all")
+    private Boolean unionAll;
+
+    @JsonProperty("contrast_type")
+    private Integer contrastType;
+
     public MulDbRequest() {
+        // Do nothing because of X and Y.
+    }
+
+    public Boolean getUnionAll() {
+        return unionAll;
+    }
+
+    public void setUnionAll(Boolean unionAll) {
+        this.unionAll = unionAll;
+    }
+
+    public Boolean getRuleEnable() {
+        return ruleEnable;
+    }
+
+    public void setRuleEnable(Boolean ruleEnable) {
+        this.ruleEnable = ruleEnable;
     }
 
     public String getRuleName() {
@@ -228,6 +278,94 @@ public class MulDbRequest {
         this.targetLinkisDataSourceType = targetLinkisDataSourceType;
     }
 
+    public String getExecutionParametersName() {
+        return executionParametersName;
+    }
+
+    public void setExecutionParametersName(String executionParametersName) {
+        this.executionParametersName = executionParametersName;
+    }
+
+    public String getAbnormalDatabase() {
+        return abnormalDatabase;
+    }
+
+    public void setAbnormalDatabase(String abnormalDatabase) {
+        this.abnormalDatabase = abnormalDatabase;
+    }
+
+    public String getAbnormalCluster() {
+        return abnormalCluster;
+    }
+
+    public void setAbnormalCluster(String abnormalCluster) {
+        this.abnormalCluster = abnormalCluster;
+    }
+
+    public String getAbnormalProxyUser() {
+        return abnormalProxyUser;
+    }
+
+    public void setAbnormalProxyUser(String abnormalProxyUser) {
+        this.abnormalProxyUser = abnormalProxyUser;
+    }
+
+    public String getWorkFlowName() {
+        return workFlowName;
+    }
+
+    public void setWorkFlowName(String workFlowName) {
+        this.workFlowName = workFlowName;
+    }
+
+    public String getWorkFlowVersion() {
+        return workFlowVersion;
+    }
+
+    public void setWorkFlowVersion(String workFlowVersion) {
+        this.workFlowVersion = workFlowVersion;
+    }
+
+    public Boolean getUploadRuleMetricValue() {
+        return uploadRuleMetricValue;
+    }
+
+    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+    }
+
+    public Boolean getUploadAbnormalValue() {
+        return uploadAbnormalValue;
+    }
+
+    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
+        this.uploadAbnormalValue = uploadAbnormalValue;
+    }
+
+    public Integer getContrastType() {
+        return contrastType;
+    }
+
+    public void setContrastType(Integer contrastType) {
+        this.contrastType = contrastType;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getRuleDetail() {
+        return ruleDetail;
+    }
+
+    public void setRuleDetail(String ruleDetail) {
+        this.ruleDetail = ruleDetail;
+    }
+
     @Override
     public String toString() {
         return "MulDbRequest{" +
@@ -252,6 +390,5 @@ public class MulDbRequest {
         checkString(request.getClusterName(), "cluster name");
         checkString(request.getSourceDb(), "source db name");
         checkString(request.getTargetDb(), "target db name");
-
     }
 }

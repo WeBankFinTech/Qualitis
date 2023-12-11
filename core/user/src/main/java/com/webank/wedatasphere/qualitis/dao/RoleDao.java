@@ -80,4 +80,32 @@ public interface RoleDao {
      * @param roleInDb
      */
     boolean checkTemplate(Role roleInDb);
+
+    /**
+     * Find by department and role Type
+     *
+     * @param departmentInDb
+     * @param roleType
+     * @return
+     */
+    Role findByDepartmentAndRoleType(Department departmentInDb, Integer roleType);
+
+    /**
+     * Find by ids
+     * @param ids
+     * @return
+     */
+    List<Role> findByIds(List<Long> ids);
+
+    /**
+     * find By Role Name And Type
+     * @param roleName
+     * @param type
+     * @return
+     */
+    Role findByRoleNameAndType(String roleName,Integer type);
+
+
+
+
 }

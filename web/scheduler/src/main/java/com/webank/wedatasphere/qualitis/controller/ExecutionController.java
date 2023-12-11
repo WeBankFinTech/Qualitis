@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.GroupListExecutionRequest;
 import com.webank.wedatasphere.qualitis.request.KillApplicationsRequest;
@@ -25,17 +26,21 @@ import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
 import com.webank.wedatasphere.qualitis.service.ExecutionService;
-import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author howeye
@@ -49,20 +54,31 @@ public class ExecutionController {
     @Autowired
     private ClusterInfoService clusterInfoService;
 
+    private HttpServletRequest httpServletRequest;
+
+    public ExecutionController(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionController.class);
 
     @POST
     @Path("project")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> projectExecution(ProjectExecutionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse projectExecution(ProjectExecutionRequest request) throws UnExpectedRequestException, InterruptedException {
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
         try {
-            return executionService.projectExecution(request, InvokeTypeEnum.UI_INVOKE.getCode());
+            GeneralResponse generalResponse = executionService.commonHandleRuleOrProjectMethod(request, null, InvokeTypeEnum.UI_INVOKE.getCode(), loginUser);
+            return new GeneralResponse<>(generalResponse.getCode(), generalResponse.getMessage(), generalResponse.getData());
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to execute project, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + e.getMessage(), null);
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (InterruptedException e) {
+            LOGGER.error("Interrupted!", e);
+            Thread.currentThread().interrupt();
+            throw new InterruptedException(e.getMessage());
+        } catch (ExecutionException | PermissionDeniedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
         }
     }
 
@@ -70,14 +86,19 @@ public class ExecutionController {
     @Path("group")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> groupListExecution(GroupListExecutionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse groupListExecution(GroupListExecutionRequest request) throws UnExpectedRequestException, InterruptedException {
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
         try {
-            return executionService.ruleGroupListExecution(request, InvokeTypeEnum.UI_INVOKE.getCode());
+            GeneralResponse generalResponse = executionService.handleRuleGroupListMethod(request, InvokeTypeEnum.UI_INVOKE.getCode(), loginUser);
+            return new GeneralResponse<>(generalResponse.getCode(), generalResponse.getMessage(), generalResponse.getData());
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to execute rule list, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_RULE_LIST}, caused by: " + e.getMessage(), null);
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (InterruptedException e) {
+            LOGGER.error("Interrupted!", e);
+            Thread.currentThread().interrupt();
+            throw new InterruptedException(e.getMessage());
+        } catch (ExecutionException | PermissionDeniedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
         }
     }
 
@@ -85,24 +106,29 @@ public class ExecutionController {
     @Path("rule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> ruleListExecution(RuleListExecutionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse ruleListExecution(RuleListExecutionRequest request) throws UnExpectedRequestException, InterruptedException {
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
         try {
-            return executionService.ruleListExecution(request, InvokeTypeEnum.UI_INVOKE.getCode());
+            GeneralResponse<?> generalResponse = executionService.commonHandleRuleOrProjectMethod(null, request, InvokeTypeEnum.UI_INVOKE.getCode(), loginUser);
+            return new GeneralResponse<>(generalResponse.getCode(), generalResponse.getMessage(), generalResponse.getData());
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getResponse().getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to execute rule list, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_RULE_LIST}, caused by: " + e.getMessage(), null);
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (InterruptedException e) {
+            LOGGER.error("Interrupted!", e);
+            Thread.currentThread().interrupt();
+            throw new InterruptedException(e.getMessage());
+        } catch (ExecutionException | PermissionDeniedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
         }
     }
 
     @GET
-    @Path("application/kill/{applicationId}/{executionUser}")
+    @Path("application/kill/{applicationId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser)
-        throws UnExpectedRequestException {
+    public GeneralResponse killApplication(@PathParam("applicationId") String applicationId)
+            throws UnExpectedRequestException {
         try {
-            return executionService.killApplication(applicationId, executionUser);
+            return executionService.killApplication(applicationId);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
@@ -114,8 +140,17 @@ public class ExecutionController {
     @POST
     @Path("application/batch/kill")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> killBatchApplication(KillApplicationsRequest request) {
+    public GeneralResponse killBatchApplication(KillApplicationsRequest request) {
         executionService.killApplications(request);
         return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_KILL_TASK}", null);
+    }
+
+    @GET
+    @Path("schedule/max_num")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getMaxExecutionNum() {
+
+        return new GeneralResponse<>("200", "success", executionService.getMaxExecutionNum());
     }
 }

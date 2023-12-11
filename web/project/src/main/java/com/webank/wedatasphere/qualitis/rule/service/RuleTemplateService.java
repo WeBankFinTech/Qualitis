@@ -27,10 +27,16 @@ import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
+import com.webank.wedatasphere.qualitis.rule.response.NamingConventionsResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleTemplatePlaceholderResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
+
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -39,6 +45,7 @@ public interface RuleTemplateService {
 
     /**
      * Paging get custom template
+     *
      * @param request
      * @return
      * @throws UnExpectedRequestException
@@ -47,6 +54,7 @@ public interface RuleTemplateService {
 
     /**
      * Paging get default template
+     *
      * @param request
      * @return
      * @throws UnExpectedRequestException
@@ -55,6 +63,7 @@ public interface RuleTemplateService {
 
     /**
      * Get template meta data information by template id
+     *
      * @param ruleTemplateId
      * @return
      * @throws UnExpectedRequestException
@@ -63,6 +72,7 @@ public interface RuleTemplateService {
 
     /**
      * Find input meta data by rule template id
+     *
      * @param ruleTemplateId
      * @return
      * @throws UnExpectedRequestException
@@ -71,6 +81,7 @@ public interface RuleTemplateService {
 
     /**
      * Check existence of rule template
+     *
      * @param ruleTemplateId
      * @return
      * @throws UnExpectedRequestException
@@ -79,13 +90,32 @@ public interface RuleTemplateService {
 
     /**
      * Add custom template
+     *
      * @param request
+     * @param loginUser
      * @return
+     * @throws UnExpectedRequestException
+     * @throws IOException
+     * @throws PermissionDeniedRequestException
      */
-    Template addCustomTemplate(AddCustomRuleRequest request);
+    Template addCustomTemplate(AddCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
+
+    /**
+     * Modify custom template
+     *
+     * @param addCustomRuleRequest
+     * @param template
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws IOException
+     * @throws PermissionDeniedRequestException
+     */
+    Template modifyCustomTemplate(AddCustomRuleRequest addCustomRuleRequest, Template template, String loginUser) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
 
     /**
      * Get function alias
+     *
      * @param code
      * @return
      */
@@ -93,6 +123,7 @@ public interface RuleTemplateService {
 
     /**
      * 删除自定义规则模版
+     *
      * @param template
      * @throws UnExpectedRequestException
      */
@@ -100,14 +131,16 @@ public interface RuleTemplateService {
 
     /**
      * Get meta data of multi-table rule template
+     *
      * @param templateId
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getMultiSourceTemplateMeta(Long templateId) throws UnExpectedRequestException;
+    GeneralResponse<TemplateInputDemandResponse> getMultiSourceTemplateMeta(Long templateId) throws UnExpectedRequestException;
 
     /**
      * Paging get multi-table rule template
+     *
      * @param request
      * @return
      * @throws UnExpectedRequestException
@@ -116,41 +149,49 @@ public interface RuleTemplateService {
 
     /**
      * Get meta data from multi-table rule template
+     *
      * @param ruleTemplateId
      * @return
      * @throws UnExpectedRequestException
      */
     GeneralResponse<TemplateMetaResponse> getRuleMultiTemplateMeta(Long ruleTemplateId)
-        throws UnExpectedRequestException;
+            throws UnExpectedRequestException;
 
     /**
      * Add default template.
+     *
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    RuleTemplateResponse addRuleTemplate(AddRuleTemplateRequest request) throws UnExpectedRequestException;
+    RuleTemplateResponse addRuleTemplate(AddRuleTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Modify rule template.
+     *
      * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws InvocationTargetException
      * @throws IllegalAccessException
+     * @throws PermissionDeniedRequestException
      */
     RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
-        throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, InvocationTargetException, IllegalAccessException, PermissionDeniedRequestException;
 
     /**
      * Delete default template.
+     *
      * @param templateId
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
     void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete file template.
+     *
      * @param templateId
      * @throws UnExpectedRequestException
      */
@@ -158,16 +199,97 @@ public interface RuleTemplateService {
 
     /**
      * Get rule template detail.
+     *
      * @param templateId
-     * @throws UnExpectedRequestException
      * @return
+     * @throws UnExpectedRequestException
      */
     RuleTemplateResponse getModifyRuleTemplateDetail(Long templateId) throws UnExpectedRequestException;
 
     /**
      * Add file template.
+     *
      * @param request
      * @return
      */
     Template addFileTemplate(AddFileRuleRequest request);
+
+    /**
+     * getTemplateOptionList
+     *
+     * @param templateType
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<Map<String, Object>> getTemplateOptionList(Integer templateType) throws UnExpectedRequestException;
+
+    /**
+     * get Option List
+     *
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<Map<String, Object>> getAllTemplateInRule();
+
+    /**
+     * get Template Check Level List
+     *
+     * @return
+     */
+    List<Map<String, Object>> getTemplateCheckLevelList();
+
+    /**
+     * get Template Check Type List
+     *
+     * @return
+     */
+    List<Map<String, Object>> getTemplateCheckTypeList();
+
+
+    /**
+     * get Template File Type List
+     *
+     * @return
+     */
+    List<Map<String, Object>> getTemplateFileTypeList();
+
+
+    /**
+     * get Statistical Function List
+     *
+     * @return
+     */
+    List<Map<String, Object>> getStatisticalFunctionList();
+
+    /**
+     * Get placeholder data
+     *
+     * @param templateType
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    RuleTemplatePlaceholderResponse getPlaceholderData(Integer templateType) throws UnExpectedRequestException;
+
+    /**
+     * Checking if the template is editable
+     *
+     * @param template
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    void checkAccessiblePermission(Template template) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * get Naming Method List
+     *
+     * @return
+     */
+    List<Map<String, Object>> getNamingMethodList();
+
+    /**
+     * get Conventions Naming Query
+     *
+     * @return
+     */
+    List<NamingConventionsResponse> getConventionsNamingQuery();
 }

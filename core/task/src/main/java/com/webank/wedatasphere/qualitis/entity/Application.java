@@ -42,12 +42,12 @@ public class Application {
     private Integer finishTaskNum;
     @Column(name = "fail_task_num")
     private Integer failTaskNum;
+    @Column(name = "total_task_num")
+    private Integer totalTaskNum;
     @Column(name = "not_pass_task_num")
     private Integer notPassTaskNum;
     @Column(name = "abnormal_task_num")
     private Integer abnormalTaskNum;
-    @Column(name = "total_task_num")
-    private Integer totalTaskNum;
 
     @Column(name = "execute_user", length = 150)
     private String executeUser;
@@ -56,6 +56,10 @@ public class Application {
     private Integer status;
     @Column(name = "rule_size")
     private Integer ruleSize;
+    @Column(name = "rule_ids", columnDefinition = "TEXT")
+    private String ruleIds;
+    @Column(name = "rule_names", columnDefinition = "TEXT")
+    private String ruleNames;
     @Column(name = "project_id")
     private Long projectId;
     @Column(name = "project_name")
@@ -76,18 +80,40 @@ public class Application {
     private String startupParam;
     @Column(name = "execution_param")
     private String executionParam;
+    @Column(name = "execution_param_json")
+    private String executionParamJson;
     @Column(name = "set_flag")
     private String setFlag;
     @Column(name = "run_date")
     private String runDate;
+    @Column(name = "fps_file_id")
+    private String fpsFileId;
+    @Column(name = "fps_hash")
+    private String fpsHashValue;
     @Column(name = "application_comment")
     private Integer applicationComment;
+    @Column(name = "node_name")
+    private String nodeName;
+    @Column(name = "split_by")
+    private String splitBy;
+    @Column(name = "job_id")
+    private String jobId;
+    @Column(name = "tenant_user_name")
+    private String tenantUserName;
 
     /**
      * Using saved db to save data that not pass verification
      */
     @Column(name = "saved_db", length = 100)
     private String savedDb;
+
+    private String ip;
+
+    @Column(name = "sub_system_id")
+    private Long subSystemId;
+
+    @Column(name = "engine_reuse")
+    private Boolean engineReuse;
 
     public Application() {
         this.finishTaskNum = 0;
@@ -133,6 +159,7 @@ public class Application {
         this.finishTaskNum = 0;
         this.failTaskNum = 0;
         this.notPassTaskNum = 0;
+        this.abnormalTaskNum = 0;
     }
 
     public String getId() {
@@ -213,6 +240,22 @@ public class Application {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public String getRuleIds() {
+        return ruleIds;
+    }
+
+    public void setRuleIds(String ruleIds) {
+        this.ruleIds = ruleIds;
+    }
+
+    public String getRuleNames() {
+        return ruleNames;
+    }
+
+    public void setRuleNames(String ruleNames) {
+        this.ruleNames = ruleNames;
     }
 
     public Integer getRuleSize() {
@@ -327,12 +370,92 @@ public class Application {
         this.clusterName = clusterName;
     }
 
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
+    }
+
     public Integer getApplicationComment() {
         return applicationComment;
     }
 
     public void setApplicationComment(Integer taskComment) {
         this.applicationComment = taskComment;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public String getExecutionParamJson() {
+        return executionParamJson;
+    }
+
+    public void setExecutionParamJson(String executionParamJson) {
+        this.executionParamJson = executionParamJson;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public String getSplitBy() {
+        return splitBy;
+    }
+
+    public void setSplitBy(String splitBy) {
+        this.splitBy = splitBy;
+    }
+
+    public String getTenantUserName() {
+        return tenantUserName;
+    }
+
+    public void setTenantUserName(String tenantUserName) {
+        this.tenantUserName = tenantUserName;
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
     }
 
     @Override

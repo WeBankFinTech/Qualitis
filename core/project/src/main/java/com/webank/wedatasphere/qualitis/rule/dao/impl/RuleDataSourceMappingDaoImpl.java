@@ -20,9 +20,13 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleDataSourceMappingRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -39,7 +43,28 @@ public class RuleDataSourceMappingDaoImpl implements RuleDataSourceMappingDao {
     }
 
     @Override
+    public List<RuleDataSourceMapping> saveAll(List<RuleDataSourceMapping> ruleDataSourceMappingList) {
+        return ruleDataSourceMappingRepository.saveAll(ruleDataSourceMappingList);
+    }
+
+    @Override
     public void deleteByRule(Rule rule) {
-        ruleDataSourceMappingRepository.deleteByRule(rule);
+        List<RuleDataSourceMapping> ruleDataSourceMappingList = ruleDataSourceMappingRepository.findByRule(rule);
+        if (CollectionUtils.isEmpty(ruleDataSourceMappingList)) {
+            return;
+        }
+        List<Long> ids = ruleDataSourceMappingList.stream().map(RuleDataSourceMapping::getId).collect(Collectors.toList());
+        ruleDataSourceMappingRepository.deleteByIdIn(ids);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void deleteByRuleList(List<Rule> rules) {
+        ruleDataSourceMappingRepository.deleteByRuleIn(rules);
+    }
+
+    @Override
+    public List<RuleDataSourceMapping> findByRuleList(List<Rule> ruleList) {
+        return ruleDataSourceMappingRepository.findByRuleIn(ruleList);
     }
 }
