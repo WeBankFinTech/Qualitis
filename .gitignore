@@ -1,12 +1,37 @@
-.gradle
-.git/
-.idea/
-build/
-out/
+.DS_Store
+.cache
+
+# for ide
 *.iml
 *.ipr
 *.iws
-__pycache__/
 *.pyc
-logs
-dist
+*.pyo
+*.swp
+.idea/
+.idea_modules/
+.project
+.pydevproject
+.scala_dependencies
+.settings
+.classpath
+.gradle
+
+# For SBT
+.jvmopts
+
+# For Node.js
+node_modules/
+
+# generated file
+.mvn/wrapper/maven-wrapper.jar
+dist/
+out/
+target/
+build/
+__pycache__/
+
+# log folder
+*.log
+logs/
+nohup.out
