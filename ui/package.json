@@ -1,55 +1,97 @@
 {
-    "name": "webank-bqm",
-    "version": "1.0.0",
-    "description": "webank DQM系统",
-    "scripts": {
-        "build": "fes build",
-        "dev": "fes dev",
-        "fix": "eslint --ext .js,.fes,.vue src --fix",
-        "lint": "eslint --ext .js,.fes,.vue src",
-        "precommit": "lint-staged"
-    },
-    "husky": {
-        "hooks": {
-            "postcommit": "git update-index --again",
-            "pre-commit": "lint-staged"
-        }
-    },
-    "lint-staged": {
-        "src/**/*.{js,fes,vue}": [
-            "eslint --fix",
-            "git add"
-        ]
-    },
-    "keywords": [
-        "DQM系统后台"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "***REMOVED***"
-    },
-    "license": "MIT",
-    "devDependencies": {
-        "@vue/test-utils": "^1.1.0",
-        "@webank/eslint-config-webank": "^0.1.4",
-        "@webank/fes-cli": "^0.4.0",
-        "babel-plugin-component": "^1.1.1",
-        "chai": "^4.2.0",
-        "csp-html-webpack-plugin": "^4.0.0",
-        "eslint": "^5.8.0",
-        "eslint-plugin-vue": "^5.0.0-beta.3",
-        "husky": "^1.2.0",
-        "lint-staged": "^13.0.0"
-    },
-    "eslintIgnore": [
-        "*.min.js"
-    ],
-    "dependencies": {
-        "@webank/fes-core": "^0.4.8",
-        "@webank/fes-ui": "^0.4.8",
-        "chart.js": "^2.9.4",
-        "date-fns": "^2.21.3",
-        "element-ui": "^2.15.3",
-        "vue-chartjs": "^3.5.1"
+  "name": "dqm-ui-next",
+  "version": "1.1.0",
+  "description": "新版qualities页面",
+  "scripts": {
+    "build": "fes build",
+    "prod": "FES_ENV=prod fes build",
+    "analyze": "ANALYZE=1 fes build",
+    "dev": "fes dev",
+    "test-sit": "FES_ENV=sit fes build",
+    "test-dev": "FES_ENV=dev fes build",
+    "test-uat": "FES_ENV=uat fes build",
+    "test:unit": "fes test:unit",
+    "prepare": "husky install",
+    "commit": "git-cz"
+  },
+  "keywords": [
+    "qualities",
+    "fes",
+    "fast",
+    "easy",
+    "strong"
+  ],
+  "files": [
+    ".eslintrc.js",
+    ".gitignore",
+    ".fes.js",
+    ".fes.prod.js",
+    "mock.js",
+    "package.json",
+    "README.md",
+    "tsconfig.json",
+    "/src",
+    "/config"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WeBankFinTech/fes.js.git",
+    "directory": "packages/fes-template"
+  },
+  "author": "harrywan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/WeBankFinTech/fes.js/issues"
+  },
+  "homepage": "https://github.com/WeBankFinTech/fes.js#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "15.0.0",
+    "@vue/compiler-sfc": "3.2.26",
+    "@webank/eslint-config-webank": "0.4.2",
+    "commitlint": "15.0.0",
+    "cz-conventional-changelog": "3.3.0",
+    "husky": "7.0.4",
+    "lint-staged": "12.1.2"
+  },
+  "dependencies": {
+    "@fesjs/fes": "2.0.14",
+    "@fesjs/fes-design": "0.7.18",
+    "@fesjs/plugin-access": "2.0.3",
+    "@fesjs/plugin-enums": "2.0.2",
+    "@fesjs/plugin-icon": "2.0.6",
+    "@fesjs/plugin-layout": "3.0.0",
+    "@fesjs/plugin-locale": "3.0.3",
+    "@fesjs/plugin-model": "2.0.3",
+    "@fesjs/plugin-monaco-editor": "2.0.0-beta.7",
+    "@fesjs/plugin-request": "2.0.12",
+    "@fesjs/plugin-watermark": "2.0.3",
+    "@fesjs/traction-widget": "^1.7.3",
+    "@micro-zoe/micro-app": "0.8.10",
+    "babel-plugin-syntax-jsx": "6.18.0",
+    "date-fns": "2.28.0",
+    "dayjs": "1.11.5",
+    "echarts": "5.2.2",
+    "lodash-es": "4.17.21",
+    "mitt": "3.0.0",
+    "vue": "3.2.26",
+    "vuex": "4.0.2"
+  },
+  "private": true,
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,vue,fes,wxa}": "eslint --fix"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -E $HUSKY_GIT_PARAMS"
+    }
+  }
 }

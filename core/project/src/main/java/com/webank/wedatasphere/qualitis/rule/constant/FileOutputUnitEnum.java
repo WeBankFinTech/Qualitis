@@ -27,21 +27,18 @@ public enum FileOutputUnitEnum {
     /**
      * TB, GB, MB, KB
      */
-    TB(1,"TB", Arrays.asList(Number.class)),
-    GB(2,"GB", Arrays.asList(Number.class)),
-    MB(3,"MB", Arrays.asList(Number.class)),
-    KB(4,"KB", Arrays.asList(Number.class)),
-    B(5,"B", Arrays.asList(Number.class))
-        ;
+    TB(1,"TB"),
+    GB(2,"GB"),
+    MB(3,"MB"),
+    KB(4,"KB"),
+    B(5,"B");
 
     private Integer code;
     private String message;
-    private List<Class> classes;
 
-    FileOutputUnitEnum(Integer code, String message, List<Class> classes) {
+    FileOutputUnitEnum(Integer code, String message) {
         this.code = code;
         this.message = message;
-        this.classes = classes;
     }
 
     public Integer getCode() {
@@ -50,10 +47,6 @@ public enum FileOutputUnitEnum {
 
     public String getMessage() {
         return message;
-    }
-
-    public List<Class> getClasses() {
-        return classes;
     }
 
     public static String fileOutputUnit(Integer code) {

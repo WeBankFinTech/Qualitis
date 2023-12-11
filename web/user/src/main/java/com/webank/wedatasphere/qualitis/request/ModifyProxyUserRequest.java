@@ -20,6 +20,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -30,9 +35,39 @@ public class ModifyProxyUserRequest {
     private Long proxyUserId;
     @JsonProperty("proxy_user_name")
     private String proxyUserName;
+    @JsonProperty("department_info")
+    private List<DepartmentInfo> departmentInfo;
+    @JsonProperty("user_config_json")
+    private String userConfigJson;
+    @JsonProperty("department")
+    private long department;
 
     public ModifyProxyUserRequest() {
         // Default Constructor
+    }
+
+    public long getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(long department) {
+        this.department = department;
+    }
+
+    public List<DepartmentInfo> getDepartmentInfo() {
+        return departmentInfo;
+    }
+
+    public void setDepartmentInfo(List<DepartmentInfo> departmentInfo) {
+        this.departmentInfo = departmentInfo;
+    }
+
+    public String getUserConfigJson() {
+        return userConfigJson;
+    }
+
+    public void setUserConfigJson(String userConfigJson) {
+        this.userConfigJson = userConfigJson;
     }
 
     public Long getProxyUserId() {
@@ -63,6 +98,13 @@ public class ModifyProxyUserRequest {
         if (StringUtils.isBlank(request.getProxyUserName())) {
             throw new UnExpectedRequestException("ProxyUser name {&CAN_NOT_BE_NULL_OR_EMPTY}, request: " + request);
         }
+        if (StringUtils.isNotBlank(request.getUserConfigJson())) {
+            try {
+                new ObjectMapper().readValue(request.getUserConfigJson(), Map.class);
+            } catch (IOException e) {
+                throw new UnExpectedRequestException("Error json format: user_config_json");
+            }
+        }
     }
 
     @Override
@@ -70,6 +112,9 @@ public class ModifyProxyUserRequest {
         return "ModifyProxyUserRequest{" +
                 "proxyUserId=" + proxyUserId +
                 ", proxyUserName='" + proxyUserName + '\'' +
+                ", departmentInfo=" + departmentInfo +
+                ", userConfigJson='" + userConfigJson + '\'' +
+                ", department=" + department +
                 '}';
     }
 }

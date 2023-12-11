@@ -16,22 +16,20 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RoleResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import java.io.IOException;
+
+import com.webank.wedatasphere.qualitis.response.UserAndRoleResponse;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -53,7 +51,7 @@ public interface RoleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRole(RoleRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteRole(RoleRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify role information
@@ -61,7 +59,7 @@ public interface RoleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyRole(RoleModifyRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyRole(RoleModifyRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all roles
@@ -75,13 +73,13 @@ public interface RoleService {
      * Find all roles of user
      * @return
      */
-    GeneralResponse<?> getRoleByUser();
+    GeneralResponse<UserAndRoleResponse> getRoleByUser();
 
     /**
      * Find all proxy users of user
      * @return
      */
-    GeneralResponse<?> getProxyUserByUser();
+    GeneralResponse<List<String>> getProxyUserByUser();
 
     /**
      * Get role Type
@@ -89,5 +87,20 @@ public interface RoleService {
      * @return
      */
     Integer getRoleType(List<UserRole> userRoles);
+
+
+    /**
+     * get All Role Type enum
+     *
+     * @return
+     */
+    List<Map<String, Object>> getAllRoleTypeEnum();
+
+    /**
+     * get role list by id
+     * @param ids
+     * @return
+     */
+    List<Role> getAllById(List<Long> ids);
 
 }

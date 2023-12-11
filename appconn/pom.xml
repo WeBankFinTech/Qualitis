@@ -79,7 +79,7 @@
       <groupId>org.apache.linkis</groupId>
       <artifactId>linkis-cs-common</artifactId>
       <version>${linkis.version}</version>
-      <scope>compile</scope>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <artifactId>linkis-bml-client</artifactId>
@@ -99,6 +99,7 @@
       <groupId>org.apache.linkis</groupId>
       <artifactId>linkis-httpclient</artifactId>
       <version>${linkis.version}</version>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <artifactId>linkis-common</artifactId>
@@ -130,8 +131,12 @@
       <version>${dss.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.14.1</version>
+    </dependency>
   </dependencies>
-
 
   <build>
     <plugins>

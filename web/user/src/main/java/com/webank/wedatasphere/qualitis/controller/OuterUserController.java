@@ -42,7 +42,7 @@ public class OuterUserController {
     @POST
     @Path("{username}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> generalExecution(@PathParam("username")String username) {
+    public GeneralResponse generalExecution(@PathParam("username")String username) {
         try {
             userService.autoAddUser(username);
             return new GeneralResponse<>("200", "{&CREATE_USER_SUCCESSFULLY}", null);

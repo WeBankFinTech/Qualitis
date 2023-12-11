@@ -18,15 +18,17 @@ package com.webank.wedatasphere.qualitis.entity;
 
 import com.webank.wedatasphere.qualitis.bean.TaskRule;
 import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
-
+import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.FileOutputNameEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,6 +37,12 @@ import java.util.Objects;
 @Entity
 @Table(name = "qualitis_application_task_rule_simple")
 public class TaskRuleSimple {
+    private static final String QUALITIS_DELETE_FAIL_CHECK_RESULT = "qualitis_delete_fail_check_result";
+    private static final String QUALITIS_UPLOAD_RULE_METRIC_VALUE = "qualitis_upload_rule_metric_value";
+    private static final String QUALITIS_UPLOAD_ABNORMAL_VALUE = "qualitis_upload_abnormal_value";
+    private static final String QUALITIS_ALERT_RECEIVERS = "qualitis_alert_receivers";
+    private static final String QUALITIS_ALERT_LEVEL = "qualitis_alert_level";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -66,18 +74,16 @@ public class TaskRuleSimple {
     private String executeUser;
     @Column(name = "submit_time", length = 20)
     private String submitTime;
+    @Column(name = "alert_level")
+    private Integer alertLevel;
+    @Column(name = "alert_receiver")
+    private String alertReceiver;
 
     @ManyToOne
     private Task task;
 
     @OneToMany(mappedBy = "taskRuleSimple", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<TaskRuleAlarmConfig> taskRuleAlarmConfigList;
-
-    @OneToOne
-    private TaskRuleSimple parentRuleSimple;
-
-    @OneToOne(mappedBy = "parentRuleSimple", fetch = FetchType.EAGER)
-    private TaskRuleSimple childRuleSimple;
 
     @Column(name = "rule_type")
     private Integer ruleType;
@@ -88,7 +94,7 @@ public class TaskRuleSimple {
     public TaskRuleSimple() {
     }
 
-    public TaskRuleSimple(TaskRule rule, Task task) {
+    public TaskRuleSimple(TaskRule rule, Task task, Map<Long, Map<String, Object>> ruleReplaceInfo) {
         this.ruleName = rule.getRuleName();
         this.cnName = rule.getCnName();
         this.ruleId = rule.getRuleId();
@@ -105,52 +111,30 @@ public class TaskRuleSimple {
         this.submitTime = task.getApplication().getSubmitTime();
         this.taskRuleAlarmConfigList = new ArrayList<>();
         this.ruleType = rule.getRuleType();
+        this.alertLevel = rule.getAlertLevel();
+        this.alertReceiver = rule.getAlertReceiver();
         for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
             this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
         }
-        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
-    }
-
-    public TaskRuleSimple(TaskRule rule, Task task, Boolean parent, TaskRuleSimple parentRuleSimple) {
-        this.ruleGroupName = rule.getRuleGroupName();
-        this.templateName = rule.getTemplateName();
-        this.ruleDetail = rule.getRuleDetail();
-        this.ruleName = rule.getRuleName();
-        this.cnName = rule.getCnName();
-        this.ruleId = rule.getRuleId();
-        this.applicationId = task.getApplication().getId();
-        this.submitTime = task.getApplication().getSubmitTime();
-        this.executeUser = task.getApplication().getExecuteUser();
-
-        this.projectId = rule.getProjectId();
-        this.projectName = rule.getProjectName();
-        this.projectCnName = rule.getProjectCnName();
-        this.projectCreator = rule.getProjectCreator();
-
-        this.taskRuleAlarmConfigList = new ArrayList<>();
-
-        if (parent) {
-            this.task = task;
-            this.ruleType = rule.getRuleType();
-            this.midTableName = rule.getMidTableName();
-            for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
-                this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
-            }
+        if (ruleReplaceInfo.get(rule.getRuleId()) != null && ruleReplaceInfo.get(rule.getRuleId()).keySet().contains(QUALITIS_DELETE_FAIL_CHECK_RESULT)) {
+            this.deleteFailCheckResult = (Boolean) ruleReplaceInfo.get(rule.getRuleId()).get(QUALITIS_DELETE_FAIL_CHECK_RESULT);
         } else {
-            this.ruleType = rule.getChildRuleType();
-            this.parentRuleSimple = parentRuleSimple;
-            for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getChildTaskRuleAlarmConfigsBeans()) {
-                this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
-            }
+            this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
         }
-        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
     }
 
-    public TaskRuleSimple(Rule rule, Task task) {
+    public TaskRuleSimple(Rule rule, Task task, Map<Long, Map<String, Object>> ruleReplaceInfo) {
         this.ruleName = rule.getName();
         this.cnName = rule.getCnName();
         this.ruleDetail = rule.getDetail();
         this.templateName = rule.getTemplate().getName();
+        if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_ALERT_LEVEL)) {
+            this.alertReceiver = (String) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_RECEIVERS);
+            this.alertLevel = (Integer) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_LEVEL);
+        } else if (Boolean.TRUE.equals(rule.getAlert())) {
+            this.alertReceiver = rule.getAlertReceiver();
+            this.alertLevel = rule.getAlertLevel();
+        }
 
         this.task = task;
         this.ruleId = rule.getId();
@@ -165,12 +149,18 @@ public class TaskRuleSimple {
         this.ruleType = rule.getRuleType();
     }
 
-    public TaskRuleSimple(Rule rule, Task task, String localeStr) {
+    public TaskRuleSimple(Rule rule, Task task, Map<Long, Map<String, Object>> ruleReplaceInfo, boolean fileRule) {
         this.ruleName = rule.getName();
         this.cnName = rule.getCnName();
         this.ruleDetail = rule.getDetail();
         this.templateName = rule.getTemplate().getName();
-
+        if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_ALERT_LEVEL)) {
+            this.alertReceiver = (String) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_RECEIVERS);
+            this.alertLevel = (Integer) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_LEVEL);
+        } else if (rule.getAlert() != null && rule.getAlert()){
+            this.alertReceiver = rule.getAlertReceiver();
+            this.alertLevel = rule.getAlertLevel();
+        }
         this.task = task;
         this.ruleId = rule.getId();
         this.projectId = rule.getProject().getId();
@@ -184,7 +174,8 @@ public class TaskRuleSimple {
         this.taskRuleAlarmConfigList = new ArrayList<>();
         for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
             TaskRuleAlarmConfig taskRuleAlarmConfig = new TaskRuleAlarmConfig();
-            taskRuleAlarmConfig.setOutputName(FileOutputNameEnum.getFileOutputName(alarmConfig.getFileOutputName(), localeStr));
+            taskRuleAlarmConfig.setOutputName(alarmConfig.getTemplateOutputMeta().getOutputName());
+
             if (alarmConfig.getFileOutputUnit() != null) {
                 taskRuleAlarmConfig.setOutputUnit(FileOutputUnitEnum.fileOutputUnit(alarmConfig.getFileOutputUnit()));
             }
@@ -194,13 +185,45 @@ public class TaskRuleSimple {
             taskRuleAlarmConfig.setTaskRuleSimple(this);
             taskRuleAlarmConfig.setRuleMetric(alarmConfig.getRuleMetric());
             taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_CHECK.getCode());
-            taskRuleAlarmConfig.setUploadAbnormalValue(alarmConfig.getUploadAbnormalValue());
-            taskRuleAlarmConfig.setUploadRuleMetricValue(alarmConfig.getUploadRuleMetricValue());
-            taskRuleAlarmConfig.setDeleteFailCheckResult(alarmConfig.getDeleteFailCheckResult());
+
+            if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_UPLOAD_ABNORMAL_VALUE)) {
+                taskRuleAlarmConfig.setUploadAbnormalValue((Boolean) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_UPLOAD_ABNORMAL_VALUE));
+            } else {
+                taskRuleAlarmConfig.setUploadAbnormalValue(alarmConfig.getUploadAbnormalValue());
+            }
+            if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_UPLOAD_RULE_METRIC_VALUE)) {
+                taskRuleAlarmConfig.setUploadRuleMetricValue((Boolean) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_UPLOAD_RULE_METRIC_VALUE));
+            } else {
+                taskRuleAlarmConfig.setUploadRuleMetricValue(alarmConfig.getUploadRuleMetricValue());
+            }
+            if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_DELETE_FAIL_CHECK_RESULT)) {
+                taskRuleAlarmConfig.setDeleteFailCheckResult((Boolean) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_DELETE_FAIL_CHECK_RESULT));
+            } else {
+                taskRuleAlarmConfig.setDeleteFailCheckResult(alarmConfig.getDeleteFailCheckResult());
+            }
 
             this.taskRuleAlarmConfigList.add(taskRuleAlarmConfig);
         }
-        this.ruleType = rule.getRuleType();
+        if (fileRule) {
+            this.ruleType = rule.getRuleType();
+        }
+    }
+
+    public TaskRuleSimple(CheckAlert currentCheckAlert, Task savedTask) {
+        this.task = savedTask;
+        this.ruleId = currentCheckAlert.getId();
+        this.ruleName = currentCheckAlert.getTopic();
+        this.ruleGroupName = currentCheckAlert.getRuleGroup().getRuleGroupName();
+        this.projectCreator = currentCheckAlert.getProject().getCreateUser();
+        this.executeUser = savedTask.getApplication().getExecuteUser();
+        this.submitTime = savedTask.getApplication().getSubmitTime();
+        this.projectName = currentCheckAlert.getProject().getName();
+        this.projectId = currentCheckAlert.getProject().getId();
+        this.applicationId = savedTask.getApplication().getId();
+        this.ruleType = RuleTypeEnum.CHECK_ALERT_RULE.getCode();
+
+        this.taskRuleAlarmConfigList = new ArrayList<>();
+        this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(this));
     }
 
     public Long getId() {
@@ -249,6 +272,22 @@ public class TaskRuleSimple {
 
     public void setRuleId(Long ruleId) {
         this.ruleId = ruleId;
+    }
+
+    public Integer getAlertLevel() {
+        return alertLevel;
+    }
+
+    public void setAlertLevel(Integer alertLevel) {
+        this.alertLevel = alertLevel;
+    }
+
+    public String getAlertReceiver() {
+        return alertReceiver;
+    }
+
+    public void setAlertReceiver(String alertReceiver) {
+        this.alertReceiver = alertReceiver;
     }
 
     public String getRuleGroupName() {
@@ -338,22 +377,6 @@ public class TaskRuleSimple {
         this.projectCreator = projectCreator;
     }
 
-    public TaskRuleSimple getParentRuleSimple() {
-        return parentRuleSimple;
-    }
-
-    public void setParentRuleSimple(TaskRuleSimple parentRuleSimple) {
-        this.parentRuleSimple = parentRuleSimple;
-    }
-
-    public TaskRuleSimple getChildRuleSimple() {
-        return childRuleSimple;
-    }
-
-    public void setChildRuleSimple(TaskRuleSimple childRuleSimple) {
-        this.childRuleSimple = childRuleSimple;
-    }
-
     public Integer getRuleType() {
         return ruleType;
     }
@@ -381,5 +404,31 @@ public class TaskRuleSimple {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "TaskRuleSimple{" +
+            "id=" + id +
+            ", ruleName='" + ruleName + '\'' +
+            ", cnName='" + cnName + '\'' +
+            ", templateName='" + templateName + '\'' +
+            ", ruleDetail='" + ruleDetail + '\'' +
+            ", ruleId=" + ruleId +
+            ", ruleGroupName='" + ruleGroupName + '\'' +
+            ", midTableName='" + midTableName + '\'' +
+            ", projectId=" + projectId +
+            ", projectName='" + projectName + '\'' +
+            ", projectCnName='" + projectCnName + '\'' +
+            ", projectCreator='" + projectCreator + '\'' +
+            ", applicationId='" + applicationId + '\'' +
+            ", executeUser='" + executeUser + '\'' +
+            ", submitTime='" + submitTime + '\'' +
+            ", alertLevel=" + alertLevel +
+            ", task=" + task +
+            ", taskRuleAlarmConfigList=" + taskRuleAlarmConfigList +
+            ", ruleType=" + ruleType +
+            ", deleteFailCheckResult=" + deleteFailCheckResult +
+            '}';
     }
 }

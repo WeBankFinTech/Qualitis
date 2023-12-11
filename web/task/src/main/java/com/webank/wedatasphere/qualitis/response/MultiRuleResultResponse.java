@@ -22,24 +22,23 @@ import com.webank.wedatasphere.qualitis.entity.TaskResult;
  * @author howeye
  */
 public class MultiRuleResultResponse {
-
-    private Integer index;
+    private String envName;
     private String value;
 
     public MultiRuleResultResponse() {
     }
 
-    public MultiRuleResultResponse(TaskResult taskResult, Integer index) {
+    public MultiRuleResultResponse(TaskResult taskResult, String envName) {
         this.value = taskResult == null ? null : taskResult.getValue();
-        this.index = index;
+        this.envName = envName;
     }
 
-    public Integer getIndex() {
-        return index;
+    public String getEnvName() {
+        return envName;
     }
 
-    public void setIndex(Integer index) {
-        this.index = index;
+    public void setEnvName(String envName) {
+        this.envName = envName;
     }
 
     public String getValue() {

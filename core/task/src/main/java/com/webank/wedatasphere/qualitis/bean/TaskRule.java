@@ -29,17 +29,15 @@ public class TaskRule {
     private String templateName;
     private String ruleGroupName;
     private Integer ruleType;
-    private Long childRuleId;
-    private Integer childRuleType;
+    private Integer alertLevel;
+    private String alertReceiver;
     private String midTableName;
     private List<TaskRuleDataSource> taskRuleDataSourceList;
-    private List<TaskRuleDataSource> childTaskRuleDataSourceList;
     private Long projectId;
     private String projectName;
     private String projectCnName;
     private String projectCreator;
     private List<TaskRuleAlarmConfigBean> taskRuleAlarmConfigBeans;
-    private List<TaskRuleAlarmConfigBean> childTaskRuleAlarmConfigsBeans;
     private Boolean deleteFailCheckResult;
 
     public TaskRule() {
@@ -150,30 +148,6 @@ public class TaskRule {
         this.projectCreator = projectCreator;
     }
 
-    public Long getChildRuleId() {
-        return childRuleId;
-    }
-
-    public void setChildRuleId(Long childRuleId) {
-        this.childRuleId = childRuleId;
-    }
-
-    public List<TaskRuleAlarmConfigBean> getChildTaskRuleAlarmConfigsBeans() {
-        return childTaskRuleAlarmConfigsBeans;
-    }
-
-    public void setChildTaskRuleAlarmConfigsBeans(List<TaskRuleAlarmConfigBean> childTaskRuleAlarmConfigsBeans) {
-        this.childTaskRuleAlarmConfigsBeans = childTaskRuleAlarmConfigsBeans;
-    }
-
-    public List<TaskRuleDataSource> getChildTaskRuleDataSourceList() {
-        return childTaskRuleDataSourceList;
-    }
-
-    public void setChildTaskRuleDataSourceList(List<TaskRuleDataSource> childTaskRuleDataSourceList) {
-        this.childTaskRuleDataSourceList = childTaskRuleDataSourceList;
-    }
-
     public Integer getRuleType() {
         return ruleType;
     }
@@ -182,12 +156,20 @@ public class TaskRule {
         this.ruleType = ruleType;
     }
 
-    public Integer getChildRuleType() {
-        return childRuleType;
+    public Integer getAlertLevel() {
+        return alertLevel;
     }
 
-    public void setChildRuleType(Integer childRuleType) {
-        this.childRuleType = childRuleType;
+    public void setAlertLevel(Integer alertLevel) {
+        this.alertLevel = alertLevel;
+    }
+
+    public String getAlertReceiver() {
+        return alertReceiver;
+    }
+
+    public void setAlertReceiver(String alertReceiver) {
+        this.alertReceiver = alertReceiver;
     }
 
     public Boolean getDeleteFailCheckResult() {

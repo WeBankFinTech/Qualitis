@@ -16,48 +16,34 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
-import com.webank.wedatasphere.qualitis.dao.PermissionDao;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.entity.Permission;
+import com.webank.wedatasphere.qualitis.dao.PermissionDao;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
+import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.userpermission.AddUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.DeleteUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.ModifyUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.response.UserSpecPermissionResponse;
 import com.webank.wedatasphere.qualitis.service.UserSpecPermissionService;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import com.webank.wedatasphere.qualitis.dao.PermissionDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
-import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.userpermission.AddUserSpecPermissionRequest;
-import com.webank.wedatasphere.qualitis.request.userpermission.DeleteUserSpecPermissionRequest;
-import com.webank.wedatasphere.qualitis.request.userpermission.ModifyUserSpecPermissionRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.UserSpecPermissionResponse;
-import com.webank.wedatasphere.qualitis.service.UserSpecPermissionService;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import java.util.ArrayList;
+import java.util.List;
+import javax.ws.rs.core.Context;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author howeye
@@ -108,6 +94,8 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         newUserSpecPermission.setUser(userInDb);
         newUserSpecPermission.setPermission(permissionInDb);
         newUserSpecPermission.setId(UuidGenerator.generate());
+        newUserSpecPermission.setCreateUser(HttpUtils.getUserName(httpServletRequest));
+        newUserSpecPermission.setCreateTime(DateUtils.now());
         UserSpecPermission savedUserSpecPermission = userSpecPermissionDao.saveUserSpecPermission(newUserSpecPermission);
         UserSpecPermissionResponse response = new UserSpecPermissionResponse(savedUserSpecPermission);
 
@@ -117,7 +105,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteUserSpecPermission(DeleteUserSpecPermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteUserSpecPermission(DeleteUserSpecPermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -136,7 +124,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> modifyUserSpecPermission(ModifyUserSpecPermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyUserSpecPermission(ModifyUserSpecPermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -152,6 +140,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         // Check existence of user and permission
         long userId = request.getUserId();
         long permissionId = request.getPermissionId();
+
         User userInDb = userDao.findById(userId);
         if (userInDb == null) {
             throw new UnExpectedRequestException("user id {&DOES_NOT_EXIST}, request: " + request);
@@ -166,8 +155,10 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         }
 
         // Save user permission
-        userSpecPermissionInDb.setPermission(permissionInDb);
         userSpecPermissionInDb.setUser(userInDb);
+        userSpecPermissionInDb.setPermission(permissionInDb);
+        userSpecPermissionInDb.setModifyUser(HttpUtils.getUserName(httpServletRequest));
+        userSpecPermissionInDb.setModifyTime(DateUtils.now());
         UserSpecPermission savedUserSpecPermission = userSpecPermissionDao.saveUserSpecPermission(userSpecPermissionInDb);
 
         LOGGER.info("Succeed to find user_permission. uuid: {}, user_id: {}, permission_id: {}, current_user: {}", uuid,

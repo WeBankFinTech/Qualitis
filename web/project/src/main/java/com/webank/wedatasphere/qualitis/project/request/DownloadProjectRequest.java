@@ -19,7 +19,10 @@ package com.webank.wedatasphere.qualitis.project.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 
+import com.webank.wedatasphere.qualitis.project.constant.ProjectTransportTypeEnum;
 import java.util.List;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -28,6 +31,12 @@ public class DownloadProjectRequest {
 
     @JsonProperty("project_ids")
     private List<Long> projectId;
+
+    @JsonProperty("download_type")
+    private Integer downloadType;
+
+    @JsonProperty("diff_variables")
+    private List<DiffVariableRequest> diffVariableRequestList;
 
     public DownloadProjectRequest() {
         // Default Constructor
@@ -41,12 +50,31 @@ public class DownloadProjectRequest {
         this.projectId = projectId;
     }
 
+    public Integer getDownloadType() {
+        return downloadType;
+    }
+
+    public void setDownloadType(Integer downloadType) {
+        this.downloadType = downloadType;
+    }
+
+    public List<DiffVariableRequest> getDiffVariableRequestList() {
+        return diffVariableRequestList;
+    }
+
+    public void setDiffVariableRequestList(List<DiffVariableRequest> diffVariableRequestList) {
+        this.diffVariableRequestList = diffVariableRequestList;
+    }
+
     public static void checkRequest(DownloadProjectRequest request) throws UnExpectedRequestException {
         if (request == null) {
-            throw new UnExpectedRequestException("");
+            throw new UnExpectedRequestException("Request {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
-        if (request.getProjectId() == null) {
-            throw new UnExpectedRequestException("Project ids {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        if (CollectionUtils.isEmpty(request.getProjectId())) {
+            throw new UnExpectedRequestException("Project {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        if (request.getDownloadType() == null) {
+            throw new UnExpectedRequestException("Download type {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
     }
 }

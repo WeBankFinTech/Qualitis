@@ -57,4 +57,11 @@ public interface TemplateDataSourceTypeDao {
      * @return
      */
     List<TemplateDataSourceType> findByTemplate(Template template);
+
+    /**
+     * Find by batch
+     * @param templateIds
+     * @return
+     */
+    List<TemplateDataSourceType> findByTemplateIds(List<Long> templateIds);
 }

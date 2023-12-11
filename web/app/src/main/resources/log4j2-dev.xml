@@ -45,9 +45,9 @@
             <AppenderRef ref="Console" />
             <AppenderRef ref="RollingFile" />
         </Logger>
-<!--        <Logger name="com.zaxxer.hikari" level="DEBUG">-->
-<!--            <AppenderRef ref="Console" />-->
-<!--            <AppenderRef ref="RollingFile" />-->
-<!--        </Logger>-->
+        <Logger name="com.zaxxer.hikari" level="DEBUG">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="RollingFile" />
+        </Logger>
     </Loggers>
 </Configuration>

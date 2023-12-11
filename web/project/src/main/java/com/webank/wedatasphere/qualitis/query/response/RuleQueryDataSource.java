@@ -25,7 +25,23 @@ public class RuleQueryDataSource {
     @JsonProperty("proxy_user")
     private String proxyUser;
 
+    @JsonProperty("datasource_type")
+    private Integer datasourceType;
+
+    @JsonProperty("sub_system_name")
+    private String subSystemName;
+    @JsonProperty("department_name")
+    private String departmentName;
+    @JsonProperty("dev_department_name")
+    private String devDepartmentName;
+    @JsonProperty("tag_name")
+    private String tagName;
+    private String envName;
+    @JsonProperty("rule_count")
+    private Integer ruleCount;
+
     public RuleQueryDataSource() {
+        // Default Constructor
     }
 
     public String getClusterName() {
@@ -74,6 +90,62 @@ public class RuleQueryDataSource {
 
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
+    }
+
+    public Integer getDatasourceType() {
+        return datasourceType;
+    }
+
+    public void setDatasourceType(Integer datasourceType) {
+        this.datasourceType = datasourceType;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
+    public String getDevDepartmentName() {
+        return devDepartmentName;
+    }
+
+    public void setDevDepartmentName(String devDepartmentName) {
+        this.devDepartmentName = devDepartmentName;
+    }
+
+    public String getTagName() {
+        return tagName;
+    }
+
+    public void setTagName(String tagName) {
+        this.tagName = tagName;
+    }
+
+    public String getEnvName() {
+        return envName;
+    }
+
+    public void setEnvName(String envName) {
+        this.envName = envName;
+    }
+
+    public Integer getRuleCount() {
+        return ruleCount;
+    }
+
+    public void setRuleCount(Integer ruleCount) {
+        this.ruleCount = ruleCount;
     }
 
     @Override

@@ -8,6 +8,9 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  * @author allenzhou
  */
 public class TemplateMidTableInputMetaResponse {
+    @JsonProperty("mid_table_input_id")
+    private Long midTableInputId;
+
     @JsonProperty("input_meta_name")
     private String name;
     @JsonProperty("input_meta_placeholder")
@@ -28,6 +31,24 @@ public class TemplateMidTableInputMetaResponse {
     @JsonProperty("placeholder_description")
     private String placeholderDescription;
 
+    @JsonProperty("input_meta_cn_name")
+    private String cnName;
+
+    @JsonProperty("input_meta_en_name")
+    private String enName;
+
+    @JsonProperty("input_meta_cn_description")
+    private String cnDescription;
+
+    @JsonProperty("input_meta_en_description")
+    private String enDescription;
+
+    @JsonProperty("field_multiple_choice")
+    private Boolean fieldMultipleChoice;
+
+    @JsonProperty("whether_new_value")
+    private Boolean whetherNewValue;
+
     public TemplateMidTableInputMetaResponse() {
     }
 
@@ -43,8 +64,8 @@ public class TemplateMidTableInputMetaResponse {
 
     public static void checkRequest(TemplateMidTableInputMetaResponse request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
-        CommonChecker.checkString(request.getName(), "templateMidTableInputMetaRequestName");
-        CommonChecker.checkString(request.getPlaceholder(), "templateMidTableInputMetaRequestPlaceholder");
+        //CommonChecker.checkString(request.getName(), "templateMidTableInputMetaRequestName");
+        //CommonChecker.checkString(request.getPlaceholder(), "templateMidTableInputMetaRequestPlaceholder");
         CommonChecker.checkObject(request.getInputType(), "templateMidTableInputMetaRequestInputType");
     }
 
@@ -103,4 +124,61 @@ public class TemplateMidTableInputMetaResponse {
     public void setPlaceholderDescription(String placeholderDescription) {
         this.placeholderDescription = placeholderDescription;
     }
+
+    public Long getMidTableInputId() {
+        return midTableInputId;
+    }
+
+    public void setMidTableInputId(Long midTableInputId) {
+        this.midTableInputId = midTableInputId;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
+    }
+
+    public String getCnDescription() {
+        return cnDescription;
+    }
+
+    public void setCnDescription(String cnDescription) {
+        this.cnDescription = cnDescription;
+    }
+
+    public String getEnDescription() {
+        return enDescription;
+    }
+
+    public void setEnDescription(String enDescription) {
+        this.enDescription = enDescription;
+    }
+
+    public Boolean getFieldMultipleChoice() {
+        return fieldMultipleChoice;
+    }
+
+    public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
+        this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherNewValue() {
+        return whetherNewValue;
+    }
+
+    public void setWhetherNewValue(Boolean whetherNewValue) {
+        this.whetherNewValue = whetherNewValue;
+    }
+
 }

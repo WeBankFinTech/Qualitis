@@ -18,9 +18,15 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import javax.persistence.*;
 import java.util.Map;
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Id;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
@@ -34,24 +40,27 @@ public class RuleVariable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne
+    @JsonIgnore
     private Rule rule;
-    @Column(name = "input_action_step")
-    private Integer inputActionStep;
-    @ManyToOne
-    private TemplateStatisticsInputMeta templateStatisticsInputMeta;
     @ManyToOne
     private TemplateMidTableInputMeta templateMidTableInputMeta;
+    @ManyToOne
+    private TemplateStatisticsInputMeta templateStatisticsInputMeta;
+
+    @Column(name = "input_action_step")
+    private Integer inputActionStep;
     @Column(name = "value", columnDefinition = "MEDIUMTEXT")
     private String value;
-    @Column(name = "origin_value")
+    @Column(name = "origin_value", columnDefinition = "MEDIUMTEXT")
     private String originValue;
     @Column(length = 50, name = "cluster_name")
     private String clusterName;
-    @Column(length = 50, name = "db_name")
-    private String dbName;
-    @Column(length = 50, name = "table_name")
+    @Column(length = 200, name = "table_name")
     private String tableName;
+    @Column(length = 200, name = "db_name")
+    private String dbName;
 
     public RuleVariable() {
     }
@@ -62,10 +71,11 @@ public class RuleVariable {
         this.inputActionStep = inputActionStep;
         this.templateMidTableInputMeta = midTableInputMeta;
         this.templateStatisticsInputMeta = statisticsInputMeta;
+
         this.value = autoAdaptValue.get("value");
-        this.clusterName = autoAdaptValue.get("clusterName");
         this.dbName = autoAdaptValue.get("dbName");
         this.tableName = autoAdaptValue.get("tableName");
+        this.clusterName = autoAdaptValue.get("clusterName");
         this.originValue = autoAdaptValue.get("originValue");
     }
 
@@ -75,10 +85,11 @@ public class RuleVariable {
         this.inputActionStep = inputActionStep;
         this.templateMidTableInputMeta = midTableInputMeta;
         this.templateStatisticsInputMeta = statisticsInputMeta;
+
         this.value = value;
-        this.clusterName = clusterName;
         this.dbName = dbName;
         this.tableName = tableName;
+        this.clusterName = clusterName;
     }
 
     public Long getId() {
@@ -105,36 +116,12 @@ public class RuleVariable {
         this.templateMidTableInputMeta = templateMidTableInputMeta;
     }
 
-    public String getValue() {
-        return value;
+    public TemplateStatisticsInputMeta getTemplateStatisticsInputMeta() {
+        return templateStatisticsInputMeta;
     }
 
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public String getClusterName() {
-        return clusterName;
-    }
-
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
-    }
-
-    public String getDbName() {
-        return dbName;
-    }
-
-    public void setDbName(String dbName) {
-        this.dbName = dbName;
-    }
-
-    public String getTableName() {
-        return tableName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public void setTemplateStatisticsInputMeta(TemplateStatisticsInputMeta templateStatisticsInputMeta) {
+        this.templateStatisticsInputMeta = templateStatisticsInputMeta;
     }
 
     public Integer getInputActionStep() {
@@ -145,12 +132,12 @@ public class RuleVariable {
         this.inputActionStep = inputActionStep;
     }
 
-    public TemplateStatisticsInputMeta getTemplateStatisticsInputMeta() {
-        return templateStatisticsInputMeta;
+    public String getValue() {
+        return value;
     }
 
-    public void setTemplateStatisticsInputMeta(TemplateStatisticsInputMeta templateStatisticsInputMeta) {
-        this.templateStatisticsInputMeta = templateStatisticsInputMeta;
+    public void setValue(String value) {
+        this.value = value;
     }
 
     public String getOriginValue() {
@@ -159,6 +146,30 @@ public class RuleVariable {
 
     public void setOriginValue(String originValue) {
         this.originValue = originValue;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public void setDbName(String dbName) {
+        this.dbName = dbName;
     }
 
     @Override

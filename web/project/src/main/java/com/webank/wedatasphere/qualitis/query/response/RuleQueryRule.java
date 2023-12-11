@@ -66,7 +66,7 @@ public class RuleQueryRule {
     BeanUtils.copyProperties(data, this);
     this.setRuleId(rule.getId());
     this.setRuleName(rule.getName());
-    this.setRuleTemplate(rule.getRuleTemplateName());
+    this.setRuleTemplate(rule.getTemplate().getName());
     this.setRuleTemplateId(rule.getTemplate().getId());
     this.setRuleType(rule.getRuleType());
     this.ruleGroupId = rule.getRuleGroup().getId();

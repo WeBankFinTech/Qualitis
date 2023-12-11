@@ -20,8 +20,23 @@ package com.webank.wedatasphere.qualitis.exception;
  * @author howeye
  */
 public class JobSubmitException extends Exception {
+    private Integer errCode;
 
     public JobSubmitException(String message) {
         super(message);
+        errCode = -1;
+    }
+
+    public JobSubmitException(String message, Integer errCode) {
+        super(message);
+        this.errCode = errCode;
+    }
+
+    public Integer getErrCode() {
+        return errCode;
+    }
+
+    public void setErrCode(Integer errCode) {
+        this.errCode = errCode;
     }
 }

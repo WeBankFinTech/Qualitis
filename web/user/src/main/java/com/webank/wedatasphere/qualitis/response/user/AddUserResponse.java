@@ -38,7 +38,7 @@ public class AddUserResponse {
 
     public AddUserResponse(User user, String password) {
         this.userId = user.getId();
-        this.username = user.getUserName();
+        this.username = user.getUsername();
         this.password = password;
         this.departmentName = user.getDepartment() != null ? user.getDepartment().getName() : "";
         this.chineseName = user.getChineseName();

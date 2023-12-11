@@ -28,6 +28,10 @@ public class RoleModifyRequest {
     private String roleName;
     @JsonProperty("role_id")
     private Long roleId;
+    @JsonProperty("role_type")
+    private Integer roleType;
+    @JsonProperty("zn_name")
+    private String znName;
 
     public RoleModifyRequest() {
         // Default Constructor
@@ -55,6 +59,22 @@ public class RoleModifyRequest {
 
     public void setRoleId(Long roleId) {
         this.roleId = roleId;
+    }
+
+    public Integer getRoleType() {
+        return roleType;
+    }
+
+    public void setRoleType(Integer roleType) {
+        this.roleType = roleType;
+    }
+
+    public String getZnName() {
+        return znName;
+    }
+
+    public void setZnName(String znName) {
+        this.znName = znName;
     }
 
     @Override

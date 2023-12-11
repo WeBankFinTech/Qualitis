@@ -17,15 +17,9 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
-import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
@@ -60,27 +54,24 @@ public class TemplateInputDemandResponse {
     private SqlDisplayResponse sqlDisplayResponse;
     @JsonProperty("template_output")
     private List<TemplateOutputMetaSimpleResponse> templateOutput;
+    @JsonProperty("filter_fields")
+    private Boolean filterFields;
 
     public TemplateInputDemandResponse() {
     }
 
     public TemplateInputDemandResponse(Template template, Integer templateType) {
-        if (templateType.equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
+        if (templateType.equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode()) || templateType.equals(RuleTemplateTypeEnum.FILE_COUSTOM.getCode())) {
             this.templateId = template.getId();
             this.clusterNum = template.getClusterNum();
             this.dbNum = template.getDbNum();
             this.tableNum = template.getTableNum();
             this.fieldNum = template.getFieldNum();
+            this.filterFields = template.getFilterFields();
             this.sqlDisplayResponse = new SqlDisplayResponse(template.getShowSql());
             this.templateOutput = new ArrayList<>();
             for (TemplateOutputMeta templateOutputMeta : template.getTemplateOutputMetas()) {
                 templateOutput.add(new TemplateOutputMetaSimpleResponse(templateOutputMeta));
-            }
-
-            if (template.getChildTemplate() != null) {
-                for (TemplateOutputMeta templateOutputMeta : template.getChildTemplate().getTemplateOutputMetas()) {
-                    templateOutput.add(new TemplateOutputMetaSimpleResponse(templateOutputMeta));
-                }
             }
         }
     }
@@ -91,11 +82,31 @@ public class TemplateInputDemandResponse {
         this.dbNum = template.getDbNum();
         this.tableNum = template.getTableNum();
         this.fieldNum = template.getFieldNum();
+        this.filterFields = template.getFilterFields();
         sqlDisplayResponse = new SqlDisplayResponse(template, regexpExprMapperRepository);
         ruleArgumentResponse = new ArrayList<>();
         templateOutput = new ArrayList<>();
         for (TemplateMidTableInputMeta templateMidTableInputMeta : template.getTemplateMidTableInputMetas()) {
             if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
+                //数值范围 是否新值 true返回最大值、最小值、中间表达式占位符   false返回数值范围占位符
+                boolean flag = false;
+                if (template.getName().equals(QualitisConstants.ROW_DATA_CONSISTENCY_VERIFICATION) &&
+                        (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.AND_CONCAT.getCode()) || templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.SOURCE_FIELDS.getCode()) ||
+                                templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.TARGET_FIELDS.getCode()))) {
+                    flag = true;
+                }
+
+                if (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.VALUE_RANGE.getCode()) && templateMidTableInputMeta.getWhetherNewValue()) {
+                    continue;
+                } else if (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.VALUE_RANGE.getCode()) && ! templateMidTableInputMeta.getWhetherNewValue()) {
+                    ruleArgumentResponse.add(new RuleArgumentResponse(templateMidTableInputMeta));
+                    break;
+                } else if (flag) {
+                    continue;
+                } else if (QualitisConstants.OVER_TABLE_TYPE.stream().anyMatch(item -> item.equals(templateMidTableInputMeta.getInputType() + ""))) {
+                    continue;
+                }
+
                 ruleArgumentResponse.add(new RuleArgumentResponse(templateMidTableInputMeta));
             }
             if (templateMidTableInputMeta.getFieldType() != null) {
@@ -111,12 +122,6 @@ public class TemplateInputDemandResponse {
 
         for (TemplateOutputMeta templateOutputMeta : template.getTemplateOutputMetas()) {
             templateOutput.add(new TemplateOutputMetaSimpleResponse(templateOutputMeta));
-        }
-        // Add child template
-        if(template.getChildTemplate() != null){
-            for (TemplateOutputMeta templateOutputMeta : template.getChildTemplate().getTemplateOutputMetas()) {
-                templateOutput.add(new TemplateOutputMetaSimpleResponse(templateOutputMeta));
-            }
         }
     }
 
@@ -190,5 +195,13 @@ public class TemplateInputDemandResponse {
 
     public void setFieldType(Integer fieldType) {
         this.fieldType = fieldType;
+    }
+
+    public Boolean getFilterFields() {
+        return filterFields;
+    }
+
+    public void setFilterFields(Boolean filterFields) {
+        this.filterFields = filterFields;
     }
 }

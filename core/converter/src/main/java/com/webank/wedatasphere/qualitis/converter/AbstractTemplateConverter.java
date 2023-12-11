@@ -18,19 +18,15 @@ package com.webank.wedatasphere.qualitis.converter;
 
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
-import com.webank.wedatasphere.qualitis.exception.ConvertException;
-import com.webank.wedatasphere.qualitis.exception.DataQualityTaskException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
-import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
  * @author howeye
  */
 public abstract class AbstractTemplateConverter {
+
     /**
      * Convert Task into code that can be executed.
      * @param dataQualityTask
@@ -40,14 +36,15 @@ public abstract class AbstractTemplateConverter {
      * @param runDate
      * @param clusterType
      * @param dataSourceMysqlConnect
+     * @param user
+     * @param leftCols
+     * @param rightCols
+     * @param comelexCols
+     * @param createUser
      * @return
-     * @throws ConvertException
-     * @throws DataQualityTaskException
-     * @throws RuleVariableNotSupportException
-     * @throws RuleVariableNotFoundException
-     * @throws IOException
-     * @throws UnExpectedRequestException
+     * @throws Exception
      */
     public abstract DataQualityJob convert(DataQualityTask dataQualityTask, Date date, String setFlag, Map<String, String> execParams, String runDate,
-        String clusterType, Map<Long, Map> dataSourceMysqlConnect) throws ConvertException, DataQualityTaskException, RuleVariableNotSupportException, RuleVariableNotFoundException, IOException, UnExpectedRequestException;
+        String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols,
+        List<String> comelexCols,String createUser) throws Exception;
 }

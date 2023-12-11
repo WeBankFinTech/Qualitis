@@ -6,17 +6,18 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import java.util.ArrayList;
-import java.util.List;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.management.relation.RoleNotFoundException;
-import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.management.relation.RoleNotFoundException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -52,15 +53,14 @@ public class QualitisHttpSessionUserInterceptor implements HttpSessionUserInterc
             }
         }
         HttpSession session = request.getSession();
-        Cookie cookie = new Cookie("JSESSIONID", session.getId());
-        cookie.setSecure(true);
+        final Cookie cookie = new Cookie("JSESSIONID", session.getId());
         cookie.setPath("/");
         HttpServletRequestWrapper requestWrapper = new HttpServletRequestWrapper(request) {
             @Override
             public Cookie[] getCookies() {
                 List<Cookie> cookieList = new ArrayList<>();
                 cookieList.add(cookie);
-                final Cookie[] cookies = (Cookie[]) cookieList.toArray();
+                final Cookie[] cookies = (Cookie[]) cookieList.toArray(new Cookie[0]);
                 return cookies;
             }
         };

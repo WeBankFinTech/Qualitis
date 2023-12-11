@@ -59,9 +59,6 @@ public class HaAbstractServiceCoordinator extends AbstractServiceCoordinator {
             lockFlag = false;
             try {
                 lock.release();
-            } catch (IllegalMonitorStateException e) {
-                LOGGER.error("Failed to release lock of zookeeper.");
-                LOGGER.error(e.getMessage(), e);
             } catch (Exception e) {
                 LOGGER.error("Failed to release lock of zookeeper.");
                 LOGGER.error(e.getMessage(), e);

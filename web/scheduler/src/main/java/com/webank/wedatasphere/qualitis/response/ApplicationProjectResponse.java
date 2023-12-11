@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.bean.TaskSubmitResult;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +30,8 @@ public class ApplicationProjectResponse {
 
     @JsonProperty("project_applications")
     private List<ApplicationTaskSimpleResponse> applicationTaskSimpleResponses;
+
+    private String exceptionMessage;
 
     public ApplicationProjectResponse() {
         this.applicationTaskSimpleResponses = new ArrayList<>();
@@ -50,5 +52,13 @@ public class ApplicationProjectResponse {
 
     public void setLastSubmitTime(Long lastSubmitTime) {
         this.lastSubmitTime = lastSubmitTime;
+    }
+
+    public String getExceptionMessage() {
+        return exceptionMessage;
+    }
+
+    public void setExceptionMessage(String exceptionMessage) {
+        this.exceptionMessage = exceptionMessage;
     }
 }

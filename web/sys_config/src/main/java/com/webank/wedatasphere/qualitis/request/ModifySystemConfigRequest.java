@@ -8,12 +8,12 @@ import org.apache.commons.lang.StringUtils;
  * @author howeye
  */
 public class ModifySystemConfigRequest {
-
     @JsonProperty("key_name")
     private String keyName;
     private String value;
 
     public ModifySystemConfigRequest() {
+        // Do nothing.
     }
 
     public String getKeyName() {

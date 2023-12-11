@@ -22,11 +22,11 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import java.util.List;
 
 /**
- * @author howeye
+ * @author allenzhou
  */
 public class KillApplicationsRequest {
 
-    @JsonProperty("application_ids")
+    @JsonProperty("applicationIds")
     private List<String> applicationIds;
     @JsonProperty("login_user")
     private String loginUser;

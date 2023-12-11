@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao.impl;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.AlarmConfigRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
@@ -38,5 +39,10 @@ public class AlarmConfigDaoImpl implements AlarmConfigDao {
     @Override
     public List<AlarmConfig> saveAllAlarmConfig(List<AlarmConfig> alarmConfigs) {
         return alarmConfigRepository.saveAll(alarmConfigs);
+    }
+
+    @Override
+    public List<AlarmConfig> getByRuleMetric(RuleMetric ruleMetric) {
+        return alarmConfigRepository.getByRuleMetric(ruleMetric);
     }
 }

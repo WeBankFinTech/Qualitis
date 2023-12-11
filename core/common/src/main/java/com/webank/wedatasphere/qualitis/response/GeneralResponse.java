@@ -22,8 +22,10 @@ import java.io.Serializable;
  * @author howeye
  */
 public class GeneralResponse<T> implements Serializable {
-    private String code;
+    private static final long serialVersionUID = 2405172041950251807L;
+
     private String message;
+    private String code;
     private T data;
 
     public GeneralResponse() {

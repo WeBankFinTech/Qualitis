@@ -75,12 +75,12 @@ public class UserSpecPermissionDaoTest {
     UserSpecPermission findByIdEntity = dao.findByUuid(saveEntity.getId());
     assertNotNull(findByIdEntity);
     assertEquals(findByIdEntity.getPermission().getUrl(), saveEntity.getPermission().getUrl());
-    assertEquals(findByIdEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByIdEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
 
     UserSpecPermission findByRoleAndPermissionEntity = dao.findByUserAndPermission(saveUser, savePermission);
     assertNotNull(findByRoleAndPermissionEntity);
     assertEquals(findByRoleAndPermissionEntity.getPermission().getUrl(), saveEntity.getPermission().getUrl());
-    assertEquals(findByRoleAndPermissionEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByRoleAndPermissionEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserSpecPermission> findByRoleEntity = dao.findByUser(saveUser);
@@ -90,7 +90,7 @@ public class UserSpecPermissionDaoTest {
     //根据username查询的数据库对象是否和保存的值一致
     List<UserSpecPermission> findByPermissionEntity = dao.findByPermission(savePermission);
     assertTrue(findByPermissionEntity.size() > 0);
-    assertEquals(findByPermissionEntity.get(0).getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByPermissionEntity.get(0).getUser().getUsername(), saveEntity.getUser().getUsername());
 
     //删除后,是否还能找到对象
     dao.deleteUserSpecPermission(saveEntity);
@@ -103,7 +103,7 @@ public class UserSpecPermissionDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setUserName("xxx");
+    user.setUsername("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);

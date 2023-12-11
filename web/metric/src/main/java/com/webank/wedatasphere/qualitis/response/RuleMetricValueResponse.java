@@ -1,6 +1,9 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
+
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -13,8 +16,27 @@ public class RuleMetricValueResponse {
     private String ruleMetricValue;
     @JsonProperty("related_rule_name")
     private String relatedRuleName;
+    @JsonProperty("datasource_names")
+    private List<String> datasourceNames;
+    @JsonProperty("env_name")
+    private String envName;
+    @JsonProperty("rule")
+    private HiveRuleDetail hiveRuleDetail;
 
-    public RuleMetricValueResponse() {
+    public String getEnvName() {
+        return envName;
+    }
+
+    public void setEnvName(String envName) {
+        this.envName = envName;
+    }
+
+    public List<String> getDatasourceNames() {
+        return datasourceNames;
+    }
+
+    public void setDatasourceNames(List<String> datasourceNames) {
+        this.datasourceNames = datasourceNames;
     }
 
     public String getGenerateTime() {
@@ -39,5 +61,13 @@ public class RuleMetricValueResponse {
 
     public void setRelatedRuleName(String relatedRuleName) {
         this.relatedRuleName = relatedRuleName;
+    }
+
+    public HiveRuleDetail getHiveRuleDetail() {
+        return hiveRuleDetail;
+    }
+
+    public void setHiveRuleDetail(HiveRuleDetail hiveRuleDetail) {
+        this.hiveRuleDetail = hiveRuleDetail;
     }
 }

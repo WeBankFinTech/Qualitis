@@ -17,21 +17,23 @@
 package com.webank.wedatasphere.qualitis.rule.request.multi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import java.util.Set;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
  */
 public class MultiDataSourceConfigRequest {
-
     @JsonProperty("db_name")
     private String dbName;
     @JsonProperty("table_name")
@@ -58,37 +60,69 @@ public class MultiDataSourceConfigRequest {
     @JsonProperty("file_hash_values")
     private String fileHashValues;
 
-    @JsonProperty("linkis_datasoure_id")
+    @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
     @JsonProperty("linkis_datasource_name")
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
-    @JsonProperty("linkis_datasoure_version_id")
+    @JsonProperty("linkis_datasource_envs")
+    private List<DataSourceEnvRequest> dataSourceEnvRequests;
+    @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
+
+    @JsonProperty("type")
+    private String type;
 
     public MultiDataSourceConfigRequest() {
     }
 
-    public MultiDataSourceConfigRequest(String dbName, String tableName, String filter) {
+    public MultiDataSourceConfigRequest(String dbName, String tableName, String filter, String proxyUser) {
         this.dbName = dbName;
         this.tableName = tableName;
         this.filter = filter;
+        this.proxyUser = proxyUser;
     }
 
     public MultiDataSourceConfigRequest(Set<RuleDataSource> ruleDataSources, Integer index) {
         for (RuleDataSource ruleDataSource : ruleDataSources) {
-            if (! ruleDataSource.getDatasourceIndex().equals(index)) {
+            if (!ruleDataSource.getDatasourceIndex().equals(index)) {
                 continue;
             }
             this.dbName = ruleDataSource.getDbName();
-            this.tableName = ruleDataSource.getTableName();
+            String table = ruleDataSource.getTableName();
+            // UUID remove.
+            if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(table) && table.contains("_") && table.length() - UuidGenerator.generate().length() - 1 > 0) {
+                this.tableName = table.substring(0, table.length() - UuidGenerator.generate().length() - 1);
+            } else {
+                this.tableName = ruleDataSource.getTableName();
+            }
             this.filter = ruleDataSource.getFilter();
             this.proxyUser = ruleDataSource.getProxyUser();
+            if (StringUtils.isNotBlank(ruleDataSource.getFileId())) {
+                this.fileId = ruleDataSource.getFileId();
+                this.fileTableDesc = ruleDataSource.getFileTableDesc();
+                this.fileDelimiter = " ".equals(ruleDataSource.getFileDelimiter()) ? SpecCharEnum.STAR.getValue() : ruleDataSource.getFileDelimiter();
+                this.fileType = ruleDataSource.getFileType();
+                this.fileHeader = ruleDataSource.getFileHeader();
+                this.fileHashValues = ruleDataSource.getFileHashValue();
+                this.fpsFile = true;
+            }
             this.linkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
-            this.linkisDataSourceType = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+            if (null != linkisDataSourceId) {
+                this.linkisDataSourceType = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+            }
             this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
             this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
+            this.type = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+            //dataSourceEnvRequests
+            this.dataSourceEnvRequests = ruleDataSource.getRuleDataSourceEnvs().stream().distinct().map(item -> {
+                DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
+                dataSourceEnvRequest.setEnvId(item.getEnvId());
+                dataSourceEnvRequest.setEnvName(item.getEnvName());
+                return dataSourceEnvRequest;
+            }).collect(Collectors.toList());
+
         }
 
         if (this.getDbName() == null || "".equals(this.getDbName())) {
@@ -227,6 +261,14 @@ public class MultiDataSourceConfigRequest {
         this.linkisDataSourceType = linkisDataSourceType;
     }
 
+    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+        return dataSourceEnvRequests;
+    }
+
+    public void setDataSourceEnvRequests(List<DataSourceEnvRequest> dataSourceEnvRequests) {
+        this.dataSourceEnvRequests = dataSourceEnvRequests;
+    }
+
     public Long getLinkisDataSourceVersionId() {
         return linkisDataSourceVersionId;
     }
@@ -235,9 +277,17 @@ public class MultiDataSourceConfigRequest {
         this.linkisDataSourceVersionId = linkisDataSourceVersionId;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public static void checkRequest(MultiDataSourceConfigRequest request, Boolean cs) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
-        if (! cs) {
+        if (!cs) {
             CommonChecker.checkString(request.getDbName(), "Db name");
         }
         CommonChecker.checkString(request.getTableName(), "Table name");

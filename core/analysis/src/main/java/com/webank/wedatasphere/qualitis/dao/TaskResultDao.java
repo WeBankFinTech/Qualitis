@@ -37,9 +37,22 @@ public interface TaskResultDao {
      * @param begin
      * @param end
      * @param ruleId
+     * @param ruleMetricId
+     * @param applicationId
      * @return
      */
-    Double findAvgByCreateTimeBetweenAndRule(String begin, String end, Long ruleId);
+    Double findAvgByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId);
+
+    /**
+     * Count value from begin time and end time
+     * @param begin
+     * @param end
+     * @param ruleId
+     * @param ruleMetricId
+     * @param applicationId
+     * @return
+     */
+    long countByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId);
 
     /**
      * Find task result by application and rule id in
@@ -63,16 +76,19 @@ public interface TaskResultDao {
      * @param size
      * @return
      */
-    List<Long> findRuleByRuleMetric(Long id, int page, int size);
+    List<Long> findRuleIdsByRuleMetric(Long id, int page, int size);
 
     /**
      * Find values by rule ID and rule metric ID.
      * @param ruleMetricId
+     * @param startTime
+     * @param endTime
+     * @param envName
      * @param page
      * @param size
      * @return
      */
-    List<TaskResult> findValuesByRuleMetric(long ruleMetricId, int page, int size);
+    List<TaskResult> findValuesByRuleMetric(long ruleMetricId, String startTime, String endTime, String envName, int page, int size);
 
     /**
      * Find avg value by rule ID and rule metric ID.
@@ -83,6 +99,17 @@ public interface TaskResultDao {
      * @return
      */
     Double findAvgByCreateTimeBetweenAndRuleAndRuleMetric(String start, String end, Long ruleId, Long ruleMetricId);
+
+    /**
+     * Count
+     * @param format
+     * @param format1
+     * @param ruleId
+     * @param ruleMetricId
+     * @param applicationId
+     * @return
+     */
+    long countByCreateTimeBetweenAndRuleAndRuleMetric(String format, String format1, Long ruleId, Long ruleMetricId, String applicationId);
 
     /**
      * Find value.
@@ -96,14 +123,33 @@ public interface TaskResultDao {
     /**
      * Count values.
      * @param ruleMetricId
+     * @param startTime
+     * @param endTime
+     * @param envName
      * @return
      */
-    int countValuesByRuleMetric(long ruleMetricId);
+    int countValuesByRuleMetric(long ruleMetricId, String startTime, String endTime, String envName);
 
     /**
      * Count rules.
      * @param ruleMetricId
      * @return
      */
-    int countRuleByRuleMetric(Long ruleMetricId);
+    int countRuleIdsByRuleMetric(Long ruleMetricId);
+
+    /**
+     * Find values with time.
+     * @param ruleMetricId
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    List<TaskResult> findValuesByRuleMetricWithTime(Long ruleMetricId, String startTime, String endTime);
+
+    /**
+     * Find all by application ID
+     * @param applicationId
+     * @return
+     */
+    List<TaskResult> findByApplicationId(String applicationId);
 }

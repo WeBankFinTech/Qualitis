@@ -18,20 +18,30 @@ package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     /**
      * Find user by username
      * @param username
      * @return
      */
-    User findByUserName(String username);
+    User findByUsername(String username);
+
+    /**
+     * Find user by username list
+     * @param usernameList
+     * @return
+     */
+    List<User> findByUsernameIn(List<String> usernameList);
 
     /**
      * Find by department id.
@@ -48,4 +58,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query(value = "select count(tu.template) from TemplateUser tu where tu.user = ?1")
     Long checkTemplate(User userInDb);
+
+    /**
+     * all user_id and username
+     * @return
+     */
+    @Query(value = "select new map(id as user_id, username as username) from User")
+    List<Map<String, Object>> findAllUserIdAndName();
+
+    /**
+     * Find all user names
+     * @return
+     */
+    @Query(value = "select u.username from User u where u.username is not null and length(u.username) > 0")
+    List<String> findAllUserName();
+
+    /**
+     * find By Sub Department Code
+     * @param subDepartmentCode
+     * @return
+     */
+    List<User> findBySubDepartmentCode(Long subDepartmentCode);
 }

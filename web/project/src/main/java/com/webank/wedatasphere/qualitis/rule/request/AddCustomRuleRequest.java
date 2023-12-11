@@ -19,22 +19,17 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
+import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
  */
-public class AddCustomRuleRequest extends AbstractAddRequest {
-    @JsonProperty("project_id")
-    private Long projectId;
-    @JsonProperty("rule_name")
-    private String ruleName;
-    @JsonProperty("cn_name")
-    private String ruleCnName;
-    @JsonProperty("rule_detail")
-    private String ruleDetail;
+public class AddCustomRuleRequest extends AbstractCommonRequest {
     @JsonProperty("output_name")
     private String outputName;
     @JsonProperty("save_mid_table")
@@ -47,27 +42,14 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
     private String fromContent;
     @JsonProperty("where_content")
     private String whereContent;
-    @JsonProperty("alarm")
-    private Boolean alarm;
-    @JsonProperty("alert")
-    private Boolean alert;
-    @JsonProperty("alert_level")
-    private Integer alertLevel;
-    @JsonProperty("alert_receiver")
-    private String alertReceiver;
-    @JsonProperty("alarm_variable")
-    private List<CustomAlarmConfigRequest> alarmVariable;
+
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("proxy_user")
     private String proxyUser;
-    @JsonProperty("rule_group_id")
-    private Long ruleGroupId;
-
-    @JsonProperty("cs_id")
-    private String csId;
-    @JsonProperty("abort_on_failure")
-    private Boolean abortOnFailure;
+    @JsonProperty("sql_check_area")
+    private String sqlCheckArea;
+    private String fifter;
 
     @JsonProperty("file_id")
     private String fileId;
@@ -86,31 +68,28 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
     @JsonProperty("file_hash_values")
     private String fileHashValues;
 
-    @JsonProperty("delete_fail_check_result")
-    private Boolean deleteFailCheckResult;
-
-    @JsonProperty("sql_check_area")
-    private String sqlCheckArea;
-
-
-    @JsonProperty("specify_static_startup_param")
-    private Boolean specifyStaticStartupParam;
-    @JsonProperty("static_startup_param")
-    private String staticStartupParam;
-
-    @JsonProperty("linkis_datasoure_id")
+    @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
-    @JsonProperty("linkis_datasoure_version_id")
+    @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
     @JsonProperty("linkis_datasource_name")
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_envs")
+    private List<DataSourceEnvRequest> dataSourceEnvRequests;
+    @JsonProperty("linkis_datasource_envs_mappings")
+    private List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests;
+    @JsonProperty("alarm_variable")
+    private List<CustomAlarmConfigRequest> alarmVariable;
 
-    private List<String> ruleMetricNamesForBdpClient;
+    @JsonProperty("linkis_udf_names")
+    private List<String> linkisUdfNames;
 
     public AddCustomRuleRequest() {
+        // Default Constructor
     }
+
 
     public String getFileHashValues() {
         return fileHashValues;
@@ -128,29 +107,6 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
         this.proxyUser = proxyUser;
     }
 
-    public String getRuleName() {
-        return ruleName;
-    }
-
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public String getRuleCnName() {
-        return ruleCnName;
-    }
-
-    public void setRuleCnName(String ruleCnName) {
-        this.ruleCnName = ruleCnName;
-    }
-
-    public String getRuleDetail() {
-        return ruleDetail;
-    }
-
-    public void setRuleDetail(String ruleDetail) {
-        this.ruleDetail = ruleDetail;
-    }
 
     public String getOutputName() {
         return outputName;
@@ -200,72 +156,12 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
         this.whereContent = whereContent;
     }
 
-    public Boolean getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Boolean alarm) {
-        this.alarm = alarm;
-    }
-
-    public Boolean getAlert() {
-        return alert;
-    }
-
-    public void setAlert(Boolean alert) {
-        this.alert = alert;
-    }
-
-    public Integer getAlertLevel() {
-        return alertLevel;
-    }
-
-    public void setAlertLevel(Integer alertLevel) {
-        this.alertLevel = alertLevel;
-    }
-
-    public List<CustomAlarmConfigRequest> getAlarmVariable() {
-        return alarmVariable;
-    }
-
-    public void setAlarmVariable(List<CustomAlarmConfigRequest> alarmVariable) {
-        this.alarmVariable = alarmVariable;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
-    }
-
     public String getClusterName() {
         return clusterName;
     }
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
-    }
-
-    public Long getRuleGroupId() {
-        return ruleGroupId;
-    }
-
-    public void setRuleGroupId(Long ruleGroupId) {
-        this.ruleGroupId = ruleGroupId;
-    }
-
-    public String getCsId() { return csId; }
-
-    public void setCsId(String csId) { this.csId = csId; }
-
-    public Boolean getAbortOnFailure() {
-        return abortOnFailure;
-    }
-
-    public void setAbortOnFailure(Boolean abortOnFailure) {
-        this.abortOnFailure = abortOnFailure;
     }
 
     public String getFileId() {
@@ -324,44 +220,12 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
         this.fileHeader = fileHeader;
     }
 
-    public String getAlertReceiver() {
-        return alertReceiver;
-    }
-
-    public void setAlertReceiver(String alertReceiver) {
-        this.alertReceiver = alertReceiver;
-    }
-
-    public Boolean getDeleteFailCheckResult() {
-        return deleteFailCheckResult;
-    }
-
-    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
-        this.deleteFailCheckResult = deleteFailCheckResult;
-    }
-
     public String getSqlCheckArea() {
         return sqlCheckArea;
     }
 
     public void setSqlCheckArea(String sqlCheckArea) {
         this.sqlCheckArea = sqlCheckArea;
-    }
-
-    public Boolean getSpecifyStaticStartupParam() {
-        return specifyStaticStartupParam;
-    }
-
-    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
-        this.specifyStaticStartupParam = specifyStaticStartupParam;
-    }
-
-    public String getStaticStartupParam() {
-        return staticStartupParam;
-    }
-
-    public void setStaticStartupParam(String staticStartupParam) {
-        this.staticStartupParam = staticStartupParam;
     }
 
     public Long getLinkisDataSourceId() {
@@ -396,12 +260,45 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
         this.linkisDataSourceType = linkisDataSourceType;
     }
 
-    public List<String> getRuleMetricNamesForBdpClient() {
-        return ruleMetricNamesForBdpClient;
+    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+        return dataSourceEnvRequests;
     }
 
-    public void setRuleMetricNamesForBdpClient(List<String> ruleMetricNamesForBdpClient) {
-        this.ruleMetricNamesForBdpClient = ruleMetricNamesForBdpClient;
+    public void setDataSourceEnvRequests(List<DataSourceEnvRequest> dataSourceEnvRequests) {
+        this.dataSourceEnvRequests = dataSourceEnvRequests;
+    }
+
+    public List<DataSourceEnvMappingRequest> getDataSourceEnvMappingRequests() {
+        return dataSourceEnvMappingRequests;
+    }
+
+    public void setDataSourceEnvMappingRequests(
+        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) {
+        this.dataSourceEnvMappingRequests = dataSourceEnvMappingRequests;
+    }
+
+    public String getFifter() {
+        return fifter;
+    }
+
+    public void setFifter(String fifter) {
+        this.fifter = fifter;
+    }
+
+    public List<CustomAlarmConfigRequest> getAlarmVariable() {
+        return alarmVariable;
+    }
+
+    public void setAlarmVariable(List<CustomAlarmConfigRequest> alarmVariable) {
+        this.alarmVariable = alarmVariable;
+    }
+
+    public List<String> getLinkisUdfNames() {
+        return linkisUdfNames;
+    }
+
+    public void setLinkisUdfNames(List<String> linkisUdfNames) {
+        this.linkisUdfNames = linkisUdfNames;
     }
 
     public static void checkRequest(AddCustomRuleRequest request) throws UnExpectedRequestException {
@@ -413,18 +310,24 @@ public class AddCustomRuleRequest extends AbstractAddRequest {
     public static void checkCustomRuleRequest(AddCustomRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkString(request.getRuleName(), "Rule name");
         CommonChecker.checkString(request.getClusterName(), "Cluster name");
-        CommonChecker.checkObject(request.getSaveMidTable(), "Save mid table");
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
-        CommonChecker.checkObject(request.getAbortOnFailure(), "abort on failure");
         if (request.getAlarm()) {
             CommonChecker.checkObject(request.getAlarmVariable(), "alarm variable");
             if (request.getAlarmVariable().size() == 0) {
                 throw new UnExpectedRequestException("alarm_variable can not be empty");
             }
 
-            for (CustomAlarmConfigRequest customAlarmConfigRequest : request.getAlarmVariable()) {
-                CustomAlarmConfigRequest.checkRequest(customAlarmConfigRequest);
+            for (AbstractCommonAlarmConfigRequest abstractCommonAlarmConfigRequest : request.getAlarmVariable()) {
+                AlarmConfigTypeUtil.checkAlarmConfigType(abstractCommonAlarmConfigRequest);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(request.getDataSourceEnvMappingRequests())) {
+            boolean repeatDbAliasName = request.getDataSourceEnvMappingRequests().stream().map(dataSourceEnvMappingRequest -> dataSourceEnvMappingRequest.getDbAliasName()).collect(
+                Collectors.toSet()).size() != request.getDataSourceEnvMappingRequests().size();
+
+            if (repeatDbAliasName) {
+                throw new UnExpectedRequestException("There are duplicate db or db alias names.");
             }
         }
         if (StringUtils.isNotBlank(request.getSqlCheckArea())) {
