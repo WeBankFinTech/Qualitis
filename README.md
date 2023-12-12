@@ -5,9 +5,7 @@ English | [中文](docs/zh_CN/ch1/README.md)
 ## Overview
 Qualitis is a data quality management platform that supports quality verification, notification, and management for various datasource. It is used to solve various data quality problems caused by data processing.
 
-Based on Spring Boot, Qualitis submits quality model task to [Linkis](https://github.com/WeBankFinTech/Linkis) platform. It provides functions such as data quality model construction, data quality model execution, data quality verification, reports of data quality generation and so on.
-
-At the same time, Qualitis provides enterprise-level features of financial-level resource isolation, management and access control. It is also guaranteed working well under high-concurrency, high-performance and high-availability scenarios.
+Based on Spring Boot, Qualitis submits quality model task to [Linkis](https://github.com/WeBankFinTech/Linkis) platform. It provides functions such as data quality model construction, data quality model execution, data quality verification, reports of data quality generation and so on. At the same time, Qualitis provides enterprise-level features of financial-level resource isolation, management and access control. It is also guaranteed working well under high-concurrency, high-performance and high-availability scenarios.
 
 ## Features
 - **Define Data Quality Model**  
@@ -34,8 +32,7 @@ Supports workflow
 Workflow needs [DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio).
 
 - **Administrator Console**  
-Administrator console provided.  
-And it also supports personnel management, access control management, privilege control management, metadata management and so on.  
+Administrator console provided. And it also supports personnel management, access control management, privilege control management, metadata management and so on.  
 
 ## Compared with similar systems
 ![](images/en_US/ch1/CompareSimilarSystem.png)
@@ -67,10 +64,15 @@ Supports generating data quality reports with optional latitude.
 ### 4. Support intelligent discovery of data quality problems
 <br/>
 
+**If you have any needs, please send us an issue and we will reply to you in time.**
+
+## Contributing
+Community partners are very welcome to contribute new engines and codes to us!
+
 ## Communication
 If you desire immediate response, please kindly raise issues to us or scan the below QR code by WeChat and QQ to join our group:   
 ![](images/en_US/ch1/ContractUs.png)
 
 ## License
-**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
 
