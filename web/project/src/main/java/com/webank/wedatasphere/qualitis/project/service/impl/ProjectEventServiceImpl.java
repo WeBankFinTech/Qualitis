@@ -1,19 +1,19 @@
 package com.webank.wedatasphere.qualitis.project.service.impl;
 
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import com.google.common.collect.Lists;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectEventDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectEvent;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
-import com.webank.wedatasphere.qualitis.submitter.impl.ExecutionManagerImpl;
-import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -21,20 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class ProjectEventServiceImpl implements ProjectEventService {
+
     @Autowired
     private ProjectEventDao projectEventDao;
-    @Autowired
-    private ProjectDao projectDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectEventServiceImpl.class);
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public void record(Long projectId, String userName, String operation, String content, Integer typeId) {
-        Project projectInDb = projectDao.findById(projectId);
-
-        ProjectEvent projectEvent = new ProjectEvent(projectInDb, userName, operation + " " + content
-            , ExecutionManagerImpl.PRINT_TIME_FORMAT.format(new Date()), typeId);
+    public void record(Project project, String operateUser, String operationContent, OperateTypeEnum operateTypeEnum) {
+        ProjectEvent projectEvent = new ProjectEvent(project, operateUser, operationContent
+                , QualitisConstants.PRINT_TIME_FORMAT.format(new Date()), operateTypeEnum.getCode());
 
         try {
             projectEventDao.save(projectEvent);
@@ -45,15 +41,19 @@ public class ProjectEventServiceImpl implements ProjectEventService {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public void recordModifyProject(Project projectInDb, String userName, String field, String beforeModify, String afterModify, Integer typeId) {
-
-        ProjectEvent projectEvent = new ProjectEvent(projectInDb, userName, field, beforeModify, afterModify, ExecutionManagerImpl.PRINT_TIME_FORMAT.format(new Date()), typeId);
+    public void recordBatch(List<Project> projects, String operateUser, String operationContent, OperateTypeEnum operateTypeEnum) {
+        List<ProjectEvent> projectEventList = Lists.newArrayListWithExpectedSize(projects.size());
+        String time = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
+        for (Project project: projects) {
+            ProjectEvent projectEvent = new ProjectEvent(project, operateUser, operationContent
+                    , time, operateTypeEnum.getCode());
+            projectEventList.add(projectEvent);
+        }
 
         try {
-            projectEventDao.save(projectEvent);
+            projectEventDao.saveBatch(projectEventList);
         } catch (Exception e) {
-            LOGGER.error("Failed to record project event.");
+            LOGGER.error("Failed to record batch project event.");
             LOGGER.error(e.getMessage(), e);
         }
     }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao;
 
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 
 import java.util.List;
@@ -32,4 +33,10 @@ public interface RuleVariableDao {
      */
     List<RuleVariable> saveAllRuleVariable(List<RuleVariable> ruleVariables);
 
+    /**
+     * Find by rule
+     * @param rule
+     * @return
+     */
+    List<RuleVariable> findByRule(Rule rule);
 }

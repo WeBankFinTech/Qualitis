@@ -47,7 +47,7 @@ public class TaskDataSourceDaoImpl implements TaskDataSourceDao {
     @Override
     public List<TaskDataSource> findByCreateUserAndDatasource(String createUser, String clusteName, String databaseName, String tableName, int page
         , int size) {
-        Sort sort = new Sort(Sort.Direction.DESC, "id");
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return taskDataSourceRepository.findByCreateUserAndDatasource(createUser, clusteName, databaseName, tableName, pageable).getContent();
     }
@@ -64,7 +64,7 @@ public class TaskDataSourceDaoImpl implements TaskDataSourceDao {
 
     @Override
     public List<TaskDataSource> findByUserAndDataSource(String username, String clusterName, String databaseName, String tableName, Integer page, Integer size) {
-        Sort sort = new Sort(Sort.Direction.DESC, "id");
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Specification<TaskDataSource> specification = getUserAndDataSourceSpecification(username, clusterName, databaseName, tableName);

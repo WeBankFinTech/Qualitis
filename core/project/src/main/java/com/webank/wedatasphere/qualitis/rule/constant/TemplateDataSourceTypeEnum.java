@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.constant;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * @author howeye
  */
@@ -51,15 +53,19 @@ public enum TemplateDataSourceTypeEnum {
                 return templateDataSourceTypeEnum.getMessage();
             }
         }
-        return TemplateDataSourceTypeEnum.HIVE.getMessage();
+        return null;
     }
 
     public static Integer getCode(String message) {
+        String dataSourceTypeName = null;
+        if (StringUtils.isNotBlank(message)) {
+            dataSourceTypeName = message.toLowerCase();
+        }
         for (TemplateDataSourceTypeEnum templateDataSourceTypeEnum : TemplateDataSourceTypeEnum.values()) {
-            if (templateDataSourceTypeEnum.getMessage().toLowerCase().equals(message)) {
+            if (templateDataSourceTypeEnum.getMessage().toLowerCase().equals(dataSourceTypeName)) {
                 return templateDataSourceTypeEnum.getCode();
             }
         }
-        return TemplateDataSourceTypeEnum.HIVE.getCode();
+        return null;
     }
 }

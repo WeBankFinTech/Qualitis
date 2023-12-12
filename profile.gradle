@@ -13,69 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+configurations.all {
+  resolutionStrategy {
+    force 'org.slf4j:slf4j-api:1.7.36'
+  }
+}
+// web sub_project dependencies
+project(':web/analysis') {
+  archivesBaseName = 'web_analysis'
+
+  dependencies{
+
+  }
+}
+
 project(':web/app') {
   archivesBaseName = 'web_app'
 
   configurations {
-    compile.exclude module: "spring-boot-starter-tomcat"
     compile.exclude module: "spring-boot-starter-logging"
+    compile.exclude module: "spring-boot-starter-tomcat"
+    compile.exclude group: 'org.sonatype.sisu.inject'
+    compile.exclude group: 'com.sun.jersey'
     compile.exclude group: 'commons-logging'
     compile.exclude module: 'slf4j-log4j12'
-    compile.exclude group: 'org.sonatype.sisu.inject'
+    compile.exclude group: 'com.fasterxml.jackson.module', module: 'jackson-module-scala_2.11'
   }
-
   dependencies {
     compile libs.springBootStarter
     compile libs.springBootStarterWeb
     compile libs.springBootStarterParent
     compile libs.springBootStarterJersey
-    compile libs.springBootStarterJetty
     compile libs.springBootStarterLog4j2
+    compile libs.springBootStarterJetty
     compile libs.springBootStarterTest
     compile libs.springBootStarterAop
-//    compile libs.dssAppJointAuth
     compile (libs.dssSso) {
-      exclude group: 'org.reflections'
       exclude group: 'org.apache.logging.log4j'
       exclude group: 'org.glassfish.jersey.media'
     }
     compile (libs.dssSpringSso) {
-      exclude group: 'org.reflections'
       exclude group: 'org.apache.logging.log4j'
       exclude group: 'org.glassfish.jersey.media'
     }
     compile libs.springAop
     compile libs.springAspects
-    compile libs.springBeans
     compile libs.springContext
+    compile libs.springBeans
     compile libs.springCore
-    compile libs.springJcl
     compile libs.springJdbc
-    compile libs.springOrm
     compile libs.springTest
+    compile libs.springOrm
+    compile libs.springJcl
     compile libs.springTx
     compile libs.springWeb
-    compile libs.springWebMvc
     compile libs.jacksonCore
+    compile libs.springWebMvc
     compile libs.jacksonDatabind
     compile libs.jacksonAnnotations
+//    compile (libs.sso) {
+//      exclude group: 'velocity'
+//    }
     compile libs.fastJson
     compile libs.dom4j
+    compile libs.derby
     compile libs.apiUtil
     compile libs.nettyAll
     compile libs.nettyTransport
-    compile libs.derby
     compile (libs.zookeeper) {
       exclude group: 'org.slf4j'
       exclude group: 'log4j'
     }
+//    compile libs.encryptPassword
     compile libs.log4jCore
-    compile project(':web/user')
-    compile project(':web/sys_config')
-    compile project(':web/meta_data')
-    compile project(':web/project')
+    compile libs.jcraft
     compile project(':web/scheduler')
-    compile project(':web/metric')
   }
 }
 
@@ -87,9 +99,7 @@ project(':web/meta_data') {
     compile libs.springBootStarterJersey
     compile libs.commonsLang
 
-    compile project(':web/common')
     compile project(':web/project')
-    compile project(":core/meta_data")
   }
 }
 
@@ -100,12 +110,11 @@ project(':web/project') {
     compile libs.springBootStarter
     compile libs.springBootStarterJersey
     compile libs.springBootStarterDataJpa
+    compile libs.jerseyMediaMultipart
     compile libs.mysqlConnectorJava
     compile libs.commonsLang
-    compile libs.jerseyMediaMultipart
     compile libs.easyExcel
 
-    compile project(':web/common')
     compile project(':web/user')
     compile project(':core/project')
     compile project(':web/sys_config')
@@ -119,12 +128,11 @@ project(':web/metric') {
     compile libs.springBootStarter
     compile libs.springBootStarterJersey
     compile libs.springBootStarterDataJpa
+    compile libs.jerseyMediaMultipart
     compile libs.mysqlConnectorJava
     compile libs.commonsLang
-    compile libs.jerseyMediaMultipart
     compile libs.easyExcel
 
-    compile project(":web/user")
     compile project(":web/meta_data")
     compile project(":core/metric")
   }
@@ -138,13 +146,7 @@ project(':web/scheduler') {
     compile libs.springBootStarterJersey
     compile libs.commonsLang
     compile project(':web/task')
-    compile project(':web/common')
     compile project(':web/metric')
-    compile project(':web/project')
-    compile project(':core/monitor')
-    compile project(':web/meta_data')
-    compile project(':core/scheduler')
-    compile project(':util')
   }
 }
 
@@ -155,12 +157,13 @@ project(':web/sys_config') {
     compile libs.springBootStarter
     compile libs.springBootStarterJersey
     compile libs.springBootStarterDataJpa
+    compile libs.jerseyMediaMultipart
     compile libs.mysqlConnectorJava
     compile libs.commonsLang
 
+    compile project(':core/user')
     compile project(':web/common')
     compile project(':core/meta_data')
-    compile project(':core/sys_config')
   }
 }
 
@@ -168,14 +171,13 @@ project(':web/task') {
   archivesBaseName = 'web_task'
 
   dependencies{
-    compile libs.springBootStarterJersey
-    compile libs.springBootStarter
-//    compile libs.dssAppJointAuth
-    compile libs.httpClient
     compile libs.httpMime
-    compile project(':core/task')
-    compile project(":web/project")
+    compile libs.httpClient
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
     compile project(':core/monitor')
+    compile project(":web/project")
+    compile project(':core/task')
   }
 }
 
@@ -188,16 +190,18 @@ project(':web/user') {
     compile libs.springBootStarterDataJpa
     compile libs.mysqlConnectorJava
     compile libs.commonsLang
+//    compile (libs.sso) {
+//      exclude group: 'velocity'
+//    }
     compile libs.opendjCore
     compile libs.opendjGrizzly
     compile libs.forgerockUtil
-    compile libs.i18nCore
     compile libs.i18nSlf4j
+    compile libs.i18nCore
     compile libs.zip4j
-    compile project(':util')
-    compile project(':web/common')
     compile project(':core/user')
-    compile project(':core/project')
+    compile project(':web/common')
+    compile project(':core/meta_data')
   }
 }
 
@@ -223,8 +227,20 @@ project(':core/converter') {
   archivesBaseName = 'core_converter'
 
   dependencies{
-    compile project(':core/divider')
     compile project(':util')
+    compile project(':core/divider')
+
+//    compile libs.encryptPassword
+//    compile (libs.encryptPasswordClient) {
+//      exclude group: 'org.apache.logging.log4j'
+//      exclude group: 'org.slf4j'
+//      exclude group: 'log4j'
+//    }
+//    compile (libs.encryptPasswordCipher) {
+//      exclude group: 'org.apache.logging.log4j'
+//      exclude group: 'org.slf4j'
+//      exclude group: 'log4j'
+//    }
   }
 }
 
@@ -234,11 +250,12 @@ project(':core/common') {
   dependencies{
     compile libs.springBootStarterJersey
     compile libs.commonsLang
+    compile libs.jgit
 
     compile (libs.hadoopClient) {
       exclude group: 'javax.servlet'
-      exclude group: 'javax.servlet.jsp'
       exclude group: 'com.sun.jersey'
+      exclude group: 'javax.servlet.jsp'
       exclude group: 'com.sun.jersey.contribs'
       exclude group: 'javax.xml.bind'
       exclude group: 'log4j'
@@ -247,38 +264,154 @@ project(':core/common') {
         compile.exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
         compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
         compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
-        compile.exclude group: 'com.google.protobuf', module: 'protobuf-java'
         compile.exclude group: 'io.netty', module: 'netty'
+        compile.exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+        compile.exclude group: 'com.google.protobuf', module: 'protobuf-java'
+        compile.exclude group: 'org.eclipse.jetty'
       }
     }
+
     compile('org.apache.commons:commons-compress:1.21'){
       force = true
     }
-    compile('org.yaml:snakeyaml:1.26'){
+    compile('org.yaml:snakeyaml:2.0'){
       force = true
     }
     compile('org.hibernate:hibernate-core:5.4.24.Final'){
       force = true
     }
-    compile('org.reflections:reflections:0.9.10'){
+    compile('com.fasterxml.jackson.core:jackson-databind:2.13.4.2'){
       force = true
     }
+    compile('org.apache.avro:avro:1.11.3'){
+      force = true
+    }
+    compile('org.codehaus.groovy:groovy-all:2.4.7') {
+      force = true
+    }
+    compile('org.apache.xmlbeans:xmlbeans:3.0.0'){
+      force = true
+    }
+    compile('com.monitorjbl:xlsx-streamer:2.1.0'){
+      force = true
+    }
+    compile('org.apache.poi:poi:4.1.1'){
+      force = true
+    }
+    compile('org.json:json:20231013'){
+      force = true
+    }
+    compile('org.codehaus.jettison:jettison:1.5.4'){
+      force = true
+    }
+    compile('commons-fileupload:commons-fileupload:1.5'){
+      force = true
+    }
+    compile('org.apache.calcite:calcite-core:1.32.0') {
+      force = true
+    }
+    compile('com.google.guava:guava:32.0.0-android'){
+      force = true
+    }
+
+    compile('org.glassfish.jersey.media:jersey-media-jaxb:2.34'){
+      force = true
+    }
+    compile('com.fasterxml.woodstox:woodstox-core:5.4.0'){
+      force = true
+    }
+    compile('org.apache.ant:ant:1.10.11'){
+      force = true
+    }
+    compile('org.apache.ivy:ivy:2.5.2'){
+      force = true
+    }
+    compile('com.squareup.okio:okio:3.4.0'){
+      force = true
+    }
+    compile('net.minidev:json-smart:2.4.9'){
+      force = true
+    }
+    compile('org.owasp.esapi:esapi:2.5.2.0'){
+      force = true
+    }
+    compile('commons-net:commons-net:3.9.0'){
+      force = true
+    }
+    compile('junit:junit:4.13.1'){
+      force = true
+    }
+    compile('org.apache.santuario:xmlsec:2.2.6'){
+      force = true
+    }
+    compile('org.owasp.antisamy:antisamy:1.7.4'){
+      force = true
+    }
+
+    compile('org.apache.hadoop:hadoop-yarn-server-common:3.3.6'){
+      configurations {
+        compile.exclude group: 'org.eclipse.jetty'
+      }
+      force = true
+    }
+    compile('com.google.protobuf:protobuf-java:3.16.3'){
+      force = true
+    }
+    compile('com.jamesmurty.utils:java-xmlbuilder:1.2'){
+      force = true
+    }
+    compile('org.apache.zookeeper:zookeeper:3.7.2'){
+      force = true
+    }
+    compile('com.google.code.gson:gson:2.9.0'){
+      force = true
+    }
+    compile('io.netty:netty-handler:4.1.100.Final'){
+      force = true
+    }
+
+    compile('org.apache.tomcat.embed:tomcat-embed-core:9.0.82'){
+      force = true
+    }
+    compile('org.apache.geronimo.components:geronimo-jaspi:2.0.0'){
+      force = true
+    }
+
+    compile (libs.springBootStarterJersey) {
+      configurations {
+        compile.exclude group: 'org.apache.calcite.avatica', module: 'avatica'
+      }
+    }
+
     compile (libs.hiveExec) {
-      exclude group: 'org.apache.commons'
-      exclude group: 'commons-lang'
-      exclude group: 'javax.servlet.jsp'
-      exclude group: 'javax.servlet'
-      exclude group: 'com.sun.jersey'
       exclude group: 'com.sun.jersey.contribs'
+      exclude group: 'org.apache.commons'
+      exclude group: 'javax.servlet.jsp'
       exclude group: 'javax.xml.bind'
+      exclude group: 'com.sun.jersey'
+      exclude group: 'javax.servlet'
+      exclude group: 'commons-lang'
       exclude group: 'log4j'
-      exclude group: 'org.apache.calcite'
 
       configurations {
         compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
         compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
       }
     }
+  }
+}
+
+project(':core/alarm') {
+  archivesBaseName = 'core_alarm'
+
+  dependencies{
+    compile libs.springBootStarter
+    compile libs.springBootStarterTest
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.springTest
+    compile libs.springWeb
+    compile libs.gson
   }
 }
 
@@ -300,14 +433,13 @@ project(':core/meta_data') {
     compile libs.commonsLang
     compile libs.springBootStarterDataJpa
     compile libs.mysqlConnectorJava
-    compile libs.quartz
-    compile libs.quartzJobs
     compile libs.springBootStarter
+    compile libs.quartzJobs
+    compile libs.httpClient
+    compile libs.httpMime
+    compile libs.quartz
 
-    compile project(":core/common")
-    compile project(":core/sys_config")
     compile project(":core/scheduler")
-    compile project(":util")
   }
 }
 
@@ -317,12 +449,8 @@ project(':core/monitor') {
   dependencies{
     compile libs.springBootStarter
 
-    compile project(':core/task')
     compile project(':core/scheduler')
-    compile project(':core/analysis')
-    compile project(':core/project')
     compile project(':core/user')
-    compile project(':util')
   }
 }
 
@@ -355,18 +483,19 @@ project(':core/scheduler') {
   archivesBaseName = 'core_scheduler'
 
   dependencies{
-    compile libs.curatorRecipes
     compile libs.curatorFramework
+    compile libs.curatorRecipes
     compile libs.curatorClient
-    compile libs.gson
-
-    compile project(':core/converter')
-    compile project(':core/analysis')
-    compile project(':core/task')
-    compile project(':core/sys_config')
     compile libs.springRetry
     compile libs.aspectJ
     compile libs.druid
+    compile libs.gson
+
+    compile project(':core/sys_config')
+    compile project(':core/converter')
+    compile project(':core/analysis')
+    compile project(':core/alarm')
+    compile project(':core/task')
   }
 }
 
@@ -374,11 +503,11 @@ project(':core/task') {
   archivesBaseName = 'core_task'
 
   dependencies{
-    compile libs.springBootStarterDataJpa
     compile libs.mysqlConnectorJava
+    compile libs.springBootStarterDataJpa
 
-    compile project(':core/common')
     compile project(':core/project')
+    compile project(':core/common')
     compile project(":util")
   }
 }
@@ -391,6 +520,7 @@ project(':util') {
   dependencies{
     compile libs.commonsLang
     compile libs.guava
+
     compile (libs.slf4j) {
       exclude group: 'log4j'
     }

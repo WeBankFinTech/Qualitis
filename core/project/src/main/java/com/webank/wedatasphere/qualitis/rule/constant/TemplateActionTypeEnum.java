@@ -21,12 +21,13 @@ package com.webank.wedatasphere.qualitis.rule.constant;
  */
 public enum TemplateActionTypeEnum {
     /**
-     * SQL, Java， Scala， Python
+     * SQL, Java， Scala， Python,METADATA(元数据接口，前端写死)
      */
     SQL(1, "SQL"),
     JAVA(2, "Java"),
     SCALA(3, "Scala"),
     PYTHON(4, "Python"),
+    METADATA(5, "Metadata"),
     ;
 
     private Integer code;

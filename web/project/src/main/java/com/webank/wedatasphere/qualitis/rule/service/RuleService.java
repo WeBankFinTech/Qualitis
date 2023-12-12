@@ -24,16 +24,21 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.EnableRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleEnableResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import java.util.List;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * @author howeye
@@ -43,13 +48,17 @@ public interface RuleService {
     /**
      * Add rule
      * @param request
+     * @param loginUser
+     * @param groupRules
      * @return
      * @throws UnExpectedRequestException
      * @throws ClusterInfoNotConfigException
      * @throws TaskNotExistException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> addRule(AddRuleRequest request)
-        throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRule(AddRuleRequest request, String loginUser, boolean groupRules)
+            throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException, IOException;
 
     /**
      * Add rule for bdp-client
@@ -57,10 +66,12 @@ public interface RuleService {
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, String loginUser)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRuleForOuter(AbstractCommonRequest request, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * Add uuid with table name
@@ -74,8 +85,9 @@ public interface RuleService {
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteRule(DeleteRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<Object> deleteRule(DeleteRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete rule real
@@ -83,17 +95,32 @@ public interface RuleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRuleReal(Rule rule);
+    GeneralResponse deleteRuleReal(Rule rule) throws UnExpectedRequestException;
 
     /**
      * Modify rule detail
      * @param request
+     * @param loginUser
+     * @param groupRules
      * @return
      * @throws UnExpectedRequestException
-     * @throws ClusterInfoNotConfigException
-     * @throws TaskNotExistException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request, String loginUser, boolean groupRules) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
+
+    /**
+     * Modify rule detail
+     * @param request
+     * @param loginUser
+     * @param groupRules
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
+     * @throws RuleLockException
+     */
+    GeneralResponse<RuleResponse> modifyRuleDetailWithLock(ModifyRuleRequest request, String loginUser, boolean groupRules) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, RuleLockException;
 
     /**
      * 根据ruleId获取rule详情
@@ -106,11 +133,21 @@ public interface RuleService {
     /**
      * Check rule name unique exclude ruleId
      * @param ruleName
+     * @param workFlowName
+     * @param workFlowVersion
      * @param project
      * @param ruleId
      * @throws UnExpectedRequestException
      */
-    void checkRuleName(String ruleName, Project project, Long ruleId) throws UnExpectedRequestException;
+    void checkRuleName(String ruleName, String workFlowName, String workFlowVersion, Project project, Long ruleId) throws UnExpectedRequestException;
+
+    /**
+     * Check rule name Number by ruleName and project
+     * @param ruleName
+     * @param project
+     * @throws UnExpectedRequestException
+     */
+    void checkRuleNameNumber(String ruleName, Project project) throws UnExpectedRequestException;
 
     /**
      * check rule existence using template
@@ -126,9 +163,11 @@ public interface RuleService {
      * @throws UnExpectedRequestException
      * @throws ClusterInfoNotConfigException
      * @throws TaskNotExistException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> addRuleForUpload(AddRuleRequest request)
-        throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, PermissionDeniedRequestException, IOException;
 
     /**
      * Modify rule in one transaction for upload.
@@ -136,7 +175,27 @@ public interface RuleService {
      * @param userName
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyRuleRequest modifyRuleRequest, String userName)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
+
+    /**
+     * get rule by projectId,name
+     * @param projectId
+     * @param name
+     * @return
+     */
+    List<Rule> getDeployExecutionParameters(Long projectId,String name);
+
+    /**
+     * enable Rule
+     * @param request
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<RuleEnableResponse> enableRule(EnableRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 }

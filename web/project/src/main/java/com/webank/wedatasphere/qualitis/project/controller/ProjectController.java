@@ -17,26 +17,26 @@
 package com.webank.wedatasphere.qualitis.project.controller;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
-import com.webank.wedatasphere.qualitis.project.response.ProjectEventResponse;
-import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.response.ProjectEventResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
+import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.project.request.*;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author howeye
@@ -82,6 +82,14 @@ public class ProjectController {
         }
     }
 
+    /**
+     * query projectDetail and all ruleList
+     * @param projectId
+     * @param pageRequest
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
     @POST
     @Path("detail/{projectId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -97,19 +105,18 @@ public class ProjectController {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get project detail, project_id: {}, caused by system error: {}", projectId, e.getMessage(), e);
+            LOGGER.error("Failed to get project detail, Project ID: {}, caused by system error: {}", projectId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
         }
     }
 
     @POST
-    @Path("event/{projectId}/{typeId}")
+    @Path("event/{projectId}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<ProjectEventResponse>> getProjectEvents(@PathParam("projectId") Long projectId, @PathParam("typeId") Integer typeId
-        , PageRequest pageRequest) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<GetAllResponse<ProjectEventResponse>> getProjectEvents(@PathParam("projectId") Long projectId, PageRequest pageRequest) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return projectService.getProjectEvents(projectId, typeId, pageRequest);
+            return projectService.getProjectEvents(projectId, pageRequest);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -117,7 +124,7 @@ public class ProjectController {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get project event, project_id: {}, caused by system error: {}", projectId, e.getMessage(), e);
+            LOGGER.error("Failed to get project event, Project ID: {}, caused by system error: {}", projectId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_EVENT}", null);
         }
     }
@@ -126,7 +133,7 @@ public class ProjectController {
     @Path("modify")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyProjectDetail(ModifyProjectDetailRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<ProjectDetailResponse> modifyProjectDetail(ModifyProjectDetailRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             return projectService.modifyProjectDetail(request, false);
         } catch (UnExpectedRequestException e) {
@@ -136,7 +143,7 @@ public class ProjectController {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to modify project. project_id: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
+            LOGGER.error("Failed to modify project. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_PROJECT}", null);
         }
     }
@@ -145,9 +152,9 @@ public class ProjectController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse deleteProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return projectService.deleteProject(request);
+            return projectService.deleteProject(request, false);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -155,9 +162,77 @@ public class ProjectController {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to delete project. project_id: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
+            LOGGER.error("Failed to delete project. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_PROJECT}", null);
         }
     }
 
+
+
+    @GET
+    @Path("all/rules/{projectId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<ProjectDetailResponse> getAllRules(@PathParam("projectId") Long projectId)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        try {
+            return projectService.getAllRules(projectId);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        }  catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get project rules, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
+        }
+    }
+
+    @POST
+    @Path("query")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse<ProjectResponse>> getProjectsByCondition(QueryProjectRequest request) throws UnExpectedRequestException {
+        request.convertParameter();
+        try {
+            return projectService.getProjectsByCondition(request, ProjectTypeEnum.NORMAL_PROJECT.getCode());
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get project user, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROJECT}", null);
+        }
+    }
+
+
+    /**
+     * query projectDetail and ruleList by condition
+     * @param projectId
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    @POST
+    @Path("query/rules/{projectId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<ProjectDetailResponse> getRulesByCondition(@PathParam("projectId") Long projectId, QueryRuleRequest request)
+            throws UnExpectedRequestException, PermissionDeniedRequestException {
+        request.convertParameter();
+        try {
+            return projectService.getRulesByCondition(projectId, request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        }  catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get project rules, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
+        }
+    }
 }

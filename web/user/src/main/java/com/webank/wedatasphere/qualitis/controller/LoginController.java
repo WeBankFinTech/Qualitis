@@ -16,25 +16,25 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
-import com.webank.wedatasphere.qualitis.service.LoginService;
-import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.exception.LoginFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
+import com.webank.wedatasphere.qualitis.service.UserService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -50,6 +50,9 @@ public class LoginController {
     @Autowired
     private RoleService roleService;
 
+    @Autowired
+    private UserService userService;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginController.class);
 
     @POST
@@ -60,11 +63,9 @@ public class LoginController {
         try {
             return loginService.localLogin(request);
         } catch (LoginFailedException e) {
-            LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            throw new LoginFailedException(e.getMessage());
         } catch (UnExpectedRequestException e) {
-            LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_LOGIN}.", null);

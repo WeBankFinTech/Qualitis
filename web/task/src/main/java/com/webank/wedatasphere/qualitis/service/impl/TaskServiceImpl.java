@@ -16,19 +16,20 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.google.common.collect.Lists;
+import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
 import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.TaskCheckResultResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.TaskService;
+import org.apache.commons.lang.time.FastDateFormat;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -50,15 +51,19 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private TaskDataSourceDao taskDataSourceDao;
 
+    @Autowired
+    private RuleDao ruleDao;
+
+    private FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+
     @Override
-    public GeneralResponse<?> getTaskDetail(Long taskId) throws UnExpectedRequestException {
+    public GeneralResponse<TaskCheckResultResponse> getTaskDetail(Long taskId) throws UnExpectedRequestException {
         Task taskInDb = taskDao.findById(taskId);
 
         if (taskInDb == null) {
             throw new UnExpectedRequestException("Job id [" + taskId + "] {&DOES_NOT_EXIST}");
         }
 
-        // FIXME:
         List<TaskRuleAlarmConfig> distinct;
         Set<TaskRuleSimple> taskRuleSimples = new HashSet<>(taskInDb.getTaskRuleSimples().size());
         for (TaskRuleSimple taskRuleSimple : taskInDb.getTaskRuleSimples()) {
@@ -107,9 +112,6 @@ public class TaskServiceImpl implements TaskService {
         List<Long> allRuleIds = new ArrayList<>();
         for (TaskRuleSimple taskRuleSimple : taskInDb.getTaskRuleSimples()) {
             allRuleIds.add(taskRuleSimple.getRuleId());
-            if (taskRuleSimple.getChildRuleSimple() != null) {
-                allRuleIds.add(taskRuleSimple.getChildRuleSimple().getRuleId());
-            }
         }
         List<TaskResult> allTaskResult = taskResultDao.findByApplicationIdAndRuleIn(taskInDb.getApplication().getId(), allRuleIds);
         Map<Long, List<TaskResult>> allResultMap = new HashMap<>(allTaskResult.size());
@@ -126,5 +128,17 @@ public class TaskServiceImpl implements TaskService {
         TaskCheckResultResponse taskCheckResultResponse = new TaskCheckResultResponse(taskInDb, singleRuleDataSourceMap, customRuleDataSourceMap
             , multiRuleDataSourceMap, fileRuleDataSourceMap, allResultMap);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_DETAIL}", taskCheckResultResponse);
+    }
+
+    @Override
+    public Long getExecutingTaskNumber(int dataRangeInHours) {
+        String startBeginTime = PRINT_TIME_FORMAT.format(DateUtils.addHours(new Date(), dataRangeInHours));
+        String endBeginTime = PRINT_TIME_FORMAT.format(new Date());
+        List<Integer> executingStatusList = Lists.newArrayListWithExpectedSize(4);
+        executingStatusList.add(TaskStatusEnum.SCHEDULED.getCode());
+        executingStatusList.add(TaskStatusEnum.SUBMITTED.getCode());
+        executingStatusList.add(TaskStatusEnum.INITED.getCode());
+        executingStatusList.add(TaskStatusEnum.RUNNING.getCode());
+        return taskDao.countExecutingTaskNumber(startBeginTime, endBeginTime, executingStatusList);
     }
 }

@@ -19,8 +19,12 @@ package com.webank.wedatasphere.qualitis.project.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -43,6 +47,10 @@ public class ProjectResponse {
     private String modifyUser;
     @JsonProperty("modify_time")
     private String modifyTime;
+    @JsonProperty("sub_system_name")
+    private String subSystemName;
+    @JsonProperty("sub_system_id")
+    private Long subSystemId;
 
     public ProjectResponse() {
     }
@@ -56,14 +64,33 @@ public class ProjectResponse {
         this.createUser = project.getCreateUser();
         this.modifyUser = project.getModifyUser();
         this.modifyTime = project.getModifyTime();
+        this.subSystemName = project.getSubSystemName();
+        this.subSystemId = project.getSubSystemId();
         Set<ProjectLabel> labelSet = project.getProjectLabels();
-        if (labelSet != null && ! labelSet.isEmpty()) {
-            Set<String> labels = new HashSet<>();
-            for (ProjectLabel projectLabel : labelSet) {
-                labels.add(projectLabel.getLabelName());
-            }
-            this.projectLabel = labels;
+        if (CollectionUtils.isNotEmpty(labelSet)) {
+            this.projectLabel = labelSet.stream().map(ProjectLabel::getLabelName).collect(Collectors.toSet());
         }
+    }
+
+    public ProjectResponse(Map<String, Object> project) {
+        this.projectId = (Long) project.get("project_id");
+        this.projectName = (String) project.get("project_name");
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
     }
 
     public Long getProjectId() {

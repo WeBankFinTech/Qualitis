@@ -16,17 +16,21 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.QueryUserRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
-import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.user.AddUserResponse;
 import com.webank.wedatasphere.qualitis.response.user.UserResponse;
+
 import javax.management.relation.RoleNotFoundException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -39,8 +43,9 @@ public interface UserService {
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws RoleNotFoundException
      */
-    GeneralResponse<AddUserResponse> addUser(UserAddRequest request) throws UnExpectedRequestException;
+    GeneralResponse<AddUserResponse> addUser(UserAddRequest request) throws UnExpectedRequestException, RoleNotFoundException;
 
 
     /**
@@ -65,16 +70,13 @@ public interface UserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<GetAllResponse<UserResponse>> findAllUser(PageRequest request) throws UnExpectedRequestException;
-
+    GeneralResponse<GetAllResponse<UserResponse>> findAllUser(QueryUserRequest request) throws UnExpectedRequestException;
 
     /**
-     * Modify user password
-     * @param request
+     * get all user_id and username
      * @return
-     * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyPassword(ModifyPasswordRequest request)  throws UnExpectedRequestException;
+    GetAllResponse<Map<String ,Object>> findAllUserIdAndName();
 
     /**
      * Auto register user
@@ -90,4 +92,32 @@ public interface UserService {
      * @throws UnExpectedRequestException
      */
     GeneralResponse<?> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException;
+
+    /**
+     * Find by username
+     * @param username
+     * @return
+     */
+    User findByUsername(String username);
+
+    /**
+     * get All position role enum
+     *
+     * @return
+     */
+    List<Map<String, Object>> getPositionRoleEnum();
+
+    /**
+     * sync Department Name
+     * @param department
+     * @param departmentName
+     */
+    void syncDepartmentName(Department department, String departmentName);
+
+    /**
+     * sync SubDepartment Name
+     * @param subDepartmentCode
+     * @param departmentName
+     */
+    void syncSubDepartmentName(Long subDepartmentCode, String departmentName);
 }

@@ -27,8 +27,13 @@ public class DataQualityJob {
     private Long taskId;
     private String user;
     private String startupParam;
+    private Boolean engineReuse;
+    private String engineType;
+    private Integer resultNum;
 
     public DataQualityJob() {
+        // Initial
+        engineReuse = Boolean.TRUE;
         jobCode = new ArrayList<>();
     }
 
@@ -62,6 +67,30 @@ public class DataQualityJob {
 
     public void setStartupParam(String startupParam) {
         this.startupParam = startupParam;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
+    }
+
+    public String getEngineType() {
+        return engineType;
+    }
+
+    public void setEngineType(String engineType) {
+        this.engineType = engineType;
+    }
+
+    public Integer getResultNum() {
+        return resultNum;
+    }
+
+    public void setResultNum(Integer resultNum) {
+        this.resultNum = resultNum;
     }
 
     @Override

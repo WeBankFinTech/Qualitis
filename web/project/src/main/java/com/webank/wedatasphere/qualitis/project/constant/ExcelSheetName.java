@@ -20,11 +20,18 @@ package com.webank.wedatasphere.qualitis.project.constant;
  * @author howeye
  */
 public class ExcelSheetName {
-    public static final String TEMPLATE_RULE_NAME = "SINGLE TABLE RULE";
-    public static final String CUSTOM_RULE_NAME = "CUSTOM RULE";
-    public static final String MULTI_TEMPLATE_RULE_NAME = "MULTI-TABLE RULE";
-    public static final String TEMPLATE_FILE_RULE_NAME = "FILE TABLE RULE";
-    public static final String PROJECT_NAME = "PROJECT";
     public static final String ANALYSIS_NAME = "ANALYSIS RESULT";
+
+    public static final String PROJECT_NAME = "PROJECT";
+
+    public static final String RULE_NAME = "RULE";
+    public static final String TABLE_GROUP = "TABLE GROUP";
+
     public static final String RULE_METRIC_NAME = "RULE METRIC";
+    public static final String RULE_TEMPLATE_NAME = "RULE TEMPLATE";
+    public static final String DATASOURCE_ENV = "LINKIS DATASOURCE ENV";
+    public static final String EXECUTION_PARAMETERS_NAME = "EXECUTION PARAMETERS";
+
+    public static final String CUSTOM_RULE = "CUSTOM RULE";
+
 }

@@ -16,19 +16,25 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao.impl;
 
-import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -45,22 +51,22 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
-    public List<Template> findAllDefaultTemplate(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+    public List<Template> findAllDefaultTemplate(int page, int size, Integer templateType, String cnName, String enName, Integer dataSourceType, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String dataType) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return templateRepository.findByTemplateType(RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(), pageable).getContent();
+        return templateRepository.findByTemplateType(templateType, cnName, enName, dataSourceType, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, dataType, pageable).getContent();
     }
 
     @Override
     public List<Template> findAllDefaultTemplateByLevel(Integer level, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return templateRepository.findByLevel(level, pageable).getContent();
     }
 
     @Override
-    public Long countAllDefaultTemplate() {
-        return templateRepository.countByTemplateType(RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode());
+    public Long countAllDefaultTemplate(Integer templateType, String cnName, String enName, Integer dataSourceType, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String dataType) {
+        return templateRepository.countByTemplateType(templateType, cnName, enName, dataSourceType, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, dataType);
     }
 
     @Override
@@ -75,7 +81,7 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
 
     @Override
     public List<Template> findAllMultiTemplate(Integer dataSourceTypeCode, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return templateRepository.findByTemplateTypeAndParentTemplateIsNull(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(), dataSourceTypeCode, pageable).getContent();
     }
@@ -101,14 +107,56 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
-    public List<Template> findTemplates(Integer level, Integer type, List<Department> departmentList, List<User> userList, Integer dataSourceTypeId, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+    public Page<Template> findTemplates(Integer type, Integer dataSourceTypeId, String tableDataType, List<Long> dataVisibilityDeptList, Long createUserId, String cnName, String enName, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return templateRepository.findTemplates(level, type, departmentList, userList, dataSourceTypeId, pageable).getContent();
+        Page<Template> resultPage = templateRepository.findTemplates(type, dataSourceTypeId, tableDataType, dataVisibilityDeptList, createUserId, cnName, enName, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, pageable);
+        return resultPage;
     }
 
     @Override
-    public long countTemplates(Integer level, Integer multiSourceTemplateCode, List<Department> departments, List<User> users, Integer dataSourceTypeId) {
-        return templateRepository.countTemplates(level, multiSourceTemplateCode, departments, users, dataSourceTypeId);
+    public long countTemplates(Integer multiSourceTemplateCode, Integer dataSourceTypeId, String tableDataType, List<Long> dataVisibilityDeptList, User createUser,String cnName,String enName,Long verificationLevel,Long verificationType,Long createId,Long modifyId,Long devDepartmentId,Long opsDepartmentId) {
+        return templateRepository.countTemplates(multiSourceTemplateCode, dataSourceTypeId, tableDataType, dataVisibilityDeptList, createUser,cnName,enName,verificationLevel,verificationType,createId,modifyId,devDepartmentId,opsDepartmentId);
     }
+
+    @Override
+    public List<Map<String, Object>> findTemplatesOptionListInRule() {
+        return templateRepository.findTemplatesOptionListInRule();
+    }
+
+    @Override
+    public List<Map<String, Object>> findTemplatesOptionList(String tableDataType, List<Long> dataVisibilityDeptList, User createUser, Integer templateType) {
+        return templateRepository.findTemplatesOptionList(tableDataType, dataVisibilityDeptList, createUser, templateType);
+    }
+
+    @Override
+    public List<Map<String, Object>> findAllTemplatesOptionList(Integer templateType) {
+        return templateRepository.findAllTemplatesOptionList(templateType);
+    }
+
+    @Override
+    public Optional<Template> getDefaultByName(String templateName) {
+        Specification<Template> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("name"), templateName));
+            predicates.add(criteriaBuilder.notEqual(root.get("templateType"), 2));
+
+            Predicate[] p = new Predicate[predicates.size()];
+            query.where(criteriaBuilder.and(predicates.toArray(p)));
+
+            return query.getRestriction();
+        };
+        return templateRepository.findOne(specification);
+    }
+
+    @Override
+    public List<Map<String ,Object>> getTemplateDefaultInputMeta(List<Integer> ids) {
+        return templateRepository.getTemplateDefaultInputMeta(ids);
+    }
+
+    @Override
+    public List<Template> findTemplateByEnName(String templateEnName) {
+        return templateRepository.findTemplateByEnName(templateEnName);
+    }
+
 }

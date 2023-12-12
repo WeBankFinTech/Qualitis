@@ -16,33 +16,20 @@
 
 package com.webank.wedatasphere.qualitis.rule.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
  * @author howeye
  */
-public class DeleteCustomRuleRequest {
-
-    @JsonProperty("rule_id")
-    private Long ruleId;
+public class DeleteCustomRuleRequest extends AbstractDeleteRequest{
 
     public DeleteCustomRuleRequest() {
+        // Default Constructor
     }
 
     public DeleteCustomRuleRequest(Long ruleId) {
-        this.ruleId = ruleId;
-    }
-
-    public Long getRuleId() {
-        return ruleId;
-    }
-
-    public void setRuleId(Long ruleId) {
-        this.ruleId = ruleId;
+        super.setRuleId(ruleId);
     }
 
     public static void checkRequest(DeleteCustomRuleRequest request) throws UnExpectedRequestException {

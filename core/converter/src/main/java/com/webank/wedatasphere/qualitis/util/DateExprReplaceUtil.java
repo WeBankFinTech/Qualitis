@@ -18,14 +18,14 @@ package com.webank.wedatasphere.qualitis.util;
 
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,12 +45,13 @@ public class DateExprReplaceUtil {
     private static final Pattern DIGITAL_PATTERN = Pattern.compile("[0-9]+");
 
     private static final Pattern CUSTOM_PLACEHOLODER_PATTERN = Pattern.compile("\\$\\{[^ ]*}");
-    private static final Map<String, String> RUN_DATE_FORMAT  = new HashMap<String, String>(2){{
-        put("run_date","yyyyMMdd");
-        put("run_date_std", "yyyy-MM-dd");
-    }};
+    private static final Map<String, String> RUN_DATE_FORMAT  = new HashMap<String, String>(2);
 
-
+    static {
+        RUN_DATE_FORMAT.put("run_date","yyyyMMdd");
+        RUN_DATE_FORMAT.put("run_date_std", "yyyy-MM-dd");
+        RUN_DATE_FORMAT.put("run_today_h_std", "yyyy-MM-dd HH");
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DateExprReplaceUtil.class);
 
@@ -108,7 +109,7 @@ public class DateExprReplaceUtil {
         Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(midTableAction);
         while (matcher.find()) {
             String replaceStr = matcher.group();
-            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std");
+            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std") || replaceStr.contains("run_today_h_std");
             if (! legalSystemParams) {
                 throw new UnExpectedRequestException("Custom placeholoder must be system variables.");
             }
@@ -121,6 +122,9 @@ public class DateExprReplaceUtil {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, 0 - forwayDay - 1);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
+            } else if ("run_today_h_std".equals(currentParam)){
+                calendar.setTime(date);
+                dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, -1);
@@ -137,7 +141,7 @@ public class DateExprReplaceUtil {
         Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(filter);
         while (matcher.find()) {
             String replaceStr = matcher.group();
-            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std");
+            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std") || replaceStr.contains("run_today_h_std");
             if (! legalSystemParams) {
                 throw new UnExpectedRequestException("Custom placeholoder must be system variables.");
             }
@@ -150,6 +154,9 @@ public class DateExprReplaceUtil {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, 0 - forwayDay - 1);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
+            } else if ("run_today_h_std".equals(currentParam)){
+                calendar.setTime(date);
+                dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, -1);

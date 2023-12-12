@@ -31,8 +31,23 @@ public class AddClusterInfoRequest {
     private String linkisAddress;
     @JsonProperty("linkis_token")
     private String linkisToken;
+    @JsonProperty("hive_urn")
+    private String hiveUrn;
+    @JsonProperty("wtss_json")
+    private String wtssJson;
+    @JsonProperty("jobserver_json")
+    private String jobserverJson;
+
     public AddClusterInfoRequest() {
         // Default Constructor
+    }
+
+    public String getHiveUrn() {
+        return hiveUrn;
+    }
+
+    public void setHiveUrn(String hiveUrn) {
+        this.hiveUrn = hiveUrn;
     }
 
     public String getClusterName() {
@@ -67,13 +82,31 @@ public class AddClusterInfoRequest {
         this.linkisToken = linkisToken;
     }
 
+    public String getWtssJson() {
+        return wtssJson;
+    }
+
+    public void setWtssJson(String wtssJson) {
+        this.wtssJson = wtssJson;
+    }
+
+    public String getJobserverJson() {
+        return jobserverJson;
+    }
+
+    public void setJobserverJson(String jobserverJson) {
+        this.jobserverJson = jobserverJson;
+    }
+
     @Override
     public String toString() {
         return "AddClusterInfoRequest{" +
                 "clusterName='" + clusterName + '\'' +
                 ", clusterType='" + clusterType + '\'' +
                 ", linkisAddress='" + linkisAddress + '\'' +
-                ", linkisToken='" + linkisToken + '\'' +
+                ", hiveUrn='" + hiveUrn + '\'' +
+                ", wtssJson='" + wtssJson + '\'' +
+                ", jobserverJson='" + jobserverJson + '\'' +
                 '}';
     }
 }

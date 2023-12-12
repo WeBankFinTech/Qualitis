@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.service;
 
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 
 import java.util.List;

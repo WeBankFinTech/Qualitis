@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.metadata.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 /**
@@ -23,10 +25,20 @@ import java.util.List;
  */
 public class DataInfo<T> {
     private int totalCount;
+    @JsonProperty("env_names")
+    private List<String> envNames;
     private List<T> content;
 
     public DataInfo() {
         // Default Constructor
+    }
+
+    public List<String> getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(List<String> envNames) {
+        this.envNames = envNames;
     }
 
     public DataInfo(int total) {

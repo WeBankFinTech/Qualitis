@@ -18,7 +18,9 @@ package com.webank.wedatasphere.qualitis.entity;
 
 import com.webank.wedatasphere.qualitis.bean.TaskRuleDataSource;
 
+import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import javax.persistence.*;
 import java.util.Objects;
@@ -30,7 +32,6 @@ import org.apache.commons.lang.StringUtils;
 @Entity
 @Table(name = "qualitis_application_task_datasource")
 public class TaskDataSource {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -62,38 +63,66 @@ public class TaskDataSource {
   @Column(name = "datasource_type")
   private Integer datasourceType;
 
+  @Column(name = "sub_system_id")
+  private Long subSystemId;
+
   public TaskDataSource() {
   }
 
   public TaskDataSource(RuleDataSource ruleDataSource, Task task) {
     this.clusterName = ruleDataSource.getClusterName();
     this.databaseName = ruleDataSource.getDbName();
-    this.tableName = ruleDataSource.getTableName();
-    this.colName = ruleDataSource.getFilter();
-    this.projectId = ruleDataSource.getRule().getProject().getId();
-    this.ruleId = ruleDataSource.getRule().getId();
+    String table = ruleDataSource.getTableName();
+
+    // UUID remove.
+    int length32 = 32;
+    if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(table)
+        && table.contains(SpecCharEnum.BOTTOM_BAR.getValue())&& table.length() - length32 > 1) {
+      this.tableName = table.substring(0, table.length() - 33);
+    }
+
     this.task = task;
-    this.executeUser = task.getApplication().getExecuteUser();
+    this.tableName = table;
+    this.colName = ruleDataSource.getColName();
+    this.ruleId = ruleDataSource.getRule().getId();
+    this.subSystemId = ruleDataSource.getSubSystemId();
     this.createUser = task.getApplication().getCreateUser();
     this.datasourceType = ruleDataSource.getDatasourceType();
+    this.executeUser = task.getApplication().getExecuteUser();
     this.datasourceIndex = ruleDataSource.getDatasourceIndex();
+    this.projectId = ruleDataSource.getRule().getProject().getId();
   }
 
   public TaskDataSource(TaskRuleDataSource ruleDataSource, Task task) {
-    this.clusterName = ruleDataSource.getClusterName();
+    this.datasourceIndex = ruleDataSource.getDatasourceIndex();
     this.databaseName = ruleDataSource.getDatabaseName();
+    this.clusterName = ruleDataSource.getClusterName();
+    this.projectId = ruleDataSource.getProjectId();
     this.tableName = ruleDataSource.getTableName();
     this.colName = ruleDataSource.getColName();
-    this.projectId = ruleDataSource.getProjectId();
     this.ruleId = ruleDataSource.getRuleId();
-    this.datasourceIndex = ruleDataSource.getDatasourceIndex();
     this.task = task;
     this.executeUser = task.getApplication().getExecuteUser();
-    this.createUser = task.getApplication().getCreateUser();
     this.datasourceType = ruleDataSource.getDatasourceType();
+    this.createUser = task.getApplication().getCreateUser();
+    this.subSystemId = ruleDataSource.getSubSystemId();
   }
 
-  public Long getId() {
+    public TaskDataSource(CheckAlert currentCheckAlert, Task task) {
+      this.task = task;
+      this.clusterName = task.getClusterName();
+      String[] strs = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
+      this.databaseName = strs[0];
+      this.tableName = strs[1];
+
+      this.ruleId = currentCheckAlert.getId();
+      this.projectId = currentCheckAlert.getProject().getId();
+      this.createUser = task.getApplication().getCreateUser();
+      this.executeUser = task.getApplication().getExecuteUser();
+      this.datasourceType = TemplateDataSourceTypeEnum.HIVE.getCode();
+    }
+
+    public Long getId() {
     return id;
   }
 
@@ -187,6 +216,14 @@ public class TaskDataSource {
 
   public void setDatasourceType(Integer datasourceType) {
     this.datasourceType = datasourceType;
+  }
+
+  public Long getSubSystemId() {
+    return subSystemId;
+  }
+
+  public void setSubSystemId(Long subSystemId) {
+    this.subSystemId = subSystemId;
   }
 
   @Override

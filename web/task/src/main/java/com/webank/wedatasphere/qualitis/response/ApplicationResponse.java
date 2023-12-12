@@ -17,13 +17,20 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.constant.ApplicationCommentEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
 import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.entity.ApplicationComment;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-
-import java.util.*;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author howeye
@@ -56,6 +63,8 @@ public class ApplicationResponse {
     private Long ruleGroupId;
     @JsonProperty("exception_message")
     private String exceptionMessage;
+    private String zhMessage;
+    private String enMessage;
     @JsonProperty("kill_option")
     private Boolean killOption;
     @JsonProperty("create_user")
@@ -74,14 +83,26 @@ public class ApplicationResponse {
     private String setFlag;
     @JsonProperty("run_date")
     private String runDate;
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
 
     @JsonProperty("application_rule_datasource")
     private String ruleDatasource;
 
-    @JsonProperty("comment")
-    private String comment;
+    @JsonProperty("schedule_project_name")
+    private String scheduleProjectName;
 
-    public ApplicationResponse(Application application, List<Task> tasks, String localStr) {
+    @JsonProperty("schedule_workflow_name")
+    private String scheduleWorkflowName;
+
+    @JsonProperty("task_total")
+    private Integer taskTotal;
+    @JsonProperty("error_count")
+    private Integer errorCount;
+
+    public ApplicationResponse(Application application, List<Task> tasks) {
         this.applicationId = application.getId();
         this.ruleSize = application.getRuleSize();
         this.startTime = application.getSubmitTime();
@@ -93,21 +114,21 @@ public class ApplicationResponse {
         this.invokeType = application.getInvokeType();
         this.taskResponses = new ArrayList<>();
         this.exceptionMessage = application.getExceptionMessage();
+        StringBuilder ruleDataSource = new StringBuilder();
         if (CollectionUtils.isNotEmpty(tasks)) {
             for (Task task : tasks) {
-                for (TaskRuleSimple taskRuleSimple : task.getTaskRuleSimples()) {
-                    this.projectName = taskRuleSimple.getProjectName();
+                if (CollectionUtils.isNotEmpty(task.getTaskRuleSimples())) {
+                    TaskRuleSimple taskRuleSimple = task.getTaskRuleSimples().stream().findFirst().get();
+                    this.projectName = StringUtils.isNotEmpty(taskRuleSimple.getProjectName()) ? taskRuleSimple.getProjectName() : taskRuleSimple.getProjectCnName();
                     this.taskName = taskRuleSimple.getRuleGroupName();
-                    break;
                 }
-                taskResponses.add(new TaskResponse(task));
+                taskResponses.add(new TaskResponse(task, ruleDataSource));
             }
         } else {
             this.projectName = application.getProjectName();
             this.taskName = application.getRuleGroupName();
         }
-        this.ruleDatasource = application.getRuleDatesource();
-
+        this.ruleDatasource = StringUtils.isNotBlank(ruleDataSource.toString()) ? ruleDataSource.toString() : application.getRuleDatesource();
 
         this.ruleGroupId =  application.getRuleGroupId();
         this.createUser = application.getCreateUser();
@@ -118,7 +139,57 @@ public class ApplicationResponse {
         this.runDate = application.getRunDate();
         this.setFlag = application.getSetFlag();
         this.clusterName = application.getClusterName();
-        this.comment = ApplicationCommentEnum.getCommentName(application.getApplicationComment(), localStr);
+        this.fpsFileId = application.getFpsFileId();
+        this.fpsHashValue = application.getFpsHashValue();
+
+        if (application.getApplicationComment() != null) {
+            ApplicationComment applicationComment = SpringContextHolder.getBean(ApplicationCommentDao.class).getByCode(application.getApplicationComment());
+            if (applicationComment != null) {
+                this.zhMessage = applicationComment.getZhMessage();
+                this.enMessage = applicationComment.getEnMessage();
+            }
+        }
+
+        if (null == this.scheduleProjectName) {
+            this.scheduleProjectName = Strings.EMPTY;
+        }
+        if (null == this.scheduleWorkflowName) {
+            this.scheduleWorkflowName = Strings.EMPTY;
+        }
+
+        // If dss group node execution, reuse them to display dss project name and node name.
+        if (! QualitisConstants.DEFAULT_NODE_NAME.equals(application.getNodeName()) && StringUtils.isNotEmpty(application.getProjectName())) {
+            this.scheduleWorkflowName = application.getNodeName();
+            this.scheduleProjectName = application.getProjectName();
+        }
+        this.taskTotal = CollectionUtils.isEmpty(tasks) ? 0 : tasks.size();
+        if (StringUtils.isNotEmpty(this.exceptionMessage)) {
+            this.errorCount = this.exceptionMessage.split(SpecCharEnum.LINE.getValue()).length;
+        }
+    }
+
+    public Integer getTaskTotal() {
+        return taskTotal;
+    }
+
+    public void setTaskTotal(Integer taskTotal) {
+        this.taskTotal = taskTotal;
+    }
+
+    public String getScheduleProjectName() {
+        return scheduleProjectName;
+    }
+
+    public void setScheduleProjectName(String scheduleProjectName) {
+        this.scheduleProjectName = scheduleProjectName;
+    }
+
+    public String getScheduleWorkflowName() {
+        return scheduleWorkflowName;
+    }
+
+    public void setScheduleWorkflowName(String scheduleWorkflowName) {
+        this.scheduleWorkflowName = scheduleWorkflowName;
     }
 
     public String getCreateUser() {
@@ -159,6 +230,22 @@ public class ApplicationResponse {
 
     public void setExceptionMessage(String exceptionMessage) {
         this.exceptionMessage = exceptionMessage;
+    }
+
+    public String getZhMessage() {
+        return zhMessage;
+    }
+
+    public void setZhMessage(String zhMessage) {
+        this.zhMessage = zhMessage;
+    }
+
+    public String getEnMessage() {
+        return enMessage;
+    }
+
+    public void setEnMessage(String enMessage) {
+        this.enMessage = enMessage;
     }
 
     public Integer getFinishedTaskNum() {
@@ -305,6 +392,22 @@ public class ApplicationResponse {
         this.runDate = runDate;
     }
 
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
+    }
+
     public String getRuleDatasource() {
         return ruleDatasource;
     }
@@ -313,11 +416,11 @@ public class ApplicationResponse {
         this.ruleDatasource = ruleDatasource;
     }
 
-    public String getComment() {
-        return comment;
+    public Integer getErrorCount() {
+        return errorCount;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setErrorCount(Integer errorCount) {
+        this.errorCount = errorCount;
     }
 }

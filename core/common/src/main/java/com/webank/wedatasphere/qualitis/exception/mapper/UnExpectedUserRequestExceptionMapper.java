@@ -17,6 +17,7 @@ package com.webank.wedatasphere.qualitis.exception.mapper;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,6 @@ public class UnExpectedUserRequestExceptionMapper implements ExceptionMapper<UnE
     public Response toResponse(UnExpectedRequestException exception) {
         String message = localeParser.replacePlaceHolderByLocale(exception.getMessage(), "en_US");
         LOGGER.warn(message, exception);
-        return Response.ok(exception.getResponse()).status(exception.getStatus()).build();
+        return Response.ok(StringUtils.isNotEmpty(message) ? exception.getResponse(message) : exception.getResponse()).status(exception.getStatus()).build();
     }
 }

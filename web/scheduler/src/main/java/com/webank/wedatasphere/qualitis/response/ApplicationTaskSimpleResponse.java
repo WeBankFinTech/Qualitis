@@ -33,6 +33,8 @@ public class ApplicationTaskSimpleResponse {
     private Integer applicationStatus;
     @JsonProperty("tasks")
     private List<TaskSimpleKeyResponse> tasks;
+    private String exceptionMessage;
+    private String code;
 
     public ApplicationTaskSimpleResponse() {
     }
@@ -84,5 +86,21 @@ public class ApplicationTaskSimpleResponse {
 
     public void setTasks(List<TaskSimpleKeyResponse> tasks) {
         this.tasks = tasks;
+    }
+
+    public String getExceptionMessage() {
+        return exceptionMessage;
+    }
+
+    public void setExceptionMessage(String exceptionMessage) {
+        this.exceptionMessage = exceptionMessage;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 }

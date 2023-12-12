@@ -16,13 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.google.common.collect.Lists;
+import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author howeye
@@ -37,6 +42,11 @@ public class RuleListExecutionRequest {
     @JsonProperty("create_user")
     private String createUser;
 
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
+
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("startup_param_name")
@@ -47,8 +57,28 @@ public class RuleListExecutionRequest {
     private boolean dyNamicPartition;
     @JsonProperty("dynamic_partition_prefix")
     private String dyNamicPartitionPrefix;
+
     @JsonProperty("bool_async")
     private boolean async;
+
+    @JsonProperty("job_id")
+    private String jobId;
+
+    @JsonProperty("start_time")
+    private String startTime;
+    @JsonProperty("end_time")
+    private String endTime;
+    @JsonIgnore
+    private List<Rule> executableRuleList;
+    @JsonIgnore
+    private RuleContext ruleContext;
+
+    @JsonProperty("split_by")
+    private String splitBy;
+
+    @JsonProperty("engine_reuse")
+    private Boolean engineReuse;
+
     public RuleListExecutionRequest() {
         // Default Constructor
     }
@@ -63,8 +93,40 @@ public class RuleListExecutionRequest {
     public RuleListExecutionRequest(RuleResponse ruleResponse, String createUser, String executionUser) {
         ruleList = new ArrayList<>(1);
         ruleList.add(ruleResponse.getRuleId());
+        if (Objects.nonNull(ruleResponse.getRule())) {
+            executableRuleList = Lists.newArrayListWithExpectedSize(1);
+            executableRuleList.add(ruleResponse.getRule());
+        }
         this.createUser = createUser;
         this.executionUser = executionUser;
+    }
+
+    public RuleContext getRuleContext() {
+        return ruleContext;
+    }
+
+    public void setRuleContext(RuleContext ruleContext) {
+        this.ruleContext = ruleContext;
+    }
+
+    public List<Rule> getExecutableRuleList() {
+        return executableRuleList;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 
     public List<Long> getRuleList() {
@@ -97,6 +159,22 @@ public class RuleListExecutionRequest {
 
     public void setCreateUser(String createUser) {
         this.createUser = createUser;
+    }
+
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
     }
 
     public String getClusterName() {
@@ -145,6 +223,34 @@ public class RuleListExecutionRequest {
 
     public void setAsync(boolean async) {
         this.async = async;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public void setExecutableRuleList(List<Rule> executableRuleList) {
+        this.executableRuleList = executableRuleList;
+    }
+
+    public String getSplitBy() {
+        return splitBy;
+    }
+
+    public void setSplitBy(String splitBy) {
+        this.splitBy = splitBy;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
     }
 
     public static void checkRequest(RuleListExecutionRequest request) throws UnExpectedRequestException {

@@ -16,10 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
@@ -28,19 +27,25 @@ import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
+import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
+import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
+import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -58,10 +63,12 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
 
     @Autowired
     private AlarmConfigRepository alarmConfigRepository;
+    @Autowired
+    private RuleMetricCommonService ruleMetricCommonService;
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public List<AlarmConfig> checkAndSaveAlarmVariable(List<AlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException {
+    public List<AlarmConfig> checkAndSaveAlarmVariable(List<AlarmConfigRequest> requests, Rule rule, String loginUser, List<DataSourceRequest> dataSourceRequests, MultiDataSourceConfigRequest source, MultiDataSourceConfigRequest target) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
         List<AlarmConfig> alarmConfigs = new ArrayList<>();
         for (AlarmConfigRequest request : requests) {
             // Check Arguments
@@ -69,37 +76,37 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
 
             // Check existence of templateOutputMeta
             TemplateOutputMeta templateOutputMetaInDb = templateOutputMetaService.checkTemplateOutputMetaId(request.getOutputMetaId());
-            // return if is multi-table template
-            if (isChildOrParentOutput(rule.getTemplate(), templateOutputMetaInDb)) {
-                continue;
-            }
 
             // Check template output meta
             checkTemplateContain(rule.getTemplate(), templateOutputMetaInDb);
 
             // Generate alarmConfig and save
             AlarmConfig newAlarmConfig = new AlarmConfig();
-            newAlarmConfig.setRule(rule);
-            newAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
-            newAlarmConfig.setCheckTemplate(request.getCheckTemplate());
-            newAlarmConfig.setThreshold(request.getThreshold());
-            Integer checkTemplateCode = request.getCheckTemplate();
-            if (checkTemplateCode.equals(CheckTemplateEnum.FIXED_VALUE.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.SEASON_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.MONTH_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.WEEK_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.DAY_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.HOUR_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.YEAR_ON_YEAR.getCode())) {
-                newAlarmConfig.setCompareType(request.getCompareType());
-            }
+            setAlarmConfigInfo(rule, templateOutputMetaInDb, newAlarmConfig, request.getCheckTemplate(), request.getThreshold(), request.getCompareType(), request.getUploadAbnormalValue(), request.getUploadRuleMetricValue(), request.getDeleteFailCheckResult());
             if (StringUtils.isNotBlank(request.getRuleMetricEnCode())) {
                 RuleMetric ruleMetric = ruleMetricDao.findByEnCode(request.getRuleMetricEnCode());
+                checkRuleMetricInOtherRules(ruleMetric, rule);
                 newAlarmConfig.setRuleMetric(ruleMetric);
                 newAlarmConfig.setUploadAbnormalValue(request.getUploadAbnormalValue());
                 newAlarmConfig.setUploadRuleMetricValue(request.getUploadRuleMetricValue());
+                newAlarmConfig.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
+            } else if (StringUtils.isNotBlank(request.getRuleMetricName())) {
+                Boolean present = false;
+                //单表
+                if (CollectionUtils.isNotEmpty(dataSourceRequests)) {
+                    present = dataSourceRequests.stream().filter(item -> CollectionUtils.isNotEmpty(item.getDataSourceEnvRequests())).findFirst().isPresent();
+                } else if (source != null && target != null && (source.getDataSourceEnvRequests().size() > 1 || target.getDataSourceEnvRequests().size() > 1)) {
+                    present = true;
+                }
+                //支持用户手动输入指标名
+                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(request.getRuleMetricName(), loginUser, present);
+                if (ruleMetric == null) {
+                    throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
+                }
+                newAlarmConfig.setRuleMetric(ruleMetric);
+                newAlarmConfig.setUploadAbnormalValue(request.getUploadAbnormalValue());
+                newAlarmConfig.setUploadRuleMetricValue(request.getUploadRuleMetricValue());
+                newAlarmConfig.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
             }
             alarmConfigs.add(newAlarmConfig);
         }
@@ -107,33 +114,20 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
         return alarmConfigDao.saveAllAlarmConfig(alarmConfigs);
     }
 
-    @Override
-    public void deleteByRule(Rule rule) {
-        alarmConfigRepository.deleteByRule(rule);
+    private void checkRuleMetricInOtherRules(RuleMetric ruleMetric, Rule rule) throws UnExpectedRequestException {
+        List<AlarmConfig> alarmConfigs = alarmConfigDao.getByRuleMetric(ruleMetric).stream().filter(alarmConfig -> !(alarmConfig.getRule().getName().equals(rule.getName()))).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(alarmConfigs)) {
+            throw new UnExpectedRequestException("Rule metric has been occupied with other rule: " + alarmConfigs.iterator().next().getRule().getName());
+        }
     }
 
-    @Override
-    public List<AlarmConfig> checkAndSaveCustomAlarmVariable(List<CustomAlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException {
-        List<AlarmConfig> alarmConfigs = new ArrayList<>();
-        List<RuleMetric> ruleMetrics = new ArrayList<>();
-        for (CustomAlarmConfigRequest request : requests) {
-            AlarmConfig newAlarmConfig = new AlarmConfig();
-            RuleMetric ruleMetric = ruleMetricDao.findByEnCode(request.getRuleMetricEnCode());
-            newAlarmConfig.setRuleMetric(ruleMetric);
-            ruleMetrics.add(ruleMetric);
-            // Check existence of templateOutputMeta
-            TemplateOutputMeta templateOutputMetaInDb = rule.getTemplate().getTemplateOutputMetas().stream().filter(
-                f -> f.getOutputName().equals(ruleMetric.getName())
-            ).iterator().next();
-
-            // Generate alarmConfig and save
-            newAlarmConfig.setRule(rule);
-            newAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
-            newAlarmConfig.setCheckTemplate(request.getCheckTemplate());
-            newAlarmConfig.setThreshold(request.getThreshold());
-
-            Integer checkTemplateCode = request.getCheckTemplate();
-            if (checkTemplateCode.equals(CheckTemplateEnum.FIXED_VALUE.getCode())
+    private void setAlarmConfigInfo(Rule rule, TemplateOutputMeta templateOutputMetaInDb, AlarmConfig newAlarmConfig, Integer checkTemplate, Double threshold, Integer compareType, Boolean uploadAbnormalValue, Boolean uploadRuleMetricValue, Boolean deleteFailCheckResult) {
+        newAlarmConfig.setRule(rule);
+        newAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
+        newAlarmConfig.setCheckTemplate(checkTemplate);
+        newAlarmConfig.setThreshold(threshold);
+        Integer checkTemplateCode = checkTemplate;
+        if (checkTemplateCode.equals(CheckTemplateEnum.FIXED_VALUE.getCode())
                 || checkTemplateCode.equals(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode())
                 || checkTemplateCode.equals(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode())
                 || checkTemplateCode.equals(CheckTemplateEnum.SEASON_RING_GROWTH.getCode())
@@ -142,16 +136,45 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
                 || checkTemplateCode.equals(CheckTemplateEnum.DAY_RING_GROWTH.getCode())
                 || checkTemplateCode.equals(CheckTemplateEnum.HOUR_RING_GROWTH.getCode())
                 || checkTemplateCode.equals(CheckTemplateEnum.YEAR_ON_YEAR.getCode())) {
-                newAlarmConfig.setCompareType(request.getCompareType());
-            }
+            newAlarmConfig.setCompareType(compareType);
+        }
+        newAlarmConfig.setUploadAbnormalValue(uploadAbnormalValue);
+        newAlarmConfig.setUploadRuleMetricValue(uploadRuleMetricValue);
+        newAlarmConfig.setDeleteFailCheckResult(deleteFailCheckResult);
+    }
 
-            newAlarmConfig.setUploadAbnormalValue(request.getUploadAbnormalValue());
-            newAlarmConfig.setUploadRuleMetricValue(request.getUploadRuleMetricValue());
-            newAlarmConfig.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
+    @Override
+    public void deleteByRule(Rule rule) {
+        alarmConfigRepository.deleteByRuleId(rule.getId());
+    }
+
+    @Override
+    public List<AlarmConfig> checkAndSaveCustomAlarmVariable(List<CustomAlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException {
+        List<RuleMetric> ruleMetrics = new ArrayList<>();
+        List<AlarmConfig> alarmConfigs = new ArrayList<>();
+
+        for (CustomAlarmConfigRequest request : requests) {
+            AlarmConfig newAlarmConfig = new AlarmConfig();
+            RuleMetric ruleMetric = null;
+            if (StringUtils.isNotBlank(request.getRuleMetricEnCode())) {
+                ruleMetric = ruleMetricDao.findByEnCode(request.getRuleMetricEnCode());
+                checkRuleMetricInOtherRules(ruleMetric, rule);
+            }
+            newAlarmConfig.setRuleMetric(ruleMetric);
+            ruleMetrics.add(ruleMetric);
+
+            // Check existence of templateOutputMeta
+            RuleMetric finalRuleMetric = ruleMetric;
+            TemplateOutputMeta templateOutputMetaInDb = rule.getTemplate().getTemplateOutputMetas().stream()
+                    .filter(templateOutputMeta -> templateOutputMeta.getOutputName().equals(finalRuleMetric.getName())).iterator().next();
+
+            // Generate alarmConfig and save
+            setAlarmConfigInfo(rule, templateOutputMetaInDb, newAlarmConfig, request.getCheckTemplate(), request.getThreshold(), request.getCompareType(), request.getUploadAbnormalValue(), request.getUploadRuleMetricValue(), request.getDeleteFailCheckResult());
             alarmConfigs.add(newAlarmConfig);
         }
-        Set<String> deptNames = ruleMetrics.stream().map(RuleMetric::getDepartmentName).collect(Collectors.toSet());
-        if (deptNames.size() > 1) {
+        Set<Integer> subSystemIds = ruleMetrics.stream().map(RuleMetric::getSubSystemId).collect(Collectors.toSet());
+        Set<String> deptNames = ruleMetrics.stream().map(RuleMetric::getDevDepartmentName).collect(Collectors.toSet());
+        if (subSystemIds.size() > 1 || deptNames.size() > 1) {
             throw new UnExpectedRequestException("{&NOT_SAME_DEPT_SYS_METRIC}");
         }
         return alarmConfigDao.saveAllAlarmConfig(alarmConfigs);
@@ -159,30 +182,43 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public List<AlarmConfig> checkAndSaveFileAlarmVariable(List<FileAlarmConfigRequest> requests, Rule rule) {
+    public List<AlarmConfig> checkAndSaveFileAlarmVariable(List<FileAlarmConfigRequest> requests, Rule rule, String loginUser, DataSourceRequest dataSourceRequest) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
         List<AlarmConfig> alarmConfigs = new ArrayList<>();
+
         for (FileAlarmConfigRequest request : requests) {
             // Generate alarmConfig and save
             AlarmConfig newAlarmConfig = new AlarmConfig();
-            newAlarmConfig.setFileOutputName(request.getFileOutputName());
+//            newAlarmConfig.setFileOutputName(request.getFileOutputName());
+            // Check existence
+            TemplateOutputMeta templateOutputMetaInDb = templateOutputMetaService.checkTemplateOutputMetaId(request.getOutputMetaId());
+            // Check template output meta
+            checkTemplateContain(rule.getTemplate(), templateOutputMetaInDb);
             newAlarmConfig.setFileOutputUnit(request.getFileOutputUnit());
-            newAlarmConfig.setRule(rule);
+            newAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
             newAlarmConfig.setCheckTemplate(request.getCheckTemplate());
+            newAlarmConfig.setRule(rule);
             newAlarmConfig.setThreshold(request.getThreshold());
             Integer checkTemplateCode = request.getCheckTemplate();
             if (checkTemplateCode.equals(CheckTemplateEnum.FIXED_VALUE.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.SEASON_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.MONTH_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.WEEK_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.DAY_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.HOUR_RING_GROWTH.getCode())
-                || checkTemplateCode.equals(CheckTemplateEnum.YEAR_ON_YEAR.getCode())) {
+                    || checkTemplateCode.equals(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.SEASON_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.MONTH_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.WEEK_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.DAY_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.HOUR_RING_GROWTH.getCode())
+                    || checkTemplateCode.equals(CheckTemplateEnum.YEAR_ON_YEAR.getCode())) {
                 newAlarmConfig.setCompareType(request.getCompareType());
             }
             if (StringUtils.isNotBlank(request.getRuleMetricEnCode())) {
                 RuleMetric ruleMetric = ruleMetricDao.findByEnCode(request.getRuleMetricEnCode());
+                checkRuleMetricInOtherRules(ruleMetric, rule);
+                newAlarmConfig.setRuleMetric(ruleMetric);
+            } else if (StringUtils.isNotBlank(request.getRuleMetricName()) && dataSourceRequest != null) {
+                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(request.getRuleMetricName(), loginUser, CollectionUtils.isNotEmpty(dataSourceRequest.getDataSourceEnvRequests()) ? true : false);
+                if (ruleMetric == null) {
+                    throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
+                }
                 newAlarmConfig.setRuleMetric(ruleMetric);
             }
             newAlarmConfig.setUploadAbnormalValue(request.getUploadAbnormalValue());
@@ -199,22 +235,5 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
             throw new UnExpectedRequestException("Template: [" + template.getName() + "] {&DOES_NOT_CONTAIN_OUTPUT_META_ID}: ["
                     + templateOutputMeta.getId() + "]");
         }
-    }
-
-    private Boolean isChildOrParentOutput(Template template, TemplateOutputMeta templateOutputMeta) {
-        Template childTemplate = template.getChildTemplate();
-        Template parentTemplate = template.getParentTemplate();
-
-        if (childTemplate != null) {
-            if (childTemplate.getTemplateOutputMetas().contains(templateOutputMeta)) {
-                return true;
-            }
-        }
-        if (parentTemplate != null) {
-            if (parentTemplate.getTemplateOutputMetas().contains(templateOutputMeta)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -16,29 +16,26 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
-import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
-import com.webank.wedatasphere.qualitis.response.RoleResponse;
-import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleModifyRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RoleResponse;
 import com.webank.wedatasphere.qualitis.service.RoleService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -73,7 +70,7 @@ public class RoleController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteRole(RoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse deleteRole(RoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -89,7 +86,7 @@ public class RoleController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyRole(RoleModifyRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse modifyRole(RoleModifyRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -119,5 +116,19 @@ public class RoleController {
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_ROLES}", null);
         }
     }
+
+    @POST
+    @Path("type/all")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getRoleTypeEnumn() {
+        try {
+            return new GeneralResponse<>("200", "{&GET_ROLE_TYPE_ENUMN_SUCCESSFULLY}", roleService.getAllRoleTypeEnum());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get Scheduled System enumn, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ROLE_TYPE_ENUMN}", e.getMessage());
+        }
+    }
+
 
 }

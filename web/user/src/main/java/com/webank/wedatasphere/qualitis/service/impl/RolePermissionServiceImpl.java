@@ -31,6 +31,7 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RolePermissionResponse;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.dao.PermissionDao;
@@ -108,6 +109,8 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         newRolePermission.setPermission(permissionInDb);
         newRolePermission.setRole(roleInDb);
         newRolePermission.setId(UuidGenerator.generate());
+        newRolePermission.setCreateUser(HttpUtils.getUserName(httpServletRequest));
+        newRolePermission.setCreateTime(DateUtils.now());
         RolePermission savedRolePermission = rolePermissionDao.saveRolePermission(newRolePermission);
         RolePermissionResponse response = new RolePermissionResponse(savedRolePermission);
 
@@ -117,7 +120,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteRolePermission(DeleteRolePermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteRolePermission(DeleteRolePermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -137,7 +140,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> modifyRolePermission(ModifyRolePermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyRolePermission(ModifyRolePermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -160,14 +163,12 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         if (permissionInDb == null) {
             throw new UnExpectedRequestException("permission id {&DOES_NOT_EXIST}, request: " + request);
         }
-        RolePermission roleIdAndPermissionIdInDb = rolePermissionDao.findByRoleAndPermission(roleInDb, permissionInDb);
-        if (roleIdAndPermissionIdInDb != null) {
-            throw new UnExpectedRequestException("role and permission {&ALREADY_EXIST}, request: " + request);
-        }
 
         // Save role permission
         rolePermissionInDb.setRole(roleInDb);
         rolePermissionInDb.setPermission(permissionInDb);
+        rolePermissionInDb.setModifyUser(HttpUtils.getUserName(httpServletRequest));
+        rolePermissionInDb.setModifyTime(DateUtils.now());
         RolePermission savedRolePermission = rolePermissionDao.saveRolePermission(rolePermissionInDb);
         LOGGER.info("Succeed to modify role_permission, uuid: {}, role_id: {}, permission_id: {}, current_user: {}", uuid, savedRolePermission.getRole().getId(),
                 savedRolePermission.getPermission().getId(), HttpUtils.getUserName(httpServletRequest));

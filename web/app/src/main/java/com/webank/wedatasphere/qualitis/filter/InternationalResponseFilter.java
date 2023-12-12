@@ -16,15 +16,13 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
-import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import java.io.IOException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.ext.Provider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ContainerResponseContext;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -32,8 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Provider
 public class InternationalResponseFilter implements ContainerResponseFilter {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InternationalResponseFilter.class);
 
     @Autowired
     private LocaleParser localeParser;

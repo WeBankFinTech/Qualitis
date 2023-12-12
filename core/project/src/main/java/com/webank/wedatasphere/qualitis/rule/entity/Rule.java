@@ -16,16 +16,28 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.rule.util.LazyGetUtil;
+import org.hibernate.annotations.NotFoundAction;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.hibernate.annotations.NotFound;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.CascadeType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.UniqueConstraint;
 import java.util.Objects;
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.annotations.NotFound;
 
 /**
  * @author howeye
@@ -38,7 +50,7 @@ public class Rule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "cs_id", length = 512)
+    @Column(name = "cs_id")
     private String csId;
 
     @ManyToOne
@@ -47,21 +59,27 @@ public class Rule {
 
     @Column(length = 128)
     private String name;
-
     @Column(name = "cn_name", length = 128)
     private String cnName;
 
-    @Column(length = 340)
+    @Column(length = 350)
     private String detail;
 
+    @Column(name = "alert")
+    private Boolean alert;
+
+    @Column(name = "alert_level")
+    private Integer alertLevel;
+
+    @Column(name = "alert_receiver")
+    private String alertReceiver;
+
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    @NotFound(action= NotFoundAction.IGNORE)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Set<RuleDataSource> ruleDataSources;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    @NotFound(action= NotFoundAction.IGNORE)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Set<RuleDataSourceMapping> ruleDataSourceMappings;
 
     @Column(name = "alarm")
@@ -71,28 +89,20 @@ public class Rule {
     private Integer ruleType;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    @NotFound(action= NotFoundAction.IGNORE)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Set<AlarmConfig> alarmConfigs;
 
-    @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    @NotFound(action= NotFoundAction.IGNORE)
+    @OneToMany(mappedBy = "rule", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    @NotFound(action = NotFoundAction.IGNORE)
     private Set<RuleVariable> ruleVariables;
 
-    @OneToOne(mappedBy = "parentRule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
-    private Rule childRule;
-
-    @OneToOne(fetch = FetchType.EAGER)
-    @JsonIgnore
-    private Rule parentRule;
+    private transient volatile int ruleVariableSize;
 
     @ManyToOne
     @JsonIgnore
     private Project project;
 
-    @Column(name = "rule_template_name", length = 180, updatable = false)
+    @Column(name = "rule_template_name")
     private String ruleTemplateName;
 
     @Column(name = "function_type")
@@ -129,6 +139,46 @@ public class Rule {
     @JsonIgnore
     private RuleGroup ruleGroup;
 
+    @Column(name = "bash_content", length = 1000)
+    private String bashContent;
+
+    @Column(name = "execution_parameters_name")
+    private String executionParametersName;
+
+    @Column(name = "abnormal_database",length = 100)
+    private String abnormalDatabase;
+
+    @Column(name = "cluster",length = 100)
+    private String abnormalCluster;
+
+    @Column(name = "abnormal_proxy_user", length = 50)
+    private String abnormalProxyUser;
+
+    @Column(name = "work_flow_name")
+    private String workFlowName;
+
+    @Column(name = "work_flow_version")
+    private String workFlowVersion;
+
+    @Column(name = "enable")
+    private Boolean enable = true;
+
+    @Column(name = "rule_no")
+    private Integer ruleNo;
+
+    @JsonProperty("union_all")
+    @Column(name = "union_all")
+    private Boolean unionAll;
+
+    @Column(name = "contrast_type")
+    private Integer contrastType;
+
+    @Column(name = "work_flow_space")
+    private String workFlowSpace;
+
+    @Column(name = "node_name")
+    private String nodeName;
+
     public Rule() {
         // Default Constructor
     }
@@ -141,9 +191,13 @@ public class Rule {
         this.id = id;
     }
 
-    public String getCsId() { return csId; }
+    public String getCsId() {
+        return csId;
+    }
 
-    public void setCsId(String csId) { this.csId = csId; }
+    public void setCsId(String csId) {
+        this.csId = csId;
+    }
 
     public Template getTemplate() {
         return template;
@@ -177,12 +231,44 @@ public class Rule {
         this.detail = detail;
     }
 
+    public Boolean getAlert() {
+        return alert;
+    }
+
+    public void setAlert(Boolean alert) {
+        this.alert = alert;
+    }
+
+    public Integer getAlertLevel() {
+        return alertLevel;
+    }
+
+    public void setAlertLevel(Integer alertLevel) {
+        this.alertLevel = alertLevel;
+    }
+
+    public String getAlertReceiver() {
+        return alertReceiver;
+    }
+
+    public void setAlertReceiver(String alertReceiver) {
+        this.alertReceiver = alertReceiver;
+    }
+
     public Set<RuleDataSource> getRuleDataSources() {
         return ruleDataSources;
     }
 
     public void setRuleDataSources(Set<RuleDataSource> ruleDataSources) {
         this.ruleDataSources = ruleDataSources;
+    }
+
+    public Set<RuleDataSourceMapping> getRuleDataSourceMappings() {
+        return ruleDataSourceMappings;
+    }
+
+    public void setRuleDataSourceMappings(Set<RuleDataSourceMapping> ruleDataSourceMappings) {
+        this.ruleDataSourceMappings = ruleDataSourceMappings;
     }
 
     public Boolean getAlarm() {
@@ -210,11 +296,16 @@ public class Rule {
     }
 
     public Set<RuleVariable> getRuleVariables() {
-        return ruleVariables;
+        if (ruleVariableSize == 0) {
+            this.ruleVariables = LazyGetUtil.getRuleVariables(this);
+            this.ruleVariableSize = this.ruleVariables.size();
+        }
+        return this.ruleVariables;
     }
 
     public void setRuleVariables(Set<RuleVariable> ruleVariables) {
         this.ruleVariables = ruleVariables;
+        this.ruleVariableSize = this.ruleVariables != null ? this.ruleVariables.size() : 0;
     }
 
     public Project getProject() {
@@ -271,38 +362,6 @@ public class Rule {
 
     public void setOutputName(String outputName) {
         this.outputName = outputName;
-    }
-
-    public Rule getChildRule() {
-        return childRule;
-    }
-
-    public void setChildRule(Rule childRule) {
-        this.childRule = childRule;
-    }
-
-    public Rule getParentRule() {
-        return parentRule;
-    }
-
-    public void setParentRule(Rule parentRule) {
-        this.parentRule = parentRule;
-    }
-
-    public Set<RuleDataSourceMapping> getRuleDataSourceMappings() {
-        return ruleDataSourceMappings;
-    }
-
-    public void setRuleDataSourceMappings(Set<RuleDataSourceMapping> ruleDataSourceMappings) {
-        this.ruleDataSourceMappings = ruleDataSourceMappings;
-    }
-
-    public RuleGroup getRuleGroup() {
-        return ruleGroup;
-    }
-
-    public void setRuleGroup(RuleGroup ruleGroup) {
-        this.ruleGroup = ruleGroup;
     }
 
     public Boolean getAbortOnFailure() {
@@ -369,10 +428,134 @@ public class Rule {
         this.staticStartupParam = staticStartupParam;
     }
 
+    public RuleGroup getRuleGroup() {
+        return ruleGroup;
+    }
+
+    public void setRuleGroup(RuleGroup ruleGroup) {
+        this.ruleGroup = ruleGroup;
+    }
+
+    public String getBashContent() {
+        return bashContent;
+    }
+
+    public void setBashContent(String bashContent) {
+        this.bashContent = bashContent;
+    }
+
+    public String getExecutionParametersName() {
+        return executionParametersName;
+    }
+
+    public void setExecutionParametersName(String executionParametersName) {
+        this.executionParametersName = executionParametersName;
+    }
+
+    public String getAbnormalDatabase() {
+        return abnormalDatabase;
+    }
+
+    public void setAbnormalDatabase(String abnormalDatabase) {
+        this.abnormalDatabase = abnormalDatabase;
+    }
+
+    public String getAbnormalCluster() {
+        return abnormalCluster;
+    }
+
+    public void setAbnormalCluster(String abnormalCluster) {
+        this.abnormalCluster = abnormalCluster;
+    }
+
+    public String getAbnormalProxyUser() {
+        return abnormalProxyUser;
+    }
+
+    public void setAbnormalProxyUser(String abnormalProxyUser) {
+        this.abnormalProxyUser = abnormalProxyUser;
+    }
+
+    public String getWorkFlowName() {
+        return workFlowName;
+    }
+
+    public void setWorkFlowName(String workFlowName) {
+        this.workFlowName = workFlowName;
+    }
+
+    public String getWorkFlowVersion() {
+        return workFlowVersion;
+    }
+
+    public void setWorkFlowVersion(String workFlowVersion) {
+        this.workFlowVersion = workFlowVersion;
+    }
+
+    public Integer getRuleNo() {
+        return ruleNo;
+    }
+
+    public void setRuleNo(Integer ruleNo) {
+        this.ruleNo = ruleNo;
+    }
+
+    public Boolean getEnable() {
+        return enable;
+    }
+
+    public void setEnable(Boolean enable) {
+        this.enable = enable;
+    }
+
+    public Boolean getUnionAll() {
+        return unionAll;
+    }
+
+    public void setUnionAll(Boolean unionAll) {
+        this.unionAll = unionAll;
+    }
+
+    public Integer getContrastType() {
+        return contrastType;
+    }
+
+    public void setContrastType(Integer contrastType) {
+        this.contrastType = contrastType;
+    }
+
+    public int getRuleVariableSize() {
+        return ruleVariableSize;
+    }
+
+    public void setRuleVariableSize(int ruleVariableSize) {
+        this.ruleVariableSize = ruleVariableSize;
+    }
+
+    public String getWorkFlowSpace() {
+        return workFlowSpace;
+    }
+
+    public void setWorkFlowSpace(String workFlowSpace) {
+        this.workFlowSpace = workFlowSpace;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {return true;}
-        if (o == null || getClass() != o.getClass()) {return false;}
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Rule rule = (Rule) o;
         return Objects.equals(id, rule.id);
     }
@@ -389,6 +572,11 @@ public class Rule {
             ", csId='" + csId + '\'' +
             ", template=" + template +
             ", name='" + name + '\'' +
+            ", cnName='" + cnName + '\'' +
+            ", detail='" + detail + '\'' +
+            ", alert=" + alert +
+            ", alertLevel=" + alertLevel +
+            ", alertReceiver='" + alertReceiver + '\'' +
             ", alarm=" + alarm +
             ", ruleType=" + ruleType +
             ", project=" + project +
@@ -399,7 +587,25 @@ public class Rule {
             ", whereContent='" + whereContent + '\'' +
             ", outputName='" + outputName + '\'' +
             ", abortOnFailure=" + abortOnFailure +
+            ", createUser='" + createUser + '\'' +
+            ", createTime='" + createTime + '\'' +
+            ", modifyUser='" + modifyUser + '\'' +
+            ", modifyTime='" + modifyTime + '\'' +
+            ", deleteFailCheckResult=" + deleteFailCheckResult +
+            ", specifyStaticStartupParam=" + specifyStaticStartupParam +
+            ", staticStartupParam='" + staticStartupParam + '\'' +
             ", ruleGroup=" + ruleGroup +
+            ", bashContent='" + bashContent + '\'' +
+            ", executionParametersName='" + executionParametersName + '\'' +
+            ", abnormalDatabase='" + abnormalDatabase + '\'' +
+            ", abnormalCluster='" + abnormalCluster + '\'' +
+            ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+            ", workFlowName='" + workFlowName + '\'' +
+            ", workFlowVersion='" + workFlowVersion + '\'' +
+            ", ruleNo=" + ruleNo +
+            ", enable=" + enable +
+            ", unionAll=" + unionAll +
+            ", contrastType=" + contrastType +
             '}';
     }
 }

@@ -17,10 +17,20 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author howeye
@@ -52,20 +62,70 @@ public class DataSourceRequest {
     @JsonProperty("file_hash_values")
     private String fileHashValues;
 
-    @JsonProperty("linkis_datasoure_id")
+    @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
-    @JsonProperty("linkis_datasoure_version_id")
+    @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
     @JsonProperty("linkis_datasource_name")
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_envs")
+    private List<DataSourceEnvRequest> dataSourceEnvRequests;
 
     @JsonProperty("black_list")
     private Boolean blackList;
 
+    @JsonProperty("type")
+    private String type;
+
     public DataSourceRequest() {
         // Default Constructor
+    }
+
+    public DataSourceRequest(RuleDataSource ruleDataSource) {
+        this.clusterName = ruleDataSource.getClusterName();
+        this.dbName = ruleDataSource.getDbName();
+        String table = ruleDataSource.getTableName();
+        // UUID remove.
+        if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(table) && table.contains(SpecCharEnum.BOTTOM_BAR.getValue()) && table.length() - UuidGenerator
+            .generate().length() - 1 > 0) {
+            this.tableName = table.substring(0, table.length() - UuidGenerator.generate().length() - 1);
+        } else {
+            this.tableName = ruleDataSource.getTableName();
+        }
+        this.proxyUser = ruleDataSource.getProxyUser();
+        if (StringUtils.isNotBlank(ruleDataSource.getColName())) {
+            this.colNames = convertColNames(Stream.of(ruleDataSource.getColName().split(SpecCharEnum.VERTICAL_BAR.getValue())).collect(Collectors.toList()));
+        }
+        this.blackList = ruleDataSource.getBlackColName();
+        this.filter = ruleDataSource.getFilter();
+        if (StringUtils.isNotBlank(ruleDataSource.getFileId())) {
+            this.fileId = ruleDataSource.getFileId();
+            this.fileTablesDesc = ruleDataSource.getFileTableDesc();
+            this.fileDelimiter = " ".equals(ruleDataSource.getFileDelimiter()) ? SpecCharEnum.STAR.getValue() : ruleDataSource.getFileDelimiter();
+            this.fileType = ruleDataSource.getFileType();
+            this.fileHeader = ruleDataSource.getFileHeader();
+            this.fileHashValues = ruleDataSource.getFileHashValue();
+        }
+        this.linkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
+        this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
+        if (null != linkisDataSourceId) {
+            this.linkisDataSourceType = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+            if (CollectionUtils.isNotEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
+                this.dataSourceEnvRequests = ruleDataSource.getRuleDataSourceEnvs().stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+            }
+        }
+        this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
+    }
+
+    private List<DataSourceColumnRequest> convertColNames(List<String> colTypes) {
+        colNames = new ArrayList<>();
+        for (String col : colTypes){
+            DataSourceColumnRequest columnRequest = new DataSourceColumnRequest(col);
+            colNames.add(columnRequest);
+        }
+        return colNames;
     }
 
     public String getClusterName() {
@@ -188,6 +248,14 @@ public class DataSourceRequest {
         this.linkisDataSourceType = linkisDataSourceType;
     }
 
+    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+        return dataSourceEnvRequests;
+    }
+
+    public void setDataSourceEnvRequests(List<DataSourceEnvRequest> dataSourceEnvRequests) {
+        this.dataSourceEnvRequests = dataSourceEnvRequests;
+    }
+
     public static void checkRequest(DataSourceRequest request, boolean cs, boolean fps) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getFilter(), "filter");
@@ -197,9 +265,6 @@ public class DataSourceRequest {
             CommonChecker.checkString(request.getDbName(), "db_name");
         }
         CommonChecker.checkString(request.getClusterName(), "cluster_name");
-        if (request.getColNames() == null) {
-            throw new UnExpectedRequestException("col_names can not be null");
-        }
         DataSourceColumnRequest.checkRequest(request.getColNames(), fps);
     }
 
@@ -225,6 +290,14 @@ public class DataSourceRequest {
 
     public void setBlackList(Boolean blackList) {
         this.blackList = blackList;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public static void checkRequest(DataSourceRequest request, boolean cs, String desc) throws UnExpectedRequestException {

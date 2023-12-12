@@ -22,9 +22,6 @@ public class FilterRequest {
     @JsonProperty("filter_column_list")
     private List<String> filterColumnList;
 
-    public FilterRequest() {
-    }
-
     public String getSourceTable() {
         return sourceTable;
     }

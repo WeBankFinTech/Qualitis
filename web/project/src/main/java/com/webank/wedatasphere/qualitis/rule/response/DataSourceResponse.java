@@ -19,14 +19,21 @@ package com.webank.wedatasphere.qualitis.rule.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -42,6 +49,9 @@ public class DataSourceResponse {
     private List<DataSourceColumnResponse> colNames;
     @JsonProperty("filter")
     private String filter;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
+
     @JsonProperty("file_id")
     private String fileId;
     @JsonProperty("file_table_desc")
@@ -54,40 +64,65 @@ public class DataSourceResponse {
     private Boolean fileHeader;
     @JsonProperty("fps_file")
     private boolean fpsFile;
-    @JsonProperty("proxy_user")
-    private String proxyUser;
     @JsonProperty("file_hash_values")
     private String fileHashValues;
-    @JsonProperty("linkis_datasoure_id")
+
+    @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
-    @JsonProperty("linkis_datasoure_version_id")
+    @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
     @JsonProperty("linkis_datasource_name")
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_envs")
+    private List<DataSourceEnvRequest> dataSourceEnvRequests;
 
     @JsonProperty("black_list")
     private Boolean blackList;
+    @JsonProperty("type")
+    private String type;
+
     public DataSourceResponse() {
     }
 
     public DataSourceResponse(RuleDataSource ruleDataSource) {
         this.clusterName = ruleDataSource.getClusterName();
         this.dbName = ruleDataSource.getDbName();
-        this.tableName = ruleDataSource.getTableName();
+        String table = ruleDataSource.getTableName();
+        // UUID remove.
+        if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(table) && table.contains(SpecCharEnum.BOTTOM_BAR.getValue()) && table.length() - UuidGenerator.generate().length() - 1 > 0) {
+            this.tableName = table.substring(0, table.length() - UuidGenerator.generate().length() - 1);
+        } else {
+            this.tableName = ruleDataSource.getTableName();
+        }
         this.proxyUser = ruleDataSource.getProxyUser();
         if (StringUtils.isNotBlank(ruleDataSource.getColName())) {
             this.colNames = convertColNames(Stream.of(ruleDataSource.getColName().split(SpecCharEnum.VERTICAL_BAR.getValue())).collect(Collectors.toList()));
-            this.blackList = ruleDataSource.getBlackColName();
         }
+        this.blackList = ruleDataSource.getBlackColName();
         this.filter = ruleDataSource.getFilter();
+        if (StringUtils.isNotBlank(ruleDataSource.getFileId())) {
+            this.fileId = ruleDataSource.getFileId();
+            this.fileTableDesc = ruleDataSource.getFileTableDesc();
+            this.fileDelimiter = " ".equals(ruleDataSource.getFileDelimiter()) ? SpecCharEnum.STAR.getValue() : ruleDataSource.getFileDelimiter();
+            this.fileType = ruleDataSource.getFileType();
+            this.fileHeader = ruleDataSource.getFileHeader();
+            this.fpsFile = true;
+            this.fileHashValues = ruleDataSource.getFileHashValue();
+        }
         this.linkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
         this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
-        if (null != ruleDataSource.getDatasourceType()) {
+        if (null != linkisDataSourceId) {
             this.linkisDataSourceType = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+            RuleDatasourceEnvDao ruleDatasourceEnvDao = SpringContextHolder.getBean(RuleDatasourceEnvDao.class);
+            List<RuleDataSourceEnv> dataSourceEnvs = ruleDatasourceEnvDao.findByRuleDataSourceList(Arrays.asList(ruleDataSource));
+            if (CollectionUtils.isNotEmpty(dataSourceEnvs)) {
+                this.dataSourceEnvRequests = dataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+            }
         }
         this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
+        this.type = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
     }
 
     private List<DataSourceColumnResponse> convertColNames(List<String> colTypes) {
@@ -235,11 +270,27 @@ public class DataSourceResponse {
         this.linkisDataSourceType = linkisDataSourceType;
     }
 
+    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+        return dataSourceEnvRequests;
+    }
+
+    public void setDataSourceEnvRequests(List<DataSourceEnvRequest> dataSourceEnvRequests) {
+        this.dataSourceEnvRequests = dataSourceEnvRequests;
+    }
+
     public Long getLinkisDataSourceVersionId() {
         return linkisDataSourceVersionId;
     }
 
     public void setLinkisDataSourceVersionId(Long linkisDataSourceVersionId) {
         this.linkisDataSourceVersionId = linkisDataSourceVersionId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

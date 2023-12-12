@@ -22,8 +22,9 @@ public enum ApplicationCommentEnum {
     BOTH_NULL_ISSUES(10,"两个表都为空", "Both datasource null"),
     METADATA_ISSUES(11,"元数据信息接口异常，可能是数据不存在导致接口请求失败", "Metadata information interface is abnormal, maybe the datasource does not exist"),
     TIMEOUT_KILL(12,"任务被取消", "Task killed"),
-    RIGHT_NULL_DATA_ISSUES(13,"右表存在为空的表或者分区", "Right null table or partition")
-        ;
+    RIGHT_NULL_DATA_ISSUES(13,"右表存在为空的表或者分区", "Right null table or partition"),
+    SENSITIVE_TABLE_CANNOT_BE_OPERATED(14,"敏感表无法操作", "Sensitive table cannot be operated")
+    ;
 
     private Integer code;
     private String zhMessage;

@@ -32,6 +32,7 @@ public class TaskExecuteLimitConfig {
     private Integer taskExecuteRuleSize;
 
     public TaskExecuteLimitConfig() {
+        // Default Constructor
     }
 
     public Integer getTaskExecuteLimitThread() {

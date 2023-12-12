@@ -59,10 +59,10 @@ public class UserRoleDaoImpl implements UserRoleDao {
     }
 
     @Override
-    public List<UserRole> findAllUserRole(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "user");
+    public List<UserRole> findAllUserRole(String userName, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "user_id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return userRoleRepository.findAll(pageable).getContent();
+        return userRoleRepository.findAllUserRole(userName, pageable).getContent();
     }
 
     @Override
@@ -76,7 +76,18 @@ public class UserRoleDaoImpl implements UserRoleDao {
     }
 
     @Override
-    public long countAll() {
-        return userRoleRepository.count();
+    public List<UserRole> findByRoleList(List<Role> role) {
+        return userRoleRepository.findByRoleList(role);
     }
+
+    @Override
+    public long countAllUserRole(String userName) {
+        return userRoleRepository.countAllUserRole(userName);
+    }
+
+    @Override
+    public long countPositionRole(Long id,Integer roleType) {
+        return userRoleRepository.countPositionRole(id,roleType);
+    }
+
 }

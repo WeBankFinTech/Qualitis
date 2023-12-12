@@ -17,9 +17,15 @@
 package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
+import com.webank.wedatasphere.qualitis.response.IndexAlarmChartResponse;
+import com.webank.wedatasphere.qualitis.response.IndexAlarmTodayResponse;
 import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
 import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.IndexRequest;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
+import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
 
 import java.text.ParseException;
 import java.util.List;
@@ -43,7 +49,24 @@ public interface IndexService {
    * Get applications status information in the limitation of time
    * @param param
    * @return List<IndexApplicationChartResponse>
-   * @throws ParseException
    */
-  List<IndexApplicationChartResponse> getApplicationChart(IndexRequest param) throws ParseException;
+  List<IndexApplicationChartResponse> getApplicationChart(IndexRequest param);
+
+  /**
+   * 获取今日发送给当前登录用户的所有告警
+   *
+   * @param user 当前登录用户
+   * @param pageRequest 分页参数
+   * @return IndexAlarmTodayResponse
+   */
+  IndexAlarmTodayResponse getTodayAlarms(String user, PageRequest pageRequest);
+
+  /**
+   * 获取时间段内发送给当前登录用户的critical/major/minor级别的告警数
+   *
+   * @param param 查询参数
+   * @return List<IndexAlarmChartResponse> 返回结果
+   * @throws ParseException 日期格式错误异常
+   */
+  List<IndexAlarmChartResponse> getAlarmChart(IndexRequest param) throws ParseException;
 }

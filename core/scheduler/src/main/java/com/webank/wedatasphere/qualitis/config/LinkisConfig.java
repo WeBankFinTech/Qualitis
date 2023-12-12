@@ -24,6 +24,24 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class LinkisConfig {
+    @Value("${linkis.udf_admin}")
+    private String udfAdmin;
+    @Value("${linkis.datasource_admin}")
+    private String datasourceAdmin;
+
+
+    @Value("${linkis.check_start_time}")
+    private String startTime;
+
+    @Value("${linkis.datasource_cluster}")
+    private String datasourceCluster;
+
+    @Value("${linkis.datasource_support_types}")
+    private String datasourceSupportTypes;
+
+    @Value("${linkis.bdap_check_alert_cluster}")
+    private String bdapCheckAlertCluster;
+
     @Value("${linkis.api.prefix}")
     private String prefix;
 
@@ -45,6 +63,18 @@ public class LinkisConfig {
     @Value("${linkis.api.status}")
     private String status;
 
+    @Value("${linkis.api.unDone}")
+    private String unDone;
+
+    @Value("${linkis.api.unDone_days}")
+    private Integer unDoneDays;
+
+    @Value("${linkis.api.unDone_switch}")
+    private Boolean unDoneSwitch;
+
+    @Value("${linkis.api.maxUnDone}")
+    private Integer maxUnDone;
+
     @Value("${linkis.log.maskKey}")
     private String logMaskKey;
 
@@ -64,8 +94,12 @@ public class LinkisConfig {
     private String datasourceTypes;
     @Value("${linkis.api.meta_data.datasource_env}")
     private String datasourceEnv;
+    @Value("${linkis.api.meta_data.datasource_env_detail}")
+    private String datasourceEnvDetail;
     @Value("${linkis.api.meta_data.datasource_info}")
     private String datasourceInfo;
+    @Value("${linkis.api.meta_data.datasource_info_ids}")
+    private String datasourceInfoIds;
     @Value("${linkis.api.meta_data.datasource_publish}")
     private String datasourcePublish;
     @Value("${linkis.api.meta_data.datasource_connect}")
@@ -82,21 +116,58 @@ public class LinkisConfig {
     private String datasourceModify;
     @Value("${linkis.api.meta_data.datasource_create}")
     private String datasourceCreate;
+    @Value("${linkis.api.meta_data.datasource_delete}")
+    private String datasourceDelete;
     @Value("${linkis.api.meta_data.datasource_init_version}")
     private String datasourceInitVersion;
     @Value("${linkis.api.meta_data.datasource_versions}")
     private String datasourceVersions;
     @Value("${linkis.api.meta_data.datasource_db}")
     private String datasourceDb;
+    @Value("${linkis.api.meta_data.datasource_query_db}")
+    private String datasourceQueryDb;
+    @Value("${linkis.api.meta_data.datasource_query_table}")
+    private String datasourceQueryTable;
+    @Value("${linkis.api.meta_data.datasource_query_column}")
+    private String datasourceQueryColumn;
     @Value("${linkis.api.meta_data.datasource_table}")
     private String datasourceTable;
     @Value("${linkis.api.meta_data.datasource_column}")
     private String datasourceColumn;
-
+    @Value("${linkis.api.meta_data.datasource_env_create_batch}")
+    private String datasourceEnvCreateBatch;
+    @Value("${linkis.api.meta_data.datasource_env_modify_batch}")
+    private String datasourceEnvModifyBatch;
     @Value("${linkis.api.meta_data.column_path}")
     private String columnPath;
     @Value("${linkis.api.meta_data.column_info}")
     private String columnInfo;
+    @Value("${linkis.api.meta_data.udf_add}")
+    private String udfAdd;
+    @Value("${linkis.api.meta_data.udf_delete}")
+    private String udfDelete;
+    @Value("${linkis.api.meta_data.udf_modify}")
+    private String udfModify;
+    @Value("${linkis.api.meta_data.udf_page}")
+    private String udfPage;
+    @Value("${linkis.api.meta_data.udf_detail}")
+    private String udfDetail;
+    @Value("${linkis.api.meta_data.udf_share}")
+    private String udfShare;
+    @Value("${linkis.api.meta_data.udf_share_user}")
+    private String udfShareUser;
+    @Value("${linkis.api.meta_data.udf_handover}")
+    private String udfHandover;
+    @Value("${linkis.api.meta_data.udf_user_directory}")
+    private String udfDirectory;
+    @Value("${linkis.api.meta_data.udf_switch_status}")
+    private String udfSwitchStatus;
+    @Value("${linkis.api.meta_data.udf_name_list}")
+    private String udfByNameList;
+    @Value("${linkis.api.meta_data.udf_new_version}")
+    private String udfNewVersion;
+    @Value("${linkis.api.meta_data.udf_publish}")
+    private String udfPublish;
 
     @Value("${linkis.spark.application.name}")
     private String appName;
@@ -104,22 +175,315 @@ public class LinkisConfig {
     private String engineName;
     @Value("${linkis.spark.engine.version}")
     private String engineVersion;
+    @Value("${linkis.shell.engine.name}")
+    private String shellEngineName;
+    @Value("${linkis.shell.engine.version}")
+    private String shellEngineVersion;
 
     @Value("${linkis.kill_stuck_tasks}")
     private Boolean killStuckTasks;
     @Value("${linkis.kill_stuck_tasks_time}")
     private Integer killStuckTasksTime;
+    @Value("${linkis.kill_total_tasks_time}")
+    private Integer killTotalTasksTime;
     @Value("${linkis.api.upload}")
     private String upload;
     @Value("${linkis.api.upload_tmp_path}")
     private String uploadTmpPath;
     @Value("${linkis.api.upload_prefix}")
     private String uploadPrefix;
+    @Value("${linkis.api.upload_workspace_prefix}")
+    private String uploadWorkspacePrefix;
+    @Value("${linkis.api.upload_root}")
+    private String uploadRoot;
+    @Value("${linkis.api.upload_dir}")
+    private String uploadDir;
+    @Value("${linkis.api.upload_create_dir}")
+    private String uploadCreateDir;
+    @Value("${linkis.api.delete_dir}")
+    private String deleteDir;
     @Value("${linkis.api.getFullTree}")
     private String getFullTree;
     @Value("${linkis.api.saveFullTree}")
     private String saveFullTree;
 
+    @Value("${linkis.gateway.query_time_out}")
+    private Integer gatewayQueryTimeout;
+    @Value("${linkis.gateway.retry_time}")
+    private Integer restTemplateMaxAttempt;
+    @Value("${linkis.gateway.retry_interval}")
+    private Integer retryTimeInterval;
+
+    @Value("${linkis.label.jobQueuingTimeoutName}")
+    private String jobQueuingTimeoutName;
+    @Value("${linkis.label.jobRunningTimeoutName}")
+    private String jobRunningTimeoutName;
+    @Value("${linkis.label.jobRetryTimeoutName}")
+    private String jobRetryTimeoutName;
+    @Value("${linkis.label.jobRetryName}")
+    private String jobRetryName;
+
+    @Value("${linkis.label.jobQueuingTimeout}")
+    private String jobQueuingTimeout;
+    @Value("${linkis.label.jobRunningTimeout}")
+    private String jobRunningTimeout;
+    @Value("${linkis.label.jobRetryTimeout}")
+    private String jobRetryTimeout;
+    @Value("${linkis.label.jobRetryNumber}")
+    private String jobRetry;
+
+    @Value("${linkis.checkAlert.template}")
+    private String checkAlertTemplate;
+    @Value("${linkis.api.meta_data.datasource_env_delete}")
+    private String envDelete;
+
+    public String getEnvDelete() {
+        return envDelete;
+    }
+
+    public void setEnvDelete(String envDelete) {
+        this.envDelete = envDelete;
+    }
+
+    public String getUdfAdd() {
+        return udfAdd;
+    }
+
+    public void setUdfAdd(String udfAdd) {
+        this.udfAdd = udfAdd;
+    }
+
+    public String getUdfDelete() {
+        return udfDelete;
+    }
+
+    public void setUdfDelete(String udfDelete) {
+        this.udfDelete = udfDelete;
+    }
+
+    public String getUdfModify() {
+        return udfModify;
+    }
+
+    public void setUdfModify(String udfModify) {
+        this.udfModify = udfModify;
+    }
+
+    public String getUdfPage() {
+        return udfPage;
+    }
+
+    public void setUdfPage(String udfPage) {
+        this.udfPage = udfPage;
+    }
+
+    public String getUdfDetail() {
+        return udfDetail;
+    }
+
+    public void setUdfDetail(String udfDetail) {
+        this.udfDetail = udfDetail;
+    }
+
+    public String getUdfShare() {
+        return udfShare;
+    }
+
+    public void setUdfShare(String udfShare) {
+        this.udfShare = udfShare;
+    }
+
+    public String getUdfShareUser() {
+        return udfShareUser;
+    }
+
+    public void setUdfShareUser(String udfShareUser) {
+        this.udfShareUser = udfShareUser;
+    }
+
+    public String getUdfHandover() {
+        return udfHandover;
+    }
+
+    public void setUdfHandover(String udfHandover) {
+        this.udfHandover = udfHandover;
+    }
+
+    public String getUdfDirectory() {
+        return udfDirectory;
+    }
+
+    public void setUdfDirectory(String udfDirectory) {
+        this.udfDirectory = udfDirectory;
+    }
+
+    public String getUdfSwitchStatus() {
+        return udfSwitchStatus;
+    }
+
+    public void setUdfSwitchStatus(String udfSwitchStatus) {
+        this.udfSwitchStatus = udfSwitchStatus;
+    }
+
+    public String getUdfByNameList() {
+        return udfByNameList;
+    }
+
+    public void setUdfByNameList(String udfByNameList) {
+        this.udfByNameList = udfByNameList;
+    }
+
+    public String getUdfNewVersion() {
+        return udfNewVersion;
+    }
+
+    public void setUdfNewVersion(String udfNewVersion) {
+        this.udfNewVersion = udfNewVersion;
+    }
+
+    public String getUdfPublish() {
+        return udfPublish;
+    }
+
+    public void setUdfPublish(String udfPublish) {
+        this.udfPublish = udfPublish;
+    }
+
+    public String getUploadWorkspacePrefix() {
+        return uploadWorkspacePrefix;
+    }
+
+    public void setUploadWorkspacePrefix(String uploadWorkspacePrefix) {
+        this.uploadWorkspacePrefix = uploadWorkspacePrefix;
+    }
+
+    public String getUploadDir() {
+        return uploadDir;
+    }
+
+    public void setUploadDir(String uploadDir) {
+        this.uploadDir = uploadDir;
+    }
+
+    public String getUploadCreateDir() {
+        return uploadCreateDir;
+    }
+
+    public void setUploadCreateDir(String uploadCreateDir) {
+        this.uploadCreateDir = uploadCreateDir;
+    }
+
+    public String getDeleteDir() {
+        return deleteDir;
+    }
+
+    public void setDeleteDir(String deleteDir) {
+        this.deleteDir = deleteDir;
+    }
+
+    public String getDatasourceInfoIds() {
+        return datasourceInfoIds;
+    }
+
+    public void setDatasourceInfoIds(String datasourceInfoIds) {
+        this.datasourceInfoIds = datasourceInfoIds;
+    }
+
+    public String getUdfAdmin() {
+        return udfAdmin;
+    }
+
+    public void setUdfAdmin(String udfAdmin) {
+        this.udfAdmin = udfAdmin;
+    }
+
+    public String getDatasourceAdmin() {
+        return datasourceAdmin;
+    }
+
+    public void setDatasourceAdmin(String datasourceAdmin) {
+        this.datasourceAdmin = datasourceAdmin;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getDatasourceCluster() {
+        return datasourceCluster;
+    }
+
+    public void setDatasourceCluster(String datasourceCluster) {
+        this.datasourceCluster = datasourceCluster;
+    }
+
+    public String getDatasourceSupportTypes() {
+        return datasourceSupportTypes;
+    }
+
+    public void setDatasourceSupportTypes(String datasourceSupportTypes) {
+        this.datasourceSupportTypes = datasourceSupportTypes;
+    }
+
+    public String getBdapCheckAlertCluster() {
+        return bdapCheckAlertCluster;
+    }
+
+    public void setBdapCheckAlertCluster(String bdapCheckAlertCluster) {
+        this.bdapCheckAlertCluster = bdapCheckAlertCluster;
+    }
+
+    public String getDatasourceEnvModifyBatch() {
+        return datasourceEnvModifyBatch;
+    }
+
+    public void setDatasourceEnvModifyBatch(String datasourceEnvModifyBatch) {
+        this.datasourceEnvModifyBatch = datasourceEnvModifyBatch;
+    }
+
+    public String getDatasourceDelete() {
+        return datasourceDelete;
+    }
+
+    public String getDatasourceQueryDb() {
+        return datasourceQueryDb;
+    }
+
+    public void setDatasourceQueryDb(String datasourceQueryDb) {
+        this.datasourceQueryDb = datasourceQueryDb;
+    }
+
+    public String getDatasourceQueryTable() {
+        return datasourceQueryTable;
+    }
+
+    public void setDatasourceQueryTable(String datasourceQueryTable) {
+        this.datasourceQueryTable = datasourceQueryTable;
+    }
+
+    public String getDatasourceQueryColumn() {
+        return datasourceQueryColumn;
+    }
+
+    public void setDatasourceQueryColumn(String datasourceQueryColumn) {
+        this.datasourceQueryColumn = datasourceQueryColumn;
+    }
+
+    public void setDatasourceDelete(String datasourceDelete) {
+        this.datasourceDelete = datasourceDelete;
+    }
+
+    public String getDatasourceEnvDetail() {
+        return datasourceEnvDetail;
+    }
+
+    public void setDatasourceEnvDetail(String datasourceEnvDetail) {
+        this.datasourceEnvDetail = datasourceEnvDetail;
+    }
 
     public String getPrefix() {
         return prefix;
@@ -183,6 +547,38 @@ public class LinkisConfig {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getUnDone() {
+        return unDone;
+    }
+
+    public void setUnDone(String unDone) {
+        this.unDone = unDone;
+    }
+
+    public Integer getMaxUnDone() {
+        return maxUnDone;
+    }
+
+    public void setMaxUnDone(Integer maxUnDone) {
+        this.maxUnDone = maxUnDone;
+    }
+
+    public Integer getUnDoneDays() {
+        return unDoneDays;
+    }
+
+    public void setUnDoneDays(Integer unDoneDays) {
+        this.unDoneDays = unDoneDays;
+    }
+
+    public Boolean getUnDoneSwitch() {
+        return unDoneSwitch;
+    }
+
+    public void setUnDoneSwitch(Boolean unDoneSwitch) {
+        this.unDoneSwitch = unDoneSwitch;
     }
 
     public String getDbPath() {
@@ -393,6 +789,22 @@ public class LinkisConfig {
         this.engineVersion = engineVersion;
     }
 
+    public String getShellEngineName() {
+        return shellEngineName;
+    }
+
+    public void setShellEngineName(String shellEngineName) {
+        this.shellEngineName = shellEngineName;
+    }
+
+    public String getShellEngineVersion() {
+        return shellEngineVersion;
+    }
+
+    public void setShellEngineVersion(String shellEngineVersion) {
+        this.shellEngineVersion = shellEngineVersion;
+    }
+
     public Boolean getKillStuckTasks() {
         return killStuckTasks;
     }
@@ -407,6 +819,14 @@ public class LinkisConfig {
 
     public void setKillStuckTasksTime(Integer killStuckTasksTime) {
         this.killStuckTasksTime = killStuckTasksTime;
+    }
+
+    public Integer getKillTotalTasksTime() {
+        return killTotalTasksTime;
+    }
+
+    public void setKillTotalTasksTime(Integer killTotalTasksTime) {
+        this.killTotalTasksTime = killTotalTasksTime;
     }
 
     public String getUpload() {
@@ -433,6 +853,14 @@ public class LinkisConfig {
         this.uploadPrefix = uploadPrefix;
     }
 
+    public String getUploadRoot() {
+        return uploadRoot;
+    }
+
+    public void setUploadRoot(String uploadRoot) {
+        this.uploadRoot = uploadRoot;
+    }
+
     public String getGetFullTree() {
         return getFullTree;
     }
@@ -449,4 +877,107 @@ public class LinkisConfig {
         this.saveFullTree = saveFullTree;
     }
 
+    public Integer getGatewayQueryTimeout() {
+        return gatewayQueryTimeout;
+    }
+
+    public void setGatewayQueryTimeout(Integer gatewayQueryTimeout) {
+        this.gatewayQueryTimeout = gatewayQueryTimeout;
+    }
+
+    public Integer getRestTemplateMaxAttempt() {
+        return restTemplateMaxAttempt;
+    }
+
+    public void setRestTemplateMaxAttempt(Integer restTemplateMaxAttempt) {
+        this.restTemplateMaxAttempt = restTemplateMaxAttempt;
+    }
+
+    public Integer getRetryTimeInterval() {
+        return retryTimeInterval;
+    }
+
+    public void setRetryTimeInterval(Integer retryTimeInterval) {
+        this.retryTimeInterval = retryTimeInterval;
+    }
+
+    public String getJobQueuingTimeoutName() {
+        return jobQueuingTimeoutName;
+    }
+
+    public void setJobQueuingTimeoutName(String jobQueuingTimeoutName) {
+        this.jobQueuingTimeoutName = jobQueuingTimeoutName;
+    }
+
+    public String getJobRunningTimeoutName() {
+        return jobRunningTimeoutName;
+    }
+
+    public void setJobRunningTimeoutName(String jobRunningTimeoutName) {
+        this.jobRunningTimeoutName = jobRunningTimeoutName;
+    }
+
+    public String getJobRetryTimeoutName() {
+        return jobRetryTimeoutName;
+    }
+
+    public void setJobRetryTimeoutName(String jobRetryTimeoutName) {
+        this.jobRetryTimeoutName = jobRetryTimeoutName;
+    }
+
+    public String getJobRetryName() {
+        return jobRetryName;
+    }
+
+    public void setJobRetryName(String jobRetryName) {
+        this.jobRetryName = jobRetryName;
+    }
+
+    public String getJobQueuingTimeout() {
+        return jobQueuingTimeout;
+    }
+
+    public void setJobQueuingTimeout(String jobQueuingTimeout) {
+        this.jobQueuingTimeout = jobQueuingTimeout;
+    }
+
+    public String getJobRunningTimeout() {
+        return jobRunningTimeout;
+    }
+
+    public void setJobRunningTimeout(String jobRunningTimeout) {
+        this.jobRunningTimeout = jobRunningTimeout;
+    }
+
+    public String getJobRetryTimeout() {
+        return jobRetryTimeout;
+    }
+
+    public void setJobRetryTimeout(String jobRetryTimeout) {
+        this.jobRetryTimeout = jobRetryTimeout;
+    }
+
+    public String getJobRetry() {
+        return jobRetry;
+    }
+
+    public void setJobRetry(String jobRetry) {
+        this.jobRetry = jobRetry;
+    }
+
+    public String getDatasourceEnvCreateBatch() {
+        return datasourceEnvCreateBatch;
+    }
+
+    public void setDatasourceEnvCreateBatch(String datasourceEnvCreateBatch) {
+        this.datasourceEnvCreateBatch = datasourceEnvCreateBatch;
+    }
+
+    public String getCheckAlertTemplate() {
+        return checkAlertTemplate;
+    }
+
+    public void setCheckAlertTemplate(String checkAlertTemplate) {
+        this.checkAlertTemplate = checkAlertTemplate;
+    }
 }

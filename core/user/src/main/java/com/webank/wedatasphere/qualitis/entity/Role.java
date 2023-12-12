@@ -34,6 +34,9 @@ public class Role {
     @Column(length = 15, unique = true)
     private String name;
 
+    @Column(name = "zn_name")
+    private String znName;
+
     @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
     @JoinTable(name = "qualitis_auth_role_permission",
             joinColumns = {@JoinColumn(name="role_id", referencedColumnName = "id")},
@@ -48,6 +51,22 @@ public class Role {
 
     @OneToOne(fetch = FetchType.EAGER)
     private Department department;
+
+    @Column(name = "role_type")
+    private Integer roleType;
+
+    @Column(name = "create_user")
+    private String createUser;
+
+    @Column(name = "create_time")
+    private String createTime;
+
+    @Column(name = "modify_user")
+    private String modifyUser;
+
+    @Column(name = "modify_time")
+    private String modifyTime;
+
 
     public Role() {
         // Default Constructor
@@ -99,6 +118,54 @@ public class Role {
 
     public void setDepartment(Department department) {
         this.department = department;
+    }
+
+    public Integer getRoleType() {
+        return roleType;
+    }
+
+    public void setRoleType(Integer roleType) {
+        this.roleType = roleType;
+    }
+
+    public String getZnName() {
+        return znName;
+    }
+
+    public void setZnName(String znName) {
+        this.znName = znName;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
     }
 
     @Override

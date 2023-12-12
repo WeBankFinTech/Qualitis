@@ -40,7 +40,7 @@ public class UserRuleTemplateDaoImpl implements UserRuleTemplateDao {
 
     @Override
     public List<Template> findByUserId(Long userId, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return userRuleTemplateRepository.findByUserId(userId, pageable).getContent().stream().map(TemplateUser::getTemplate).collect(Collectors.toList());
     }

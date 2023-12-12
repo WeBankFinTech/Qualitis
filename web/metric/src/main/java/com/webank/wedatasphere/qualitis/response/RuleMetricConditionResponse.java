@@ -1,10 +1,8 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.RuleMetricTypeConfig;
-import java.util.ArrayList;
-import java.util.HashSet;
+
 import java.util.List;
 import java.util.Set;
 
@@ -18,7 +16,7 @@ public class RuleMetricConditionResponse {
   private Set<String> subSystemNameCondition;
 
   @JsonProperty("rule_metric_type")
-  private Set<RuleMetricTypeConfig> ruleMetricTypeConfigs;
+  private List<RuleMetricTypeConfig> ruleMetricTypeConfigs;
 
   @JsonProperty("en_code")
   private Set<String> enCode;
@@ -31,11 +29,11 @@ public class RuleMetricConditionResponse {
     this.subSystemNameCondition = subSystemNameCondition;
   }
 
-  public Set<RuleMetricTypeConfig> getRuleMetricType() {
+  public List<RuleMetricTypeConfig> getRuleMetricType() {
     return ruleMetricTypeConfigs;
   }
 
-  public void setRuleMetricType(Set<RuleMetricTypeConfig> ruleMetricTypeConfigs) {
+  public void setRuleMetricType(List<RuleMetricTypeConfig> ruleMetricTypeConfigs) {
     this.ruleMetricTypeConfigs = ruleMetricTypeConfigs;
   }
 

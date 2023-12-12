@@ -33,8 +33,23 @@ public class ModifyClusterInfoRequest {
     private String linkisAddress;
     @JsonProperty("linkis_token")
     private String linkisToken;
+    @JsonProperty("hive_urn")
+    private String hiveUrn;
+    @JsonProperty("wtss_json")
+    private String wtssJson;
+    @JsonProperty("jobserver_json")
+    private String jobserverJson;
+
     public ModifyClusterInfoRequest() {
         // Default Constructor
+    }
+
+    public String getHiveUrn() {
+        return hiveUrn;
+    }
+
+    public void setHiveUrn(String hiveUrn) {
+        this.hiveUrn = hiveUrn;
     }
 
     public Long getClusterInfoId() {
@@ -75,5 +90,21 @@ public class ModifyClusterInfoRequest {
 
     public void setLinkisToken(String linkisToken) {
         this.linkisToken = linkisToken;
+    }
+
+    public String getWtssJson() {
+        return wtssJson;
+    }
+
+    public void setWtssJson(String wtssJson) {
+        this.wtssJson = wtssJson;
+    }
+
+    public String getJobserverJson() {
+        return jobserverJson;
+    }
+
+    public void setJobserverJson(String jobserverJson) {
+        this.jobserverJson = jobserverJson;
     }
 }

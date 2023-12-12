@@ -16,8 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.bean.LogResult;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
@@ -33,6 +32,6 @@ public interface JobService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException;
+    GeneralResponse<LogResult> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException;
 
 }

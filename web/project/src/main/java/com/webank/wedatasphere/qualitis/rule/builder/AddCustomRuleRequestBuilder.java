@@ -6,25 +6,27 @@ import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.util.DatasourceEnvUtil;
+import com.webank.wedatasphere.qualitis.service.SubDepartmentPermissionService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author allenzhou@webank.com
@@ -40,25 +42,35 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     private String ruleMetricEnCode;
     private Template template;
     private String ruleDetail;
+    private String ruleCnName;
     private Project project;
     private String ruleName;
     private String userName;
 
+    private String proxyUser;
+
+    private String datasourceCluster;
+
+    private RuleGroupDao ruleGroupDao;
     private RuleMetricDao ruleMetricDao;
     private MetaDataClient metaDataClient;
+    private SubDepartmentPermissionService subDepartmentPermissionService;
 
     private static Integer FOUR = 4;
+    private static final String COMMA = ".";
 
     private static final Pattern DATA_SOURCE_ID = Pattern.compile("\\.\\(ID=[0-9]+\\)");
     private static final Pattern DATA_SOURCE_NAME = Pattern.compile("\\.\\(NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\)");
 
-    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<String, Integer>(){{
-        put("CRITICAL", 1);
-        put("MAJOR", 2);
-        put("MINOR", 3);
-        put("WARNING", 4);
-        put("INFO", 5);
-    }};
+    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<String, Integer>();
+
+    static {
+        ALERT_LEVEL_CODE.put("CRITICAL", 1);
+        ALERT_LEVEL_CODE.put("MAJOR", 2);
+        ALERT_LEVEL_CODE.put("MINOR", 3);
+        ALERT_LEVEL_CODE.put("WARNING", 4);
+        ALERT_LEVEL_CODE.put("INFO", 5);
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AddCustomRuleRequestBuilder.class);
 
@@ -72,65 +84,60 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         this.ruleMetricDao = ruleMetricDao;
     }
 
+    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, MetaDataClient metaDataClient, String datasourceCluster) {
+        addCustomRuleRequest = new AddCustomRuleRequest();
+        this.datasourceCluster = datasourceCluster;
+        this.metaDataClient = metaDataClient;
+        this.ruleMetricDao = ruleMetricDao;
+    }
+
+    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, String datasourceCluster,
+        SubDepartmentPermissionService subDepartmentPermissionService) {
+        this.subDepartmentPermissionService = subDepartmentPermissionService;
+        addCustomRuleRequest = new AddCustomRuleRequest();
+        this.datasourceCluster = datasourceCluster;
+        this.metaDataClient = metaDataClient;
+        this.ruleMetricDao = ruleMetricDao;
+        this.ruleGroupDao = ruleGroupDao;
+    }
+
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean abortOnFailure, String alertInfo)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        // Use automatic generate rule name and project.
+            throws Exception {
+        String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+        String realClusterName = this.datasourceCluster;
+        // Automatic generate rule name and project.
         automaticProjectRuleSetting();
         // Alert info.
         alertSetting(alertInfo);
         addCustomRuleRequest.setSqlCheckArea(sql);
         addCustomRuleRequest.setSaveMidTable(false);
-        String dataSourceId = "";
-        Matcher matcherId = DATA_SOURCE_ID.matcher(cluster.toUpperCase());
-        String dataSourceName = "";
-        Matcher matcherName = DATA_SOURCE_NAME.matcher(cluster.toUpperCase());
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder dataSourceType = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        StringBuilder clusterBuffer = new StringBuilder(cluster);
+        List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>();
+        DatasourceEnvUtil.getDatasourceIdOrName(dataSourceId, dataSourceName, envsStringBuffer, clusterBuffer);
 
-        while (matcherId.find()) {
-            String group = matcherId.group();
-            dataSourceId = group.replace(".(", "").replace(")", "").split("=")[1];
-            int startIndex = cluster.toUpperCase().indexOf(group);
-            String replaceStr = cluster.substring(startIndex, startIndex + group.length());
-            cluster = cluster.replace(replaceStr, "");
-        }
-        if (StringUtils.isBlank(dataSourceId)) {
-            while (matcherName.find()) {
-                String group = matcherName.group();
-                int startIndex = cluster.toUpperCase().indexOf(group);
-                String replaceStr = cluster.substring(startIndex, startIndex + group.length());
-                dataSourceName = replaceStr.replace(".(", "").replace(")", "").split("=")[1];
-                cluster = cluster.replace(replaceStr, "");
-            }
+        addCustomRuleRequest.setClusterName(clusterBuffer.toString());
+
+        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, realUserName, realClusterName, metaDataClient, "", "", new ArrayList<ColumnInfoDetail>());
+        if (StringUtils.isNotEmpty(dataSourceId.toString())) {
+            addCustomRuleRequest.setLinkisDataSourceId(Long.parseLong(dataSourceId.toString()));
         }
 
-        addCustomRuleRequest.setClusterName(cluster);
-        if (StringUtils.isNotBlank(dataSourceId)) {
-            LOGGER.info("Find data source connect. Data source ID: " + dataSourceId);
-            addCustomRuleRequest.setLinkisDataSourceId(Long.parseLong(dataSourceId));
-            GeneralResponse<Map> response = metaDataClient.getDataSourceInfoDetail(cluster, userName, addCustomRuleRequest.getLinkisDataSourceId(), null);
-            Map dataSourceInfo = ((Map) response.getData().get("info"));
-            String dataSourceInfoName = (String) dataSourceInfo.get("dataSourceName");
-            String dataSourceInfoType = (String) ((Map) dataSourceInfo.get("dataSourceType")).get("name");
-            addCustomRuleRequest.setLinkisDataSourceName(dataSourceInfoName);
-            addCustomRuleRequest.setLinkisDataSourceType(dataSourceInfoType);
-        } else if (StringUtils.isNotBlank(dataSourceName)) {
-            LOGGER.info("Find data source connect. Data source name: " + dataSourceName);
-            GeneralResponse<Map> response = metaDataClient.getDataSourceInfoDetailByName(cluster, userName, dataSourceName);
-            Map dataSourceInfo = ((Map) response.getData().get("info"));
-            String dataSourceInfoName = (String) dataSourceInfo.get("dataSourceName");
-            String dataSourceInfoType = (String) ((Map) dataSourceInfo.get("dataSourceType")).get("name");
-            Integer currentDataSourceId = (Integer) dataSourceInfo.get("id");
-            addCustomRuleRequest.setLinkisDataSourceId(currentDataSourceId.longValue());
-
-            addCustomRuleRequest.setLinkisDataSourceName(dataSourceInfoName);
-            addCustomRuleRequest.setLinkisDataSourceType(dataSourceInfoType);
-        }
+        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests = new ArrayList<>();
+        addCustomRuleRequest.setDataSourceEnvMappingRequests(dataSourceEnvMappingRequests);
+        addCustomRuleRequest.setLinkisDataSourceType(dataSourceType.toString());
+        addCustomRuleRequest.setLinkisDataSourceName(dataSourceName.toString());
+        addCustomRuleRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
         taskSetting(abortOnFailure, execParams);
         // Init alarm properties.
         List<CustomAlarmConfigRequest> alarmVariable = new ArrayList<>();
@@ -159,7 +166,9 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     private void automaticProjectRuleSetting() {
         addCustomRuleRequest.setRuleName(ruleName);
         addCustomRuleRequest.setRuleDetail(ruleDetail);
+        addCustomRuleRequest.setRuleCnName(ruleCnName);
         addCustomRuleRequest.setProjectId(project.getId());
+        addCustomRuleRequest.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
     }
 
     private void taskSetting(boolean abortOnFailure, String execParams) {
@@ -174,34 +183,48 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-        boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String sql, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder basicInfoWithDataSource(String datasource,
+                                                     List<TemplateArgumentRequest> templateArgumentRequests,
+                                                     boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure,
+                                                     String execParams) throws Exception {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, String condition1, String condition2, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder addRuleMetric(String ruleMetricName) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException {
+        addCustomRuleRequest.setExecutionParametersName(executionParameterName);
         return this;
     }
 
@@ -237,6 +260,10 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         setUploadAbnormalValue(uploadAbnormalValue);
         setUploadRuleMetricValue(uploadRuleMetricValue);
         setDeleteFailCheckResult(deleteFailCheckResult);
+
+        addCustomRuleRequest.setUploadAbnormalValue(uploadAbnormalValue);
+        addCustomRuleRequest.setUploadRuleMetricValue(uploadRuleMetricValue);
+        addCustomRuleRequest.setDeleteFailCheckResult(deleteFailCheckResult);
         return this;
     }
 
@@ -299,7 +326,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     public AddRequestBuilder fixValueEqual(String value) {
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         addCustomRuleRequest.setAlarm(true);
         return this;
     }
@@ -308,7 +335,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     public AddRequestBuilder fixValueNotEqual(String value) {
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         addCustomRuleRequest.setAlarm(true);
         return this;
     }
@@ -318,7 +345,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -327,7 +354,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -336,7 +363,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -345,16 +372,16 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
     @Override
-    public AddRequestBuilder mouthFlux(String value) {
+    public AddRequestBuilder monthFlux(String value) {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -363,7 +390,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -372,7 +399,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -381,7 +408,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -390,7 +417,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -399,7 +426,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -408,7 +435,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -417,7 +444,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -426,7 +453,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -435,7 +462,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -444,7 +471,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -453,7 +480,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -462,7 +489,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -471,7 +498,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -480,7 +507,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -489,7 +516,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -498,7 +525,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -507,7 +534,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -516,7 +543,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -525,7 +552,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -534,7 +561,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -543,7 +570,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -552,7 +579,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -561,7 +588,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -570,7 +597,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -579,7 +606,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -588,7 +615,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -597,7 +624,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -606,7 +633,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -615,7 +642,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -624,7 +651,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -633,7 +660,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -642,7 +669,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -651,7 +678,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -660,7 +687,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -669,7 +696,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -678,7 +705,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -687,7 +714,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -696,7 +723,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -705,7 +732,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -714,7 +741,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -723,7 +750,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -732,7 +759,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -741,7 +768,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -750,7 +777,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -759,7 +786,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -768,7 +795,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -777,7 +804,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -786,7 +813,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -795,7 +822,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -804,7 +831,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -867,7 +894,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     public AddRequestBuilder fixValueEqual(double value) {
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         addCustomRuleRequest.setAlarm(true);
         return this;
     }
@@ -876,7 +903,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     public AddRequestBuilder fixValueNotEqual(double value) {
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         addCustomRuleRequest.setAlarm(true);
         return this;
     }
@@ -886,7 +913,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -895,7 +922,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -904,7 +931,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -913,16 +940,16 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FIXED_VALUE.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
     @Override
-    public AddRequestBuilder mouthFlux(double value) {
+    public AddRequestBuilder monthFlux(double value) {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -931,7 +958,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -940,7 +967,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -949,7 +976,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -958,7 +985,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -967,7 +994,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -976,7 +1003,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -985,7 +1012,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -994,7 +1021,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1003,7 +1030,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1012,7 +1039,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1021,7 +1048,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1030,7 +1057,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1039,7 +1066,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1048,7 +1075,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1057,7 +1084,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1066,7 +1093,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1075,7 +1102,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1084,7 +1111,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.NOT_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1093,7 +1120,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1102,7 +1129,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1111,7 +1138,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1120,7 +1147,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1129,7 +1156,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1138,7 +1165,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1147,7 +1174,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1156,7 +1183,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.SMALLER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1165,7 +1192,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1174,7 +1201,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1183,7 +1210,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1192,7 +1219,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1201,7 +1228,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1210,7 +1237,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1219,7 +1246,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1228,7 +1255,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.BIGGER.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1237,7 +1264,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1246,7 +1273,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1255,7 +1282,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1264,7 +1291,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1273,7 +1300,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1282,7 +1309,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1291,7 +1318,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1300,7 +1327,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.SMALLER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1309,7 +1336,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HOUR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1318,7 +1345,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.DAY_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1327,7 +1354,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.WEEK_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1336,7 +1363,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1345,7 +1372,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.SEASON_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1354,7 +1381,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1363,7 +1390,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
@@ -1372,12 +1399,12 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         addCustomRuleRequest.setAlarm(true);
         List<CustomAlarmConfigRequest> alarmConfigRequests = addCustomRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.YEAR_ON_YEAR.getCode(), CompareTypeEnum.BIGGER_EQUAL.getCode(), value));
-        addCustomRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addCustomRuleRequest.setAlarmVariable(addCustomRuleRequest.getAlarmVariable());
         return this;
     }
 
     @Override
-    public AbstractAddRequest returnRequest() {
+    public AbstractCommonRequest returnRequest() {
         return addCustomRuleRequest;
     }
 
@@ -1397,6 +1424,15 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public void setRuleName(String ruleName) {
         this.ruleName = ruleName;
+    }
+
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    @Override
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
     }
 
     public String getRuleDetail() {
@@ -1424,6 +1460,97 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    @Override
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    @Override
+    public AddRequestBuilder setAbnormalDb(String clusterAndDbName) throws UnExpectedRequestException {
+        if (StringUtils.isEmpty(clusterAndDbName) || !clusterAndDbName.contains(COMMA)) {
+            throw new UnExpectedRequestException("Abnormal cluster and database is illegal.");
+        }
+        String[] infos = clusterAndDbName.split(SpecCharEnum.PERIOD.getValue());
+        addCustomRuleRequest.setAbnormalCluster(infos[0]);
+        addCustomRuleRequest.setAbnormalDatabase(infos[1]);
+        addCustomRuleRequest.setAbnormalProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder disable() throws UnExpectedRequestException {
+        addCustomRuleRequest.setRuleEnable(false);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder unionAll() throws UnExpectedRequestException {
+        addCustomRuleRequest.setUnionAll(true);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withGroup(String ruleGroupName) throws UnExpectedRequestException {
+        RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, project.getId());
+        if (ruleGroup != null) {
+            addCustomRuleRequest.setRuleGroupId(ruleGroup.getId());
+        } else {
+            RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
+            addCustomRuleRequest.setRuleGroupId(savedRuleGroup.getId());
+        }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder save() {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder async() {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder filter(String filter) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder joinType(String joinType) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder envMapping(String envNames, String dbName, String dbAliasName) throws UnExpectedRequestException {
+        List<DataSourceEnvRequest> dataSourceEnvRequests = addCustomRuleRequest.getDataSourceEnvRequests();
+        if (CollectionUtils.isNotEmpty(dataSourceEnvRequests)) {
+            if (StringUtils.isEmpty(envNames) || StringUtils.isEmpty(dbName)) {
+                throw new UnExpectedRequestException("Env mapping parameters {&CAN_NOT_BE_NULL_OR_EMPTY}");
+            }
+
+            DataSourceEnvMappingRequest dataSourceEnvMappingRequest = new DataSourceEnvMappingRequest();
+
+            dataSourceEnvMappingRequest.setDbName(dbName);
+            dataSourceEnvMappingRequest.setDbAliasName(dbAliasName);
+            String[] envNameStrs = envNames.split(SpecCharEnum.COMMA.getValue());
+
+            for (String envName : envNameStrs) {
+                for (DataSourceEnvRequest dataSourceEnvRequest : dataSourceEnvRequests) {
+                    if (dataSourceEnvRequest.getEnvName().equals(envName)) {
+                        dataSourceEnvMappingRequest.getDataSourceEnvRequests().add(dataSourceEnvRequest);
+                    }
+                }
+            }
+            addCustomRuleRequest.getDataSourceEnvMappingRequests().add(dataSourceEnvMappingRequest);
+        }
+        return this;
     }
 
     public boolean getDeleteFailCheckResult() {

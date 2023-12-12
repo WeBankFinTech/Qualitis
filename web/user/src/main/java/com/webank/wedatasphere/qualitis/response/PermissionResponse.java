@@ -18,17 +18,17 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.Permission;
-import com.webank.wedatasphere.qualitis.entity.Permission;
 
 /**
  * @author howeye
  */
-public class PermissionResponse {
+public class PermissionResponse extends BaseResponse {
 
     @JsonProperty("permission_id")
     private Long permissionId;
     private String url;
     private String method;
+    private String splitName;
 
     public PermissionResponse() {
         // Default Constructor
@@ -38,6 +38,12 @@ public class PermissionResponse {
         this.permissionId = permission.getId();
         this.url = permission.getUrl();
         this.method = permission.getMethod();
+        //method + ":" + url
+        this.splitName = permission.getMethod() + ":" + permission.getUrl();
+        this.createTime = permission.getCreateTime();
+        this.createUser = permission.getCreateUser();
+        this.modifyUser = permission.getModifyUser();
+        this.modifyTime = permission.getModifyTime();
     }
 
     public Long getPermissionId() {
@@ -62,6 +68,14 @@ public class PermissionResponse {
 
     public void setMethod(String method) {
         this.method = method;
+    }
+
+    public String getSplitName() {
+        return splitName;
+    }
+
+    public void setSplitName(String splitName) {
+        this.splitName = splitName;
     }
 
     @Override
