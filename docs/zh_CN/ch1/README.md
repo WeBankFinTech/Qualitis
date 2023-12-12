@@ -29,7 +29,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 
 - **支持工作流**
 支持在工作流当中进行数据质量校验  
-工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/Linkis).
+工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio).
 
 - **管理员控制台**  
 提供管理员控制台界面，支持人员管理，权限管理，权限管理，元数据管理等管理功能。  
@@ -42,6 +42,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 [架构设计文档](架构设计文档.md)  
 [用户手册](用户手册.md)  
 <br/>
+**点击[这里](docs/zh_CN/ch1)可以参考更多文档**
 
 ## Architecture
 ![](../../../images/zh_CN/ch1/总体架构设计.png)
@@ -69,9 +70,9 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 非常欢迎广大的社区伙伴给我们贡献新引擎和代码！
 
 ## Communication
-如果您想得到最快的响应，请给我们提issue，或者您也可以扫码进群：  
+如果您想得到最快的响应，请给我们提 issue，或者您也可以扫码进群：  
 ![](../../../images/en_US/ch1/ContractUs.png)
 
 ## License
-**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
 
