@@ -17,19 +17,34 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.entity.Role;
+import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
 import com.webank.wedatasphere.qualitis.entity.Role;
 
 /**
  * @author howeye
  */
 public class RoleResponse {
+
     @JsonProperty("role_id")
     private long roleId;
     @JsonProperty("role_name")
     private String roleName;
     @JsonProperty("department_name")
     private String departmentName;
+    @JsonProperty("zn_name")
+    private String znName;
+    @JsonProperty("role_type")
+    private Integer roleType;
+    @JsonProperty("role_type_name")
+    private String roleTypeName;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("create_time")
+    private String createTime;
+    @JsonProperty("modify_user")
+    private String modifyUser;
+    @JsonProperty("modify_time")
+    private String modifyTime;
 
     public RoleResponse() {
         // Default Constructor
@@ -38,7 +53,18 @@ public class RoleResponse {
     public RoleResponse(Role role) {
         this.roleId = role.getId();
         this.roleName = role.getName();
-        this.departmentName = role.getDepartment() == null ? "" :role.getDepartment().getName();
+        this.departmentName = role.getDepartment() == null ? "" : role.getDepartment().getName();
+        this.znName = role.getZnName();
+        this.roleType = role.getRoleType();
+        if (role.getRoleType() == null) {
+            this.roleTypeName = "";
+        } else {
+            this.roleTypeName = (role.getRoleType().toString()).equals(RoleTypeEnum.SYSTEM_ROLE.getCode().toString()) ? RoleTypeEnum.SYSTEM_ROLE.getMessage() : RoleTypeEnum.POSITION_ROLE.getMessage();
+        }
+        this.createTime = role.getCreateTime();
+        this.createUser = role.getCreateUser();
+        this.modifyTime = role.getModifyTime();
+        this.modifyUser = role.getModifyUser();
     }
 
     public long getRoleId() {
@@ -65,12 +91,68 @@ public class RoleResponse {
         this.departmentName = departmentName;
     }
 
+    public String getZnName() {
+        return znName;
+    }
+
+    public void setZnName(String znName) {
+        this.znName = znName;
+    }
+
+    public Integer getRoleType() {
+        return roleType;
+    }
+
+    public void setRoleType(Integer roleType) {
+        this.roleType = roleType;
+    }
+
+    public String getRoleTypeName() {
+        return roleTypeName;
+    }
+
+    public void setRoleTypeName(String roleTypeName) {
+        this.roleTypeName = roleTypeName;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
     @Override
     public String toString() {
         return "RoleResponse{" +
-            "roleId=" + roleId +
-            ", roleName='" + roleName + '\'' +
-            ", departmentName='" + departmentName + '\'' +
-            '}';
+                "roleId=" + roleId +
+                ", roleName='" + roleName + '\'' +
+                ", departmentName='" + departmentName + '\'' +
+                '}';
     }
 }

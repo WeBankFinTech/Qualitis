@@ -37,7 +37,7 @@ public class AddUserProxyUserResponse {
 
     public AddUserProxyUserResponse(UserProxyUser userProxyUser) {
         this.userProxyUserId = userProxyUser.getId();
-        this.username = userProxyUser.getUser().getUserName();
+        this.username = userProxyUser.getUser().getUsername();
         this.proxyUserName = userProxyUser.getProxyUser().getProxyUserName();
     }
 

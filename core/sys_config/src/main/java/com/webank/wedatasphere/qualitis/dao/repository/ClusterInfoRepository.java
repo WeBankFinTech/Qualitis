@@ -17,7 +17,12 @@
 package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
 
 /**
  * @author howeye
@@ -30,5 +35,29 @@ public interface ClusterInfoRepository extends JpaRepository<ClusterInfo, Long> 
      * @return
      */
     ClusterInfo findByClusterName(String clusterName);
+
+    /**
+     * Find cluster like name
+     * @param clusterName
+     * @param pageable
+     * @return
+     */
+    @Query(value = "select ci from ClusterInfo ci where ci.clusterName like ?1")
+    Page<ClusterInfo> findLikeClusterName(String clusterName, Pageable pageable);
+
+    /**
+     * Count by name for page
+     * @param clusterName
+     * @return
+     */
+    @Query(value = "SELECT COUNT(ci.id) from ClusterInfo ci where ci.clusterName like ?1")
+    int countTotalByName(String clusterName);
+
+    /**
+     * Find clutser info List by cluster name
+     * @param clusterNameList
+     * @return
+     */
+    List<ClusterInfo> findByClusterNameIn(List<String> clusterNameList);
 
 }

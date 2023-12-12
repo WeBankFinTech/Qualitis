@@ -16,11 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import javax.persistence.*;
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -37,8 +43,10 @@ public class TemplateStatisticsInputMeta {
     private String funcName;
     @Column(length = 50)
     private String value;
-    @Column(length = 50, updatable = false)
+    @Column(length = 500, updatable = false)
     private String name;
+    @Column(name = "pure_name", length = 500, updatable = false)
+    private String pureName;
 
     @Column(name = "result_type")
     private String resultType;
@@ -50,6 +58,7 @@ public class TemplateStatisticsInputMeta {
     private Integer valueType;
 
     @ManyToOne
+    @JsonIgnore
     private Template template;
 
     public TemplateStatisticsInputMeta() {
@@ -96,12 +105,24 @@ public class TemplateStatisticsInputMeta {
         this.valueType = valueType;
     }
 
+    public String getPureName() {
+        return pureName;
+    }
+
+    public void setPureName(String pureName) {
+        this.pureName = pureName;
+    }
+
     public String getName() {
         return name;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Template getTemplate() {
+        return template;
     }
 
     public void setTemplate(Template template) {

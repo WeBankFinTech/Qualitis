@@ -31,6 +31,10 @@ public class AddProjectRequest {
     @JsonProperty("cn_name")
     private String cnName;
     private String username;
+    @JsonProperty("sub_system_id")
+    private Long subSystemId;
+    @JsonProperty("sub_system_name")
+    private String subSystemName;
     private String description;
     @JsonProperty("project_label")
     private Set<String> projectLabels;
@@ -79,6 +83,22 @@ public class AddProjectRequest {
 
     public void setProjectLabels(Set<String> projectLabels) {
         this.projectLabels = projectLabels;
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
     }
 
     public List<AuthorizeProjectUserRequest> getAuthorizeProjectUserRequests() {

@@ -74,7 +74,7 @@ public class UserSpecPermissionController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteUserSpecPermission(DeleteUserSpecPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse deleteUserSpecPermission(DeleteUserSpecPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -90,7 +90,7 @@ public class UserSpecPermissionController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyUserSpecPermission(ModifyUserSpecPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse modifyUserSpecPermission(ModifyUserSpecPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);

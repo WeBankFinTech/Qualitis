@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,30 +51,27 @@ public class UserDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setUserName("xxx");
+    user.setUsername("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);
 
-    //总数量大于0
-    long userSize = userDao.countAll();
-    assertTrue(userSize > 0);
 
     //分页查询有结果
-    List<User> users = userDao.findAllUser(0, 5);
-    assertTrue(users.size() > 0);
+    Page<User> users = userDao.findAllUser("allenzhou",null,null, 0, 5);
+    assertTrue(users.getTotalElements() > 0);
 
     //保存到数据库的对象是否和保存的值一致
     User findUser = userDao.findById(saveUser.getId());
     assertNotNull(findUser);
     assertEquals(findUser.getChineseName(), saveUser.getChineseName());
     assertEquals(findUser.getDepartment(), saveUser.getDepartment());
-    assertEquals(findUser.getUserName(), saveUser.getUserName());
+    assertEquals(findUser.getUsername(), saveUser.getUsername());
 
     //根据username查询的数据库对象是否和保存的值一致
-    User findByUsernameUser = userDao.findByUsername(saveUser.getUserName());
+    User findByUsernameUser = userDao.findByUsername(saveUser.getUsername());
     assertNotNull(findByUsernameUser);
-    assertEquals(findByUsernameUser.getUserName(), saveUser.getUserName());
+    assertEquals(findByUsernameUser.getUsername(), saveUser.getUsername());
 
     //删除后,是否还能找到对象
     userDao.deleteUser(saveUser);

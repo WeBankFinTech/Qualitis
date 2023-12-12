@@ -16,7 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.project.controller;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
+import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
 import com.webank.wedatasphere.qualitis.project.service.WorkflowProjectService;
@@ -68,6 +72,51 @@ public class WorkflowController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get workflow project detail, project_id: {}, caused by: {}", projectId, e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
+        }
+    }
+
+    @POST
+    @Path("query")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse<ProjectResponse>> query(QueryProjectRequest request) throws UnExpectedRequestException {
+        try {
+            request.convertParameter();
+            return workflowProjectService.getWorkflowProjectByUser(request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get project user, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROJECT}", null);
+        }
+    }
+    /**
+     * query projectDetail and ruleList by condition
+     * @param projectId
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    @POST
+    @Path("query/rules/{projectId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<ProjectDetailResponse> getRulesByCondition(@PathParam("projectId") Long projectId, QueryRuleRequest request)
+            throws UnExpectedRequestException, PermissionDeniedRequestException {
+        request.convertParameter();
+        try {
+            return workflowProjectService.getWorkflowRuleByCondition(projectId, request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        }  catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get project rules, caused by system error: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
         }
     }

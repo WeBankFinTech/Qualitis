@@ -31,7 +31,8 @@ public enum ApplicationStatusEnum {
     NOT_PASS(8, "未通过校验", "NOT_PASS"),
     TASK_SUBMIT_FAILED(9, "任务初始化失败", "TASK_SUBMIT_FAILED"),
     SUCCESSFUL_CREATE_APPLICATION(10, "任务初始化成功", "SUCCESSFUL_CREATE_APPLICATION"),
-    ARGUMENT_NOT_CORRECT(11, "参数错误", "ARGUMENT_NOT_CORRECT")
+    ARGUMENT_NOT_CORRECT(11, "参数错误", "ARGUMENT_NOT_CORRECT"),
+    SUBMIT_PENDING(12, "提交阻塞", "SUBMIT_PENDING")
     ;
 
     private Integer code;

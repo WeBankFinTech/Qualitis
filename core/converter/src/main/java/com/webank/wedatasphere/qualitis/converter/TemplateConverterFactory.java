@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.converter;
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.constant.TaskTypeEnum;
 import com.webank.wedatasphere.qualitis.exception.TaskTypeException;
-import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
-import com.webank.wedatasphere.qualitis.constant.TaskTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

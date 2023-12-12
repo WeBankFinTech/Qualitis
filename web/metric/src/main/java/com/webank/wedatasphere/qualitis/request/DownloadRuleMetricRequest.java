@@ -14,6 +14,7 @@ public class DownloadRuleMetricRequest {
     private List<Long> ruleMetricIds;
 
     public DownloadRuleMetricRequest() {
+        // Default Constructor
     }
 
     public DownloadRuleMetricRequest(List<Long> ruleMetricIds) {

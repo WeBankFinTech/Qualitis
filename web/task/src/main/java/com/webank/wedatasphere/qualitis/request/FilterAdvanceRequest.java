@@ -17,13 +17,13 @@
 package com.webank.wedatasphere.qualitis.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+
 import java.util.List;
 
 /**
- * @author howeye
+ * @author allenzhou
  */
 public class FilterAdvanceRequest {
     @JsonProperty("application_id")
@@ -40,22 +40,50 @@ public class FilterAdvanceRequest {
     private String databaseName;
     @JsonProperty("table_name")
     private String tableName;
+    @JsonProperty("rule_group_id")
+    private Long ruleGroupId;
 
     @JsonProperty("start_time")
     private String startTime;
     @JsonProperty("end_time")
     private String endTime;
+    @JsonProperty("execute_user")
+    private String executeUser;
+
+    @JsonProperty("stop_able_status")
+    private List<Integer> stopAbleStatus;
+    @JsonProperty("start_finish_time")
+    private String startFinishTime;
+    @JsonProperty("end_finish_time")
+    private String endFinishTime;
 
     private Integer page;
     private Integer size;
 
     public FilterAdvanceRequest() {
+        // Do nothing.
     }
 
     public static void checkRequest(FilterAdvanceRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Advance filter request.");
         CommonChecker.checkObject(request.getPage(), "page");
         CommonChecker.checkObject(request.getSize(), "size");
+    }
+
+    public String getStartFinishTime() {
+        return startFinishTime;
+    }
+
+    public void setStartFinishTime(String startFinishTime) {
+        this.startFinishTime = startFinishTime;
+    }
+
+    public String getEndFinishTime() {
+        return endFinishTime;
+    }
+
+    public void setEndFinishTime(String endFinishTime) {
+        this.endFinishTime = endFinishTime;
     }
 
     public String getApplicationId() {
@@ -114,6 +142,14 @@ public class FilterAdvanceRequest {
         this.tableName = tableName;
     }
 
+    public Long getRuleGroupId() {
+        return ruleGroupId;
+    }
+
+    public void setRuleGroupId(Long ruleGroupId) {
+        this.ruleGroupId = ruleGroupId;
+    }
+
     public String getStartTime() {
         return startTime;
     }
@@ -146,4 +182,19 @@ public class FilterAdvanceRequest {
         this.size = size;
     }
 
+    public String getExecuteUser() {
+        return executeUser;
+    }
+
+    public void setExecuteUser(String executeUser) {
+        this.executeUser = executeUser;
+    }
+
+    public List<Integer> getStopAbleStatus() {
+        return stopAbleStatus;
+    }
+
+    public void setStopAbleStatus(List<Integer> stopAbleStatus) {
+        this.stopAbleStatus = stopAbleStatus;
+    }
 }

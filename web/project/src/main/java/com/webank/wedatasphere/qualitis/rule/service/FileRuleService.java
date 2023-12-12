@@ -20,12 +20,15 @@ import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestExcepti
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+
+import java.io.IOException;
 
 /**
  * @author allenzhou
@@ -34,10 +37,14 @@ public interface FileRuleService {
     /**
      * Add file rule
      * @param request
+     * @param loginUser
+     * @param groupRules
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> addRule(AddFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRule(AddFileRuleRequest request, String loginUser, boolean groupRules) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * Add file rule for bdp-client.
@@ -45,9 +52,11 @@ public interface FileRuleService {
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, String loginUser)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRuleForOuter(AbstractCommonRequest request, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * Delete rule
@@ -55,8 +64,9 @@ public interface FileRuleService {
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteRule(DeleteFileRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse deleteRule(DeleteFileRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Delete rule real
@@ -64,15 +74,32 @@ public interface FileRuleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse deleteRuleReal(Rule rule) throws UnExpectedRequestException;
 
     /**
      * Modify rule detail
      * @param request
+     * @param loginUser
+     * @param groupRules
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> modifyRuleDetail(ModifyFileRuleRequest request, String loginUser, boolean groupRules) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
+
+    /**
+     * Modify rule detail
+     * @param request
+     * @param loginUser
+     * @param groupRules
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
+     * @throws RuleLockException
+     */
+    GeneralResponse<RuleResponse> modifyRuleDetailWithLock(ModifyFileRuleRequest request, String loginUser, boolean groupRules) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, RuleLockException;
 
     /**
      * 根据ruleId获取rule详情
@@ -87,8 +114,10 @@ public interface FileRuleService {
      * @param request
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> addRuleForUpload(AddFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRuleForUpload(AddFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * Modify rule in one transaction for upload.
@@ -96,7 +125,9 @@ public interface FileRuleService {
      * @param userName
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyFileRuleRequest modifyRuleRequest, String userName)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 }

@@ -8,34 +8,35 @@ import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.util.DatasourceEnvUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * @author allenzhou@webank.com
@@ -49,27 +50,36 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     private String ruleMetricEnCode;
     private Template template;
     private String ruleDetail;
+    private String ruleCnName;
     private Project project;
     private String ruleName;
     private String userName;
+
+    private String proxyUser;
+
+    private String datasourceCluster;
 
 
     private static Integer TWO = 2;
     private static Integer THREE = 3;
 
     private static Integer FOUR = 4;
+    private static final String COMMA = ".";
 
-    private static final Pattern DATA_SOURCE_ID = Pattern.compile("\\.\\(ID=[0-9]+\\)");
-    private static final Pattern DATA_SOURCE_NAME = Pattern.compile("\\.\\(NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\)");
+    private static final Pattern DATA_SOURCE_NAME = Pattern.compile("\\.\\(NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\{[\\u4E00-\\u9FA5A-Za-z0-9_,]+\\}\\)");
 
 
-    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<String, Integer>(){{
-        put("CRITICAL", 1);
-        put("MAJOR", 2);
-        put("MINOR", 3);
-        put("WARNING", 4);
-        put("INFO", 5);
-    }};
+    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<String, Integer>();
+
+    static {
+        ALERT_LEVEL_CODE.put("CRITICAL", 1);
+        ALERT_LEVEL_CODE.put("MAJOR", 2);
+        ALERT_LEVEL_CODE.put("MINOR", 3);
+        ALERT_LEVEL_CODE.put("WARNING", 4);
+        ALERT_LEVEL_CODE.put("INFO", 5);
+    }
+
+    private RuleGroupDao ruleGroupDao;
 
     private RuleMetricDao ruleMetricDao;
 
@@ -87,22 +97,37 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         this.ruleMetricDao = ruleMetricDao;
     }
 
+    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, MetaDataClient metaDataClient, String datasourceCluster) {
+        addRuleRequest = new AddRuleRequest();
+        this.metaDataClient = metaDataClient;
+        this.ruleMetricDao = ruleMetricDao;
+        this.datasourceCluster = datasourceCluster;
+    }
+
+    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, String datasourceCluster) {
+        addRuleRequest = new AddRuleRequest();
+        this.metaDataClient = metaDataClient;
+        this.ruleGroupDao = ruleGroupDao;
+        this.ruleMetricDao = ruleMetricDao;
+        this.datasourceCluster = datasourceCluster;
+    }
+
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean abortOnFailure, String alertInfo)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return this;
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-        boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception {
         // Datasource
         solveDatasource(datasource);
 
@@ -136,7 +161,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         setUploadRuleMetricValue(uploadRuleMetricValue);
         setUploadAbnormalValue(uploadAbnormalValue);
         addRuleRequest.setAlarmVariable(alarmVariable);
-
+        addRuleRequest.setUploadAbnormalValue(uploadAbnormalValue);
+        addRuleRequest.setUploadRuleMetricValue(uploadRuleMetricValue);
     }
 
     private void taskSetting(boolean deleteFailCheckResult, boolean abortOnFailure, String execParams) {
@@ -170,48 +196,30 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     private void automaticProjectRuleSetting() {
         addRuleRequest.setRuleName(ruleName);
         addRuleRequest.setRuleDetail(ruleDetail);
+        addRuleRequest.setRuleCnName(ruleCnName);
         addRuleRequest.setProjectId(project.getId());
         addRuleRequest.setRuleTemplateId(template.getId());
     }
 
-    private void solveDatasource(String datasource) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+    private void solveDatasource(String datasource) throws Exception {
         List<DataSourceRequest> dataSourceRequests = new ArrayList<>(1);
         List<DataSourceColumnRequest> dataSourceColumnRequests = new ArrayList<>(1);
         DataSourceRequest dataSourceRequest = new DataSourceRequest();
-        String clusterName;
-        String database;
-        String table;
-        String col;
-        String filter;
+        String clusterName, database, table, col, filter;
 
         String[] datasourceStrs = datasource.split(SpecCharEnum.COLON.getValue());
         if (datasourceStrs.length > TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
-        String dbAndTable = datasourceStrs[0];
-        String dataSourceId = "";
-        Matcher matcherId = DATA_SOURCE_ID.matcher(dbAndTable.toUpperCase());
-        String dataSourceName = "";
-        Matcher matcherName = DATA_SOURCE_NAME.matcher(dbAndTable.toUpperCase());
+        StringBuilder dbAndTable = new StringBuilder(datasourceStrs[0]);
 
-        while (matcherId.find()) {
-            String group = matcherId.group();
-            dataSourceId = group.replace(".(", "").replace(")", "").split("=")[1];
-            int startIndex = dbAndTable.toUpperCase().indexOf(group);
-            String replaceStr = dbAndTable.substring(startIndex, startIndex + group.length());
-            dbAndTable = dbAndTable.replace(replaceStr, "");
-        }
-        if (StringUtils.isBlank(dataSourceId)) {
-            while (matcherName.find()) {
-                String group = matcherName.group();
-                int startIndex = dbAndTable.toUpperCase().indexOf(group);
-                String replaceStr = dbAndTable.substring(startIndex, startIndex + group.length());
-                dataSourceName = replaceStr.replace(".(", "").replace(")", "").split("=")[1];
-                dbAndTable = dbAndTable.replace(replaceStr, "");
-            }
-        }
-        String[] datasources = dbAndTable.split(SpecCharEnum.PERIOD.getValue());
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDatasourceIdOrName(dataSourceId, dataSourceName, envsStringBuffer, dbAndTable);
+        String[] datasources = dbAndTable.toString().split(SpecCharEnum.PERIOD.getValue());
         filter = datasourceStrs[1];
+
         if (datasources.length != FOUR && datasources.length != THREE) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
@@ -220,33 +228,36 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         table = datasources[2];
         col = datasources.length >= FOUR ? datasources[3] : "";
 
-        List<ColumnInfoDetail> cols = metaDataClient.getColumnInfo(clusterName, database, table, userName);
-
-        if (StringUtils.isNotBlank(dataSourceId)) {
-            LOGGER.info("Find data source connect. Data source ID: " + dataSourceId);
-            dataSourceRequest.setLinkisDataSourceId(Long.parseLong(dataSourceId));
-            GeneralResponse<Map> response = metaDataClient.getDataSourceInfoDetail(clusterName, userName, dataSourceRequest.getLinkisDataSourceId(), null);
-            cols = metaDataClient.getColumnsByDataSource(clusterName, userName, dataSourceRequest.getLinkisDataSourceId(), database, table).getContent();
-            Map dataSourceInfo = ((Map) response.getData().get("info"));
-            String dataSourceInfoName = (String) dataSourceInfo.get("dataSourceName");
-            String dataSourceInfoType = (String) ((Map) dataSourceInfo.get("dataSourceType")).get("name");
-            dataSourceRequest.setLinkisDataSourceName(dataSourceInfoName);
-            dataSourceRequest.setLinkisDataSourceType(dataSourceInfoType);
-        } else if (StringUtils.isNotBlank(dataSourceName)) {
-            LOGGER.info("Find data source connect. Data source name: " + dataSourceName);
-            GeneralResponse<Map> response = metaDataClient.getDataSourceInfoDetailByName(clusterName, userName, dataSourceName);
-
-            Map dataSourceInfo = ((Map) response.getData().get("info"));
-            String dataSourceInfoName = (String) dataSourceInfo.get("dataSourceName");
-            String dataSourceInfoType = (String) ((Map) dataSourceInfo.get("dataSourceType")).get("name");
-            Integer currentDataSourceId = (Integer) dataSourceInfo.get("id");
-            dataSourceRequest.setLinkisDataSourceId(currentDataSourceId.longValue());
-            cols = metaDataClient.getColumnsByDataSource(clusterName, userName, currentDataSourceId.longValue(), database, table).getContent();
-
-            dataSourceRequest.setLinkisDataSourceName(dataSourceInfoName);
-            dataSourceRequest.setLinkisDataSourceType(dataSourceInfoType);
+        List<ColumnInfoDetail> cols = new ArrayList<>();
+        try {
+            if (StringUtils.isEmpty(envsStringBuffer.toString())) {
+                cols = metaDataClient.getColumnInfo(clusterName, database, table, StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            }
+        } catch (Exception e) {
+            throw new UnExpectedRequestException(e.getMessage(), 500);
         }
 
+        getDataSourceRequest(dataSourceRequests, dataSourceColumnRequests, dataSourceRequest, clusterName, database, table, col, filter, dataSourceId, dataSourceName, cols, envsStringBuffer);
+
+        this.addRuleRequest.setDatasource(dataSourceRequests);
+    }
+
+    private void getDataSourceRequest(List<DataSourceRequest> dataSourceRequests, List<DataSourceColumnRequest> dataSourceColumnRequests, DataSourceRequest dataSourceRequest
+            , String clusterName, String database, String table, String col, String filter, StringBuilder dataSourceId, StringBuilder dataSourceName, List<ColumnInfoDetail> cols, StringBuilder envsStringBuffer) throws Exception {
+
+        String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+        String realClusterName = this.datasourceCluster;
+
+        StringBuilder dataSourceType = new StringBuilder();
+        List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>();
+        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, realUserName, realClusterName, metaDataClient, database, table, cols);
+
+        if (StringUtils.isNotEmpty(dataSourceId.toString())) {
+            dataSourceRequest.setLinkisDataSourceId(Long.parseLong(dataSourceId.toString()));
+        }
+        dataSourceRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
+        dataSourceRequest.setLinkisDataSourceType(dataSourceType.toString());
+        dataSourceRequest.setLinkisDataSourceName(dataSourceName.toString());
         // For one or more fields
         if (StringUtils.isBlank(col)) {
             LOGGER.info("Table count check.");
@@ -276,7 +287,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
                 }
             } else {
                 for (String colName : colsInDatasource) {
-                    String type = cols.stream().filter( field -> field.getFieldName().equals(colName)).map(ColumnInfoDetail::getDataType).collect(Collectors.joining());
+                    String type = cols.stream().filter(field -> field.getFieldName().equals(colName)).map(ColumnInfoDetail::getDataType).collect(Collectors.joining());
                     DataSourceColumnRequest dataSourceColumnRequest = new DataSourceColumnRequest(colName, type);
                     dataSourceColumnRequests.add(dataSourceColumnRequest);
                 }
@@ -285,23 +296,20 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
             dataSourceRequest.setBlackList(blackList);
         }
 
-        dataSourceRequest.setClusterName(clusterName);
         dataSourceRequest.setDbName(database);
         dataSourceRequest.setTableName(table);
+        dataSourceRequest.setClusterName(clusterName);
         dataSourceRequest.setColNames(dataSourceColumnRequests);
-
+        dataSourceRequest.setProxyUser(realUserName);
         dataSourceRequest.setFilter(filter);
-        dataSourceRequest.setProxyUser(userName);
 
         dataSourceRequests.add(dataSourceRequest);
-
-        this.addRuleRequest.setDatasource(dataSourceRequests);
     }
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, String regxOrRangeOrEnum, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception {
         // Datasource
         solveDatasource(datasource);
 
@@ -322,10 +330,32 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
-    private void templateArgumentSetting(List<TemplateArgumentRequest> templateArgumentRequests, String regxOrRange) {
+    @Override
+    public AddRequestBuilder basicInfoWithDataSource(String datasource, List<TemplateArgumentRequest> templateArgumentRequests
+            , boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception {
+        // Datasource
+        solveDatasource(datasource);
+
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+        addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
+        // Alert info.
+        alertSetting(alertInfo);
+
+        // Task running info.
+        taskSetting(deleteFailCheckResult, abortOnFailure, execParams);
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+        initAlarm(alarmVariable, uploadRuleMetricValue, uploadAbnormalValue);
+        return this;
+    }
+
+    private void templateArgumentSetting(List<TemplateArgumentRequest> templateArgumentRequests, String regxOrRangeOrEnum) {
         for (TemplateMidTableInputMeta templateMidTableInputMeta : template.getTemplateMidTableInputMetas()) {
             if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
-                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), regxOrRange));
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), regxOrRangeOrEnum));
             }
         }
         addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
@@ -333,8 +363,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, String condition1, String condition2, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception {
         // Datasource
         solveDatasource(datasource);
 
@@ -356,8 +386,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult,
-        boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return null;
     }
 
@@ -374,8 +404,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
                 return Long.compare(templateMidTableInputMetaFront.getId(), templateMidTableInputMetaBack.getId());
             }
         });
-        templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMetaList.get(0).getId(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), condition1));
-        templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMetaList.get(1).getId(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), condition2));
+        templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMetaList.get(0).getId(), templateMidTableInputMetaList.get(0).getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), condition1));
+        templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMetaList.get(1).getId(), templateMidTableInputMetaList.get(1).getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), condition2));
 
         addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
     }
@@ -403,7 +433,13 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder addRuleMetricWithCheck(String ruleMetricName, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue) throws UnExpectedRequestException{
+    public AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException {
+        addRuleRequest.setExecutionParametersName(executionParameterName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder addRuleMetricWithCheck(String ruleMetricName, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue) throws UnExpectedRequestException {
         return this;
     }
 
@@ -517,7 +553,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder mouthFlux(String value) {
+    public AddRequestBuilder monthFlux(String value) {
         addRuleRequest.setAlarm(true);
         List<AlarmConfigRequest> alarmConfigRequests = addRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
@@ -1093,7 +1129,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder mouthFlux(double value) {
+    public AddRequestBuilder monthFlux(double value) {
         addRuleRequest.setAlarm(true);
         List<AlarmConfigRequest> alarmConfigRequests = addRuleRequest.getAlarmVariable();
         alarmConfigRequests.add(commonAlarmSetting(CheckTemplateEnum.MONTH_FLUCTUATION.getCode(), CompareTypeEnum.EQUAL.getCode(), value));
@@ -1552,7 +1588,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AbstractAddRequest returnRequest() {
+    public AbstractCommonRequest returnRequest() {
         if (addRuleRequest.getAlarmVariable().size() >= TWO) {
             addRuleRequest.getAlarmVariable().remove(0);
         }
@@ -1586,6 +1622,15 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         this.ruleName = ruleName;
     }
 
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    @Override
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
+    }
+
     public String getRuleDetail() {
         return ruleDetail;
     }
@@ -1602,6 +1647,76 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    @Override
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
+    }
+
+    @Override
+    public AddRequestBuilder setAbnormalDb(String clusterAndDbName) throws UnExpectedRequestException {
+        if (StringUtils.isEmpty(clusterAndDbName) || !clusterAndDbName.contains(COMMA)) {
+            throw new UnExpectedRequestException("Abnormal cluster and database is illegal.");
+        }
+        String[] infos = clusterAndDbName.split(SpecCharEnum.PERIOD.getValue());
+        addRuleRequest.setAbnormalCluster(infos[0]);
+        addRuleRequest.setAbnormalDatabase(infos[1]);
+        addRuleRequest.setAbnormalProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder disable() throws UnExpectedRequestException {
+        addRuleRequest.setRuleEnable(false);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder unionAll() throws UnExpectedRequestException {
+        addRuleRequest.setUnionAll(true);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withGroup(String ruleGroupName) throws UnExpectedRequestException {
+        RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, project.getId());
+        if (ruleGroup != null) {
+            addRuleRequest.setRuleGroupId(ruleGroup.getId());
+        } else {
+            RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
+            addRuleRequest.setRuleGroupId(savedRuleGroup.getId());
+        }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder save() {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder async() {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder filter(String filter) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder joinType(String joinType) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder envMapping(String envName, String dbAndTableName, String dbAliasName) throws UnExpectedRequestException {
+        return this;
     }
 
     public RuleMetricDao getRuleMetricDao() {

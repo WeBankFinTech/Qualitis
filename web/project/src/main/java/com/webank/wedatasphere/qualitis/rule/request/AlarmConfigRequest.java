@@ -25,24 +25,10 @@ import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 /**
  * @author howeye
  */
-public class AlarmConfigRequest {
+public class AlarmConfigRequest extends AbstractCommonAlarmConfigRequest{
 
     @JsonProperty("output_meta_id")
     private Long outputMetaId;
-    @JsonProperty("check_template")
-    private Integer checkTemplate;
-    @JsonProperty("compare_type")
-    private Integer compareType;
-    private Double threshold;
-
-    @JsonProperty("rule_metric_en_code")
-    private String ruleMetricEnCode;
-
-    @JsonProperty("upload_rule_metric_value")
-    private Boolean uploadRuleMetricValue;
-    @JsonProperty("upload_abnormal_value")
-    private Boolean uploadAbnormalValue;
-
 
     private static final Integer MAX_THRESHOLD_VALUE = 10000;
 
@@ -52,9 +38,9 @@ public class AlarmConfigRequest {
 
     public AlarmConfigRequest(Long outputMetaId, Integer checkTemplate, Integer compareType, Double threshold) {
         this.outputMetaId = outputMetaId;
-        this.checkTemplate = checkTemplate;
-        this.compareType = compareType;
-        this.threshold = threshold;
+        super.setCheckTemplate(checkTemplate);
+        super.setCompareType(compareType);
+        super.setThreshold(threshold);
     }
 
     public Long getOutputMetaId() {
@@ -65,58 +51,14 @@ public class AlarmConfigRequest {
         this.outputMetaId = outputMetaId;
     }
 
-    public Integer getCheckTemplate() {
-        return checkTemplate;
-    }
-
-    public void setCheckTemplate(Integer checkTemplate) {
-        this.checkTemplate = checkTemplate;
-    }
-
-    public Double getThreshold() {
-        return threshold;
-    }
-
-    public void setThreshold(Double threshold) {
-        this.threshold = threshold;
-    }
-
-    public Integer getCompareType() {
-        return compareType;
-    }
-
-    public void setCompareType(Integer compareType) {
-        this.compareType = compareType;
-    }
-
-    public String getRuleMetricEnCode() {
-        return ruleMetricEnCode;
-    }
-
-    public void setRuleMetricEnCode(String ruleMetricEnCode) {
-        this.ruleMetricEnCode = ruleMetricEnCode;
-    }
-
-    public Boolean getUploadRuleMetricValue() {
-        return uploadRuleMetricValue;
-    }
-
-    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
-        this.uploadRuleMetricValue = uploadRuleMetricValue;
-    }
-
-    public Boolean getUploadAbnormalValue() {
-        return uploadAbnormalValue;
-    }
-
-    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
-        this.uploadAbnormalValue = uploadAbnormalValue;
+    public static Integer getMaxThresholdValue() {
+        return MAX_THRESHOLD_VALUE;
     }
 
     public static void checkRequest(AlarmConfigRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
-        CommonChecker.checkObject(request.getOutputMetaId(), "output_meta_id");
         CommonChecker.checkObject(request.getThreshold(), "threshold");
+        CommonChecker.checkObject(request.getOutputMetaId(), "output_meta_id");
         CommonChecker.checkObject(request.getCheckTemplate(), "checkTemplate");
 
         // 检查checkTemplate是否是枚举中的值
@@ -152,13 +94,6 @@ public class AlarmConfigRequest {
         throw new UnExpectedRequestException("value of compare_type not support");
     }
 
-    @Override
-    public String toString() {
-        return "AlarmConfigRequest{" +
-                "outputMetaId=" + outputMetaId +
-                ", checkTemplate=" + checkTemplate +
-                ", compareType=" + compareType +
-                ", threshold=" + threshold +
-                '}';
-    }
+
+
 }

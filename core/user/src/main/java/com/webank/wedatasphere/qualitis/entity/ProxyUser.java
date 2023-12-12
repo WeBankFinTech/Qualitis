@@ -16,8 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.entity;
 
+import org.springframework.boot.json.JacksonJsonParser;
+
 import javax.persistence.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -31,11 +35,86 @@ public class ProxyUser {
     private Long id;
     @Column(name = "proxy_user_name", length = 20)
     private String proxyUserName;
-
+    @Column(name = "user_config_json", columnDefinition = "MEDIUMTEXT")
+    private String userConfigJson;
+    @Transient
+    private Map<String, Object> userConfigMap;
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Department department;
+    @OneToMany(mappedBy = "proxyUser", cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    private List<ProxyUserDepartment> proxyUserDepartment;
     @OneToMany(mappedBy = "proxyUser", cascade = CascadeType.REMOVE)
     private List<UserProxyUser> userProxyUsers;
 
+    @Column(name = "create_user")
+    private String createUser;
+
+    @Column(name = "create_time")
+    private String createTime;
+
+    @Column(name = "modify_user")
+    private String modifyUser;
+
+    @Column(name = "modify_time")
+    private String modifyTime;
+
+    public String getUserConfigJson() {
+        return userConfigJson;
+    }
+
+    public void setUserConfigJson(String userConfigJson) {
+        this.userConfigJson = userConfigJson;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
     public ProxyUser() {
+        // Default Constructor
+    }
+
+    public Department getDepartment() {
+        return department;
+    }
+
+    public List<ProxyUserDepartment> getProxyUserDepartment() {
+        return proxyUserDepartment;
+    }
+
+    public void setProxyUserDepartment(List<ProxyUserDepartment> proxyUserDepartment) {
+        this.proxyUserDepartment = proxyUserDepartment;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
     }
 
     public ProxyUser(String proxyUserName) {
@@ -64,5 +143,14 @@ public class ProxyUser {
 
     public void setUserProxyUsers(List<UserProxyUser> userProxyUsers) {
         this.userProxyUsers = userProxyUsers;
+    }
+
+    public Map<String, Object> getUserConfigMap() {
+        if (this.userConfigMap == null && this.userConfigJson != null) {
+            this.userConfigMap = new JacksonJsonParser().parseMap(this.userConfigJson);
+        } else {
+            this.userConfigMap = new HashMap<>();
+        }
+        return this.userConfigMap;
     }
 }

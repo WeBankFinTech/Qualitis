@@ -26,12 +26,26 @@ import org.springframework.context.annotation.Configuration;
 public class ThreadPoolConfig {
     @Value("${timer.thread.size}")
     private Integer size;
+    @Value("${timer.thread.async_execution_core_size}")
+    private Integer executionCorePoolSize;
+    @Value("${timer.thread.async_execution_max_size}")
+    private Integer executionMaxPoolSize;
+    @Value("${timer.check.update_core_size}")
+    private Integer updateCorePoolSize;
+    @Value("${timer.check.update_max_size}")
+    private Integer updateMaxPoolSize;
     @Value("${timer.check.period}")
     private Integer period;
+    @Value("${timer.check.pending_period}")
+    private Integer pendingPeriod;
     @Value("${timer.check.update_job_size}")
     private Integer updateJobSize;
     @Value("${timer.lock.zk.path}")
     private String lockZkPath;
+    @Value("${timer.abnormal_data_record_alarm.cron}")
+    private String abnormalDataRedordAlarmCron;
+    @Value("${timer.abnormal_data_record_alarm.cron_enable}")
+    private Boolean abnormalDataRedordAlarmCronEnable;
 
     public ThreadPoolConfig() {
         // Default Constructor
@@ -45,12 +59,52 @@ public class ThreadPoolConfig {
         this.size = size;
     }
 
+    public Integer getExecutionCorePoolSize() {
+        return executionCorePoolSize;
+    }
+
+    public void setExecutionCorePoolSize(Integer executionCorePoolSize) {
+        this.executionCorePoolSize = executionCorePoolSize;
+    }
+
+    public Integer getUpdateCorePoolSize() {
+        return updateCorePoolSize;
+    }
+
+    public void setUpdateCorePoolSize(Integer updateCorePoolSize) {
+        this.updateCorePoolSize = updateCorePoolSize;
+    }
+
+    public Integer getUpdateMaxPoolSize() {
+        return updateMaxPoolSize;
+    }
+
+    public void setUpdateMaxPoolSize(Integer updateMaxPoolSize) {
+        this.updateMaxPoolSize = updateMaxPoolSize;
+    }
+
+    public Integer getExecutionMaxPoolSize() {
+        return executionMaxPoolSize;
+    }
+
+    public void setExecutionMaxPoolSize(Integer executionMaxPoolSize) {
+        this.executionMaxPoolSize = executionMaxPoolSize;
+    }
+
     public Integer getPeriod() {
         return period;
     }
 
     public void setPeriod(Integer period) {
         this.period = period;
+    }
+
+    public Integer getPendingPeriod() {
+        return pendingPeriod;
+    }
+
+    public void setPendingPeriod(Integer pendingPeriod) {
+        this.pendingPeriod = pendingPeriod;
     }
 
     public String getLockZkPath() {
@@ -67,5 +121,21 @@ public class ThreadPoolConfig {
 
     public void setUpdateJobSize(Integer updateJobSize) {
         this.updateJobSize = updateJobSize;
+    }
+
+    public String getAbnormalDataRedordAlarmCron() {
+        return abnormalDataRedordAlarmCron;
+    }
+
+    public void setAbnormalDataRedordAlarmCron(String abnormalDataRedordAlarmCron) {
+        this.abnormalDataRedordAlarmCron = abnormalDataRedordAlarmCron;
+    }
+
+    public Boolean getAbnormalDataRedordAlarmCronEnable() {
+        return abnormalDataRedordAlarmCronEnable;
+    }
+
+    public void setAbnormalDataRedordAlarmCronEnable(Boolean abnormalDataRedordAlarmCronEnable) {
+        this.abnormalDataRedordAlarmCronEnable = abnormalDataRedordAlarmCronEnable;
     }
 }

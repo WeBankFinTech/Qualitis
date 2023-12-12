@@ -17,16 +17,20 @@
 package com.webank.wedatasphere.qualitis.rule.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvMappingRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
@@ -37,12 +41,14 @@ public interface RuleDataSourceService {
      * Check and save ruleDatasource
      * @param requests
      * @param rule
+     * @param ruleGroup
      * @param cs
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    List<RuleDataSource> checkAndSaveRuleDataSource(List<DataSourceRequest> requests, Rule rule, boolean cs, String loginUser)
+    List<RuleDataSource> checkAndSaveRuleDataSource(List<DataSourceRequest> requests, Rule rule,
+        RuleGroup ruleGroup, boolean cs, String loginUser)
         throws UnExpectedRequestException;
 
     /**
@@ -52,24 +58,44 @@ public interface RuleDataSourceService {
     void deleteByRule(Rule rule);
 
     /**
+     * Delete ruleDatasource by rule group
+     * @param ruleGroup
+     */
+    void deleteByRuleGroup(RuleGroup ruleGroup);
+
+    /**
      * Check and save custom ruleDatasource.
      * @param clusterName
+     * @param fileId
+     * @param fpsTableDesc
+     * @param fileDb
+     * @param fileTable
+     * @param fileDelimiter
+     * @param fileType
+     * @param fileHeader
      * @param proxyUser
+     * @param fileHashValues
      * @param loginUser
      * @param savedRule
      * @param cs
+     * @param fps
      * @param sqlCheck
      * @param linkisDataSourceId
      * @param linkisDataSourceVersionId
      * @param linkisDataSourceName
      * @param linkisDataSourceType
+     * @param dataSourceEnvRequests
+     * @param dataSourceEnvMappingRequests
      * @return
      * @throws UnExpectedRequestException
      */
     @Transactional(rollbackFor = {RuntimeException.class, SemanticException.class, ParseException.class})
-    List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String proxyUser, String loginUser, Rule savedRule, boolean cs
-        , boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName, String linkisDataSourceType)
-        throws UnExpectedRequestException;
+    List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String fileId, String fpsTableDesc, String fileDb,
+        String fileTable, String fileDelimiter, String fileType, Boolean fileHeader, String proxyUser, String fileHashValues, String loginUser
+        , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId,
+        String linkisDataSourceName
+        , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests,
+        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) throws UnExpectedRequestException;
 
     /**
      * Check cluster name supported
@@ -90,10 +116,11 @@ public interface RuleDataSourceService {
      * @param datasource
      * @param savedRule
      * @param cs
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    RuleDataSource checkAndSaveFileRuleDataSource(DataSourceRequest datasource, Rule savedRule, boolean cs) throws UnExpectedRequestException;
+    RuleDataSource checkAndSaveFileRuleDataSource(DataSourceRequest datasource, Rule savedRule, boolean cs, String loginUser) throws UnExpectedRequestException;
 
     /**
      * Updata rule datasource count.
@@ -101,4 +128,20 @@ public interface RuleDataSourceService {
      * @param varyAmount
      */
     void updateRuleDataSourceCount(Rule ruleInDb, Integer varyAmount);
+
+    /**
+     * update In Lock
+     * @param datasourceName
+     * @param userId
+     * @param varyAmount
+     * @param ruleInDb
+     */
+    void updateInLock(StringBuilder datasourceName, Long userId, Integer varyAmount, Rule ruleInDb);
+
+    /**
+     * add some fields from dms: sub_system_id,tag_code,depart_name
+     * @param userName
+     * @return
+     */
+    GeneralResponse<DataMapResultInfo> syncMetadata(String userName);
 }

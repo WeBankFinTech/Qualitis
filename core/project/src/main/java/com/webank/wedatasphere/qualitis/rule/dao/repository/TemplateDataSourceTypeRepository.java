@@ -18,9 +18,10 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -46,4 +47,13 @@ public interface TemplateDataSourceTypeRepository extends JpaRepository<Template
      * @return
      */
     void deleteByTemplate(Template template);
+
+    /**
+     * find By Template Ids
+     * @param templateIds
+     * @return
+     */
+    @Query(value = "select td.* from qualitis_template_datasource_type td where td.template_id in(?1)",nativeQuery = true)
+    List<TemplateDataSourceType> findByTemplateIds(List<Long> templateIds);
+
 }

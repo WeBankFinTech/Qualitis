@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.qualitis.rule.dao;
 
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceCount;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author allenzhou
@@ -38,4 +40,10 @@ public interface RuleDataSourceCountDao {
      */
     RuleDataSourceCount save(RuleDataSourceCount ruleDataSourceCount);
 
+    /**
+     * Save in batch
+     * @param ruleDataSourceCountSet
+     * @return
+     */
+    List<RuleDataSourceCount> saveAll(Set<RuleDataSourceCount> ruleDataSourceCountSet);
 }

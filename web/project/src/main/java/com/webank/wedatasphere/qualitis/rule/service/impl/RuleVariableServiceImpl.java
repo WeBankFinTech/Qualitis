@@ -16,21 +16,15 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleVariableRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleVariableRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleVariableRepository;
 import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
@@ -48,9 +42,8 @@ public class RuleVariableServiceImpl implements RuleVariableService {
     }
 
     @Override
-    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public void deleteByRule(Rule rule) {
-        ruleVariableRepository.deleteByRule(rule);
+        ruleVariableRepository.deleteByRuleId(rule.getId());
     }
 
 }

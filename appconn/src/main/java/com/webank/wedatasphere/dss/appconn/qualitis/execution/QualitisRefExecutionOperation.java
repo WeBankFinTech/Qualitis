@@ -25,7 +25,6 @@ import com.webank.wedatasphere.dss.standard.app.development.listener.common.RefE
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.LongTermRefExecutionOperation;
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.Killable;
 import com.webank.wedatasphere.dss.standard.app.development.listener.core.Procedure;
-import com.webank.wedatasphere.dss.standard.app.development.service.DevelopmentService;
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef;
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.RefExecutionRequestRef;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
@@ -53,22 +52,24 @@ import org.springframework.web.client.RestTemplate;
  */
 public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation<RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef>
     implements Killable, Procedure {
-    private static final String SUBMIT_TASK_PATH = "qualitis/outer/api/v1/execution";
-    private static final String GET_TASK_STATUS_PATH = "qualitis/outer/api/v1/application/{applicationId}/status/";
-    private static final String GET_TASK_RESULT_PATH = "qualitis/outer/api/v1/application/{applicationId}/result/";
-    private static final String KILL_TASK_PATH = "qualitis/outer/api/v1/execution/application/kill/{applicationId}/{executionUser}";
+
+    private static Logger LOGGER = LoggerFactory.getLogger(QualitisRefExecutionOperation.class);
+
+    private static final String FILTER = "filter";
     private static final String NODE_NAME_KEY = "nodeName";
     private static final String RULEGROUPID = "ruleGroupId";
     private static final String RULE_GROUP_ID = "rule_group_id";
     private static final String EXECUTION_USER_KEY = "executionUser";
     private static final String WDS_SUBMIT_USER_KEY = "wds.dss.workflow.submit.user";
+    private static final String SUBMIT_TASK_PATH = "qualitis/outer/api/v1/execution";
+    private static final String GET_TASK_LOG_PATH = "qualitis/outer/api/v1/application/{applicationId}/log";
+    private static final String GET_TASK_STATUS_PATH = "qualitis/outer/api/v1/application/{applicationId}/status/";
+    private static final String GET_TASK_RESULT_PATH = "qualitis/outer/api/v1/application/{applicationId}/result/";
+    private static final String KILL_TASK_PATH = "qualitis/outer/api/v1/execution/application/kill/{applicationId}/{executionUser}";
 
-    private static Logger LOGGER = LoggerFactory.getLogger(QualitisRefExecutionOperation.class);
 
     private String appId = "linkis_id";
     private String appToken = "***REMOVED***";
-
-    private static final String FILTER = "filter";
 
     @Override
     protected String getAppConnName() {
@@ -254,7 +255,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         }
         LOGGER.info("Start to check job. url: {}, method: {}, body: {}", url, HttpMethod.GET, entity);
         Map<String, Object> response = restTemplate.getForEntity(url, Map.class).getBody();
-        String finishLog = String.format("Succeed to submit job to qualitis. response: %s", response);
+        String finishLog = String.format("Succeed to check job. response: %s", response);
         LOGGER.info(finishLog);
 
         if (response == null) {
@@ -265,7 +266,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
 
         if (! checkResponse(response)) {
             String message = (String) response.get("message");
-            String errorMsg = String.format("Error! Can not submit job, exception: %s", message);
+            String errorMsg = String.format("Error! Can not check job, exception: %s", message);
             LOGGER.error(errorMsg);
             return null;
         }
@@ -362,7 +363,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         }
         LOGGER.info("Start to get job result. url: {}, method: {}, body: {}", url, HttpMethod.GET, entity);
         Map<String, Object> response = restTemplate.getForEntity(url, Map.class).getBody();
-        String finishLog = String.format("Succeed to submit job to qualitis. response: %s", response);
+        String finishLog = String.format("Succeed to get job result. response: %s", response);
         LOGGER.info(finishLog);
 
         if (response == null) {
@@ -373,7 +374,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
 
         if (! checkResponse(response)) {
             String message = (String) response.get("message");
-            String errorMsg = String.format("Error! Can not submit job, exception: %s", message);
+            String errorMsg = String.format("Error! Can not get job result, exception: %s", message);
             LOGGER.error(errorMsg);
             return null;
         }
@@ -387,6 +388,13 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
         String taskMsg = String.format("Task result: Pass/Failed/Not Pass ------- %s/%s/%s", passNum, failedNum, notPassNum);
         LOGGER.info(taskMsg);
         LOGGER.info(resultMessage);
+
+        try {
+            action.getExecutionRequestRefContext().appendLog(this.log(action));
+        } catch (Exception e) {
+            LOGGER.error("Get qualitis log failed.");
+            LOGGER.error(e.getMessage(), e);
+        }
 
         if (failedNum != 0) {
             return ExecutionResponseRef.newBuilder().error();
@@ -403,6 +411,50 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
 
     @Override
     public String log(RefExecutionAction action) {
-        return "";
+        if (null == action) {
+            return "";
+        }
+
+        QualitisRefExecutionAction qualitisRefExecutionAction = (QualitisRefExecutionAction) action;
+        String applicationId = qualitisRefExecutionAction.getApplicationId();
+        String executionUser = qualitisRefExecutionAction.getExecutionUser();
+        LOGGER.info("Qualitis application ID: {}", applicationId);
+        LOGGER.info("Qualitis execution user: {}", executionUser);
+        if (StringUtils.isEmpty(applicationId) || StringUtils.isEmpty(executionUser)) {
+            return "";
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Object> entity = new HttpEntity<>(headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        String url = null;
+        try {
+            url = HttpUtils.buildUrI(getBaseUrl(), GET_TASK_LOG_PATH.replace("{applicationId}", applicationId), appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.info("Qualitis no signature algor.", e);
+        } catch (URISyntaxException e) {
+            LOGGER.error("Qualitis uri syntax exception.", e);
+        }
+        LOGGER.info("Start to get job log. url: {}, method: {}, body: {}", url, HttpMethod.GET, entity);
+        Map<String, Object> response = restTemplate.getForEntity(url, Map.class).getBody();
+        String finishLog = String.format("Succeed to get job log.");
+        LOGGER.info(finishLog);
+
+        if (response == null) {
+            String errorMsg = "Error! Can not get job log, response is null";
+            LOGGER.error(errorMsg);
+            return "";
+        }
+
+        if (! checkResponse(response)) {
+            String message = (String) response.get("message");
+            String errorMsg = String.format("Error! Can not get job log, exception: %s", message);
+            LOGGER.error(errorMsg);
+            return "";
+        }
+
+         return (String) response.get("data");
     }
 }

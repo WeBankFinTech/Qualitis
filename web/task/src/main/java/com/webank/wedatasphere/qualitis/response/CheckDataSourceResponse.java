@@ -29,6 +29,7 @@ public class CheckDataSourceResponse {
     private List<CheckFileDataSourceResponse> file;
 
     public CheckDataSourceResponse() {
+        // Default Constructor
     }
 
     public List<CheckSingleDataSourceResponse> getSingle() {

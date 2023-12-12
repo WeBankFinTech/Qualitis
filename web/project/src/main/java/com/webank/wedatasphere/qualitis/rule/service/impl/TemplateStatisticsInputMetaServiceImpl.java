@@ -16,24 +16,22 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateStatisticsInputMetaRepository;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author howeye
@@ -42,10 +40,10 @@ import java.util.Set;
 public class TemplateStatisticsInputMetaServiceImpl implements TemplateStatisticsInputMetaService {
 
     @Autowired
-    private TemplateStatisticsInputMetaRepository repository;
+    private RuleTemplateService templateService;
 
     @Autowired
-    private RuleTemplateService templateService;
+    private TemplateStatisticsInputMetaRepository repository;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TemplateStatisticsInputMetaServiceImpl.class);
 
@@ -65,9 +63,11 @@ public class TemplateStatisticsInputMetaServiceImpl implements TemplateStatistic
                                                                                   Boolean saveMidTable, Template template) {
         Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>();
         TemplateStatisticsInputMeta templateStatisticsInputMeta = new TemplateStatisticsInputMeta();
+
+        templateStatisticsInputMeta.setValueType(StatisticsValueTypeEnum.FIXED_VALUE.getCode());
         templateStatisticsInputMeta.setFuncName(FunctionTypeEnum.getByCode(functionType).getFunction());
         templateStatisticsInputMeta.setValue(functionContent.replace("-", "_"));
-        templateStatisticsInputMeta.setValueType(StatisticsValueTypeEnum.FIXED_VALUE.getCode());
+        templateStatisticsInputMeta.setPureName(outputName.replace("-", "_"));
         templateStatisticsInputMeta.setName(outputName.replace("-", "_"));
         templateStatisticsInputMeta.setResultType("Long");
         templateStatisticsInputMeta.setTemplate(template);

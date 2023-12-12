@@ -8,28 +8,47 @@ import com.alibaba.excel.metadata.BaseRowModel;
  * @date 2021/5/6 16:00
  */
 public class ExcelResult extends BaseRowModel {
-    @ExcelProperty(value = "Rule Name", index = 0)
+    @ExcelProperty(value = "Project Name", index = 0)
+    private String projectName;
+    @ExcelProperty(value = "Rule Name", index = 1)
     private String ruleName;
-    @ExcelProperty(value = "Cluster Name", index = 1)
+    @ExcelProperty(value = "Cluster Name", index = 2)
     private String clusterName;
-    @ExcelProperty(value = "Database Name", index = 2)
+    @ExcelProperty(value = "Database Name", index = 3)
     private String databaseName;
-    @ExcelProperty(value = "Table Name", index = 3)
+    @ExcelProperty(value = "Table Name", index = 4)
     private String tableName;
-    @ExcelProperty(value = "Check Templates", index = 4)
+    @ExcelProperty(value = "Partition", index = 5)
+    private String partition;
+    @ExcelProperty(value = "Check Templates", index = 6)
     private String ruleCheckTemplates;
-    @ExcelProperty(value = "History Result", index = 5)
+    @ExcelProperty(value = "Status", index = 7)
+    private String status;
+    @ExcelProperty(value = "History Result", index = 8)
     private String historyResult;
-    @ExcelProperty(value = "Result Time", index = 6)
+    @ExcelProperty(value = "Result Time", index = 9)
     private String createTime;
-    @ExcelProperty(value = "Execution User", index = 7)
+    @ExcelProperty(value = "Execution User", index = 10)
     private String executionUser;
-    @ExcelProperty(value = "Begin Time", index = 8)
+    @ExcelProperty(value = "Begin Time", index = 11)
     private String beginTime;
-    @ExcelProperty(value = "Eng Time", index = 9)
+    @ExcelProperty(value = "End Time", index = 12)
     private String endTime;
+    @ExcelProperty(value = "Application ID", index = 13)
+    private String applicationId;
+    @ExcelProperty(value = "Application Comment", index = 14)
+    private String applicationComment;
 
     public ExcelResult() {
+        // Do nothing.
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     public String getRuleName() {
@@ -46,6 +65,14 @@ public class ExcelResult extends BaseRowModel {
 
     public void setRuleCheckTemplates(String ruleCheckTemplates) {
         this.ruleCheckTemplates = ruleCheckTemplates;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getHistoryResult() {
@@ -96,6 +123,14 @@ public class ExcelResult extends BaseRowModel {
         this.tableName = tableName;
     }
 
+    public String getPartition() {
+        return partition;
+    }
+
+    public void setPartition(String partition) {
+        this.partition = partition;
+    }
+
     public String getBeginTime() {
         return beginTime;
     }
@@ -110,6 +145,22 @@ public class ExcelResult extends BaseRowModel {
 
     public void setEndTime(String endTime) {
         this.endTime = endTime;
+    }
+
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    public void setApplicationId(String applicationId) {
+        this.applicationId = applicationId;
+    }
+
+    public String getApplicationComment() {
+        return applicationComment;
+    }
+
+    public void setApplicationComment(String applicationComment) {
+        this.applicationComment = applicationComment;
     }
 
     @Override

@@ -35,6 +35,11 @@ public class GroupExecutionRequest {
     @JsonProperty("node_name")
     private String nodeName;
 
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
+
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("startup_param_name")
@@ -48,7 +53,28 @@ public class GroupExecutionRequest {
     @JsonProperty("bool_async")
     private boolean async;
 
+    @JsonProperty("job_id")
+    private String jobId;
+
+    @JsonProperty("start_time")
+    private String startTime;
+    @JsonProperty("end_time")
+    private String endTime;
+
+    @JsonProperty("split_by")
+    private String splitBy;
+
+    @JsonProperty("engine_reuse")
+    private Boolean engineReuse;
+
     public GroupExecutionRequest() {
+    }
+
+    public GroupExecutionRequest(Long groupId, String executionUser, String createUser, String nodeName) {
+        this.groupId = groupId;
+        this.executionUser = executionUser;
+        this.createUser = createUser;
+        this.nodeName = nodeName;
     }
 
     public Long getGroupId() {
@@ -89,6 +115,22 @@ public class GroupExecutionRequest {
 
     public void setNodeName(String nodeName) {
         this.nodeName = nodeName;
+    }
+
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
     }
 
     public String getClusterName() {
@@ -139,10 +181,73 @@ public class GroupExecutionRequest {
         this.async = async;
     }
 
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getSplitBy() {
+        return splitBy;
+    }
+
+    public void setSplitBy(String splitBy) {
+        this.splitBy = splitBy;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
+    }
+
     public static void checkRequest(GroupExecutionRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkObject(request.getGroupId(), "Group Id");
-        CommonChecker.checkString(request.getExecutionUser(), "Execution User");
         CommonChecker.checkString(request.getCreateUser(), "Create User");
+        CommonChecker.checkString(request.getExecutionUser(), "Execution User");
+    }
+
+    @Override
+    public String toString() {
+        return "GroupExecutionRequest{" +
+            "groupId=" + groupId +
+            ", executionParam='" + executionParam + '\'' +
+            ", executionUser='" + executionUser + '\'' +
+            ", createUser='" + createUser + '\'' +
+            ", nodeName='" + nodeName + '\'' +
+            ", fpsFileId='" + fpsFileId + '\'' +
+            ", fpsHashValue='" + fpsHashValue + '\'' +
+            ", clusterName='" + clusterName + '\'' +
+            ", startupParamName='" + startupParamName + '\'' +
+            ", setFlag='" + setFlag + '\'' +
+            ", dyNamicPartition=" + dyNamicPartition +
+            ", dyNamicPartitionPrefix='" + dyNamicPartitionPrefix + '\'' +
+            ", async=" + async +
+            ", startTime='" + startTime + '\'' +
+            ", endTime='" + endTime + '\'' +
+            ", splitBy='" + splitBy + '\'' +
+            ", engineReuse=" + engineReuse +
+            '}';
     }
 }

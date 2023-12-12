@@ -55,4 +55,15 @@ public class HttpUtils {
     }
     return (String) user.get("username");
   }
+
+  /**
+   * 把字符串IP转换成Integer
+   *
+   * @param ipStr 字符串IP
+   * @return IP对应的int值
+   */
+  public static Integer ip2Integer(String ipStr) {
+    String[] ip = ipStr.split("\\.");
+    return Integer.valueOf(ip[0])  * 256 * 256 * 256 + Integer.valueOf(ip[1])  * 256 * 256 + Integer.valueOf(ip[2]) * 256 + Integer.valueOf(ip[3]);
+  }
 }

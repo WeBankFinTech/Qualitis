@@ -18,10 +18,16 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import javax.persistence.*;
-import java.util.Objects;
-import java.util.Set;
 import org.codehaus.jackson.annotate.JsonIgnore;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import java.util.Objects;
 
 /**
  * @author howeye
@@ -33,16 +39,17 @@ public class TemplateMidTableInputMeta {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(length = 50, updatable = false)
     private String name;
 
-    @ManyToOne
-    private Template template;
-
     @Column(length = 30)
     private String placeholder;
+
+    @ManyToOne
+    @JsonIgnore
+    private Template template;
 
     /**
      * Input type, such as field, fixed_value, database, table, field_concat...
@@ -71,27 +78,36 @@ public class TemplateMidTableInputMeta {
     @Column(name = "placeholder_description", length = 300, updatable = false)
     private String placeholderDescription;
 
-
-    @ManyToOne
-    @JsonIgnore
-    private TemplateMidTableInputMeta parent;
-
-    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
-    private Set<TemplateMidTableInputMeta> children;
-
-
     @Column(name = "concat_template", length = 3000)
     private String concatTemplate;
+
+    @Column(name = "cn_name", length = 16)
+    private String cnName;
+
+    @Column(name = "en_name", length = 64)
+    private String enName;
+
+    @Column(name = "cn_description", length = 256)
+    private String cnDescription;
+
+    @Column(name = "en_description", length = 256)
+    private String enDescription;
+
+    @Column(name = "field_multiple_choice")
+    private Boolean fieldMultipleChoice;
+
+    @Column(name = "whether_new_value")
+    private Boolean whetherNewValue;
 
     public TemplateMidTableInputMeta() {
         // Default Constructor
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -131,28 +147,12 @@ public class TemplateMidTableInputMeta {
         this.replaceByRequest = replaceByRequest;
     }
 
-    public TemplateMidTableInputMeta getParent() {
-        return parent;
-    }
-
-    public void setParent(TemplateMidTableInputMeta parent) {
-        this.parent = parent;
-    }
-
-    public Set<TemplateMidTableInputMeta> getChildren() {
-        return children;
-    }
-
-    public void setChildren(Set<TemplateMidTableInputMeta> children) {
-        this.children = children;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {return true;}
         if (o == null || getClass() != o.getClass()) {return false;}
         TemplateMidTableInputMeta that = (TemplateMidTableInputMeta) o;
-        return id == that.id;
+        return id.equals(that.id);
     }
 
     @Override
@@ -191,4 +191,54 @@ public class TemplateMidTableInputMeta {
     public void setConcatTemplate(String concatTemplate) {
         this.concatTemplate = concatTemplate;
     }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
+    }
+
+    public String getCnDescription() {
+        return cnDescription;
+    }
+
+    public void setCnDescription(String cnDescription) {
+        this.cnDescription = cnDescription;
+    }
+
+    public String getEnDescription() {
+        return enDescription;
+    }
+
+    public void setEnDescription(String enDescription) {
+        this.enDescription = enDescription;
+    }
+
+    public Boolean getFieldMultipleChoice() {
+        return fieldMultipleChoice;
+    }
+
+    public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
+        this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherNewValue() {
+        return whetherNewValue;
+    }
+
+    public void setWhetherNewValue(Boolean whetherNewValue) {
+        this.whetherNewValue = whetherNewValue;
+    }
+
+
 }

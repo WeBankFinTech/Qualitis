@@ -36,6 +36,7 @@ public class CheckSingleDataSourceResponse {
     private List<CheckTableResponse> checkTableResponse;
 
     public CheckSingleDataSourceResponse() {
+        // Default Constructor
     }
 
     public CheckSingleDataSourceResponse(String database, String table, List<TaskDataSource> taskDataSources, Map<Long, TaskRuleSimple> taskRuleSimpleMap
@@ -44,8 +45,8 @@ public class CheckSingleDataSourceResponse {
         this.table = table;
         this.checkTableResponse = new ArrayList<>();
         for (TaskDataSource taskDataSource : taskDataSources) {
-            CheckTableResponse checkTableResponse = new CheckTableResponse(taskDataSource, taskRuleSimpleMap, taskResultMap);
-            this.checkTableResponse.add(checkTableResponse);
+            CheckTableResponse currentCheckTableResponse = new CheckTableResponse(taskDataSource, taskRuleSimpleMap, taskResultMap);
+            this.checkTableResponse.add(currentCheckTableResponse);
         }
     }
 

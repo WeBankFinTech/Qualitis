@@ -18,7 +18,9 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.Task;
+import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +29,10 @@ import java.util.List;
  * @author howeye
  */
 public class TaskResponse {
-
     @JsonProperty("task_id")
     private Long taskId;
+    @JsonProperty("task_remote_id")
+    private Long taskRemoteId;
     @JsonProperty("start_time")
     private String startTime;
     @JsonProperty("end_time")
@@ -42,6 +45,7 @@ public class TaskResponse {
 
     public TaskResponse(Task task) {
         this.taskId = task.getId();
+        this.taskRemoteId = task.getTaskRemoteId();
         this.startTime = task.getBeginTime();
         this.endTime = task.getEndTime();
         this.status = task.getStatus();
@@ -52,12 +56,48 @@ public class TaskResponse {
         }
     }
 
+    public TaskResponse(Task task, StringBuilder ruleDataSource) {
+        this.taskId = task.getId();
+        this.taskRemoteId = task.getTaskRemoteId();
+        this.startTime = task.getBeginTime();
+        this.endTime = task.getEndTime();
+        this.status = task.getStatus();
+        this.clusterId = task.getClusterName();
+        this.taskRules = new ArrayList<>();
+        for (TaskRuleSimple taskRuleSimple : task.getTaskRuleSimples()) {
+            for (TaskDataSource taskDataSource : task.getTaskDataSources()) {
+                if (taskDataSource != null) {
+                    String databaseName = StringUtils.isNotBlank(taskDataSource.getDatabaseName()) ? taskDataSource.getDatabaseName() : "";
+                    String tableName = StringUtils.isNotBlank(taskDataSource.getTableName()) ? taskDataSource.getTableName() : "";
+                    if (StringUtils.isNotBlank(databaseName)) {
+                        ruleDataSource.append(databaseName).append(".").append(tableName);
+                    } else {
+                        ruleDataSource.append(databaseName).append(tableName);
+                    }
+                    ruleDataSource.append(";");
+                }
+            }
+            if (ruleDataSource.toString().length() > 1) {
+                ruleDataSource.deleteCharAt(ruleDataSource.length() - 1);
+            }
+            taskRules.add(new TaskRuleResponse(taskRuleSimple, task.getTaskDataSources()));
+        }
+    }
+
     public Long getTaskId() {
         return taskId;
     }
 
     public void setTaskId(Long taskId) {
         this.taskId = taskId;
+    }
+
+    public Long getTaskRemoteId() {
+        return taskRemoteId;
+    }
+
+    public void setTaskRemoteId(Long taskRemoteId) {
+        this.taskRemoteId = taskRemoteId;
     }
 
     public String getStartTime() {

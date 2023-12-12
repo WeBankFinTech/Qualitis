@@ -25,6 +25,7 @@ public class SystemConfig {
     private String value;
 
     public SystemConfig() {
+        // Default Constructor
     }
 
     public Long getId() {

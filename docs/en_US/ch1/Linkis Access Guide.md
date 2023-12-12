@@ -25,7 +25,7 @@ Add MySQL Lib in it.
 
 At last, restart Linkis.
 
-## Qualitis Configuration
-Type in 'QUALITIS-AUTH' in the blank of Linkis Token:  
-Here is an example：  
+## Qualitis Cluster Configuration
+Settings -- Cluster, Type in 'QUALITIS-AUTH' in the blank of Linkis Token:  
+Here is an example：
 ![](../../../images/en_US/ch1/ClusterConfigurationDemo.png)

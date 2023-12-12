@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectEvent;
 
 /**
@@ -10,26 +11,17 @@ import com.webank.wedatasphere.qualitis.project.entity.ProjectEvent;
 public class ProjectEventResponse {
     private String content;
     private String time;
-    @JsonProperty("field")
-    private String field;
-    @JsonProperty("before_modify")
-    private String beforeModify;
-    @JsonProperty("after_modify")
-    private String afterModify;
-    @JsonProperty("modify_user")
-    private String modifyUser;
-
-    @JsonProperty("execute_user")
-    private String executeUser;
+    @JsonProperty("operate_user")
+    private String operateUser;
+    @JsonProperty("operate_type")
+    private String operateType;
 
     public ProjectEventResponse(ProjectEvent projectEvent) {
         this.content = projectEvent.getContent();
         this.time = projectEvent.getTime();
-        this.field = projectEvent.getField();
-        this.beforeModify = projectEvent.getBeforeModify();
-        this.afterModify = projectEvent.getAfterModify();
-        this.modifyUser = projectEvent.getModifyUser();
-        this.executeUser = projectEvent.getExecuteUser();
+        this.operateUser = projectEvent.getOperateUser();
+        OperateTypeEnum operateTypeEnum = OperateTypeEnum.fromCode(projectEvent.getOperateType());
+        this.operateType = operateTypeEnum == null ? null : operateTypeEnum.getName();
     }
 
     public String getContent() {
@@ -48,43 +40,19 @@ public class ProjectEventResponse {
         this.time = time;
     }
 
-    public String getField() {
-        return field;
+    public String getOperateUser() {
+        return operateUser;
     }
 
-    public void setField(String field) {
-        this.field = field;
+    public void setOperateUser(String operateUser) {
+        this.operateUser = operateUser;
     }
 
-    public String getBeforeModify() {
-        return beforeModify;
+    public String getOperateType() {
+        return operateType;
     }
 
-    public void setBeforeModify(String beforeModify) {
-        this.beforeModify = beforeModify;
-    }
-
-    public String getAfterModify() {
-        return afterModify;
-    }
-
-    public void setAfterModify(String afterModify) {
-        this.afterModify = afterModify;
-    }
-
-    public String getModifyUser() {
-        return modifyUser;
-    }
-
-    public void setModifyUser(String modifyUser) {
-        this.modifyUser = modifyUser;
-    }
-
-    public String getExecuteUser() {
-        return executeUser;
-    }
-
-    public void setExecuteUser(String executeUser) {
-        this.executeUser = executeUser;
+    public void setOperateType(String operateType) {
+        this.operateType = operateType;
     }
 }

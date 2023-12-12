@@ -16,32 +16,26 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.request.userrole.AddUserRoleRequest;
-import com.webank.wedatasphere.qualitis.request.userrole.DeleteUserRoleRequest;
-import com.webank.wedatasphere.qualitis.request.userrole.ModifyUserRoleRequest;
-import com.webank.wedatasphere.qualitis.response.UserRoleResponse;
-import com.webank.wedatasphere.qualitis.service.UserRoleService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.QueryUserRequest;
 import com.webank.wedatasphere.qualitis.request.userrole.AddUserRoleRequest;
 import com.webank.wedatasphere.qualitis.request.userrole.DeleteUserRoleRequest;
 import com.webank.wedatasphere.qualitis.request.userrole.ModifyUserRoleRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.UserRoleResponse;
 import com.webank.wedatasphere.qualitis.service.UserRoleService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -77,7 +71,7 @@ public class UserRoleController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteUserRole(DeleteUserRoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse deleteUserRole(DeleteUserRoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -93,7 +87,7 @@ public class UserRoleController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyUserRole(ModifyUserRoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse modifyUserRole(ModifyUserRoleRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -110,7 +104,7 @@ public class UserRoleController {
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<UserRoleResponse>> findAllUserRole(PageRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<UserRoleResponse>> findAllUserRole(QueryUserRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);

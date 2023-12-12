@@ -18,28 +18,39 @@ package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
  */
 public class HiveRuleDetail {
 
+    @JsonProperty("project_id")
+    private Long projectId;
+    @JsonProperty("project_name")
+    private String projectName;
+    @JsonProperty("project_type")
+    private Integer projectType;
     @JsonProperty("rule_id")
     private Long ruleId;
     @JsonProperty("rule_name")
     private String ruleName;
+    @JsonProperty("rule_cn_name")
+    private String ruleCnName;
     @JsonProperty("rule_type")
     private Integer ruleType;
     private List<String> filter;
@@ -53,25 +64,98 @@ public class HiveRuleDetail {
     private Long ruleGroupId;
     @JsonProperty("rule_group_name")
     private String ruleGroupName;
+    @JsonProperty("relation_object")
+    private String relationObject;
+    @JsonProperty("table_group")
+    private Boolean tableGroup;
+
+    @JsonProperty("work_flow_name")
+    private String workFlowName;
+    @JsonProperty("work_flow_version")
+    private String workFlowVersion;
+    @JsonProperty("work_flow_space")
+    private String workFlowSpace;
+    @JsonProperty("work_flow_project")
+    private String workFlowProject;
+    @JsonProperty("node_name")
+    private String nodeName;
+    @JsonProperty("rule_enable")
+    private Boolean ruleEnable;
+    @JsonProperty("union_all")
+    private Boolean unionAll;
+    @JsonProperty("create_user")
+    private String createUser;
+    @JsonProperty("modify_user")
+    private String modifyUser;
+    @JsonProperty("create_time")
+    private String createTime;
+    @JsonProperty("modify_time")
+    private String modifyTime;
+
 
     public HiveRuleDetail() {
+    }
+
+    public HiveRuleDetail(Long ruleId, Long ruleGroupId, String ruleName, String ruleGroupName, String workFlowName, String workFlowVersion, Boolean enable, String workFlowSpace, String workFlowProject, String nodeName) {
+        this.ruleId = ruleId;
+        this.ruleName = ruleName;
+        this.ruleGroupId = ruleGroupId;
+        this.ruleGroupName = ruleGroupName;
+        this.workFlowName = workFlowName;
+        this.workFlowVersion = workFlowVersion;
+        this.workFlowSpace = workFlowSpace;
+        this.workFlowProject = workFlowProject;
+        this.nodeName = nodeName;
+        this.ruleEnable = enable;
     }
 
     public HiveRuleDetail(Rule rule) {
         this.ruleId = rule.getId();
         this.ruleName = rule.getName();
+        this.ruleCnName = rule.getCnName();
         this.ruleGroupId = rule.getRuleGroup().getId();
         this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
+        this.projectId = rule.getProject().getId();
+        this.projectType = rule.getProject().getProjectType();
+        this.createUser = rule.getCreateUser();
+        this.createTime = rule.getCreateTime();
+        this.modifyUser = rule.getModifyUser();
+        this.modifyTime = rule.getModifyTime();
+        this.workFlowName = rule.getWorkFlowName();
+        this.workFlowVersion = rule.getWorkFlowVersion();
+        this.workFlowSpace = rule.getWorkFlowSpace();
+        this.workFlowProject = rule.getProject().getName();
+        this.nodeName = rule.getNodeName();
+
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            ExecutionParameters executionParameters = SpringContextHolder.getBean(ExecutionParametersDao.class).findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
+            if (executionParameters != null) {
+                this.ruleEnable = rule.getEnable();
+                this.unionAll = executionParameters.getUnionAll();
+            } else {
+                this.unionAll = rule.getUnionAll();
+                this.ruleEnable = rule.getEnable();
+            }
+        } else {
+            this.unionAll = rule.getUnionAll();
+            this.ruleEnable = rule.getEnable();
+        }
+        if (CollectionUtils.isNotEmpty(rule.getRuleGroup().getRuleDataSources())) {
+            this.tableGroup = true;
+        } else {
+            this.tableGroup = false;
+        }
         if (rule.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {
             this.filter = rule.getRuleDataSources().stream().map(RuleDataSource::getFilter).collect(Collectors.toList());
         } else if (rule.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
             this.filter = Collections.singletonList(rule.getWhereContent());
         } else if (rule.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
-          rule.getRuleVariables()
-              .stream()
-              .filter(item -> TemplateInputTypeEnum.CONDITION.getCode().equals(item.getTemplateMidTableInputMeta().getInputType()))
-              .findAny()
-              .ifPresent(variable -> this.filter = Collections.singletonList(variable.getValue()));
+            rule.getRuleVariables()
+                    .stream()
+                    .filter(tp -> tp.getTemplateMidTableInputMeta() != null)
+                    .filter(item -> TemplateInputTypeEnum.CONDITION.getCode().equals(item.getTemplateMidTableInputMeta().getInputType()))
+                    .findAny()
+                    .ifPresent(variable -> this.filter = Collections.singletonList(variable.getValue()));
         } else if (rule.getRuleType().equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
             this.filter = rule.getRuleDataSources().stream().map(RuleDataSource::getFilter).collect(Collectors.toList());
         }
@@ -85,11 +169,56 @@ public class HiveRuleDetail {
                 if (StringUtils.isEmpty(tableName)) {
                     continue;
                 }
+                // UUID remove.
+                if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(tableName) && tableName.contains(SpecCharEnum.BOTTOM_BAR.getValue())
+                        && tableName.length() - UuidGenerator.generate().length() - 1 > 0) {
+                    tableName = tableName.substring(0, tableName.length() - UuidGenerator.generate().length() - 1);
+                }
                 // If type equals to data source
                 hiveDataSource.add(new HiveDataSourceDetail(ruleDataSource.getClusterName(), ruleDataSource.getDbName(), tableName));
             }
         }
 
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public Boolean getRuleEnable() {
+        return ruleEnable;
+    }
+
+    public void setRuleEnable(Boolean ruleEnable) {
+        this.ruleEnable = ruleEnable;
+    }
+
+    public Integer getProjectType() {
+        return projectType;
+    }
+
+    public void setProjectType(Integer projectType) {
+        this.projectType = projectType;
+    }
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
+
+    public String getRuleCnName() {
+        return ruleCnName;
+    }
+
+    public void setRuleCnName(String ruleCnName) {
+        this.ruleCnName = ruleCnName;
     }
 
     public Long getRuleId() {
@@ -156,12 +285,108 @@ public class HiveRuleDetail {
         this.ruleGroupId = ruleGroupId;
     }
 
+    public String getRelationObject() {
+        return relationObject;
+    }
+
+    public void setRelationObject(String relationObject) {
+        this.relationObject = relationObject;
+    }
+
     public String getRuleGroupName() {
         return ruleGroupName;
     }
 
     public void setRuleGroupName(String ruleGroupName) {
         this.ruleGroupName = ruleGroupName;
+    }
+
+    public Boolean getTableGroup() {
+        return tableGroup;
+    }
+
+    public void setTableGroup(Boolean tableGroup) {
+        this.tableGroup = tableGroup;
+    }
+
+    public String getWorkFlowName() {
+        return workFlowName;
+    }
+
+    public void setWorkFlowName(String workFlowName) {
+        this.workFlowName = workFlowName;
+    }
+
+    public String getWorkFlowVersion() {
+        return workFlowVersion;
+    }
+
+    public void setWorkFlowVersion(String workFlowVersion) {
+        this.workFlowVersion = workFlowVersion;
+    }
+
+    public Boolean getUnionAll() {
+        return unionAll;
+    }
+
+    public void setUnionAll(Boolean unionAll) {
+        this.unionAll = unionAll;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public String getWorkFlowSpace() {
+        return workFlowSpace;
+    }
+
+    public void setWorkFlowSpace(String workFlowSpace) {
+        this.workFlowSpace = workFlowSpace;
+    }
+
+    public String getWorkFlowProject() {
+        return workFlowProject;
+    }
+
+    public void setWorkFlowProject(String workFlowProject) {
+        this.workFlowProject = workFlowProject;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
     }
 
     @Override

@@ -19,6 +19,8 @@ package com.webank.wedatasphere.qualitis.project.service.impl;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
+import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
@@ -51,8 +53,21 @@ public class WorkflowProjectServiceImpl implements WorkflowProjectService {
     }
 
     @Override
+    public GeneralResponse<GetAllResponse<ProjectResponse>> getWorkflowProjectByUser(QueryProjectRequest request) throws UnExpectedRequestException {
+        GeneralResponse<GetAllResponse<ProjectResponse>> response = projectService.getProjectsByCondition(request, ProjectTypeEnum.WORKFLOW_PROJECT.getCode());
+
+        LOGGER.info("Succeed to get all workflow project, response: {}", response);
+        return response;
+    }
+
+    @Override
     public GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(Long projectId, PageRequest pageRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         return projectService.getProjectDetail(projectId, pageRequest);
+    }
+
+    @Override
+    public GeneralResponse<ProjectDetailResponse> getWorkflowRuleByCondition(Long projectId, QueryRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        return projectService.getRulesByCondition(projectId, request);
     }
 }

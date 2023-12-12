@@ -12,7 +12,6 @@ spring:
     encoding: UTF-8
     basename: i18n/messages
 
-
 # logging
 logging:
   config: classpath:log4j2-${spring.profiles.active}.xml
@@ -25,13 +24,15 @@ server:
     whitelabel:
       enabled: false
 
-
 workflow:
-  enable: true
+  enable: false
 
 ha:
-  enable: false
+  enable: false # 是否开启高可用多实例部署
 
 system:
   config:
     save_database_pattern: save_database_pattern
+
+devOps:
+  enable: false # 是否仅限运维用户访问环境

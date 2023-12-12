@@ -16,20 +16,38 @@
 
 package com.webank.wedatasphere.qualitis.dao.repository;
 
-import com.webank.wedatasphere.qualitis.entity.ProxyUser;
+import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.ProxyUser;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
 
 /**
  * @author howeye
  */
-public interface ProxyUserRepository extends JpaRepository<ProxyUser, Long> {
+public interface ProxyUserRepository extends JpaRepository<ProxyUser, Long>, JpaSpecificationExecutor<ProxyUser> {
 
     /**
      * Find proxy user by proxy user name
+     *
      * @param proxyUserName
      * @return
      */
     ProxyUser findByProxyUserName(String proxyUserName);
 
+    /**
+     * find By Department
+     * @param department
+     * @return
+     */
+    List<ProxyUser> findByDepartment(Department department);
+
+    /**
+     * Get all names
+     * @return
+     */
+    @Query(value = "select pu.proxyUserName from ProxyUser pu where pu.proxyUserName is not null and length(pu.proxyUserName) > 0")
+    List<String> getAllProxyUserName();
 }

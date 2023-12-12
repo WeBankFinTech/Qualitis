@@ -17,10 +17,12 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.UserProxyUserService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
@@ -48,7 +50,7 @@ public class UserProxyUserController {
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return userProxyUserService.addUserProxyUser(request);
         } catch (UnExpectedRequestException e) {
@@ -62,7 +64,7 @@ public class UserProxyUserController {
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return userProxyUserService.deleteUserProxyUser(request);
         } catch (UnExpectedRequestException e) {
@@ -77,7 +79,7 @@ public class UserProxyUserController {
     @Path("{proxyUserName}/all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getAllUserProxyUserByProxyUserName(@PathParam("proxyUserName")String proxyUserName, PageRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<AddUserProxyUserResponse>> getAllUserProxyUserByProxyUserName(@PathParam("proxyUserName")String proxyUserName, PageRequest request) throws UnExpectedRequestException {
         try {
             return userProxyUserService.getAllUserProxyUserByProxyUserName(proxyUserName, request);
         } catch (UnExpectedRequestException e) {
@@ -87,7 +89,5 @@ public class UserProxyUserController {
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_USER_PROXY_USER_BY_PROXY_USER_NAME}", null);
         }
     }
-
-
 
 }

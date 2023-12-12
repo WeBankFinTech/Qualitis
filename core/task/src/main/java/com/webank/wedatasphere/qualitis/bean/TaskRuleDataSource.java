@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.bean;
 
+
 /**
  * @author howeye
  */
@@ -31,6 +32,7 @@ public class TaskRuleDataSource {
 
     private Integer datasourceIndex;
     private Integer datasourceType;
+    private Long subSystemId;
 
     public TaskRuleDataSource() {
         // Default Constructor
@@ -98,5 +100,13 @@ public class TaskRuleDataSource {
 
     public void setDatasourceType(Integer datasourceType) {
         this.datasourceType = datasourceType;
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
     }
 }

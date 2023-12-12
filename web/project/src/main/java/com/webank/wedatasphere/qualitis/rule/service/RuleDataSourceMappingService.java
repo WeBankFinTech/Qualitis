@@ -19,9 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.service;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
 
 import java.util.List;
 
@@ -34,9 +31,10 @@ public interface RuleDataSourceMappingService {
      * Check and save RuleDataSourceMapping
      * @param mappings
      * @param rule
+     * @param type
      * @return
      */
-    List<RuleDataSourceMapping> checkAndSaveRuleDataSourceMapping(List<MultiDataSourceJoinConfigRequest> mappings, Rule rule);
+    List<RuleDataSourceMapping> checkAndSaveRuleDataSourceMapping(List<MultiDataSourceJoinConfigRequest> mappings, Rule rule,Integer type);
 
     /**
      * Delete RuleDataSourceMapping by id

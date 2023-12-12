@@ -1,0 +1,347 @@
+<template>
+    <div class="login-panel">
+        <div class="login-panel-swap">
+            <div class="logo">
+                <img class="logo-img" src="../../assets/images/qualitis.png" alt="" />
+            </div>
+            <div class="split" />
+            <div class="login-form">
+                <div class="line" :class="getStyle('userFocus')">
+                    <input
+                        ref="usernameRef"
+                        v-model="username"
+                        type="text"
+                        name="username"
+                        autocomplete="off"
+                        autofocus
+                        :placeholder="$t('home.username')"
+                        @input="input"
+                        @focus="focusHandler('userFocus')"
+                        @blur="blurHandler('userFocus')"
+                    />
+                </div>
+                <div class="line" :class="getStyle('passwordFocus')">
+                    <input
+                        ref="passwordRef"
+                        v-model="password"
+                        type="password"
+                        name="password"
+                        autocomplete="off"
+                        :placeholder="$t('home.password')"
+                        @input="input"
+                        @focus="focusHandler('passwordFocus')"
+                        @blur="blurHandler('passwordFocus')"
+                        @keyup.enter="login"
+                    />
+                </div>
+                <div class="line">
+                    <button @click="login">{{$t('home.login')}}</button>
+                </div>
+                <div v-show="error" class="error">
+                    <ExclamationCircleOutlined />{{error}}
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<script setup>
+import { getUserRole } from '@/assets/js/utils.js';
+import { ExclamationCircleOutlined } from '@fesjs/fes-design/icon';
+import { ref } from 'vue';
+import { access, request as FRequest, useI18n } from '@fesjs/fes';
+
+const { t: $t } = useI18n();
+
+const focus = ref({
+    passwordFocus: false,
+    userFocus: false,
+});
+const usernameRef = ref(null);
+const passwordRef = ref(null);
+
+const username = ref('');
+const password = ref('');
+async function login() {
+    access.setRole('noauth');
+    sessionStorage.setItem('userLogin', false);
+    const curUsername = username.value;
+    // eslint-disable-next-line no-use-before-define
+    const curPassword = sha256(password.value);
+    // eslint-disable-next-line no-use-before-define
+    if (validate()) {
+        await FRequest('api/v1/login/local', {
+            username: curUsername,
+            password: curPassword,
+        });
+        // 设置用户、角色等
+        sessionStorage.setItem('firstUserName', username);
+        sessionStorage.setItem('userLogin', true);
+        // eslint-disable-next-line no-use-before-define
+        getRole();
+        // 需要刷新应用，角色用户在渲染前设置
+        const url = window.location.href;
+        const newUrl = url.replace('home', 'null');
+        window.location.href = '';
+        window.location.href = newUrl;
+    }
+}
+function getRole() {
+    getUserRole();
+}
+function sha256(s) {
+    const chrsz = 8;
+    const hexcase = 0;
+    // eslint-disable-next-line camelcase
+    function safe_add(x, y) {
+        const lsw = (x & 0xffff) + (y & 0xffff);
+        const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+        return (msw << 16) | (lsw & 0xffff);
+    }
+    function S(X, n) {
+        return (X >>> n) | (X << (32 - n));
+    }
+    function R(X, n) {
+        return X >>> n;
+    }
+    function Ch(x, y, z) {
+        return (x & y) ^ (~x & z);
+    }
+    function Maj(x, y, z) {
+        return (x & y) ^ (x & z) ^ (y & z);
+    }
+    function Sigma0256(x) {
+        return S(x, 2) ^ S(x, 13) ^ S(x, 22);
+    }
+    function Sigma1256(x) {
+        return S(x, 6) ^ S(x, 11) ^ S(x, 25);
+    }
+    function Gamma0256(x) {
+        return S(x, 7) ^ S(x, 18) ^ R(x, 3);
+    }
+    function Gamma1256(x) {
+        return S(x, 17) ^ S(x, 19) ^ R(x, 10);
+    }
+    // eslint-disable-next-line camelcase
+    function core_sha256(m, l) {
+        const K = new Array([
+            0x428a2f98,
+            0x71374491,
+            0xb5c0fbcf,
+            0xe9b5dba5,
+            0x3956c25b,
+            0x59f111f1,
+            0x923f82a4,
+            0xab1c5ed5,
+            0xd807aa98,
+            0x12835b01,
+            0x243185be,
+            0x550c7dc3,
+            0x72be5d74,
+            0x80deb1fe,
+            0x9bdc06a7,
+            0xc19bf174,
+            0xe49b69c1,
+            0xefbe4786,
+            0xfc19dc6,
+            0x240ca1cc,
+            0x2de92c6f,
+            0x4a7484aa,
+            0x5cb0a9dc,
+            0x76f988da,
+            0x983e5152,
+            0xa831c66d,
+            0xb00327c8,
+            0xbf597fc7,
+            0xc6e00bf3,
+            0xd5a79147,
+            0x6ca6351,
+            0x14292967,
+            0x27b70a85,
+            0x2e1b2138,
+            0x4d2c6dfc,
+            0x53380d13,
+            0x650a7354,
+            0x766a0abb,
+            0x81c2c92e,
+            0x92722c85,
+            0xa2bfe8a1,
+            0xa81a664b,
+            0xc24b8b70,
+            0xc76c51a3,
+            0xd192e819,
+            0xd6990624,
+            0xf40e3585,
+            0x106aa070,
+            0x19a4c116,
+            0x1e376c08,
+            0x2748774c,
+            0x34b0bcb5,
+            0x391c0cb3,
+            0x4ed8aa4a,
+            0x5b9cca4f,
+            0x682e6ff3,
+            0x748f82ee,
+            0x78a5636f,
+            0x84c87814,
+            0x8cc70208,
+            0x90befffa,
+            0xa4506ceb,
+            0xbef9a3f7,
+            0xc67178f2,
+        ]);
+        const HASH = new Array([
+            0x6a09e667,
+            0xbb67ae85,
+            0x3c6ef372,
+            0xa54ff53a,
+            0x510e527f,
+            0x9b05688c,
+            0x1f83d9ab,
+            0x5be0cd19,
+        ]);
+        const W = new Array(64);
+        let a; let b; let c; let d; let e; let f; let g; let h; let i; let
+            j;
+        let T1; let
+            T2;
+        m[l >> 5] |= 0x80 << (24 - (l % 32));
+        m[(((l + 64) >> 9) << 4) + 15] = l;
+        for (i = 0; i < m.length; i += 16) {
+            a = HASH[0];
+            b = HASH[1];
+            c = HASH[2];
+            d = HASH[3];
+            e = HASH[4];
+            f = HASH[5];
+            g = HASH[6];
+            h = HASH[7];
+            for (j = 0; j < 64; j++) {
+                if (j < 16) W[j] = m[j + i];
+                else {
+                    W[j] = safe_add(
+                        safe_add(
+                            safe_add(Gamma1256(W[j - 2]), W[j - 7]),
+                            Gamma0256(W[j - 15]),
+                        ),
+                        W[j - 16],
+                    );
+                }
+                T1 = safe_add(
+                    safe_add(safe_add(safe_add(h, Sigma1256(e)), Ch(e, f, g)), K[j]),
+                    W[j],
+                );
+                T2 = safe_add(Sigma0256(a), Maj(a, b, c));
+                h = g;
+                g = f;
+                f = e;
+                e = safe_add(d, T1);
+                d = c;
+                c = b;
+                b = a;
+                a = safe_add(T1, T2);
+            }
+            HASH[0] = safe_add(a, HASH[0]);
+            HASH[1] = safe_add(b, HASH[1]);
+            HASH[2] = safe_add(c, HASH[2]);
+            HASH[3] = safe_add(d, HASH[3]);
+            HASH[4] = safe_add(e, HASH[4]);
+            HASH[5] = safe_add(f, HASH[5]);
+            HASH[6] = safe_add(g, HASH[6]);
+            HASH[7] = safe_add(h, HASH[7]);
+        }
+        return HASH;
+    }
+    function str2binb(str) {
+        const bin = new Array([]);
+        const mask = (1 << chrsz) - 1;
+        for (let i = 0; i < str.length * chrsz; i += chrsz) {
+            bin[i >> 5] |= (str.charCodeAt(i / chrsz) & mask) << (24 - (i % 32));
+        }
+        return bin;
+    }
+    function Utf8Encode(string) {
+        string = string.replace(/\r\n/g, '\n');
+        let utftext = '';
+        for (let n = 0; n < string.length; n++) {
+            const c = string.charCodeAt(n);
+            if (c < 128) {
+                utftext += String.fromCharCode(c);
+            } else if (c > 127 && c < 2048) {
+                utftext += String.fromCharCode((c >> 6) | 192);
+                utftext += String.fromCharCode((c & 63) | 128);
+            } else {
+                utftext += String.fromCharCode((c >> 12) | 224);
+                utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                utftext += String.fromCharCode((c & 63) | 128);
+            }
+        }
+        return utftext;
+    }
+    function binb2hex(binarray) {
+        // eslint-disable-next-line camelcase
+        const hex_tab = hexcase ? '0123456789ABCDEF' : '0123456789abcdef';
+        let str = '';
+        for (let i = 0; i < binarray.length * 4; i++) {
+            str
+                += hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8 + 4)) & 0xf)
+                    + hex_tab.charAt((binarray[i >> 2] >> ((3 - (i % 4)) * 8)) & 0xf);
+        }
+        return str;
+    }
+    s = Utf8Encode(s);
+    return binb2hex(core_sha256(str2binb(s), s.length * chrsz));
+}
+const error = ref('');
+function input() {
+    error.value = '';
+}
+function validate() {
+    const curUsername = username.value;
+    if (curUsername === '' || curUsername === null) {
+        error.value = '请输入用户名';
+        return false;
+    }
+
+    return true;
+}
+function getStyle(type) {
+    let style = '';
+    // eslint-disable-next-line no-use-before-define
+    if (focus.value[type] && isIE(9)) {
+        if (type === 'passwordFocus' && !password.value) {
+            style += ' ie-palceholder ie-palceholder-password';
+        } else if (type === 'userFocus' && !username) {
+            style += ' ie-palceholder';
+        }
+    }
+    return style;
+}
+function initStyle() {
+    // eslint-disable-next-line no-use-before-define
+    if (isIE(9)) {
+        !password.value && (focus.value.passwordFocus = true);
+    }
+}
+function focusHandler(type) {
+    // eslint-disable-next-line no-use-before-define
+    isIE(9) && (focus.value[type] = false);
+}
+function blurHandler(type) {
+    focus.value[type] = true;
+}
+function isIE(ver) {
+    const b = document.createElement('b');
+    b.innerHTML = `<!--[if IE ${ver}]><i></i><![endif]-->`;
+    return b.getElementsByTagName('i').length === 1;
+}
+</script>
+
+
+<style lang="less" scoped>
+@import './index.less';
+.logo-img {
+  width: 100%;
+  height: 103px;
+  margin-top: 100px;
+}
+</style>

@@ -19,16 +19,15 @@ package com.webank.wedatasphere.qualitis.rule.constant;
 /**
  * @author howeye
  */
-public enum  TemplateRegexpTypeEnum {
+public enum TemplateRegexpTypeEnum {
     /**
-     * 1.Data Regex
+     * 1.Date Regex
      * 2.Number Regex
      * 3.Identity Regex
      */
     DATE(1, "日期格式"),
-    NOT_NUMBER(2, "数值格式"),
-    IDENTITY(3, "身份证"),
-    ;
+    NUMBER(2, "数值格式"),
+    IDENTITY(3, "身份证");
 
 
     private Integer code;

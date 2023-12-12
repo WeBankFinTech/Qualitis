@@ -24,19 +24,20 @@ import java.util.UUID;
  */
 public class UuidGenerator {
     private static SecureRandom secureRandom;
+
     static {
         secureRandom = new SecureRandom();
     }
 
     private UuidGenerator() {
-        secureRandom = new SecureRandom();
+//        do something
     }
 
     public static String generate() {
         return UUID.randomUUID().toString().replace("-", "");
     }
     public static String generateRandom(int count) {
-        StringBuffer randomNumberSeq = new StringBuffer();
+        StringBuilder randomNumberSeq = new StringBuilder();
         for (int i = 0; i < count; i ++) {
             randomNumberSeq.append(secureRandom.nextInt(10) + "");
         }

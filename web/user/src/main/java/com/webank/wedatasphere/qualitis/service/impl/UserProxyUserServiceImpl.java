@@ -16,49 +16,35 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
-import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
 import com.webank.wedatasphere.qualitis.entity.ProxyUser;
 import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
+import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
+import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
+import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
+import com.webank.wedatasphere.qualitis.service.UserProxyUserService;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.service.UserProxyUserService;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
-import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
-import com.webank.wedatasphere.qualitis.entity.ProxyUser;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
-import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.service.UserProxyUserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.webank.wedatasphere.qualitis.request.PageRequest;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author howeye
  */
 @Service
 public class UserProxyUserServiceImpl implements UserProxyUserService {
-
     @Autowired
     private UserProxyUserRepository userProxyUserRepository;
 
@@ -72,7 +58,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         AddUserProxyUserRequest.checkRequest(request);
 
@@ -103,7 +89,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         DeleteUserProxyUserRequest.checkRequest(request);
 
@@ -119,7 +105,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
     }
 
     @Override
-    public GeneralResponse<?> getAllUserProxyUserByProxyUserName(String proxyUserName, PageRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<AddUserProxyUserResponse>> getAllUserProxyUserByProxyUserName(String proxyUserName, PageRequest request) throws UnExpectedRequestException {
         // Check Arguments
         PageRequest.checkRequest(request);
 
@@ -132,7 +118,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
         // Find user proxy user by proxy user
         int page = request.getPage();
         int size = request.getSize();
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
         List<UserProxyUser> userProxyUsers = userProxyUserRepository.findByProxyUser(proxyUserInDb, pageable);
         long total = userProxyUserRepository.countByProxyUser(proxyUserInDb);
@@ -149,6 +135,4 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
         LOGGER.info("Succeed to find all user proxy users by proxy user name, response: {}", response);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_PROXY_USERS_BY_PROXY_USER_NAME}", response);
     }
-
-
 }

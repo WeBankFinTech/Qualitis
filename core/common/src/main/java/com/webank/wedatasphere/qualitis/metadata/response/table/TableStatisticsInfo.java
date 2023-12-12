@@ -29,7 +29,7 @@ public class TableStatisticsInfo {
     @JsonProperty("table_file_count")
     private int tableFileCount;
     @JsonProperty("partitions")
-    private List<Map> partitions;
+    private List<Map<String, Object>> partitions;
 
     public TableStatisticsInfo() {
         // Default Constructor
@@ -51,11 +51,11 @@ public class TableStatisticsInfo {
         this.tableFileCount = tableFileCount;
     }
 
-    public List<Map> getPartitions() {
+    public List<Map<String, Object>> getPartitions() {
         return partitions;
     }
 
-    public void setPartitions(List<Map> partitions) {
+    public void setPartitions(List<Map<String, Object>> partitions) {
         this.partitions = partitions;
     }
 }

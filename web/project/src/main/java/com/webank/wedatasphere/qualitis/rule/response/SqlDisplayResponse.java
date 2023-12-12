@@ -17,11 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateRegexpExpr;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
@@ -58,7 +54,19 @@ public class SqlDisplayResponse {
                 List<TemplateRegexpExpr> templateRegexpExprs = regexpExprMapperRepository.findByRegexpType(regexpType);
                 placeholders.add(new PlaceholderResponse(midTableInputMeta, templateRegexpExprs));
             } else {
-                placeholders.add(new PlaceholderResponse(midTableInputMeta));
+                boolean flag = false;
+                if (template.getName().equals(QualitisConstants.ROW_DATA_CONSISTENCY_VERIFICATION) &&
+                        (inputType.equals(TemplateInputTypeEnum.AND_CONCAT.getCode()) || inputType.equals(TemplateInputTypeEnum.SOURCE_FIELDS.getCode()) ||
+                                inputType.equals(TemplateInputTypeEnum.TARGET_FIELDS.getCode()))) {
+                    flag = true;
+                }
+
+                if (flag) {
+                    continue;
+                } else {
+                    placeholders.add(new PlaceholderResponse(midTableInputMeta));
+                }
+
             }
         }
 

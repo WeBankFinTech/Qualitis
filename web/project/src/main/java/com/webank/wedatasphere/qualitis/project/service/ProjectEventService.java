@@ -16,10 +16,10 @@
 
 package com.webank.wedatasphere.qualitis.project.service;
 
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -27,24 +27,22 @@ import org.springframework.transaction.annotation.Transactional;
 public interface ProjectEventService {
 
     /**
-     * Record project event.
+     * record
      * @param project
-     * @param userName
-     * @param operation
-     * @param content
-     * @param code
+     * @param operateUser
+     * @param operationContent
+     * @param operateTypeEnum
+     * @return
      */
-    void record(Long project, String userName, String operation, String content, Integer code);
+    void record(Project project, String operateUser, String operationContent, OperateTypeEnum operateTypeEnum);
 
     /**
-     * Field modify record.
-     * @param projectInDb
-     * @param userName
-     * @param field
-     * @param beforeModify
-     * @param afterModify
-     * @param typeId
+     * record Batch
+     * @param projects
+     * @param operateUser
+     * @param operationContent
+     * @param operateTypeEnum
+     * @return
      */
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    void recordModifyProject(Project projectInDb, String userName, String field, String beforeModify, String afterModify, Integer typeId);
+    void recordBatch(List<Project> projects, String operateUser, String operationContent, OperateTypeEnum operateTypeEnum);
 }

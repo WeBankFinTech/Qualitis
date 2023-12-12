@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.config;
 
+import com.webank.wedatasphere.qualitis.handler.LinkisErrorHandler;
 import com.webank.wedatasphere.qualitis.handler.RestErrorHandler;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -54,6 +55,13 @@ public class RestClientConfig {
     public RestTemplate restTemplate() {
         RestTemplate restTemplate = new RestTemplate(clientHttpRequestFactory());
         restTemplate.setErrorHandler(new RestErrorHandler());
+        return restTemplate;
+    }
+
+    @Bean(name = "linkisRestTemplate")
+    public RestTemplate linkisRestTemplate() {
+        RestTemplate restTemplate = new RestTemplate(clientHttpRequestFactory());
+        restTemplate.setErrorHandler(new LinkisErrorHandler());
         return restTemplate;
     }
 

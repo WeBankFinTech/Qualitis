@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.rule.controller;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.constant.EventTypeEnum;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
@@ -28,18 +27,14 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 
 /**
  * @author allenzhou
@@ -63,13 +58,14 @@ public class FileRuleController {
     @Path("add")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<RuleResponse> addRule(AddFileRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<RuleResponse> addRule(AddFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            // Record project event.
-//            String loginUser = HttpUtils.getUserName(httpServletRequest);
-//            projectEventService.record(request.getProjectId(), loginUser, "add", "file rule[name= " + request.getRuleName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
-            return fileRuleService.addRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return fileRuleService.addRule(request, loginUser, false);
         } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (PermissionDeniedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
@@ -82,7 +78,7 @@ public class FileRuleController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteRule(DeleteFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse deleteRule(DeleteFileRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             String loginUser = HttpUtils.getUserName(httpServletRequest);
             return fileRuleService.deleteRule(request, loginUser);
@@ -105,7 +101,8 @@ public class FileRuleController {
     public GeneralResponse<RuleResponse> modifyRuleDetail(ModifyFileRuleRequest request)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return fileRuleService.modifyRuleDetail(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return fileRuleService.modifyRuleDetailWithLock(request, loginUser, false);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
