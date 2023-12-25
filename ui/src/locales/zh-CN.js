@@ -184,6 +184,7 @@ export default {
         sourceDatabase: '来源数据库',
         targetDatabase: '目标数据库',
         linkis: 'Linkis地址',
+        token: 'Linkis令牌',
         pleaseEnter: '请输入',
         view: '查看',
         executeTask: '执行任务',

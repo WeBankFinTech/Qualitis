@@ -58,6 +58,7 @@ CREATE TABLE `qualitis_alert_config` (
   `work_flow_version` varchar(180) DEFAULT NULL,
   `work_flow_name` varchar(180) DEFAULT NULL,
   `node_name` varchar(180) DEFAULT NULL,
+  `work_flow_space` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -187,6 +188,8 @@ CREATE TABLE `qualitis_auth_department` (
   `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
   `department_code` varchar(255) COLLATE utf8_bin DEFAULT NULL,
   `tenant_user_id` bigint(20) DEFAULT NULL,
+  `source_type` int(4) DEFAULT NULL COMMENT '',
+  `parent_id` bigint(20) DEFAULT NULL COMMENT '',
   `create_user` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '创建时间',
   `modify_user` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '修改用户',
@@ -802,6 +805,7 @@ CREATE TABLE `qualitis_auth_proxy_user` (
   `proxy_user_name` varchar(20) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
   `bdp_client_token` varchar(2000) DEFAULT NULL,
+  `user_config_json` mediumtext COMMENT '用户配置信息',
   `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) DEFAULT NULL COMMENT '创建时间',
   `modify_user` varchar(50) DEFAULT NULL COMMENT '修改用户',
@@ -819,7 +823,7 @@ CREATE TABLE `qualitis_auth_proxy_user_department` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `proxy_user_id` bigint(20) DEFAULT NULL,
   `department` varchar(50) DEFAULT NULL,
-  `department_sub_id` bigint(20) DEFAULT NULL,
+  `sub_department_code` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKpmln0snv5mkc203umzzgcjf05` (`proxy_user_id`),
   CONSTRAINT `FKpmln0snv5mkc203umzzgcjf05` FOREIGN KEY (`proxy_user_id`) REFERENCES `qualitis_auth_proxy_user` (`id`)
@@ -872,7 +876,8 @@ CREATE TABLE `qualitis_auth_user` (
   `password` varchar(64) DEFAULT NULL,
   `username` varchar(30) DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
-  `department_sub_id` bigint(20) DEFAULT NULL,
+  `user_config_json` mediumtext COMMENT '用户配置',
+  `sub_department_code` bigint(20) DEFAULT NULL,
   `bdp_client_token` varchar(2000) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) DEFAULT NULL COMMENT '创建时间',
@@ -1479,6 +1484,8 @@ CREATE TABLE `qualitis_rule` (
   `enable` bit(1) DEFAULT b'1',
   `union_all` bit(1) DEFAULT b'0',
   `contrast_type` int(11) DEFAULT NULL,
+  `work_flow_space` varchar(500) DEFAULT NULL,
+  `node_name` varchar(180) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK7hv5yh1en46cfwxkqdmixyrn1` (`rule_group_id`),
   KEY `FKf769w3wjl2ywbue7hft6aq8c4` (`template_id`),
@@ -1666,7 +1673,7 @@ insert into qualitis_auth_role(id, role_type, name, zn_name) values(5, 2, "Test"
 
 
 -- 管理员账户
-insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, "admin", "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918", "管理员", "管理员");
+insert into qualitis_auth_user(id, username, password, chinese_name, department) values(1, "admin", "93956d0840b837284103670473a3dd2fca8c46c40c1c4313252d4a192df19474", "管理员", "管理员");
 
 -- 管理员角色
 insert into qualitis_auth_user_role(id, user_id, role_id) values("5932425efdfe49949587f51a54e8xffb", 1, 1);
@@ -2244,6 +2251,5 @@ insert into qualitis_template_default_input_meta(id, type, placeholder, placehol
 
 INSERT INTO qualitis_template_naming_conventions (id,major_categories,kind,create_user,create_time,modify_user,modify_time) VALUES (1,'{"en_name":"basics","zh_name":"IT基础","abbreviation":"A"}','[{"en_name":"Fluctuate","zh_name":"波动","abbreviation":"F"},{"en_name":"New","zh_name":"新值","abbreviation":"N"},{"en_name":"Balance","zh_name":"对账","abbreviation":"B"}]',NULL,NULL,NULL,NULL);
 INSERT INTO qualitis_template_naming_conventions (id,major_categories,kind,create_user,create_time,modify_user,modify_time) VALUES (2,'{"en_name":"general_knowledge","zh_name":"IT通识","abbreviation":"B"}','[{"en_name":"Common","zh_name":"常规","abbreviation":"C"},{"en_name":"Anti","zh_name":"反洗钱","abbreviation":"A"},{"en_name":"Regulate","zh_name":"监管报送","abbreviation":"R"}]',NULL,NULL,NULL,NULL);
-
 
 -- dml end

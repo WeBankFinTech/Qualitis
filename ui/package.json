@@ -62,7 +62,6 @@
     "@fesjs/plugin-access": "2.0.3",
     "@fesjs/plugin-enums": "2.0.2",
     "@fesjs/plugin-icon": "2.0.6",
-    "@fesjs/plugin-layout": "3.0.0",
     "@fesjs/plugin-locale": "3.0.3",
     "@fesjs/plugin-model": "2.0.3",
     "@fesjs/plugin-monaco-editor": "2.0.0-beta.7",
