@@ -277,7 +277,7 @@ project(':core/common') {
     compile('org.yaml:snakeyaml:2.0'){
       force = true
     }
-    compile('org.hibernate:hibernate-core:5.4.24.Final'){
+    compile('org.hibernate:hibernate-core:5.6.5.Final'){
       force = true
     }
     compile('com.fasterxml.jackson.core:jackson-databind:2.13.4.2'){
