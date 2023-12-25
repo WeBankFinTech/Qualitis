@@ -15,7 +15,7 @@ spring:
       private_key: X
       url: jdbc:mysql://[DB_HOST_WORKER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
       driver-class-name: com.mysql.jdbc.Driver
-      type: com.zaxxer.hikari.HikariDataSourc
+      type: com.zaxxer.hikari.HikariDataSource
     # 连接池配置
     hikari:
       minimum-idle: 20
