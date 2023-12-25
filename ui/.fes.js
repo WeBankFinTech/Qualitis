@@ -15,7 +15,7 @@ export default {
     layout: false,
     define: {
         // 请求服务地址，没有明确ip采用相对地址
-        BASEURL: 'http://172.21.8.149:8090/qualitis',
+        BASEURL: '/qualitis',
     },
     alias: {
         '@': path.resolve(__dirname, 'src')

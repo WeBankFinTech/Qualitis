@@ -192,13 +192,6 @@
                             </FButton>
                         </div>
                     </div>
-                    <div v-if="addDataSourceForm.inputType === 2">
-                        <!-- {{ addDataSourceForm.dcn }} -->
-                        <FFormItem label="DCN" prop="dcn">
-                            <FSelectTree v-model="addDataSourceForm.dcn" :data="dcnTreeData" cascade checkStrictly="parent" multiple collapseTags :collapseTagsLimit="3">
-                            </FSelectTree>
-                        </FFormItem>
-                    </div>
                     <template v-if="!(addDataSourceForm.inputType === 1 && addDataSourceForm.verifyType === 2)">
                         <div class="title">{{$t('dataSourceManagement.loginAuth')}}</div>
                         <div>
@@ -269,7 +262,6 @@ import {
     fetchDataSourceType, fetchAddDataSource, fetchSubSystemInfo, fetchEditDataSource, fetchUpdateDataSourceVersion,
 } from '../api';
 import DetailManagement from './detailManagement.vue';
-import { useDcnData } from '../useDcnData';
 
 
 const { t: $t } = useI18n();
@@ -485,17 +477,6 @@ const {
     visSelectChange,
 } = useDepartment(devCurSubDepartData, opsCurSubDepartData, visCurSubDepartData, visDivisions);
 
-// DCN list相关处理
-const {
-    dcnTreeData,
-    dcnListData,
-    genDcnTreeData,
-} = useDcnData();
-const handleSubSystemChange = async () => {
-    const subSystem = props.subSystemList.find(item => item.value === addDataSourceForm.value.subSystem);
-    console.log('subSystem', subSystem);
-    await genDcnTreeData({ subSystemId: subSystem.id });
-};
 
 const curAuthTypeList = ref(commonAuthTypeList);
 const getDataSourceAddTypeList = async () => {
@@ -567,21 +548,7 @@ const handleRequestParams = () => {
     let connectParams = {};
     curDataSourceEnvs = [];
     params = pick(addDataSourceForm.value, Object.keys(initaddDataSourceForm()));
-    if (addDataSourceForm.value.inputType === 2) {
-        const dcns = getDataFormTreeSelect(addDataSourceForm.value.dcn, dcnListData.value);
-        console.log('addDataSourceForm.dcn', addDataSourceForm.value.dcn, dcns, envList.value);
-        const authData = computeAuthData(addDataSourceForm.value);
-        curDataSourceEnvs = dcns.map(dcn => ({
-            database: dcn.db_name,
-            envName: dcn.dcn_num,
-            connectParams: {
-                host: dcn.vip,
-                port: dcn.gwport,
-                ...authData,
-            },
-            id: envList.value.find(item => item.dcnId === dcn.value)?.id || '',
-        }));
-    } else if (addDataSourceForm.value.inputType === 1) {
+    if (addDataSourceForm.value.inputType === 1) {
         envList.value.forEach((item) => {
             const curEnv = pick(item, ['envName', 'envDesc']);
             connectParams = pick(item, ['port', 'host', 'connectParam']);
@@ -680,8 +647,6 @@ const editSource = async () => {
     addDataSourceForm.value.dataSourceDesc = props.curDataSourceDetail.dataSourceDescription;
     addDataSourceForm.value.dataSourceTypeId = String(props.curDataSourceDetail.dataSourceTypeId);
     addDataSourceForm.value.action_range = addDataSourceForm.value.visibility_department_list?.map(item => item.name.split('/')) || [];
-    // 初始化DCN Tree初始值
-    await handleSubSystemChange();
     // 初始化多DCN相关数据
     addDataSourceForm.value.dcn = props.curDataSourceDetail.dcnSequence;
     console.log(addDataSourceForm.value);

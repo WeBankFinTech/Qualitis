@@ -128,6 +128,7 @@ export default {
         cluster: 'Cluster',
         taskExecCluster: '任务执行集群',
         linkis: 'Linkis Address',
+        token: 'Linkis Token',
         sourceName: 'SourceName',
         targetName: 'TargetName',
         filterFields: 'Filter Fields',

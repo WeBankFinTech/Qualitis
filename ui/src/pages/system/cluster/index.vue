@@ -27,7 +27,7 @@
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="cluster_name" :label="$t('configureParameterPage.clusterName')" :minWidth="192" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="cluster_type" :label="$t('configureParameterPage.clusterType')" :minWidth="102" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_address" :label="$t('common.linkis')" :minWidth="200" />
-                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_token" label="Linkis Token" :minWidth="142" />
+                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_token" :label="`${$t('common.token')}`" :minWidth="142" />
                     <f-table-column prop="create_user" :label="$t('optionManagePage.create_user')" :minWidth="120" ellipsis />
                     <f-table-column prop="create_time" :label="$t('optionManagePage.create_time')" :minWidth="180" ellipsis />
                     <f-table-column prop="modify_user" :label="$t('optionManagePage.modify_user')" :minWidth="120" ellipsis />
@@ -71,7 +71,7 @@
             <FFormItem :label="`${$t('common.linkis')}`" prop="linkis_address">
                 <FInput v-model="form.linkis_address" :placeholder="$t('common.pleaseEnter')" />
             </FFormItem>
-            <FFormItem label="LinkisToken" prop="linkis_token">
+            <FFormItem :label="`${$t('common.token')}`" prop="linkis_token">
                 <FInput v-model="form.linkis_token" :placeholder="$t('common.pleaseEnter')" />
             </FFormItem>
             <FFormItem :label="`${$t('configureParameterPage.wtssConf')}`" prop="wtss_conf">

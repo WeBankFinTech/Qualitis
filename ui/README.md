@@ -61,11 +61,11 @@ http://backendip:8090/web/		http://localhost:8000/
 
 |规则类型|目录|表单项|数据项|
 |:---|:---|:---|:---|
-|单表校验|src/components/rules/singleTableCheck|![单表校验](/docs/dbjy.png)|![单表校验数据项](/docs/dbjysjx.png)|
-|多表比对|src/components/rules/crossTableCheck|![多表比对](/docs/dbbd.png)|![多表比对数据项](/docs/dbbdsjx.png)|
-|自定义SQL校验|src/components/rules/customCheck|![自定义SQL校验](/docs/zdysqljy.png)|![自定义SQL校验数据项](/docs/zdysqljysjx.png)|
-|表文件校验|src/components/rules/fileCheck|![表文件校验](/docs/bwjjy.png)|![表文件校验数据项](/docs/bwjjysjx.png)|
-|库一致性比对|src/components/rules/crossDbCheck|![库一致性对比](/docs/kyzxdb.png)|![库一致性对比数据项](/docs/kyzxdbsjx.png)|
+|单表校验|src/components/rules/singleTableCheck|![单表校验](./docs/dbjy.png)|![单表校验数据项](./docs/dbjysjx.png)|
+|多表比对|src/components/rules/crossTableCheck|![多表比对](./docs/dbbd.png)|![多表比对数据项](./docs/dbbdsjx.png)|
+|自定义SQL校验|src/components/rules/customCheck|![自定义SQL校验](./docs/zdysqljy.png)|![自定义SQL校验数据项](./docs/zdysqljysjx.png)|
+|表文件校验|src/components/rules/fileCheck|![表文件校验](./docs/bwjjy.png)|![表文件校验数据项](./docs/bwjjysjx.png)|
+|库一致性比对|src/components/rules/crossDbCheck|![库一致性对比](./docs/kyzxdb.png)|![库一致性对比数据项](./docs/kyzxdbsjx.png)|
 
 ## 表格数据为空的缺省页说明
 
