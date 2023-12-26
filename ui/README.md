@@ -2,12 +2,24 @@
 
 项目使用基于`vue3`的框架[FesJs](https://winixt.gitee.io/fesjs/zh/)以及[FesUI](https://fes-design-4gvn317r3b6bfe17-1254145788.ap-shanghai.app.tcloudbase.com/)，搭配`hooks`思想组合功能
 
-`注：后台接口需要在开发网中访问`
+## 环境要求
+
+node >= 16.15.0
+npm >= 6, npm >= 9时可能会出现依赖读取不到的问题
 
 ## 本地开发：
 ```
 npm i
 npm run dev
+```
+
+## 本地打包
+
+建议源码修改地址后本地编译
+后台接口地址在.fes.js中的BASE_URL中修改，编译步骤如下
+```
+npm i
+npm run build
 ```
 
 ## 跨域联调
