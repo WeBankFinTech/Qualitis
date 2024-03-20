@@ -16,11 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.timer;
 
+import com.webank.wedatasphere.qualitis.config.ImsConfig;
 import com.webank.wedatasphere.qualitis.config.ThreadPoolConfig;
 
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.ha.AbstractServiceCoordinator;
+import com.webank.wedatasphere.qualitis.util.AlarmUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -42,6 +45,8 @@ public class JobCheckerTimer {
     @Autowired
     private ApplicationDao applicationDao;
     @Autowired
+    private ImsConfig imsConfig;
+    @Autowired
     private TaskDao taskDao;
     @Autowired
     private IChecker iChecker;
@@ -52,8 +57,15 @@ public class JobCheckerTimer {
     public void init() {
         ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(threadPoolConfig.getSize(), new MonitoryThreadFactory());
         executor.scheduleWithFixedDelay(
-            new CheckerRunnable(applicationDao, taskDao, iChecker, abstractServiceCoordinator, threadPoolConfig.getUpdateJobSize()),
+            new CheckerRunnable(applicationDao, taskDao, iChecker, threadPoolConfig.getUpdateJobSize(), QualitisConstants.QUALITIS_SERVER_HOST),
             0, threadPoolConfig.getPeriod(), TimeUnit.MILLISECONDS);
+
+        if (threadPoolConfig.getAbnormalDataRedordAlarmCronEnable()) {
+            ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+            threadPoolTaskScheduler.initialize();
+            threadPoolTaskScheduler.schedule(new UploaderRunnable(iChecker, abstractServiceCoordinator)
+                , new CronTrigger(threadPoolConfig.getAbnormalDataRedordAlarmCron()));
+        }
     }
 
 }

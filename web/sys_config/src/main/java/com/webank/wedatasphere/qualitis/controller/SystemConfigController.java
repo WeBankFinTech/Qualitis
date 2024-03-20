@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.entity.SystemConfig;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.ModifySystemConfigRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -29,7 +30,7 @@ public class SystemConfigController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifySystemConfig(ModifySystemConfigRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifySystemConfig(ModifySystemConfigRequest request) throws UnExpectedRequestException {
         try {
             return systemConfigService.modifySystemConfig(request);
         } catch (UnExpectedRequestException e) {
@@ -43,7 +44,7 @@ public class SystemConfigController {
     @GET
     @Path("{key_name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> findByKeyName(@PathParam("key_name")String keyName) throws UnExpectedRequestException {
+    public GeneralResponse<SystemConfig> findByKeyName(@PathParam("key_name")String keyName) throws UnExpectedRequestException {
         try {
             return systemConfigService.findByKeyName(keyName);
         } catch (UnExpectedRequestException e) {
@@ -53,6 +54,5 @@ public class SystemConfigController {
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_SYSTEM_CONFIG}", null);
         }
     }
-
 
 }

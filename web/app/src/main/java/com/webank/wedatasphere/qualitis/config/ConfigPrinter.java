@@ -86,8 +86,8 @@ public class ConfigPrinter {
                 List<PropertySource<?>> propertySources = propertySourceLoader.load(fileName, resource);
                 for (PropertySource p : propertySources) {
                     Map<String, Object> map = (Map<String, Object>) p.getSource();
-                    for (String key : map.keySet()) {
-                        LOGGER.info("Name: [{}]=[{}]", key, map.get(key));
+                    for (Map.Entry<String, Object> m : map.entrySet()) {
+                        LOGGER.info("Name: [{}]=[{}]", m.getKey(), map.get(m.getKey()));
                     }
                 }
             } catch (IOException e) {

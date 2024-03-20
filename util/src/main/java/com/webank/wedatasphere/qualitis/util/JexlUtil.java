@@ -14,7 +14,7 @@ import org.apache.commons.jexl3.internal.Engine;
 public class JexlUtil {
     private static JexlEngine jexlEngine = new Engine();
 
-    public static Object executeExpression(String jexlExpression, Map<String, Object> map) {
+    public static synchronized Object executeExpression(String jexlExpression, Map<String, Object> map) {
         JexlExpression expression = jexlEngine.createExpression(jexlExpression);
         JexlContext context = new MapContext();
         if (map !=null && ! map.isEmpty()) {

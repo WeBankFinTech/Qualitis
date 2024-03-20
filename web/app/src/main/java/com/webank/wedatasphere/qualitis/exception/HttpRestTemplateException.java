@@ -35,7 +35,7 @@ public class HttpRestTemplateException extends IOException {
         this.statusCode = statusCode;
     }
 
-    public GeneralResponse<?> getResponse() {
+    public GeneralResponse<Object> getResponse() {
         return new GeneralResponse<>(statusCode, message, null);
     }
 }

@@ -16,14 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
-import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.exception.LoginFailedException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
+import javax.management.relation.RoleNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -39,8 +37,9 @@ public interface LoginService {
      * @return
      * @throws LoginFailedException
      * @throws UnExpectedRequestException
+     * @throws RoleNotFoundException
      */
-    GeneralResponse<?> localLogin(LocalLoginRequest request) throws LoginFailedException, UnExpectedRequestException;
+    GeneralResponse localLogin(LocalLoginRequest request) throws LoginFailedException, UnExpectedRequestException, RoleNotFoundException;
 
     /**
      * Logout
@@ -58,4 +57,11 @@ public interface LoginService {
      */
     void addToSession(String username, HttpServletRequest httpServletRequest);
 
+    /**
+     * Add dms user check cookie
+     * @param username
+     * @param httpServletRequest
+     * @param httpServletResponse
+     */
+    void addDmsUserCheckCookie(String username, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse);
 }

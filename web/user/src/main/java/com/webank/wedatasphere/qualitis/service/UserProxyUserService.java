@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
+import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -25,6 +26,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 
 /**
  * @author howeye
@@ -37,7 +39,7 @@ public interface UserProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Remove proxy user of user
@@ -45,7 +47,7 @@ public interface UserProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteUserProxyUser(DeleteUserProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all user proxy user relationship by proxy user
@@ -54,6 +56,6 @@ public interface UserProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getAllUserProxyUserByProxyUserName(String proxyUserName, PageRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<AddUserProxyUserResponse>> getAllUserProxyUserByProxyUserName(String proxyUserName, PageRequest request) throws UnExpectedRequestException;
 
 }

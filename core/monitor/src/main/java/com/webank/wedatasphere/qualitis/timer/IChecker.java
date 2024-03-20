@@ -40,4 +40,9 @@ public interface IChecker {
      * @param isNotExist
      */
     void checkIfLastJob(Application applicationInDb, boolean finish, boolean isPass, boolean isNotExist);
+
+    /**
+     * Abnormal data record alarm.
+     */
+    void abnormalDataRecordAlarm();
 }

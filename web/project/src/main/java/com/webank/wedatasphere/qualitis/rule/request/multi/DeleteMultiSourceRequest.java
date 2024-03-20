@@ -16,37 +16,25 @@
 
 package com.webank.wedatasphere.qualitis.rule.request.multi;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractDeleteRequest;
 
 /**
  * @author howeye
  */
-public class DeleteMultiSourceRequest {
-
-    @JsonProperty("rule_id")
-    private Long multiRuleId;
+public class DeleteMultiSourceRequest extends AbstractDeleteRequest {
 
     public DeleteMultiSourceRequest() {
+        // Default Constructor
     }
 
     public DeleteMultiSourceRequest(Long multiRuleId) {
-        this.multiRuleId = multiRuleId;
-    }
-
-    public Long getMultiRuleId() {
-        return multiRuleId;
-    }
-
-    public void setMultiRuleId(Long multiRuleId) {
-        this.multiRuleId = multiRuleId;
+        super.setRuleId(multiRuleId);
     }
 
     public static void checkRequest(DeleteMultiSourceRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
-        CommonChecker.checkObject(request.getMultiRuleId(), "Multi rule id");
+        CommonChecker.checkObject(request.getRuleId(), "Multi Rule id");
     }
 }

@@ -19,20 +19,18 @@ package com.webank.wedatasphere.qualitis.dao.impl;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ApplicationRepository;
 import com.webank.wedatasphere.qualitis.entity.Application;
-
-import com.webank.wedatasphere.qualitis.project.entity.Project;
-import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.persistence.criteria.Predicate;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -66,7 +64,7 @@ public class ApplicationDaoImpl implements ApplicationDao {
 
   @Override
   public List<Application> findByCreateUser(String createUser, Integer page, Integer size) {
-    Sort sort = new Sort(Sort.Direction.DESC, "submitTime");
+    Sort sort = Sort.by(Sort.Direction.DESC, "submitTime");
     Pageable pageable = PageRequest.of(page, size, sort);
     return repository.findByCreateUser(createUser, pageable).getContent();
   }
@@ -78,7 +76,7 @@ public class ApplicationDaoImpl implements ApplicationDao {
 
   @Override
   public List<Application> findByCreateUserAndStatus(String createUser, Integer status, Integer commentType, Integer page, Integer size) {
-    Sort sort = new Sort(Sort.Direction.DESC, "submitTime");
+    Sort sort = Sort.by(Sort.Direction.DESC, "submitTime");
     Pageable pageable = PageRequest.of(page, size, sort);
     return repository.findByCreateUserAndStatus(createUser, status, commentType, pageable).getContent();
   }
@@ -91,7 +89,7 @@ public class ApplicationDaoImpl implements ApplicationDao {
   @Override
   public List<Application> findByCreateUserAndProject(String createUser, Long projectId, Integer page,
       Integer size) {
-    Sort sort = new Sort(Sort.Direction.DESC, "submitTime");
+    Sort sort = Sort.by(Sort.Direction.DESC, "submitTime");
     Pageable pageable = PageRequest.of(page, size, sort);
     return repository.findByCreateUserAndProject(createUser, projectId, pageable).getContent();
   }
@@ -102,33 +100,39 @@ public class ApplicationDaoImpl implements ApplicationDao {
   }
 
   @Override
-  public List<Application> findApplicationByUserAndSubmitTimeBetween(String createUser, String startSubmitDate, String endSubmitDate) {
-    return repository.findApplicationByUserAndSubmitTimeBetween(createUser, startSubmitDate, endSubmitDate);
-  }
-
-  @Override
-  public List<Application> findApplicationByUserAndSubmitTimeBetweenPage(String user, String startSubmitDate, String endSubmitDate, int page, int size) {
-    Sort sort = new Sort(Sort.Direction.DESC, "submitTime");
+  public List<Application> findApplicationByUserAndSubmitTimeBetween(String user, String startSubmitDate, String endSubmitDate, int page, int size) {
+    Sort sort = Sort.by(Sort.Direction.DESC, "submitTime");
     Pageable pageable = PageRequest.of(page, size, sort);
-    return repository.findApplicationByUserAndSubmitTimeBetweenPage(user, startSubmitDate, endSubmitDate, pageable).getContent();
+    return repository.findApplicationByUserAndSubmitTimeBetween(user, startSubmitDate, endSubmitDate, pageable).getContent();
   }
 
   @Override
-  public List<Application> findApplicationByAdavnceConditions(String user, Long projectId, Integer status, Integer commentType, String startSubmitDate,
-      String endSubmitDate, int page, int size) {
-    Sort sort = new Sort(Sort.Direction.DESC, "submitTime");
+  public List<Map<String, Object>> chartApplicationByUserAndSubmitTimeBetween(String user, String startSubmitDate, String endSubmitDate) {
+    endSubmitDate = endSubmitDate + " 23:59:59";
+    startSubmitDate = startSubmitDate + " 00:00:00";
+    return repository.chartApplicationByUserAndSubmitTimeBetween(user, startSubmitDate, endSubmitDate);
+  }
+
+  @Override
+  public long countApplicationByUserAndSubmitTimeBetweenAndStatus(String user, String startSubmitDate, String endSubmitDate, Integer status) {
+    if (status == null) {
+      return repository.countApplicationByUserAndSubmitTimeBetween(user, startSubmitDate, endSubmitDate);
+    } else {
+      return repository.countApplicationByUserAndSubmitTimeBetweenAndStatus(user, startSubmitDate, endSubmitDate, status);
+    }
+
+  }
+
+  @Override
+  public Page<Application> findApplicationByAdvanceConditions(String user, Long projectId, Integer status, Integer commentType, String startSubmitDate,
+                                                              String endSubmitDate, Long ruleGroupId, String executeUser, List<Integer> stopStatus, String startFinishTime, String endFinishTime, int page, int size) {
+    Sort sort = Sort.by(Sort.Direction.DESC, "submit_time");
     Pageable pageable = PageRequest.of(page, size, sort);
-    return repository.findApplicationByAdavnceConditions(user, projectId, status, startSubmitDate, endSubmitDate, commentType, pageable).getContent();
-  }
-
-  @Override
-  public long countApplicationByAdavnceConditions(String user, Long projectId, Integer status, Integer commentType, String startSubmitDate, String endSubmitDate) {
-    return repository.countApplicationByAdavnceConditions(user, projectId, status, startSubmitDate, endSubmitDate, commentType);
+    return repository.findApplicationByAdvanceConditions(user, projectId, status, startSubmitDate, endSubmitDate, commentType, ruleGroupId, executeUser, stopStatus, startFinishTime, endFinishTime, pageable);
   }
 
   @Override
   public List<Application> findByStatusIn(List<Integer> statusList) {
-
     return repository.findByStatusIn(statusList);
   }
   @Override
@@ -158,24 +162,52 @@ public class ApplicationDaoImpl implements ApplicationDao {
   }
 
   @Override
-  public List<Application> findByCreateUserAndId(String createUser, String applicationId) {
-    return repository.findByCreateUserAndId(createUser, applicationId);
+  public List<Application> findByCreateUserAndId(String createUser, String applicationId, Integer page, Integer size) {
+    Sort sort = Sort.by(Sort.Direction.DESC, "id");
+    Pageable pageable = PageRequest.of(page, size, sort);
+    return repository.findByCreateUserAndId(createUser, applicationId, pageable);
   }
 
-    @Override
-    public List<Application> findApplicationByAdavnceConditionsWithDatasource(String userName, String clusterName, String databaseName,
-        String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Integer page, Integer size) {
-      Sort sort = new Sort(Sort.Direction.DESC, "id");
+  @Override
+  public long countByCreateUserAndId(String createUser, String applicationId) {
+    return repository.countByCreateUserAndId(createUser, applicationId);
+  }
+
+  @Override
+    public List<Application> findApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName,
+                                                                              String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId, String executeUser, Integer page, Integer size) {
+      Sort sort = Sort.by(Sort.Direction.DESC, "id");
       Pageable pageable = PageRequest.of(page, size, sort);
-      return repository.findApplicationByAdavnceConditionsWithDatasource(userName, clusterName, databaseName, tableName, projectId
-      , status, commentType, startTime, endTime, pageable).getContent();
+      List<String> applicationIds = repository.findApplicationByAdavnceConditionsWithDatasource(userName, clusterName, databaseName, tableName, projectId
+      , status, commentType, startTime, endTime, ruleGroupId, executeUser, pageable);
+      return repository.findAllById(applicationIds);
     }
 
   @Override
-  public long countApplicationByAdavnceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName,
-      Long projectId, Integer status, Integer commentType, String startTime, String endTime) {
+  public long countApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName,
+      Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser) {
     return repository.countApplicationByAdavnceConditionsWithDatasource(userName, clusterName, databaseName, tableName, projectId
-        , status, commentType, startTime, endTime);
+        , status, commentType, startTime, endTime, ruleGroupId,executeUser);
+  }
+
+    @Override
+    public List<Map<String, Object>> getServiceWithApplicationNum() {
+        return repository.getServiceWithApplicationNum();
+    }
+
+  @Override
+  public List<Map<String, Object>> getServiceWithApplicationNumIn(List<String> ipList) {
+    return repository.getServiceWithApplicationNumIn(ipList);
+  }
+
+  @Override
+  public int countNotFinishApplicationNum(String currentIp) {
+    return repository.countNotFinishApplicationNum(currentIp);
+  }
+
+  @Override
+  public List<String> getAllExecuteUser(String userName) {
+    return repository.getAllExecuteUser(userName);
   }
 
 }

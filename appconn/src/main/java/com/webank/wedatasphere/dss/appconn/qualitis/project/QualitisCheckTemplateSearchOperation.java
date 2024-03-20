@@ -5,25 +5,27 @@ import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
 import com.webank.wedatasphere.dss.appconn.qualitis.ref.entity.QualitisTemplate;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
 import com.webank.wedatasphere.dss.standard.app.structure.StructureRequestRef;
-import com.webank.wedatasphere.dss.standard.app.structure.StructureRequestRefImpl;
 import com.webank.wedatasphere.dss.standard.app.structure.optional.AbstractOptionalOperation;
-import com.webank.wedatasphere.dss.standard.app.structure.project.ref.ProjectResponseRef;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.RequestRefImpl;
 import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
 import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRefImpl;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import org.apache.commons.collections.CollectionUtils;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.linkis.common.conf.CommonVars;
 import org.apache.linkis.server.BDPJettyServerHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
-
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
-import java.util.*;
 
 /**
  * @author leebai

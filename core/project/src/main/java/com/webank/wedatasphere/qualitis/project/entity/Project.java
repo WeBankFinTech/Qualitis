@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import javax.persistence.*;
 import java.util.Set;
+import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -33,20 +35,19 @@ public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(length = 170)
+    @Column(length = 128)
     private String name;
-    @Column(name = "cn_name")
+    @Column(name = "cn_name", length = 128)
     private String cnName;
     @Column(length = 1700)
     private String description;
 
-    @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
+    @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<ProjectUser> projectUsers;
 
-    @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
-    private Set<ProjectEvent> projectEvents;
-
     @OneToMany(mappedBy = "project", cascade = {CascadeType.REMOVE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<ProjectLabel> projectLabels;
 
     @Column(name = "create_user", length = 50)
@@ -54,17 +55,28 @@ public class Project {
     /**
      * Full name, such as: Tom(chinese_name)
      */
-    @Column(name = "create_user_full_name", length = 50)
+    @Column(name = "create_user_full_name", length = 100)
     private String createUserFullName;
 
-    @Column(name = "user_department", length = 50)
-    private String userDepartment;
+    @Column(name = "department", length = 50)
+    private String department;
+
+    @Column(name = "sub_system_id")
+    private Long subSystemId;
+
+    @Column(name = "sub_system_name")
+    private String subSystemName;
 
     @Column(name = "create_time", length = 25)
     private String createTime;
 
     @Column(name = "modify_user", length = 50)
     private String modifyUser;
+    /**
+     * Full name, such as: Tom(chinese_name)
+     */
+    @Column(name = "modify_user_full_name", length = 100)
+    private String modifyUserFullName;
 
     @Column(name = "modify_time", length = 25)
     private String modifyTime;
@@ -80,8 +92,8 @@ public class Project {
         this.cnName = cnName;
         this.description = description;
         this.createUser = username;
-        this.createUserFullName = username + "(" + chineseName + ")";
-        this.userDepartment = department;
+        this.createUserFullName = username + "(" + (StringUtils.isNotEmpty(chineseName) ? chineseName : "") + ")";
+        this.department = department;
         this.createTime = createTime;
     }
 
@@ -149,12 +161,12 @@ public class Project {
         this.createUserFullName = createUserFullName;
     }
 
-    public String getUserDepartment() {
-        return userDepartment;
+    public String getDepartment() {
+        return department;
     }
 
-    public void setUserDepartment(String userDepartment) {
-        this.userDepartment = userDepartment;
+    public void setDepartment(String department) {
+        this.department = department;
     }
 
     public Integer getProjectType() {
@@ -181,6 +193,14 @@ public class Project {
         this.modifyUser = modifyUser;
     }
 
+    public String getModifyUserFullName() {
+        return modifyUserFullName;
+    }
+
+    public void setModifyUserFullName(String modifyUserFullName) {
+        this.modifyUserFullName = modifyUserFullName;
+    }
+
     public String getModifyTime() {
         return modifyTime;
     }
@@ -189,12 +209,20 @@ public class Project {
         this.modifyTime = modifyTime;
     }
 
-    public Set<ProjectEvent> getProjectEvents() {
-        return projectEvents;
+    public Long getSubSystemId() {
+        return subSystemId;
     }
 
-    public void setProjectEvents(Set<ProjectEvent> projectEvents) {
-        this.projectEvents = projectEvents;
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
     }
 
     @Override
@@ -202,10 +230,17 @@ public class Project {
         return "Project{" +
             "id=" + id +
             ", name='" + name + '\'' +
+            ", cnName='" + cnName + '\'' +
             ", description='" + description + '\'' +
             ", createUser='" + createUser + '\'' +
             ", createUserFullName='" + createUserFullName + '\'' +
-            ", userDepartment='" + userDepartment + '\'' +
+            ", userDepartment='" + department + '\'' +
+            ", subSystemId=" + subSystemId +
+            ", subSystemName='" + subSystemName + '\'' +
+            ", createTime='" + createTime + '\'' +
+            ", modifyUser='" + modifyUser + '\'' +
+            ", modifyTime='" + modifyTime + '\'' +
+            ", projectType=" + projectType +
             '}';
     }
 }

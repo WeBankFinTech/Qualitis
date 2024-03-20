@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -34,6 +35,14 @@ public class DataSourceColumnRequest {
     private String columnName;
     @JsonProperty("data_type")
     private String dataType;
+
+    public DataSourceColumnRequest(String colType) {
+        int index = colType.indexOf(SpecCharEnum.COLON.getValue());
+        if(index > 0){
+            this.columnName = colType.substring(0, index);
+            this.dataType = colType.substring(index + 1);
+        }
+    }
 
     public String getColumnName() {
         return columnName;
@@ -61,6 +70,9 @@ public class DataSourceColumnRequest {
     }
 
     public static void checkRequest(List<DataSourceColumnRequest> requests, boolean fps) throws UnExpectedRequestException {
+        if (requests == null) {
+            return;
+        }
         for (DataSourceColumnRequest request : requests){
             CommonChecker.checkString(request.getColumnName(), "column_name");
             if (fps) {

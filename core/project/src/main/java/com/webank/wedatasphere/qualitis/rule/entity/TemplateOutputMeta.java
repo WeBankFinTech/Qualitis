@@ -16,11 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import javax.persistence.*;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import java.util.Objects;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -35,6 +42,7 @@ public class TemplateOutputMeta {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     private Template template;
 
     @Column(length = 150, name = "output_name", updatable = false)
@@ -43,6 +51,8 @@ public class TemplateOutputMeta {
     private String fieldName;
     @Column(name = "field_type")
     private Integer fieldType;
+    @Column(name = "output_en_name")
+    private String outputEnName;
 
     public TemplateOutputMeta() {
         // Default Constructor
@@ -82,6 +92,14 @@ public class TemplateOutputMeta {
 
     public void setTemplate(Template template) {
         this.template = template;
+    }
+
+    public String getOutputEnName() {
+        return outputEnName;
+    }
+
+    public void setOutputEnName(String outputEnName) {
+        this.outputEnName = outputEnName;
     }
 
     @Override

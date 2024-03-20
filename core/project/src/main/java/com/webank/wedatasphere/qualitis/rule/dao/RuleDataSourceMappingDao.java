@@ -19,6 +19,8 @@ package com.webank.wedatasphere.qualitis.rule.dao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
 
+import java.util.List;
+
 /**
  * @author howeye
  */
@@ -32,9 +34,28 @@ public interface RuleDataSourceMappingDao {
     RuleDataSourceMapping saveRuleDataSourceMapping(RuleDataSourceMapping ruleDataSourceMapping);
 
     /**
+     * Save all
+     * @param ruleDataSourceMappingList
+     * @return
+     */
+    List<RuleDataSourceMapping> saveAll(List<RuleDataSourceMapping> ruleDataSourceMappingList);
+
+    /**
      * Delete rule datasource mapping by rule
      * @param rule
      */
     void deleteByRule(Rule rule);
 
+    /**
+     * delete By Rule List
+     * @param rules
+     */
+    void deleteByRuleList(List<Rule> rules);
+
+    /**
+     * find By Rule List
+     * @param ruleList
+     * @return
+     */
+    List<RuleDataSourceMapping> findByRuleList(List<Rule> ruleList);
 }

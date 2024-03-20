@@ -34,6 +34,7 @@ public class ProjectUserResponse {
     private String authorizedUser;
     @JsonProperty("permission")
     private List<Integer> permissions;
+    private Boolean hidden;
 
     public ProjectUserResponse() {
         // Default Constructor
@@ -84,6 +85,14 @@ public class ProjectUserResponse {
 
     public void setPermissions(List<Integer> permissions) {
         this.permissions = permissions;
+    }
+
+    public Boolean getHidden() {
+        return hidden;
+    }
+
+    public void setHidden(Boolean hidden) {
+        this.hidden = hidden;
     }
 
     @Override

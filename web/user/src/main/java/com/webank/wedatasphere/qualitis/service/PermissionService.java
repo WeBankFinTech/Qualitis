@@ -24,14 +24,6 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.PermissionResponse;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.response.PermissionResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.permission.AddPermissionRequest;
-import com.webank.wedatasphere.qualitis.request.permission.DeletePermissionRequest;
-import com.webank.wedatasphere.qualitis.request.permission.ModifyPermissionRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
 /**
  * @author howeye
@@ -52,7 +44,7 @@ public interface PermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify permission object
@@ -60,7 +52,7 @@ public interface PermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all permissions

@@ -13,19 +13,33 @@ public class ApplicationSubmitRequest {
     private Long projectId;
     private Long ruleGroupId;
     private List<Long> ruleIds;
-    private StringBuffer partition;
+    private StringBuilder partition;
+    private String partitionFullSize;
+    private String clusterName;
+    private String database;
+    private String table;
 
     public ApplicationSubmitRequest() {
     }
 
-    public ApplicationSubmitRequest(Long projectId, Long ruleGroupId, List<Long> ruleIds, StringBuffer partition) {
+    public ApplicationSubmitRequest(Long projectId, Long ruleGroupId, List<Long> ruleIds, StringBuilder partition) {
         this.projectId = projectId;
         this.ruleGroupId = ruleGroupId;
         this.ruleIds = ruleIds;
         this.partition = partition;
     }
 
-    public ApplicationSubmitRequest(String jobId, Long projectId, Long ruleGroupId, List<Long> ruleIds, StringBuffer partition) {
+    public ApplicationSubmitRequest(Long projectId, Long ruleGroupId, List<Long> ruleIds, StringBuilder partition, String clusterName, String database, String table) {
+        this.projectId = projectId;
+        this.ruleGroupId = ruleGroupId;
+        this.ruleIds = ruleIds;
+        this.partition = partition;
+        this.clusterName = clusterName;
+        this.database = database;
+        this.table = table;
+    }
+
+    public ApplicationSubmitRequest(String jobId, Long projectId, Long ruleGroupId, List<Long> ruleIds, StringBuilder partition) {
         this.jobId = jobId;
         this.projectId = projectId;
         this.ruleGroupId = ruleGroupId;
@@ -65,11 +79,43 @@ public class ApplicationSubmitRequest {
         this.ruleIds = ruleIds;
     }
 
-    public StringBuffer getPartition() {
+    public StringBuilder getPartition() {
         return partition;
     }
 
-    public void setPartition(StringBuffer partition) {
+    public void setPartition(StringBuilder partition) {
         this.partition = partition;
+    }
+
+    public String getPartitionFullSize() {
+        return partitionFullSize;
+    }
+
+    public void setPartitionFullSize(String partitionFullSize) {
+        this.partitionFullSize = partitionFullSize;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
     }
 }

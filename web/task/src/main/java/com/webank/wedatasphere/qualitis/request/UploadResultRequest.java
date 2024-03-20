@@ -25,7 +25,6 @@ import java.util.List;
  * @author howeye
  */
 public class UploadResultRequest {
-
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("database_name")
@@ -40,8 +39,12 @@ public class UploadResultRequest {
     private List<Integer> status;
     @JsonProperty("hdfs_path")
     private String hdfsPath;
+    @JsonProperty("proxy_user")
+    private String proxyUser;
 
-    public UploadResultRequest() {}
+    public UploadResultRequest() {
+        // Do nothing.
+    }
 
     public String getClusterName() {
         return clusterName;
@@ -97,6 +100,14 @@ public class UploadResultRequest {
 
     public void setHdfsPath(String hdfsPath) {
         this.hdfsPath = hdfsPath;
+    }
+
+    public String getProxyUser() {
+        return proxyUser;
+    }
+
+    public void setProxyUser(String proxyUser) {
+        this.proxyUser = proxyUser;
     }
 
     public static void checkRequest(UploadResultRequest request) throws UnExpectedRequestException {

@@ -15,6 +15,7 @@ public class SystemKeyConfig {
     private String saveDatabasePattern;
 
     public SystemKeyConfig() {
+        // Do nothing.
     }
 
     public String getSaveDatabasePattern() {

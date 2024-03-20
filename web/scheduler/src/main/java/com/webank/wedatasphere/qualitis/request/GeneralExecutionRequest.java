@@ -25,6 +25,9 @@ import java.util.List;
  * @author howeye
  */
 public class GeneralExecutionRequest {
+    @JsonProperty("job_id")
+    private String jobId;
+
     @JsonProperty("project_id")
     private Long projectId;
 
@@ -45,6 +48,8 @@ public class GeneralExecutionRequest {
 
     @JsonProperty(value = "project_name")
     private String projectName;
+    @JsonProperty(value = "group_name")
+    private String ruleGroupName;
     @JsonProperty(value = "rule_name_list")
     private List<String> ruleNameList;
 
@@ -56,6 +61,12 @@ public class GeneralExecutionRequest {
 
     @JsonProperty("node_name")
     private String nodeName;
+
+
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
 
     @JsonProperty("cluster_name")
     private String clusterName;
@@ -71,8 +82,21 @@ public class GeneralExecutionRequest {
     @JsonProperty("bool_async")
     private boolean async;
 
+    @JsonProperty("start_time")
+    private String startTime;
+    @JsonProperty("end_time")
+    private String endTime;
+
     public GeneralExecutionRequest() {
         this.crossTable = false;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(String jobId) {
+        this.jobId = jobId;
     }
 
     public Long getProjectId() {
@@ -131,6 +155,14 @@ public class GeneralExecutionRequest {
         this.projectName = projectName;
     }
 
+    public String getRuleGroupName() {
+        return ruleGroupName;
+    }
+
+    public void setRuleGroupName(String ruleGroupName) {
+        this.ruleGroupName = ruleGroupName;
+    }
+
     public List<String> getRuleNameList() {
         return ruleNameList;
     }
@@ -177,6 +209,22 @@ public class GeneralExecutionRequest {
 
     public void setNodeName(String nodeName) {
         this.nodeName = nodeName;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
+    }
+
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
     }
 
     public String getClusterName() {
@@ -227,6 +275,22 @@ public class GeneralExecutionRequest {
         this.async = async;
     }
 
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
     public static void checkRequest(GeneralExecutionRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getCreateUser(), "Create User");
@@ -249,6 +313,8 @@ public class GeneralExecutionRequest {
             ", cluster='" + cluster + '\'' +
             ", table='" + table + '\'' +
             ", nodeName='" + nodeName + '\'' +
+            ", fpsHashValue='" + fpsHashValue + '\'' +
+            ", fpsFileId='" + fpsFileId + '\'' +
             ", clusterName='" + clusterName + '\'' +
             ", startupParamName='" + startupParamName + '\'' +
             ", setFlag='" + setFlag + '\'' +

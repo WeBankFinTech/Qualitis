@@ -23,12 +23,10 @@ import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
  * @author howeye
  */
 public class DataSourceColumnResponse {
-
     @JsonProperty("column_name")
     private String columnName;
     @JsonProperty("data_type")
     private String dataType;
-
 
     public DataSourceColumnResponse() {
     }

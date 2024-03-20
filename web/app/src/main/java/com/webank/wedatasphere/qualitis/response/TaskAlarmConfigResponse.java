@@ -9,9 +9,10 @@ public class TaskAlarmConfigResponse {
     private Integer expectedCheckStatus;
 
     public TaskAlarmConfigResponse() {
+        // Default Constructor
     }
 
-    public TaskAlarmConfigResponse(String ruleName, Double result) {
+    public TaskAlarmConfigResponse(String ruleName) {
         this.ruleName = ruleName;
     }
 
@@ -39,11 +40,4 @@ public class TaskAlarmConfigResponse {
         this.ruleName = ruleName;
     }
 
-    public Integer getCheckMap() {
-        return expectedCheckStatus;
-    }
-
-    public void setCheckMap(Integer checkTemplateAndStatus) {
-        this.expectedCheckStatus = checkTemplateAndStatus;
-    }
 }

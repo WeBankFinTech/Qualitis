@@ -16,24 +16,31 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
-import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
+import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.Permission;
 import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.Permission;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
 import javax.management.relation.RoleNotFoundException;
-import javax.servlet.*;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -82,6 +89,7 @@ public class Filter1AuthorizationFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
+        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         String requestUrl = request.getRequestURI();
         // Pass if file upload url accepted
@@ -114,14 +122,16 @@ public class Filter1AuthorizationFilter implements Filter {
                     if (userInDb != null) {
                         // 放入session
                         loginService.addToSession(username, request);
-                        ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage());
+                        loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
+                        ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
                     } else {
                         // 自动创建用户
                         LOGGER.warn("user: {}, do not exist, trying to create user", username);
                         try {
                             userService.autoAddUser(username);
                             loginService.addToSession(username, request);
-                            ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage());
+                            loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
+                            ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
                         } catch (RoleNotFoundException e) {
                             LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);
                         }

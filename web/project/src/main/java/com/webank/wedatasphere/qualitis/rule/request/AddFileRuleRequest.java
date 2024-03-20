@@ -19,121 +19,26 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+
 import java.util.List;
-import javax.persistence.Column;
 
 /**
  * @author allenzhou
  */
-public class AddFileRuleRequest extends AbstractAddRequest {
-    @JsonProperty("rule_name")
-    private String ruleName;
-    @JsonProperty("cn_name")
-    private String ruleCnName;
-    @JsonProperty("rule_detail")
-    private String ruleDetail;
-    @JsonProperty("alarm")
-    private Boolean alarm;
+public class AddFileRuleRequest extends AbstractCommonRequest {
     @JsonProperty("alarm_variable")
-    private List<FileAlarmConfigRequest> alarmVariable;
-    private DataSourceRequest datasource;
-    @JsonProperty("project_id")
-    private Long projectId;
-    @JsonProperty("rule_group_id")
-    private Long ruleGroupId;
-    @JsonProperty("cs_id")
-    private String csId;
-    @JsonProperty("abort_on_failure")
-    private Boolean abortOnFailure;
-
-    private List<String> ruleMetricNamesForBdpClient;
+    private List<FileAlarmConfigRequest> fileAlarmVariable;
 
     public AddFileRuleRequest() {
         // Default Constructor
     }
 
-    public String getRuleName() {
-        return ruleName;
+    public List<FileAlarmConfigRequest> getFileAlarmVariable() {
+        return fileAlarmVariable;
     }
 
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public String getRuleCnName() {
-        return ruleCnName;
-    }
-
-    public void setRuleCnName(String ruleCnName) {
-        this.ruleCnName = ruleCnName;
-    }
-
-    public String getRuleDetail() {
-        return ruleDetail;
-    }
-
-    public void setRuleDetail(String ruleDetail) {
-        this.ruleDetail = ruleDetail;
-    }
-
-    public List<FileAlarmConfigRequest> getAlarmVariable() {
-        return alarmVariable;
-    }
-
-    public void setAlarmVariable(List<FileAlarmConfigRequest> alarmVariable) {
-        this.alarmVariable = alarmVariable;
-    }
-
-    public Boolean getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Boolean alarm) {
-        this.alarm = alarm;
-    }
-
-    public DataSourceRequest getDatasource() {
-        return datasource;
-    }
-
-    public void setDatasource(DataSourceRequest datasource) {
-        this.datasource = datasource;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
-    }
-
-    public String getCsId() { return csId; }
-
-    public void setCsId(String csId) { this.csId = csId; }
-
-    public Boolean getAbortOnFailure() {
-        return abortOnFailure;
-    }
-
-    public void setAbortOnFailure(Boolean abortOnFailure) {
-        this.abortOnFailure = abortOnFailure;
-    }
-
-    public Long getRuleGroupId() {
-        return ruleGroupId;
-    }
-
-    public void setRuleGroupId(Long ruleGroupId) {
-        this.ruleGroupId = ruleGroupId;
-    }
-
-    public List<String> getRuleMetricNamesForBdpClient() {
-        return ruleMetricNamesForBdpClient;
-    }
-
-    public void setRuleMetricNamesForBdpClient(List<String> ruleMetricNamesForBdpClient) {
-        this.ruleMetricNamesForBdpClient = ruleMetricNamesForBdpClient;
+    public void setFileAlarmVariable(List<FileAlarmConfigRequest> fileAlarmVariable) {
+        this.fileAlarmVariable = fileAlarmVariable;
     }
 
     public static void checkRequest(AddFileRuleRequest request, boolean modifyOrNot) throws UnExpectedRequestException {
@@ -141,10 +46,9 @@ public class AddFileRuleRequest extends AbstractAddRequest {
         CommonChecker.checkString(request.getRuleName(), "rule_name");
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
-        CommonChecker.checkObject(request.getAbortOnFailure(), "abort_on_failure");
         if (request.getAlarm()) {
-            CommonChecker.checkObject(request.getAlarmVariable(), "alarm_variable");
-            if (request.getAlarmVariable().isEmpty()) {
+            CommonChecker.checkObject(request.getFileAlarmVariable(), "alarm_variable");
+            if (request.getFileAlarmVariable().isEmpty()) {
                 throw new UnExpectedRequestException("alarm_variable can not be empty");
             }
         }
@@ -158,16 +62,4 @@ public class AddFileRuleRequest extends AbstractAddRequest {
         CommonChecker.checkStringLength(request.getRuleName(), 128, "rule name");
     }
 
-    @Override
-    public String toString() {
-        return "AddRuleRequest{" +
-            "ruleName='" + ruleName + '\'' +
-            ", alarm=" + alarm +
-            ", alarmVariable=" + alarmVariable +
-            ", datasource=" + datasource +
-            ", projectId=" + projectId +
-            ", ruleGroupId=" + ruleGroupId +
-            ", csId='" + csId + '\'' +
-            '}';
-    }
 }

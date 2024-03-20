@@ -19,6 +19,7 @@ package com.webank.wedatasphere.qualitis.controller;
 import com.webank.wedatasphere.qualitis.request.permission.AddPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.permission.DeletePermissionRequest;
 import com.webank.wedatasphere.qualitis.request.permission.ModifyPermissionRequest;
+import com.webank.wedatasphere.qualitis.response.AddUserTenantUserResponse;
 import com.webank.wedatasphere.qualitis.response.PermissionResponse;
 import com.webank.wedatasphere.qualitis.service.PermissionService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -73,7 +74,7 @@ public class PermissionController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deletePermission(DeletePermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse deletePermission(DeletePermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -89,7 +90,7 @@ public class PermissionController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyPermission(ModifyPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse modifyPermission(ModifyPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);

@@ -16,21 +16,27 @@
 
 package com.webank.wedatasphere.qualitis.project.controller;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.util.LdapUtil;
-import java.io.InputStream;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.json.JSONException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author allenzhou
@@ -43,16 +49,23 @@ public class OuterProjectBatchController {
     @Autowired
     private ProjectBatchService projectBatchService;
     @Autowired
-    private LdapUtil ldapUtil;
-    @Autowired
     private LoginService loginService;
+    @Autowired
+    private LdapUtil ldapUtil;
 
     @POST
     @Path("upload")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public GeneralResponse<?> uploadProjectRulesAndRuleMetrics(@FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileDisposition
-        , @FormDataParam("userName") String userName, @FormDataParam("password") String password) {
+    public GeneralResponse uploadProjectFromAomp(@FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileDisposition
+        , @FormDataParam("username") String userName, @FormDataParam("password") String password) throws IOException, UnExpectedRequestException, PermissionDeniedRequestException, JSONException, MetaDataAcquireFailedException {
+        int fileSize = fileInputStream.available();
+        LOGGER.info("Upload zip file size: {} MB", fileSize / (1024 * 1024));
+        int maxFileSize = 10 * 1024 * 1024;
+        if(fileSize > maxFileSize) {
+            throw new UnExpectedRequestException("File size exceeds limit: 10 MB");
+        }
+
         // Ldap Proxy check with user name and password.
         if (! ldapUtil.loginByLdap(userName, password)) {
             String msg = "Failed to login by ldap, please check user name and password.";
@@ -60,6 +73,6 @@ public class OuterProjectBatchController {
             return new GeneralResponse<>("401", "{&FAILED_TO_UPLOAD_PROJECTS}, caused by: " + msg, null);
         }
 
-        return projectBatchService.uploadProjectRulesAndRuleMetrics(fileInputStream, fileDisposition, userName);
+        return projectBatchService.uploadProjectFromAomp(fileInputStream, fileDisposition, userName);
     }
 }

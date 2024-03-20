@@ -18,17 +18,18 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateMidTableInputMetaDao;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
+
+import java.util.List;
 
 /**
  * @author howeye
  */
 public class RuleArgumentResponse {
-
     @JsonProperty("argument_id")
     private Long argumentId;
     @JsonProperty("argument_name")
@@ -39,16 +40,28 @@ public class RuleArgumentResponse {
     private Integer argumentStep;
     @JsonProperty("regexp_type")
     private Integer regexpType;
+    @JsonProperty("field_multiple_choice")
+    private Boolean fieldMultipleChoice;
 
     public RuleArgumentResponse() {
     }
 
     public RuleArgumentResponse(TemplateMidTableInputMeta templateMidTableInputMeta) {
         this.argumentId = templateMidTableInputMeta.getId();
-        this.argumentName = templateMidTableInputMeta.getName();
-        this.argumentType = templateMidTableInputMeta.getInputType();
-        this.argumentStep = InputActionStepEnum.TEMPLATE_INPUT_META.getCode();
         this.regexpType = templateMidTableInputMeta.getRegexpType();
+        this.argumentStep = InputActionStepEnum.TEMPLATE_INPUT_META.getCode();
+        if (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_REPLACE_NULL_CONCAT.getCode()) ||
+                templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_CONCAT.getCode())||templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD.getCode())) {
+            List<Long> templateMidTableInputMetaList = SpringContextHolder.getBean(TemplateMidTableInputMetaDao.class).findByInputType(TemplateInputTypeEnum.FIELD.getCode());
+            TemplateMidTableInputMeta meta = SpringContextHolder.getBean(TemplateMidTableInputMetaDao.class).findById(templateMidTableInputMetaList.get(0));
+            this.argumentName = meta.getName();
+            this.argumentType = meta.getInputType();
+            this.fieldMultipleChoice = templateMidTableInputMeta.getFieldMultipleChoice();
+        }else{
+            this.argumentName = templateMidTableInputMeta.getName();
+            this.argumentType = templateMidTableInputMeta.getInputType();
+        }
+
     }
 
     public RuleArgumentResponse(TemplateStatisticsInputMeta templateStatisticsInputMeta) {
@@ -96,5 +109,13 @@ public class RuleArgumentResponse {
 
     public void setRegexpType(Integer regexpType) {
         this.regexpType = regexpType;
+    }
+
+    public Boolean getFieldMultipleChoice() {
+        return fieldMultipleChoice;
+    }
+
+    public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
+        this.fieldMultipleChoice = fieldMultipleChoice;
     }
 }

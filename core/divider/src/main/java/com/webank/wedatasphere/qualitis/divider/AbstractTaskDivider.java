@@ -24,6 +24,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -36,14 +37,19 @@ public abstract class AbstractTaskDivider {
      * @param createTime
      * @param partition
      * @param date
-     * @param database
+     * @param databaseMap
+     * @param dataSourceMysqlConnect
      * @param user
      * @param threshold
+     * @param splitBy
+     * @param startupParam
      * @return
      * @throws ArgumentException
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
     public abstract List<DataQualityTask> divide(List<Rule> rules, String applicationId, String createTime, String partition, Date date,
-        String database, String user, Integer threshold) throws ArgumentException, UnExpectedRequestException, MetaDataAcquireFailedException;
+        Map<Long, Map<String, Object>> databaseMap,
+        Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user,
+        Integer threshold, String splitBy, String startupParam) throws ArgumentException, UnExpectedRequestException, MetaDataAcquireFailedException;
 }

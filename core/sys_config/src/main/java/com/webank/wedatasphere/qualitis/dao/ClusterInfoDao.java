@@ -47,6 +47,13 @@ public interface ClusterInfoDao {
     ClusterInfo findById(long id);
 
     /**
+     * Find cluster info by name list
+     * @param clusterNames
+     * @return
+     */
+    List<ClusterInfo> findByClusterNames(List<String> clusterNames);
+
+    /**
      * Delete cluster info
      * @param clusterInfo
      */
@@ -65,5 +72,21 @@ public interface ClusterInfoDao {
      * @return
      */
     Long countAll();
+
+    /**
+     * Find cluster like name
+     * @param clusterName
+     * @param page
+     * @param size
+     * @return
+     */
+    List<ClusterInfo> findClusterInfoLikeName(String clusterName, int page, int size);
+
+    /**
+     * Count by name for page.
+     * @param clusterName
+     * @return
+     */
+    int countTotalByName(String clusterName);
 
 }

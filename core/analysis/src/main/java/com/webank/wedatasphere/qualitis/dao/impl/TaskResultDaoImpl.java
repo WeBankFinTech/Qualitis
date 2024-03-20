@@ -41,14 +41,20 @@ public class TaskResultDaoImpl implements TaskResultDao {
     }
 
     @Override
-    public Double findAvgByCreateTimeBetweenAndRule(String begin, String end, Long ruleId) {
-        return resultRepository.findAvgByCreateTimeBetween(begin, end, ruleId);
-    }
-
-    @Override
     public List<TaskResult> findByApplicationIdAndRuleIn(String applicationId, List<Long> ruleIds) {
         return resultRepository.findByApplicationIdAndRuleIdIn(applicationId, ruleIds);
     }
+
+    @Override
+    public Double findAvgByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId) {
+        return resultRepository.findAvgByCreateTimeBetweenAndRuleAndMetricAndApplication(begin, end, ruleId, ruleMetricId, applicationId);
+    }
+
+    @Override
+    public long countByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId) {
+        return resultRepository.countByCreateTimeBetweenAndRuleAndMetricAndApplication(begin, end, ruleId, ruleMetricId, applicationId);
+    }
+
 
     @Override
     public TaskResult saveTaskResult(TaskResult taskResult) {
@@ -56,22 +62,37 @@ public class TaskResultDaoImpl implements TaskResultDao {
     }
 
     @Override
-    public List<Long> findRuleByRuleMetric(Long ruleMetricId, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+    public List<Long> findRuleIdsByRuleMetric(Long ruleMetricId, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return resultRepository.findRuleByRuleMetricId(ruleMetricId, pageable).getContent();
+        return resultRepository.findRuleIdsByRuleMetric(ruleMetricId, pageable).getContent();
     }
 
     @Override
-    public List<TaskResult> findValuesByRuleMetric(long ruleMetricId, int page, int size) {
-        Sort sort = new Sort(Sort.Direction.DESC, "id");
+    public int countRuleIdsByRuleMetric(Long ruleMetricId) {
+        return resultRepository.countRuleIdsByRuleMetric(ruleMetricId);
+    }
+
+    @Override
+    public List<TaskResult> findValuesByRuleMetric(long ruleMetricId, String startTime, String endTime, String envName, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return resultRepository.findValuesByRuleAndRuleMetric(ruleMetricId, pageable).getContent();
+        return resultRepository.findValuesByRuleMetric(ruleMetricId, startTime, endTime, envName, pageable).getContent();
+    }
+
+    @Override
+    public int countValuesByRuleMetric(long ruleMetricId, String startTime, String endTime, String envName) {
+        return resultRepository.countValuesByRuleMetric(ruleMetricId, startTime, endTime, envName);
     }
 
     @Override
     public Double findAvgByCreateTimeBetweenAndRuleAndRuleMetric(String start, String end, Long ruleId, Long ruleMetricId) {
-        return resultRepository.findAvgByCreateTimeBetween(start, end, ruleId, ruleMetricId);
+        return resultRepository.findAvgByCreateTimeBetweenAndRuleAndRuleMetric(start, end, ruleId, ruleMetricId);
+    }
+
+    @Override
+    public long countByCreateTimeBetweenAndRuleAndRuleMetric(String start, String end, Long ruleId, Long ruleMetricId, String applicationId) {
+        return resultRepository.countByCreateTimeBetweenAndRuleAndRuleMetric(start, end, ruleId, ruleMetricId, applicationId);
     }
 
     @Override
@@ -80,12 +101,13 @@ public class TaskResultDaoImpl implements TaskResultDao {
     }
 
     @Override
-    public int countValuesByRuleMetric(long ruleMetricId) {
-        return resultRepository.countValuesByRuleMetric(ruleMetricId);
+    public List<TaskResult> findValuesByRuleMetricWithTime(Long ruleMetricId, String startTime, String endTime) {
+        return resultRepository.findValuesByRuleMetricWithTime(ruleMetricId, startTime, endTime);
     }
 
     @Override
-    public int countRuleByRuleMetric(Long ruleMetricId) {
-        return resultRepository.countRulesByRuleMetric(ruleMetricId);
+    public List<TaskResult> findByApplicationId(String applicationId) {
+        return resultRepository.findByApplicationId(applicationId);
     }
+
 }

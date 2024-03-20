@@ -27,10 +27,18 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  * @date 2018-12-12
  */
 public class FilterApplicationIdRequest {
-
     @JsonProperty("application_id")
     private String applicationId;
+    @JsonProperty("filter_status")
+    private Integer filterStatus;
 
+    private Integer page;
+    private Integer size;
+
+    @JsonProperty("task_page")
+    private Integer taskPage;
+    @JsonProperty("task_size")
+    private Integer taskSize;
 
     public String getApplicationId() {
         return applicationId;
@@ -40,8 +48,56 @@ public class FilterApplicationIdRequest {
         this.applicationId = applicationId;
     }
 
+    public Integer getPage() {
+        return page;
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
+    }
+
+    public Integer getFilterStatus() {
+        return filterStatus;
+    }
+
+    public void setFilterStatus(Integer filterStatus) {
+        this.filterStatus = filterStatus;
+    }
+
+    public Integer getTaskPage() {
+        return taskPage;
+    }
+
+    public void setTaskPage(Integer taskPage) {
+        this.taskPage = taskPage;
+    }
+
+    public Integer getTaskSize() {
+        return taskSize;
+    }
+
+    public void setTaskSize(Integer taskSize) {
+        this.taskSize = taskSize;
+    }
+
     public static void checkRequest(FilterApplicationIdRequest request) throws UnExpectedRequestException {
         com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkObject(request, "request");
         CommonChecker.checkString(request.getApplicationId(), "application_id");
+
+        CommonChecker.checkObject(request.getPage(), "page");
+        CommonChecker.checkObject(request.getSize(), "size");
+
+        if (request.getFilterStatus() != null) {
+            CommonChecker.checkObject(request.getTaskPage(), "Task page");
+            CommonChecker.checkObject(request.getTaskSize(), "Task size");
+        }
     }
 }

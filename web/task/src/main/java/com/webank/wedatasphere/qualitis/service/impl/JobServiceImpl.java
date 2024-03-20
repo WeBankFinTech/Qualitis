@@ -17,33 +17,22 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.bean.LogResult;
+import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.entity.ApplicationComment;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.job.MonitorManager;
-import com.webank.wedatasphere.qualitis.service.JobService;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
-import com.webank.wedatasphere.qualitis.exception.LogPartialException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.bean.LogResult;
-import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.JobService;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +56,14 @@ public class JobServiceImpl implements JobService {
     private UserDao userDao;
     @Autowired
     private ClusterInfoDao clusterInfoDao;
+    @Autowired
+    private ApplicationCommentDao applicationCommentDao;
+
+    private static final List<Integer> ABNORMAL_STATUS_LIST = Arrays.asList(
+        TaskStatusEnum.CANCELLED.getCode(),
+        TaskStatusEnum.TIMEOUT.getCode(),
+        TaskStatusEnum.FAILED.getCode()
+        );
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JobServiceImpl.class);
 
@@ -77,7 +74,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public GeneralResponse<?> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException {
+    public GeneralResponse<LogResult> getTaskLog(Long taskId, String clusterName) throws UnExpectedRequestException {
         Task task = taskDao.findById(taskId);
         if (task == null) {
             throw new UnExpectedRequestException("{&JOB_ID_DOES_NOT_EXIST}");
@@ -96,7 +93,14 @@ public class JobServiceImpl implements JobService {
             throw new UnExpectedRequestException(e.getMessage());
         }
 
+        logResult.setTaskId(taskId);
+        if (task.getTaskComment() != null && ABNORMAL_STATUS_LIST.contains(task.getStatus())) {
+            // Return error message
+            ApplicationComment applicationComment = applicationCommentDao.getByCode(task.getTaskComment());
+            logResult.setZhMessage(applicationComment.getZhMessage());
+            logResult.setEnMessage(applicationComment.getEnMessage());
+        }
         LOGGER.info("Succeed to get task log, task_id: {}, cluster_id: {}", taskId, clusterName);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", logResult.getLog());
+        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", logResult);
     }
 }

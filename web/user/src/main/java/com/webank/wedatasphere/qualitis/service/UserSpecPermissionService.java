@@ -16,16 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.userpermission.AddUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.DeleteUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.ModifyUserSpecPermissionRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.UserSpecPermissionResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.response.UserSpecPermissionResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
 
 /**
  * @author howeye
@@ -46,7 +44,7 @@ public interface UserSpecPermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteUserSpecPermission(DeleteUserSpecPermissionRequest request) throws UnExpectedRequestException ;
+    GeneralResponse<Object> deleteUserSpecPermission(DeleteUserSpecPermissionRequest request) throws UnExpectedRequestException ;
 
     /**
      * Modify user permission
@@ -54,7 +52,7 @@ public interface UserSpecPermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyUserSpecPermission(ModifyUserSpecPermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyUserSpecPermission(ModifyUserSpecPermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all user permissions

@@ -17,8 +17,8 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateRegexpExpr;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateDefaultInputMeta;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateRegexpExpr;
 
@@ -37,8 +37,27 @@ public class PlaceholderResponse {
     private List<EnumValueResponse> enumValue;
     @JsonProperty("input_type")
     private Integer inputType;
+    @JsonProperty("input_cn_name")
+    private String inputCnName;
+    @JsonProperty("input_en_name")
+    private String inputEnName;
     @JsonProperty("placeholder_description")
     private String placeholderDescription;
+    @JsonProperty("cn_name")
+    private String cnName;
+    @JsonProperty("en_name")
+    private String enName;
+    @JsonProperty("cn_description")
+    private String cnDescription;
+    @JsonProperty("en_description")
+    private String enDescription;
+    @JsonProperty("field_multiple_choice")
+    private Boolean fieldMultipleChoice;
+    @JsonProperty("whether_new_value")
+    private Boolean whetherNewValue;
+    @JsonProperty("name")
+    private String name;
+
 
     public PlaceholderResponse() {
     }
@@ -48,6 +67,30 @@ public class PlaceholderResponse {
         this.placeholderId = templateMidTableInputMeta.getId();
         this.inputType = templateMidTableInputMeta.getInputType();
         this.placeholderDescription = templateMidTableInputMeta.getPlaceholderDescription();
+        this.cnName = templateMidTableInputMeta.getCnName();
+        this.enName = templateMidTableInputMeta.getEnName();
+        this.cnDescription = templateMidTableInputMeta.getCnDescription();
+        this.enDescription = templateMidTableInputMeta.getEnDescription();
+        this.fieldMultipleChoice = templateMidTableInputMeta.getFieldMultipleChoice();
+        this.whetherNewValue = templateMidTableInputMeta.getWhetherNewValue();
+        this.name = templateMidTableInputMeta.getName();
+        this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("cnMessage").toString();
+        this.inputEnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("enMessage").toString();
+    }
+
+    public PlaceholderResponse(TemplateDefaultInputMeta templateDefaultInputMeta) {
+        this.placeholder = templateDefaultInputMeta.getPlaceholder();
+        this.placeholderId = templateDefaultInputMeta.getId();
+        this.inputType = templateDefaultInputMeta.getType();
+        this.placeholderDescription = templateDefaultInputMeta.getPlaceholderDesc();
+        this.cnName = templateDefaultInputMeta.getCnName();
+        this.enName = templateDefaultInputMeta.getEnName();
+        this.cnDescription = templateDefaultInputMeta.getCnDesc();
+        this.enDescription = templateDefaultInputMeta.getEnDesc();
+        this.fieldMultipleChoice = templateDefaultInputMeta.getSupportFields();
+        this.whetherNewValue = templateDefaultInputMeta.getSupportNewValue();
+        this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateDefaultInputMeta.getType()).get("cnMessage").toString();
+        this.inputEnName = TemplateInputTypeEnum.getTemplateData(templateDefaultInputMeta.getType()).get("enMessage").toString();
     }
 
     public PlaceholderResponse(TemplateMidTableInputMeta templateMidTableInputMeta, List<TemplateRegexpExpr> templateRegexpExprs) {
@@ -55,6 +98,15 @@ public class PlaceholderResponse {
         this.placeholderId = templateMidTableInputMeta.getId();
         this.inputType = templateMidTableInputMeta.getInputType();
         this.placeholderDescription = templateMidTableInputMeta.getPlaceholderDescription();
+        this.cnName = templateMidTableInputMeta.getCnName();
+        this.enName = templateMidTableInputMeta.getEnName();
+        this.cnDescription = templateMidTableInputMeta.getCnDescription();
+        this.enDescription = templateMidTableInputMeta.getEnDescription();
+        this.fieldMultipleChoice = templateMidTableInputMeta.getFieldMultipleChoice();
+        this.whetherNewValue = templateMidTableInputMeta.getWhetherNewValue();
+        this.name = templateMidTableInputMeta.getName();
+        this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("cnMessage").toString();
+        this.inputEnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("enMessage").toString();
 
         enumValue = new ArrayList<>();
         for (TemplateRegexpExpr templateRegexpExpr : templateRegexpExprs) {
@@ -100,5 +152,77 @@ public class PlaceholderResponse {
 
     public void setPlaceholderDescription(String placeholderDescription) {
         this.placeholderDescription = placeholderDescription;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
+    }
+
+    public String getCnDescription() {
+        return cnDescription;
+    }
+
+    public void setCnDescription(String cnDescription) {
+        this.cnDescription = cnDescription;
+    }
+
+    public String getEnDescription() {
+        return enDescription;
+    }
+
+    public void setEnDescription(String enDescription) {
+        this.enDescription = enDescription;
+    }
+
+    public Boolean getFieldMultipleChoice() {
+        return fieldMultipleChoice;
+    }
+
+    public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
+        this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherNewValue() {
+        return whetherNewValue;
+    }
+
+    public void setWhetherNewValue(Boolean whetherNewValue) {
+        this.whetherNewValue = whetherNewValue;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getInputCnName() {
+        return inputCnName;
+    }
+
+    public void setInputCnName(String inputCnName) {
+        this.inputCnName = inputCnName;
+    }
+
+    public String getInputEnName() {
+        return inputEnName;
+    }
+
+    public void setInputEnName(String inputEnName) {
+        this.inputEnName = inputEnName;
     }
 }

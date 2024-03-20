@@ -44,7 +44,7 @@ public class TransferUserController {
     @Path("{proxy_username}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> transferUser(@PathParam("proxy_username")String proxyUsername) throws UnExpectedRequestException {
+    public GeneralResponse transferUser(@PathParam("proxy_username")String proxyUsername) throws UnExpectedRequestException {
         try {
             return transferUserService.transferUser(proxyUsername);
         } catch (UnExpectedRequestException e) {
@@ -59,7 +59,7 @@ public class TransferUserController {
     @Path("exit")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> exitUser() {
+    public GeneralResponse exitUser() {
         try {
             return transferUserService.exitUser();
         } catch (Exception e) {

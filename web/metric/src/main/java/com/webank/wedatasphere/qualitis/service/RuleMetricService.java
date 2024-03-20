@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetricTypeConfig;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
@@ -7,19 +8,22 @@ import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
 import com.webank.wedatasphere.qualitis.request.AddRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.request.DownloadRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.RuleMetricListValuesRequest;
 import com.webank.wedatasphere.qualitis.request.RuleMetricQueryRequest;
+import com.webank.wedatasphere.qualitis.response.EnvResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RuleMetricConditionResponse;
+import com.webank.wedatasphere.qualitis.response.RuleMetricListValueResponse;
 import com.webank.wedatasphere.qualitis.response.RuleMetricResponse;
 import com.webank.wedatasphere.qualitis.response.RuleMetricValueResponse;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
-import javax.servlet.http.HttpServletResponse;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -33,8 +37,9 @@ public interface RuleMetricService {
    * @param loginUser
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
-  GeneralResponse<RuleMetricResponse> addRuleMetricForOuter(AddRuleMetricRequest request, String loginUser) throws UnExpectedRequestException;
+  GeneralResponse<RuleMetricResponse> addRuleMetricForOuter(AddRuleMetricRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
   /**
    * Modify for bdp-client.
@@ -42,6 +47,7 @@ public interface RuleMetricService {
    * @param createUser
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
   GeneralResponse<RuleMetricResponse>  modifyRuleMetricForOuter(ModifyRuleMetricRequest modifyRuleMetricRequest, String createUser)
       throws UnExpectedRequestException, PermissionDeniedRequestException;
@@ -51,14 +57,16 @@ public interface RuleMetricService {
    * @param request
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
-  GeneralResponse<RuleMetricResponse> addRuleMetric(AddRuleMetricRequest request) throws UnExpectedRequestException;
+  GeneralResponse<RuleMetricResponse> addRuleMetric(AddRuleMetricRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
   /**
    * Delete rule metric.
    * @param id
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
   GeneralResponse<RuleMetricResponse> deleteRuleMetric(long id) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
@@ -67,6 +75,7 @@ public interface RuleMetricService {
    * @param request
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
   GeneralResponse<RuleMetricResponse> modifyRuleMetric(ModifyRuleMetricRequest request)
       throws UnExpectedRequestException, PermissionDeniedRequestException;
@@ -76,6 +85,7 @@ public interface RuleMetricService {
    * @param id
    * @return
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
   GeneralResponse<RuleMetricResponse> getRuleMetricDetail(long id) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
@@ -85,7 +95,7 @@ public interface RuleMetricService {
    * @return
    * @throws UnExpectedRequestException
    */
-  GeneralResponse<GetAllResponse<RuleMetricResponse>> getAllRuleMetric(PageRequest request) throws UnExpectedRequestException;
+  GeneralResponse<GetAllResponse<RuleMetricResponse>> getAllRuleMetric(RuleMetricQueryRequest request) throws UnExpectedRequestException;
 
 
   /**
@@ -98,10 +108,11 @@ public interface RuleMetricService {
   /**
    * Query rule metric.
    * @param request
+   * @param needVisibilityDepartmentList
    * @return
    * @throws UnExpectedRequestException
    */
-  GeneralResponse<GetAllResponse<RuleMetricResponse>> queryRuleMetric(RuleMetricQueryRequest request) throws UnExpectedRequestException;
+  GeneralResponse<GetAllResponse<RuleMetricResponse>> queryRuleMetric(RuleMetricQueryRequest request, boolean needVisibilityDepartmentList) throws UnExpectedRequestException;
 
   /**
    * Find rule by rule metric ID with page.
@@ -111,17 +122,20 @@ public interface RuleMetricService {
    * @return
    * @throws UnExpectedRequestException
    */
-  DataInfo<HiveRuleDetail> getRulesByRuleMetric(long ruleMetricId, int page, int size) throws UnExpectedRequestException;
+  DataInfo<HiveRuleDetail> getRuleByRuleMetric(long ruleMetricId, int page, int size) throws UnExpectedRequestException;
 
   /**
    * Find rule metric value by rule metric ID with page.
    * @param id
+   * @param startTime
+   * @param endTime
+   * @param envName
    * @param page
    * @param size
    * @return
    * @throws UnExpectedRequestException
    */
-  DataInfo<RuleMetricValueResponse> getResultsByRuleMetric(long id, int page, int size) throws UnExpectedRequestException;
+  DataInfo<RuleMetricValueResponse> getResultsByRuleMetric(long id, String startTime, String endTime, String envName, int page, int size) throws UnExpectedRequestException;
 
   /**
    * Download rule metric.
@@ -131,8 +145,9 @@ public interface RuleMetricService {
    * @throws UnExpectedRequestException
    * @throws IOException
    * @throws WriteExcelException
+   * @throws PermissionDeniedRequestException
    */
-  GeneralResponse<?> download(DownloadRuleMetricRequest request, HttpServletResponse response)
+  GeneralResponse<Object> download(DownloadRuleMetricRequest request, HttpServletResponse response)
       throws UnExpectedRequestException, IOException, WriteExcelException, PermissionDeniedRequestException;
 
   /**
@@ -143,12 +158,30 @@ public interface RuleMetricService {
    * @throws UnExpectedRequestException
    * @throws IOException
    */
-  GeneralResponse<?> upload(InputStream fileInputStream, FormDataContentDisposition fileDisposition) throws UnExpectedRequestException, IOException;
+  GeneralResponse<Object> upload(InputStream fileInputStream, FormDataContentDisposition fileDisposition) throws UnExpectedRequestException, IOException;
 
 
   /**
    * Find rule metric types.
    * @return
    */
-  GeneralResponse<?> types();
+  GeneralResponse<List<RuleMetricTypeConfig>> types();
+
+  /**
+   * Find rule metric value by rule metric ID list with start and end time.
+   * @param ruleMetricListValuesRequest
+   * @return
+   * @throws UnExpectedRequestException
+   */
+  List<RuleMetricListValueResponse> getResultsByRuleMetricList(RuleMetricListValuesRequest ruleMetricListValuesRequest)
+      throws UnExpectedRequestException;
+
+  /**
+   * Get envs
+   *
+   * @param id
+   * @return
+   * @throws UnExpectedRequestException
+   */
+  GeneralResponse<GetAllResponse<EnvResponse>> getAllEnvs(long id) throws UnExpectedRequestException;
 }

@@ -39,6 +39,7 @@ public class IndexApplicationTodayResponse {
   private List<IndexApplicationResponse> applications;
 
   public IndexApplicationTodayResponse() {
+    // Default Constructor
   }
 
   public IndexApplicationTodayResponse(List<IndexApplicationResponse> applicationResponses, long totalNum, long totalSuccNum, long totalFailNum, long totalFailCheckNum) {

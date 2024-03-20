@@ -30,6 +30,7 @@ public class CheckAlarmVariable {
     private Integer compareType;
     private Double threshold;
     private Integer status;
+    private String result;
 
     public CheckAlarmVariable() {
     }
@@ -73,5 +74,11 @@ public class CheckAlarmVariable {
         this.status = status;
     }
 
+    public String getResult() {
+        return result;
+    }
 
+    public void setResult(String result) {
+        this.result = result;
+    }
 }

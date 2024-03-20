@@ -16,18 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.FieldTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateFileTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,12 +59,18 @@ public class TemplateOutputMetaServiceImpl implements TemplateOutputMetaService 
 
     @Override
     @Transactional(rollbackFor = RuntimeException.class)
-    public Set<TemplateOutputMeta> getAndSaveTemplateOutputMeta(String outputName, Integer functionType, Boolean saveMidTable, Template template) {
+    public Set<TemplateOutputMeta> getAndSaveTemplateOutputMeta(String outputName, Integer functionType, Boolean saveMidTable, Template template,String samplingContent) {
         Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>();
         TemplateOutputMeta templateOutputMeta = new TemplateOutputMeta();
         templateOutputMeta.setTemplate(template);
-        templateOutputMeta.setOutputName(outputName);
-        if (saveMidTable) {
+
+        if (RuleTemplateTypeEnum.FILE_COUSTOM.getCode().equals(template.getTemplateType())&& StringUtils.isNotBlank(samplingContent)) {
+            templateOutputMeta.setOutputName(TemplateFileTypeEnum.getTemplateFileTypeByCode(Integer.valueOf(samplingContent)));
+        } else {
+            templateOutputMeta.setOutputName(outputName);
+        }
+        templateOutputMeta.setOutputEnName(QualitisConstants.DISSATISFIED_EN_NAME);
+        if (Boolean.TRUE.equals(saveMidTable)) {
             templateOutputMeta.setFieldName(FunctionTypeEnum.getByCode(functionType).getFunction());
         } else {
             templateOutputMeta.setFieldName(FunctionTypeEnum.MAX_FUNCTION.getFunction());

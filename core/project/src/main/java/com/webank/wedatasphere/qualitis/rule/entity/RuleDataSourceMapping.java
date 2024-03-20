@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -49,10 +50,15 @@ public class RuleDataSourceMapping {
     @Column(name = "right_column_types", length = 2000)
     private String rightColumnTypes;
 
+    @Column(name = "mapping_type")
+    private Integer mappingType;
+
     @ManyToOne
+    @JsonIgnore
     private Rule rule;
 
     public RuleDataSourceMapping() {
+        // Do nothing.
     }
 
     public String getLeftColumnTypes() {
@@ -125,6 +131,14 @@ public class RuleDataSourceMapping {
 
     public void setRule(Rule rule) {
         this.rule = rule;
+    }
+
+    public Integer getMappingType() {
+        return mappingType;
+    }
+
+    public void setMappingType(Integer mappingType) {
+        this.mappingType = mappingType;
     }
 
     @Override

@@ -15,6 +15,7 @@ public class RuleMetricRulesRequest {
   private Integer size;
 
   public RuleMetricRulesRequest() {
+    // Default Constructor
   }
 
   public Long getRuleMetricId() {

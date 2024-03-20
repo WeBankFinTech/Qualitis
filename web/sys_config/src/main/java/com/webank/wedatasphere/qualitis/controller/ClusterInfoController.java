@@ -16,24 +16,24 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.FindClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
-import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 
 /**
  * @author howeye
@@ -53,7 +53,8 @@ public class ClusterInfoController {
         try {
             return clusterInfoService.addClusterInfo(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add cluster_info. request: {}, caused by: {}", request, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_ADD_CLUSTER_INFO}", null);
@@ -64,11 +65,12 @@ public class ClusterInfoController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
         try {
             return clusterInfoService.deleteClusterInfo(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw  e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete cluster_info. cluster_info_id: {}, caused by: {}", request.getClusterInfoId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_CLUSTER_INFO}", null);
@@ -78,11 +80,12 @@ public class ClusterInfoController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
         try {
             return clusterInfoService.modifyClusterInfo(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify cluster_info, cluster_info_id: {}, caused by: {}", request.getClusterInfoId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_CLUSTER_INFO}", null);
@@ -93,11 +96,12 @@ public class ClusterInfoController {
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<ClusterInfo>> findAllClusterInfo(PageRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<ClusterInfo>> findAllClusterInfo(FindClusterInfoRequest request) throws UnExpectedRequestException {
         try {
-            return clusterInfoService.findAllClusterInfo(request);
+            return clusterInfoService.findClusterInfoLikeName(request);
         } catch (UnExpectedRequestException e) {
-            throw new UnExpectedRequestException(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find cluster_infos. page: {}, size: {}, caused by: {}", request.getPage(), request.getSize(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_CLUSTER_INFOS}", null);

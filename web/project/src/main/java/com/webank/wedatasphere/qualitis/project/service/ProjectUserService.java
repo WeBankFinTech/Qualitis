@@ -39,6 +39,8 @@ public interface ProjectUserService {
      * @param modify
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws RoleNotFoundException
      */
     GeneralResponse<ProjectUserResponse> authorizePermission(AuthorizeProjectUserRequest addProjectUserRequest, Long userId, boolean modify)
         throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
@@ -49,6 +51,7 @@ public interface ProjectUserService {
      * @param userId
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
     GeneralResponse deletePermission(AuthorizeProjectUserRequest request, Long userId)
         throws UnExpectedRequestException, PermissionDeniedRequestException;
@@ -58,6 +61,7 @@ public interface ProjectUserService {
      * @param projectId
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
     GeneralResponse<List<ProjectUserResponse>> getAllProjectUser(Long projectId) throws UnExpectedRequestException, PermissionDeniedRequestException;
 

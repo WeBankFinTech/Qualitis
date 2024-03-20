@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.timer;
 
-import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 
 /**
@@ -25,6 +24,6 @@ import java.util.concurrent.ThreadFactory;
 public class UpdaterThreadFactory implements ThreadFactory {
     @Override
     public Thread newThread(Runnable r) {
-        return new Thread(r);
+        return new Thread(r, "Application Update Thread");
     }
 }
