@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.rule.service.RuleLimitationService;
@@ -23,6 +24,9 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleLimitationService;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.rule.service.RuleLimitationService;
+
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +43,9 @@ public class RuleLimitationServiceImpl implements RuleLimitationService {
     @Autowired
     private ClusterInfoDao clusterInfoDao;
 
+    @Autowired
+    private LinkisConfig linkisConfig;
+
     /**
      * Get supported cluster
      * @return
@@ -46,8 +53,9 @@ public class RuleLimitationServiceImpl implements RuleLimitationService {
     @Override
     public Set<String> getLimitClusters() {
         List<ClusterInfo> clusters = clusterInfoDao.findAllClusterInfo(0, Integer.MAX_VALUE);
+        clusters = clusters.stream().filter(clusterInfo -> ! clusterInfo.getClusterName().equals(linkisConfig.getDatasourceCluster())).collect(Collectors.toList());
         if (clusters == null || clusters.isEmpty()){
-            return null;
+            return Collections.emptySet();
         }
         Set<String> results = new HashSet<>();
         for (ClusterInfo info : clusters){

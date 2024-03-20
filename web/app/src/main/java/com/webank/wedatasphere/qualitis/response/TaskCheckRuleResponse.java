@@ -11,6 +11,7 @@ public class TaskCheckRuleResponse {
     private List<TaskAlarmConfigResponse> taskAlarmConfigResponses;
 
     public TaskCheckRuleResponse() {
+        // Default Constructor
     }
 
     public Long getRuleId() {

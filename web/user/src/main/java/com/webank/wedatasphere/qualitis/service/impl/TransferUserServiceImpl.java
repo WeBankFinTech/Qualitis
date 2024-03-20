@@ -46,21 +46,21 @@ public class TransferUserServiceImpl implements TransferUserService {
     }
 
     @Override
-    public GeneralResponse<?> transferUser(String user) throws UnExpectedRequestException {
+    public GeneralResponse transferUser(String user) throws UnExpectedRequestException {
         User userInDb = userDao.findByUsername(user);
 
         if (userInDb == null) {
             throw new UnExpectedRequestException("ProxyUser: " + user + " {&DOES_NOT_EXIST}");
         }
 
-        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUserName());
+        Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUsername());
         HttpSession httpSession = httpServletRequest.getSession();
         httpSession.setAttribute("proxyUser", userMap);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_TRANSFER_TO_PROXYUSER}", null);
     }
 
     @Override
-    public GeneralResponse<?> exitUser() {
+    public GeneralResponse exitUser() {
         HttpSession httpSession = httpServletRequest.getSession();
         httpSession.setAttribute("proxyUser", null);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_EXIT_USER}", null);

@@ -27,14 +27,13 @@ import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequ
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
 import java.net.URISyntaxException;
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.HttpMethod;
-import org.apache.linkis.bml.client.BmlClient;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.linkis.bml.client.BmlClient;
 import org.apache.linkis.bml.client.BmlClientFactory;
 import org.apache.linkis.bml.protocol.BmlUploadResponse;
 import org.slf4j.Logger;
@@ -110,8 +109,9 @@ public class QualitisRefExportOperation extends QualitisDevelopmentOperation<Thi
         }
         LOGGER.info("Start to export to qualitis. url: {}, method: {}, body: {}", url, HttpMethod.GET, entity);
         Map<String, Object> response = restTemplate.getForEntity(url, Map.class).getBody();
-        String finishLog = String.format("Finish to export to qualitis. response: %s", response);
+        String finishLog = String.format("Finish to export to qualitis. ");
         LOGGER.info(finishLog);
+        LOGGER.info("Finish to export to qualitis.");
 
         if (response == null) {
             String errorMsg = "Error! Can not export, response is null";
@@ -127,9 +127,9 @@ public class QualitisRefExportOperation extends QualitisDevelopmentOperation<Thi
         }
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> data = (Map) response.get("data");
-        String dataString;
+        byte[] dataString;
         try {
-            dataString = objectMapper.writeValueAsString(data);
+            dataString = objectMapper.writeValueAsBytes(data);
         } catch (JsonProcessingException e) {
             LOGGER.error("Error when parse export responses to json.", e);
             throw new ExternalOperationFailedException(90156, "Error when parse export responses to json.", e);
@@ -139,7 +139,7 @@ public class QualitisRefExportOperation extends QualitisDevelopmentOperation<Thi
          */
         BmlClient bmlClient = BmlClientFactory.createBmlClient(DEFAULT_USER);
         BmlUploadResponse bmlUploadResponse = bmlClient.uploadResource(DEFAULT_USER,
-            "Qualitis_exported_" + UUID.randomUUID().toString(), new ByteArrayInputStream(dataString.getBytes(StandardCharsets.UTF_8)));
+            "Qualitis_exported_" + UUID.randomUUID().toString(), new ByteArrayInputStream(dataString));
         Map<String, Object> resourceMap = new HashMap();
         resourceMap.put("resourceId", bmlUploadResponse.resourceId());
         resourceMap.put("version", bmlUploadResponse.version());

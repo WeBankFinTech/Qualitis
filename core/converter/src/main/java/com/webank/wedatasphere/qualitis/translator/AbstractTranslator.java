@@ -21,7 +21,6 @@ import com.webank.wedatasphere.qualitis.exception.RuleVariableNotSupportExceptio
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 
-import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,21 +31,28 @@ import java.util.Set;
 public abstract class AbstractTranslator {
     /**
      * Generate persistence statement.
+     * @param persistenceTranslate
      * @param ruleId
      * @param ruleMetricMaps
      * @param templateStatisticsInputMetas
      * @param applicationId
      * @param ruleVariables
      * @param createTime
-     * @param count
+     * @param partOfVariableName
+     * @param date
      * @param runDate
+     * @param realColumn
+     * @param enumListNewValue
+     * @param numRangeNewValue
+     * @param selectResult
+     * @param unionAllForSaveResult
      * @return
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
      */
-    public abstract List<String> persistenceTranslate(Long ruleId, Map<String, Long> ruleMetricMaps,
-        Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables,
-        String createTime, Integer count, String runDate) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
+    public abstract List<String> persistenceTranslate(String persistenceTranslate, Long ruleId, Map<String, Long> ruleMetricMaps
+        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables, String createTime
+        , String partOfVariableName, String date, String runDate, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
 
     /**
      * Generate initial statement.

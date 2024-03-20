@@ -22,12 +22,13 @@ import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailed
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
-import com.webank.wedatasphere.qualitis.query.request.RuleQueryRequest;
+import com.webank.wedatasphere.qualitis.query.request.LineageParameterRequest;
+import com.webank.wedatasphere.qualitis.project.request.RuleQueryRequest;
 import com.webank.wedatasphere.qualitis.query.request.RulesDeleteRequest;
+import com.webank.wedatasphere.qualitis.query.response.LineageParameterResponse;
 import com.webank.wedatasphere.qualitis.query.response.RuleQueryDataSource;
-import com.webank.wedatasphere.qualitis.query.response.RuleQueryProject;
-
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+
 import java.util.List;
 import java.util.Map;
 
@@ -38,20 +39,6 @@ import java.util.Map;
 public interface RuleQueryService {
 
   /**
-   * initial query api
-   * @param user
-   * @return
-   */
-  List<RuleQueryProject> init(String user);
-
-  /**
-   * Rule query api
-   * @param param
-   * @return
-   */
-  List<RuleQueryProject> query(RuleQueryRequest param);
-
-  /**
    * Filter datasource with conditions
    *
    * @param pageRequest
@@ -59,11 +46,16 @@ public interface RuleQueryService {
    * @param clusterName
    * @param dbName
    * @param tableName
-   * @param b
+   * @param datasourceType
+   * @param subSystemId
+   * @param envName
+   * @param departmentName
+   * @param devDepartmentName
+   * @param tagCode
    * @return
    */
-  List<RuleQueryDataSource> filter(PageRequest pageRequest, String user, String clusterName, String dbName,
-      String tableName, boolean b);
+  DataInfo<RuleQueryDataSource> filter(PageRequest pageRequest, String user, String clusterName, String dbName, String tableName,
+                                       Integer datasourceType, Long subSystemId, String tagCode, String departmentName, String devDepartmentName, String envName);
 
   /**
    * Get all rule datasource by user
@@ -81,7 +73,7 @@ public interface RuleQueryService {
   List<RuleQueryDataSource> all(String user, PageRequest pageRequest);
 
   /**
-   * Get the column information of the table
+   * Get the column information of the table.
    * @param cluster
    * @param datasourceId
    * @param db
@@ -89,9 +81,18 @@ public interface RuleQueryService {
    * @param user
    * @return
    * @throws UnExpectedRequestException
+   * @throws MetaDataAcquireFailedException
    */
-    List<ColumnInfoDetail> getColumnsByTableName(String cluster, Long datasourceId, String db, String table, String user)
+    List<ColumnInfoDetail> getColumnsFromMetaService(String cluster, Long datasourceId, String db, String table, String user)
         throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+  /**
+   * filter results of getColumnsFromMetaService() in local
+   * @param columnInfoDetailList
+   * @param filterCondition
+   * @return
+   */
+    List<ColumnInfoDetail> filterColumns(List<ColumnInfoDetail> columnInfoDetailList, RuleQueryRequest filterCondition);
 
   /**
    * Get rules related with columns
@@ -100,16 +101,19 @@ public interface RuleQueryService {
    * @param table
    * @param user
    * @param s
+   * @param ruleTemplateId
+   * @param relationObjectType
    * @param page
    * @param size
    * @return
    */
-  DataInfo<HiveRuleDetail> getRulesByColumn(String cluster, String db, String table, String user, String s, int page, int size);
+  DataInfo<HiveRuleDetail> getRulesByCondition(String cluster, String db, String table, String user, String s, Long ruleTemplateId, Integer relationObjectType, int page, int size);
 
   /**
    * delete rule in rule query UI.
    * @param request
    * @throws UnExpectedRequestException
+   * @throws PermissionDeniedRequestException
    */
     void deleteRules(RulesDeleteRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
@@ -130,4 +134,37 @@ public interface RuleQueryService {
    * @return
    */
   List<String> findCols(String cluster, String db, String table, String user);
+
+  /**
+   * Count rule datasource.
+   * @param user
+   * @param cluster
+   * @param db
+   * @param table
+   * @param datasourceType
+   * @param subSystemId
+   * @param departmentName
+   * @param devDepartmentName
+   * @param tagCode
+   * @param envName
+   * @return
+   */
+  int count(String user, String cluster, String db, String table, Integer datasourceType, Long subSystemId, String departmentName,
+      String devDepartmentName, String tagCode, String envName);
+
+  /**
+   * Get table tags from dms
+   * @return
+   * @throws MetaDataAcquireFailedException
+   */
+  DataInfo<Map<String, Object>> getTagList() throws MetaDataAcquireFailedException;
+
+  /**
+   * get some parameter for data lineage in front-end page
+   * @param request
+   * @return
+   * @throws UnExpectedRequestException
+   * @throws MetaDataAcquireFailedException
+   */
+  LineageParameterResponse getLineageParameter(LineageParameterRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 }

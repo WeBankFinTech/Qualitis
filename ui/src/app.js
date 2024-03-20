@@ -1,138 +1,242 @@
-import Vue from 'vue';
 import {
-    Form,
-    FormItem,
-    RadioGroup,
-    Radio,
-    Input,
-    Select,
-    Option,
-    Switch
-} from 'element-ui';
-import './assets/styles/main.scss'
-import { buildRuleTableFlag } from './assets/js/utils';
+    access, request as FRequest, monaco,
+} from '@fesjs/fes';
+import PageLoading from '@/components/PageLoading';
+import {
+    FTabs,
+    FSwitch,
+    FCheckbox,
+    FModal,
+    FSpin,
+    FButton,
+    FInput,
+    FInputNumber,
+    FForm,
+    FTag,
+    FSelect,
+    FTable,
+    FPagination,
+    FDatePicker,
+    FDropdown,
+    FDrawer,
+    FCheckboxGroup,
+    FSelectTree,
+    FSelectCascader,
+    FTooltip,
+    FSpace,
+    FRadio,
+    FRadioGroup,
+    FEllipsis,
+    FMessage,
+} from '@fesjs/fes-design';
+import './style/base.less';
+import { getUrlParams, getBaseUrlParam } from '@/common/utils';
+import store from '@/store';
+import microApp from '@micro-zoe/micro-app';
+import { isString } from 'lodash-es';
 
-/**
- * 获取角色并设置，路由切换时检查角色权限
- * @param {*} ctx
- * @param {Boolean} inIframe
- * @param {*} next
- */
-function setOrCheckRole(ctx, inIframe, next = () => {}) {
-    ctx.FesApi.fetch("api/v1/projector/role", "get").then(({roles,username, login_random}) => {
-        if(Array.isArray(roles)){
-            roles = roles.map(item => item.toLowerCase())
-            // let userRole = roles[0];
-            ctx.FesFesx.set('userRole', roles);
-        }
-        let role = 'noauth';
-        ctx.FesStorage.set("userLogin", true);
-        ctx.FesStorage.set("loginRandom", login_random);
-        if (!ctx.FesStorage.get('simulatedUser')) {
-            ctx.FesApp.set("FesRoleName", "");
-            if(roles && roles.indexOf('admin') > -1 ){
-                role = 'admin';
-                ctx.FesApp.set("FesRoleName", "管理员");
-            }
-            ctx.FesApp.set("FesUserName", username);
-            ctx.FesApp.setRole(role, false);
-            ctx.FesStorage.set('firstRole', role);
-        }
-        next();
-    }).catch((err) => {
-        console.error(err);
-        next({path: '/home'});
-    });
+microApp.start();
+// ticket只能用一次，每次进来的时候只带一次
+function checkAndUpdateTicket(ticket = '') {
+    const currentTicket = sessionStorage.getItem('currentTicket') || '';
+    if (currentTicket !== ticket) {
+        sessionStorage.setItem('currentTicket', ticket);
+        return ticket;
+    }
+    return '';
 }
-export default function () {
-    Vue.component(Form.name, Form);
-    Vue.component(Select.name, Select);
-    Vue.component(FormItem.name, FormItem);
-    Vue.component(RadioGroup.name, RadioGroup);
-    Vue.component(Radio.name, Radio);
-    Vue.component(Input.name, Input);
-    Vue.component(Select.name, Select);
-    Vue.component(Option.name, Option);
-    Vue.component(Switch.name, Switch);
-    // 设置logo点击事件
-    this.set('FesLogoEvent', () => {});
-    // 设置路由钩子
-    this.setBeforeRouter(function (to, from, next) {
-        const isHideHeader = to.query.hideHead || this.FesFesx.get('IS_HIDE_HEADER');
-        if (isHideHeader) {
-            const layoutBody = document.querySelector('.layout-right-body');
-            layoutBody.style.top = 0;
-        }
-        this.FesFesx.set('IS_HIDE_HEADER', isHideHeader);
-        if(from.path === to.path && from.path === "/") {
-            next('/Dashboard');
-            return
-        }
-        if (to.path === '/error') {
-            next();
-        } else {
-            if (to.path === '/home') return next();
-            setOrCheckRole(this, false, next);
-        }
-    });
 
-    // 设置AJAX配置
-    this.FesApi.option({
-        timeout: 1000 * 60
-    });
-    const that = this;
-    this.FesApi.setError({
-        404: function () {
-            that.router.replace({path: '/error'})
-        },
-        401: ({
-            data: {
-                data
+// eslint-disable-next-line no-restricted-globals
+
+
+export const beforeRender = {
+    loading: <PageLoading />,
+    action: async () => {
+        // let role = sessionStorage?.getItem('firstRole') || 'noauth';
+
+        try {
+            if (window.location.hash === '#/home') {
+                access.setRole('noauth');
+                sessionStorage.setItem('firstRole', 'noauth');
+                sessionStorage.setItem('firstUserName', 'noauth');
+                return Promise.resolve({
+                    userName: 'noauth',
+                });
             }
-        }) => {
-            let lastRedirect = this.FesStorage.get('redirect_to_um_login');
-            if (!data) {
-                this.FesStorage.set('userLogin', false);
-                this.FesApp.setRole('unLogin');
-                this.FesApp.router.replace('/home');
-            } else {
-                // 防止接口问题引起循环跳转, 正常登录不会有问题如果sso登录回调回来没有登录态就会循环 setBeforeRouter 里有获取角色的信息
-                if ((!lastRedirect || +new Date() - lastRedirect > 3000) && data.redirect) {
-                    this.FesStorage.set('redirect_to_um_login', +new Date());
-                    let splitChar = data.redirect.indexOf('?') > 0 ? '&' : '?';
-                    data.redirect = `${data.redirect}${splitChar}link=${encodeURIComponent(window.location.href)}`;
-                    this.FesApp.setRole('admin');
-                    window.location.href = data.redirect;
+
+            let username = sessionStorage?.getItem('firstUserName') || 'noauth';
+            const res = await FRequest('api/v1/projector/role', {}, { method: 'GET' });
+
+            username = res?.username || 'noauth';
+            const roles = res?.roles || ['noauth'];
+            // eslint-disable-next-line camelcase
+            const login_random = res.login_random;
+            sessionStorage.setItem('login_random', login_random);
+            if (Array.isArray(roles) && roles.length > 0) {
+                access.setRole(roles[0].toLowerCase());
+            }
+            let role = 'noauth';
+            sessionStorage.setItem('userLogin', true);
+            // 如果没有设置模拟账户走原来正常初始化的逻辑
+            const isSimulatorMode = !!sessionStorage.getItem('simulatedUser');
+            if (!isSimulatorMode) {
+                // 兜底处理
+                if (roles.length && (roles.includes('admin') || roles.includes('ADMIN'))) {
+                    role = 'admin';
                 }
+                // 缓存原本的身份
+                sessionStorage.setItem('firstRole', role);
+                // 缓存原本身份的名字
+                sessionStorage.setItem('firstUserName', username);
+                access.setRole(role);
             }
+            // 初始化应用的全局状态，可以通过 useModel('@@initialState') 获取
+            return {
+                userName: username,
+                role,
+            };
+        } catch (error) {
+            access.setRole('noauth');
+            console.error(error);
+            sessionStorage.setItem('firstRole', 'noauth');
+            sessionStorage.setItem('firstUserName', 'noauth');
+            window.location.hash = '#/home';
+            return Promise.resolve({
+                userName: 'noauth',
+            });
         }
-    })
+    },
+};
+FDrawer.props.maskClosable.default = false;
+// 样式注册
+monaco.editor.defineTheme('logview', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+        { token: 'log-info', foreground: '4b71ca' },
+        { token: 'log-error', foreground: 'ff0000', fontStyle: 'bold' },
+        { token: 'log-warn', foreground: 'FFA500' },
+        { token: 'log-date', foreground: '008800' },
+        { token: 'log-normal', foreground: '808080' },
+    ],
+    colors: {
+        'editor.lineHighlightBackground': '#ffffff',
+        'editorGutter.background': '#f7f7f7',
+    },
+});
+// 语言注册
+monaco.languages.register({ id: 'log' });
 
-    setTimeout(() => {
-        let currentLanguage = this.FesFesx.get('currentLanguage');
-        if(currentLanguage && currentLanguage === 'en'){
-            this.FesApp.setLocale('en')
-            this.FesFesx.set('currentLanguage', 'en')
-            this.FesFesx.set('Language', 'en_US')
-            this.FesFesx.set('isEn', true);
-        }else {
-            this.FesApp.setLocale('zh-cn')
-            this.FesFesx.set('currentLanguage', 'zh-cn')
-            this.FesFesx.set('Language', 'zh_CN')
-            this.FesFesx.set('isEn', false);
-        }
-        this.FesApi.setHeader({
-            'Content-Language': this.FesFesx.get('Language')
-        })
-    }, 0)
+monaco.languages.setMonarchTokensProvider('log', {
+    tokenizer: {
+        root: [
+            [/(^[=a-zA-Z].*|\d\s.*)/, 'log-normal'],
+            [/\sERROR\s.*/, 'log-error'],
+            [/\sWARN\s.*/, 'log-warn'],
+            [/\sINFO\s.*/, 'log-info'],
+            [/^([0-9]{4}||[0-9]{2})-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]{3})?/, 'log-date'],
+            [/^[0-9]{2}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]{3})?/, 'log-date'],
+            [/(^\*\*Waiting queue:.*)/, 'log-info'],
+            [/(^\*\*result tips:.*)/, 'log-info'],
+        ],
+    },
+});
+export function onAppCreated({ app }) {
+    app.use(FButton);
+    app.use(FTabs);
+    app.use(FSelect);
+    app.use(FSwitch);
+    app.use(FCheckbox);
+    app.use(FCheckboxGroup);
+    app.use(FModal);
+    app.use(FInput);
+    app.use(FInputNumber);
+    app.use(FForm);
+    app.use(FTag);
+    app.use(FSpin);
+    app.use(FTable);
+    app.use(FPagination);
+    app.use(FDatePicker);
+    app.use(FDropdown);
+    app.use(FDrawer);
+    app.use(FSelectTree);
+    app.use(FSelectCascader);
+    app.use(FEllipsis);
+    app.use(FSpace);
+    app.use(FTooltip);
+    app.use(FRadioGroup);
+    app.use(FRadio);
 
-    // 设置响应结构
-    this.FesApi.setResponse({
-        successCode: '200',
-        codePath: 'code',
-        messagePath: 'message',
-        resultPath: 'data'
+    // 引入vuex
+    app.use(store);
+}
+const inBaseUrl = getBaseUrlParam();
+export const request = {
+    dataField: 'data',
+    baseURL: inBaseUrl || BASEURL,
+    withCredentials: true,
+    timeout: 60000,
+    responseDataAdaptor(data) {
+        const result = Object.assign({}, data);
+        // 5375用于判断script部分成功的情况
+        // 200其他接口默认都使用这个
+        // result.code = ['200'].includes(result.code) ? '0' : result.code;
+        result.code = (result.code === '200' || result.retCode === 0 || result.retCode === 3001 || result.status === 0) ? '0' : result.code;
+        return result;
+    },
+    requestInterceptors: [
+        (config) => {
+            // eslint-disable-next-line no-restricted-globals
+            if (top !== self && !self.location.href.includes('microApp/dqm')) {
+                // eslint-disable-next-line no-restricted-globals, camelcase
+                const entrance_origin = decodeURIComponent(getUrlParams(self.location.href)?.dssurl || '');
+                // eslint-disable-next-line camelcase
+                config.headers.entrance_origin = entrance_origin;
+                return config;
+            }
+            return config;
+        },
+    ],
+    responseInterceptors: [
+        (response) => {
+            const loginPropertiesExpired = response.data?.retCode === 3001 || response.data.data?.retCode === 3001; // 登录接口过期
+            const otherExpired = response.data?.status_code === '302'; // 其他接口过期
+            if (loginPropertiesExpired || otherExpired) {
+                console.log('登录信息过期, 跳转到sso登出地址!');
+                window.location.hash = '#/home';
+                return response;
+            }
+            return response;
+        },
+    ],
+    errorHandler: {
+        401(error) {
+            sessionStorage.setItem('userLogin', false);
+            access.setRole('noauth');
+            console.warn(error, error.data?.message, error.response);
+            FMessage.error(error.data?.message || error.response?.data?.message || error.message || error.msg || '认证失败');
+            if (window.location.hash !== '#/home') {
+                window.location.href = '#/home';
+            }
+        },
+        403(error) {
+            console.warn(error, error.data?.message, error.response);
+            FMessage.error(error.data?.message || error.response?.data?.message || error.message || error.msg || 'ACCESS IS FORBIDDEN');
+        },
+        default(error) {
+            console.warn(error, error.data?.message, error.response);
+            // 200的时候error.data?.message
+            // 非200的时候error.response?.data?.message
+            // 重复请求err.msg
+            if (error && error.msg === '重复请求') return;
+            FMessage.error(error.data?.message || error.response?.data?.message || error.message || error.msg);
+        },
+    },
+};
+
+export function patchRoutes({ routes }) {
+    routes.unshift({
+        path: '/',
+        redirect: '/dashboard',
     });
-
-    this.FesUtil.buildRuleTableFlag = buildRuleTableFlag;
 }

@@ -33,6 +33,7 @@ public class TaskRuleAlarmConfigBean {
     private Boolean deleteFailCheckResult;
 
     public TaskRuleAlarmConfigBean() {
+        // Default Constructor
     }
 
     public String getOutputName() {

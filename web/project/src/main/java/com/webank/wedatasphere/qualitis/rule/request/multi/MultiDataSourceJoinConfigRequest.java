@@ -20,13 +20,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -113,7 +110,7 @@ public class MultiDataSourceJoinConfigRequest {
     public void setRight(List<MultiDataSourceJoinColumnRequest> right) {
         this.right = right;
     }
-    
+
     public static void checkRequest(MultiDataSourceJoinConfigRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getLeftStatement(), "Left statement");

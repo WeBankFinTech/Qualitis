@@ -16,22 +16,26 @@
 
 package com.webank.wedatasphere.qualitis.client;
 
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
 import com.webank.wedatasphere.qualitis.bean.JobKillResult;
+import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
 import com.webank.wedatasphere.qualitis.bean.LogResult;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
 import com.webank.wedatasphere.qualitis.constant.LinkisResponseKeyEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
+import com.webank.wedatasphere.qualitis.dao.repository.UserTenantUserRepository;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
-import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
+import com.webank.wedatasphere.qualitis.request.SendLinkisRequst;
+import com.webank.wedatasphere.qualitis.response.DemandLinkis;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,13 +69,21 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
     @Autowired
     private ClusterInfoDao clusterInfoDao;
+    @Autowired
+    private TaskDataSourceConfig taskDataSourceConfig;
+    @Autowired
+    private UserTenantUserRepository userTenantUserRepository;
 
     @Autowired
     private Environment env;
 
+    @Autowired
+    private DemandLinkis demandLinkis;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkisJobSubmitter.class);
     private static final int PASS_LEN = 100;
     private static final String END_FLAG = "查询完成, 成功的步骤";
+    private static final String LABLE_PRFIX = "qualitis.linkis.label";
 
     private static final Pattern LINE_PATTERN = Pattern.compile("\n");
     private static final Pattern NUBBER_PATTERN = Pattern.compile("[0-9]+");
@@ -79,24 +91,19 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
     @Override
     public JobSubmitResult submitJob(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId,
-        String csId, String nodeName, String startupParam) throws JobSubmitException, ClusterInfoNotConfigException {
+        String csId, String nodeName, String startupParam) throws Exception {
         String url = getPath(remoteAddress).path(linkisConfig.getSubmitJob()).toString();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("Token-User", user);
-        headers.add("Token-Code", getToken(clusterName));
-
         Gson gson = new Gson();
-        Map<String, Object> map = new HashMap<>(4);
-        Map<String, Map> configuration = new HashMap<>(2);
+        Map<String, Object> map = Maps.newHashMapWithExpectedSize(4);
+        Map<String, Map<String, Object>> configuration = Maps.newHashMapWithExpectedSize(2);
 
         map.put("requestApplicationName", linkisConfig.getAppName());
         map.put("executeApplicationName", engineName);
         map.put("executionCode", code);
         map.put("runType", "scala");
 
-        Map<String, String> runtime = new HashMap<>(2);
+        Map<String, Object> runtime = Maps.newHashMapWithExpectedSize(2);
         runtime.put("contextID", csId);
         runtime.put("nodeName", nodeName);
         configuration.put("runtime", runtime);
@@ -124,45 +131,26 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             configuration.put("startup", startup);
         }
 
-        Map<String, Map> params = new HashMap<>(1);
+        Map<String, Map<String, Map<String, Object>>> params = Maps.newHashMapWithExpectedSize(1);
         params.put("configuration", configuration);
         map.put("params", params);
-        HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(map), headers);
-        LOGGER.info("Start to submit job to linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
-        Map<String, Object> response = null;
-        try {
-            response = restTemplate.postForObject(url, entity, Map.class);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            return null;
-        }
-        LOGGER.info("Succeed to submit job to linkis. response: {}", response);
-
-        if (!checkResponse(response)) {
-            String message = (String) response.get("message");
-            throw new JobSubmitException("Error! Can not submit job, exception: " + message);
-        }
+        Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis."), gson.toJson(map));
 
         Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
         String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
-        String status = "";
-        return new JobSubmitResult(taskId, status, clusterName, remoteAddress, jobId, execId);
+        return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
     }
 
     @Override
-    public JobSubmitResult submitJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId,
-        String csId, String nodeName, String startupParam, boolean engineReUse) throws JobSubmitException, ClusterInfoNotConfigException {
+    public JobSubmitResult submitJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String csId
+        , String nodeName, String startupParam, boolean engineReUse, String tenantUserName) throws Exception {
+
         String url = getPath(remoteAddress).path(linkisConfig.getSubmitJobNew()).toString();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("Token-User", user);
-        headers.add("Token-Code", getToken(clusterName));
-
         Gson gson = new Gson();
-        Map<String, Object> map = new HashMap<>(4);
+        Map<String, Object> map = Maps.newHashMapWithExpectedSize(4);
 
-        Map<String, String> executionContent = new HashMap<>(2);
+        Map<String, String> executionContent = Maps.newHashMapWithExpectedSize(2);
         executionContent.put("code", code);
         executionContent.put("runType", "scala");
         map.put("executionContent", executionContent);
@@ -170,14 +158,14 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         map.put("executeApplicationName", engineName);
         map.put("executeUser", user);
 
-        Map<String, Map> params = new HashMap<>(2);
-        Map<String, Map> configuration = new HashMap<>(2);
-        Map<String, String> runtime = new HashMap<>(2);
+        Map<String, Map<String, Map<String, Object>>> params = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Map<String, Object>> configuration = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Object> runtime = Maps.newHashMapWithExpectedSize(2);
         runtime.put("contextID", csId);
         runtime.put("nodeName", nodeName);
         configuration.put("runtime", runtime);
         Map<String, Object> startup;
-        Map<String, String> labels = new HashMap<>(4);
+        Map<String, String> labels = Maps.newHashMapWithExpectedSize(4);
         if (! engineReUse) {
             labels.put("executeOnce", "");
         }
@@ -196,6 +184,10 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
                 String key = paramStrs[0];
                 String value = paramStrs[1];
                 Matcher matcher = NUBBER_PATTERN.matcher(value);
+                if (key.startsWith(LABLE_PRFIX)) {
+                    labels.put(key.replace(LABLE_PRFIX + ".", ""), value);
+                    continue;
+                }
 
                 if (matcher.matches()) {
                     startup.put(key, Integer.parseInt(value));
@@ -206,34 +198,39 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             }
             configuration.put("startup", startup);
         }
+        putDefaultLabelConfig(labels);
         params.put("configuration", configuration);
         map.put("params", params);
 
         labels.put("engineType", linkisConfig.getEngineName() + "-" + linkisConfig.getEngineVersion());
+
+        if (StringUtils.isNotEmpty(tenantUserName)) {
+            labels.put("tenant", tenantUserName);
+        }
         labels.put("userCreator", user + "-" + linkisConfig.getAppName());
         labels.put("codeLanguageType", "scala");
         map.put("labels", labels);
 
-        HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(map), headers);
-        LOGGER.info("Start to submit job to linkis 1.0. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
-        Map<String, Object> response = null;
-        try {
-            response = restTemplate.postForObject(url, entity, Map.class);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            throw new JobSubmitException("{&FAILED_TO_SUBMIT_TO_LINKIS}. Exception: " + e.getMessage());
-        }
-        LOGGER.info("Succeed to submit job to linkis 1.0. response: {}", response);
-
-        if (! checkResponse(response)) {
-            String message = (String) response.get("message");
-            throw new JobSubmitException("{&FAILED_TO_SUBMIT_TO_LINKIS}. Exception: " + message);
-        }
+        Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis new."), gson.toJson(map));
 
         Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
         String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
-        String status = "";
-        return new JobSubmitResult(taskId, status, clusterName, remoteAddress, jobId, execId);
+        return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
+    }
+
+    private void putDefaultLabelConfig(Map<String, String> labels) {
+        if (labels.get(linkisConfig.getJobQueuingTimeoutName()) == null) {
+            labels.put(linkisConfig.getJobQueuingTimeoutName(), linkisConfig.getJobQueuingTimeout());
+        }
+        if (labels.get(linkisConfig.getJobRunningTimeoutName()) == null) {
+            labels.put(linkisConfig.getJobRunningTimeoutName(), linkisConfig.getJobRunningTimeout());
+        }
+        if (labels.get(linkisConfig.getJobRetryTimeoutName()) == null) {
+            labels.put(linkisConfig.getJobRetryTimeoutName(), linkisConfig.getJobRetryTimeout());
+        }
+        if (labels.get(linkisConfig.getJobRetryName()) == null) {
+            labels.put(linkisConfig.getJobRetryName(), linkisConfig.getJobRetry());
+        }
     }
 
     @Override
@@ -248,8 +245,8 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         headers.add("Token-Code", getToken(clusterName));
         HttpEntity<Object> entity = new HttpEntity<>(headers);
         LOGGER.info("Start to kill job to linkis. url: {}, method: {}", url, javax.ws.rs.HttpMethod.GET);
-        Map response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
-        LOGGER.info("Succeed to kill job to linkis. response: {}", response);
+        Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+        LOGGER.info("Finish to kill job to linkis. response: {}", response);
 
         if (! checkResponse(response)) {
             String message = (String) response.get("message");
@@ -262,14 +259,14 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
     @Override
     public String getTaskStatus(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
-        Map response = getTaskDetail(taskId, user, remoteAddress, clusterName);
+        Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
 
         return (String) ((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
     }
 
     @Override
     public Map<String, Object> getTaskStatusAndProgressAndErrCode(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
-        Map response = getTaskDetail(taskId, user, remoteAddress, clusterName);
+        Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
 
         String status = (String) ((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
         Double progress = 0.0;
@@ -277,7 +274,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         if (((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()) != null) {
             progress = Double.parseDouble(((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()).toString());
         }
-        Map<String, Object> taskInfos = new HashMap<>(2);
+        Map<String, Object> taskInfos = Maps.newHashMapWithExpectedSize(2);
         taskInfos.put("status", status);
         taskInfos.put("progress", progress);
         taskInfos.put("errCode", errCode);
@@ -292,9 +289,9 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         String logPath = null;
         String execId = null;
         try {
-            Map response = getTaskDetail(taskId, user, remoteAddress, clusterName);
-            jobStatus = (String) ((Map)((Map)response.get("data")).get("task")).get("status");
+            Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
             logPath = (String) ((Map)((Map)response.get("data")).get("task")).get("logPath");
+            jobStatus = (String) ((Map)((Map)response.get("data")).get("task")).get("status");
             execId = (String) ((Map)((Map)response.get("data")).get("task")).get("strongerExecId");
         } catch (TaskNotExistException e) {
             throw new LogPartialException(e);
@@ -312,7 +309,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             HttpEntity entity = new HttpEntity<>(headers);
 
             LOGGER.info("Start to get job log from linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
-            Map response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+            Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
             LOGGER.info("Succeed to get job log from linkis. repsonse: {}", response);
 
             if (! checkResponse(response)) {
@@ -330,7 +327,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             HttpEntity entity = new HttpEntity<>(headers);
 
             LOGGER.info("Start to get job log from linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
-            Map response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+            Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
             LOGGER.info("Succeed to get job log from linkis. repsonse: {}", response);
 
             if (! checkResponse(response)) {
@@ -344,6 +341,75 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         log = maskAccountInfo(log);
         Integer end = getEnd(log) + begin1;
         return new LogResult(log, begin1, end, getLast(log));
+    }
+
+    @Override
+    public JobSubmitResult submitShellJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String startupParam, String tenantUserName)
+        throws Exception {
+        String url = getPath(remoteAddress).path(linkisConfig.getSubmitJobNew()).toString();
+
+        Gson gson = new Gson();
+        Map<String, Object> map = Maps.newHashMapWithExpectedSize(4);
+
+        Map<String, String> executionContent = Maps.newHashMapWithExpectedSize(2);
+        executionContent.put("code", code);
+        executionContent.put("runType", "shell");
+        map.put("executionContent", executionContent);
+        map.put("executeUser", user);
+
+        Map<String, Map<String, Map<String, Object>>> params = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Object> runtime = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Map<String, Object>> configuration = Maps.newHashMapWithExpectedSize(2);
+        configuration.put("runtime", runtime);
+        Map<String, Object> startup;
+        Map<String, String> labels = Maps.newHashMapWithExpectedSize(4);
+        if (StringUtils.isNotBlank(startupParam)) {
+            String[] startupParams = startupParam.split(SpecCharEnum.DIVIDER.getValue());
+            startup = new HashMap<>(startupParams.length);
+
+            for (String param : startupParams) {
+                if (StringUtils.isBlank(param)) {
+                    continue;
+                }
+                String[] paramStrs = param.split("=");
+                if (paramStrs.length < 2) {
+                    continue;
+                }
+                String key = paramStrs[0];
+                String value = paramStrs[1];
+                Matcher matcher = NUBBER_PATTERN.matcher(value);
+                if (key.startsWith(LABLE_PRFIX)) {
+                    labels.put(key.replace(LABLE_PRFIX + ".", ""), value);
+                    continue;
+                }
+
+                if (matcher.matches()) {
+                    startup.put(key, Integer.parseInt(value));
+                } else {
+                    startup.put(key, value);
+                }
+
+            }
+            configuration.put("startup", startup);
+        }
+        putDefaultLabelConfig(labels);
+        params.put("configuration", configuration);
+        map.put("params", params);
+
+        labels.put("engineType", linkisConfig.getShellEngineName() + "-" + linkisConfig.getShellEngineVersion());
+
+        if (StringUtils.isNotEmpty(tenantUserName)) {
+            labels.put("tenant", tenantUserName);
+        }
+        labels.put("codeType", "shell");
+        labels.put("userCreator", user + "-" + linkisConfig.getAppName());
+        map.put("labels", labels);
+
+        Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis 1.0."), gson.toJson(map));
+
+        Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
+        String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
+        return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
     }
 
     private String getToken(String clusterName) throws ClusterInfoNotConfigException {
@@ -381,17 +447,9 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             }
             log = log.replace(envValue, "******");
         }
-        String realPassword = "";
-        int indexPassword = log.indexOf("prop.setProperty(\"password\"");
-
-        if (indexPassword != -1) {
-            int indexSemicolon = log.indexOf(";", indexPassword + "\"password\"".length());
-            if (indexSemicolon != -1) {
-                realPassword = log.subSequence(indexPassword + "prop.setProperty(\"password\"".length() + 3, indexSemicolon - 2).toString();
-            }
-        }
-        if (realPassword.length() > 0 && realPassword.length() < PASS_LEN) {
-            log = log.replace(realPassword, "******");
+        String realSecret = taskDataSourceConfig.getPassword();
+        if (realSecret.length() > 0 && realSecret.length() < PASS_LEN) {
+            log = log.replace(realSecret, "******");
         }
         // 0.16.0 mask jdbc user name and password.
         Matcher matcher = JDBC_USER_PASSWORD_PATTERN.matcher(log);
@@ -405,7 +463,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         return log;
     }
 
-    private Map getTaskDetail(Long taskId, String user, String ujesAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
+    private Map<String, Object> getTaskDetail(Long taskId, String user, String ujesAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
         String url = getPath(ujesAddress).path(linkisConfig.getStatus()).toString();
         url = url.replace("{id}", String.valueOf(taskId));
 
@@ -416,7 +474,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         HttpEntity entity = new HttpEntity<>(headers);
 
         LOGGER.info("Start to get job detail from linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
-        Map response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
+        Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
         LOGGER.info("Succeed to get job detail from linkis. response: {}", response);
 
         if (! checkResponse(response)) {
@@ -431,7 +489,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         return response;
     }
 
-    private boolean checkResponse(Map response) {
+    private boolean checkResponse(Map<String, Object> response) {
         Integer responseStatus = (Integer) response.get("status");
         return responseStatus == 0;
     }

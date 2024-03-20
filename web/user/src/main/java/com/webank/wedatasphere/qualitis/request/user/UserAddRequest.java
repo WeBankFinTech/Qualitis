@@ -28,9 +28,44 @@ public class UserAddRequest {
     private String chineseName;
     @JsonProperty("department")
     private Long departmentId;
+    @JsonProperty("department_name")
+    private String departmentName;
+    @JsonProperty("user_config_json")
+    private String userConfigJson;
+    @JsonProperty("department_sub_id")
+    private long departmentSubId;
+    @JsonProperty("position_zh")
+    private String positionZh;
+    @JsonProperty("position_en")
+    private String positionEn;
+
 
     public UserAddRequest() {
         // Default Constructor
+    }
+
+    public long getDepartmentSubId() {
+        return departmentSubId;
+    }
+
+    public void setDepartmentSubId(long departmentSubId) {
+        this.departmentSubId = departmentSubId;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
+    public String getUserConfigJson() {
+        return userConfigJson;
+    }
+
+    public void setUserConfigJson(String userConfigJson) {
+        this.userConfigJson = userConfigJson;
     }
 
     public String getChineseName() {
@@ -57,4 +92,19 @@ public class UserAddRequest {
         this.username = username;
     }
 
+    public String getPositionZh() {
+        return positionZh;
+    }
+
+    public void setPositionZh(String positionZh) {
+        this.positionZh = positionZh;
+    }
+
+    public String getPositionEn() {
+        return positionEn;
+    }
+
+    public void setPositionEn(String positionEn) {
+        this.positionEn = positionEn;
+    }
 }

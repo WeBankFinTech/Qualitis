@@ -20,18 +20,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import java.util.HashSet;
-import java.util.Set;
 import org.springframework.beans.BeanUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author howeye
  */
 public class ProjectDetailResponse {
-
     @JsonProperty("project_detail")
     private ProjectDetail projectDetail;
     @JsonProperty("rule_details")
@@ -58,6 +58,8 @@ public class ProjectDetailResponse {
         projectDetail.setCnName(project.getCnName());
         projectDetail.setProjectName(project.getName());
         projectDetail.setCreateUser(project.getCreateUser());
+        projectDetail.setSubSystemName(project.getSubSystemName());
+        projectDetail.setSubSystemId(project.getSubSystemId());
         Set<ProjectLabel> labelSet = project.getProjectLabels();
         if (labelSet != null && ! labelSet.isEmpty()) {
             Set<String> labels = new HashSet<>();
@@ -70,6 +72,26 @@ public class ProjectDetailResponse {
         if (null != ruleList) {
             for (Rule rule : ruleList) {
                 ruleDetails.add(new HiveRuleDetail(rule));
+            }
+        }
+    }
+
+    public ProjectDetailResponse(List<Map<String, Object>> rules) {
+        ruleDetails = new ArrayList<>();
+        if (null != rules) {
+            for (Map<String, Object> currentRuleMap : rules) {
+                Long ruleId = (Long) currentRuleMap.get("rule_id");
+                String ruleName = (String) currentRuleMap.get("rule_name");
+                Long ruleGroupId = (Long) currentRuleMap.get("rule_group_id");
+                String ruleGroupName = (String) currentRuleMap.get("rule_group_name");
+                String workFlowName = (String) currentRuleMap.get("work_flow_name");
+                String workFlowVersion = (String) currentRuleMap.get("work_flow_version");
+                Boolean enable = (Boolean) currentRuleMap.get("rule_enable");
+                String workFlowSpace = (String) currentRuleMap.get("work_flow_space");
+                String workFlowProject = (String) currentRuleMap.get("work_flow_project");
+                String nodeName = (String) currentRuleMap.get("node_name");
+
+                ruleDetails.add(new HiveRuleDetail(ruleId, ruleGroupId, ruleName, ruleGroupName,workFlowName,workFlowVersion,enable,workFlowSpace,workFlowProject,nodeName));
             }
         }
     }

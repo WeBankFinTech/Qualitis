@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -29,6 +30,8 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author howeye
@@ -73,14 +76,14 @@ public class CommonChecker {
         throw new UnExpectedRequestException("{&THE_LENGTH_OF} [" + objName + "] {&CAN_NOT_LARGER_THAN_THE_MAX_LENGTH}, [" + maxLength + "]");
     }
 
-    public static void checkListSize(List list, Integer maxSize, String listName) throws UnExpectedRequestException {
+    public static void checkListSize(List<?> list, Integer maxSize, String listName) throws UnExpectedRequestException {
         if (list == null || list.size() <= maxSize) {
             return;
         }
         throw new UnExpectedRequestException("{&THE_SIZE_OF} [" + listName + "] {&CAN_NOT_LARGER_THAN_THE_MAX_SIZE}, [" + maxSize + "]");
     }
 
-    public static void checkListMinSize(List list, Integer minSize, String listName) throws UnExpectedRequestException {
+    public static void checkListMinSize(List<?> list, Integer minSize, String listName) throws UnExpectedRequestException {
         if (list == null || list.size() >= minSize) {
             return;
         }
@@ -118,9 +121,52 @@ public class CommonChecker {
         }
     }
 
-    public static void checkCollections(Collection collections, String objName) throws UnExpectedRequestException {
+    public static void checkCollections(Collection<?> collections, String objName) throws UnExpectedRequestException {
         if (CollectionUtils.isEmpty(collections)) {
             throw new UnExpectedRequestException(objName + " {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
     }
+
+    public static boolean compareIdentical(Boolean unionAll, Boolean abortOnFailure, Boolean specifyStaticStartupParam, String staticStartupParam, String abnormalDatabase
+            , String cluster, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalProxyUser, Boolean deleteFailCheckResult, Boolean uploadRuleMetricValue, Boolean uploadAbnormalValue, ExecutionParameters executionParameters) {
+        boolean flag = false;
+        boolean compareEqual = ((abortOnFailure == null && executionParameters.getAbortOnFailure() == null) || (abortOnFailure != null && abortOnFailure.equals(executionParameters.getAbortOnFailure()))) &&
+                ((specifyStaticStartupParam == null && executionParameters.getSpecifyStaticStartupParam() == null) || (specifyStaticStartupParam != null && specifyStaticStartupParam.equals(executionParameters.getSpecifyStaticStartupParam()))) &&
+                (StringUtils.isNotBlank(staticStartupParam) ? staticStartupParam : "").equals(StringUtils.isNotBlank(executionParameters.getStaticStartupParam()) ? executionParameters.getStaticStartupParam() : "") &&
+                (StringUtils.isNotBlank(abnormalDatabase) ? abnormalDatabase : "").equals(StringUtils.isNotBlank(executionParameters.getAbnormalDatabase()) ? executionParameters.getAbnormalDatabase() : "") &&
+                (StringUtils.isNotBlank(cluster) ? cluster : "").equals(StringUtils.isNotBlank(executionParameters.getCluster()) ? executionParameters.getCluster() : "") &&
+                ((alert == null && executionParameters.getAlert() == null) || (alert != null && alert.equals(executionParameters.getAlert()))) &&
+                (alertLevel != null ? alertLevel : "").equals(executionParameters.getAlertLevel() != null ? executionParameters.getAlertLevel() : "") &&
+                (StringUtils.isNotBlank(alertReceiver) ? alertReceiver : "").equals(StringUtils.isNotBlank(executionParameters.getAlertReceiver()) ? executionParameters.getAlertReceiver() : "") &&
+                (StringUtils.isNotBlank(abnormalProxyUser) ? abnormalProxyUser : "").equals(StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) ? executionParameters.getAbnormalProxyUser() : "") &&
+                ((deleteFailCheckResult == null && executionParameters.getDeleteFailCheckResult() == null) || (deleteFailCheckResult != null && deleteFailCheckResult.equals(executionParameters.getDeleteFailCheckResult()))) &&
+                ((uploadRuleMetricValue == null && executionParameters.getUploadRuleMetricValue() == null) || (uploadRuleMetricValue != null && uploadRuleMetricValue.equals(executionParameters.getUploadRuleMetricValue()))) &&
+                ((uploadAbnormalValue == null && executionParameters.getUploadAbnormalValue() == null) || (uploadAbnormalValue != null && uploadAbnormalValue.equals(executionParameters.getUploadAbnormalValue()))) &&
+                ((unionAll == null && executionParameters.getUnionAll() == null) || (unionAll != null && unionAll.equals(executionParameters.getUnionAll())));
+        if (compareEqual) {
+            flag = true;
+        }
+        return flag;
+    }
+
+    public static void checkIntegerMaxLength(Integer propertyValue, Integer maxLength, String propertyName) throws UnExpectedRequestException {
+        if (null == propertyValue) {
+            return;
+        }
+        if (propertyValue > maxLength) {
+            throw new UnExpectedRequestException(propertyName + " {&EXCEED_MAX_LENGTH}");
+        }
+    }
+
+    public static void checkMatcher(String regex, String propertyValue) throws UnExpectedRequestException {
+        if (null == regex || null == propertyValue) {
+            return;
+        }
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(propertyValue);
+        if (!matcher.matches()) {
+            throw new UnExpectedRequestException(propertyValue + " {&NOT_MATCH_OF_REGEX}");
+        }
+    }
+
 }

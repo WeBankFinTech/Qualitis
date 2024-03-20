@@ -18,8 +18,10 @@ package com.webank.wedatasphere.qualitis.dao;
 
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -34,11 +36,24 @@ public interface UserDao {
     User saveUser(User user);
 
     /**
+     * save All User
+     * @param users
+     */
+    void saveAllUser(List<User> users);
+
+    /**
      * Find user by username
      * @param username
      * @return
      */
     User findByUsername(String username);
+
+    /**
+     * Find user by username list
+     * @param usernameList
+     * @return
+     */
+    List<User> findByUsernameList(List<String> usernameList);
 
     /**
      * Find user by id
@@ -54,27 +69,28 @@ public interface UserDao {
      */
     void deleteUser(User user);
 
-
     /**
      * Paging find all users
+     * @param userName
+     * @param departmentCode
+     * @param departmentSubId
      * @param page
      * @param size
      * @return
      */
-    List<User> findAllUser(int page, int size);
-
-
-    /**
-     * Count all user
-     * @return
-     */
-    Long countAll();
+    Page<User> findAllUser(String userName, String departmentCode, Long departmentSubId, int page, int size);
 
     /**
-     * Find all users
+     * list all username
      * @return
      */
-    List<User> findAllUser();
+    List<Map<String, Object>> findAllUserIdAndName();
+
+    /**
+     * Find all user names
+     * @return
+     */
+    List<String> findAllUserName();
 
     /**
      * Find user by department.
@@ -89,4 +105,11 @@ public interface UserDao {
      * @return
      */
     boolean checkTemplate(User userInDb);
+
+    /**
+     * find By Sub Department Code
+     * @param subDepartmentCode
+     * @return
+     */
+    List<User> findBySubDepartmentCode(Long subDepartmentCode);
 }

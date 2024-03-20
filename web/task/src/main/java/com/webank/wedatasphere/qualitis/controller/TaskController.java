@@ -18,15 +18,17 @@ package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.TaskCheckResultResponse;
 import com.webank.wedatasphere.qualitis.service.TaskService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * @author howeye
@@ -43,7 +45,7 @@ public class TaskController {
     @Path("detail/{task_id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getTaskDetail(@PathParam("task_id")Long taskId) throws UnExpectedRequestException {
+    public GeneralResponse<TaskCheckResultResponse> getTaskDetail(@PathParam("task_id")Long taskId) throws UnExpectedRequestException {
         try {
             return taskService.getTaskDetail(taskId);
         } catch (UnExpectedRequestException e) {

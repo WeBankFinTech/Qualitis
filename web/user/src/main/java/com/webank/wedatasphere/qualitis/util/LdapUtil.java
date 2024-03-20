@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.util;
 
 import com.webank.wedatasphere.qualitis.config.LdapConfig;
+import java.io.UnsupportedEncodingException;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.LDAPConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
@@ -22,7 +23,7 @@ public class LdapUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LdapUtil.class);
 
-    public boolean loginByLdap(String userName, String password) {
+    public boolean loginByLdap(String userName, String password) throws UnsupportedEncodingException {
         LDAPConnectionFactory ldf = new LDAPConnectionFactory(ldapConfig.getIp(), ldapConfig.getPort());
         Connection conn;
         try {
@@ -31,7 +32,7 @@ public class LdapUtil {
             LOGGER.info("connecting failed. please check ip :" + ldapConfig.getIp() + " port: " + ldapConfig.getPort());
             return false;
         }
-        BindRequest request = Requests.newSimpleBindRequest(userName , password.getBytes());
+        BindRequest request = Requests.newSimpleBindRequest(userName , password.getBytes("UTF-8"));
         try {
             conn.bind(request);
             LOGGER.info("Login by ladp success! User: {}", userName);

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.bean.LogResult;
 import com.webank.wedatasphere.qualitis.service.JobService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -45,7 +46,7 @@ public class JobController {
     @GET
     @Path("log/{clusterName}/{taskId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getJobLog(@PathParam("clusterName")String clusterName, @PathParam("taskId")Long taskId) throws UnExpectedRequestException {
+    public GeneralResponse<LogResult> getJobLog(@PathParam("clusterName")String clusterName, @PathParam("taskId")Long taskId) throws UnExpectedRequestException {
         try {
             return jobService.getTaskLog(taskId, clusterName);
         } catch (UnExpectedRequestException e) {

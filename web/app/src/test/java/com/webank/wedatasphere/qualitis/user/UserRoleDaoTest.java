@@ -67,28 +67,28 @@ public class UserRoleDaoTest {
     assertNotNull(saveEntity.getId());
 
     //总数量大于0
-    long size = dao.countAll();
+    long size = dao.countAllUserRole("allenzhou");
     assertTrue(size > 0);
 
     //分页查询有结果
-    List<UserRole> datas = dao.findAllUserRole(0, 5);
+    List<UserRole> datas = dao.findAllUserRole("allenzhou",0, 5);
     assertTrue(datas.size() > 0);
 
     //保存到数据库的对象是否和保存的值一致
     UserRole findByIdEntity = dao.findByUuid(saveEntity.getId());
     assertNotNull(findByIdEntity);
-    assertEquals(findByIdEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByIdEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
     assertEquals(findByIdEntity.getRole().getName(), saveEntity.getRole().getName());
 
     UserRole findByUserAndRoleEntity = dao.findByUserAndRole(saveUser, saveRole);
     assertNotNull(findByUserAndRoleEntity);
-    assertEquals(findByUserAndRoleEntity.getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByUserAndRoleEntity.getUser().getUsername(), saveEntity.getUser().getUsername());
     assertEquals(findByUserAndRoleEntity.getRole().getName(), saveEntity.getRole().getName());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserRole> findByRoleEntity = dao.findByRole(saveRole);
     assertTrue(findByRoleEntity.size() > 0);
-    assertEquals(findByRoleEntity.get(0).getUser().getUserName(), saveEntity.getUser().getUserName());
+    assertEquals(findByRoleEntity.get(0).getUser().getUsername(), saveEntity.getUser().getUsername());
 
     //根据username查询的数据库对象是否和保存的值一致
     List<UserRole> findByUserEntity = dao.findByUser(saveUser);
@@ -114,7 +114,7 @@ public class UserRoleDaoTest {
     //保存是否成功
     User user = new User();
     user.setChineseName("xxx");
-    user.setUserName("xxx");
+    user.setUsername("xxx");
     user.setPassword("xxx");
     User saveUser = userDao.saveUser(user);
     assertTrue(saveUser.getId() != 0);

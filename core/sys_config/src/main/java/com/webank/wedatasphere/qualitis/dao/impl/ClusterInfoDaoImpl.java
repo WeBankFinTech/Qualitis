@@ -19,7 +19,6 @@ package com.webank.wedatasphere.qualitis.dao.impl;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ClusterInfoRepository;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
-import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,13 +52,18 @@ public class ClusterInfoDaoImpl implements ClusterInfoDao {
     }
 
     @Override
+    public List<ClusterInfo> findByClusterNames(List<String> clusterNames) {
+        return clusterInfoRepository.findByClusterNameIn(clusterNames);
+    }
+
+    @Override
     public void deleteClusterInfo(ClusterInfo clusterInfo) {
         clusterInfoRepository.delete(clusterInfo);
     }
 
     @Override
     public List<ClusterInfo> findAllClusterInfo(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "clusterName");
         Pageable pageable = PageRequest.of(page, size, sort);
         return clusterInfoRepository.findAll(pageable).getContent();
     }
@@ -68,4 +72,17 @@ public class ClusterInfoDaoImpl implements ClusterInfoDao {
     public Long countAll() {
         return clusterInfoRepository.count();
     }
+
+    @Override
+    public List<ClusterInfo> findClusterInfoLikeName(String clusterName, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return clusterInfoRepository.findLikeClusterName(clusterName + "%", pageable).getContent();
+    }
+
+    @Override
+    public int countTotalByName(String clusterName) {
+        return clusterInfoRepository.countTotalByName(clusterName);
+    }
+
 }

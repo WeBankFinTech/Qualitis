@@ -19,7 +19,6 @@ package com.webank.wedatasphere.qualitis.dao;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
-import com.webank.wedatasphere.qualitis.entity.Role;
 
 import java.util.List;
 
@@ -58,11 +57,12 @@ public interface UserRoleDao {
 
     /**
      * Paging find all user role
+     * @param userName
      * @param page
      * @param size
      * @return
      */
-    List<UserRole> findAllUserRole(int page, int size);
+    List<UserRole> findAllUserRole(String userName,int page, int size);
 
     /**
      * Find user role by user
@@ -79,8 +79,27 @@ public interface UserRoleDao {
     List<UserRole> findByRole(Role role);
 
     /**
-     * Count by user role
+     * Find user role by role List
+     * @param role
      * @return
      */
-    long countAll();
+    List<UserRole> findByRoleList(List<Role> role);
+
+    /**
+     * Count by user role
+     * @param userName
+     * @return
+     */
+    long countAllUserRole(String userName);
+
+    /**
+     * count Postition Role
+     *
+     * @param id
+     * @param roleType
+     * @return
+     */
+    long countPositionRole(Long id,Integer roleType);
+
+
 }

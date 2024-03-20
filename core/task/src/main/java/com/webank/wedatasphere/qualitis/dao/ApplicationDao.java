@@ -17,8 +17,10 @@
 package com.webank.wedatasphere.qualitis.dao;
 
 import com.webank.wedatasphere.qualitis.entity.Application;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -108,15 +110,6 @@ public interface ApplicationDao {
   Long countByCreateUserAndProject(String createUser, Long projectId);
 
   /**
-   * Find application by user and time between
-   * @param createUser
-   * @param startSubmitDate
-   * @param endSubmitDate
-   * @return
-   */
-  List<Application> findApplicationByUserAndSubmitTimeBetween(String createUser, String startSubmitDate, String endSubmitDate);
-
-  /**
    * Paging find application by user and time between
    * @param user
    * @param startSubmitDate
@@ -125,36 +118,48 @@ public interface ApplicationDao {
    * @param size
    * @return
    */
-  List<Application> findApplicationByUserAndSubmitTimeBetweenPage(String user, String startSubmitDate, String endSubmitDate, int page, int size);
+  List<Application> findApplicationByUserAndSubmitTimeBetween(String user, String startSubmitDate, String endSubmitDate, int page, int size);
+
+  /**
+   * Chart application by submit time
+   * @param user
+   * @param startSubmitDate
+   * @param endSubmitDate
+   * @return
+   */
+  List<Map<String, Object>> chartApplicationByUserAndSubmitTimeBetween(String user, String startSubmitDate, String endSubmitDate);
+
+    /**
+   * Count application by user and time between
+   * @param user
+   * @param startSubmitDate
+   * @param endSubmitDate
+   * @param status
+   * @return
+   */
+  long countApplicationByUserAndSubmitTimeBetweenAndStatus(String user, String startSubmitDate, String endSubmitDate, Integer status);
 
   /**
    * Paging find application by advanced conditions.
+   *
    * @param user
    * @param projectId
    * @param status
    * @param commentType
    * @param startSubmitDate
    * @param endSubmitDate
+   * @param ruleGroupId
+   * @param executeUser
    * @param page
    * @param size
+   * @param stopStatus
+   * @param startFinishTime
+   * @param endFinishTime
    * @return
    */
-  List<Application> findApplicationByAdavnceConditions(String user, Long projectId, Integer status, Integer commentType,
-      String startSubmitDate, String endSubmitDate,
-      int page, int size);
-
-  /**
-   * Count application by advanced conditions.
-   * @param user
-   * @param projectId
-   * @param status
-   * @param commentType
-   * @param startSubmitDate
-   * @param endSubmitDate
-   * @return
-   */
-  long countApplicationByAdavnceConditions(String user, Long projectId, Integer status, Integer commentType, String startSubmitDate,
-      String endSubmitDate);
+  Page<Application> findApplicationByAdvanceConditions(String user, Long projectId, Integer status, Integer commentType,
+                                                       String startSubmitDate, String endSubmitDate, Long ruleGroupId, String executeUser, List<Integer> stopStatus,
+                                                       String startFinishTime, String endFinishTime, int page, int size);
 
     /**
    * Find application by status in status list
@@ -178,16 +183,25 @@ public interface ApplicationDao {
    * @param appStatus
    * @return
    */
-  long countApplicationByUserAndSubmitTimeBetweenAndStatusIn(String user,
-      String startSubmitDate, String endSubmitDate, Integer[] appStatus);
+  long countApplicationByUserAndSubmitTimeBetweenAndStatusIn(String user, String startSubmitDate, String endSubmitDate, Integer[] appStatus);
 
   /**
-   * Find application by creator and application id
+   * Find application by creator and application id, to be optimized
    * @param createUser
+   * @param applicationId
+   * @param page
+   * @param size
+   * @return
+   */
+  List<Application> findByCreateUserAndId(String createUser, String applicationId, Integer page, Integer size);
+
+  /**
+   * Count
+   * @param userName
    * @param applicationId
    * @return
    */
-  List<Application> findByCreateUserAndId(String createUser, String applicationId);
+  long countByCreateUserAndId(String userName, String applicationId);
 
   /**
    * With datasource advance
@@ -200,11 +214,13 @@ public interface ApplicationDao {
    * @param commentType
    * @param startTime
    * @param endTime
+   * @param ruleGroupId
+   * @param executeUser
    * @param page
    * @param size
    * @return
    */
-  List<Application> findApplicationByAdavnceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Integer page,
+  List<Application> findApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser, Integer page,
         Integer size);
 
   /**
@@ -218,7 +234,37 @@ public interface ApplicationDao {
    * @param commentType
    * @param startTime
    * @param endTime
+   * @param ruleGroupId
+   * @param executeUser
    * @return
    */
-  long countApplicationByAdavnceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime);
+  long countApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser);
+
+  /**
+   * Get service with application num
+   * @return
+   */
+    List<Map<String, Object>> getServiceWithApplicationNum();
+
+  /**
+   * Get service with application num in list
+   * @param ipList
+   * @return
+   */
+    List<Map<String, Object>>  getServiceWithApplicationNumIn(List<String> ipList);
+
+  /**
+   * Count not finish application
+   * @param currentIp
+   * @return
+   */
+  int countNotFinishApplicationNum(String currentIp);
+
+  /**
+   * get All ExecuteUser
+   * @param userName
+   * @return
+   */
+  List<String> getAllExecuteUser(String userName);
+
 }

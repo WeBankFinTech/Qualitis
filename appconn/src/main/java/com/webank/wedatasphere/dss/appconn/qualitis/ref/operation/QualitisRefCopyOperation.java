@@ -17,26 +17,27 @@
 package com.webank.wedatasphere.dss.appconn.qualitis.ref.operation;
 
 import com.google.gson.Gson;
-import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
-import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisDevelopmentOperation;
 import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
+import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefCopyOperation;
-import com.webank.wedatasphere.dss.standard.app.development.ref.RefJobContentResponseRef;
 import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
-import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.CopyWitContextRequestRefImpl;
+import com.webank.wedatasphere.dss.standard.app.development.ref.RefJobContentResponseRef;
+import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisDevelopmentOperation;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.CopyWitContextAndDSSJobContentRequestRefImpl;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
-import java.net.URISyntaxException;
+import com.webank.wedatasphere.dss.standard.app.development.utils.DSSJobContentConstant;
+import org.apache.commons.lang.RandomStringUtils;
 import java.security.NoSuchAlgorithmException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,8 +45,9 @@ import org.springframework.web.client.RestTemplate;
  * @author allenzhou@webank.com
  * @date 2021/6/21 14:40
  */
-public class QualitisRefCopyOperation extends QualitisDevelopmentOperation<ThirdlyRequestRef.CopyWitContextRequestRefImpl, RefJobContentResponseRef>
-    implements RefCopyOperation<ThirdlyRequestRef.CopyWitContextRequestRefImpl> {
+public class QualitisRefCopyOperation extends QualitisDevelopmentOperation<ThirdlyRequestRef.CopyWitContextAndDSSJobContentRequestRefImpl, RefJobContentResponseRef>
+    implements RefCopyOperation<ThirdlyRequestRef.CopyWitContextAndDSSJobContentRequestRefImpl> {
+    private static final Gson gson = new Gson();
     private static final String COPY_RULE_URL = "/qualitis/outer/api/v1/projector/rule/copy";
     private static final Logger LOGGER = LoggerFactory.getLogger(QualitisRefDeletionOperation.class);
 
@@ -58,8 +60,7 @@ public class QualitisRefCopyOperation extends QualitisDevelopmentOperation<Third
     }
 
     @Override
-    public RefJobContentResponseRef copyRef(CopyWitContextRequestRefImpl requestRef) throws ExternalOperationFailedException {
-        Gson gson = new Gson();
+    public RefJobContentResponseRef copyRef(CopyWitContextAndDSSJobContentRequestRefImpl requestRef) throws ExternalOperationFailedException {
         LOGGER.info("Qualitis copy request: " + gson.toJson(requestRef));
         Map<String, Object> jobContent = requestRef.getRefJobContent();
         String url;
@@ -72,7 +73,7 @@ public class QualitisRefCopyOperation extends QualitisDevelopmentOperation<Third
             LOGGER.error("Qualitis uri syntax exception.", e);
             throw new ExternalOperationFailedException(90156, "Construct copy outer url failed when copy.");
         }
-        if (! jobContent.containsKey("ruleGroupId") || jobContent.get("ruleGroupId") == null) {
+        if (jobContent == null || !jobContent.containsKey("ruleGroupId") || jobContent.get("ruleGroupId") == null) {
             throw new ExternalOperationFailedException(90156, "Rule group ID or username is null when copy.");
         }
         Integer ruleGroupId = null;
@@ -87,10 +88,14 @@ public class QualitisRefCopyOperation extends QualitisDevelopmentOperation<Third
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             Map<String,Object> request = new HashMap<>(4);
-            request.put("create_user", requestRef.getUserName());
             request.put("version", requestRef.getNewVersion());
+            request.put("create_user", requestRef.getUserName());
             request.put("source_rule_group_id", Long.valueOf(ruleGroupId.toString()));
-            request.put("target_project_id", requestRef.getParameter("projectId"));
+            // When copy cross projects, target project may be different with above.
+            request.put("target_project_id", requestRef.getParameter("refProjectId"));
+            request.put("work_flow_name", requestRef.getDSSJobContent().get(DSSJobContentConstant.ORCHESTRATION_NAME));
+            request.put("cs_id", requestRef.getContextId());
+            request.put("node_name", requestRef.getName());
 
             HttpEntity<Object> entity = new HttpEntity<>(gson.toJson(request), headers);
 

@@ -36,6 +36,12 @@ public class DataSourceExecutionRequest {
     @JsonProperty("execution_param")
     private String executionParam;
 
+
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
+
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("startup_param_name")
@@ -52,6 +58,17 @@ public class DataSourceExecutionRequest {
 
     @JsonProperty("job_id")
     private String jobId;
+
+    @JsonProperty("start_time")
+    private String startTime;
+    @JsonProperty("end_time")
+    private String endTime;
+
+    @JsonProperty("split_by")
+    private String splitBy;
+
+    @JsonProperty("engine_reuse")
+    private Boolean engineReuse;
 
     public DataSourceExecutionRequest() {
         crossTable = false;
@@ -113,6 +130,22 @@ public class DataSourceExecutionRequest {
         this.createUser = createUser;
     }
 
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
+    }
+
     public String getClusterName() {
         return clusterName;
     }
@@ -167,6 +200,38 @@ public class DataSourceExecutionRequest {
 
     public void setJobId(String jobId) {
         this.jobId = jobId;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getSplitBy() {
+        return splitBy;
+    }
+
+    public void setSplitBy(String splitBy) {
+        this.splitBy = splitBy;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
     }
 
     public static void checkRequest(DataSourceExecutionRequest request) throws UnExpectedRequestException {

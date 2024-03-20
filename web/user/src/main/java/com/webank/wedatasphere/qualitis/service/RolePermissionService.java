@@ -49,7 +49,7 @@ public interface RolePermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteRolePermission(DeleteRolePermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteRolePermission(DeleteRolePermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify role permission
@@ -57,7 +57,7 @@ public interface RolePermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyRolePermission(ModifyRolePermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyRolePermission(ModifyRolePermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all role permissions

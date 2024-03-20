@@ -16,16 +16,23 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import java.util.List;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.CascadeType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Id;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -47,11 +54,21 @@ public class RuleDataSource {
     private String colName;
     @Column(name = "black_col_name")
     private Boolean blackColName;
+    @Column(name = "file_uuid", length = 50)
+    private String fileUuid;
+
     @Column(name = "project_id", length = 20)
     private Long projectId;
 
     @ManyToOne
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JsonIgnore
     private Rule rule;
+
+    @ManyToOne
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JsonIgnore
+    private RuleGroup ruleGroup;
 
     @Column(length = 3200)
     private String filter;
@@ -59,21 +76,61 @@ public class RuleDataSource {
     @Column(name = "datasource_index")
     private Integer datasourceIndex;
 
+    @Column(name = "file_id", length = 256)
+    private String fileId;
+
+    @Column(name = "file_hash_values")
+    private String fileHashValue;
+
+    @Column(name = "file_table_desc")
+    private String fileTableDesc;
+
+    @Column(name = "file_delimiter")
+    private String fileDelimiter;
+
+    @Column(name = "file_type")
+    private String fileType;
+
+    @Column(name = "file_header")
+    private Boolean fileHeader;
+
+    @Column(name= "file_sheet_name")
+    private String fileSheetName;
+
     @Column(name = "proxy_user")
     private String proxyUser;
 
-    @Column(name = "linkis_datasoure_id")
+    @Column(name = "linkis_datasource_id")
     private Long linkisDataSourceId;
-    @Column(name = "linkis_datasoure_version_id")
+
+    @Column(name = "linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
 
     @Column(name = "linkis_datasource_name")
     private String linkisDataSourceName;
+
+    @OneToMany(mappedBy = "ruleDataSource", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    private List<RuleDataSourceEnv> ruleDataSourceEnvs;
     /**
-     * datasource type, such as hive, mysql, kafka
+     * datasource type, such as hive, mysql, tdsql, kafka, fps
      */
     @Column(name = "datasource_type")
     private Integer datasourceType;
+
+    @Column(name = "sub_system_id")
+    private Long subSystemId;
+    @Column(name = "sub_system_name")
+    private String subSystemName;
+    @Column(name = "department_code")
+    private String departmentCode;
+    @Column(name = "department_name")
+    private String departmentName;
+    @Column(name = "dev_department_name")
+    private String devDepartmentName;
+    @Column(name = "tag_code")
+    private String tagCode;
+    @Column(name = "tag_name")
+    private String tagName;
 
     public RuleDataSource() {
         // Default Constructor
@@ -87,6 +144,7 @@ public class RuleDataSource {
         this.blackColName = ruleDataSource.getBlackColName();
         this.dbName = ruleDataSource.getDbName();
         this.projectId = ruleDataSource.getProjectId();
+        this.fileUuid = ruleDataSource.getFileUuid();
         this.filter = ruleDataSource.getFilter();
         this.rule = ruleDataSource.getRule();
         this.datasourceIndex = ruleDataSource.getDatasourceIndex();
@@ -94,6 +152,14 @@ public class RuleDataSource {
         this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
         this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
         this.datasourceType = ruleDataSource.getDatasourceType();
+    }
+
+    public String getFileSheetName() {
+        return fileSheetName;
+    }
+
+    public void setFileSheetName(String fileSheetName) {
+        this.fileSheetName = fileSheetName;
     }
 
     public Long getId() {
@@ -168,6 +234,14 @@ public class RuleDataSource {
         this.projectId = projectId;
     }
 
+    public String getFileUuid() {
+        return fileUuid;
+    }
+
+    public void setFileUuid(String fileUuid) {
+        this.fileUuid = fileUuid;
+    }
+
     public Integer getDatasourceIndex() {
         return datasourceIndex;
     }
@@ -176,12 +250,60 @@ public class RuleDataSource {
         this.datasourceIndex = datasourceIndex;
     }
 
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
+    public String getFileTableDesc() {
+        return fileTableDesc;
+    }
+
+    public void setFileTableDesc(String fileTableDesc) {
+        this.fileTableDesc = fileTableDesc;
+    }
+
+    public String getFileDelimiter() {
+        return fileDelimiter;
+    }
+
+    public void setFileDelimiter(String fileDelimiter) {
+        this.fileDelimiter = fileDelimiter;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Boolean getFileHeader() {
+        return fileHeader;
+    }
+
+    public void setFileHeader(Boolean fileHeader) {
+        this.fileHeader = fileHeader;
+    }
+
     public String getProxyUser() {
         return proxyUser;
     }
 
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
+    }
+
+    public String getFileHashValue() {
+        return fileHashValue;
+    }
+
+    public void setFileHashValue(String fileHashValue) {
+        this.fileHashValue = fileHashValue;
     }
 
     public Long getLinkisDataSourceId() {
@@ -208,12 +330,84 @@ public class RuleDataSource {
         this.linkisDataSourceName = linkisDataSourceName;
     }
 
+    public List<RuleDataSourceEnv> getRuleDataSourceEnvs() {
+        return ruleDataSourceEnvs;
+    }
+
+    public void setRuleDataSourceEnvs(List<RuleDataSourceEnv> ruleDataSourceEnvs) {
+        this.ruleDataSourceEnvs = ruleDataSourceEnvs;
+    }
+
     public Integer getDatasourceType() {
         return datasourceType;
     }
 
     public void setDatasourceType(Integer datasourceType) {
         this.datasourceType = datasourceType;
+    }
+
+    public RuleGroup getRuleGroup() {
+        return ruleGroup;
+    }
+
+    public void setRuleGroup(RuleGroup ruleGroup) {
+        this.ruleGroup = ruleGroup;
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
+    }
+
+    public String getDepartmentCode() {
+        return departmentCode;
+    }
+
+    public void setDepartmentCode(String departmentCode) {
+        this.departmentCode = departmentCode;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
+    public String getDevDepartmentName() {
+        return devDepartmentName;
+    }
+
+    public void setDevDepartmentName(String devDepartmentName) {
+        this.devDepartmentName = devDepartmentName;
+    }
+
+    public String getTagCode() {
+        return tagCode;
+    }
+
+    public void setTagCode(String tagCode) {
+        this.tagCode = tagCode;
+    }
+
+    public String getTagName() {
+        return tagName;
+    }
+
+    public void setTagName(String tagName) {
+        this.tagName = tagName;
     }
 
     @Override
@@ -240,6 +434,11 @@ public class RuleDataSource {
             ", projectId=" + projectId +
             ", filter='" + filter + '\'' +
             ", datasourceIndex=" + datasourceIndex +
+            ", fileId='" + fileId + '\'' +
+            ", fileTableDesc='" + fileTableDesc + '\'' +
+            ", fileDelimiter='" + fileDelimiter + '\'' +
+            ", fileType='" + fileType + '\'' +
+            ", fileHeader=" + fileHeader +
             ", proxyUser=" + proxyUser +
             '}';
     }

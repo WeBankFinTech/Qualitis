@@ -15,6 +15,7 @@ public class LdapConfig {
     private int port;
 
     public LdapConfig() {
+        // Default Constructor
     }
 
     public String getIp() {

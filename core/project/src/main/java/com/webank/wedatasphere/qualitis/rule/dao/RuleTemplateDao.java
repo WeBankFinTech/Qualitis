@@ -16,11 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.rule.dao;
 
-import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -28,6 +31,7 @@ import java.util.List;
 public interface RuleTemplateDao {
     /**
      * Find rule template by id
+     *
      * @param ruleTemplateId
      * @return
      */
@@ -35,14 +39,28 @@ public interface RuleTemplateDao {
 
     /**
      * Find all rule template
+     *
      * @param page
      * @param size
+     * @param templateType
+     * @param cnName
+     * @param enName
+     * @param dataSourceType
+     * @param verificationLevel
+     * @param verificationType
+     * @param createId
+     * @param modifyId
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param dataType
      * @return
      */
-    List<Template> findAllDefaultTemplate(int page, int size);
+    List<Template> findAllDefaultTemplate(int page, int size, Integer templateType, String cnName, String enName, Integer dataSourceType, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String dataType);
 
     /**
      * Find template by rule template level
+     *
      * @param level
      * @param page
      * @param size
@@ -52,12 +70,27 @@ public interface RuleTemplateDao {
 
     /**
      * Count all default template
+     *
+     * @param templateType
+     * @param cnName
+     * @param enName
+     * @param dataSourceType
+     * @param verificationLevel
+     * @param verificationType
+     * @param createId
+     * @param modifyId
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param dataType
      * @return
      */
-    Long countAllDefaultTemplate();
+    Long countAllDefaultTemplate(Integer templateType, String cnName, String enName, Integer dataSourceType, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String dataType);
+
 
     /**
      * Save template
+     *
      * @param template
      * @return
      */
@@ -65,6 +98,7 @@ public interface RuleTemplateDao {
 
     /**
      * Delete template
+     *
      * @param template
      */
     void deleteTemplate(Template template);
@@ -81,19 +115,22 @@ public interface RuleTemplateDao {
 
     /**
      * Count all multi-table template
-     * @return
+     *
      * @param dataSourceTypeCode
+     * @return
      */
     Long countAllMultiTemplate(Integer dataSourceTypeCode);
 
     /**
      * Find all template
+     *
      * @return
      */
     List<Template> getAllTemplate();
 
     /**
      * Find template by name
+     *
      * @param name
      * @return
      */
@@ -101,6 +138,7 @@ public interface RuleTemplateDao {
 
     /**
      * Find template by import export name
+     *
      * @param importExportName
      * @return
      */
@@ -108,27 +146,96 @@ public interface RuleTemplateDao {
 
     /**
      * Find templates.
-     * @param level
+     *
      * @param type
-     * @param departmentList
-     * @param userList
      * @param dataSourceTypeCode
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param createUserId
+     * @param cnName
+     * @param enName
+     * @param verificationLevel
+     * @param verificationType
+     * @param createId
+     * @param modifyId
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
      * @param page
      * @param size
      * @return
      */
-    List<Template> findTemplates(Integer level, Integer type, List<Department> departmentList, List<User> userList,
-        Integer dataSourceTypeCode, int page, int size);
+    Page<Template> findTemplates(Integer type,
+                                 Integer dataSourceTypeCode, String tableDataType, List<Long> dataVisibilityDeptList, Long createUserId, String cnName, String enName, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, int page, int size);
 
     /**
      * Count templates.
-     * @param code
+     *
      * @param multiSourceTemplateCode
-     * @param departments
-     * @param users
      * @param dataSourceTypeCode
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param createUser
+     * @param cnName
+     * @param enName
+     * @param verificationLevel
+     * @param verificationType
+     * @param createId
+     * @param modifyId
+     * @param devDepartmentId
+     * @param opsDepartmentId
      * @return
      */
-    long countTemplates(Integer code, Integer multiSourceTemplateCode, List<Department> departments, List<User> users,
-        Integer dataSourceTypeCode);
+    long countTemplates(Integer multiSourceTemplateCode,
+                        Integer dataSourceTypeCode, String tableDataType, List<Long> dataVisibilityDeptList, User createUser, String cnName, String enName, Long verificationLevel, Long verificationType, Long createId, Long modifyId, Long devDepartmentId, Long opsDepartmentId);
+
+    /**
+     * find By Rule
+     *
+     * @return
+     */
+    List<Map<String, Object>> findTemplatesOptionListInRule();
+
+    /**
+     * findTemplatesOptionList
+     *
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param createUser
+     * @param templateType
+     * @return
+     */
+    List<Map<String, Object>> findTemplatesOptionList(String tableDataType, List<Long> dataVisibilityDeptList, User createUser, Integer templateType);
+
+    /**
+     * findAllTemplatesOptionList
+     *
+     * @param templateType
+     * @return
+     */
+    List<Map<String, Object>> findAllTemplatesOptionList(Integer templateType);
+
+    /**
+     * Get default or multi template by name
+     *
+     * @param templateName
+     * @return
+     */
+    Optional<Template> getDefaultByName(String templateName);
+
+    /**
+     * getTemplateMidTableInputMeta
+     *
+     * @param ids
+     * @return
+     */
+    List<Map<String, Object>> getTemplateDefaultInputMeta(List<Integer> ids);
+
+    /**
+     * find Template By EnName
+     *
+     * @param templateEnName
+     * @return
+     */
+    List<Template> findTemplateByEnName(String templateEnName);
 }

@@ -29,6 +29,10 @@ public class GroupListExecutionRequest {
     private String executionParam;
     @JsonProperty("execution_user")
     private String executionUser;
+    @JsonProperty("fps_file_id")
+    private String fpsFileId;
+    @JsonProperty("fps_hash")
+    private String fpsHashValue;
 
     @JsonProperty("cluster_name")
     private String clusterName;
@@ -40,6 +44,12 @@ public class GroupListExecutionRequest {
     private boolean dyNamicPartition;
     @JsonProperty("dynamic_partition_prefix")
     private String dyNamicPartitionPrefix;
+
+    @JsonProperty("split_by")
+    private String splitBy;
+
+    @JsonProperty("engine_reuse")
+    private Boolean engineReuse;
 
     public GroupListExecutionRequest() {
     }
@@ -55,6 +65,22 @@ public class GroupListExecutionRequest {
     public void setGroupExecutionRequests(
         List<GroupExecutionRequest> groupExecutionRequests) {
         this.groupExecutionRequests = groupExecutionRequests;
+    }
+
+    public String getFpsFileId() {
+        return fpsFileId;
+    }
+
+    public void setFpsFileId(String fpsFileId) {
+        this.fpsFileId = fpsFileId;
+    }
+
+    public String getFpsHashValue() {
+        return fpsHashValue;
+    }
+
+    public void setFpsHashValue(String fpsHashValue) {
+        this.fpsHashValue = fpsHashValue;
     }
 
     public String getExecutionParam() {
@@ -113,4 +139,19 @@ public class GroupListExecutionRequest {
         this.dyNamicPartitionPrefix = dyNamicPartitionPrefix;
     }
 
+    public String getSplitBy() {
+        return splitBy;
+    }
+
+    public void setSplitBy(String splitBy) {
+        this.splitBy = splitBy;
+    }
+
+    public Boolean getEngineReuse() {
+        return engineReuse;
+    }
+
+    public void setEngineReuse(Boolean engineReuse) {
+        this.engineReuse = engineReuse;
+    }
 }

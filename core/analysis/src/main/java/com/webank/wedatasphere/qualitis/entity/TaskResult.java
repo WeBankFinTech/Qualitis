@@ -46,6 +46,16 @@ public class TaskResult {
     private Long runDate;
     @Column(name = "department_code")
     private String departmentCode;
+    @Column(name = "version")
+    private String version;
+    @Column(name = "env_name")
+    private String envName;
+
+    @Column(name = "compare_value")
+    private String compareValue;
+
+    @Column(name = "denoising_value")
+    private Boolean denoisingValue;
 
     public TaskResult() {
         // Default Constructor
@@ -129,5 +139,37 @@ public class TaskResult {
 
     public void setDepartmentCode(String departmentCode) {
         this.departmentCode = departmentCode;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getEnvName() {
+        return envName;
+    }
+
+    public void setEnvName(String envName) {
+        this.envName = envName;
+    }
+
+    public String getCompareValue() {
+        return compareValue;
+    }
+
+    public void setCompareValue(String compareValue) {
+        this.compareValue = compareValue;
+    }
+
+    public Boolean getDenoisingValue() {
+        return denoisingValue;
+    }
+
+    public void setDenoisingValue(Boolean denoisingValue) {
+        this.denoisingValue = denoisingValue;
     }
 }

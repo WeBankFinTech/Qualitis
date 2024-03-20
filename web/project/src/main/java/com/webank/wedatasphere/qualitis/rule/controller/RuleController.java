@@ -16,25 +16,25 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.EnableRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleEnableResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 /**
@@ -59,13 +59,14 @@ public class RuleController {
     @Path("add")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<RuleResponse> addRule(AddRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<RuleResponse> addRule(AddRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            // Record project event.
-//            String loginUser = HttpUtils.getUserName(httpServletRequest);
-//            projectEventService.record(request.getProjectId(), loginUser, "add", "rule[name= " + request.getRuleName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
-            return ruleService.addRule(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return ruleService.addRule(request, loginUser, false);
         } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (PermissionDeniedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
@@ -78,15 +79,18 @@ public class RuleController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             String loginUser = HttpUtils.getUserName(httpServletRequest);
             return ruleService.deleteRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to delete rule. rule_id: {}, caused by system error: {}", request.getRuleGroupId(), e.getMessage(), e);
+            LOGGER.error("Failed to delete rule, rule id: {}, caused by system error: {}", request.getRuleGroupId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE}", null);
         }
     }
@@ -95,14 +99,19 @@ public class RuleController {
     @Path("modify")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<RuleResponse> modifyRuleDetail(ModifyRuleRequest request)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return ruleService.modifyRuleDetail(request);
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return ruleService.modifyRuleDetailWithLock(request, loginUser, false);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to modify rule detail. rule_id: {}, caused by system error: {}", request.getRuleId(), e.getMessage(), e);
+            LOGGER.error("Failed to modify rule detail, rule id: {}, caused by system error: {}", request.getRuleId(), e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_DETAIL}", null);
         }
     }
@@ -111,16 +120,37 @@ public class RuleController {
     @Path("/{rule_id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<RuleDetailResponse> getRuleDetail(@PathParam("rule_id")Long ruleId) throws UnExpectedRequestException {
+    public GeneralResponse getRuleDetail(@PathParam("rule_id")Long ruleId) throws UnExpectedRequestException {
         try {
             return ruleService.getRuleDetail(ruleId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get rule detail. rule_id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
+            LOGGER.error("Failed to get rule detail, rule id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_DETAIL}", null);
         }
+    }
+
+    @POST
+    @Path("/enable")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<RuleEnableResponse> enableRule(EnableRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        try {
+            String loginUser = HttpUtils.getUserName(httpServletRequest);
+            return ruleService.enableRule(request, loginUser);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to enable rule , caused by system error: {}",  e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_ENABLE_RULE}", null);
+        }
+
     }
 
 }

@@ -24,15 +24,13 @@ import com.webank.wedatasphere.qualitis.request.FilterProjectRequest;
 import com.webank.wedatasphere.qualitis.request.FilterStatusRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.request.UploadResultRequest;
+import com.webank.wedatasphere.qualitis.response.ApplicationClusterResponse;
+import com.webank.wedatasphere.qualitis.response.ApplicationResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.FilterDataSourceRequest;
-import com.webank.wedatasphere.qualitis.request.FilterProjectRequest;
-import com.webank.wedatasphere.qualitis.request.FilterStatusRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.util.List;
 
 /**
  * @author howeye
@@ -46,7 +44,7 @@ public interface ApplicationService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> filterStatusApplication(FilterStatusRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<ApplicationResponse>> filterStatusApplication(FilterStatusRequest request) throws UnExpectedRequestException;
 
 
     /**
@@ -55,7 +53,7 @@ public interface ApplicationService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> filterProjectApplication(FilterProjectRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<ApplicationResponse>> filterProjectApplication(FilterProjectRequest request) throws UnExpectedRequestException;
 
 
     /**
@@ -64,7 +62,7 @@ public interface ApplicationService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getDataSource(PageRequest request) throws UnExpectedRequestException;
+    GeneralResponse<List<ApplicationClusterResponse>> getDataSource(PageRequest request) throws UnExpectedRequestException;
 
     /**
      * 根据数据源过滤查询application信息
@@ -72,14 +70,20 @@ public interface ApplicationService {
      * @return 请求返回值
      * @throws UnExpectedRequestException 参数错误时抛出的异常
      */
-    GeneralResponse<?> filterDataSourceApplication(FilterDataSourceRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<ApplicationResponse>> filterDataSourceApplication(FilterDataSourceRequest request) throws UnExpectedRequestException;
 
     /**
      * Find application by applicationId
      * @param applicationId
+     * @param filterStatus
+     * @param page
+     * @param size
+     * @param taskPage
+     * @param taskSize
      * @return
      */
-    GeneralResponse<?> filterApplicationId(String applicationId);
+    GeneralResponse<GetAllResponse<ApplicationResponse>> filterApplicationId(String applicationId, Integer filterStatus, Integer page, Integer size,
+        Integer taskPage, Integer taskSize);
 
     /**
      * Upload datasource analysis result. such as: rules, check, task result value.
@@ -89,7 +93,7 @@ public interface ApplicationService {
      * @throws MetaDataAcquireFailedException
      * @throws IOException
      */
-    GeneralResponse<?> uploadDataSourceAnalysisResult(UploadResultRequest request)
+    GeneralResponse<Integer> uploadDataSourceAnalysisResult(UploadResultRequest request)
         throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
 
     /**
@@ -97,5 +101,13 @@ public interface ApplicationService {
      * @param request
      * @return
      */
-    GeneralResponse<?> filterAdvanceApplication(FilterAdvanceRequest request);
+    GeneralResponse<GetAllResponse<ApplicationResponse>> filterAdvanceApplication(FilterAdvanceRequest request);
+
+    /**
+     * get All ExecuteUser
+     *
+     * @return
+     */
+    GeneralResponse<List<String>> getAllExecuteUser();
+
 }

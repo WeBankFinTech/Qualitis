@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import javax.persistence.Column;
 import java.util.Set;
 
 /**
@@ -33,11 +35,31 @@ public class ProjectDetail {
     private String description;
     @JsonProperty("create_user")
     private String createUser;
+    @JsonProperty("sub_system_id")
+    private Long subSystemId;
+    @JsonProperty("sub_system_name")
+    private String subSystemName;
     @JsonProperty("project_label")
     private Set<String> projectLabels;
 
     public ProjectDetail() {
         // Default Constructor
+    }
+
+    public Long getSubSystemId() {
+        return subSystemId;
+    }
+
+    public void setSubSystemId(Long subSystemId) {
+        this.subSystemId = subSystemId;
+    }
+
+    public String getSubSystemName() {
+        return subSystemName;
+    }
+
+    public void setSubSystemName(String subSystemName) {
+        this.subSystemName = subSystemName;
     }
 
     public Long getProjectId() {

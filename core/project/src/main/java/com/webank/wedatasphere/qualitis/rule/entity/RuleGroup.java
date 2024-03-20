@@ -16,10 +16,13 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import java.util.Set;
 import javax.persistence.*;
-import java.util.List;
+import org.hibernate.annotations.NotFound;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.hibernate.annotations.NotFoundAction;
 
 /**
  * @author howeye
@@ -33,17 +36,24 @@ public class RuleGroup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "rule_group_name", length = 100)
+    @Column(name = "rule_group_name")
     private String ruleGroupName;
 
     @Column(name = "project_id")
     private Long projectId;
 
-    @OneToMany(mappedBy = "ruleGroup", cascade = CascadeType.REMOVE, fetch = FetchType.EAGER)
-    private List<Rule> rules;
-
     @Column(name = "version")
     private String version;
+
+    @OneToMany(mappedBy = "ruleGroup", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Set<RuleDataSource> ruleDataSources;
+
+    @Column(name = "node_name")
+    private String nodeName;
+
+    @Column(name = "type")
+    private Integer type;
 
     public RuleGroup() {
     }
@@ -51,6 +61,18 @@ public class RuleGroup {
     public RuleGroup(String ruleGroupName, Long projectId) {
         this.ruleGroupName = ruleGroupName;
         this.projectId = projectId;
+    }
+
+    public RuleGroup(String ruleGroupName, Long projectId, String version) {
+        this.ruleGroupName = ruleGroupName;
+        this.projectId = projectId;
+        this.version = version;
+    }
+
+    public RuleGroup(String ruleGroupName, Long projectId, int groupType) {
+        this.ruleGroupName = ruleGroupName;
+        this.projectId = projectId;
+        this.type = groupType;
     }
 
     public Long getProjectId() {
@@ -69,14 +91,6 @@ public class RuleGroup {
         this.id = id;
     }
 
-    public List<Rule> getRules() {
-        return rules;
-    }
-
-    public void setRules(List<Rule> rules) {
-        this.rules = rules;
-    }
-
     public String getRuleGroupName() {
         return ruleGroupName;
     }
@@ -91,6 +105,30 @@ public class RuleGroup {
 
     public void setVersion(String version) {
         this.version = version;
+    }
+
+    public Set<RuleDataSource> getRuleDataSources() {
+        return ruleDataSources;
+    }
+
+    public void setRuleDataSources(Set<RuleDataSource> ruleDataSources) {
+        this.ruleDataSources = ruleDataSources;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     @Override

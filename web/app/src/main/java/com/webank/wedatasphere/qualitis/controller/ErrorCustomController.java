@@ -24,7 +24,6 @@ public class ErrorCustomController implements ErrorController {
     @Value("${server.port}")
     private int port;
 
-    @Override
     public String getErrorPath() {
         return "/#/error";
     }

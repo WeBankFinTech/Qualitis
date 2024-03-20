@@ -22,25 +22,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class MultiRuleSaveTableResponse {
-
-    private Integer index;
     @JsonProperty("mid_table_name")
     private String midTableName;
 
     public MultiRuleSaveTableResponse() {
     }
 
-    public MultiRuleSaveTableResponse(String midTableName, Integer index) {
-        this.index = index;
+    public MultiRuleSaveTableResponse(String midTableName) {
         this.midTableName = midTableName;
-    }
-
-    public Integer getIndex() {
-        return index;
-    }
-
-    public void setIndex(Integer index) {
-        this.index = index;
     }
 
     public String getMidTableName() {

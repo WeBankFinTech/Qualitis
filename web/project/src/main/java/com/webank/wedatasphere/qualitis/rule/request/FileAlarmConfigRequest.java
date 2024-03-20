@@ -24,36 +24,15 @@ import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 /**
  * @author allenzhou
  */
-public class FileAlarmConfigRequest {
-    @JsonProperty("file_output_name")
-    private Integer fileOutputName;
+public class FileAlarmConfigRequest extends AbstractCommonAlarmConfigRequest{
     @JsonProperty("file_output_unit")
     private Integer fileOutputUnit;
-    @JsonProperty("check_template")
-    private Integer checkTemplate;
-    @JsonProperty("compare_type")
-    private Integer compareType;
-    private Double threshold;
-    @JsonProperty("rule_metric_en_code")
-    private String ruleMetricEnCode;
 
-    @JsonProperty("upload_rule_metric_value")
-    private Boolean uploadRuleMetricValue;
-    @JsonProperty("upload_abnormal_value")
-    private Boolean uploadAbnormalValue;
-
-    @JsonProperty("delete_fail_check_result")
-    private Boolean deleteFailCheckResult;
+    @JsonProperty("output_meta_id")
+    private Long outputMetaId;
 
     public FileAlarmConfigRequest() {
-    }
-
-    public Integer getFileOutputName() {
-        return fileOutputName;
-    }
-
-    public void setFileOutputName(Integer fileOutputName) {
-        this.fileOutputName = fileOutputName;
+        // Default Constructor
     }
 
     public Integer getFileOutputUnit() {
@@ -64,60 +43,12 @@ public class FileAlarmConfigRequest {
         this.fileOutputUnit = fileOutputUnit;
     }
 
-    public Integer getCheckTemplate() {
-        return checkTemplate;
+    public Long getOutputMetaId() {
+        return outputMetaId;
     }
 
-    public void setCheckTemplate(Integer checkTemplate) {
-        this.checkTemplate = checkTemplate;
-    }
-
-    public Integer getCompareType() {
-        return compareType;
-    }
-
-    public void setCompareType(Integer compareType) {
-        this.compareType = compareType;
-    }
-
-    public Double getThreshold() {
-        return threshold;
-    }
-
-    public void setThreshold(Double threshold) {
-        this.threshold = threshold;
-    }
-
-    public String getRuleMetricEnCode() {
-        return ruleMetricEnCode;
-    }
-
-    public void setRuleMetricEnCode(String ruleMetricEnCode) {
-        this.ruleMetricEnCode = ruleMetricEnCode;
-    }
-
-    public Boolean getUploadRuleMetricValue() {
-        return uploadRuleMetricValue;
-    }
-
-    public void setUploadRuleMetricValue(Boolean uploadRuleMetricValue) {
-        this.uploadRuleMetricValue = uploadRuleMetricValue;
-    }
-
-    public Boolean getUploadAbnormalValue() {
-        return uploadAbnormalValue;
-    }
-
-    public void setUploadAbnormalValue(Boolean uploadAbnormalValue) {
-        this.uploadAbnormalValue = uploadAbnormalValue;
-    }
-
-    public Boolean getDeleteFailCheckResult() {
-        return deleteFailCheckResult;
-    }
-
-    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
-        this.deleteFailCheckResult = deleteFailCheckResult;
+    public void setOutputMetaId(Long outputMetaId) {
+        this.outputMetaId = outputMetaId;
     }
 
     public static void checkRequest(FileAlarmConfigRequest request) throws UnExpectedRequestException {
@@ -128,4 +59,6 @@ public class FileAlarmConfigRequest {
         }
         CommonChecker.checkObject(request.getThreshold(), "Threshold");
     }
+
+
 }

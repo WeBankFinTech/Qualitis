@@ -17,8 +17,10 @@
 package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceCount;
+import javax.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 /**
@@ -32,6 +34,7 @@ public interface RuleDataSourceCountRepository extends JpaRepository<RuleDataSou
      * @param userId
      * @return
      */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = "SELECT dsc FROM RuleDataSourceCount dsc where dsc.datasourceName = ?1 and dsc.userId = ?2")
     RuleDataSourceCount findByDatasourceNameAndUserId(String datasourceName, Long userId);
 }

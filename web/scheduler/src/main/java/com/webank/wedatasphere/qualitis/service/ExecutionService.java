@@ -20,12 +20,13 @@ import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.request.GroupListExecutionRequest;
 import com.webank.wedatasphere.qualitis.request.KillApplicationsRequest;
 import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
 import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author howeye
@@ -34,53 +35,102 @@ public interface ExecutionService {
 
     /**
      * Execute project job
+     *
      * @param request
      * @param code
-     * @return
-     * @throws UnExpectedRequestException
-     */
-    GeneralResponse<?> projectExecution(ProjectExecutionRequest request, Integer code)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
-
-    /**
-     * Execute rule job
-     * @param request
-     * @param code
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> ruleListExecution(RuleListExecutionRequest request, Integer code)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse projectExecution(ProjectExecutionRequest request, Integer code, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Execute rule job
+     *
+     * @param request
+     * @param code
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse ruleListExecution(RuleListExecutionRequest request, Integer code, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Kill job
+     *
      * @param applicationId
-     * @param executionUser
      * @return
      * @throws JobKillException
      * @throws ClusterInfoNotConfigException
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> killApplication(String applicationId, String executionUser)
-        throws JobKillException, ClusterInfoNotConfigException, UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse killApplication(String applicationId)
+            throws JobKillException, ClusterInfoNotConfigException, UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Execute rule group job
+     *
      * @param request
      * @param code
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> ruleGroupListExecution(GroupListExecutionRequest request, Integer code)
-        throws UnExpectedRequestException;
+    GeneralResponse ruleGroupListExecution(GroupListExecutionRequest request, Integer code, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Batch kill.
+     *
      * @param request
      * @throws JobKillException
      * @throws ClusterInfoNotConfigException
      * @throws UnExpectedRequestException
      */
     void killApplications(KillApplicationsRequest request);
+
+    /**
+     * Get max execution num with login user
+     *
+     * @return
+     */
+    Integer getMaxExecutionNum();
+
+    /**
+     * common Handle Rule Or Project Method
+     *
+     * @param projectExecutionRequest
+     * @param ruleListExecutionRequest
+     * @param code
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    GeneralResponse commonHandleRuleOrProjectMethod(ProjectExecutionRequest projectExecutionRequest, RuleListExecutionRequest ruleListExecutionRequest, Integer code, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, ExecutionException, InterruptedException;
+
+    /**
+     * handle Rule Group List Method
+     *
+     * @param groupListExecutionRequest
+     * @param code
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    GeneralResponse handleRuleGroupListMethod(GroupListExecutionRequest groupListExecutionRequest, Integer code, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, ExecutionException, InterruptedException;
+
 }

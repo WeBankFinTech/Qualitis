@@ -16,13 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.rule.service;
 
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
-
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
+
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -32,21 +36,30 @@ public interface AlarmConfigService {
 
     /**
      * Check and save alarm config
+     *
      * @param requests
      * @param rule
+     * @param loginUser
+     * @param dataSourceRequests
+     * @param source
+     * @param target
      * @return
      * @throws UnExpectedRequestException
+     * @throws IOException
+     * @throws PermissionDeniedRequestException
      */
-    List<AlarmConfig> checkAndSaveAlarmVariable(List<AlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException;
+    List<AlarmConfig> checkAndSaveAlarmVariable(List<AlarmConfigRequest> requests, Rule rule, String loginUser, List<DataSourceRequest> dataSourceRequests, MultiDataSourceConfigRequest source, MultiDataSourceConfigRequest target) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
 
     /**
      * Delete alarm config by rule
+     *
      * @param rule
      */
     void deleteByRule(Rule rule);
 
     /**
      * Check and save custom alarm config
+     *
      * @param requests
      * @param rule
      * @return
@@ -54,11 +67,18 @@ public interface AlarmConfigService {
      */
     List<AlarmConfig> checkAndSaveCustomAlarmVariable(List<CustomAlarmConfigRequest> requests, Rule rule) throws UnExpectedRequestException;
 
-    /**Check and save file alarm config
+    /**
+     * Check and save file alarm config
      *
      * @param alarmVariable
      * @param savedRule
+     * @param loginUser
+     * @param dataSourceRequest
      * @return
+     * @throws UnExpectedRequestException
+     * @throws IOException
+     * @throws PermissionDeniedRequestException
      */
-    List<AlarmConfig> checkAndSaveFileAlarmVariable(List<FileAlarmConfigRequest> alarmVariable, Rule savedRule);
+    List<AlarmConfig> checkAndSaveFileAlarmVariable(List<FileAlarmConfigRequest> alarmVariable, Rule savedRule, String loginUser, DataSourceRequest dataSourceRequest) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
+
 }
