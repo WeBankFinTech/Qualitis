@@ -17,18 +17,12 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddProxyUserRequest;
+import com.webank.wedatasphere.qualitis.request.*;
+import com.webank.wedatasphere.qualitis.response.AddProxyUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.request.ModifyProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.DeleteProxyUserRequest;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.ProxyUserService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyProxyUserRequest;
-import com.webank.wedatasphere.qualitis.response.DeleteProxyUserRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.service.ProxyUserService;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +44,7 @@ public class ProxyUserController {
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> addProxyUser(AddProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<AddProxyUserResponse> addProxyUser(AddProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.addProxyUser(request);
         } catch (UnExpectedRequestException e) {
@@ -65,7 +59,7 @@ public class ProxyUserController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.deleteProxyUser(request);
         } catch (UnExpectedRequestException e) {
@@ -79,7 +73,7 @@ public class ProxyUserController {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.modifyProxyUser(request);
         } catch (UnExpectedRequestException e) {
@@ -94,13 +88,26 @@ public class ProxyUserController {
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getAllProxyUser(PageRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<AddProxyUserResponse>> getAllProxyUser(QueryProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.getAllProxyUser(request);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all proxy users, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
+        }
+    }
+
+    @GET
+    @Path("name/all")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<List<String>> getAllProxyUserName() {
+        try {
+            return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_PROXYUSERS}", proxyUserService.getAllProxyUserName());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get all proxy user names, caused by: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
         }
     }

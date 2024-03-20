@@ -35,6 +35,7 @@ public class CheckFileDataSourceResponse {
     private List<CheckTableResponse> checkTableResponse;
 
     public CheckFileDataSourceResponse() {
+        // Default Constructor
     }
 
     public CheckFileDataSourceResponse(String database, String table, List<TaskDataSource> taskDataSources,
@@ -43,8 +44,8 @@ public class CheckFileDataSourceResponse {
         this.table = table;
         this.checkTableResponse = new ArrayList<>();
         for (TaskDataSource taskDataSource : taskDataSources) {
-            CheckTableResponse checkTableResponse = new CheckTableResponse(taskDataSource, taskRuleSimpleMap, taskResultMap);
-            this.checkTableResponse.add(checkTableResponse);
+            CheckTableResponse currentCheckTableResponse = new CheckTableResponse(taskDataSource, taskRuleSimpleMap, taskResultMap);
+            this.checkTableResponse.add(currentCheckTableResponse);
         }
     }
 

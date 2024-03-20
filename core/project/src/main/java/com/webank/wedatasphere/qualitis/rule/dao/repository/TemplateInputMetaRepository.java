@@ -19,9 +19,9 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
@@ -48,4 +48,12 @@ public interface TemplateInputMetaRepository extends JpaRepository<TemplateMidTa
      * @param templateInDb
      */
     void deleteByTemplate(Template templateInDb);
+
+    /**
+     * findByInputType
+     * @param type
+     * @return
+     */
+    @Query(value = "select td.id from qualitis_template_mid_table_input_meta td where td.input_type = ?1",nativeQuery = true)
+    List<Long> findByInputType(Integer type);
 }

@@ -18,21 +18,20 @@ package com.webank.wedatasphere.qualitis.project.service;
 
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
-import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.request.*;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectEventResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+
+import javax.management.relation.RoleNotFoundException;
 import java.util.List;
 import java.util.Set;
-import javax.management.relation.RoleNotFoundException;
 
 /**
  * @author howeye
@@ -49,6 +48,13 @@ public interface ProjectService {
     GeneralResponse<ProjectDetailResponse> addProject(AddProjectRequest request, Long userId) throws UnExpectedRequestException;
 
     /**
+     * Auth admin and proxy
+     * @param user
+     * @param savedProject
+     */
+    void autoAuthAdminAndProxy(User user, Project savedProject);
+
+    /**
      * Paging get all normal project by user
      * @param request
      * @return
@@ -57,11 +63,32 @@ public interface ProjectService {
     GeneralResponse<GetAllResponse<ProjectResponse>> getAllProjectByUser(PageRequest request) throws UnExpectedRequestException;
 
     /**
-     * Get project detail
+     * paging get normal project by some conditions
+     * @param request
+     * @param projectType
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<GetAllResponse<ProjectResponse>> getProjectsByCondition(QueryProjectRequest request, Integer projectType) throws UnExpectedRequestException;
+
+    /**
+     * query projectDetail and ruleList by condition
+     * this is an extension to getProjectDetail()
+     * @param projectId
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> getRulesByCondition(Long projectId, QueryRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Get project detail.
      * @param projectId
      * @param pageRequest
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
     GeneralResponse<ProjectDetailResponse> getProjectDetail(Long projectId, PageRequest pageRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException;
@@ -72,9 +99,10 @@ public interface ProjectService {
      * @param workflow
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws RoleNotFoundException
      */
-    GeneralResponse<?> modifyProjectDetail(ModifyProjectDetailRequest request, boolean workflow)
-        throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
+    GeneralResponse<ProjectDetailResponse> modifyProjectDetail(ModifyProjectDetailRequest request, boolean workflow) throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
      * Create project user.
@@ -86,10 +114,12 @@ public interface ProjectService {
     /**
      * Delete project by id
      * @param request
+     * @param workflow
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse deleteProject(DeleteProjectRequest request, boolean workflow) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Check existence of project
@@ -146,12 +176,12 @@ public interface ProjectService {
     /**
      * Get project events.
      * @param projectId
-     * @param typeId
      * @param pageRequest
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<GetAllResponse<ProjectEventResponse>> getProjectEvents(Long projectId, Integer typeId, PageRequest pageRequest)
+    GeneralResponse<GetAllResponse<ProjectEventResponse>> getProjectEvents(Long projectId, PageRequest pageRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
@@ -161,7 +191,38 @@ public interface ProjectService {
      * @param authorizeProjectUserRequests
      * @param modify
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws RoleNotFoundException
      */
     void authorizeUsers(Project savedProject, User userInDb, List<AuthorizeProjectUserRequest> authorizeProjectUserRequests, boolean modify)
         throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
+
+    /**
+     * Delete all rules.
+     * @param ruleList
+     * @param userName
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    void deleteAllRules(Iterable<Rule> ruleList, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Get all rules, groups info for submit, execution param config
+     * @param projectId
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> getAllRules(Long projectId)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * check Projects Existence
+     * @param projectIds
+     * @param loginUser
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<Project> checkProjectsExistence(List<Long> projectIds, String loginUser) throws UnExpectedRequestException;
+
 }

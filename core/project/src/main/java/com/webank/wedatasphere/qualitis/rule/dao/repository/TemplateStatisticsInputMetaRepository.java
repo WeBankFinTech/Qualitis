@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -30,4 +31,11 @@ public interface TemplateStatisticsInputMetaRepository extends JpaRepository<Tem
      * @param templateInDb
      */
     void deleteByTemplate(Template templateInDb);
+
+    /**
+     * Find by template.
+     * @param templateInDb
+     * @return
+     */
+    List<TemplateStatisticsInputMeta> findByTemplate(Template templateInDb);
 }

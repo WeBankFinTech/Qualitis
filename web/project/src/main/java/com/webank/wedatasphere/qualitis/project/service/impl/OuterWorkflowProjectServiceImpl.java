@@ -25,7 +25,6 @@ import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
 import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.GetProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
@@ -34,21 +33,17 @@ import com.webank.wedatasphere.qualitis.project.service.OuterWorkflowService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectUserService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
-import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
-import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
 import com.webank.wedatasphere.qualitis.service.UserService;
-import java.util.List;
-import java.util.Set;
-import javax.management.relation.RoleNotFoundException;
-import org.apache.commons.collections.CollectionUtils;
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.management.relation.RoleNotFoundException;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -81,7 +76,7 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
         Set<String> labels = request.getProjectLabels();
         AddProjectRequest.checkRequest(request);
         if (request.getUsername() == null) {
-            throw new UnExpectedRequestException("Username: {&CAN_NOT_BE_NULL_OR_EMPTY}");
+            throw new UnExpectedRequestException("User name {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
 
         // Check existence of user
@@ -102,7 +97,7 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
                 needSuffix = true;
             }
         }
-        Project newProject = projectService.addProjectReal(userInDb.getId(), needSuffix ? request.getProjectName() + "_workflow" : request.getProjectName(), request.getCnName(), request.getDescription());
+        Project newProject = projectService.addProjectReal(userInDb.getId(), needSuffix ? request.getProjectName() + UuidGenerator.generate() : request.getProjectName(), request.getCnName(), request.getDescription());
         newProject.setProjectType(ProjectTypeEnum.WORKFLOW_PROJECT.getCode());
         Project savedProject = projectDao.saveProject(newProject);
         projectService.addProjectLabels(labels, savedProject);
@@ -117,10 +112,10 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public GeneralResponse<?> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
+    public GeneralResponse<ProjectDetailResponse> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
         throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException {
         if (request.getUsername() == null) {
-            throw new UnExpectedRequestException("Username: {&CAN_NOT_BE_NULL_OR_EMPTY}");
+            throw new UnExpectedRequestException("Username {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
 
         return projectService.modifyProjectDetail(request, true);
@@ -128,11 +123,17 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public GeneralResponse<?> deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         if (request.getUsername() == null) {
-            throw new UnExpectedRequestException("Username: {&CAN_NOT_BE_NULL_OR_EMPTY}");
+            throw new UnExpectedRequestException("Username {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
-        return projectService.deleteProject(request);
+        // Check existence of project
+        Project projectInDb = projectDao.findById(request.getProjectId());
+        LOGGER.info("Delete workflow project request: " + new Gson().toJson(request));
+        if (projectInDb == null || ! projectInDb.getProjectType().equals(ProjectTypeEnum.WORKFLOW_PROJECT.getCode())) {
+            throw new UnExpectedRequestException("project_id {&DOES_NOT_EXIST}");
+        }
+        return projectService.deleteProject(request, true);
     }
 
     @Override

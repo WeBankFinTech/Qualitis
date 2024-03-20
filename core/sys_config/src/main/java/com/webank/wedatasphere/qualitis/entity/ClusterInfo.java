@@ -17,8 +17,13 @@
 package com.webank.wedatasphere.qualitis.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.util.Strings;
 
 import javax.persistence.*;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -44,9 +49,34 @@ public class ClusterInfo {
     @Column(name = "linkis_token", length = 500)
     @JsonProperty("linkis_token")
     private String linkisToken;
+    @Column(name = "hive_urn", length = 25)
+    @JsonProperty("hive_urn")
+    private String hiveUrn;
 
     @Column(name = "skip_data_size")
     private String skipDataSize;
+
+    @Column(name = "wtss_json", columnDefinition = "MEDIUMTEXT")
+    private String wtssJson;
+
+    @Column(name = "jobserver_json", columnDefinition = "MEDIUMTEXT")
+    private String jobserverJson;
+
+    @JsonProperty("create_user")
+    @Column(name = "create_user")
+    private String createUser;
+
+    @JsonProperty("create_time")
+    @Column(name = "create_time")
+    private String createTime;
+
+    @JsonProperty("modify_user")
+    @Column(name = "modify_user")
+    private String modifyUser;
+
+    @JsonProperty("modify_time")
+    @Column(name = "modify_time")
+    private String modifyTime;
 
     public ClusterInfo() {
         // Default Constructor
@@ -58,6 +88,38 @@ public class ClusterInfo {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
     }
 
     public String getClusterName() {
@@ -92,11 +154,57 @@ public class ClusterInfo {
         this.linkisToken = linkisToken;
     }
 
+    public String getHiveUrn() {
+        return hiveUrn;
+    }
+
+    public void setHiveUrn(String hiveUrn) {
+        this.hiveUrn = hiveUrn;
+    }
+
     public String getSkipDataSize() {
         return skipDataSize;
     }
 
     public void setSkipDataSize(String skipDataSize) {
         this.skipDataSize = skipDataSize;
+    }
+
+    public String getWtssJson() {
+        return wtssJson;
+    }
+
+    public void setWtssJson(String wtssJson) {
+        this.wtssJson = wtssJson;
+    }
+
+    public String getJobserverJson() {
+        return jobserverJson;
+    }
+
+    public void setJobserverJson(String jobserverJson) {
+        this.jobserverJson = jobserverJson;
+    }
+
+    public Map<String, Object> getJobServerJsonMap() {
+        if (Strings.isNotEmpty(jobserverJson)) {
+            try {
+                return new ObjectMapper().readValue(jobserverJson, Map.class);
+            } catch (IOException e) {
+              //No exception handing
+            }
+        }
+        return Collections.emptyMap();
+    }
+
+    public Map<String, Object> getWtssJsonMap() {
+        if (Strings.isNotEmpty(wtssJson)) {
+            try {
+                return new ObjectMapper().readValue(wtssJson, Map.class);
+            } catch (IOException e) {
+              //No exception handing
+            }
+        }
+        return Collections.emptyMap();
     }
 }

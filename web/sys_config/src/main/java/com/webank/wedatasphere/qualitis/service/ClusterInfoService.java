@@ -18,14 +18,13 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.request.FindClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 
 /**
  * @author howeye
@@ -46,7 +45,7 @@ public interface ClusterInfoService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException;
+    GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify clusterInfo
@@ -54,7 +53,7 @@ public interface ClusterInfoService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException;
+    GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging find all clusterInfos
@@ -64,4 +63,11 @@ public interface ClusterInfoService {
      */
     GeneralResponse<GetAllResponse<ClusterInfo>> findAllClusterInfo(PageRequest request) throws UnExpectedRequestException;
 
+    /**
+     * Find cluster like name
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<GetAllResponse<ClusterInfo>> findClusterInfoLikeName(FindClusterInfoRequest request) throws UnExpectedRequestException;
 }

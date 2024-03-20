@@ -11,6 +11,7 @@ public class ApplicationQueryRequest {
     private String jobId;
 
     public ApplicationQueryRequest() {
+        // Default do nothing.
     }
 
     public String getJobId() {

@@ -16,14 +16,15 @@
 package com.webank.wedatasphere.qualitis.exception.mapper;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
 /**
  * @author allenzhou
@@ -43,6 +44,6 @@ public class PermissionDeniedUserRequestExceptionMapper implements ExceptionMapp
     public Response toResponse(PermissionDeniedRequestException exception) {
         String message = localeParser.replacePlaceHolderByLocale(exception.getMessage(), "en_US");
         LOGGER.warn(message, exception);
-        return Response.ok(exception.getResponse()).status(exception.getStatus()).build();
+        return Response.ok(StringUtils.isNotEmpty(message) ? exception.getResponse(message) : exception.getResponse()).status(exception.getStatus()).build();
     }
 }

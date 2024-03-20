@@ -59,7 +59,7 @@ public class RoleDaoImpl implements RoleDao {
 
     @Override
     public List<Role> findAllRole(int page, int size) {
-        Sort sort = new Sort(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return roleRepository.findAll(pageable).getContent();
     }
@@ -78,4 +78,20 @@ public class RoleDaoImpl implements RoleDao {
     public boolean checkTemplate(Role roleInDb) {
         return roleRepository.checkTemplate(roleInDb.getDepartment()) <= 0;
     }
+
+    @Override
+    public Role findByDepartmentAndRoleType(Department departmentInDb, Integer roleType) {
+        return roleRepository.findByDepartmentAndRoleType(departmentInDb, roleType);
+    }
+
+    @Override
+    public List<Role> findByIds(List<Long> ids) {
+        return roleRepository.findAllById(ids);
+    }
+
+    @Override
+    public Role findByRoleNameAndType(String roleName, Integer type) {
+        return roleRepository.findByRoleNameAndType(roleName, type);
+    }
+
 }

@@ -16,24 +16,17 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.request.QueryUserRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
-import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
-import com.webank.wedatasphere.qualitis.service.UserService;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.user.AddUserResponse;
 import com.webank.wedatasphere.qualitis.response.user.UserResponse;
-import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
-import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
-import com.webank.wedatasphere.qualitis.request.user.UserRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.UserService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,7 +102,7 @@ public class UserController {
     @Path("admin/user/all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<UserResponse>> findAllUser(PageRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<UserResponse>> findAllUser(QueryUserRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -118,6 +111,21 @@ public class UserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to find all users, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(), e.getMessage(), username, e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_USERS}", null);
+        }
+    }
+
+    @GET
+    @Path("admin/user/base/all")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse> findAllUserIdAndName(@Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+        String username = null;
+        try {
+            username = HttpUtils.getUserName(httpServletRequest);
+            return new GeneralResponse<>("200", "{&FIND_ALL_USERS_SUCCESSFULLY}", userService.findAllUserIdAndName());
+        } catch (Exception e) {
+            LOGGER.error("Failed to find all users, caused by: {}, current_user: {}", e.getMessage(), username, e);
             return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_USERS}", null);
         }
     }
@@ -138,20 +146,18 @@ public class UserController {
     }
 
     @POST
-    @Path("projector/user/modify_password")
+    @Path("position/role/all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyPassword(ModifyPasswordRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
-        String username = null;
+    public GeneralResponse getPositionRoleConstant() {
         try {
-            username = HttpUtils.getUserName(httpServletRequest);
-            return userService.modifyPassword(request);
-        } catch (UnExpectedRequestException e) {
-            throw  new UnExpectedRequestException(e.getMessage());
+            return new GeneralResponse<>("200", "{&GET_POSITION_ROLE_ENUMN_SUCCESSFULLY}", userService.getPositionRoleEnum());
         } catch (Exception e) {
-            LOGGER.error("Failed to modify password, userId: {}, caused by: {}", HttpUtils.getUserId(httpServletRequest), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_PASSWORD}", null);
+            LOGGER.error("Failed to get Scheduled System enumn, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_POSITION_ROLE_ENUMN}", e.getMessage());
         }
     }
+
+
 
 }

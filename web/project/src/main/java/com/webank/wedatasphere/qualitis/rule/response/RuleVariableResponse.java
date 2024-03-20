@@ -17,10 +17,14 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.commons.lang.StringEscapeUtils;
 
 /**
@@ -38,6 +42,9 @@ public class RuleVariableResponse {
     private String alias;
     private Integer type;
 
+    private static final List<String> ENUM_VALUE = Arrays
+        .asList("{&ENUM_VALUE}","Enum Value","枚举值");
+
     public RuleVariableResponse() {
     }
 
@@ -51,7 +58,11 @@ public class RuleVariableResponse {
             } else {
                 this.statisticArgId = ruleVariable.getTemplateStatisticsInputMeta().getId();
             }
-            this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+            if (TemplateInputTypeEnum.CONNECT_FIELDS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) || TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
+                this.value = ruleVariable.getOriginValue();
+            } else {
+                this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+            }
         }
 
     }

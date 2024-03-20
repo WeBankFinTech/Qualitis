@@ -19,9 +19,20 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.entity.User;
-import javax.persistence.*;
-import java.util.Set;
+import com.webank.wedatasphere.qualitis.rule.util.LazyGetUtil;
 import org.codehaus.jackson.annotate.JsonIgnore;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -65,17 +76,23 @@ public class Template {
     @Column(name = "action_type")
     private Integer actionType;
 
-    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
+    @OneToMany(mappedBy = "template", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private Set<TemplateStatisticsInputMeta> statisticAction;
 
-    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
+    @OneToMany(mappedBy = "template", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     private Set<TemplateMidTableInputMeta> templateMidTableInputMetas;
 
     @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
-    @JsonIgnore
     private Set<TemplateOutputMeta> templateOutputMetas;
+
+    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    private Set<TemplateUdf> templateUdf;
+
+    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    private Set<TemplateCountFunction> templateCountFunction;
+
+    @OneToMany(mappedBy = "template", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    private Set<TemplateDataSourceType> templateDataSourceType;
 
     /**
      * Built-in templates, department shared templates, personal templates
@@ -98,13 +115,119 @@ public class Template {
     @Column(name = "import_export_name")
     private String importExportName;
 
-    @OneToOne
-    @JsonIgnore
-    private Template parentTemplate;
+    /**
+     * 开发部门
+     */
+    @Column(name = "dev_department_name")
+    private String devDepartmentName;
 
-    @OneToOne(mappedBy = "parentTemplate", fetch = FetchType.EAGER)
-    @JsonIgnore
-    private Template childTemplate;
+    /**
+     * 运维部门
+     */
+    @Column(name = "ops_department_name")
+    private String opsDepartmentName;
+
+    @Column(name = "dev_department_id")
+    private Long devDepartmentId;
+
+    @Column(name = "ops_department_id")
+    private Long opsDepartmentId;
+
+    /**
+     * 英文名称
+     */
+    @Column(name="en_name",length = 64)
+    private String enName;
+    /**
+     * 模板描述
+     */
+    @Column(name="description",length = 256)
+    private String description;
+    /**
+     * 校验级别
+     */
+    @Column(name="verification_level")
+    private Integer verificationLevel;
+    /**
+     * 校验类型
+     */
+    @Column(name="verification_type")
+    private Integer verificationType;
+    /**
+     * 是否保存异常数据
+     */
+    @Column(name="exception_database")
+    private Boolean exceptionDatabase;
+    /**
+     * 是否需要过滤字段
+     */
+    @Column(name="filter_fields")
+    private Boolean filterFields;
+    /**
+     * 是否使用UDF
+     */
+    @Column(name="whether_using_functions")
+    private Boolean whetherUsingFunctions;
+
+    /**
+     * 创建时间
+     */
+    @Column(name = "create_time")
+    private String createTime;
+
+    /**
+     * 修改时间
+     */
+    @Column(name = "modify_time")
+    private String modifyTime;
+
+    /**
+     * 校验中文名
+     */
+    @Column(name = "verification_cn_name")
+    private String verificationCnName;
+
+    /**
+     * 校验英文名
+     */
+    @Column(name = "verification_en_name")
+    private String verificationEnName;
+
+    /**
+     * 命名方式
+     */
+    @Column(name="naming_method")
+    private Integer namingMethod;
+
+    /**
+     * 是否固化校验方式
+     */
+    @Column(name="whether_solidification")
+    private Boolean whetherSolidification;
+
+    /**
+     * 校验方式
+     */
+    @Column(name="check_template")
+    private Integer checkTemplate;
+
+    /**
+     * 模板大类、类别
+     */
+    @Column(name="major_type")
+    private String majorType;
+
+    /**
+     * 模板编号
+     */
+    @Column(name="template_number")
+    private String templateNumber;
+
+    /**
+     * 自定义中文码
+     */
+    @Column(name="custom_zh_code")
+    private String customZhCode;
 
     public Template() {
         // Default Constructor
@@ -116,6 +239,22 @@ public class Template {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getDevDepartmentId() {
+        return devDepartmentId;
+    }
+
+    public void setDevDepartmentId(Long devDepartmentId) {
+        this.devDepartmentId = devDepartmentId;
+    }
+
+    public Long getOpsDepartmentId() {
+        return opsDepartmentId;
+    }
+
+    public void setOpsDepartmentId(Long opsDepartmentId) {
+        this.opsDepartmentId = opsDepartmentId;
     }
 
     public String getName() {
@@ -135,7 +274,11 @@ public class Template {
     }
 
     public Set<TemplateMidTableInputMeta> getTemplateMidTableInputMetas() {
-        return templateMidTableInputMetas;
+        if (this.id == null) {
+            return this.templateMidTableInputMetas;
+        } else {
+            return LazyGetUtil.getTemplateMidTableInputMetas(this);
+        }
     }
 
     public void setTemplateMidTableInputMetas(Set<TemplateMidTableInputMeta> templateMidTableInputMetas) {
@@ -167,7 +310,11 @@ public class Template {
     }
 
     public Set<TemplateStatisticsInputMeta> getStatisticAction() {
-        return statisticAction;
+        if (this.id == null) {
+            return this.statisticAction;
+        } else {
+            return LazyGetUtil.getStatisticAction(this);
+        }
     }
 
     public void setStatisticAction(Set<TemplateStatisticsInputMeta> statisticAction) {
@@ -254,6 +401,30 @@ public class Template {
         this.templateDepartments = templateDepartments;
     }
 
+    public Set<TemplateUdf> getTemplateUdf() {
+        return templateUdf;
+    }
+
+    public void setTemplateUdf(Set<TemplateUdf> templateUdf) {
+        this.templateUdf = templateUdf;
+    }
+
+    public Set<TemplateCountFunction> getTemplateCountFunction() {
+        return templateCountFunction;
+    }
+
+    public void setTemplateCountFunction(Set<TemplateCountFunction> templateCountFunction) {
+        this.templateCountFunction = templateCountFunction;
+    }
+
+    public Set<TemplateDataSourceType> getTemplateDataSourceType() {
+        return templateDataSourceType;
+    }
+
+    public void setTemplateDataSourceType(Set<TemplateDataSourceType> templateDataSourceType) {
+        this.templateDataSourceType = templateDataSourceType;
+    }
+
     public String getImportExportName() {
         return importExportName;
     }
@@ -262,19 +433,172 @@ public class Template {
         this.importExportName = importExportName;
     }
 
-    public Template getParentTemplate() {
-        return parentTemplate;
+    public String getDevDepartmentName() {
+        return devDepartmentName;
     }
 
-    public void setParentTemplate(Template parentTemplate) {
-        this.parentTemplate = parentTemplate;
+    public void setDevDepartmentName(String devDepartmentName) {
+        this.devDepartmentName = devDepartmentName;
     }
 
-    public Template getChildTemplate() {
-        return childTemplate;
+    public String getOpsDepartmentName() {
+        return opsDepartmentName;
     }
 
-    public void setChildTemplate(Template childTemplate) {
-        this.childTemplate = childTemplate;
+    public void setOpsDepartmentName(String opsDepartmentName) {
+        this.opsDepartmentName = opsDepartmentName;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Integer getVerificationLevel() {
+        return verificationLevel;
+    }
+
+    public void setVerificationLevel(Integer verificationLevel) {
+        this.verificationLevel = verificationLevel;
+    }
+
+    public Integer getVerificationType() {
+        return verificationType;
+    }
+
+    public void setVerificationType(Integer verificationType) {
+        this.verificationType = verificationType;
+    }
+
+    public Boolean getExceptionDatabase() {
+        return exceptionDatabase;
+    }
+
+    public void setExceptionDatabase(Boolean exceptionDatabase) {
+        this.exceptionDatabase = exceptionDatabase;
+    }
+
+    public Boolean getFilterFields() {
+        return filterFields;
+    }
+
+    public void setFilterFields(Boolean filterFields) {
+        this.filterFields = filterFields;
+    }
+
+    public Boolean getWhetherUsingFunctions() {
+        return whetherUsingFunctions;
+    }
+
+    public void setWhetherUsingFunctions(Boolean whetherUsingFunctions) {
+        this.whetherUsingFunctions = whetherUsingFunctions;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
+
+    public String getVerificationCnName() {
+        return verificationCnName;
+    }
+
+    public void setVerificationCnName(String verificationCnName) {
+        this.verificationCnName = verificationCnName;
+    }
+
+    public String getVerificationEnName() {
+        return verificationEnName;
+    }
+
+    public void setVerificationEnName(String verificationEnName) {
+        this.verificationEnName = verificationEnName;
+    }
+
+    public Integer getNamingMethod() {
+        return namingMethod;
+    }
+
+    public void setNamingMethod(Integer namingMethod) {
+        this.namingMethod = namingMethod;
+    }
+
+    public Boolean getWhetherSolidification() {
+        return whetherSolidification;
+    }
+
+    public void setWhetherSolidification(Boolean whetherSolidification) {
+        this.whetherSolidification = whetherSolidification;
+    }
+
+    public Integer getCheckTemplate() {
+        return checkTemplate;
+    }
+
+    public void setCheckTemplate(Integer checkTemplate) {
+        this.checkTemplate = checkTemplate;
+    }
+
+    public String getMajorType() {
+        return majorType;
+    }
+
+    public void setMajorType(String majorType) {
+        this.majorType = majorType;
+    }
+
+    public String getTemplateNumber() {
+        return templateNumber;
+    }
+
+    public void setTemplateNumber(String templateNumber) {
+        this.templateNumber = templateNumber;
+    }
+
+    public String getCustomZhCode() {
+        return customZhCode;
+    }
+
+    public void setCustomZhCode(String customZhCode) {
+        this.customZhCode = customZhCode;
+    }
+
+    @Override
+    public String toString() {
+        return "Template{" +
+            "id=" + id +
+            ", name='" + name + '\'' +
+            ", midTableAction='" + midTableAction + '\'' +
+            ", level=" + level +
+            ", createUser=" + createUser +
+            ", modifyUser=" + modifyUser +
+            ", devDepartmentName='" + devDepartmentName + '\'' +
+            ", opsDepartmentName='" + opsDepartmentName + '\'' +
+            ", devDepartmentId=" + devDepartmentId +
+            ", opsDepartmentId=" + opsDepartmentId +
+            ", enName='" + enName + '\'' +
+            '}';
     }
 }

@@ -53,4 +53,11 @@ public interface TemplateMidTableInputMetaDao {
      * @param templateInDb
      */
     void deleteByTemplate(Template templateInDb);
+
+    /**
+     * findByInputType
+     * @param type
+     * @return
+     */
+    List<Long> findByInputType(Integer type);
 }

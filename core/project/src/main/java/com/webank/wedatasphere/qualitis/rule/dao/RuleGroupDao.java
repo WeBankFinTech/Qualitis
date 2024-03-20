@@ -17,7 +17,9 @@
 package com.webank.wedatasphere.qualitis.rule.dao;
 
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -46,6 +48,12 @@ public interface RuleGroupDao {
     void delete(RuleGroup ruleGroup);
 
     /**
+     * Delete batch
+     * @param ruleGroups
+     */
+    void deleteAll(List<RuleGroup> ruleGroups);
+
+    /**
      * Find by rule group name and project id
      * @param ruleGroupName
      * @param projectId
@@ -59,4 +67,41 @@ public interface RuleGroupDao {
      * @return
      */
     List<RuleGroup> findByProjectId(Long projectId);
+
+
+    /**
+     * Find By Project
+     * @param projectId
+     * @return
+     */
+    List<Map<String, Object>> findByProject(Long projectId);
+
+    /**
+     * Find By ProjectId And ExistRule
+     * @param projectId
+     * @return
+     */
+    List<RuleGroup> findByProjectIdAndExistRule(Long projectId);
+
+    /**
+     * Find By ProjectId And NotExistRule
+     * @param projectId
+     * @return
+     */
+    List<RuleGroup> findByProjectIdAndNotExistRule(Long projectId);
+
+    /**
+     * Find rules by ids
+     * @param ruleGroupIds
+     * @return
+     */
+    List<RuleGroup> findByIds(List<Long> ruleGroupIds);
+
+    /**
+     * Find latest version
+     * @param ruleGroupName
+     * @param projectId
+     * @return
+     */
+    RuleGroup findLatestVersionByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId);
 }

@@ -16,9 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.rule.constant;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * @author howeye
  */
@@ -26,16 +23,14 @@ public enum FieldTypeEnum {
     /**
      * 数值类型
      */
-    NUMBER(1, "数值类型", Arrays.asList(Number.class));
+    NUMBER(1, "数值类型");
 
     private Integer code;
     private String message;
-    private List<Class> classes;
 
-    FieldTypeEnum(Integer code, String message, List<Class> classes) {
+    FieldTypeEnum(Integer code, String message) {
         this.code = code;
         this.message = message;
-        this.classes = classes;
     }
 
     public Integer getCode() {
@@ -44,9 +39,5 @@ public enum FieldTypeEnum {
 
     public String getMessage() {
         return message;
-    }
-
-    public List<Class> getClasses() {
-        return classes;
     }
 }

@@ -49,8 +49,9 @@ public interface OuterWorkflowService {
      * @return
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
+     * @throws RoleNotFoundException
      */
-    GeneralResponse<?> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
+    GeneralResponse<ProjectDetailResponse> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
         throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
@@ -60,7 +61,7 @@ public interface OuterWorkflowService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse deleteWorkflowProject(DeleteProjectRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Get workflow project

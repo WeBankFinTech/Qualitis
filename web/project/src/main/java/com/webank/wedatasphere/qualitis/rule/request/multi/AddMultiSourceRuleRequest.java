@@ -19,62 +19,40 @@ package com.webank.wedatasphere.qualitis.rule.request.multi;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 
-import java.util.Collection;
 import java.util.List;
-import jodd.util.CollectionUtil;
 import org.apache.commons.collections.CollectionUtils;
 
 /**
  * @author howeye
  */
-public class AddMultiSourceRuleRequest extends AbstractAddRequest {
-    @JsonProperty("rule_name")
-    private String ruleName;
-    @JsonProperty("rule_detail")
-    private String ruleDetail;
-    @JsonProperty("cn_name")
-    private String ruleCnName;
+public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("multi_source_rule_template_id")
     private Long multiSourceRuleTemplateId;
-    @JsonProperty("project_id")
-    private Long projectId;
     private MultiDataSourceConfigRequest source;
     private MultiDataSourceConfigRequest target;
-    private List<MultiDataSourceJoinConfigRequest> mappings;
-    private String filter;
-    @JsonProperty("alarm")
-    private Boolean alarm;
-    @JsonProperty("alert")
-    private Boolean alert;
-    @JsonProperty("alert_level")
-    private Integer alertLevel;
-    @JsonProperty("alert_receiver")
-    private String alertReceiver;
+
+    @JsonProperty("template_arguments")
+    private List<TemplateArgumentRequest> templateArgumentRequests;
+
+    @JsonProperty("contrast_type")
+    private Integer contrastType;
+    @JsonProperty("filter_col_names")
+    private List<DataSourceColumnRequest> colNames;
+
+
+    private String loginUser;
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
-    @JsonProperty("rule_group_id")
-    private Long ruleGroupId;
-    @JsonProperty("cs_id")
-    private String csId;
-    @JsonProperty("abort_on_failure")
-    private Boolean abortOnFailure;
-    private String loginUser;
-    @JsonProperty("delete_fail_check_result")
-    private Boolean deleteFailCheckResult;
-
-    @JsonProperty("specify_static_startup_param")
-    private Boolean specifyStaticStartupParam;
-    @JsonProperty("static_startup_param")
-    private String staticStartupParam;
-
-    private List<String> ruleMetricNamesForBdpClient;
 
     public AddMultiSourceRuleRequest() {
+        // Default Constructor
     }
 
     public String getLoginUser() {
@@ -83,30 +61,6 @@ public class AddMultiSourceRuleRequest extends AbstractAddRequest {
 
     public void setLoginUser(String loginUser) {
         this.loginUser = loginUser;
-    }
-
-    public String getRuleName() {
-        return ruleName;
-    }
-
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public String getRuleCnName() {
-        return ruleCnName;
-    }
-
-    public void setRuleCnName(String ruleCnName) {
-        this.ruleCnName = ruleCnName;
-    }
-
-    public String getRuleDetail() {
-        return ruleDetail;
-    }
-
-    public void setRuleDetail(String ruleDetail) {
-        this.ruleDetail = ruleDetail;
     }
 
     public String getClusterName() {
@@ -125,14 +79,6 @@ public class AddMultiSourceRuleRequest extends AbstractAddRequest {
         this.multiSourceRuleTemplateId = multiSourceRuleTemplateId;
     }
 
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
-    }
-
     public MultiDataSourceConfigRequest getSource() {
         return source;
     }
@@ -149,38 +95,6 @@ public class AddMultiSourceRuleRequest extends AbstractAddRequest {
         this.target = target;
     }
 
-    public List<MultiDataSourceJoinConfigRequest> getMappings() {
-        return mappings;
-    }
-
-    public void setMappings(List<MultiDataSourceJoinConfigRequest> mappings) {
-        this.mappings = mappings;
-    }
-
-    public Boolean getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Boolean alarm) {
-        this.alarm = alarm;
-    }
-
-    public Boolean getAlert() {
-        return alert;
-    }
-
-    public void setAlert(Boolean alert) {
-        this.alert = alert;
-    }
-
-    public Integer getAlertLevel() {
-        return alertLevel;
-    }
-
-    public void setAlertLevel(Integer alertLevel) {
-        this.alertLevel = alertLevel;
-    }
-
     public List<AlarmConfigRequest> getAlarmVariable() {
         return alarmVariable;
     }
@@ -189,72 +103,28 @@ public class AddMultiSourceRuleRequest extends AbstractAddRequest {
         this.alarmVariable = alarmVariable;
     }
 
-    public String getFilter() {
-        return filter;
+    public List<DataSourceColumnRequest> getColNames() {
+        return colNames;
     }
 
-    public void setFilter(String filter) {
-        this.filter = filter;
+    public void setColNames(List<DataSourceColumnRequest> colNames) {
+        this.colNames = colNames;
     }
 
-    public Long getRuleGroupId() {
-        return ruleGroupId;
+    public List<TemplateArgumentRequest> getTemplateArgumentRequests() {
+        return templateArgumentRequests;
     }
 
-    public void setRuleGroupId(Long ruleGroupId) {
-        this.ruleGroupId = ruleGroupId;
+    public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
+        this.templateArgumentRequests = templateArgumentRequests;
     }
 
-    public String getCsId() { return csId; }
-
-    public void setCsId(String csId) { this.csId = csId; }
-
-    public Boolean getAbortOnFailure() {
-        return abortOnFailure;
+    public Integer getContrastType() {
+        return contrastType;
     }
 
-    public void setAbortOnFailure(Boolean abortOnFailure) {
-        this.abortOnFailure = abortOnFailure;
-    }
-
-    public String getAlertReceiver() {
-        return alertReceiver;
-    }
-
-    public void setAlertReceiver(String alertReceiver) {
-        this.alertReceiver = alertReceiver;
-    }
-
-    public Boolean getDeleteFailCheckResult() {
-        return deleteFailCheckResult;
-    }
-
-    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
-        this.deleteFailCheckResult = deleteFailCheckResult;
-    }
-
-    public Boolean getSpecifyStaticStartupParam() {
-        return specifyStaticStartupParam;
-    }
-
-    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
-        this.specifyStaticStartupParam = specifyStaticStartupParam;
-    }
-
-    public String getStaticStartupParam() {
-        return staticStartupParam;
-    }
-
-    public void setStaticStartupParam(String staticStartupParam) {
-        this.staticStartupParam = staticStartupParam;
-    }
-
-    public List<String> getRuleMetricNamesForBdpClient() {
-        return ruleMetricNamesForBdpClient;
-    }
-
-    public void setRuleMetricNamesForBdpClient(List<String> ruleMetricNamesForBdpClient) {
-        this.ruleMetricNamesForBdpClient = ruleMetricNamesForBdpClient;
+    public void setContrastType(Integer contrastType) {
+        this.contrastType = contrastType;
     }
 
     public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot, Boolean cs) throws UnExpectedRequestException {
@@ -264,22 +134,21 @@ public class AddMultiSourceRuleRequest extends AbstractAddRequest {
         CommonChecker.checkObject(request.getMultiSourceRuleTemplateId(), "Multi source template id");
         MultiDataSourceConfigRequest.checkRequest(request.getSource(), cs);
         MultiDataSourceConfigRequest.checkRequest(request.getTarget(), cs);
-        if (CollectionUtils.isNotEmpty(request.getMappings())) {
-            for (MultiDataSourceJoinConfigRequest mapping : request.getMappings()) {
-                MultiDataSourceJoinConfigRequest.checkRequest(mapping);
-            }
+
+        if (CollectionUtils.isNotEmpty(request.getSource().getDataSourceEnvRequests()) && CollectionUtils.isNotEmpty(request.getTarget().getDataSourceEnvRequests())
+                && request.getSource().getDataSourceEnvRequests().size() != request.getTarget().getDataSourceEnvRequests().size()) {
+            throw new UnExpectedRequestException("Source envs size can not be different from target envs.");
         }
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
-        CommonChecker.checkObject(request.getAbortOnFailure(), "abort_on_failure");
         if (request.getAlarm()) {
             CommonChecker.checkObject(request.getAlarmVariable(), "alarm_variable");
             if (request.getAlarmVariable().isEmpty()) {
-                throw new UnExpectedRequestException("alarm_variable can not be empty");
+                throw new UnExpectedRequestException("Alarm variable can not be empty");
             }
         }
 
-        if (!modifyOrNot) {
+        if (! modifyOrNot) {
             CommonChecker.checkObject(request.getProjectId(), "Project id");
         }
     }

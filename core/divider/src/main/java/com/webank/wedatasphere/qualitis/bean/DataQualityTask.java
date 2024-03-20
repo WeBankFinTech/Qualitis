@@ -17,27 +17,30 @@
 package com.webank.wedatasphere.qualitis.bean;
 
 import com.webank.wedatasphere.qualitis.constant.TaskTypeEnum;
+import com.webank.wedatasphere.qualitis.exception.ArgumentException;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateActionTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.exception.ArgumentException;
-import com.webank.wedatasphere.qualitis.constant.TaskTypeEnum;
-import com.webank.wedatasphere.qualitis.exception.ArgumentException;
-
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * @author howeye
  */
 public class DataQualityTask {
-    private String applicationId;
     private Integer taskType;
+    private String applicationId;
     private List<RuleTaskDetail> ruleTaskDetails;
+    private String startupParam;
     private String createTime;
     private String partition;
     private Long taskId;
     private String user;
-    private String startupParam;
+    private String dbShare;
+    private String tableShare;
+    private String filterShare;
+    private String columnShare;
+    private List<Map<String, Object>> connectShare;
 
     public DataQualityTask() {
     }
@@ -45,6 +48,7 @@ public class DataQualityTask {
     public DataQualityTask(String applicationId, String createTime, String partition, List<RuleTaskDetail> ruleTaskDetails) throws ArgumentException {
         List<Rule> rules = ruleTaskDetails.stream().map(RuleTaskDetail::getRule).collect(Collectors.toList());
         List<Integer> actionTypeList = rules.stream().map(rule -> rule.getTemplate().getActionType()).distinct().collect(Collectors.toList());
+
         if (actionTypeList.isEmpty()) {
             throw new ArgumentException("Error! Action type can not be null");
         }
@@ -64,26 +68,10 @@ public class DataQualityTask {
             throw new ArgumentException("Error! Action type: [" + actionType + "] is not supported");
         }
 
+        this.ruleTaskDetails = ruleTaskDetails;
         this.applicationId = applicationId;
         this.createTime = createTime;
         this.partition = partition;
-        this.ruleTaskDetails = ruleTaskDetails;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public Long getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(Long taskId) {
-        this.taskId = taskId;
     }
 
     public Integer getTaskType() {
@@ -102,22 +90,6 @@ public class DataQualityTask {
         this.applicationId = applicationId;
     }
 
-    public String getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(String createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getPartition() {
-        return partition;
-    }
-
-    public void setPartition(String partition) {
-        this.partition = partition;
-    }
-
     public List<RuleTaskDetail> getRuleTaskDetails() {
         return ruleTaskDetails;
     }
@@ -134,16 +106,93 @@ public class DataQualityTask {
         this.startupParam = startupParam;
     }
 
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getPartition() {
+        return partition;
+    }
+
+    public void setPartition(String partition) {
+        this.partition = partition;
+    }
+
+    public Long getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(Long taskId) {
+        this.taskId = taskId;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getDbShare() {
+        return dbShare;
+    }
+
+    public void setDbShare(String dbShare) {
+        this.dbShare = dbShare;
+    }
+
+    public String getTableShare() {
+        return tableShare;
+    }
+
+    public void setTableShare(String tableShare) {
+        this.tableShare = tableShare;
+    }
+
+    public String getFilterShare() {
+        return filterShare;
+    }
+
+    public void setFilterShare(String filterShare) {
+        this.filterShare = filterShare;
+    }
+
+    public String getColumnShare() {
+        return columnShare;
+    }
+
+    public void setColumnShare(String columnShare) {
+        this.columnShare = columnShare;
+    }
+
+    public List<Map<String, Object>> getConnectShare() {
+        return connectShare;
+    }
+
+    public void setConnectShare(List<Map<String, Object>> connectShare) {
+        this.connectShare = connectShare;
+    }
+
     @Override
     public String toString() {
         return "DataQualityTask{" +
-            "applicationId='" + applicationId + '\'' +
-            ", taskType=" + taskType +
+            "taskType=" + taskType +
+            ", applicationId='" + applicationId + '\'' +
             ", ruleTaskDetails=" + ruleTaskDetails +
+            ", startupParam='" + startupParam + '\'' +
             ", createTime='" + createTime + '\'' +
             ", partition='" + partition + '\'' +
             ", taskId=" + taskId +
             ", user='" + user + '\'' +
+            ", dbShare='" + dbShare + '\'' +
+            ", tableShare='" + tableShare + '\'' +
+            ", filterShare='" + filterShare + '\'' +
+            ", columnShare='" + columnShare + '\'' +
             '}';
     }
 }

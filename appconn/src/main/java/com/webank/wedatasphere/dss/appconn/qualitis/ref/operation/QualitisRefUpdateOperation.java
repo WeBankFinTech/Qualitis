@@ -18,23 +18,26 @@ package com.webank.wedatasphere.dss.appconn.qualitis.ref.operation;
 
 import com.google.gson.Gson;
 import com.webank.wedatasphere.dss.appconn.qualitis.QualitisAppConn;
-import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
-import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
 import com.webank.wedatasphere.dss.appconn.qualitis.publish.QualitisDevelopmentOperation;
+import com.webank.wedatasphere.dss.appconn.qualitis.utils.HttpUtils;
 import com.webank.wedatasphere.dss.standard.app.development.operation.RefUpdateOperation;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
-import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRefImpl;
-import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
+import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
 import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef.UpdateWitContextRequestRefImpl;
+import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
+import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.apache.commons.lang.RandomStringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -44,57 +47,75 @@ import org.springframework.web.client.RestTemplate;
 public class QualitisRefUpdateOperation extends QualitisDevelopmentOperation<UpdateWitContextRequestRefImpl, ResponseRef>
     implements RefUpdateOperation<ThirdlyRequestRef.UpdateWitContextRequestRefImpl> {
 
-    private static final String UPDATE_RULE_PATH = "/qualitis/outer/api/v1/projector/rule/modify";
-
-    private String appId = "linkis_id";
-    private String appToken = "***REMOVED***";
-
+    private static final String MODIFY_RULE_URL = "/qualitis/outer/api/v1/projector/rule/modify";
     private final static Logger LOGGER = LoggerFactory.getLogger(QualitisRefUpdateOperation.class);
+
+    private static String appId = "linkis_id";
+    private static String appToken = "***REMOVED***";
 
     @Override
     protected String getAppConnName() {
         return QualitisAppConn.QUALITIS_APPCONN_NAME;
     }
 
-    private ResponseRef updateQualitisCS(UpdateWitContextRequestRefImpl qualitisUpdateCSRequestRef) throws ExternalOperationFailedException {
-        LOGGER.info("Update CS request body" + new Gson().toJson(qualitisUpdateCSRequestRef));
-        String csId = qualitisUpdateCSRequestRef.getContextId();
-        String projectName = qualitisUpdateCSRequestRef.getProjectName();
-
-        LOGGER.info("Start set context for qualitis node: {}", qualitisUpdateCSRequestRef.getName());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> requestPayLoad = new HashMap<>();
-        try {
-            requestPayLoad.put("cs_id", csId);
-            requestPayLoad.put("rule_name", qualitisUpdateCSRequestRef.getName());
-            requestPayLoad.put("project_name", projectName);
-            requestPayLoad.put("project_id", qualitisUpdateCSRequestRef.getRefProjectId());
-
-            RestTemplate restTemplate = new RestTemplate();
-
-            HttpEntity<Object> entity = new HttpEntity<>(new Gson().toJson(requestPayLoad), headers);
-            String url = HttpUtils.buildUrI(getBaseUrl(), UPDATE_RULE_PATH, appId, appToken,
-                RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
-            LOGGER.info("Set context service url is {}", url);
-            Map<String, Object> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST, entity, Map.class).getBody();
-            if (response == null) {
-                LOGGER.error("Failed to delete rule. Response is null.");
-                throw new ExternalOperationFailedException(90176, "Failed to delete rule. Response is null.");
-            }
-            String status = response.get("code").toString();
-            if (! "200".equals(status)) {
-                String errorMsg = response.get("message").toString();
-                throw new ExternalOperationFailedException(90176, errorMsg);
-            }
-            return new ResponseRefImpl(new Gson().toJson(response), HttpStatus.OK.value(), "", response);
-        } catch (Exception e){
-            throw new ExternalOperationFailedException(90176,"Set context Qualitis AppJointNode Exception", e);
-        }
-    }
-
     @Override
     public ResponseRef updateRef(UpdateWitContextRequestRefImpl requestRef) throws ExternalOperationFailedException {
-        return updateQualitisCS(requestRef);
+        // Get rule group info from request.
+        LOGGER.info("Start to get the job content when modify.");
+        Map<String, Object> jobContent = requestRef.getRefJobContent();
+        LOGGER.info("The job content when modify ref is:" + jobContent);
+        String url;
+        try {
+            url = HttpUtils.buildUrI(getBaseUrl(), MODIFY_RULE_URL, appId, appToken, RandomStringUtils.randomNumeric(5), String.valueOf(System.currentTimeMillis())).toString();
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.error("Modify rule failed. Rule group info: {}, exception: {}", jobContent, e);
+            throw new ExternalOperationFailedException(90156, "Construct modify outer url failed when delete.");
+        } catch (URISyntaxException e) {
+            LOGGER.error("Qualitis uri syntax exception.", e);
+            throw new ExternalOperationFailedException(90156, "Construct modify outer url failed when delete.");
+        }
+        if (jobContent == null || ! jobContent.containsKey("ruleGroupId") || jobContent.get("ruleGroupId") == null) {
+            LOGGER.info("Rule group ID is null when modify.");
+            return ResponseRef.newExternalBuilder().success();
+        }
+        Integer ruleGroupId = null;
+        if(jobContent.get("ruleGroupId") instanceof Double){
+            Double tempId = (Double)jobContent.get("ruleGroupId");
+            ruleGroupId = tempId.intValue();
+        }else if(jobContent.get("ruleGroupId") instanceof Integer){
+            ruleGroupId = (Integer)jobContent.get("ruleGroupId");
+        }
+        LOGGER.info("Rules in {} will be modified.", ruleGroupId.toString());
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String,Object> request = new HashMap<>();
+            request.put("rule_group_id", Long.valueOf(ruleGroupId.toString()));
+            request.put("node_name", requestRef.getName());
+
+            HttpEntity<Object> entity = new HttpEntity<>(new Gson().toJson(request), headers);
+
+            LOGGER.info("Start to modify rule. url: {}, method: {}, body: {}", String.format("%s/%s", url, MODIFY_RULE_URL), javax.ws.rs.HttpMethod.POST, entity);
+
+            RestTemplate restTemplate = new RestTemplate();
+            Map<String, Object> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class).getBody();
+            if (response == null) {
+                LOGGER.error("Failed to modify rule. Response is null.");
+                throw new ExternalOperationFailedException(90156, "Modify outer url return null.");
+            }
+            LOGGER.info("Finished to modify rule. Response: {}", response);
+            String status = response.get("code").toString();
+            if (status != null && HttpStatus.OK.value() == Integer.parseInt(status)) {
+                LOGGER.info("Modify rule successfully.");
+            } else {
+                LOGGER.error("Modify rule failed.");
+                throw new ExternalOperationFailedException(90156, "Modify outer url return status is not ok.");
+            }
+        } catch (RestClientException e) {
+            LOGGER.error("Failed to modify rule because of restTemplate exception. Exception is: {}", e);
+            throw new ExternalOperationFailedException(90156, "Modify outer url request failed with rest template.");
+        }
+        return ResponseRef.newExternalBuilder().success();
     }
 }

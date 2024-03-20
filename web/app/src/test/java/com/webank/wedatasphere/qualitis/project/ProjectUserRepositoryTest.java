@@ -55,12 +55,12 @@ public class ProjectUserRepositoryTest {
     project.setCreateUser("setCreateUser");
     project.setCreateUserFullName("setCreateUserFullName");
     project.setDescription("setDescription");
-    project.setUserDepartment("setUserDepartment");
+    project.setDepartment("setUserDepartment");
     Project saveProject = projectRepository.save(project);
     assertTrue(saveProject.getId() != 0);
 
     ProjectUser saveEntity = new ProjectUser(ProjectUserPermissionEnum.CREATOR.getCode(), project,
-                                          "v_wblwyan_test", "颜龙武");
+                                          "v_wblwyan_test", false);
     ProjectUser entity = repository.save(saveEntity);
 
     //根据username查询的数据库对象是否和保存的值一致

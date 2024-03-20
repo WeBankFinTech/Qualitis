@@ -23,7 +23,6 @@ INSERT INTO `dss_appconn` (
                 'DSS_INSTALL_HOME_VAL/dss-appconns/qualitis',
                 '');
 
-
 select @dss_appconn_qualitisId:=id from `dss_appconn` where `appconn_name` = 'qualitis';
 
 INSERT INTO `dss_appconn_instance`(
@@ -36,6 +35,18 @@ INSERT INTO `dss_appconn_instance`(
             'DEV',
             'http://APPCONN_INSTALL_IP:APPCONN_INSTALL_PORT/',
             '{"reqUri":""}',
+            '#/dashboard');
+
+INSERT INTO `dss_appconn_instance`(
+            `appconn_id`,
+            `label`,
+            `url`,
+            `enhance_json`,
+            `homepage_uri`)
+            VALUES (@dss_appconn_qualitisId,
+            'PROD',
+            'http://APPCONN_INSTALL_IP:APPCONN_INSTALL_PORT/',
+            '',
             '#/dashboard');
 
 select @dss_qualitis_appconnId:=id from `dss_appconn` WHERE `appconn_name` in ('qualitis');
@@ -87,10 +98,25 @@ VALUES (@dss_qualitis_appconnId,
        'shujuzhiliang-icon');
 
 select @dss_qualitisId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis';
+select @dss_qualitisBashId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.bash';
+select @dss_qualitisCheckAlertId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.checkalert';
+select @dss_qualitisTableCheckRulesId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.TableRules';
 
 delete from `dss_workflow_node_to_ui` where `workflow_node_id`=@dss_qualitisId;
 delete from `dss_workflow_node_to_group` where `node_id`=@dss_qualitisId;
 delete from `dss_workflow_node` where `node_type`='linkis.appconn.qualitis';
+
+delete from `dss_workflow_node_to_ui` where `workflow_node_id`=@dss_qualitisBashId;
+delete from `dss_workflow_node_to_group` where `node_id`=@dss_qualitisBashId;
+delete from `dss_workflow_node` where `node_type`='linkis.appconn.qualitis.bash';
+
+delete from `dss_workflow_node_to_ui` where `workflow_node_id`=@dss_qualitisCheckAlertId;
+delete from `dss_workflow_node_to_group` where `node_id`=@dss_qualitisCheckAlertId;
+delete from `dss_workflow_node` where `node_type`='linkis.appconn.qualitis.checkalert';
+
+delete from `dss_workflow_node_to_ui` where `workflow_node_id`=@dss_qualitisTableCheckRulesId;
+delete from `dss_workflow_node_to_group` where `node_id`=@dss_qualitisTableCheckRulesId;
+delete from `dss_workflow_node` where `node_type`='linkis.appconn.qualitis.TableRules';
 
 INSERT INTO `dss_workflow_node` (
             `icon_path`,
@@ -111,9 +137,83 @@ INSERT INTO `dss_workflow_node` (
             0,
             1,
             1,
-            'qualitis');
+            'CheckRules');
+INSERT INTO `dss_workflow_node` (
+            `icon_path`,
+            `node_type`,
+            `appconn_name`,
+            `submit_to_scheduler`,
+            `enable_copy`,
+            `should_creation_before_node`,
+            `support_jump`,
+            `jump_type`,
+            `name`)
+            VALUES (
+            'icons/bash.icon',
+            'linkis.appconn.qualitis.bash',
+            'qualitis',
+            1,
+            0,
+            0,
+            1,
+            1,
+            'ShellRules');
+INSERT INTO `dss_workflow_node` (
+            `icon_path`,
+            `node_type`,
+            `appconn_name`,
+            `submit_to_scheduler`,
+            `enable_copy`,
+            `should_creation_before_node`,
+            `support_jump`,
+            `jump_type`,
+            `name`)
+            VALUES (
+            'icons/checkalert.icon',
+            'linkis.appconn.qualitis.checkalert',
+            'qualitis',
+            1,
+            0,
+            0,
+            1,
+            1,
+            'CheckAlert');
+
+INSERT INTO `dss_workflow_node` (
+            `icon_path`,
+            `node_type`,
+            `appconn_name`,
+            `submit_to_scheduler`,
+            `enable_copy`,
+            `should_creation_before_node`,
+            `support_jump`,
+            `jump_type`,
+            `name`)
+            VALUES (
+            'icons/TableRules.icon',
+            'linkis.appconn.qualitis.TableRules',
+            'qualitis',
+            1,
+            0,
+            0,
+            1,
+            1,
+            'TableRules');
 
 select @dss_qualitis_nodeId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis';
+select @dss_qualitisBash_nodeId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.bash';
+select @dss_qualitisCheckAlert_nodeId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.checkalert';
+select @dss_qualitisTableCheckRules_nodeId:=id from `dss_workflow_node` where `node_type` = 'linkis.appconn.qualitis.TableRules';
 
 INSERT INTO `dss_workflow_node_to_group` (`node_id`, `group_id`) VALUES (@dss_qualitis_nodeId, 3);
 INSERT INTO `dss_workflow_node_to_ui` (workflow_node_id, ui_id) VALUES (@dss_qualitis_nodeId, 1),(@dss_qualitis_nodeId,3),(@dss_qualitis_nodeId,5),(@dss_qualitis_nodeId,6),(@dss_qualitis_nodeId,35),(@dss_qualitis_nodeId,36);
+
+INSERT INTO `dss_workflow_node_to_group` (`node_id`, `group_id`) VALUES (@dss_qualitisBash_nodeId, 3);
+INSERT INTO `dss_workflow_node_to_ui` (workflow_node_id, ui_id) VALUES (@dss_qualitisBash_nodeId, 1),(@dss_qualitisBash_nodeId,3),(@dss_qualitisBash_nodeId,5),(@dss_qualitisBash_nodeId,6),(@dss_qualitisBash_nodeId,35),(@dss_qualitisBash_nodeId,36);
+
+INSERT INTO `dss_workflow_node_to_group` (`node_id`, `group_id`) VALUES (@dss_qualitisCheckAlert_nodeId, 3);
+INSERT INTO `dss_workflow_node_to_ui` (workflow_node_id, ui_id) VALUES (@dss_qualitisCheckAlert_nodeId, 1),(@dss_qualitisCheckAlert_nodeId,3),(@dss_qualitisCheckAlert_nodeId,5),(@dss_qualitisCheckAlert_nodeId,6),(@dss_qualitisCheckAlert_nodeId,35),(@dss_qualitisCheckAlert_nodeId,36);
+
+INSERT INTO `dss_workflow_node_to_group` (`node_id`, `group_id`) VALUES (@dss_qualitisTableCheckRules_nodeId, 3);
+INSERT INTO `dss_workflow_node_to_ui` (workflow_node_id, ui_id) VALUES (@dss_qualitisTableCheckRules_nodeId, 1),(@dss_qualitisTableCheckRules_nodeId,3),(@dss_qualitisTableCheckRules_nodeId,5),(@dss_qualitisTableCheckRules_nodeId,6),(@dss_qualitisTableCheckRules_nodeId,35),(@dss_qualitisTableCheckRules_nodeId,36);
+

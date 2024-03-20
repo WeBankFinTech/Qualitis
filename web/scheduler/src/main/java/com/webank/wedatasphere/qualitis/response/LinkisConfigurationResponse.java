@@ -26,28 +26,47 @@ import java.util.Map;
  * @author howeye
  */
 public class LinkisConfigurationResponse {
-
     @JsonProperty("full_tree_queue_name")
-    private Map queueName;
+    private Map<String, Object> queueName;
     @JsonProperty("full_tree")
-    private Map queue;
+    private Map<String, Object> queue;
+
+    private String timestamp;
+    private String sinature;
 
     public LinkisConfigurationResponse() {
+        // Default do nothing.
     }
 
-    public Map getQueueName() {
+    public Map<String, Object> getQueueName() {
         return queueName;
     }
 
-    public void setQueueName(Map queueName) {
+    public void setQueueName(Map<String, Object> queueName) {
         this.queueName = queueName;
     }
 
-    public Map getQueue() {
+    public Map<String, Object> getQueue() {
         return queue;
     }
 
-    public void setQueue(Map queue) {
+    public void setQueue(Map<String, Object> queue) {
         this.queue = queue;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getSinature() {
+        return sinature;
+    }
+
+    public void setSinature(String sinature) {
+        this.sinature = sinature;
     }
 }

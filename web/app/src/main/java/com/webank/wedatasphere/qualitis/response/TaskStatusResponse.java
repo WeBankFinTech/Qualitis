@@ -11,6 +11,7 @@ public class TaskStatusResponse {
     private List<TaskCheckRuleResponse> taskCheckRuleResponses;
 
     public TaskStatusResponse() {
+        // Default Constructor
     }
 
     public TaskStatusResponse(Integer taskId, Integer taskStatus) {

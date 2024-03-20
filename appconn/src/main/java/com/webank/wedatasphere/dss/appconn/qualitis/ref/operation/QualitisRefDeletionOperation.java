@@ -61,7 +61,7 @@ public class QualitisRefDeletionOperation extends QualitisDevelopmentOperation<R
     @Override
     public ResponseRef deleteRef(RefJobContentRequestRefImpl requestRef) throws ExternalOperationFailedException {
         // Get rule group info from request.
-        LOGGER.info("Start to get the job content when delete ref.");
+        LOGGER.info("Start to get the job content when delete.");
         Map<String, Object> jobContent = requestRef.getRefJobContent();
         LOGGER.info("The job content when delete ref is:" + jobContent);
         String url;
@@ -89,6 +89,7 @@ public class QualitisRefDeletionOperation extends QualitisDevelopmentOperation<R
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+
             Map<String,Object> request = new HashMap<>();
             request.put("rule_group_id", Long.valueOf(ruleGroupId.toString()));
 

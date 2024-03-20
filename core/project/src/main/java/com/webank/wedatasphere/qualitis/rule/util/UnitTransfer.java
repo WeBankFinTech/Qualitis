@@ -22,8 +22,6 @@ public class UnitTransfer {
             res = chooseUnit(taskResult, alarmConfigUnit);
         } else if (taskResultUnit.equals(FileOutputUnitEnum.B.getMessage())) {
             res = chooseUnit(taskResult, alarmConfigUnit);
-        } else {
-
         }
         return res;
     }
@@ -40,8 +38,6 @@ public class UnitTransfer {
             output = input  / 1024;
         } else if (unit.equals(FileOutputUnitEnum.B.getMessage())) {
             output = input;
-        } else {
-
         }
         return output;
     }

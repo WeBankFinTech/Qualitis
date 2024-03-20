@@ -22,13 +22,58 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author howeye
  */
 public class ModifyDepartmentRequest {
-
     @JsonProperty("user_id")
     private Long userId;
     @JsonProperty("department_name")
     private String departmentName;
+    @JsonProperty("department")
+    private long department;
+    @JsonProperty("user_config_json")
+    private String userConfigJson;
+    @JsonProperty("department_sub_id")
+    private long departmentSubId;
+    @JsonProperty("position_zh")
+    private String positionZh;
+    @JsonProperty("position_en")
+    private String positionEn;
+
+    @JsonProperty("chinese_name")
+    private String chineseName;
 
     public ModifyDepartmentRequest() {
+        // Do nothing.
+    }
+
+    public String getChineseName() {
+        return chineseName;
+    }
+
+    public void setChineseName(String chineseName) {
+        this.chineseName = chineseName;
+    }
+
+    public String getUserConfigJson() {
+        return userConfigJson;
+    }
+
+    public void setUserConfigJson(String userConfigJson) {
+        this.userConfigJson = userConfigJson;
+    }
+
+    public long getDepartmentSubId() {
+        return departmentSubId;
+    }
+
+    public void setDepartmentSubId(long departmentSubId) {
+        this.departmentSubId = departmentSubId;
+    }
+
+    public long getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(long department) {
+        this.department = department;
     }
 
     public Long getUserId() {
@@ -45,5 +90,21 @@ public class ModifyDepartmentRequest {
 
     public void setDepartmentName(String departmentName) {
         this.departmentName = departmentName;
+    }
+
+    public String getPositionZh() {
+        return positionZh;
+    }
+
+    public void setPositionZh(String positionZh) {
+        this.positionZh = positionZh;
+    }
+
+    public String getPositionEn() {
+        return positionEn;
+    }
+
+    public void setPositionEn(String positionEn) {
+        this.positionEn = positionEn;
     }
 }

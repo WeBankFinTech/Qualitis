@@ -17,15 +17,21 @@
 package com.webank.wedatasphere.qualitis.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.dao.AuthListDao;
 import com.webank.wedatasphere.qualitis.encoder.Sha256Encoder;
 import com.webank.wedatasphere.qualitis.entity.AuthList;
+import com.webank.wedatasphere.qualitis.request.DataSourceParamModifyRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.util.QualitisCollectionUtils;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -37,6 +43,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BufferedHttpEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +96,8 @@ public class Filter2TokenFilter implements Filter {
             if (authList != null && validateSignature(nonce, timestamp, authList.getAppToken(),
                 appId, signature)) {
                 LOGGER.info(
-                    "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
-                    appId, nonce, timestamp, signature);
+                    "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
+                    appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -131,8 +139,8 @@ public class Filter2TokenFilter implements Filter {
         System.out.println(timeStamp);
         MessageDigest hash;
 
-        StringBuffer resultInner = new StringBuffer();
-        StringBuffer resultOuter = new StringBuffer();
+        StringBuilder resultInner = new StringBuilder();
+        StringBuilder resultOuter = new StringBuilder();
 
         String plain = "linkis_id" + nonce + timeStamp;
 
@@ -143,12 +151,12 @@ public class Filter2TokenFilter implements Filter {
             String inner = StringUtils.leftPad(resultInner.toString(), 32, '0');
 
             hash.reset();
+
             hash.update(inner.concat("***REMOVED***").getBytes("UTF-8"));
             resultOuter.append(new BigInteger(1, hash.digest()).toString(16));
             String outer = StringUtils.leftPad(resultOuter.toString(), 32, '0');
 
-            System.out.println(
-                filter2TokenFilter.getSignature(nonce, timeStamp, "***REMOVED***", "linkis_id"));
+            System.out.println(filter2TokenFilter.getSignature(nonce, timeStamp, "***REMOVED***", "linkis_id"));
             System.out.println(outer);
 
         } catch (NoSuchAlgorithmException e) {

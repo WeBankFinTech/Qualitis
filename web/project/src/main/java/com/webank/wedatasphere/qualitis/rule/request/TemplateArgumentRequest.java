@@ -19,35 +19,48 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
  * @author howeye
  */
 public class TemplateArgumentRequest {
-
     @JsonProperty("argument_id")
     private Long argumentId;
+    @JsonProperty("argument_type")
+    private Integer argumentType;
     @JsonProperty("argument_step")
     private Integer argumentStep;
     @JsonProperty("argument_value")
     private String argumentValue;
+    @JsonProperty("argument_placeholder")
+    private String argumentPlaceholder;
     @JsonProperty("argument_cluster")
     private String argumentCluster;
     @JsonProperty("argument_db")
     private String argumentDb;
     @JsonProperty("argument_table")
     private String argumentTable;
+    @JsonProperty("field_multiple_choice")
+    private Boolean fieldMultipleChoice;
+
 
     public TemplateArgumentRequest() {
         // Default Constructor
     }
 
-    public TemplateArgumentRequest(Long argumentId, Integer argumentStep, String argumentValue) {
+    public TemplateArgumentRequest(Long argumentId, Integer argumentType, Integer argumentStep, String argumentValue) {
         this.argumentId = argumentId;
+        this.argumentType = argumentType;
         this.argumentStep = argumentStep;
         this.argumentValue = argumentValue;
+    }
+
+    public Integer getArgumentType() {
+        return argumentType;
+    }
+
+    public void setArgumentType(Integer argumentType) {
+        this.argumentType = argumentType;
     }
 
     public Integer getArgumentStep() {
@@ -74,6 +87,13 @@ public class TemplateArgumentRequest {
         this.argumentValue = argumentValue;
     }
 
+    public String getArgumentPlaceholder() {
+        return argumentPlaceholder;
+    }
+
+    public void setArgumentPlaceholder(String argumentPlaceholder) {
+        this.argumentPlaceholder = argumentPlaceholder;
+    }
 
     public String getArgumentCluster() {
         return argumentCluster;
@@ -97,6 +117,14 @@ public class TemplateArgumentRequest {
 
     public void setArgumentTable(String argumentTable) {
         this.argumentTable = argumentTable;
+    }
+
+    public Boolean getFieldMultipleChoice() {
+        return fieldMultipleChoice;
+    }
+
+    public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
+        this.fieldMultipleChoice = fieldMultipleChoice;
     }
 
     public static void checkRequest(TemplateArgumentRequest request) throws UnExpectedRequestException {

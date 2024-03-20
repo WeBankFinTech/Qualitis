@@ -28,24 +28,50 @@ import java.util.Map;
  * @author allenzhou
  */
 public class CheckCustomDataSourceResponse {
-    @JsonProperty("frome_content")
+    private String database;
+    private String table;
+
+    @JsonProperty("from_content")
     private String fromContent;
     @JsonProperty("check_table")
     private List<CheckTableResponse> checkTableResponse;
 
     public CheckCustomDataSourceResponse() {
+        // Do nothing.
     }
 
     public CheckCustomDataSourceResponse(List<TaskDataSource> taskDataSources, Map<Long, TaskRuleSimple> taskRuleSimpleMap, Map<Long, List<TaskResult>> taskResultMap) {
-        StringBuffer fromContentStr = new StringBuffer();
+        StringBuilder fromContentStr = new StringBuilder();
+        StringBuilder tableStr = new StringBuilder();
+        StringBuilder dbStr = new StringBuilder();
 
         this.checkTableResponse = new ArrayList<>();
         for (TaskDataSource taskDataSource : taskDataSources) {
             fromContentStr.append(taskDataSource.getDatabaseName() + "." + taskDataSource.getTableName()).append("\n");
+            tableStr.append(taskDataSource.getTableName() + ";").append("\n");
+            dbStr.append(taskDataSource.getDatabaseName() + ";").append("\n");
         }
         this.fromContent = fromContentStr.toString();
-        CheckTableResponse checkTableResponse = new CheckTableResponse(taskDataSources.get(0), taskRuleSimpleMap, taskResultMap);
-        this.checkTableResponse.add(checkTableResponse);
+        this.database = dbStr.toString();
+        this.table = tableStr.toString();
+        CheckTableResponse currentCheckTableResponse = new CheckTableResponse(taskDataSources.get(0), taskRuleSimpleMap, taskResultMap);
+        this.checkTableResponse.add(currentCheckTableResponse);
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
     }
 
     public String getFromContent() {

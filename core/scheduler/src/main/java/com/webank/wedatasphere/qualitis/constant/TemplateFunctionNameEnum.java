@@ -33,6 +33,9 @@ public enum TemplateFunctionNameEnum {
     EXPECT_JOIN_SQL_PASS(19L, "expectJoinTableSqlPass"),
     EXPECT_TABLE_CONSISTENT(20L, "expectTableConsistent"),
     EXPECT_LINES_NOT_REPEAT(2149L, "expectLinesNotRepeat"),
+    EXPECT_COLUMNS_IN_LIST_NEW_VALUE(2853L, "expectColumnInListNewValueCheck"),
+    EXPECT_COLUMNS_IN_RANGE_NEW_VALUE(2860L, "expectColumnInRangeNewValueCheck"),
+    EXPECT_DATA_NOT_REPEAT(4000L, "expectDataNotRepeat")
     ;
 
 

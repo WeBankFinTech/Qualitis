@@ -4,11 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import org.springframework.beans.BeanUtils;
 
+import java.util.List;
+
 /**
  * @author allenzhou@webank.com
  * @date 2021/2/24 16:30
  */
 public class RuleMetricResponse {
+
   @JsonProperty("id")
   private Long id;
   @JsonProperty("name")
@@ -29,8 +32,6 @@ public class RuleMetricResponse {
   private String productId;
   @JsonProperty("product_name")
   private String productName;
-  @JsonProperty("metric_level")
-  private Integer level;
 
   @JsonProperty("create_user")
   private String createUser;
@@ -45,30 +46,95 @@ public class RuleMetricResponse {
   private String departmentCode;
   @JsonProperty("department_name")
   private String departmentName;
-
   @JsonProperty("dev_department_name")
   private String devDepartmentName;
   @JsonProperty("ops_department_name")
   private String opsDepartmentName;
+  @JsonProperty("dev_department_id")
+  private Long devDepartmentId;
+  @JsonProperty("ops_department_id")
+  private Long opsDepartmentId;
+
+  @JsonProperty("metric_level")
+  private Integer level;
 
   @JsonProperty("type")
   private Integer type;
   @JsonProperty("en_code")
   private String enCode;
+
   @JsonProperty("available")
   private Boolean available;
   @JsonProperty("frequency")
   private Integer frequency;
+
   @JsonProperty("buss_code")
   private Integer bussCode;
   @JsonProperty("buss_custom")
   private String bussCustom;
+
+  @JsonProperty("multi_env")
+  private Boolean multiEnv;
+
+  @JsonProperty("used")
+  private Boolean used;
+  @JsonProperty("is_editable")
+  private boolean isEditable;
+  @JsonProperty("visibility_department_list")
+  private List<DepartmentSubInfoResponse> visibilityDepartmentList;
 
   public RuleMetricResponse() {
   }
 
   public RuleMetricResponse(RuleMetric ruleMetric) {
     BeanUtils.copyProperties(ruleMetric, this);
+    this.devDepartmentId = ruleMetric.getDevDepartmentId();
+    this.opsDepartmentId = ruleMetric.getOpsDepartmentId();
+  }
+
+  public RuleMetricResponse(RuleMetric ruleMetric, boolean used) {
+    BeanUtils.copyProperties(ruleMetric, this);
+    this.used = used;
+  }
+
+  public Long getDevDepartmentId() {
+    return devDepartmentId;
+  }
+
+  public void setDevDepartmentId(Long devDepartmentId) {
+    this.devDepartmentId = devDepartmentId;
+  }
+
+  public Long getOpsDepartmentId() {
+    return opsDepartmentId;
+  }
+
+  public void setOpsDepartmentId(Long opsDepartmentId) {
+    this.opsDepartmentId = opsDepartmentId;
+  }
+
+  public boolean isEditable() {
+    return isEditable;
+  }
+
+  public void setEditable(boolean editable) {
+    isEditable = editable;
+  }
+
+  public Boolean getUsed() {
+    return used;
+  }
+
+  public void setUsed(Boolean used) {
+    this.used = used;
+  }
+
+  public List<DepartmentSubInfoResponse> getVisibilityDepartmentList() {
+    return visibilityDepartmentList;
+  }
+
+  public void setVisibilityDepartmentList(List<DepartmentSubInfoResponse> visibilityDepartmentList) {
+    this.visibilityDepartmentList = visibilityDepartmentList;
   }
 
   public Long getId() {
@@ -261,5 +327,13 @@ public class RuleMetricResponse {
 
   public void setBussCustom(String bussCustom) {
     this.bussCustom = bussCustom;
+  }
+
+  public Boolean getMultiEnv() {
+    return multiEnv;
+  }
+
+  public void setMultiEnv(Boolean multiEnv) {
+    this.multiEnv = multiEnv;
   }
 }

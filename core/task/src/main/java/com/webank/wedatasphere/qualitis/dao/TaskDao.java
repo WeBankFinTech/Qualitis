@@ -56,6 +56,30 @@ public interface TaskDao {
     List<Task> findByApplication(Application application);
 
     /**
+     * Find task by application pageable
+     * @param application
+     * @param isNonPassStatus
+     * @param page
+     * @param size
+     * @return
+     */
+    List<Task> findByApplicationPageable(Application application, boolean isNonPassStatus, int page, int size);
+
+    /**
+     * Count
+     * @param application
+     * @return
+     */
+    int countByApplication(Application application);
+
+    /**
+     * findByApplicationList
+     * @param applicationList
+     * @return
+     */
+    List<Task> findByApplicationList(List<Application> applicationList);
+
+    /**
      * Save all tasks
      * @param tasks
      */
@@ -79,4 +103,19 @@ public interface TaskDao {
      * @return
      */
     List<Task> findWithSubmitTimeAndDatasource(String startTime, String endTime, String clusterName, String databaseName, String tableName);
+
+    /**
+     * count number of task executing
+     * @param startBeginTime
+     * @param endBeginTime
+     * @param taskStatusList
+     * @return
+     */
+    Long countExecutingTaskNumber(String startBeginTime, String endBeginTime, List<Integer> taskStatusList);
+
+    /**
+     * Delete
+     * @param task
+     */
+    void delete(Task task);
 }

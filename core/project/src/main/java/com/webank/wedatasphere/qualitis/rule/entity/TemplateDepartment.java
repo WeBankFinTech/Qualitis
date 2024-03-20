@@ -24,6 +24,7 @@ public class TemplateDepartment {
     private Template template;
 
     public TemplateDepartment() {
+        // Do nothing.
     }
 
     public long getId() {

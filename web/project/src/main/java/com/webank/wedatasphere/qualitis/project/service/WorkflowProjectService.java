@@ -18,12 +18,13 @@ package com.webank.wedatasphere.qualitis.project.service;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 
 /**
  * @author howeye
@@ -39,12 +40,33 @@ public interface WorkflowProjectService {
     GeneralResponse<GetAllResponse<ProjectResponse>> getWorkflowProjectByUser(PageRequest request) throws UnExpectedRequestException;
 
     /**
+     * get Work flow Project By User
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<GetAllResponse<ProjectResponse>> getWorkflowProjectByUser(QueryProjectRequest request) throws UnExpectedRequestException;
+
+    /**
      * Get workflow project detail
      * @param projectId
      * @param pageRequest
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
     GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(Long projectId, PageRequest pageRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * Get workflow project detail by condition
+     * @param projectId
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> getWorkflowRuleByCondition(Long projectId, QueryRuleRequest request)
+            throws UnExpectedRequestException, PermissionDeniedRequestException;
+
 }

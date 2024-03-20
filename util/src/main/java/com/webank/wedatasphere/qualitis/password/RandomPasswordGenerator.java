@@ -20,7 +20,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 /**
  * @author howeye
@@ -37,7 +36,7 @@ public class RandomPasswordGenerator {
         int i = 0;
         int count = 0;
 
-        StringBuffer stringBuffer = new StringBuffer("");
+        StringBuilder stringBuilder = new StringBuilder();
         List<Character> list = new ArrayList<>();
         SecureRandom secureRandom = new SecureRandom();
 
@@ -47,10 +46,10 @@ public class RandomPasswordGenerator {
         Collections.shuffle(list);
         while(count < length){
             i = secureRandom.nextInt(list.size());
-            stringBuffer.append(list.get(i));
+            stringBuilder.append(list.get(i));
             count++;
         }
-        return stringBuffer.toString();
+        return stringBuilder.toString();
     }
 
 }
