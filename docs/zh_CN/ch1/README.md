@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-[English](../../../) | 中文  
+[English](../../../README.md) | 中文  
 
 ## 引言
 Qualitis是一个支持多种异构数据源的质量校验、通知、管理服务的数据质量管理平台，用于解决业务系统运行、数据中心建设及数据治理过程中的各种数据质量问题。
@@ -12,7 +12,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 支持以下数据模型定义：  
 1.单表校验数据模型。  
 2.跨表校验数据模型。  
-3.自定义单/多指标校验数据模型。  
+3.自定义校验数据模型。  
 <br />同时，系统预置了多个数据质量校验模版，包括空值校验，枚举校验等常用校验，并且支持自定义数据质量模版。  
 
 - **数据质量模型调度**  
@@ -32,16 +32,17 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio).
 
 - **管理员控制台**  
-提供管理员控制台界面，支持人员管理，角色管理，权限管理，集群管理等管理功能。  
+提供管理员控制台界面，支持人员管理，权限管理，权限管理，元数据管理等管理功能。  
 
 ## 与类似系统对比
 ![](../../../images/zh_CN/ch1/相似系统对比图.png)
 
 ## 文档列表
-[快速搭建手册](快速搭建手册——单机版.md)  
+[快速搭建手册](快速搭建手册——单机.md)  
 [架构设计文档](架构设计文档.md)  
 [用户手册](用户手册.md)  
 <br/>
+**点击[这里](docs/zh_CN/ch1)可以参考更多文档**
 
 ## Architecture
 ![](../../../images/zh_CN/ch1/总体架构设计.png)
@@ -53,7 +54,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 
 ### 2. 支持多种数据源的数据质量校验
 
-- 支持离线数据源，关系型数据源的数据质量校验  
+- 支持HDFS, HIVE, MySQL等数据源间的数据质量校验  
 - 支持实时数据的数据质量校验，如Kafka  
 
 ### 3. 支持生成可选纬度的数据质量报表
@@ -69,8 +70,9 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 非常欢迎广大的社区伙伴给我们贡献新引擎和代码！
 
 ## Communication
-如果您想得到最快的响应，请给我们提issue，或者您也可以扫码进群：  
+如果您想得到最快的响应，请给我们提 issue，或者您也可以扫码进群：  
 ![](../../../images/en_US/ch1/ContractUs.png)
 
 ## License
 **Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+

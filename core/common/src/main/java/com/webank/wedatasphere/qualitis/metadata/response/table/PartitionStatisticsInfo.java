@@ -29,7 +29,9 @@ public class PartitionStatisticsInfo {
     @JsonProperty("partition_child_count")
     private int partitionChildCount;
     @JsonProperty("partitions")
-    private List<Map> partitions;
+    private List<Map<String, Object>> partitions;
+    @JsonProperty("modificationTime")
+    private Long modificationTime;
 
     public PartitionStatisticsInfo() {
         // Default Constructor
@@ -51,11 +53,19 @@ public class PartitionStatisticsInfo {
         this.partitionChildCount = partitionChildCount;
     }
 
-    public List<Map> getPartitions() {
+    public List<Map<String, Object>> getPartitions() {
         return partitions;
     }
 
-    public void setPartitions(List<Map> partitions) {
+    public void setPartitions(List<Map<String, Object>> partitions) {
         this.partitions = partitions;
+    }
+
+    public Long getModificationTime() {
+        return modificationTime;
+    }
+
+    public void setModificationTime(Long modificationTime) {
+        this.modificationTime = modificationTime;
     }
 }

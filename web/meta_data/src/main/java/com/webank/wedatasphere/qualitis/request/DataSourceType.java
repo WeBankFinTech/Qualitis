@@ -8,9 +8,6 @@ public class DataSourceType {
     private Integer layers;
     private String name;
 
-    public DataSourceType() {
-    }
-
     public Integer getLayers() {
         return layers;
     }

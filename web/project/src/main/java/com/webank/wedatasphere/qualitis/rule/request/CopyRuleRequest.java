@@ -19,8 +19,9 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
+
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -40,6 +41,12 @@ public class CopyRuleRequest {
     private String version;
     @JsonProperty("old_version")
     private String oldVersion;
+    @JsonProperty("work_flow_name")
+    private String workFlowName;
+    @JsonProperty("node_name")
+    private String nodeName;
+    @JsonProperty("cs_id")
+    private String csId;
 
 
     public CopyRuleRequest() {
@@ -100,6 +107,46 @@ public class CopyRuleRequest {
 
     public void setOldVersion(String oldVersion) {
         this.oldVersion = oldVersion;
+    }
+
+    public String getWorkFlowName() {
+        return workFlowName;
+    }
+
+    public void setWorkFlowName(String workFlowName) {
+        this.workFlowName = workFlowName;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+
+    public void setNodeName(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public String getCsId() {
+        return csId;
+    }
+
+    public void setCsId(String csId) {
+        this.csId = csId;
+    }
+
+    @Override
+    public String toString() {
+        return "CopyRuleRequest{" +
+            "targetProjectId=" + targetProjectId +
+            ", targetRuleGroupId=" + targetRuleGroupId +
+            ", sourceRuleGroupId=" + sourceRuleGroupId +
+            ", sourceRuleIdList=" + sourceRuleIdList +
+            ", createUser='" + createUser + '\'' +
+            ", version='" + version + '\'' +
+            ", oldVersion='" + oldVersion + '\'' +
+            ", workFlowName='" + workFlowName + '\'' +
+            ", nodeName='" + nodeName + '\'' +
+            ", csId='" + csId + '\'' +
+            '}';
     }
 
     public static void checkRequest(CopyRuleRequest request) throws UnExpectedRequestException {

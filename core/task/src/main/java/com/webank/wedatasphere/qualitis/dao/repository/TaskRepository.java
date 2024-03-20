@@ -18,10 +18,11 @@ package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
@@ -34,6 +35,31 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * @return
      */
     List<Task> findByApplication(Application application);
+
+    /**
+     * Find task by application pageable
+     * @param application
+     * @param isNonPassStatus
+     * @param pageable
+     * @return
+     */
+    @Query(value = "SELECT * FROM qualitis_application_task t WHERE t.application_id = ?1 AND IF(?2 = true, t.status != 5, 1=1)", nativeQuery = true)
+    List<Task> findByApplicationPageable(String application, boolean isNonPassStatus, Pageable pageable);
+
+    /**
+     * Count
+     * @param application
+     * @return
+     */
+    @Query(value = "SELECT COUNT(t.id) FROM Task t WHERE t.application = ?1")
+    int countByApplication(Application application);
+
+    /**
+     * findByApplicationIn
+     * @param applicationList
+     * @return
+     */
+    List<Task> findByApplicationIn(List<Application> applicationList);
 
     /**
      * Find task by application and status and remote id

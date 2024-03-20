@@ -16,16 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.ProxyUserDepartment;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddProxyUserRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.request.DeleteProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.DeleteProxyUserRequest;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddProxyUserRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyProxyUserRequest;
+import com.webank.wedatasphere.qualitis.request.QueryProxyUserRequest;
+import com.webank.wedatasphere.qualitis.response.AddProxyUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+
+import java.util.List;
 
 /**
  * @author howeye
@@ -38,7 +40,7 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> addProxyUser(AddProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<AddProxyUserResponse> addProxyUser(AddProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Delete proxy user
@@ -46,7 +48,7 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify proxy user name
@@ -54,7 +56,7 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all proxy users
@@ -62,6 +64,35 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getAllProxyUser(PageRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<AddProxyUserResponse>> getAllProxyUser(QueryProxyUserRequest request) throws UnExpectedRequestException;
 
+    /**
+     * Get all names
+     * @return
+     */
+    List<String> getAllProxyUserName();
+
+    /**
+     * sync Department Name
+     * @param department
+     * @param departmentName
+     * @return
+     */
+    void syncDepartmentName(Department department, String departmentName);
+
+    /**
+     * sync Sub Department Name
+     * @param subDepartmentCode
+     * @param departmentName
+     * @return
+     */
+    void syncSubDepartmentName(Long subDepartmentCode, String departmentName);
+
+    /**
+     * find By Sub Department Code
+     * @param subDepartmentCode
+     * @param subDepartmentCode
+     * @return
+     */
+    List<ProxyUserDepartment> findBySubDepartmentCode(Long subDepartmentCode);
 }

@@ -32,9 +32,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * @author howeye
@@ -51,30 +50,36 @@ public class DaoAspect {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DaoAspect.class);
 
-    private static final List<String> STEP_IN_METHOD_LIST = Arrays.asList("getTemplateOutputMetas", "getChildTemplate", "getTemplateMidTableInputMetas", "getAlarmConfigs", "getRules", "getTemplateOutputMeta", "getTemplate");
+    private static final List<String> STEP_IN_METHOD_LIST = Arrays.asList("getTemplateOutputMetas", "getTemplateOutputMeta", "getTemplate", "getAlarmConfigs", "getRules");
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.project.dao.ProjectDao.*(..))")
     public void projectAspect(){
+        // Do nothing
     }
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.rule.dao.impl.RuleTemplateDaoImpl.*(..))")
     public void ruleTemplateAspect(){
+        // Do nothing
     }
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.rule.dao.impl.TemplateMidTableInputMetaDaoImpl.*(..))")
     public void templateMidTableInputMetaAspect(){
+        // Do nothing
     }
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.rule.dao.repository.TemplateStatisticsInputMetaRepository.findById(..))")
     public void templateStatisticsInputMetaAspect(){
+        // Do nothing
     }
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.rule.dao.impl.TemplateOutputMetaDaoImpl.*(..))")
     public void templateOutputMetaAspect(){
+        // Do nothing
     }
 
     @Pointcut("execution(public * com.webank.wedatasphere.qualitis.rule.dao.impl.RuleDaoImpl.*(..))")
     public void ruleAspect(){
+        // Do nothing
     }
 
     @AfterReturning(pointcut = "ruleTemplateAspect()", returning = "object")
@@ -155,12 +160,24 @@ public class DaoAspect {
         }
     }
 
-    private void replaceMessage(Object object, String localeStr) throws InvocationTargetException, IllegalAccessException {
-        Class objectClass = object.getClass();
+    public void replaceMessage(Object object, String localeStr) throws InvocationTargetException, IllegalAccessException {
+        realReplaceMessage(object, localeStr, new WeakHashMap<>());
+    }
+
+    private void realReplaceMessage(Object object, String localeStr, WeakHashMap<Object, Integer> referenceHistoryMap) throws InvocationTargetException, IllegalAccessException {
+//        如果STEP_IN_METHOD_LIST中存在两个对象相互引用的对象，为了防止无限递归，通过引用历史防止重复执行
+//        之所以采用弱引用，是因为大部分时候，并不存在相互引用的对象
+        if (referenceHistoryMap.containsKey(object)) {
+            return;
+        } else {
+            referenceHistoryMap.put(object, 1);
+        }
+        Class<?> objectClass = object.getClass();
         if (object instanceof Iterable || objectClass.isArray()) {
-            for (Object obj : (Iterable<? extends Object>) object) {
+            Iterable<?> list = (Iterable<? extends Object>) object;
+            for (Object obj : list) {
                 if (obj != null) {
-                    replaceMessage(obj, localeStr);
+                    realReplaceMessage(obj, localeStr, referenceHistoryMap);
                 }
             }
         } else {
@@ -169,11 +186,11 @@ public class DaoAspect {
                     // 获取返回值，并调用replaceMessage
                     Object returnObj = method.invoke(object);
                     if (returnObj != null) {
-                        replaceMessage(returnObj, localeStr);
+                        realReplaceMessage(returnObj, localeStr, referenceHistoryMap);
                     }
                 }
                 if (method.getName().startsWith(GET_METHOD_PREFIX) && method.getParameterCount() == 0 && method.getReturnType().equals(String.class)) {
-                    String message = (String)method.invoke(object);
+                    String message = (String) method.invoke(object);
                     if (message == null) {
                         continue;
                     }
@@ -189,6 +206,5 @@ public class DaoAspect {
             }
         }
     }
-
 
 }

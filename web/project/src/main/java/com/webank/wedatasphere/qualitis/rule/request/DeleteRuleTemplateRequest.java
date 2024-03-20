@@ -12,6 +12,7 @@ public class DeleteRuleTemplateRequest {
     private List<Long> ruleTemplateIdList;
 
     public DeleteRuleTemplateRequest() {
+//        do something
     }
 
     public List<Long> getRuleTemplateIdList() {

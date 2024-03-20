@@ -18,8 +18,10 @@ package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import javax.persistence.*;
 import java.util.Objects;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -34,6 +36,7 @@ public class ProjectUser {
     private Long id;
 
     @ManyToOne
+    @JsonIgnore
     private Project project;
 
     private Integer permission;
@@ -44,20 +47,25 @@ public class ProjectUser {
     @Column(name = "user_full_name", length = 30)
     private String userFullName;
 
+    @Column(name = "automatic_switch")
+    private Boolean automaticSwitch;
+
     public ProjectUser() {
     }
 
-    public ProjectUser(Integer permission, Project project, String userName) {
+    public ProjectUser(Integer permission, Project project, String userName, Boolean flag) {
         this.permission = permission;
         this.project = project;
         this.userName = userName;
+        this.automaticSwitch = flag;
     }
 
-    public ProjectUser(Integer permission, Project project, String userName, String userFullName) {
+    public ProjectUser(Integer permission, Project project, String userName, String userFullName, Boolean flag) {
         this.permission = permission;
         this.project = project;
         this.userName = userName;
         this.userFullName = userFullName;
+        this.automaticSwitch = flag;
     }
 
     public Long getId() {
@@ -84,28 +92,40 @@ public class ProjectUser {
         this.permission = permission;
     }
 
-  public String getUserName() {
-    return userName;
-  }
+    public String getUserName() {
+        return userName;
+    }
 
-  public void setUserName(String userName) {
-    this.userName = userName;
-  }
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
 
-  public String getUserFullName() {
-    return userFullName;
-  }
+    public String getUserFullName() {
+        return userFullName;
+    }
 
-  public void setUserFullName(String userFullName) {
-    this.userFullName = userFullName;
-  }
+    public void setUserFullName(String userFullName) {
+        this.userFullName = userFullName;
+    }
 
-  @Override
+    public Boolean getAutomaticSwitch() {
+        return automaticSwitch;
+    }
+
+    public void setAutomaticSwitch(Boolean automaticSwitch) {
+        this.automaticSwitch = automaticSwitch;
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) {return true;}
-        if (o == null || getClass() != o.getClass()) {return false;}
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         ProjectUser that = (ProjectUser) o;
-        return Objects.equals(id, that.id);
+        return Objects.equals(id, that.id) && Objects.equals(userName, that.userName);
     }
 
     @Override
@@ -116,7 +136,6 @@ public class ProjectUser {
     @Override
     public String toString() {
         return "ProjectUser{" +
-                "id=" + id +
                 ", project=" + project.getId() +
                 ", permission=" + permission +
                 ", userName='" + userName + '\'' +

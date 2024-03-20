@@ -41,9 +41,10 @@ public class Task {
     @Column(name = "end_time", length = 25)
     private String endTime;
     private Integer status;
+    private Double progress;
+
     @Column(name = "new_progress_time")
     private Long newProgressTime;
-    private Double progress;
 
     @OneToMany(mappedBy = "task", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Set<TaskRuleSimple> taskRuleSimples;
@@ -76,13 +77,13 @@ public class Task {
     }
 
     public Task(Application application, String beginTime, Integer status, Double progress, String clusterName, String submitAddress) {
-        this.beginTime = beginTime;
         this.application = application;
+        this.beginTime = beginTime;
         this.status = status;
         this.progress = progress;
+        this.clusterName = clusterName;
         taskRuleSimples = new HashSet<>();
         taskDataSources = new HashSet<>();
-        this.clusterName = clusterName;
         this.submitAddress = submitAddress;
     }
 
@@ -239,5 +240,16 @@ public class Task {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+            "id=" + id +
+            ", taskRemoteId=" + taskRemoteId +
+            ", beginTime='" + beginTime + '\'' +
+            ", status=" + status +
+            ", application=" + application +
+            '}';
     }
 }

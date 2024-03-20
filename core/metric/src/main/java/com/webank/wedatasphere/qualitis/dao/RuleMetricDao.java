@@ -19,7 +19,9 @@ package com.webank.wedatasphere.qualitis.dao;
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.User;
+
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author allenzhou
@@ -27,63 +29,96 @@ import java.util.List;
 public interface RuleMetricDao {
     /**
      * Query pageable rule metrics with SYS_ADMIN.
+     *
      * @param subSystemName
      * @param ruleMetricName
      * @param enCode
      * @param type
      * @param available
+     * @param multiEnvs
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param tableDataType
+     * @param createUser
+     * @param modifyUser
      * @param page
      * @param size
      * @return
      */
-    List<RuleMetric> queryAllRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available, int page,
-        int size);
+    List<RuleMetric> queryAllRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available,
+                                         Boolean multiEnvs, String devDepartmentId, String opsDepartmentId, Set<String> actionRange, String tableDataType, String createUser, String modifyUser, int page, int size);
 
     /**
      * Count query rule metrics with SYS_ADMIN.
+     *
      * @param subSystemName
      * @param ruleMetricName
      * @param enCode
      * @param type
      * @param available
+     * @param multiEnvs
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param tableDataType
+     * @param createUser
+     * @param modifyUser
      * @return
      */
-    long countQueryAllRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available);
+    long countQueryAllRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available,
+                                  Boolean multiEnvs, String devDepartmentId, String opsDepartmentId, Set<String> actionRange, String tableDataType, String createUser, String modifyUser);
 
     /**
      * Query pageable rule metrics with different characters(DEPARTMENT_ADMIN, PROJECTOR).
-     * @param level
-     * @param departmentList
-     * @param user
+     *
      * @param subSystemName
      * @param ruleMetricName
      * @param enCode
      * @param type
+     * @param requestAvailable
      * @param available
+     * @param multiEnvs
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param createUser
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param buildUser
+     * @param modifyUser
      * @param page
      * @param size
      * @return
      */
-    List<RuleMetric> queryRuleMetrics(Integer level, List<Department> departmentList,
-        User user, String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available, int page, int size);
+    List<RuleMetric> queryRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean requestAvailable, Boolean available,
+                                      Boolean multiEnvs, String tableDataType, List<Long> dataVisibilityDeptList, String createUser, String devDepartmentId, String opsDepartmentId, Set<String> actionRange, String buildUser, String modifyUser, int page, int size);
 
     /**
      * Count query rule metrics with different characters(DEPARTMENT_ADMIN, PROJECTOR).
-     * @param level
-     * @param departmentList
-     * @param user
+     *
      * @param subSystemName
      * @param ruleMetricName
      * @param enCode
      * @param type
      * @param available
+     * @param multiEnvs
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param createUser
+     * @param devDepartmentId
+     * @param opsDepartmentId
+     * @param actionRange
+     * @param buildUser
+     * @param modifyUser
      * @return
      */
-    long countQueryRuleMetrics(Integer level, List<Department> departmentList,
-        User user, String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available);
+    long countQueryRuleMetrics(String subSystemName, String ruleMetricName, String enCode, Integer type, Boolean available, Boolean multiEnvs
+            , String tableDataType, List<Long> dataVisibilityDeptList, String createUser, String devDepartmentId, String opsDepartmentId, Set<String> actionRange, String buildUser, String modifyUser);
 
     /**
      * Query rule metrics with name.
+     *
      * @param level
      * @param departmentList
      * @param user
@@ -96,6 +131,7 @@ public interface RuleMetricDao {
 
     /**
      * Count of querying rule metrics with name.
+     *
      * @param level
      * @param departmentList
      * @param user
@@ -105,7 +141,32 @@ public interface RuleMetricDao {
     long countWithRuleMetricName(Integer level, List<Department> departmentList, User user, String name);
 
     /**
+     * Query rule metrics by sub-system-id.
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param subSystemId
+     * @param page
+     * @param size
+     * @return
+     */
+    List<RuleMetric> findBySubSystemId(Integer level, List<Department> departmentList, User user, long subSystemId, int page, int size);
+
+    /**
+     * Count of querying rule metrics by sub-system-id.
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param subSystemId
+     * @return
+     */
+    long countBySubSystemId(Integer level, List<Department> departmentList, User user, long subSystemId);
+
+    /**
      * Find all rule metrics.
+     *
      * @param page
      * @param size
      * @return
@@ -114,12 +175,14 @@ public interface RuleMetricDao {
 
     /**
      * Count all rule metrics.
+     *
      * @return
      */
     long countAllRuleMetrics();
 
     /**
      * Find pageable rule metrics with different characters(SYS_ADMIN, DEPARTMENT_ADMIN, PROJECTOR).
+     *
      * @param level
      * @param departmentList
      * @param user
@@ -131,6 +194,7 @@ public interface RuleMetricDao {
 
     /**
      * Count all rule metrics with different characters(SYS_ADMIN, DEPARTMENT_ADMIN, PROJECTOR).
+     *
      * @param level
      * @param departmentList
      * @param user
@@ -139,7 +203,98 @@ public interface RuleMetricDao {
     long countRuleMetrics(Integer level, List<Department> departmentList, User user);
 
     /**
+     * Find not used rule metric
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param createUser
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param page
+     * @param size
+     * @return
+     */
+    List<RuleMetric> findNotUsed(Integer level, List<Department> departmentList,
+                                 User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size);
+
+    /**
+     * Count not used rule metric
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param createUser
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @return
+     */
+    long countNotUsed(Integer level, List<Department> departmentList, User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList);
+
+    /**
+     * Find not used rule metric
+     *
+     * @param page
+     * @param size
+     * @return
+     */
+    List<RuleMetric> findAllNotUsed(int page, int size);
+
+    /**
+     * Count not used rule metric
+     *
+     * @return
+     */
+    long countAllNotUsed();
+
+    /**
+     * Find used rule metric
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param createUser
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @param page
+     * @param size
+     * @return
+     */
+    List<RuleMetric> findUsed(Integer level, List<Department> departmentList,
+                              User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size);
+
+    /**
+     * Count used rule metric
+     *
+     * @param level
+     * @param departmentList
+     * @param user
+     * @param createUser
+     * @param tableDataType
+     * @param dataVisibilityDeptList
+     * @return
+     */
+    long countUsed(Integer level, List<Department> departmentList, User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList);
+
+    /**
+     * Find used rule metric
+     *
+     * @param page
+     * @param size
+     * @return
+     */
+    List<RuleMetric> findAllUsed(int page, int size);
+
+    /**
+     * Count used rule metric
+     *
+     * @return
+     */
+    long countAllUsed();
+
+    /**
      * Add
+     *
      * @param ruleMetric
      * @return
      */
@@ -147,6 +302,7 @@ public interface RuleMetricDao {
 
     /**
      * Modify
+     *
      * @param ruleMetric
      * @return
      */
@@ -154,12 +310,14 @@ public interface RuleMetricDao {
 
     /**
      * Delete
+     *
      * @param ruleMetric
      */
     void delete(RuleMetric ruleMetric);
 
     /**
      * Find by id.
+     *
      * @param id
      * @return
      */
@@ -167,6 +325,7 @@ public interface RuleMetricDao {
 
     /**
      * Find by en code.
+     *
      * @param name
      * @return
      */
@@ -174,6 +333,7 @@ public interface RuleMetricDao {
 
     /**
      * Find by IDs.
+     *
      * @param ids
      * @return
      */
@@ -181,6 +341,7 @@ public interface RuleMetricDao {
 
     /**
      * Find by name.
+     *
      * @param name
      * @return
      */

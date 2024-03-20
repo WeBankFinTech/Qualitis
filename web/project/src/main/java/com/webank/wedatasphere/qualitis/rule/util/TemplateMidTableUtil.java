@@ -19,8 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.util;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateRegexpTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 
 /**
  * @author howeye
@@ -37,18 +35,13 @@ public class TemplateMidTableUtil {
                 return true;
             }
 
-            if (templateMidTableInputMeta.getRegexpType().equals(TemplateRegexpTypeEnum.IDENTITY.getCode()) ||
-            templateMidTableInputMeta.getRegexpType().equals(TemplateRegexpTypeEnum.NOT_NUMBER.getCode())) {
+            if (templateMidTableInputMeta.getRegexpType().equals(TemplateRegexpTypeEnum.IDENTITY.getCode()) || templateMidTableInputMeta.getRegexpType().equals(TemplateRegexpTypeEnum.NUMBER.getCode())) {
                 return false;
             }
         }
 
-        // Return false if can not auto adapt. return true if type equals to field, table, database, field_concat
-         if (!templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD.getCode()) &&
-                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.TABLE.getCode()) &&
-                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.DATABASE.getCode()) &&
-                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_CONCAT.getCode()) &&
-                !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.FIELD_REPLACE_NULL_CONCAT.getCode())) {
+        // Return false if can not auto adapt. Return true if type equals to filter, table, database
+        if (!templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode()) &&!templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.TABLE.getCode()) && !templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.DATABASE.getCode())) {
             return true;
         }
         return false;

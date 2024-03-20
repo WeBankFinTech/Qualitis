@@ -17,38 +17,36 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
+import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
+import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author howeye
  */
-public class MultiRuleDetailResponse {
-
-    @JsonProperty("rule_id")
-    private Long ruleId;
-    @JsonProperty("rule_name")
-    private String ruleName;
-    @JsonProperty("rule_detail")
-    private String ruleDetail;
-    @JsonProperty("cn_name")
-    private String ruleCnName;
+public class MultiRuleDetailResponse extends AbstractCommonRequest {
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("multi_source_rule_template_id")
@@ -57,14 +55,20 @@ public class MultiRuleDetailResponse {
     private String ruleTemplateName;
     private MultiDataSourceConfigRequest source;
     private MultiDataSourceConfigRequest target;
-    private List<MultiDataSourceJoinConfigRequest> mappings;
+
+//    private List<MultiDataSourceJoinConfigRequest> mappings;
+//    @JsonProperty("compare_cols")
+//    private List<MultiDataSourceJoinConfigRequest> compareCols;
+
+    @JsonProperty("contrast_type")
+    private Integer contrastType;
+    @JsonProperty("filter_col_names")
+    private List<DataSourceColumnRequest> colNames;
 
     private String filter;
 
-    @JsonProperty("alarm")
-    private Boolean alarm;
-    @JsonProperty("alarm_variable")
-    private List<AlarmConfigResponse> alarmVariable;
+    @JsonProperty("template_arguments")
+    private List<TemplateArgumentRequest> templateArguments;
     @JsonProperty("create_user")
     private String createUser;
     @JsonProperty("create_time")
@@ -73,97 +77,176 @@ public class MultiRuleDetailResponse {
     private String modifyUser;
     @JsonProperty("modify_time")
     private String modifyTime;
-    @JsonProperty("rule_group_id")
-    private Long ruleGroupId;
-    @JsonProperty("cs_id")
-    private String csId;
-    @JsonProperty("abort_on_failure")
-    private Boolean abortOnFailure;
 
-    @JsonProperty("delete_fail_check_result")
-    private Boolean deleteFailCheckResult;
-    @JsonProperty("specify_static_startup_param")
-    private Boolean specifyStaticStartupParam;
-    @JsonProperty("static_startup_param")
-    private String staticStartupParam;
+    @JsonProperty("cluster")
+    private String cluster;
+    @JsonProperty("abnormal_data_storage")
+    private Boolean abnormalDataStorage;
+    @JsonProperty("alarm_variable")
+    private List<AlarmConfigResponse> alarmVariable;
+
     public MultiRuleDetailResponse() {
     }
 
     public MultiRuleDetailResponse(Rule rule) {
-        this.ruleId = rule.getId();
-        this.ruleName = rule.getName();
-        this.ruleDetail = rule.getDetail();
-        this.ruleCnName = rule.getCnName();
+        super.setRuleId(rule.getId());
+        super.setRuleName(rule.getName());
+        super.setRuleDetail(rule.getDetail());
+        super.setRuleCnName(rule.getCnName());
         this.clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
         this.multiSourceRuleTemplateId = rule.getTemplate().getId();
-        this.ruleTemplateName = rule.getRuleTemplateName();
-        this.ruleGroupId = rule.getRuleGroup().getId();
+        this.ruleTemplateName = rule.getTemplate().getName();
+        super.setRuleGroupId(rule.getRuleGroup().getId());
         this.createUser = rule.getCreateUser();
         this.createTime = rule.getCreateTime();
         this.modifyUser = rule.getModifyUser();
         this.modifyTime = rule.getModifyTime();
-
+        super.setWorkFlowName(rule.getWorkFlowName());
+        super.setWorkFlowVersion(rule.getWorkFlowVersion());
+        super.setWorkFlowProject(rule.getProject().getName());
+        super.setWorkFlowSpace(rule.getWorkFlowSpace());
+        super.setNodeName(rule.getNodeName());
+        this.contrastType = rule.getContrastType();
         this.source = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 0);
         this.target = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 1);
-        this.abortOnFailure = rule.getAbortOnFailure();
-        // 设置mapping
-        this.mappings = new ArrayList<>();
-        for (RuleDataSourceMapping ruleDataSourceMapping : rule.getRuleDataSourceMappings()) {
-            this.mappings.add(new MultiDataSourceJoinConfigRequest(ruleDataSourceMapping));
-        }
 
-        // 设置filter
-        List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
-                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
-        if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
-            this.filter = filterRuleVariable.iterator().next().getValue();
-        }
-        this.alarm = rule.getAlarm();
-        // 设置alarmVariable
-        this.alarmVariable = new ArrayList<>();
-        for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
-            this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
-        }
-        if (rule.getChildRule() != null) {
-            for (AlarmConfig alarmConfig : rule.getChildRule().getAlarmConfigs()) {
-                this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
+        this.templateArguments = new ArrayList<>();
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : rule.getTemplate().getTemplateMidTableInputMetas()) {
+            if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
+                for (RuleVariable ruleVariable : rule.getRuleVariables()) {
+                    TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+
+                    if (ruleVariable.getTemplateMidTableInputMeta().equals(templateMidTableInputMeta)) {
+                        String value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+
+                        if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) || TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
+                            value = ruleVariable.getOriginValue();
+                        }
+                        templateArgumentRequest.setArgumentPlaceholder("${" + templateMidTableInputMeta.getPlaceholder() + "}");
+                        templateArgumentRequest.setArgumentStep(InputActionStepEnum.TEMPLATE_INPUT_META.getCode());
+                        templateArgumentRequest.setArgumentId(templateMidTableInputMeta.getId());
+                        templateArgumentRequest.setArgumentType(templateMidTableInputMeta.getInputType());
+                        templateArgumentRequest.setArgumentValue(value);
+
+                        this.templateArguments.add(templateArgumentRequest);
+                    }
+                }
             }
         }
-        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
-        this.specifyStaticStartupParam = rule.getSpecifyStaticStartupParam();
-        this.staticStartupParam = rule.getStaticStartupParam();
+
+        for (TemplateStatisticsInputMeta templateStatisticsInputMeta : rule.getTemplate().getStatisticAction()) {
+            if (TemplateStatisticsUtil.shouldResponse(templateStatisticsInputMeta)) {
+                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+                templateArgumentRequest.setArgumentStep(InputActionStepEnum.STATISTICS_ARG.getCode());
+                templateArgumentRequest.setArgumentId(templateStatisticsInputMeta.getId());
+                this.templateArguments.add(templateArgumentRequest);
+            }
+        }
+
+        // 设置mapping
+//        this.mappings = new ArrayList<>();
+//        this.compareCols = new ArrayList<>();
+//
+//        for (RuleDataSourceMapping ruleDataSourceMapping : rule.getRuleDataSourceMappings()) {
+//            if (ruleDataSourceMapping.getMappingType() == null || 1 == ruleDataSourceMapping.getMappingType()) {
+//                this.mappings.add(new MultiDataSourceJoinConfigRequest(ruleDataSourceMapping));
+//            } else {
+//                this.compareCols.add(new MultiDataSourceJoinConfigRequest(ruleDataSourceMapping));
+//            }
+//        }
+
+        // Set filterColNames
+        addFilterColNames(rule);
+
+        // 设置filter
+
+        //处理 跨表模板->通用模板
+//        List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
+//                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
+//        if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
+//            this.filter = filterRuleVariable.iterator().next().getValue();
+//        }
+//        List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
+//                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode())).collect(Collectors.toList());
+//        if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
+//            this.filter = filterRuleVariable.iterator().next().getValue();
+//        }
+
+        super.setAlarm(rule.getAlarm());
+        // 设置alarmVariable
+        addAlarmVariable(rule);
+
+        super.setBashContent(rule.getBashContent());
+        super.setExecutionParametersName(rule.getExecutionParametersName());
+
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            ExecutionParameters executionParameters = SpringContextHolder.getBean(ExecutionParametersDao.class).findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
+            if (executionParameters != null) {
+                super.setSpecifyStaticStartupParam(executionParameters.getSpecifyStaticStartupParam());
+                if (super.getSpecifyStaticStartupParam() != null && super.getSpecifyStaticStartupParam()) {
+                    super.setStaticStartupParam(executionParameters.getStaticStartupParam());
+                }
+                super.setAbortOnFailure(executionParameters.getAbortOnFailure());
+                super.setAlert(executionParameters.getAlert());
+                if (super.getAlert()) {
+                    super.setAlertLevel(executionParameters.getAlertLevel());
+                    super.setAlertReceiver(executionParameters.getAlertReceiver());
+                }
+                super.setAbnormalDatabase(executionParameters.getAbnormalDatabase());
+                this.cluster = executionParameters.getCluster();
+                super.setAbnormalProxyUser(executionParameters.getAbnormalProxyUser());
+                super.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
+                super.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
+                super.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
+                super.setRuleEnable(rule.getEnable());
+                super.setUnionAll(executionParameters.getUnionAll());
+                if (StringUtils.isNotBlank(executionParameters.getCluster()) || StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) || StringUtils.isNotBlank(executionParameters.getAbnormalDatabase())) {
+                    this.abnormalDataStorage = true;
+                } else {
+                    this.abnormalDataStorage = false;
+                }
+            } else {
+                setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
+            }
+        } else {
+            setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
+        }
+
     }
 
-    public Long getRuleGroupId() {
-        return ruleGroupId;
-    }
+    private void setBaseInfo(Boolean unionAll, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable) {
+        super.setSpecifyStaticStartupParam(specifyStaticStartupParam);
+        if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
+            super.setStaticStartupParam(staticStartupParam);
+        }
+        super.setAbortOnFailure(abortOnFailure);
+        super.setAlert(alert);
+        if (alert != null && alert) {
+            super.setAlertLevel(alertLevel);
+            super.setAlertReceiver(alertReceiver);
+        }
+        super.setAbnormalDatabase(abnormalDatabase);
+        this.cluster = cluster;
+        super.setAbnormalProxyUser(abnormalProxyUser);
+        super.setDeleteFailCheckResult(deleteFailCheckResult);
+        super.setRuleEnable(enable);
+        super.setUnionAll(unionAll);
+        if (StringUtils.isNotBlank(cluster) || StringUtils.isNotBlank(abnormalProxyUser) || StringUtils.isNotBlank(abnormalDatabase)) {
+            this.abnormalDataStorage = true;
+        } else {
+            this.abnormalDataStorage = false;
+        }
 
-    public void setRuleGroupId(Long ruleGroupId) {
-        this.ruleGroupId = ruleGroupId;
-    }
-
-    public String getRuleName() {
-        return ruleName;
-    }
-
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public String getRuleCnName() {
-        return ruleCnName;
-    }
-
-    public void setRuleCnName(String ruleCnName) {
-        this.ruleCnName = ruleCnName;
-    }
-
-    public String getRuleDetail() {
-        return ruleDetail;
-    }
-
-    public void setRuleDetail(String ruleDetail) {
-        this.ruleDetail = ruleDetail;
+        if (CollectionUtils.isNotEmpty(alarmVariable)) {
+            AlarmConfigResponse alarmConfigResponse = AlarmConfigTypeUtil.checkAlarmConfigResponse(alarmVariable.get(0));
+            if (alarmConfigResponse != null) {
+                super.setUploadAbnormalValue(alarmConfigResponse.getUploadAbnormalValue() != null ? alarmConfigResponse.getUploadAbnormalValue() : false);
+                super.setUploadRuleMetricValue(alarmConfigResponse.getUploadRuleMetricValue() != null ? alarmConfigResponse.getUploadRuleMetricValue() : false);
+            } else {
+                super.setUploadAbnormalValue(false);
+                super.setUploadRuleMetricValue(false);
+            }
+        }
     }
 
     public String getClusterName() {
@@ -198,44 +281,12 @@ public class MultiRuleDetailResponse {
         this.target = target;
     }
 
-    public List<MultiDataSourceJoinConfigRequest> getMappings() {
-        return mappings;
-    }
-
-    public void setMappings(List<MultiDataSourceJoinConfigRequest> mappings) {
-        this.mappings = mappings;
-    }
-
     public String getFilter() {
         return filter;
     }
 
     public void setFilter(String filter) {
         this.filter = filter;
-    }
-
-    public Boolean getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Boolean alarm) {
-        this.alarm = alarm;
-    }
-
-    public List<AlarmConfigResponse> getAlarmVariable() {
-        return alarmVariable;
-    }
-
-    public void setAlarmVariable(List<AlarmConfigResponse> alarmVariable) {
-        this.alarmVariable = alarmVariable;
-    }
-
-    public Long getRuleId() {
-        return ruleId;
-    }
-
-    public void setRuleId(Long ruleId) {
-        this.ruleId = ruleId;
     }
 
     public String getRuleTemplateName() {
@@ -246,20 +297,12 @@ public class MultiRuleDetailResponse {
         this.ruleTemplateName = ruleTemplateName;
     }
 
-    public String getCsId() {
-        return csId;
+    public Boolean getAbnormalDataStorage() {
+        return abnormalDataStorage;
     }
 
-    public void setCsId(String csId) {
-        this.csId = csId;
-    }
-
-    public Boolean getAbortOnFailure() {
-        return abortOnFailure;
-    }
-
-    public void setAbortOnFailure(Boolean abortOnFailure) {
-        this.abortOnFailure = abortOnFailure;
+    public void setAbnormalDataStorage(Boolean abnormalDataStorage) {
+        this.abnormalDataStorage = abnormalDataStorage;
     }
 
     public String getCreateUser() {
@@ -294,27 +337,64 @@ public class MultiRuleDetailResponse {
         this.modifyTime = modifyTime;
     }
 
-    public Boolean getDeleteFailCheckResult() {
-        return deleteFailCheckResult;
+    public String getCluster() {
+        return cluster;
     }
 
-    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
-        this.deleteFailCheckResult = deleteFailCheckResult;
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
     }
 
-    public Boolean getSpecifyStaticStartupParam() {
-        return specifyStaticStartupParam;
+    public List<TemplateArgumentRequest> getTemplateArguments() {
+        return templateArguments;
     }
 
-    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
-        this.specifyStaticStartupParam = specifyStaticStartupParam;
+    public void setTemplateArguments(List<TemplateArgumentRequest> templateArguments) {
+        this.templateArguments = templateArguments;
     }
 
-    public String getStaticStartupParam() {
-        return staticStartupParam;
+    public List<AlarmConfigResponse> getAlarmVariable() {
+        return alarmVariable;
     }
 
-    public void setStaticStartupParam(String staticStartupParam) {
-        this.staticStartupParam = staticStartupParam;
+    public void setAlarmVariable(List<AlarmConfigResponse> alarmVariable) {
+        this.alarmVariable = alarmVariable;
+    }
+
+    public Integer getContrastType() {
+        return contrastType;
+    }
+
+    public void setContrastType(Integer contrastType) {
+        this.contrastType = contrastType;
+    }
+
+    public List<DataSourceColumnRequest> getColNames() {
+        return colNames;
+    }
+
+    public void setColNames(List<DataSourceColumnRequest> colNames) {
+        this.colNames = colNames;
+    }
+
+    private void addAlarmVariable(Rule rule) {
+        this.alarmVariable = new ArrayList<>();
+        for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
+            this.alarmVariable.add(new AlarmConfigResponse(alarmConfig));
+        }
+    }
+
+    private void addFilterColNames(Rule rule) {
+        if (CollectionUtils.isEmpty(rule.getRuleDataSources())) {
+            return;
+        }
+        for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
+            if (ruleDataSource.getBlackColName() != null && ruleDataSource.getBlackColName()) {
+                DataSourceRequest dataSourceRequest = new DataSourceRequest(ruleDataSource);
+                //filter_col_names
+                this.colNames = dataSourceRequest.getColNames();
+            }
+        }
+
     }
 }

@@ -18,10 +18,6 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 
 import java.util.ArrayList;
@@ -58,30 +54,30 @@ public class TemplateMetaResponse {
     private List<String> templateOutputName;
 
     public TemplateMetaResponse() {
+//        do something
     }
 
-    public TemplateMetaResponse(Template template, List<TemplateMidTableInputMeta> templateMidTableInputMetas, List<TemplateOutputMeta> templateOutputMetas, List<Integer> dataSourceTypes) {
-        this.dataSourceType = dataSourceTypes;
-        this.dbNum = template.getDbNum();
-        this.templateId = template.getId();
-        this.templateName = template.getName();
-        this.tableNum = template.getTableNum();
-        this.fieldNum = template.getFieldNum();
-        this.clusterNum = template.getClusterNum();
-        this.templateType = template.getTemplateType();
-        this.templateActionType = template.getActionType();
-        this.saveMidTable = template.getSaveMidTable();
-        this.showSql = template.getMidTableAction();
-        this.templateOutputName = new ArrayList<>();
-
-        for (TemplateOutputMeta templateOutputMeta : templateOutputMetas) {
-            templateOutputName.add(templateOutputMeta.getOutputName());
-        }
-    }
+//    public TemplateMetaResponse(Template template, List<TemplateMidTableInputMeta> templateMidTableInputMetas, List<TemplateOutputMeta> templateOutputMetas, List<Integer> dataSourceTypes) {
+//        this.dataSourceType = dataSourceTypes;
+//        this.dbNum = template.getDbNum();
+//        this.templateId = template.getId();
+//        this.templateName = template.getName();
+//        this.tableNum = template.getTableNum();
+//        this.fieldNum = template.getFieldNum();
+//        this.clusterNum = template.getClusterNum();
+//        this.templateType = template.getTemplateType();
+//        this.templateActionType = template.getActionType();
+//        this.saveMidTable = template.getSaveMidTable();
+//        this.showSql = template.getMidTableAction();
+//        this.templateOutputName = new ArrayList<>();
+//
+//        for (TemplateOutputMeta templateOutputMeta : templateOutputMetas) {
+//            templateOutputName.add(templateOutputMeta.getOutputName());
+//        }
+//    }
 
     public TemplateMetaResponse(Template template, List<TemplateOutputMeta> templateOutputMetas, List<Integer> dataSourceTypes) {
         this.dataSourceType = dataSourceTypes;
-
         this.dbNum = template.getDbNum();
         this.templateId = template.getId();
         this.templateName = template.getName();

@@ -18,26 +18,31 @@ package com.webank.wedatasphere.qualitis.rule.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.rule.constant.ContrastTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.MappingOperationEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateRegexpTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RegexpExprMapperRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateRegexpExpr;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateRegexpExpr;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
-import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -63,19 +68,20 @@ public class AutoArgumentAdapter {
      * @return
      */
     public Map<String, String> getAdaptValue(TemplateMidTableInputMeta templateMidTableInputMeta, DataSourceRequest dataSourceRequest,
-                                             List<TemplateArgumentRequest> templateArgumentRequests) throws UnExpectedRequestException {
+        List<TemplateArgumentRequest> templateArgumentRequests) throws UnExpectedRequestException {
         Integer inputType = templateMidTableInputMeta.getInputType();
-        if (inputType.equals(TemplateInputTypeEnum.CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.LIST.getCode())
-                || inputType.equals(TemplateInputTypeEnum.FIXED_VALUE.getCode())) {
+        if (inputType.equals(TemplateInputTypeEnum.LIST.getCode()) || inputType.equals(TemplateInputTypeEnum.FIXED_VALUE.getCode()) || inputType.equals(TemplateInputTypeEnum.INTERMEDIATE_EXPRESSION.getCode())
+                || inputType.equals(TemplateInputTypeEnum.VALUE_RANGE.getCode()) || inputType.equals(TemplateInputTypeEnum.MAXIMUM.getCode()) || inputType.equals(TemplateInputTypeEnum.MINIMUM.getCode())
+                || inputType.equals(TemplateInputTypeEnum.FRONT_CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.BEHIND_CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode())) {
             // Get value from request
             return ImmutableMap.of("value", findRequestById(templateMidTableInputMeta.getId(), templateArgumentRequests).getArgumentValue());
         } else if (inputType.equals(TemplateInputTypeEnum.REGEXP.getCode())) {
             // Get value from request if replaceByRequest = true, else return value in database
             return getRegexpValue(templateMidTableInputMeta, templateArgumentRequests);
-        } else if (inputType.equals(TemplateInputTypeEnum.FIELD_CONCAT.getCode())) {
+        } else if (inputType.equals(TemplateInputTypeEnum.FIELD_REPLACE_NULL_CONCAT.getCode())) {
             // Get string that connected with comma
             return getFieldConcat(dataSourceRequest);
-        }  else if (inputType.equals(TemplateInputTypeEnum.FIELD_REPLACE_NULL_CONCAT.getCode())) {
+        } else if (inputType.equals(TemplateInputTypeEnum.FIELD.getCode()) && Boolean.TRUE.equals(templateMidTableInputMeta.getFieldMultipleChoice())) {
             // Get string that connected with comma
             return getFieldConcat(dataSourceRequest);
         } else {
@@ -84,49 +90,40 @@ public class AutoArgumentAdapter {
         }
     }
 
-    private Map<String, String> getReplaceNullFieldConcat(DataSourceRequest dataSourceRequest) {
-        String fileType = dataSourceRequest.getFileType();
-        String dbName = dataSourceRequest.getDbName();
-        String uniqueStr = UuidGenerator.generate();
-        if (fileType != null && ! EXCEL_TYPE.contains(fileType)) {
-            dbName = "";
-        }
-        List<String> replaceNullCol = dataSourceRequest.getColNames().stream().map(DataSourceColumnRequest::getColumnName)
-                                                                              .map(colName -> "nvl(" + colName + ", '" + uniqueStr + "')").collect(Collectors.toList());
-        return ImmutableMap.of("value", "concat(" + String.join(",", replaceNullCol) + ")",
-            "clusterName", dataSourceRequest.getClusterName(),
-            "dbName", dbName,
-            "tableName", dataSourceRequest.getTableName());
-    }
+    public Map<String, String> getMultiSourceAdaptValue(Rule rule, TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName, MultiDataSourceConfigRequest firstDataSource
+        , MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames, String filter, String contrastType, String connFieldOriginValue, String compFieldOriginValue) {
 
-    public Map<String, String> getMultiSourceAdaptValue(Rule rule, TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName,
-                                                        MultiDataSourceConfigRequest firstDataSource, MultiDataSourceConfigRequest secondDataSource,
-                                                        List<MultiDataSourceJoinConfigRequest> mappings, String filter) throws UnExpectedRequestException {
         Integer inputType = templateMidTableInputMeta.getInputType();
-        if (inputType.equals(TemplateInputTypeEnum.AND_CONCAT.getCode())) {
-            // And_concat
-            return ImmutableMap.of("value", generateAndConcatStatement(templateMidTableInputMeta, mappings, rule));
-        } else if (inputType.equals(TemplateInputTypeEnum.CONDITION.getCode())) {
-            // Condition
-            CommonChecker.checkString(filter, "Filter");
+        if (inputType.equals(TemplateInputTypeEnum.CONTRAST_TYPE.getCode())) {
+            // Contrast type
+            rule.setContrastType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : "1"));
+            return ImmutableMap.of("value", ContrastTypeEnum.getJoinType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : "1")));
+        } else if (inputType.equals(TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode())) {
+            // Comparison results for filter
+            filter = StringUtils.isEmpty(filter) ? "" : filter;
             return ImmutableMap.of("value", filter);
+        } else if (inputType.equals(TemplateInputTypeEnum.CONNECT_FIELDS.getCode())) {
+            // Connect fields
+            return ImmutableMap.of("value", generateAndConcatStatement(mappings), "originValue", StringUtils.isNotBlank(connFieldOriginValue)?connFieldOriginValue:"");
+        } else if (inputType.equals(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode())) {
+            // Comparison field settings
+            return ImmutableMap.of("value", generateAndConcatStatement(mappings), "originValue", StringUtils.isNotBlank(compFieldOriginValue)?compFieldOriginValue:"");
         } else {
             // Database, tables, fields
-            return findValueFromMultiDataSourceConfig(templateMidTableInputMeta, clusterName, firstDataSource, secondDataSource, mappings);
+            return findValueFromMultiDataSourceConfig(templateMidTableInputMeta, clusterName, firstDataSource, secondDataSource, mappings, colNames);
         }
     }
 
-    private Map<String, String> findValueFromMultiDataSourceConfig(TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName,
-            MultiDataSourceConfigRequest firstDataSource, MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings) {
+    private Map<String, String> findValueFromMultiDataSourceConfig(TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName, MultiDataSourceConfigRequest firstDataSource, MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames) {
         Map<String, String> map = new HashMap<>(4);
         String firstFileType = firstDataSource.getFileType();
         String firstDbName = firstDataSource.getDbName();
-        if (firstFileType != null && ! EXCEL_TYPE.contains(firstFileType)) {
+        if (StringUtils.isNotBlank(firstFileType)  && ! EXCEL_TYPE.contains(firstFileType)) {
             firstDbName = "";
         }
         String secondFileType = secondDataSource.getFileType();
         String secondDbName = secondDataSource.getDbName();
-        if (secondFileType != null && ! EXCEL_TYPE.contains(secondFileType)) {
+        if (StringUtils.isNotBlank(secondFileType) && ! EXCEL_TYPE.contains(secondFileType)) {
             secondDbName = "";
         }
         Integer inputType = templateMidTableInputMeta.getInputType();
@@ -141,12 +138,18 @@ public class AutoArgumentAdapter {
             map.put("value", firstDataSource.getTableName());
         } else if (inputType.equals(TemplateInputTypeEnum.SOURCE_FIELDS.getCode())) {
             List<String> fieldName = new ArrayList<>();
-            for (MultiDataSourceJoinConfigRequest request : mappings) {
-                for (MultiDataSourceJoinColumnRequest columnRequest : request.getLeft()) {
-                    if (columnRequest.getColumnName().equals(DIFF_COUNT)) {
-                        continue;
+            if (CollectionUtils.isNotEmpty(mappings)) {
+                for (MultiDataSourceJoinConfigRequest request : mappings) {
+                    for (MultiDataSourceJoinColumnRequest columnRequest : request.getLeft()) {
+                        if (columnRequest.getColumnName().equals(DIFF_COUNT)) {
+                            continue;
+                        }
+                        fieldName.add(columnRequest.getColumnName().replace("tmp1.", ""));
                     }
-                    fieldName.add(columnRequest.getColumnName().replace("tmp1.", ""));
+                }
+            } else if (CollectionUtils.isNotEmpty(colNames)) {
+                for (DataSourceColumnRequest dataSourceColumnRequest : colNames) {
+                    fieldName.add(dataSourceColumnRequest.getColumnName());
                 }
             }
             map.put("value", String.join(", ", fieldName));
@@ -161,12 +164,18 @@ public class AutoArgumentAdapter {
             map.put("value", secondDataSource.getTableName());
         } else if (inputType.equals(TemplateInputTypeEnum.TARGET_FIELDS.getCode())) {
             List<String> fieldName = new ArrayList<>();
-            for (MultiDataSourceJoinConfigRequest request : mappings) {
-                for (MultiDataSourceJoinColumnRequest columnRequest : request.getRight()) {
-                    if (columnRequest.getColumnName().equals(DIFF_COUNT)) {
-                        continue;
+            if (CollectionUtils.isNotEmpty(mappings)) {
+                for (MultiDataSourceJoinConfigRequest request : mappings) {
+                    for (MultiDataSourceJoinColumnRequest columnRequest : request.getRight()) {
+                        if (columnRequest.getColumnName().equals(DIFF_COUNT)) {
+                            continue;
+                        }
+                        fieldName.add(columnRequest.getColumnName().replace("tmp2.", ""));
                     }
-                    fieldName.add(columnRequest.getColumnName().replace("tmp2.", ""));
+                }
+            } else if (CollectionUtils.isNotEmpty(colNames)) {
+                for (DataSourceColumnRequest dataSourceColumnRequest : colNames) {
+                    fieldName.add(dataSourceColumnRequest.getColumnName());
                 }
             }
             map.put("value", String.join(", ", fieldName));
@@ -174,50 +183,12 @@ public class AutoArgumentAdapter {
         return map;
     }
 
-    private String generateAndConcatStatement(TemplateMidTableInputMeta templateMidTableInputMeta, List<MultiDataSourceJoinConfigRequest> mappings, Rule rule) {
-        String concatTemplate = templateMidTableInputMeta.getConcatTemplate();
-        Collection<TemplateMidTableInputMeta> children = templateMidTableInputMeta.getChildren();
-
+    private String generateAndConcatStatement(List<MultiDataSourceJoinConfigRequest> mappings) {
         List<String> originStatement = new ArrayList<>();
-        if (rule.getTemplate().getMidTableAction().contains(DIFF_COUNT)) {
-            MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
-            MultiDataSourceJoinColumnRequest leftJoinColumnRequest = new MultiDataSourceJoinColumnRequest("tmp1.".concat(DIFF_COUNT), "int");
-            MultiDataSourceJoinColumnRequest rightJoinColumnRequest = new MultiDataSourceJoinColumnRequest("tmp2.".concat(DIFF_COUNT), "int");
-            multiDataSourceJoinConfigRequest.setOperation(MappingOperationEnum.EQUAL.getCode());
-            multiDataSourceJoinConfigRequest.setLeft(Arrays.asList(leftJoinColumnRequest));
-            multiDataSourceJoinConfigRequest.setRight(Arrays.asList(rightJoinColumnRequest));
-            multiDataSourceJoinConfigRequest.setLeftStatement("tmp1.".concat(DIFF_COUNT));
-            multiDataSourceJoinConfigRequest.setRightStatement("tmp2.".concat(DIFF_COUNT));
-            mappings.add(multiDataSourceJoinConfigRequest);
-        }
         for (MultiDataSourceJoinConfigRequest mapping : mappings) {
-            String replacedTemplate = concatTemplate;
-            Boolean addedFlag = false;
-            for (TemplateMidTableInputMeta child : children) {
-                if (child.getInputType().equals(TemplateInputTypeEnum.LEFT_STATEMENT.getCode())) {
-                    replacedTemplate = replacedTemplate.replace(getPlaceHolder(child.getPlaceholder()), mapping.getLeftStatement());
-                } else if (child.getInputType().equals(TemplateInputTypeEnum.OPERATION.getCode())) {
-                    replacedTemplate = replacedTemplate.replace(getPlaceHolder(child.getPlaceholder()),
-                            MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol());
-                } else if (child.getInputType().equals(TemplateInputTypeEnum.RIGHT_STATEMENT.getCode())) {
-                    replacedTemplate = replacedTemplate.replace(getPlaceHolder(child.getPlaceholder()), mapping.getRightStatement());
-                } else if (child.getInputType().equals(TemplateInputTypeEnum.SOURCE_FIELD.getCode())) {
-                    for (MultiDataSourceJoinColumnRequest multiDataSourceJoinColumnRequest : mapping.getLeft()) {
-                        String tmp1 = concatTemplate.replace(getPlaceHolder(child.getPlaceholder()), multiDataSourceJoinColumnRequest.getColumnName());
-                        originStatement.add(tmp1);
-                        addedFlag = true;
-                    }
-                } else if (child.getInputType().equals(TemplateInputTypeEnum.TARGET_FIELD.getCode())) {
-                    for (MultiDataSourceJoinColumnRequest multiDataSourceJoinColumnRequest : mapping.getRight()) {
-                        String tmp1 = concatTemplate.replace(getPlaceHolder(child.getPlaceholder()), multiDataSourceJoinColumnRequest.getColumnName());
-                        originStatement.add(tmp1);
-                        addedFlag = true;
-                    }
-                }
-            }
-            if (!addedFlag) {
-                originStatement.add(replacedTemplate);
-            }
+            StringBuilder fullStatement = new StringBuilder();
+            fullStatement.append(mapping.getLeftStatement()).append(MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol()).append(mapping.getRightStatement());
+            originStatement.add(fullStatement.toString());
         }
 
         return generateStatementByConcatStr(originStatement, "AND");
@@ -239,7 +210,7 @@ public class AutoArgumentAdapter {
         Map<String, String> map = new HashMap<>(4);
         String fileType = request.getFileType();
         String dbName = request.getDbName();
-        if (fileType != null && ! EXCEL_TYPE.contains(fileType)) {
+        if (StringUtils.isNotBlank(fileType) && ! EXCEL_TYPE.contains(fileType)) {
             dbName = "";
         }
         if (inputType.equals(TemplateInputTypeEnum.FIELD.getCode())) {
@@ -257,7 +228,7 @@ public class AutoArgumentAdapter {
             map.put("dbName", dbName);
             map.put("tableName", request.getTableName());
             map.put("value", request.getTableName());
-        } else {
+        } else if (inputType.equals(TemplateInputTypeEnum.DATABASE.getCode())) {
             // Database Type
             map.put("clusterName", request.getClusterName());
             map.put("dbName", dbName);

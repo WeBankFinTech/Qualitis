@@ -50,6 +50,49 @@ public class Permission {
     @OneToMany(mappedBy = "permission", cascade = CascadeType.REMOVE)
     private List<UserSpecPermission> userSpecPermissions;
 
+    @Column(name = "create_user")
+    private String createUser;
+
+    @Column(name = "create_time")
+    private String createTime;
+
+    @Column(name = "modify_user")
+    private String modifyUser;
+
+    @Column(name = "modify_time")
+    private String modifyTime;
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getModifyUser() {
+        return modifyUser;
+    }
+
+    public void setModifyUser(String modifyUser) {
+        this.modifyUser = modifyUser;
+    }
+
+    public String getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(String modifyTime) {
+        this.modifyTime = modifyTime;
+    }
     public Permission() {
         // Default Constructor
     }

@@ -18,7 +18,10 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * @author howeye
@@ -31,4 +34,18 @@ public interface RuleVariableRepository extends JpaRepository<RuleVariable, Long
      */
     void deleteByRule(Rule rule);
 
+    /**
+     * Find by rule
+     * @param rule
+     * @return
+     */
+    List<RuleVariable> findByRule(Rule rule);
+
+    /**
+     * Delete by ruleId.
+     * @param ruleId
+     */
+    @Modifying
+    @Query(value = "delete from qualitis_rule_variable where rule_id = ?1", nativeQuery = true)
+    void deleteByRuleId(Long ruleId);
 }

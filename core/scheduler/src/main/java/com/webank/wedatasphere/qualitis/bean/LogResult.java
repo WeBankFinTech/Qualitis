@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.bean;
 
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import org.apache.commons.lang.StringUtils;
+
 /**
  * @author howeye
  */
@@ -26,6 +29,18 @@ public class LogResult {
     private Integer end;
     private Boolean last;
 
+    private String infoString;
+    private String warnString;
+    private String errorString;
+
+    private Integer infoCount;
+    private Integer warnCount;
+    private Integer errorCount;
+
+    private Long taskId;
+    private String zhMessage;
+    private String enMessage;
+
     public LogResult() {
     }
 
@@ -34,6 +49,46 @@ public class LogResult {
         this.begin = begin;
         this.end = end;
         this.last = last;
+
+        StringBuilder info = new StringBuilder();
+        StringBuilder warn = new StringBuilder();
+        StringBuilder error = new StringBuilder();
+
+        Integer infoAmount = 0;
+        Integer warnAmount = 0;
+        Integer errorAmount = 0;
+
+        if (StringUtils.isNotBlank(log)) {
+            String[] logSplit = log.split("\\n");
+
+            for (String str : logSplit) {
+                if (str.contains(QualitisConstants.LOG_INFO)) {
+                    info.append(str).append("\n");
+                    infoAmount++;
+                } else if (str.contains(QualitisConstants.LOG_WARN)) {
+                    warn.append(str).append("\n");
+                    warnAmount++;
+                } else if (str.contains(QualitisConstants.LOG_ERROR)) {
+                    error.append(str).append("\n");
+                    errorAmount++;
+                } else {
+                    if (str.startsWith("\tat") || str.startsWith("  at ") || str.startsWith("Caused by: ")) {
+                        error.append(str).append("\n");
+                        errorAmount++;
+                    } else {
+                        info.append(str).append("\n");
+                        infoAmount++;
+                    }
+                }
+            }
+        }
+        this.infoString = info.toString();
+        this.warnString = warn.toString();
+        this.errorString = error.toString();
+
+        this.infoCount = infoAmount;
+        this.warnCount = warnAmount;
+        this.errorCount = errorAmount;
     }
 
     public String getLog() {
@@ -66,5 +121,77 @@ public class LogResult {
 
     public void setLast(Boolean last) {
         this.last = last;
+    }
+
+    public String getInfoString() {
+        return infoString;
+    }
+
+    public void setInfoString(String infoString) {
+        this.infoString = infoString;
+    }
+
+    public String getWarnString() {
+        return warnString;
+    }
+
+    public void setWarnString(String warnString) {
+        this.warnString = warnString;
+    }
+
+    public String getErrorString() {
+        return errorString;
+    }
+
+    public void setErrorString(String errorString) {
+        this.errorString = errorString;
+    }
+
+    public Integer getInfoCount() {
+        return infoCount;
+    }
+
+    public void setInfoCount(Integer infoCount) {
+        this.infoCount = infoCount;
+    }
+
+    public Integer getWarnCount() {
+        return warnCount;
+    }
+
+    public void setWarnCount(Integer warnCount) {
+        this.warnCount = warnCount;
+    }
+
+    public Integer getErrorCount() {
+        return errorCount;
+    }
+
+    public void setErrorCount(Integer errorCount) {
+        this.errorCount = errorCount;
+    }
+
+    public Long getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(Long taskId) {
+        this.taskId = taskId;
+    }
+
+    public String getZhMessage() {
+        return zhMessage;
+    }
+
+    public void setZhMessage(String zhMessage) {
+        this.zhMessage = zhMessage;
+    }
+
+    public String getEnMessage() {
+        return enMessage;
+    }
+
+    public void setEnMessage(String enMessage) {
+        this.enMessage = enMessage;
     }
 }

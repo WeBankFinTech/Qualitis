@@ -34,8 +34,12 @@ public class UnExpectedRequestException extends Exception {
         this.status = status;
     }
 
-    public GeneralResponse<?> getResponse() {
+    public GeneralResponse<Object> getResponse() {
         return new GeneralResponse<>(this.status + "", getMessage(), null);
+    }
+
+    public GeneralResponse<Object> getResponse(String message) {
+        return new GeneralResponse<>(this.status + "", message, null);
     }
 
     public Integer getStatus() {

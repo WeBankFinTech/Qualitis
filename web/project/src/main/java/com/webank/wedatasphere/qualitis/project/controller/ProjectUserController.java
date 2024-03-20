@@ -71,26 +71,6 @@ public class ProjectUserController {
     }
 
     @POST
-    @Path("all/{projectId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<List<ProjectUserResponse>> getAllProjectUser(@PathParam("projectId") Long projectId)
-        throws UnExpectedRequestException, PermissionDeniedRequestException {
-        try {
-            return projectUserService.getAllProjectUser(projectId);
-        } catch (UnExpectedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (PermissionDeniedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (Exception e) {
-            LOGGER.error("Failed to get authorized user, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_USER}", null);
-        }
-    }
-
-    @POST
     @Path("modify")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -112,10 +92,30 @@ public class ProjectUserController {
     }
 
     @POST
+    @Path("all/{projectId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<List<ProjectUserResponse>> getAllProjectUser(@PathParam("projectId") Long projectId)
+        throws UnExpectedRequestException, PermissionDeniedRequestException {
+        try {
+            return projectUserService.getAllProjectUser(projectId);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get authorized user, caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_USER}", null);
+        }
+    }
+
+    @POST
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteProjectUser(AuthorizeProjectUserRequest request, @Context HttpServletRequest httpServletRequest)
+    public GeneralResponse deleteProjectUser(AuthorizeProjectUserRequest request, @Context HttpServletRequest httpServletRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             Long userId = HttpUtils.getUserId(httpServletRequest);
@@ -136,7 +136,7 @@ public class ProjectUserController {
     @Path("/user")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getUser(@Context HttpServletRequest httpServletRequest)
+    public GeneralResponse<List<String>> getUser(@Context HttpServletRequest httpServletRequest)
         throws UnExpectedRequestException {
         try {
             Long userId = HttpUtils.getUserId(httpServletRequest);

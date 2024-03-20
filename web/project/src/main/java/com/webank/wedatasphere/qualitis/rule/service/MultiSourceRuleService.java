@@ -22,7 +22,8 @@ import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.DeleteMultiSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.ModifyMultiSourceRequest;
@@ -31,63 +32,88 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author howeye
  */
 public interface MultiSourceRuleService {
 
     /**
-     * Add multi-table rule
+     * Add multi-table rule.
      * @param request
      * @param check
      * @return
      * @throws UnExpectedRequestException
-     * @throws TaskNotExistException
-     * @throws ClusterInfoNotConfigException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> addMultiSourceRule(AddMultiSourceRuleRequest request, boolean check)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
-     * Add multi-table rule for bdp-client
+     * Add multi-table rule for bdp-client.
      * @param request
      * @param check
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, boolean check)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRuleForOuter(AbstractCommonRequest request, boolean check)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
-     * Delete multi-table rule
+     * Delete multi-table rule.
      * @param request
      * @param loginUser
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteMultiSourceRule(DeleteMultiSourceRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<Object> deleteMultiSourceRule(DeleteMultiSourceRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
-     * Delete multi-table rule real
+     * Delete multi-table rule real.
      * @param rule
      * @return
+     * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteMultiRuleReal(Rule rule);
+    GeneralResponse<Object> deleteMultiRuleReal(Rule rule) throws UnExpectedRequestException;
 
     /**
-     * Modify multi-table rule
+     * Modify multi-table rule.
      * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws TaskNotExistException
      * @throws ClusterInfoNotConfigException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyMultiSourceRule(ModifyMultiSourceRequest request)
-        throws UnExpectedRequestException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException, IOException;
+
 
     /**
-     * Get multi-table rule detail
+     * Modify multi-table rule.
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws TaskNotExistException
+     * @throws ClusterInfoNotConfigException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
+     * @throws RuleLockException
+     */
+    GeneralResponse<RuleResponse> modifyMultiSourceRuleWithLock(ModifyMultiSourceRequest request)
+            throws UnExpectedRequestException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException, IOException, RuleLockException;
+
+    /**
+     * Get multi-table rule detail.
      * @param ruleId
      * @return
      * @throws UnExpectedRequestException
@@ -102,16 +128,26 @@ public interface MultiSourceRuleService {
      * @throws UnExpectedRequestException
      * @throws TaskNotExistException
      * @throws ClusterInfoNotConfigException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> addMultiSourceRuleForUpload(AddMultiSourceRuleRequest request,
-        boolean check) throws UnExpectedRequestException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException;
+        boolean check) throws UnExpectedRequestException, TaskNotExistException, ClusterInfoNotConfigException, PermissionDeniedRequestException, IOException;
     /**
      * Modify rule in one transaction for upload.
      * @param modifyRuleRequest
      * @param userName
      * @return
      * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyMultiSourceRequest modifyRuleRequest, String userName)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
+
+    /**
+     * get constrast enum
+     * @return
+     */
+    List<Map<String, Object>> getAllConstrastEnum();
 }

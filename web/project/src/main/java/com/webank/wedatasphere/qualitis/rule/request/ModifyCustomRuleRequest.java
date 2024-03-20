@@ -19,6 +19,7 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
@@ -26,16 +27,8 @@ import java.util.List;
 /**
  * @author howeye
  */
-public class ModifyCustomRuleRequest {
+public class ModifyCustomRuleRequest extends AbstractCommonRequest {
 
-    @JsonProperty("rule_id")
-    private Long ruleId;
-    @JsonProperty("rule_name")
-    private String ruleName;
-    @JsonProperty("rule_detail")
-    private String ruleDetail;
-    @JsonProperty("cn_name")
-    private String ruleCnName;
     @JsonProperty("output_name")
     private String outputName;
     @JsonProperty("save_mid_table")
@@ -48,23 +41,15 @@ public class ModifyCustomRuleRequest {
     private String fromContent;
     @JsonProperty("where_content")
     private String whereContent;
-    @JsonProperty("alarm")
-    private Boolean alarm;
-    @JsonProperty("alert")
-    private Boolean alert;
-    @JsonProperty("alert_level")
-    private Integer alertLevel;
-    @JsonProperty("alert_receiver")
-    private String alertReceiver;
-    @JsonProperty("alarm_variable")
-    private List<CustomAlarmConfigRequest> alarmVariable;
     @JsonProperty("cluster_name")
     private String clusterName;
-
-    @JsonProperty("cs_id")
-    private String csId;
-    @JsonProperty("abort_on_failure")
-    private Boolean abortOnFailure;
+    @JsonProperty("rule_metric_id")
+    private Long ruleMetricId;
+    @JsonProperty("rule_metric_name")
+    private String ruleMetricName;
+    @JsonProperty("sql_check_area")
+    private String sqlCheckArea;
+    private String fifter;
 
     @JsonProperty("file_id")
     private String fileId;
@@ -85,33 +70,37 @@ public class ModifyCustomRuleRequest {
     @JsonProperty("file_hash_values")
     private String fileHashValues;
 
-    @JsonProperty("rule_metric_id")
-    private Long ruleMetricId;
-    @JsonProperty("rule_metric_name")
-    private String ruleMetricName;
-    @JsonProperty("delete_fail_check_result")
-    private Boolean deleteFailCheckResult;
-
-
-    @JsonProperty("sql_check_area")
-    private String sqlCheckArea;
-
-
-    @JsonProperty("specify_static_startup_param")
-    private Boolean specifyStaticStartupParam;
-    @JsonProperty("static_startup_param")
-    private String staticStartupParam;
-
-    @JsonProperty("linkis_datasoure_id")
+    @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
-    @JsonProperty("linkis_datasoure_version_id")
+    @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
     @JsonProperty("linkis_datasource_name")
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_envs")
+    private List<DataSourceEnvRequest> dataSourceEnvRequests;
+    @JsonProperty("linkis_datasource_envs_mappings")
+    private List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests;
+    @JsonProperty("alarm_variable")
+    private List<CustomAlarmConfigRequest> alarmVariable;
+
+    @JsonProperty("linkis_udf_names")
+    private List<String> linkisUdfNames;
+
+    @JsonIgnore
+    private Boolean fromOuter;
 
     public ModifyCustomRuleRequest() {
+        // Default Constructor
+    }
+
+    public Boolean isFromOuter() {
+        return fromOuter;
+    }
+
+    public void setFromOuter(Boolean fromOuter) {
+        this.fromOuter = fromOuter;
     }
 
     public String getFileHashValues() {
@@ -128,30 +117,6 @@ public class ModifyCustomRuleRequest {
 
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
-    }
-
-    public String getRuleName() {
-        return ruleName;
-    }
-
-    public void setRuleName(String ruleName) {
-        this.ruleName = ruleName;
-    }
-
-    public String getRuleCnName() {
-        return ruleCnName;
-    }
-
-    public void setRuleCnName(String ruleCnName) {
-        this.ruleCnName = ruleCnName;
-    }
-
-    public String getRuleDetail() {
-        return ruleDetail;
-    }
-
-    public void setRuleDetail(String ruleDetail) {
-        this.ruleDetail = ruleDetail;
     }
 
     public String getOutputName() {
@@ -202,64 +167,12 @@ public class ModifyCustomRuleRequest {
         this.whereContent = whereContent;
     }
 
-    public Boolean getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Boolean alarm) {
-        this.alarm = alarm;
-    }
-
-    public Boolean getAlert() {
-        return alert;
-    }
-
-    public void setAlert(Boolean alert) {
-        this.alert = alert;
-    }
-
-    public Integer getAlertLevel() {
-        return alertLevel;
-    }
-
-    public void setAlertLevel(Integer alertLevel) {
-        this.alertLevel = alertLevel;
-    }
-
-    public List<CustomAlarmConfigRequest> getAlarmVariable() {
-        return alarmVariable;
-    }
-
-    public void setAlarmVariable(List<CustomAlarmConfigRequest> alarmVariable) {
-        this.alarmVariable = alarmVariable;
-    }
-
     public String getClusterName() {
         return clusterName;
     }
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
-    }
-
-    public Long getRuleId() {
-        return ruleId;
-    }
-
-    public void setRuleId(Long ruleId) {
-        this.ruleId = ruleId;
-    }
-
-    public String getCsId() { return csId; }
-
-    public void setCsId(String csId) { this.csId = csId; }
-
-    public Boolean getAbortOnFailure() {
-        return abortOnFailure;
-    }
-
-    public void setAbortOnFailure(Boolean abortOnFailure) {
-        this.abortOnFailure = abortOnFailure;
     }
 
     public String getFileId() {
@@ -318,22 +231,6 @@ public class ModifyCustomRuleRequest {
         this.fileHeader = fileHeader;
     }
 
-    public String getAlertReceiver() {
-        return alertReceiver;
-    }
-
-    public void setAlertReceiver(String alertReceiver) {
-        this.alertReceiver = alertReceiver;
-    }
-
-    public Boolean getDeleteFailCheckResult() {
-        return deleteFailCheckResult;
-    }
-
-    public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
-        this.deleteFailCheckResult = deleteFailCheckResult;
-    }
-
     public Long getRuleMetricId() {
         return ruleMetricId;
     }
@@ -356,22 +253,6 @@ public class ModifyCustomRuleRequest {
 
     public void setSqlCheckArea(String sqlCheckArea) {
         this.sqlCheckArea = sqlCheckArea;
-    }
-
-    public Boolean getSpecifyStaticStartupParam() {
-        return specifyStaticStartupParam;
-    }
-
-    public void setSpecifyStaticStartupParam(Boolean specifyStaticStartupParam) {
-        this.specifyStaticStartupParam = specifyStaticStartupParam;
-    }
-
-    public String getStaticStartupParam() {
-        return staticStartupParam;
-    }
-
-    public void setStaticStartupParam(String staticStartupParam) {
-        this.staticStartupParam = staticStartupParam;
     }
 
     public Long getLinkisDataSourceId() {
@@ -404,6 +285,47 @@ public class ModifyCustomRuleRequest {
 
     public void setLinkisDataSourceType(String linkisDataSourceType) {
         this.linkisDataSourceType = linkisDataSourceType;
+    }
+
+    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+        return dataSourceEnvRequests;
+    }
+
+    public void setDataSourceEnvRequests(List<DataSourceEnvRequest> dataSourceEnvRequests) {
+        this.dataSourceEnvRequests = dataSourceEnvRequests;
+    }
+
+    public List<DataSourceEnvMappingRequest> getDataSourceEnvMappingRequests() {
+        return dataSourceEnvMappingRequests;
+    }
+
+    public void setDataSourceEnvMappingRequests(
+        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) {
+        this.dataSourceEnvMappingRequests = dataSourceEnvMappingRequests;
+    }
+
+    public String getFifter() {
+        return fifter;
+    }
+
+    public void setFifter(String fifter) {
+        this.fifter = fifter;
+    }
+
+    public List<CustomAlarmConfigRequest> getAlarmVariable() {
+        return alarmVariable;
+    }
+
+    public void setAlarmVariable(List<CustomAlarmConfigRequest> alarmVariable) {
+        this.alarmVariable = alarmVariable;
+    }
+
+    public List<String> getLinkisUdfNames() {
+        return linkisUdfNames;
+    }
+
+    public void setLinkisUdfNames(List<String> linkisUdfNames) {
+        this.linkisUdfNames = linkisUdfNames;
     }
 
     public static void checkRequest(ModifyCustomRuleRequest request) throws UnExpectedRequestException {

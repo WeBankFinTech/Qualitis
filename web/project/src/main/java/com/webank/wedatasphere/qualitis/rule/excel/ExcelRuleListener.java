@@ -19,69 +19,30 @@ package com.webank.wedatasphere.qualitis.rule.excel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
-import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 
-import com.webank.wedatasphere.qualitis.project.excel.ExcelCustomRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelMultiTemplateRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelTemplateFileRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelTemplateRuleByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelExecutionParametersByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelGroupByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelRuleByProject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author howeye
  */
 public class ExcelRuleListener extends AnalysisEventListener<Object> {
-
-    private Map<String, List<ExcelTemplateRuleByProject>> templateExcelContent = new HashMap<>(32);
-    private Map<String, List<ExcelCustomRuleByProject>> customExcelContent = new HashMap<>(32);
-    private Map<String, List<ExcelMultiTemplateRuleByProject>> multiTemplateExcelContent = new HashMap<>(32);
-    private Map<String, List<ExcelTemplateFileRuleByProject>> templateFileExcelContent = new HashMap<>(32);
+    private List<ExcelRuleByProject> excelRuleContent = new ArrayList<>();
+    private List<ExcelGroupByProject> excelGroupByProjects = new ArrayList<>();
+    private List<ExcelExecutionParametersByProject> excelExecutionParametersContent = new ArrayList<>();
 
     @Override
     public void invoke(Object object, AnalysisContext context) {
-        if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.TEMPLATE_RULE_NAME)) {
-            ExcelTemplateRuleByProject excelTemplateRuleByProject = (ExcelTemplateRuleByProject) object;
-            String key = excelTemplateRuleByProject.getRuleName();
-            if (templateExcelContent.containsKey(key)) {
-                templateExcelContent.get(key).add(excelTemplateRuleByProject);
-            } else {
-                List<ExcelTemplateRuleByProject> tmp = new ArrayList<>();
-                tmp.add(excelTemplateRuleByProject);
-                templateExcelContent.put(key, tmp);
-            }
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.CUSTOM_RULE_NAME)) {
-            ExcelCustomRuleByProject excelCustomRule = (ExcelCustomRuleByProject) object;
-            String key = excelCustomRule.getRuleName();
-            if (customExcelContent.containsKey(key)) {
-                customExcelContent.get(key).add(excelCustomRule);
-            } else {
-                List<ExcelCustomRuleByProject> tmp = new ArrayList<>();
-                tmp.add(excelCustomRule);
-                customExcelContent.put(key, tmp);
-            }
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.MULTI_TEMPLATE_RULE_NAME)) {
-            ExcelMultiTemplateRuleByProject excelMultiTemplateRule = (ExcelMultiTemplateRuleByProject) object;
-            String key = excelMultiTemplateRule.getRuleName();
-            if (multiTemplateExcelContent.containsKey(key)) {
-                multiTemplateExcelContent.get(key).add(excelMultiTemplateRule);
-            } else {
-                List<ExcelMultiTemplateRuleByProject> tmp = new ArrayList<>();
-                tmp.add(excelMultiTemplateRule);
-                multiTemplateExcelContent.put(key, tmp);
-            }
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.TEMPLATE_FILE_RULE_NAME)) {
-            ExcelTemplateFileRuleByProject excelTemplateFileRule = (ExcelTemplateFileRuleByProject) object;
-            String key = excelTemplateFileRule.getRuleName();
-            if (templateFileExcelContent.containsKey(key)) {
-                templateFileExcelContent.get(key).add(excelTemplateFileRule);
-            } else {
-                List<ExcelTemplateFileRuleByProject> tmp = new ArrayList<>();
-                tmp.add(excelTemplateFileRule);
-                templateFileExcelContent.put(key, tmp);
-            }
+        if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.RULE_NAME)) {
+            ExcelRuleByProject excelRuleByProject = (ExcelRuleByProject) object;
+            excelRuleContent.add(excelRuleByProject);
+        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.TABLE_GROUP)) {
+            excelGroupByProjects.add((ExcelGroupByProject) object);
+        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.EXECUTION_PARAMETERS_NAME)) {
+            excelExecutionParametersContent.add((ExcelExecutionParametersByProject) object);
         }
     }
 
@@ -90,19 +51,15 @@ public class ExcelRuleListener extends AnalysisEventListener<Object> {
         // no need to implement
     }
 
-    public Map<String, List<ExcelTemplateRuleByProject>> getTemplateExcelContent() {
-        return templateExcelContent;
+    public List<ExcelExecutionParametersByProject> getExcelExecutionParametersContent() {
+        return excelExecutionParametersContent;
     }
 
-    public Map<String, List<ExcelCustomRuleByProject>> getCustomExcelContent() {
-        return customExcelContent;
+    public List<ExcelGroupByProject> getExcelGroupByProjects() {
+        return excelGroupByProjects;
     }
 
-    public Map<String, List<ExcelMultiTemplateRuleByProject>> getMultiTemplateExcelContent() {
-        return multiTemplateExcelContent;
-    }
-
-    public Map<String, List<ExcelTemplateFileRuleByProject>> getTemplateFileExcelContent() {
-        return templateFileExcelContent;
+    public List<ExcelRuleByProject> getExcelRuleContent() {
+        return excelRuleContent;
     }
 }

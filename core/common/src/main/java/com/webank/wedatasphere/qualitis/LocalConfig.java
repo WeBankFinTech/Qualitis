@@ -17,8 +17,13 @@ public class LocalConfig {
     /**
      * dev or prod.
      */
-    @Value("${front_end.center}")
-    private String center;
+    @Value("${front_end.support_migrate}")
+    private Boolean supportMigrate;
+    /**
+     * BDAP or BDP.
+     */
+    @Value("${front_end.cluster}")
+    private String cluster;
 
     public String getLocal() {
         return local;
@@ -28,11 +33,19 @@ public class LocalConfig {
         this.local = local;
     }
 
-    public String getCenter() {
-        return center;
+    public Boolean getSupportMigrate() {
+        return supportMigrate;
     }
 
-    public void setCenter(String center) {
-        this.center = center;
+    public void setSupportMigrate(Boolean supportMigrate) {
+        this.supportMigrate = supportMigrate;
+    }
+
+    public String getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
     }
 }

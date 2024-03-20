@@ -18,16 +18,13 @@ package com.webank.wedatasphere.qualitis.submitter;
 
 
 import com.webank.wedatasphere.qualitis.bean.TaskSubmitResult;
+import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.*;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.exception.JobSubmitException;
-import com.webank.wedatasphere.qualitis.exception.ArgumentException;
 
-import java.io.IOException;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +40,7 @@ public interface ExecutionManager {
      * @param nodeName
      * @param createTime
      * @param user
-     * @param database
+     * @param ruleReplaceInfo
      * @param partition
      * @param date
      * @param application
@@ -52,27 +49,30 @@ public interface ExecutionManager {
      * @param setFlag
      * @param execParams
      * @param runDate
+     * @param splitBy
      * @param dataSourceMysqlConnect
+     * @param tenantUserName
+     * @param leftCols
+     * @param rightCols
+     * @param comelexCols
+     * @param createUser
      * @return
-     * @throws ArgumentException
-     * @throws TaskTypeException
-     * @throws ConvertException
-     * @throws DataQualityTaskException
-     * @throws RuleVariableNotSupportException
-     * @throws RuleVariableNotFoundException
-     * @throws JobSubmitException
-     * @throws ClusterInfoNotConfigException
-     * @throws IOException
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
-     * @throws ParseException
+     * @throws Exception
      */
-    List<TaskSubmitResult> submitApplication(List<Rule> rules, String nodeName, String createTime, String user,
-        String database, StringBuffer partition, Date date, Application application, String cluster, String startupParam, String setFlag,
-        Map<String, String> execParams,
-        StringBuffer runDate, Map<Long, Map> dataSourceMysqlConnect) throws ArgumentException
-        , TaskTypeException, ConvertException, DataQualityTaskException, RuleVariableNotSupportException, RuleVariableNotFoundException, JobSubmitException, ClusterInfoNotConfigException
-        , IOException, UnExpectedRequestException, MetaDataAcquireFailedException, ParseException;
+    List<TaskSubmitResult> submitApplication(List<Rule> rules, String nodeName, String createTime, String user, Map<Long, Map<String, Object>> ruleReplaceInfo
+            , StringBuilder partition, Date date, Application application, String cluster, String startupParam, String setFlag, Map<String, String> execParams, StringBuilder runDate
+            , StringBuilder splitBy, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String tenantUserName, List<String> leftCols, List<String> rightCols, List<String> comelexCols, String createUser) throws Exception;
+
+    /**
+     * Kill application.
+     * @param applicationInDb
+     * @param user
+     * @return
+     * @throws JobKillException
+     * @throws UnExpectedRequestException
+     * @throws ClusterInfoNotConfigException
+     */
+    GeneralResponse<Integer> killApplication(Application applicationInDb, String user) throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException;
 
     /**
      * File rule job.
@@ -82,24 +82,45 @@ public interface ExecutionManager {
      * @param user
      * @param clusterName
      * @param runDate
+     * @param ruleReplaceInfo
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
-     * @throws ParseException
+     * @throws Exception
      */
-    TaskSubmitResult executeFileRule(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName,
-        StringBuffer runDate)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, ParseException;
+    TaskSubmitResult executeFileRule(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName, StringBuilder runDate
+        , Map<Long, Map<String, Object>> ruleReplaceInfo) throws Exception;
 
     /**
-     * Kill application
-     * @param applicationInDb
+     * File rule shell job.
+     * @param fileRules
+     * @param submitTime
+     * @param application
      * @param user
+     * @param clusterName
+     * @param runDate
+     * @param ruleReplaceInfo
+     * @param startupParam
+     * @param engineReuse
+     * @param engineType
      * @return
-     * @throws JobKillException
-     * @throws UnExpectedRequestException
-     * @throws ClusterInfoNotConfigException
+     * @throws Exception
      */
-    GeneralResponse<?> killApplication(Application applicationInDb, String user)
-        throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException;
+    List<TaskSubmitResult> executeFileRuleWithShell(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName
+        , String runDate, Map<Long, Map<String, Object>> ruleReplaceInfo, String startupParam, Boolean engineReuse, String engineType) throws Exception;
+
+    /**
+     * Execute check alert.
+     * @param clusterInfo
+     * @param dbAndTables
+     * @param columns
+     * @param currentCheckAlert
+     * @param saveApplication
+     * @param startupParam
+     * @param engineReuse
+     * @param engineType
+     * @return
+     * @throws Exception
+     */
+    TaskSubmitResult executeCheckAlert(ClusterInfo clusterInfo, String[] dbAndTables, List<String> columns, CheckAlert currentCheckAlert,
+        Application saveApplication,
+        String startupParam, Boolean engineReuse, String engineType) throws Exception;
 }

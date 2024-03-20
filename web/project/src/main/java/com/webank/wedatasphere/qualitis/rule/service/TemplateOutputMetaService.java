@@ -19,9 +19,6 @@ package com.webank.wedatasphere.qualitis.rule.service;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
 
 import java.util.Set;
 
@@ -44,9 +41,10 @@ public interface TemplateOutputMetaService {
      * @param functionType
      * @param template
      * @param saveMidTable
+     * @param samplingContent
      * @return
      */
-    Set<TemplateOutputMeta> getAndSaveTemplateOutputMeta(String outputName, Integer functionType, Boolean saveMidTable, Template template);
+    Set<TemplateOutputMeta> getAndSaveTemplateOutputMeta(String outputName, Integer functionType, Boolean saveMidTable, Template template,String samplingContent);
 
 
 

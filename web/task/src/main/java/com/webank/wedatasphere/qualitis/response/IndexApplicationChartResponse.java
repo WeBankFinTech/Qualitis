@@ -29,7 +29,6 @@ import java.util.List;
  * @date 2018-11-14
  */
 public class IndexApplicationChartResponse {
-
   private String date;
   @JsonProperty("application_succ_num")
   private int applicationSuccNum;

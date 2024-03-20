@@ -53,10 +53,25 @@ public interface TaskRuleSimpleDao {
     int countByCreateUserAndProjectId(String createUser, Long projectId);
 
     /**
+     * Find by application and rule
+     * @param applicationId
+     * @param ruleId
+     * @return
+     */
+    TaskRuleSimple findByApplicationAndRule(String applicationId, Long ruleId);
+
+    /**
      * Find task rule simple by task
      * 根据task寻找taskRuleSimple
      * @param task
      * @return
      */
     List<TaskRuleSimple> findByTask(Task task);
+
+    /**
+     * save
+     * @param taskRuleSimple
+     * @return
+     */
+    TaskRuleSimple save(TaskRuleSimple taskRuleSimple);
 }

@@ -23,12 +23,15 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
+import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+
+import java.io.IOException;
 
 /**
  * @author howeye
@@ -42,9 +45,10 @@ public interface CustomRuleService {
      * @return
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> addCustomRule(AddCustomRuleRequest request)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * Add custom rule for bdp-client
@@ -53,9 +57,10 @@ public interface CustomRuleService {
      * @return
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
-    GeneralResponse<RuleResponse> addRuleForOuter(AbstractAddRequest request, String loginUser)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<RuleResponse> addRuleForOuter(AbstractCommonRequest request, String loginUser)
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
      * delete custom rule
@@ -65,7 +70,7 @@ public interface CustomRuleService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse deleteCustomRule(DeleteCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * delete custom rule real
@@ -73,7 +78,7 @@ public interface CustomRuleService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteCustomRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse deleteCustomRuleReal(Rule rule) throws UnExpectedRequestException;
 
     /**
      * Get custom rule detail
@@ -92,9 +97,26 @@ public interface CustomRuleService {
      * @throws TaskNotExistException
      * @throws MetaDataAcquireFailedException
      * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyCustomRule(ModifyCustomRuleRequest request)
-        throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, MetaDataAcquireFailedException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, MetaDataAcquireFailedException, PermissionDeniedRequestException, IOException;
+
+
+    /**
+     * Modifty custom rule
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws ClusterInfoNotConfigException
+     * @throws TaskNotExistException
+     * @throws MetaDataAcquireFailedException
+     * @throws PermissionDeniedRequestException
+     * @throws IOException
+     * @throws RuleLockException
+     */
+    GeneralResponse<RuleResponse> modifyCustomRuleWithLock(ModifyCustomRuleRequest request)
+            throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, MetaDataAcquireFailedException, PermissionDeniedRequestException, IOException, RuleLockException;
 
     /**
      * Add rule in one transaction for upload.
@@ -103,9 +125,10 @@ public interface CustomRuleService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> addCustomRuleForUpload(AddCustomRuleRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException, IOException;
 
     /**
      * Modify rule in one transaction for upload.
@@ -113,9 +136,9 @@ public interface CustomRuleService {
      * @param userName
      * @return
      * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
      * @throws PermissionDeniedRequestException
+     * @throws IOException
      */
     GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyCustomRuleRequest modifyRuleRequest, String userName)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 }

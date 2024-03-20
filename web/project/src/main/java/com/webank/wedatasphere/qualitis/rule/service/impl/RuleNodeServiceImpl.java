@@ -1,7 +1,12 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.LocalConfig;
+import com.webank.wedatasphere.qualitis.checkalert.dao.CheckAlertDao;
+import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
+import com.webank.wedatasphere.qualitis.checkalert.service.CheckAlertService;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDepartmentUserDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -10,110 +15,57 @@ import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelMultiTemplateRuleByProject;
-import com.webank.wedatasphere.qualitis.project.excel.ExcelTemplateFileRuleByProject;
-import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.service.OuterWorkflowService;
+import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.FileOutputNameEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.FunctionTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.MappingOperationEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateDataSourceTypeDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateDataSourceType;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateOutputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CopyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequests;
-import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.config.RuleConfig;
+import com.webank.wedatasphere.qualitis.rule.constant.*;
+import com.webank.wedatasphere.qualitis.rule.dao.*;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.response.CopyRuleWithDatasourceResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponses;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
-import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceMappingService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleNodeService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeCallable;
+import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeThreadFactory;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.UserService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.management.relation.RoleNotFoundException;
+import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.management.relation.RoleNotFoundException;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @author allenzhou
@@ -121,15 +73,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
+    private RuleConfig ruleConfig;
+    @Autowired
     private LocalConfig localConfig;
     @Autowired
     private RuleService ruleService;
+    @Autowired
+    private FileRuleService fileRuleService;
     @Autowired
     private CustomRuleService customRuleService;
     @Autowired
     private MultiSourceRuleService multiSourceRuleService;
     @Autowired
-    private FileRuleService fileRuleService;
+    private DataVisibilityService dataVisibilityService;
+    @Autowired
+    private CheckAlertService checkAlertService;
 
     @Autowired
     private UserService userService;
@@ -138,7 +96,11 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
     private ProjectService projectService;
     @Autowired
+    private RuleBatchService ruleBatchService;
+    @Autowired
     private AlarmConfigService alarmConfigService;
+    @Autowired
+    private ProjectBatchService projectBatchService;
     @Autowired
     private RuleVariableService ruleVariableService;
     @Autowired
@@ -148,9 +110,9 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
     @Autowired
-    private RuleDataSourceMappingService ruleDataSourceMappingService;
-    @Autowired
     private TemplateOutputMetaService templateOutputMetaService;
+    @Autowired
+    private RuleDataSourceMappingService ruleDataSourceMappingService;
     @Autowired
     private TemplateMidTableInputMetaService templateMidTableInputMetaService;
     @Autowired
@@ -162,11 +124,15 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
     private UserRoleDao userRoleDao;
     @Autowired
+    private CheckAlertDao checkAlertDao;
+    @Autowired
     private AlarmConfigDao alarmConfigDao;
     @Autowired
     private RuleVariableDao ruleVariableDao;
     @Autowired
     private RuleDataSourceDao ruleDataSourceDao;
+    @Autowired
+    private RuleDatasourceEnvDao ruleDatasourceEnvDao;
     @Autowired
     private RuleDataSourceMappingDao ruleDataSourceMappingDao;
     @Autowired
@@ -179,89 +145,123 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     private TemplateOutputMetaDao templateOutputMetaDao;
     @Autowired
     private TemplateDataSourceTypeDao templateDataSourceTypeDao;
+    @Autowired
+    private AlarmArgumentsExecutionParametersDao alarmArgumentsExecutionParametersDao;
 
     @Autowired
     private RuleMetricDao ruleMetricDao;
     @Autowired
     private RuleMetricDepartmentUserDao ruleMetricDepartmentUserDao;
 
+    @Autowired
+    private ExecutionParametersDao executionParametersDao;
+    @Autowired
+    private NoiseEliminationManagementDao noiseEliminationManagementDao;
+    @Autowired
+    private ExecutionVariableDao executionVariableDao;
+    @Autowired
+    private StaticExecutionParametersDao staticExecutionParametersDao;
 
-    private static final String DEV_CENTER = "dev";
-    private static final String PROD_CENTER = "prod";
+    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(50,
+            Integer.MAX_VALUE,
+            60,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(1000),
+            new RuleNodeThreadFactory(),
+            new ThreadPoolExecutor.DiscardPolicy());
+
+    private static final String RULE_NAME = "--rule-name";
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleNodeServiceImpl.class);
 
+    private HttpServletRequest httpServletRequest;
+
+    public RuleNodeServiceImpl(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<?> deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteRule(DeleteRuleRequest request) throws UnExpectedRequestException {
         // Check Arguments
         DeleteRuleRequest.checkRequest(request);
         Long ruleGroupId = request.getRuleGroupId();
         if (StringUtils.isBlank(ruleGroupId.toString())) {
-            throw new UnExpectedRequestException("Rule group id is invalid.");
+            throw new UnExpectedRequestException("Rule group id is invalid");
         }
-        // Delete any rule when find rule by rule group ID
-        LOGGER.info("Check existence of rule before deleting. Rule group id: {}.", ruleGroupId.toString());
-        List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupDao.findById(request.getRuleGroupId()));
-        if(CollectionUtils.isEmpty(rules)) {
-            return new GeneralResponse<>("200", "No rules to be delete.", null);
+        LOGGER.info("Check existence of rule group before deleting. Rule group id: {}.", ruleGroupId.toString());
+
+        RuleGroup ruleGroupInDb = ruleGroupDao.findById(request.getRuleGroupId());
+
+        if (ruleGroupInDb == null) {
+            return new GeneralResponse<>("200", "No rule group to be delete", null);
+        }
+
+        if (GroupTypeEnum.CHECK_ALERT_GROUP.getCode().equals(ruleGroupInDb.getType())) {
+            List<CheckAlert> checkAlerts = checkAlertDao.findByRuleGroup(ruleGroupInDb);
+            LOGGER.info("Start to delete check alert. Rule group id: {}.", ruleGroupId.toString());
+
+            if (CollectionUtils.isNotEmpty(checkAlerts)) {
+                checkAlertDao.deleteAll(checkAlerts);
+            }
+            LOGGER.info("Success to delete check alert. Rule group id: {}.", ruleGroupId.toString());
+            return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
+        }
+
+        List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
+        if (CollectionUtils.isEmpty(rules)) {
+            return new GeneralResponse<>("200", "No rules to be delete", null);
         }
         for (Rule ruleInDb : rules) {
-            LOGGER.info("Start to delete rule. Rule group id: {}.", ruleGroupId.toString());
+            LOGGER.info("Start to delete rule. Rule group ID: {}.", ruleGroupId.toString());
             ruleService.deleteRuleReal(ruleInDb);
         }
-        LOGGER.info("Start to delete rule. Rule group id: {}.", ruleGroupId.toString());
+        LOGGER.info("Success to delete rule. Rule group ID: {}.", ruleGroupId.toString());
         return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<RuleResponse> modifyRuleByCsId(ModifyRuleRequest request) throws UnExpectedRequestException {
-        CommonChecker.checkObject(request, "ModifyRuleRequest");
-        Project projectInDb = projectDao.findById(request.getProjectId());
-        if (projectInDb == null) {
-            projectInDb = projectDao.findByName(request.getProjectName());
-            if (projectInDb == null) {
-                throw new UnExpectedRequestException("Project is not exist.");
-            }
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse modifyRule(ModifyRuleRequest request) throws UnExpectedRequestException {
+        Long ruleGroupId = request.getRuleGroupId();
+        if (StringUtils.isBlank(ruleGroupId.toString()) || StringUtils.isBlank(request.getNodeName())) {
+            throw new UnExpectedRequestException("Rule group id or node name is invalid");
         }
-        if (projectInDb.getProjectType().equals(ProjectTypeEnum.NORMAL_PROJECT.getCode())) {
-            throw new UnExpectedRequestException("Project is not workflow project.");
+        LOGGER.info("Check existence of rule group before modifying. Rule group id: {}.", ruleGroupId.toString());
+
+        RuleGroup ruleGroupInDb = ruleGroupDao.findById(request.getRuleGroupId());
+
+        if (ruleGroupInDb == null) {
+            return new GeneralResponse<>("200", "No rule group to be modify", null);
         }
 
-        List<Rule> rules = ruleDao.findByProject(projectInDb);
-        if(rules.isEmpty() || rules.get(0) == null) {
-            throw new UnExpectedRequestException("Project [id = " + projectInDb.getId() + "] does not have rules.");
-        }
-        LOGGER.info("Start to update context service ID.");
-        for (Rule ruleInDb : rules) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                if (ruleInDb.getCsId() == null || ruleInDb.getCsId().length() == 0) {
-                    continue;
-                }
-                JsonNode ruleCsId = mapper.readTree(ruleInDb.getCsId());
-                JsonNode requestCsId = mapper.readTree(request.getCsId());
-                String ruleCsIdValue = ruleCsId.get("value").toString();
-                String requestCsIdValue = requestCsId.get("value").toString();
-                String ruleFlowStr = ruleCsIdValue.substring(1, ruleCsIdValue.length() - 1).replaceAll("\\\\", "");
-                String requestFlowStr = requestCsIdValue.substring(1, requestCsIdValue.length() - 1).replaceAll("\\\\", "");
-                JsonNode ruleFlow = mapper.readTree(ruleFlowStr);
-                JsonNode requestFlow = mapper.readTree(requestFlowStr);
-                // Converting string to json and compare the flow name.
-                if (ruleFlow.get("flow").toString().equals(requestFlow.get("flow").toString())) {
-                    ruleInDb.setCsId(request.getCsId());
-                    ruleDao.saveRule(ruleInDb);
-                    LOGGER.info("Succeed to save rule. rule_id: {}, rule_cs_id: {}", ruleInDb.getId(), ruleInDb.getCsId());
-                }
-            } catch (NullPointerException e) {
-                LOGGER.error("Update context service ID NPE.", e);
-            } catch (JsonProcessingException e) {
-                LOGGER.error("Update context service ID exception.", e);
-            } catch (IOException e) {
-                LOGGER.error("Update context service ID exception.", e);
+        if (GroupTypeEnum.CHECK_ALERT_GROUP.getCode().equals(ruleGroupInDb.getType())) {
+            List<CheckAlert> checkAlerts = checkAlertDao.findByRuleGroup(ruleGroupInDb);
+            LOGGER.info("Start to modify check alert. Rule group id: {}.", ruleGroupId.toString());
+            if (CollectionUtils.isEmpty(checkAlerts)) {
+                return new GeneralResponse<>("200", "No check alerts to be modify", null);
             }
+            checkAlerts = checkAlerts.stream().map(checkAlert -> {
+                checkAlert.setNodeName(request.getNodeName());
+                return checkAlert;
+            }).collect(Collectors.toList());
+            checkAlertDao.saveAll(checkAlerts);
+            LOGGER.info("Success to modify check alert. Rule group id: {}.", ruleGroupId.toString());
+            return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", null);
         }
+
+        List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
+        if (CollectionUtils.isEmpty(rules)) {
+            return new GeneralResponse<>("200", "No rules to be modify", null);
+        }
+        rules = rules.stream().map(rule -> {
+            rule.setNodeName(request.getNodeName());
+            return rule;
+        }).collect(Collectors.toList());
+        ruleDao.saveRules(rules);
+        LOGGER.info("Success to modify rule. Rule group ID: {}.", ruleGroupId.toString());
         return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", null);
     }
 
@@ -276,100 +276,226 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         List<RuleNodeResponse> responses = new ArrayList<>();
         try {
             List<Rule> rules = ruleDao.findByRuleGroup(ruleGroup);
-            if(CollectionUtils.isEmpty(rules)) {
-                throw new UnExpectedRequestException("Rule group [id = " + ruleGroup.getId() + "] does not have rules.");
-            }
-            for (Rule rule : rules) {
-                responses.add(ruleNodeResponse(rule));
+            List<CheckAlert> checkAlerts = checkAlertDao.findByRuleGroup(ruleGroup);
+            if (CollectionUtils.isEmpty(rules) && CollectionUtils.isEmpty(checkAlerts)) {
+                throw new UnExpectedRequestException("Rule group [id = " + ruleGroup.getId() + "] does not have rules or check alert rules.");
+            } else if (CollectionUtils.isNotEmpty(rules)) {
+                for (Rule rule : rules) {
+                    responses.add(ruleNodeResponse(rule));
+                }
+            } else if (CollectionUtils.isNotEmpty(checkAlerts)) {
+                for (CheckAlert checkAlert : checkAlerts) {
+                    responses.add(ruleNodeResponse(checkAlert));
+                }
             }
         } catch (IOException e) {
             LOGGER.error("Failed to export rule because of JSON serialization opeartions.", e);
             return new GeneralResponse<>("500", "{&FAILED_TO_EXPORT_RULE}", null);
         }
         LOGGER.info("Succeed to export rule. Rule info: {}", Arrays.toString(responses.toArray()));
-        RuleNodeResponses ruleNodeResponses = new RuleNodeResponses(responses);
-        return new GeneralResponse<>("200", "{&EXPORT_RULE_SUCCESSFULLY}", ruleNodeResponses);
+        RuleNodeResponses ruleNodeResponseList = new RuleNodeResponses(responses);
+        return new GeneralResponse<>("200", "{&EXPORT_RULE_SUCCESSFULLY}", ruleNodeResponseList);
+    }
+
+    private RuleNodeResponse ruleNodeResponse(CheckAlert checkAlert) throws IOException {
+        RuleNodeResponse response = new RuleNodeResponse();
+        response.setCheckAlertRule(objectMapper.writeValueAsString(checkAlert));
+
+        // Project info.
+        response.setProjectId(objectMapper.writeValueAsString(checkAlert.getProject().getId()));
+        response.setProjectName(objectMapper.writeValueAsString(checkAlert.getProject().getName()));
+
+        // Group info.
+        response.setRuleGroupObject(objectMapper.writeValueAsString(checkAlert.getRuleGroup()));
+
+        return response;
     }
 
     /**
-     *  Parse the rule information and encapsulate it into the response body.
+     * Parse the rule information and encapsulate it into the response body.
+     *
      * @param rule
      * @throws IOException
      */
     private RuleNodeResponse ruleNodeResponse(Rule rule) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
         RuleNodeResponse response = new RuleNodeResponse();
         // Project info.
         response.setProjectId(objectMapper.writeValueAsString(rule.getProject().getId()));
         response.setProjectName(objectMapper.writeValueAsString(rule.getProject().getName()));
-        // Rule, Template, RuleGroup.
-        response.setRuleObject(objectMapper.writeValueAsString(rule));
-        response.setTemplateObject(objectMapper.writeValueAsString(rule.getTemplate()));
+
         response.setRuleGroupObject(objectMapper.writeValueAsString(rule.getRuleGroup()));
-        // RuleDataSource.
-        response.setRuleDataSourcesObject(objectMapper.writerWithType(new TypeReference<Set<RuleDataSource>>() {})
-            .writeValueAsString(rule.getRuleDataSources()));
-        response.setRuleDataSourceMappingsObject(objectMapper.writerWithType(new TypeReference<Set<RuleDataSourceMapping>>() {})
-            .writeValueAsString(rule.getRuleDataSourceMappings()));
+        response.setTemplateObject(objectMapper.writeValueAsString(rule.getTemplate()));
+        // Template visibility department name list
+        List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(rule.getTemplate().getId(), TableDataTypeEnum.RULE_TEMPLATE);
 
-        // Rule check meta info.
-        response.setAlarmConfigsObject(objectMapper.writerWithType(new TypeReference<Set<AlarmConfig>>() {}).writeValueAsString(rule.getAlarmConfigs()));
-        response.setRuleVariablesObject(objectMapper.writerWithType(new TypeReference<Set<RuleVariable>>() {}).writeValueAsString(rule.getRuleVariables()));
-        // Template check meta info.
-        response.setTemplateTemplateStatisticsInputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateStatisticsInputMeta>>() {})
-            .writeValueAsString(rule.getTemplate().getStatisticAction()));
-        response.setTemplateTemplateMidTableInputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateMidTableInputMeta>>() {})
-            .writeValueAsString(rule.getTemplate().getTemplateMidTableInputMetas()));
-        response.setTemplateTemplateOutputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateOutputMeta>>() {})
-            .writeValueAsString(rule.getTemplate().getTemplateOutputMetas()));
+        if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+            response.setTemplateDataVisibilityObject(objectMapper.writerWithType(new TypeReference<List<DataVisibility>>() {}).writeValueAsString(dataVisibilityList));
+        }
+        response.setRuleObject(objectMapper.writeValueAsString(rule));
 
-        // Child Rule.
-        if (rule.getChildRule() != null) {
-            // Rule, Template.
-            response.setChildRuleObject(objectMapper.writeValueAsString(rule.getChildRule()));
-            response.setChildTemplateObject(objectMapper.writeValueAsString(rule.getChildRule().getTemplate()));
-            // RuleDataSource.
-            response.setChildRuleDataSourcesObject(objectMapper.writerWithType(new TypeReference<Set<RuleDataSource>>() {})
-                .writeValueAsString(rule.getChildRule().getRuleDataSources()));
-            response.setChildRuleDataSourceMappingsObject(objectMapper.writerWithType(new TypeReference<Set<RuleDataSourceMapping>>() {})
-                .writeValueAsString(rule.getChildRule().getRuleDataSourceMappings()));
-            // Child rule check meta info.
-            response.setChildAlarmConfigsObject(objectMapper.writerWithType(new TypeReference<Set<AlarmConfig>>() {})
-                .writeValueAsString(rule.getChildRule().getAlarmConfigs()));
-            response.setChildRuleVariablesObject(objectMapper.writerWithType(new TypeReference<Set<RuleVariable>>() {})
-                .writeValueAsString(rule.getChildRule().getRuleVariables()));
-            // Child template check meta info.
-            response.setChildTemplateTemplateOutputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateOutputMeta>>() {})
-                .writeValueAsString(rule.getChildRule().getTemplate().getTemplateOutputMetas()));
-            response.setChildTemplateTemplateMidTableInputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateMidTableInputMeta>>() {})
-                .writeValueAsString(rule.getChildRule().getTemplate().getTemplateMidTableInputMetas()));
-            response.setChildTemplateTemplateStatisticsInputMetaObject(objectMapper.writerWithType(new TypeReference<Set<TemplateStatisticsInputMeta>>() {})
-                .writeValueAsString(rule.getChildRule().getTemplate().getStatisticAction()));
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
+            if (executionParameters != null) {
+                response.setExecutionParamObject(objectMapper.writeValueAsString(executionParameters));
+            }
         }
 
         return response;
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<RuleResponse> importRuleGroup(RuleNodeRequests ruleNodeRequests)
-        throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
+    public GeneralResponse<RuleResponse> importRuleGroup(RuleNodeRequests ruleNodeRequests) throws UnExpectedRequestException, IOException, ExecutionException, InterruptedException {
+        LOGGER.info("Import requests: {}", ruleNodeRequests.toString());
         // Project, rule group.
         Project projectInDb = projectDao.findById(ruleNodeRequests.getNewProjectId());
+        projectInDb = handleProject(projectInDb, ruleNodeRequests);
+        LOGGER.info("Import into {}", projectInDb.getName());
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        RuleGroup ruleGroupExists;
+        StringBuilder workflowName = new StringBuilder("");
+
+        List<String> ruleNames = new ArrayList<>(ruleNodeRequests.getRuleNodeRequests().size());
+        List<String> checkAlertTopics = new ArrayList<>(ruleNodeRequests.getRuleNodeRequests().size());
         RuleGroup ruleGroup = objectMapper.readValue(ruleNodeRequests.getRuleNodeRequests().iterator().next().getRuleGroupObject(), RuleGroup.class);
-        RuleGroup ruleGroupInDb = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroup.getRuleGroupName(), projectInDb.getId()));
-        if (DEV_CENTER.equals(localConfig.getCenter())) {
-            CopyRuleRequest copyRuleRequest = new CopyRuleRequest();
-            copyRuleRequest.setSourceRuleGroupId(ruleGroup.getId());
-            copyRuleRequest.setCreateUser(projectInDb.getCreateUser());
-            copyRuleRequest.setTargetRuleGroupId(ruleGroupInDb.getId());
-            copyRuleRequest.setTargetProjectId(ruleNodeRequests.getNewProjectId());
-            copyRuleByRuleGroupId(copyRuleRequest);
-            return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupInDb.getId()));
+        Set<RuleDataSource> ruleDataSourceSet = ruleGroup.getRuleDataSources();
+
+
+        for (RuleNodeRequest request : ruleNodeRequests.getRuleNodeRequests()) {
+            if (StringUtils.isNotEmpty(request.getRuleObject())) {
+                Rule rule = objectMapper.readValue(request.getRuleObject(), Rule.class);
+                ruleNames.add(rule.getName());
+
+                if (StringUtils.isEmpty(workflowName.toString()) && StringUtils.isNotEmpty(rule.getWorkFlowName())) {
+                    workflowName.append(rule.getWorkFlowName());
+                }
+            }
+            if (StringUtils.isNotEmpty(request.getCheckAlertRule())) {
+                CheckAlert checkAlert = objectMapper.readValue(request.getCheckAlertRule(), CheckAlert.class);
+                checkAlertTopics.add(checkAlert.getTopic());
+
+                if (StringUtils.isEmpty(workflowName.toString()) && StringUtils.isNotEmpty(checkAlert.getWorkFlowName())) {
+                    workflowName.append(checkAlert.getWorkFlowName());
+                }
+            }
+        }
+        ruleGroupExists = reuseRuleGroupExists(ruleGroup, ruleNames, checkAlertTopics, projectInDb, workflowName.toString());
+
+        Long sourceRuleGroupId = ruleGroup.getId();
+
+        ruleGroup.setId(null);
+        ruleGroup.setProjectId(projectInDb.getId());
+        RuleGroup ruleGroupInDb = ruleGroupDao.saveRuleGroup(ruleGroup);
+
+        // Dev copy project, mainly about the project copy of different dss.
+        if (Boolean.TRUE.equals(localConfig.getSupportMigrate())) {
+            return devCenterCopyIfMigrate(ruleGroup, sourceRuleGroupId, projectInDb, ruleNodeRequests, workflowName.toString());
         }
 
+        List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+        if (ruleGroupExists == null) {
+            updateRuleGroupDatasource(ruleGroupInDb, ruleDataSourceSet);
+            ruleNodeRequestFuture(ruleNodeRequests, projectInDb, objectMapper, ruleGroupInDb, exceptionList);
+            if (CollectionUtils.isNotEmpty(exceptionList)) {
+                StringBuilder exceptionMessage = new StringBuilder();
+                for (Future<List<Exception>> eList : exceptionList) {
+                    for (Exception e : eList.get()) {
+                        exceptionMessage.append(e.getMessage()).append("\n");
+                    }
+                }
+                if (StringUtils.isNotEmpty(exceptionMessage.toString())) {
+                    return new GeneralResponse<>("500", "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
+                }
+            }
+            disableRules(ruleGroupInDb);
+            modifyRuleContextService(ruleGroupInDb, ruleNodeRequests.getCsId());
+            LOGGER.info("Imported rule group ID: {}", ruleGroupInDb.getId());
+            return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupInDb.getId()));
+        } else {
+            updateRuleGroupDatasource(ruleGroupExists, ruleDataSourceSet);
+            ruleNodeRequestFuture(ruleNodeRequests, projectInDb, objectMapper, ruleGroupExists, exceptionList);
+            if (CollectionUtils.isNotEmpty(exceptionList)) {
+                StringBuilder exceptionMessage = new StringBuilder();
+                for (Future<List<Exception>> eList : exceptionList) {
+                    for (Exception e : eList.get()) {
+                        exceptionMessage.append(e.getMessage()).append("\n");
+                    }
+                }
+
+                if (StringUtils.isNotEmpty(exceptionMessage.toString())) {
+                    return new GeneralResponse<>("500", "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
+                }
+            }
+            disableRules(ruleGroupExists);
+            modifyRuleContextService(ruleGroupExists, ruleNodeRequests.getCsId());
+            LOGGER.info("Imported rule group ID: {}", ruleGroupExists.getId());
+            return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupExists.getId()));
+        }
+    }
+
+    private void modifyRuleContextService(RuleGroup ruleGroupInDb, String csId) {
+        LOGGER.info("Rules need to update contextID: {}", csId);
+        List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
+        if (CollectionUtils.isNotEmpty(rules) && StringUtils.isNotEmpty(csId)) {
+            for (Rule rule : rules) {
+                if (StringUtils.isEmpty(rule.getCsId())) {
+                    continue;
+                }
+                LOGGER.info(rule.getName() + " " + " update contextID.");
+                rule.setCsId(csId);
+            }
+            ruleDao.saveRules(rules);
+        }
+    }
+
+    private GeneralResponse<RuleResponse> devCenterCopyIfMigrate(RuleGroup ruleGroup, Long sourceRuleGroupId, Project projectInDb, RuleNodeRequests ruleNodeRequests, String workflowName) throws InterruptedException, ExecutionException, UnExpectedRequestException {
+        CopyRuleRequest copyRuleRequest = new CopyRuleRequest();
+
+        copyRuleRequest.setWorkFlowName(workflowName);
+        copyRuleRequest.setVersion(ruleGroup.getVersion());
+        copyRuleRequest.setCsId(ruleNodeRequests.getCsId());
+        copyRuleRequest.setSourceRuleGroupId(sourceRuleGroupId);
+        copyRuleRequest.setCreateUser(projectInDb.getCreateUser());
+        copyRuleRequest.setTargetProjectId(ruleNodeRequests.getNewProjectId());
+
+        return copyRuleByRuleGroupId(copyRuleRequest);
+    }
+
+    private RuleGroup reuseRuleGroupExists(RuleGroup ruleGroup, List<String> ruleNames, List<String> checkAlertTopics, Project projectInDb, String workflowName) {
+        if (CollectionUtils.isNotEmpty(ruleNames)) {
+            List<Rule> rulesInDb = ruleDao.findByProjectAndWorkflowNameAndRuleNames(projectInDb, workflowName, ruleNames);
+
+            if (CollectionUtils.isNotEmpty(rulesInDb)) {
+                Rule currentRule = rulesInDb.iterator().next();
+                RuleGroup ruleGroupExists = currentRule.getRuleGroup();
+
+                ruleGroupExists.setVersion(ruleGroup.getVersion());
+                ruleGroupExists.setNodeName(ruleGroup.getNodeName());
+                ruleGroupExists.setRuleGroupName(ruleGroup.getRuleGroupName());
+
+                ruleGroupExists = ruleGroupDao.saveRuleGroup(ruleGroupExists);
+                LOGGER.info("Success to save exists rule group[" + ruleGroupExists.getRuleGroupName() + "]");
+                return ruleGroupExists;
+            }
+        } else if (CollectionUtils.isNotEmpty(checkAlertTopics)) {
+            List<CheckAlert> checkAlertsInDb = checkAlertDao.findByProjectAndWorkflowNameAndTopics(projectInDb, workflowName, checkAlertTopics);
+
+            if (CollectionUtils.isNotEmpty(checkAlertsInDb)) {
+                CheckAlert currentCheckAlert = checkAlertsInDb.iterator().next();
+                RuleGroup ruleGroupExists = currentCheckAlert.getRuleGroup();
+
+                ruleGroupExists.setVersion(ruleGroup.getVersion());
+                ruleGroupExists.setNodeName(ruleGroup.getNodeName());
+                ruleGroupExists.setRuleGroupName(ruleGroup.getRuleGroupName());
+
+                ruleGroupExists = ruleGroupDao.saveRuleGroup(ruleGroupExists);
+                LOGGER.info("Success to save exists rule group[" + ruleGroupExists.getRuleGroupName() + "]");
+                return ruleGroupExists;
+            }
+        }
+        return null;
+    }
+
+    private Project handleProject(Project projectInDb, RuleNodeRequests ruleNodeRequests) throws UnExpectedRequestException {
         if (projectInDb != null) {
             LOGGER.info("Project info : {}", projectInDb.toString());
         } else {
@@ -389,27 +515,84 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 }
             }
 
-            Project newProject = projectService.addProjectReal(currentUser.getId(), currentUser.getUserName() + "_project_" + UUID.randomUUID().toString()
-                , currentUser.getUserName() + "_项目_" + UUID.randomUUID().toString(), "Auto created.");
+            Project newProject = projectService.addProjectReal(currentUser.getId(), currentUser.getUsername() + "_project_" + UUID.randomUUID().toString()
+                , currentUser.getUsername() + "_项目_" + UUID.randomUUID().toString(), "Auto created.");
             newProject.setProjectType(ProjectTypeEnum.WORKFLOW_PROJECT.getCode());
             projectInDb = projectDao.saveProject(newProject);
             LOGGER.info("Succeed to create project. New project: {}", projectInDb.toString());
         }
+        return projectInDb;
+    }
 
-        for (RuleNodeRequest request : ruleNodeRequests.getRuleNodeRequests()) {
-            importRule(request, projectInDb, ruleGroupInDb, objectMapper);
+    private void disableRules(RuleGroup ruleGroupInDb) {
+        List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
+        if (StringUtils.isNotEmpty(ruleGroupInDb.getVersion())) {
+            rules = rules.stream().filter(rule -> !rule.getWorkFlowVersion().equals(ruleGroupInDb.getVersion())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(rules)) {
+                LOGGER.info("Some rules need to be unavailable. Current rule group name: {}, version: {}", ruleGroupInDb.getRuleGroupName(),
+                    ruleGroupInDb.getVersion());
+                for (Rule rule : rules) {
+                    LOGGER.info(rule.getName() + " " + rule.getWorkFlowName() + " " + rule.getWorkFlowVersion()
+                        + " need to be unavailable because workflow version is different from rule group.");
+                    rule.setEnable(Boolean.FALSE);
+                }
+                ruleDao.saveRules(rules);
+            }
         }
-        return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupInDb.getId()));
+    }
+
+    private void ruleNodeRequestFuture(RuleNodeRequests ruleNodeRequests, Project projectInDb, ObjectMapper objectMapper, RuleGroup ruleGroupInDb, List<Future<List<Exception>>> exceptionList) {
+        int total = ruleNodeRequests.getRuleNodeRequests().size();
+        int updateThreadSize = total / ruleConfig.getRuleUpdateSize() + 1;
+        if (total % ruleConfig.getRuleUpdateSize() == 0) {
+            updateThreadSize = total / ruleConfig.getRuleUpdateSize();
+        }
+        CountDownLatch latch = new CountDownLatch(updateThreadSize);
+        for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
+            if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
+                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), null, projectInDb, ruleGroupInDb, objectMapper, latch));
+                exceptionList.add(exceptionFuture);
+            } else {
+                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, total), null, projectInDb, ruleGroupInDb, objectMapper, latch));
+                exceptionList.add(exceptionFuture);
+            }
+            updateThreadSize--;
+        }
+
+        if (total > 0 && updateThreadSize == 0) {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
     }
 
     @Override
     public GeneralResponse<RuleResponse> copyRuleByRuleGroupId(CopyRuleRequest request)
-        throws UnExpectedRequestException, PermissionDeniedRequestException {
+            throws UnExpectedRequestException, ExecutionException, InterruptedException {
         CopyRuleRequest.checkRequest(request);
+        LOGGER.info("Copy request: {}", request.toString());
+
         Long ruleGroupId = request.getSourceRuleGroupId();
         RuleGroup ruleGroupInDb = ruleGroupDao.findById(request.getSourceRuleGroupId());
+        if (ruleGroupInDb == null) {
+            throw new UnExpectedRequestException("Rule group {&DOES_NOT_EXIST}");
+        }
+        Project targetProject = projectDao.findById(ruleGroupInDb.getProjectId());
+        if (targetProject == null) {
+            throw new UnExpectedRequestException("Source project {&DOES_NOT_EXIST}");
+        }
 
-        int totalFinish = 0;
+        boolean crossProject = request.getTargetProjectId() != null && (! ruleGroupInDb.getProjectId().equals(request.getTargetProjectId()));
+        // Check project existence.
+        if (crossProject) {
+            Project projectInDb = projectDao.findById(request.getTargetProjectId());
+            if (projectInDb == null) {
+                throw new UnExpectedRequestException("Target project {&DOES_NOT_EXIST}");
+            }
+            targetProject = projectInDb;
+        }
         RuleGroup targetRuleGroup;
         if (request.getTargetRuleGroupId() != null) {
             RuleGroup targetRuleGroupInDb = ruleGroupDao.findById(request.getTargetRuleGroupId());
@@ -419,122 +602,368 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 throw new UnExpectedRequestException("Rule group id is illegal.");
             }
         } else {
-            RuleGroup currentRuleGroup = new RuleGroup("Group_" + UUID.randomUUID().toString().replace("-", "")
-                , request.getTargetProjectId() != null ? request.getTargetProjectId() : ruleGroupInDb.getProjectId());
-            currentRuleGroup.setVersion(request.getVersion());
+            RuleGroup currentRuleGroup = new RuleGroup(ruleGroupInDb.getRuleGroupName(), crossProject ? request.getTargetProjectId() : ruleGroupInDb.getProjectId());
+            currentRuleGroup.setNodeName(StringUtils.isNotBlank(request.getNodeName()) ? request.getNodeName() : "");
+            currentRuleGroup.setVersion(StringUtils.isNotBlank(request.getVersion()) ? request.getVersion() : "");
+
+            if (ruleGroupInDb.getType() != null) {
+                currentRuleGroup.setType(ruleGroupInDb.getType());
+            }
             targetRuleGroup = ruleGroupDao.saveRuleGroup(currentRuleGroup);
+            updateRuleGroupDatasource(targetRuleGroup, ruleGroupInDb.getRuleDataSources());
         }
         if (ruleGroupId != null) {
-            LOGGER.info("Start to copy rules of rule group[ID=" + ruleGroupId + "].");
+            boolean checkAlertGroup = GroupTypeEnum.CHECK_ALERT_GROUP.getCode().equals(ruleGroupInDb.getType());
 
-            if (ruleGroupInDb == null) {
-                throw new UnExpectedRequestException("Rule group {&DOES_NOT_EXIST}");
+            List<Rule> rules = new ArrayList<>();
+            List<CheckAlert> checkAlerts = new ArrayList<>();
+
+            LOGGER.info("Start to copy of rule group[ID=" + ruleGroupId + "].");
+
+            int total;
+
+            if (! checkAlertGroup) {
+                rules = ruleDao.findByRuleGroup(ruleGroupInDb);
+                total = rules.size();
+            } else {
+                checkAlerts = checkAlertDao.findByRuleGroup(ruleGroupInDb);
+                total = checkAlerts.size();
             }
-            List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
-            for (Rule rule : rules) {
-                switch (rule.getRuleType().intValue()) {
-                    case 1:
-                        AddRuleRequest addRuleRequest = constructSingleRequest(rule, targetRuleGroup);
-                        ruleService.addRuleForOuter(addRuleRequest, request.getCreateUser());
-                        totalFinish ++;
-                        break;
-                    case 2:
-                        AddCustomRuleRequest addCustomRuleRequest = constructCustomRequest(rule, targetRuleGroup);
-                        customRuleService.addRuleForOuter(addCustomRuleRequest, request.getCreateUser());
-                        totalFinish ++;
-                        break;
-                    case 3:
-                        AddMultiSourceRuleRequest addMultiSourceRuleRequest = constructMultiRequest(rule, targetRuleGroup);
-                        addMultiSourceRuleRequest.setLoginUser(request.getCreateUser());
 
-                        multiSourceRuleService.addRuleForOuter(addMultiSourceRuleRequest, false);
-                        totalFinish ++;
-                        break;
-                    case 4:
-                        AddFileRuleRequest addFileRuleRequest = constructFileRequest(rule, targetRuleGroup);
-                        fileRuleService.addRuleForOuter(addFileRuleRequest, request.getCreateUser());
-                        totalFinish ++;
-                        break;
-                    default:
+            int updateThreadSize = total / ruleConfig.getRuleUpdateSize() + 1;
+            if (total % ruleConfig.getRuleUpdateSize() == 0) {
+                updateThreadSize = total / ruleConfig.getRuleUpdateSize();
+            }
 
+            List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+
+            CountDownLatch latch = new CountDownLatch(updateThreadSize);
+            for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
+                if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
+                    Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), checkAlertGroup ? checkAlerts.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
+                    exceptionList.add(exceptionFuture);
+                } else {
+                    Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, total), checkAlertGroup ? checkAlerts.subList(indexThread, total) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
+                    exceptionList.add(exceptionFuture);
+                }
+                updateThreadSize--;
+            }
+
+            if (total > 0 && updateThreadSize == 0) {
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    LOGGER.error("Interrupted!", e);
+                    Thread.currentThread().interrupt();
+                    throw new InterruptedException(e.getMessage());
+                }
+            }
+
+            // Check
+            List<Exception> exceptions = new ArrayList<>();
+            StringBuilder exceptionMessage = new StringBuilder();
+            for (Future<List<Exception>> future : exceptionList) {
+                if (CollectionUtils.isNotEmpty(future.get())) {
+                    exceptions.addAll(future.get());
+                }
+            }
+            if (CollectionUtils.isEmpty(exceptions)) {
+                modifyRuleContextService(targetRuleGroup, request.getCsId());
+                return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
+            } else {
+                for (Exception e : exceptions) {
+                    exceptionMessage.append(e.getMessage()).append("\n");
                 }
 
+                return new GeneralResponse<>("500", "{&FAILED_TO_COPY_RULE_DETAIL}, caused by " + exceptionMessage.toString(), null);
             }
-            if (totalFinish != rules.size()) {
-                return new GeneralResponse<>("200", "{&COPY_RULE_FAILED}", new RuleResponse(targetRuleGroup.getId()));
-            }
-
-        } else if (CollectionUtils.isNotEmpty(request.getSourceRuleIdList())) {
-
         }
+        modifyRuleContextService(targetRuleGroup, request.getCsId());
         return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
     }
 
-    private AddFileRuleRequest constructFileRequest(Rule rule, RuleGroup ruleGroup) {
-        AddFileRuleRequest addFileRuleRequest = new AddFileRuleRequest();
-        String newVersion = ruleGroup.getVersion();
-        if (StringUtils.isEmpty(newVersion)) {
-            String newRuleName = rule.getName() + "_copy_" + ruleGroup.getId();
-            LOGGER.info("File rule start to be copied. Copied rule name: " + newRuleName);
-            addFileRuleRequest.setRuleName(newRuleName);
-            if (StringUtils.isNotBlank(rule.getCnName())) {
-                addFileRuleRequest.setRuleCnName(rule.getCnName() + "_副本");
+    private void updateRuleGroupDatasource(RuleGroup targetRuleGroup, Set<RuleDataSource> ruleDataSourceSet) {
+        if (CollectionUtils.isNotEmpty(ruleDataSourceSet)) {
+            List<RuleDataSourceEnv> ruleDataSourceEnvList = new ArrayList<>();
+            List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
+            ruleDataSourceList.addAll(ruleDataSourceSet.stream().map(ruleDataSource -> {
+                ruleDataSource.setId(null);
+                ruleDataSource.setRuleGroup(targetRuleGroup);
+                if (CollectionUtils.isNotEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
+                    ruleDataSourceEnvList.addAll(ruleDataSource.getRuleDataSourceEnvs().stream().map(currRuleDataSourceEnv -> {
+                        currRuleDataSourceEnv.setId(null);
+                        return currRuleDataSourceEnv;
+                    }).collect(Collectors.toList()));
+                }
+                return ruleDataSource;
+            }).collect(Collectors.toList()));
+
+            ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList);
+            ruleDatasourceEnvDao.saveAllRuleDataSourceEnv(ruleDataSourceEnvList);
+        }
+    }
+
+    @Override
+    public int handleParameterIsNull(CopyRuleRequest request, int totalFinish, RuleGroup targetRuleGroup, Rule rule) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
+        switch (rule.getRuleType().intValue()) {
+            case 1:
+                AddRuleRequest addRuleRequest = constructSingleRequest(rule, targetRuleGroup, null);
+                ruleService.addRuleForOuter(addRuleRequest, request.getCreateUser());
+                totalFinish++;
+                break;
+            case 2:
+                AddCustomRuleRequest addCustomRuleRequest = constructCustomRequest(rule, targetRuleGroup, null);
+                customRuleService.addRuleForOuter(addCustomRuleRequest, request.getCreateUser());
+                totalFinish++;
+                break;
+            case 3:
+                AddMultiSourceRuleRequest addMultiSourceRuleRequest = constructMultiRequest(rule, targetRuleGroup, null);
+                addMultiSourceRuleRequest.setLoginUser(request.getCreateUser());
+                multiSourceRuleService.addRuleForOuter(addMultiSourceRuleRequest, false);
+                totalFinish++;
+                break;
+            case 4:
+                AddFileRuleRequest addFileRuleRequest = constructFileRequest(rule, targetRuleGroup, null);
+                fileRuleService.addRuleForOuter(addFileRuleRequest, request.getCreateUser());
+                totalFinish++;
+                break;
+            default:
+                break;
+        }
+        return totalFinish;
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse copyRuleWithDatasource(CopyRuleWithDatasourceRequest request)
+            throws UnExpectedRequestException {
+        CopyRuleWithDatasourceRequest.checkRequest(request);
+        List<Long> ruleIds = request.getRuleIdList();
+        List<Rule> rules = ruleDao.findByIds(ruleIds);
+
+        RuleGroup ruleGroup;
+        Long ruleGroupId = null;
+
+        int totalFinish = 0;
+        boolean firstAdd = true;
+
+        if (null != request.getRuleGroupId()) {
+            ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            //规则的工作流 version 保存前端入参的，不要继承旧规则的
+            if (StringUtils.isNotBlank(request.getWorkFlowVersion())) {
+                ruleGroup.setVersion(request.getWorkFlowVersion());
             }
+
         } else {
-            String oldVersion = rule.getRuleGroup().getVersion();
-            LOGGER.info("File rule start to be copied. Copied rule name: " + rule.getName() + "_" + ruleGroup.getVersion());
-            if (StringUtils.isNotBlank(oldVersion) && rule.getName().endsWith(oldVersion)) {
-                addFileRuleRequest.setRuleName(rule.getName().replace(oldVersion, newVersion));
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addFileRuleRequest.setRuleCnName(rule.getCnName().replace(oldVersion, newVersion));
+            RuleGroup tempRuleGroup = new RuleGroup("Group_" + UUID.randomUUID().toString().replace("-", "")
+                    , request.getProjectId());
+            tempRuleGroup.setVersion(StringUtils.isNotBlank(request.getWorkFlowVersion()) ? request.getWorkFlowVersion() : "");
+            ruleGroup = ruleGroupDao.saveRuleGroup(tempRuleGroup);
+        }
+
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+
+        for (Rule rule : rules) {
+            try {
+                if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(rule.getRuleType().intValue())) {
+                    List<DataSourceRequest> dataSourceRequests = new ArrayList<>();
+                    AddRuleRequest addRuleRequest = constructSingleRequest(rule, ruleGroup, StringUtils.isNotBlank(request.getWorkFlowName()) ? request.getWorkFlowName() : null);
+                    LOGGER.info("Succeed to construct old rule request: {}", addRuleRequest.toString());
+                    DataSourceRequest dataSourceRequest = addRuleRequest.getDatasource().iterator().next();
+                    DataSourceRequest dataSourceRequestReal = request.getDatasource().iterator().next();
+                    setDataSourceRequest(dataSourceRequest, dataSourceRequestReal);
+                    if (StringUtils.isNotBlank(request.getCsId())) {
+                        addRuleRequest.setCsId(request.getCsId());
+                    } else {
+                        dataSourceRequest.setDbName(dataSourceRequestReal.getDbName());
+                    }
+
+                    dataSourceRequests.add(dataSourceRequest);
+                    addRuleRequest.setDatasource(dataSourceRequests);
+
+                    // Remove temp rule group info
+                    if (null != request.getRuleGroupId()) {
+                        addRuleRequest.setRuleGroupId(request.getRuleGroupId());
+                    } else {
+                        addRuleRequest.setRuleGroupId(ruleGroupId);
+                    }
+                    addRuleRequest.setRuleName(addRuleRequest.getRuleName().replace("_" + ruleGroup.getId(), ""));
+                    LOGGER.info("Succeed to replace rule request with datasource: {}", addRuleRequest.toString());
+                    RuleResponse response = ruleService.addRule(addRuleRequest, loginUser, false).getData();
+                    if (firstAdd) {
+                        firstAdd = false;
+                        ruleGroupId = response.getRuleGroupId();
+                    }
+                    totalFinish++;
                 }
-            } else {
-                addFileRuleRequest.setRuleName(rule.getName() + "_" + newVersion);
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addFileRuleRequest.setRuleCnName(rule.getCnName() + "_" + newVersion);
-                }
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+                LOGGER.error("Failed to copy rule with datasource, exception: {}", e.getMessage());
             }
         }
-        String ruleDetail = rule.getDetail();
-        addFileRuleRequest.setRuleDetail(ruleDetail);
+
+        if (totalFinish != rules.size()) {
+            return new GeneralResponse<>("400", "{&COPY_RULE_FAILED}", new RuleResponse(ruleGroupId));
+        }
+
+        return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new CopyRuleWithDatasourceResponse(ruleGroup.getProjectId(), ruleGroupId, request.getRuleIdList()));
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse<List<Long>> updateRuleDataForBatch(BatchExecutionParametersRequest request) throws UnExpectedRequestException {
+        BatchExecutionParametersRequest.checkRequest(request);
+
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        //遍历规则ID
+        for (Long ids : request.getRuleIdList()) {
+            Rule ruleInDb = ruleDao.findById(ids);
+            if (ruleInDb == null) {
+                throw new UnExpectedRequestException("rule_id [" + ids + "] {&DOES_NOT_EXIST}");
+            }
+            boolean groupRules = CollectionUtils.isNotEmpty(ruleInDb.getRuleGroup().getRuleDataSources());
+            if (StringUtils.isNotBlank(request.getExecutionParametersName())) {
+                ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), ruleInDb.getProject().getId());
+                if (groupRules || executionParameters != null) {
+                    ruleInDb.setExecutionParametersName(request.getExecutionParametersName());
+                    ruleInDb.setUnionAll(executionParameters.getUnionAll());
+
+                    alarmConfigDao.saveAllAlarmConfig(ruleInDb.getAlarmConfigs().stream().map(temp -> {
+                        temp.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue() != null ? executionParameters.getUploadRuleMetricValue() : false);
+                        temp.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult() != null ? executionParameters.getDeleteFailCheckResult() : false);
+                        temp.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue() != null ? executionParameters.getUploadAbnormalValue() : false);
+                        return temp;
+                    }).collect(Collectors.toList()));
+
+                    //ExecutionParameters Filter() 单表过滤条件  SourceTableFilter() 源表过滤条件 TargetTableFilter() 目标表过滤条件
+
+                    if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(ruleInDb.getRuleType()) && CollectionUtils.isNotEmpty(ruleInDb.getRuleDataSources())
+                            && ruleInDb.getRuleDataSources().size() == 1 && Boolean.TRUE.equals(executionParameters.getSpecifyFilter())) {
+                        ruleDataSourceDao.saveAllRuleDataSource(ruleInDb.getRuleDataSources().stream().map((ruleDataSource) -> {
+                            ruleDataSource.setFilter(StringUtils.isNotBlank(executionParameters.getFilter()) ? executionParameters.getFilter() : "");
+                            return ruleDataSource;
+                        }).collect(Collectors.toList()));
+                    }
+
+                    if (RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode().equals(ruleInDb.getRuleType()) && CollectionUtils.isNotEmpty(ruleInDb.getRuleDataSources())
+                            && ruleInDb.getRuleDataSources().size() == 2 && Boolean.TRUE.equals(executionParameters.getSpecifyFilter())) {
+                        //源表
+                        ruleDataSourceDao.saveAllRuleDataSource(ruleInDb.getRuleDataSources().stream().filter(
+                                ruleDataSources -> ruleDataSources.getDatasourceIndex() == 0).map((temp) -> {
+                            temp.setFilter(StringUtils.isNotBlank(executionParameters.getSourceTableFilter()) ? executionParameters.getSourceTableFilter() : "");
+                            return temp;
+                        }).collect(Collectors.toList()));
+
+                        //目标表
+                        ruleDataSourceDao.saveAllRuleDataSource(ruleInDb.getRuleDataSources().stream().filter(
+                                ruleDataSources -> ruleDataSources.getDatasourceIndex() == 1).map((temp) -> {
+                            temp.setFilter(StringUtils.isNotBlank(executionParameters.getTargetTableFilter()) ? executionParameters.getTargetTableFilter() : "");
+                            return temp;
+                        }).collect(Collectors.toList()));
+                    }
+
+                }
+            } else {
+                throw new UnExpectedRequestException("execution_parameters_name [" + request.getExecutionParametersName() + "] {&DOES_NOT_EXIST}");
+            }
+            String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
+            ruleInDb.setModifyUser(loginUser);
+            ruleInDb.setModifyTime(nowDate);
+
+            Rule savedRule = ruleDao.saveRule(ruleInDb);
+            LOGGER.info("Succeed to update rule. Rule id: {}", savedRule.getId());
+        }
+        return new GeneralResponse<>("200", "{&BATCH_MODIFY_RULE_SUCCESSFULLY}", request.getRuleIdList());
+    }
+
+    private void setDataSourceRequest(DataSourceRequest dataSourceRequest, DataSourceRequest dataSourceRequestReal) {
+        dataSourceRequest.setClusterName(dataSourceRequestReal.getClusterName());
+        dataSourceRequest.setTableName(dataSourceRequestReal.getTableName());
+        dataSourceRequest.setColNames(dataSourceRequestReal.getColNames());
+
+        dataSourceRequest.setLinkisDataSourceId(dataSourceRequestReal.getLinkisDataSourceId());
+        dataSourceRequest.setDataSourceEnvRequests(dataSourceRequest.getDataSourceEnvRequests());
+        dataSourceRequest.setLinkisDataSourceType(dataSourceRequestReal.getLinkisDataSourceType());
+        dataSourceRequest.setLinkisDataSourceName(dataSourceRequestReal.getLinkisDataSourceName());
+        dataSourceRequest.setLinkisDataSourceVersionId(dataSourceRequest.getLinkisDataSourceVersionId());
+    }
+
+    @Override
+    public AddFileRuleRequest constructFileRequest(Rule rule, RuleGroup ruleGroup, String workFlowName) {
+        AddFileRuleRequest addFileRuleRequest = new AddFileRuleRequest();
+        addFileRuleRequest.setRuleName(rule.getName());
+        addFileRuleRequest.setRuleCnName(rule.getCnName());
+        addFileRuleRequest.setNodeName(rule.getNodeName());
+        addFileRuleRequest.setWorkFlowSpace(rule.getWorkFlowSpace());
+        addFileRuleRequest.setWorkFlowName(StringUtils.isNotBlank(workFlowName) ? workFlowName : "");
+        addFileRuleRequest.setWorkFlowVersion(StringUtils.isNotBlank(ruleGroup.getVersion()) ? ruleGroup.getVersion() : "");
+
+        addFileRuleRequest.setRuleDetail(rule.getDetail());
         addFileRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
 
         addFileRuleRequest.setCsId(rule.getCsId());
+        addFileRuleRequest.setRuleEnable(rule.getEnable());
+        addFileRuleRequest.setUnionAll(rule.getUnionAll());
         addFileRuleRequest.setRuleGroupId(ruleGroup.getId());
         addFileRuleRequest.setProjectId(ruleGroup.getProjectId());
-        addFileRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
+        addFileRuleRequest.setRuleTemplateId(rule.getTemplate().getId());
 
-        for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            addFileRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
+            // Sync execution parameters in different project.
+            synchroExecutionParameters(rule, ruleGroup);
+        } else {
+            addFileRuleRequest.setAlert(rule.getAlert());
+            if (rule.getAlert() != null && rule.getAlert()) {
+                addFileRuleRequest.setAlertLevel(rule.getAlertLevel());
+                addFileRuleRequest.setAlertReceiver(rule.getAlertReceiver());
+            }
+            addFileRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
+        }
+        if (StringUtils.isNotBlank(rule.getBashContent())) {
+            int startIndexOfRuleNameKey = rule.getBashContent().indexOf(RULE_NAME);
+            int startIndexOfRuleName = rule.getBashContent().indexOf(rule.getName(), startIndexOfRuleNameKey);
+            addFileRuleRequest.setBashContent(rule.getBashContent().substring(startIndexOfRuleNameKey, startIndexOfRuleName) + rule.getName());
+        }
+
+        if (CollectionUtils.isNotEmpty(rule.getRuleDataSources())) {
             DataSourceRequest dataSourceRequest = new DataSourceRequest();
-            String clusterName = ruleDataSource.getClusterName();
-            String databaseName = ruleDataSource.getDbName();
-            String tableName = ruleDataSource.getTableName();
-            String filter = ruleDataSource.getFilter();
+            String clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
+            String databaseName = rule.getRuleDataSources().iterator().next().getDbName();
+            String tableName = rule.getRuleDataSources().iterator().next().getTableName();
+            String filter = rule.getRuleDataSources().iterator().next().getFilter();
 
             dataSourceRequest.setClusterName(clusterName);
             dataSourceRequest.setDbName(databaseName);
             dataSourceRequest.setTableName(tableName);
             dataSourceRequest.setFilter(filter);
 
-            addFileRuleRequest.setDatasource(dataSourceRequest);
-            break;
+            addFileRuleRequest.setDatasource(Lists.newArrayList(dataSourceRequest));
+
         }
+
         List<FileAlarmConfigRequest> alarmVariable = new ArrayList<>();
+        setFileAlarm(rule, alarmVariable);
+        addFileRuleRequest.setAlarm(true);
+        addFileRuleRequest.setFileAlarmVariable(alarmVariable);
+        return addFileRuleRequest;
+    }
+
+    private void setFileAlarm(Rule rule, List<FileAlarmConfigRequest> alarmVariable) {
         for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
             FileAlarmConfigRequest fileAlarmConfigRequest = new FileAlarmConfigRequest();
 
             Double threshold = alarmConfig.getThreshold();
             Integer unit = alarmConfig.getFileOutputUnit();
             Integer alarmCompareType = alarmConfig.getCompareType();
-            Integer alarmOutputName = alarmConfig.getFileOutputName();
-
             Integer checkTemplateName = alarmConfig.getCheckTemplate();
 
             fileAlarmConfigRequest.setFileOutputUnit(unit);
             fileAlarmConfigRequest.setCompareType(alarmCompareType);
-            fileAlarmConfigRequest.setFileOutputName(alarmOutputName);
+            fileAlarmConfigRequest.setOutputMetaId(alarmConfig.getTemplateOutputMeta().getId());
             fileAlarmConfigRequest.setCheckTemplate(checkTemplateName);
             fileAlarmConfigRequest.setThreshold(threshold);
+
             RuleMetric ruleMetric = alarmConfig.getRuleMetric();
             // Recod rule metric info (unique code).
             if (ruleMetric != null) {
@@ -547,58 +976,108 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             fileAlarmConfigRequest.setDeleteFailCheckResult(alarmConfig.getDeleteFailCheckResult());
             alarmVariable.add(fileAlarmConfigRequest);
         }
-        addFileRuleRequest.setAlarm(true);
-        addFileRuleRequest.setAlarmVariable(alarmVariable);
-        return addFileRuleRequest;
     }
 
-    private AddMultiSourceRuleRequest constructMultiRequest(Rule rule, RuleGroup ruleGroup) {
+    @Override
+    public AddMultiSourceRuleRequest constructMultiRequest(Rule rule, RuleGroup ruleGroup, String workFlowName) {
         AddMultiSourceRuleRequest addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
-        String newVersion = ruleGroup.getVersion();
-        if (StringUtils.isEmpty(newVersion)) {
-            String newRuleName = rule.getName() + "_copy_" + ruleGroup.getId();
-            LOGGER.info("Multi rule start to be copied. Copied rule name: " + newRuleName);
-            addMultiSourceRuleRequest.setRuleName(newRuleName);
-            if (StringUtils.isNotBlank(rule.getCnName())) {
-                addMultiSourceRuleRequest.setRuleCnName(rule.getCnName() + "_副本");
-            }
-        } else {
-            String oldVersion = rule.getRuleGroup().getVersion();
-            LOGGER.info("Multi rule start to be copied. Copied rule name: " + rule.getName() + "_" + ruleGroup.getVersion());
-            if (StringUtils.isNotBlank(oldVersion) && rule.getName().endsWith(oldVersion)) {
-                addMultiSourceRuleRequest.setRuleName(rule.getName().replace(oldVersion, newVersion));
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addMultiSourceRuleRequest.setRuleCnName(rule.getCnName().replace(oldVersion, newVersion));
-                }
-            } else {
-                addMultiSourceRuleRequest.setRuleName(rule.getName() + "_" + newVersion);
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addMultiSourceRuleRequest.setRuleCnName(rule.getCnName() + "_" + newVersion);
-                }
-            }
-        }
+        addMultiSourceRuleRequest.setRuleName(rule.getName());
+        addMultiSourceRuleRequest.setRuleCnName(rule.getCnName());
+        addMultiSourceRuleRequest.setNodeName(rule.getNodeName());
+        addMultiSourceRuleRequest.setWorkFlowSpace(rule.getWorkFlowSpace());
+        addMultiSourceRuleRequest.setWorkFlowName(StringUtils.isNotBlank(workFlowName) ? workFlowName : "");
+        addMultiSourceRuleRequest.setWorkFlowVersion(StringUtils.isNotBlank(ruleGroup.getVersion()) ? ruleGroup.getVersion() : "");
 
-        String ruleDetail = rule.getDetail();
-
-        String clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
-        addMultiSourceRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
-        addMultiSourceRuleRequest.setClusterName(clusterName);
-        addMultiSourceRuleRequest.setRuleDetail(ruleDetail);
-        addMultiSourceRuleRequest.setCsId(rule.getCsId());
-        addMultiSourceRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
         addMultiSourceRuleRequest.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
         addMultiSourceRuleRequest.setMultiSourceRuleTemplateId(rule.getTemplate().getId());
-        addMultiSourceRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
+        String clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
+        addMultiSourceRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
         addMultiSourceRuleRequest.setProjectId(ruleGroup.getProjectId());
         addMultiSourceRuleRequest.setRuleGroupId(ruleGroup.getId());
+        addMultiSourceRuleRequest.setRuleDetail(rule.getDetail());
+        addMultiSourceRuleRequest.setRuleEnable(rule.getEnable());
+        addMultiSourceRuleRequest.setUnionAll(rule.getUnionAll());
+        addMultiSourceRuleRequest.setClusterName(clusterName);
+        addMultiSourceRuleRequest.setCsId(rule.getCsId());
+
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            addMultiSourceRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
+            // Sync execution parameters in different project.
+            synchroExecutionParameters(rule, ruleGroup);
+        } else {
+            addMultiSourceRuleRequest.setAlert(rule.getAlert());
+            if (rule.getAlert() != null && rule.getAlert()) {
+                addMultiSourceRuleRequest.setAlertLevel(rule.getAlertLevel());
+                addMultiSourceRuleRequest.setAlertReceiver(rule.getAlertReceiver());
+            }
+            addMultiSourceRuleRequest.setAbnormalCluster(rule.getAbnormalCluster());
+            addMultiSourceRuleRequest.setAbnormalDatabase(rule.getAbnormalDatabase());
+            addMultiSourceRuleRequest.setAbnormalProxyUser(rule.getAbnormalProxyUser());
+            addMultiSourceRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
+            addMultiSourceRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
+        }
+        if (StringUtils.isNotBlank(rule.getBashContent())) {
+            int startIndexOfRuleNameKey = rule.getBashContent().indexOf(RULE_NAME);
+            int startIndexOfRuleName = rule.getBashContent().indexOf(rule.getName(), startIndexOfRuleNameKey);
+            addMultiSourceRuleRequest.setBashContent(rule.getBashContent().substring(startIndexOfRuleNameKey, startIndexOfRuleName) + rule.getName());
+        }
+
+        List<TemplateArgumentRequest> templateArgumentRequests = Lists.newArrayList();
 
         List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
-            ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
+                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
         if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
-            addMultiSourceRuleRequest.setFilter(filterRuleVariable.iterator().next().getValue());
+            TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+            templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode());
+            templateArgumentRequest.setArgumentValue(filterRuleVariable.iterator().next().getValue());
+            templateArgumentRequests.add(templateArgumentRequest);
         }
 
         // Data source request
+        requestDataSource(rule, addMultiSourceRuleRequest);
+        // Mapping
+        List<MultiDataSourceJoinConfigRequest> mappings = new ArrayList<>();
+        List<MultiDataSourceJoinConfigRequest> compareCols = new ArrayList<>();
+        for (RuleDataSourceMapping mapping : rule.getRuleDataSourceMappings()) {
+            MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
+            multiDataSourceJoinConfigRequest.setOperation(mapping.getOperation());
+            multiDataSourceJoinConfigRequest.setLeftStatement(mapping.getLeftStatement());
+            multiDataSourceJoinConfigRequest.setRightStatement(mapping.getRightStatement());
+
+            List<MultiDataSourceJoinColumnRequest> left = getMultiDataSourceJoinColumnRequest(mapping.getLeftColumnNames(), mapping.getLeftColumnTypes());
+            List<MultiDataSourceJoinColumnRequest> right = getMultiDataSourceJoinColumnRequest(mapping.getRightColumnNames(), mapping.getLeftColumnTypes());
+            multiDataSourceJoinConfigRequest.setLeft(left);
+            multiDataSourceJoinConfigRequest.setRight(right);
+            if (MappingTypeEnum.CONNECT_FIELDS.getCode().equals(mapping.getMappingType())) {
+                mappings.add(multiDataSourceJoinConfigRequest);
+            } else if (MappingTypeEnum.MATCHING_FIELDS.getCode().equals(mapping.getMappingType())) {
+                compareCols.add(multiDataSourceJoinConfigRequest);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(mappings)) {
+            TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+            templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.CONNECT_FIELDS.getCode());
+            templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(mappings));
+            templateArgumentRequests.add(templateArgumentRequest);
+        }
+
+        if (CollectionUtils.isNotEmpty(compareCols)) {
+            TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+            templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode());
+            templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(compareCols));
+            templateArgumentRequests.add(templateArgumentRequest);
+        }
+
+        addMultiSourceRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
+
+        List<AlarmConfigRequest> alarmConfigRequests = constructAlarmConfigRequest(rule.getAlarmConfigs());
+        addMultiSourceRuleRequest.setAlarmVariable(alarmConfigRequests);
+        addMultiSourceRuleRequest.setAlarm(true);
+        return addMultiSourceRuleRequest;
+    }
+
+    private void requestDataSource(Rule rule, AddMultiSourceRuleRequest addMultiSourceRuleRequest) {
         for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
             String databaseName = ruleDataSource.getDbName();
             String tableName = ruleDataSource.getTableName();
@@ -609,6 +1088,14 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             dataSourceConfigRequest.setTableName(tableName);
             dataSourceConfigRequest.setFilter(filter);
             dataSourceConfigRequest.setProxyUser(ruleDataSource.getProxyUser());
+            if (StringUtils.isNotBlank(ruleDataSource.getFileId())) {
+                dataSourceConfigRequest.setFileId(ruleDataSource.getFileId());
+                dataSourceConfigRequest.setFileType(ruleDataSource.getFileType());
+                dataSourceConfigRequest.setFileHeader(ruleDataSource.getFileHeader());
+                dataSourceConfigRequest.setFileHashValues(ruleDataSource.getFileHashValue());
+                dataSourceConfigRequest.setFileTableDesc(ruleDataSource.getFileTableDesc());
+                dataSourceConfigRequest.setFileDelimiter(ruleDataSource.getFileDelimiter());
+            }
             if (ruleDataSource.getLinkisDataSourceId() != null) {
                 dataSourceConfigRequest.setLinkisDataSourceType(TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType()));
                 dataSourceConfigRequest.setLinkisDataSourceName(ruleDataSource.getLinkisDataSourceName());
@@ -620,68 +1107,32 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 addMultiSourceRuleRequest.setTarget(dataSourceConfigRequest);
             }
         }
-        // Mapping
-        List<MultiDataSourceJoinConfigRequest> mappings = new ArrayList<>();
-        for (RuleDataSourceMapping mapping : rule.getRuleDataSourceMappings()) {
-            MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
-            multiDataSourceJoinConfigRequest.setOperation(mapping.getOperation());
-            multiDataSourceJoinConfigRequest.setLeftStatement(mapping.getLeftStatement());
-            multiDataSourceJoinConfigRequest.setRightStatement(mapping.getRightStatement());
-
-            List<MultiDataSourceJoinColumnRequest> left = getMultiDataSourceJoinColumnRequest(mapping.getLeftColumnNames(), mapping.getLeftColumnTypes());
-            List<MultiDataSourceJoinColumnRequest> right = getMultiDataSourceJoinColumnRequest(mapping.getRightColumnNames(), mapping.getLeftColumnTypes());
-            multiDataSourceJoinConfigRequest.setLeft(left);
-            multiDataSourceJoinConfigRequest.setRight(right);
-            mappings.add(multiDataSourceJoinConfigRequest);
-        }
-        addMultiSourceRuleRequest.setMappings(mappings);
-
-        List<AlarmConfigRequest> alarmConfigRequests = constructAlarmConfigRequest(rule.getAlarmConfigs());
-        addMultiSourceRuleRequest.setAlarm(true);
-        addMultiSourceRuleRequest.setAlarmVariable(alarmConfigRequests);
-        return addMultiSourceRuleRequest;
     }
 
     private List<MultiDataSourceJoinColumnRequest> getMultiDataSourceJoinColumnRequest(String names, String types) {
         List<MultiDataSourceJoinColumnRequest> joinColumnRequests = new ArrayList<>();
         String[] columnNames = names.split(",");
         String[] columnTypes = types.split("\\|");
-        for (int i = 0; i < columnNames.length; i ++) {
+        for (int i = 0; i < columnNames.length; i++) {
             joinColumnRequests.add(new MultiDataSourceJoinColumnRequest(columnNames[i], columnTypes[i]));
         }
         return joinColumnRequests;
     }
 
-    private AddCustomRuleRequest constructCustomRequest(Rule rule, RuleGroup ruleGroup) {
+    @Override
+    public AddCustomRuleRequest constructCustomRequest(Rule rule, RuleGroup ruleGroup, String workFlowName) {
         AddCustomRuleRequest addCustomRuleRequest = new AddCustomRuleRequest();
-        String newVersion = ruleGroup.getVersion();
-        if (StringUtils.isEmpty(newVersion)) {
-            String newRuleName = rule.getName() + "_copy_" + ruleGroup.getId();
-            LOGGER.info("Custom rule start to be copied. Copied rule name: " + newRuleName);
-            addCustomRuleRequest.setRuleName(newRuleName);
-            if (StringUtils.isNotBlank(rule.getCnName())) {
-                addCustomRuleRequest.setRuleCnName(rule.getCnName() + "_副本");
-            }
-        } else {
-            String oldVersion = rule.getRuleGroup().getVersion();
-            LOGGER.info("Custom rule start to be copied. Copied rule name: " + rule.getName() + "_" + ruleGroup.getVersion());
-            if (StringUtils.isNotBlank(oldVersion) && rule.getName().endsWith(oldVersion)) {
-                addCustomRuleRequest.setRuleName(rule.getName().replace(oldVersion, newVersion));
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addCustomRuleRequest.setRuleCnName(rule.getCnName().replace(oldVersion, newVersion));
-                }
-            } else {
-                addCustomRuleRequest.setRuleName(rule.getName() + "_" + newVersion);
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addCustomRuleRequest.setRuleCnName(rule.getCnName() + "_" + newVersion);
-                }
-            }
-        }
+        addCustomRuleRequest.setRuleName(rule.getName());
+        addCustomRuleRequest.setRuleCnName(rule.getCnName());
+        addCustomRuleRequest.setNodeName(rule.getNodeName());
+        addCustomRuleRequest.setWorkFlowSpace(rule.getWorkFlowSpace());
+        addCustomRuleRequest.setWorkFlowName(StringUtils.isNotBlank(workFlowName) ? workFlowName : "");
+        addCustomRuleRequest.setWorkFlowVersion(StringUtils.isNotBlank(ruleGroup.getVersion()) ? ruleGroup.getVersion() : "");
 
         addCustomRuleRequest.setRuleDetail(rule.getDetail());
         addCustomRuleRequest.setSaveMidTable(rule.getTemplate().getSaveMidTable());
         if (rule.getFunctionType() != null && StringUtils.isNotBlank(rule.getFunctionContent())
-            && StringUtils.isNotBlank(rule.getFromContent()) && StringUtils.isNotBlank(rule.getWhereContent())) {
+                && StringUtils.isNotBlank(rule.getFromContent()) && StringUtils.isNotBlank(rule.getWhereContent())) {
             String functionContent = rule.getFunctionContent();
             String whereContent = rule.getWhereContent();
             String fromContent = rule.getFromContent();
@@ -696,21 +1147,58 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
         addCustomRuleRequest.setAlarm(true);
         addCustomRuleRequest.setAlarmVariable(constructCustomAlarmConfigRequest(rule.getAlarmConfigs(), addCustomRuleRequest));
-        RuleDataSource ruleDataSource = rule.getRuleDataSources().iterator().next();
+        RuleDataSource ruleDataSource = rule.getRuleDataSources().stream().filter(currentRuleDataSource -> currentRuleDataSource.getDatasourceIndex() != null).iterator().next();
         addCustomRuleRequest.setClusterName(ruleDataSource.getClusterName());
         addCustomRuleRequest.setProxyUser(ruleDataSource.getProxyUser());
 
         addCustomRuleRequest.setProjectId(ruleGroup.getProjectId());
         addCustomRuleRequest.setRuleGroupId(ruleGroup.getId());
+        addCustomRuleRequest.setRuleEnable(rule.getEnable());
+        addCustomRuleRequest.setUnionAll(rule.getUnionAll());
         addCustomRuleRequest.setCsId(rule.getCsId());
-        addCustomRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
-        addCustomRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
-        addCustomRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
+
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            addCustomRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
+            // Sync execution parameters in different project.
+            synchroExecutionParameters(rule, ruleGroup);
+        } else {
+            addCustomRuleRequest.setAlert(rule.getAlert());
+            addCustomRuleRequest.setAlertLevel(rule.getAlertLevel());
+            addCustomRuleRequest.setAlertReceiver(rule.getAlertReceiver());
+            addCustomRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
+            addCustomRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
+            addCustomRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
+        }
+        if (StringUtils.isNotBlank(rule.getBashContent())) {
+            int startIndexOfRuleNameKey = rule.getBashContent().indexOf(RULE_NAME);
+            int startIndexOfRuleName = rule.getBashContent().indexOf(rule.getName(), startIndexOfRuleNameKey);
+            addCustomRuleRequest.setBashContent(rule.getBashContent().substring(startIndexOfRuleNameKey, startIndexOfRuleName) + rule.getName());
+
+        }
 
         if (ruleDataSource.getLinkisDataSourceId() != null) {
             addCustomRuleRequest.setLinkisDataSourceId(ruleDataSource.getLinkisDataSourceId());
             addCustomRuleRequest.setLinkisDataSourceName(ruleDataSource.getLinkisDataSourceName());
             addCustomRuleRequest.setLinkisDataSourceType(TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType()));
+
+            List<RuleDataSourceEnv> ruleDataSourceEnvs = ruleDataSource.getRuleDataSourceEnvs();
+            if (CollectionUtils.isNotEmpty(ruleDataSourceEnvs)) {
+                List<DataSourceEnvRequest> ruleDataSourceEnvRequests = new ArrayList<>(ruleDataSourceEnvs.size());
+                for (RuleDataSourceEnv ruleDataSourceEnv : ruleDataSourceEnvs) {
+                    ruleDataSourceEnvRequests.add(new DataSourceEnvRequest(ruleDataSourceEnv));
+                }
+                addCustomRuleRequest.setDataSourceEnvRequests(ruleDataSourceEnvRequests);
+            }
+        }
+
+        String fileId = ruleDataSource.getFileId();
+        if (StringUtils.isNotBlank(fileId)) {
+            addCustomRuleRequest.setFileId(fileId);
+            addCustomRuleRequest.setFileType(ruleDataSource.getFileType());
+            addCustomRuleRequest.setFileHeader(ruleDataSource.getFileHeader());
+            addCustomRuleRequest.setFileDelimiter(ruleDataSource.getFileDelimiter());
+            addCustomRuleRequest.setFileHashValues(ruleDataSource.getFileHashValue());
+            addCustomRuleRequest.setFileTableDesc(ruleDataSource.getFileTableDesc());
         }
 
         return addCustomRuleRequest;
@@ -731,39 +1219,25 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
             alarmConfigRequest.setUploadRuleMetricValue(alarmConfig.getUploadRuleMetricValue());
             alarmConfigRequest.setDeleteFailCheckResult(alarmConfig.getDeleteFailCheckResult());
-            addCustomRuleRequest.setOutputName(ruleMetric.getName());
+            addCustomRuleRequest.setOutputName(ruleMetric != null ? ruleMetric.getName() : "");
             alarmConfigRequests.add(alarmConfigRequest);
         }
 
         return alarmConfigRequests;
     }
 
-    private AddRuleRequest constructSingleRequest(Rule rule, RuleGroup ruleGroup) {
+    @Override
+    public AddRuleRequest constructSingleRequest(Rule rule, RuleGroup ruleGroup, String workFlowName) {
         AddRuleRequest addRuleRequest = new AddRuleRequest();
-        String newVersion = ruleGroup.getVersion();
-        if (StringUtils.isEmpty(newVersion)) {
-            String newRuleName = rule.getName() + "_copy_" + ruleGroup.getId();
-            LOGGER.info("Single rule start to be copied. Copied rule name: " + newRuleName);
-            addRuleRequest.setRuleName(newRuleName);
-            if (StringUtils.isNotBlank(rule.getCnName())) {
-                addRuleRequest.setRuleCnName(rule.getCnName() + "_副本");
-            }
-        } else {
-            String oldVersion = rule.getRuleGroup().getVersion();
-            LOGGER.info("Single rule start to be copied. Copied rule name: " + rule.getName() + "_" + ruleGroup.getVersion());
-            if (StringUtils.isNotBlank(oldVersion) && rule.getName().endsWith(oldVersion)) {
-                addRuleRequest.setRuleName(rule.getName().replace(oldVersion, newVersion));
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addRuleRequest.setRuleCnName(rule.getCnName().replace(oldVersion, newVersion));
-                }
-            } else {
-                addRuleRequest.setRuleName(rule.getName() + "_" + newVersion);
-                if (StringUtils.isNotBlank(rule.getCnName())) {
-                    addRuleRequest.setRuleCnName(rule.getCnName() + "_" + newVersion);
-                }
-            }
-        }
+        addRuleRequest.setRuleName(rule.getName());
+        // Same work flow name, a higher level version in rule group.
+        // New work flow name, initialized version
+        addRuleRequest.setNodeName(rule.getNodeName());
+        addRuleRequest.setWorkFlowSpace(rule.getWorkFlowSpace());
+        addRuleRequest.setWorkFlowName(StringUtils.isNotBlank(workFlowName) ? workFlowName : "");
+        addRuleRequest.setWorkFlowVersion(StringUtils.isNotBlank(ruleGroup.getVersion()) ? ruleGroup.getVersion() : "");
 
+        addRuleRequest.setRuleCnName(rule.getCnName());
         addRuleRequest.setRuleDetail(rule.getDetail());
         addRuleRequest.setRuleTemplateId(rule.getTemplate().getId());
 
@@ -772,38 +1246,72 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addRuleRequest.setTemplateArgumentRequests(constructTemplateArgumentRequest(rule));
         addRuleRequest.setDatasource(constructDataSourceRequest(rule.getRuleDataSources()));
 
+        addRuleRequest.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
         addRuleRequest.setProjectId(ruleGroup.getProjectId());
         addRuleRequest.setRuleGroupId(ruleGroup.getId());
+        addRuleRequest.setRuleEnable(rule.getEnable());
+        addRuleRequest.setUnionAll(rule.getUnionAll());
         addRuleRequest.setCsId(rule.getCsId());
 
-        addRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
-        addRuleRequest.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
-        addRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
-        addRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            addRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
+            // Sync execution parameters in different project.
+            synchroExecutionParameters(rule, ruleGroup);
+        } else {
+            addRuleRequest.setAlert(rule.getAlert());
+            addRuleRequest.setAlertLevel(rule.getAlertLevel());
+            addRuleRequest.setAlertReceiver(rule.getAlertReceiver());
+            addRuleRequest.setAbortOnFailure(rule.getAbortOnFailure());
+            addRuleRequest.setAbnormalCluster(rule.getAbnormalCluster());
+            addRuleRequest.setAbnormalDatabase(rule.getAbnormalDatabase());
+            addRuleRequest.setAbnormalProxyUser(rule.getAbnormalProxyUser());
+            addRuleRequest.setSpecifyStaticStartupParam(rule.getSpecifyStaticStartupParam());
+            addRuleRequest.setStaticStartupParam(rule.getStaticStartupParam());
+        }
+
+        if (StringUtils.isNotBlank(rule.getBashContent())) {
+            addRuleRequest.setBashContent(rule.getBashContent());
+        }
         return addRuleRequest;
     }
 
+    private void synchroExecutionParameters(Rule rule, RuleGroup ruleGroup) {
+        ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
+        if (!rule.getProject().getId().equals(ruleGroup.getProjectId())) {
+            ExecutionParameters targetExecutionParameters = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), ruleGroup.getProjectId());
+            if (targetExecutionParameters == null) {
+                targetExecutionParameters = new ExecutionParameters();
+                BeanUtils.copyProperties(executionParameters, targetExecutionParameters);
+                targetExecutionParameters.setId(null);
+            } else {
+                Long originId = targetExecutionParameters.getId();
+                BeanUtils.copyProperties(executionParameters, targetExecutionParameters);
+                targetExecutionParameters.setId(originId);
+            }
+            targetExecutionParameters.setProjectId(ruleGroup.getProjectId());
+            executionParametersDao.saveExecutionParameters(targetExecutionParameters);
+        }
+    }
+
     private List<TemplateArgumentRequest> constructTemplateArgumentRequest(Rule rule) {
-        List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>(rule.getTemplate().getTemplateMidTableInputMetas().size());
+        List<TemplateMidTableInputMeta> templateMidTableInputMetaList = rule.getTemplate().getTemplateMidTableInputMetas().stream().filter(t -> TemplateMidTableUtil.shouldResponse(t)).collect(Collectors.toList());
+        List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>(templateMidTableInputMetaList.size());
 
-        for (TemplateMidTableInputMeta templateMidTableInputMeta : rule.getTemplate().getTemplateMidTableInputMetas()) {
-            if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
-                for (RuleVariable ruleVariable : rule.getRuleVariables()) {
-                    TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : templateMidTableInputMetaList) {
+            for (RuleVariable ruleVariable : rule.getRuleVariables()) {
+                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
 
-                    if (ruleVariable.getTemplateMidTableInputMeta().equals(templateMidTableInputMeta)) {
-                        String value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
-                        if (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.REGEXP.getCode())) {
-                            if (templateMidTableInputMeta.getRegexpType() != null) {
-                                value = ruleVariable.getOriginValue();
-                            }
-                        }
-                        templateArgumentRequest.setArgumentStep(InputActionStepEnum.TEMPLATE_INPUT_META.getCode());
-                        templateArgumentRequest.setArgumentId(templateMidTableInputMeta.getId());
-                        templateArgumentRequest.setArgumentValue(value);
-
-                        templateArgumentRequests.add(templateArgumentRequest);
+                if (ruleVariable.getTemplateMidTableInputMeta().equals(templateMidTableInputMeta)) {
+                    String value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+                    if (templateMidTableInputMeta.getInputType().equals(TemplateInputTypeEnum.REGEXP.getCode()) && templateMidTableInputMeta.getRegexpType() != null) {
+                        value = ruleVariable.getOriginValue();
                     }
+                    templateArgumentRequest.setArgumentStep(InputActionStepEnum.TEMPLATE_INPUT_META.getCode());
+                    templateArgumentRequest.setArgumentType(templateMidTableInputMeta.getInputType());
+                    templateArgumentRequest.setArgumentId(templateMidTableInputMeta.getId());
+                    templateArgumentRequest.setArgumentValue(value);
+
+                    templateArgumentRequests.add(templateArgumentRequest);
                 }
             }
         }
@@ -838,6 +1346,31 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 }
             }
             dataSourceRequest.setColNames(dataSourceColumnRequests);
+            String fileId = ruleDataSource.getFileId();
+            if (StringUtils.isNotBlank(fileId)) {
+                dataSourceRequest.setFileId(fileId);
+                dataSourceRequest.setFileType(ruleDataSource.getFileType());
+                dataSourceRequest.setFileHeader(ruleDataSource.getFileHeader());
+                dataSourceRequest.setFileDelimiter(ruleDataSource.getFileDelimiter());
+                dataSourceRequest.setFileHashValues(ruleDataSource.getFileHashValue());
+                dataSourceRequest.setFileTablesDesc(ruleDataSource.getFileTableDesc());
+
+                String table = dataSourceRequest.getTableName();
+
+                // UUID remove.
+                if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(table) && table.contains(SpecCharEnum.BOTTOM_BAR.getValue()) && table.length() - UuidGenerator.generate().length() - 1 > 0) {
+                    table = table.substring(0, table.length() - UuidGenerator.generate().length() - 1);
+                }
+                dataSourceRequest.setTableName(table);
+            }
+            List<RuleDataSourceEnv> ruleDataSourceEnvs = ruleDataSource.getRuleDataSourceEnvs();
+            if (CollectionUtils.isNotEmpty(ruleDataSourceEnvs)) {
+                List<DataSourceEnvRequest> ruleDataSourceEnvRequests = new ArrayList<>(ruleDataSourceEnvs.size());
+                for (RuleDataSourceEnv ruleDataSourceEnv : ruleDataSourceEnvs) {
+                    ruleDataSourceEnvRequests.add(new DataSourceEnvRequest(ruleDataSourceEnv));
+                }
+                dataSourceRequest.setDataSourceEnvRequests(ruleDataSourceEnvRequests);
+            }
             dataSourceRequests.add(dataSourceRequest);
         }
         return dataSourceRequests;
@@ -867,463 +1400,67 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class}, propagation = Propagation.REQUIRED)
-    public void importRule(RuleNodeRequest ruleNodeRequest, Project projectInDb, RuleGroup ruleGroup, ObjectMapper objectMapper)
-        throws UnExpectedRequestException, IOException {
-        // Rule, Template, RuleGroup.
-        Rule rule = objectMapper.readValue(ruleNodeRequest.getRuleObject(), Rule.class);
-        Template template = objectMapper.readValue(ruleNodeRequest.getTemplateObject(), Template.class);
-        // RuleDataSource.
-        Set<RuleDataSource> ruleDataSources = objectMapper.readValue(ruleNodeRequest.getRuleDataSourcesObject(),
-            new TypeReference<Set<RuleDataSource>>() {});
-        Set<RuleDataSourceMapping> ruleDataSourceMappings = objectMapper.readValue(ruleNodeRequest.getRuleDataSourceMappingsObject(),
-            new TypeReference<Set<RuleDataSourceMapping>>() {});
-        // Rule check meta info.
-        Set<AlarmConfig> alarmConfigs = objectMapper.readValue(ruleNodeRequest.getAlarmConfigsObject(), new TypeReference<Set<AlarmConfig>>() {});
-        Set<RuleVariable> ruleVariables = objectMapper.readValue(ruleNodeRequest.getRuleVariablesObject(), new TypeReference<Set<RuleVariable>>() {});
-        LOGGER.info("Import basic information: {}", new StringBuilder().append("\n").append(rule.getName()).append("\n")
-                .append(template.getName()).append("\n").toString());
-        LOGGER.info(objectMapper.writeValueAsString(ruleNodeRequest));
-
-        Rule ruleInDb = ruleDao.findByProjectAndRuleName(projectInDb, rule.getName());
-        try {
-            importRuleReal(ruleNodeRequest, ruleInDb, rule, projectInDb, template, ruleGroup, alarmConfigs, ruleVariables, ruleDataSources, ruleDataSourceMappings);
-        } catch(NullPointerException e) {
-            LOGGER.error("Rule object attributes must not be null.", e);
-        }
-    }
-
-    private void importRuleReal(RuleNodeRequest ruleNodeRequest, Rule ruleInDb, Rule rule, Project projectInDb, Template template, RuleGroup ruleGroup,
-                                                    Set<AlarmConfig> alarmConfigs, Set<RuleVariable> ruleVariables, Set<RuleDataSource> ruleDataSources,
-                                                      Set<RuleDataSourceMapping> ruleDataSourceMappings) throws IOException, UnExpectedRequestException {
-        if (ruleInDb == null) {
-            LOGGER.info("Import in first time. That means adding.");
-            rule.setProject(projectInDb);
-            ruleGroup.setProjectId(projectInDb.getId());
-            if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())) {
-                Template saveTemplate = ruleTemplateDao.saveTemplate(template);
-                Set<Integer> templateDateTypes = ruleDataSources.stream()
-                    .filter(currRuleDataSource -> currRuleDataSource.getDatasourceType() != null)
-                    .map(RuleDataSource::getDatasourceType)
-                    .collect(Collectors.toSet());
-                for (Integer templateDataType : templateDateTypes) {
-                    TemplateDataSourceType templateDataSourceType = new TemplateDataSourceType(templateDataType, saveTemplate);
-                    templateDataSourceTypeDao.save(templateDataSourceType);
-                }
-                Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>();
-                Set<TemplateOutputMeta> templateOutputMetaSet = new HashSet<>();
-                if (rule.getOutputName() != null && rule.getFunctionType() != null && rule.getFunctionContent() != null) {
-                    templateStatisticsInputMetas = templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
-                        rule.getOutputName(), rule.getFunctionType(), rule.getFunctionContent(), saveTemplate.getSaveMidTable(), saveTemplate);
-                    templateOutputMetaSet = templateOutputMetaService.getAndSaveTemplateOutputMeta(rule.getOutputName(),
-                        rule.getFunctionType(), saveTemplate.getSaveMidTable(), saveTemplate);
-                } else {
-                    List<RuleMetric> ruleMetrics = alarmConfigs.stream().map(AlarmConfig::getRuleMetric).collect(Collectors.toList());
-                    for (RuleMetric ruleMetric : ruleMetrics) {
-                        templateStatisticsInputMetas.addAll(templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
-                            ruleMetric.getName(), FunctionTypeEnum.MAX_FUNCTION.getCode(), ruleMetric.getName(), saveTemplate.getSaveMidTable(), saveTemplate));
-                        templateOutputMetaSet.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(ruleMetric.getName(),
-                            FunctionTypeEnum.MAX_FUNCTION.getCode(), saveTemplate.getSaveMidTable(), saveTemplate));
-                    }
-                }
-
-                saveTemplate.setStatisticAction(templateStatisticsInputMetas);
-                saveTemplate.setTemplateOutputMetas(templateOutputMetaSet);
-                rule.setTemplate(saveTemplate);
-            } else if (RuleTypeEnum.FILE_TEMPLATE_RULE.getCode().equals(rule.getRuleType())) {
-                LOGGER.info("Start to import file rule. {}", rule.getName());
-                // Save file rule template.
-                rule.setTemplate(ruleTemplateDao.saveTemplate(template));
-                // Save file rule group
-                rule.setRuleGroup(ruleGroup);
-                Rule savedRule = ruleDao.saveRule(rule);
-                // Save file alarmconfig
-                List<AlarmConfig> alarmConfigList = new ArrayList<>();
-                for (AlarmConfig alarmConfig : alarmConfigs) {
-                    ruleMetricSycn(alarmConfig);
-                    alarmConfig.setRule(savedRule);
-                    alarmConfigList.add(alarmConfig);
-                }
-
-                List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
-                for (RuleDataSource ruleDataSource : ruleDataSources) {
-                    ruleDataSource.setProjectId(projectInDb.getId());
-                    ruleDataSource.setRule(savedRule);
-                    ruleDataSourceList.add(ruleDataSource);
-                }
-                savedRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(alarmConfigList)));
-                savedRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
-                LOGGER.info("Finish to import file rule. {}", rule.getName());
-                return;
-            } else {
-                // When trying out the newly created rule template in the development center, the production center needs to synchronize the rule template.
-                synchroRuleTemplate(ruleNodeRequest, rule, template, ruleDataSources);
-            }
-            rule.setRuleGroup(ruleGroup);
-            Rule savedRule = ruleDao.saveRule(rule);
-            saveRuleInfo(savedRule, template, projectInDb, alarmConfigs, ruleVariables, ruleDataSources, ruleDataSourceMappings);
-            if (ruleNodeRequest.getChildRuleObject() != null) {
-                importChildRule(savedRule, ruleGroup, ruleNodeRequest, projectInDb);
-            }
-        } else {
-            LOGGER.info("Import multiple times. That is to update.");
-            if (RuleTypeEnum.FILE_TEMPLATE_RULE.getCode().equals(rule.getRuleType())) {
-                LOGGER.info("Start to update import file rule. {}", rule.getName());
-                Set<AlarmConfig> alarmConfigList = new HashSet<>();
-                for (AlarmConfig alarmConfig : alarmConfigs) {
-                    ruleMetricSycn(alarmConfig);
-                    alarmConfig.setRule(ruleInDb);
-                    alarmConfigList.add(alarmConfig);
-                }
-                updateImportedFileRule(rule, ruleInDb, ruleGroup, alarmConfigList, ruleDataSources);
-                LOGGER.info("Finish to update import file rule. {}", rule.getName());
-                return;
-            }
-            updateImportedRule(rule, ruleInDb, ruleGroup, ruleNodeRequest, template, alarmConfigs, ruleVariables, ruleDataSources, ruleDataSourceMappings);
-        }
-    }
-
-    private void ruleMetricSycn(AlarmConfig alarmConfig) {
-        // Rule metric fix.
-        if (alarmConfig.getRuleMetric() != null) {
-            RuleMetric ruleMetric = alarmConfig.getRuleMetric();
-            if (ruleMetricDao.findByEnCode(ruleMetric.getEnCode()) != null) {
-                alarmConfig.setRuleMetric(ruleMetricDao.findByEnCode(ruleMetric.getEnCode()));
-            } else if (ruleMetricDao.findByName(ruleMetric.getName()) != null){
-                alarmConfig.setRuleMetric(ruleMetricDao.findByName(ruleMetric.getName()));
-            } else {
-                alarmConfig.setRuleMetric(ruleMetricDao.add(ruleMetric));
-            }
-        }
-    }
-
-    private void updateImportedFileRule(Rule rule, Rule ruleInDb, RuleGroup ruleGroup,
-        Set<AlarmConfig> alarmConfigs, Set<RuleDataSource> ruleDataSources) {
-        ruleInDb.setRuleGroup(ruleGroup);
-        ruleInDb.setAlarm(rule.getAlarm());
-        ruleInDb.setAbortOnFailure(rule.getAbortOnFailure());
-        alarmConfigService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all alarm_config. rule_id: {}", ruleInDb.getId());
-        ruleDataSourceService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all rule_dataSources. rule_id: {}", ruleInDb.getId());
-        Rule updateRule = ruleDao.saveRule(ruleInDb);
-        // Save file alarmconfig
-        List<AlarmConfig> alarmConfigList = new ArrayList<>();
-        for (AlarmConfig alarmConfig : alarmConfigs) {
-            alarmConfig.setRule(updateRule);
-            alarmConfigList.add(alarmConfig);
-        }
-        // Save file datasource
-        List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
-        for (RuleDataSource ruleDataSource : ruleDataSources) {
-            ruleDataSource.setProjectId(updateRule.getId());
-            ruleDataSource.setRule(updateRule);
-            ruleDataSourceList.add(ruleDataSource);
-        }
-        updateRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(alarmConfigList)));
-        updateRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
-    }
-
-    private void importChildRule(Rule parentRule, RuleGroup ruleGroup, RuleNodeRequest ruleNodeRequest,
-        Project projectInDb) throws IOException {
-        LOGGER.info("Start to import child rule.");
-        ObjectMapper objectMapper = new ObjectMapper();
-        Rule childRule = objectMapper.readValue(ruleNodeRequest.getChildRuleObject(), Rule.class);
-        Template childTemplate = objectMapper.readValue(ruleNodeRequest.getChildTemplateObject(), Template.class);
-        Set<RuleDataSource> childRuleDataSources = objectMapper.readValue(ruleNodeRequest.getChildRuleDataSourcesObject(),
-            new TypeReference<Set<RuleDataSource>>() {});
-        Set<RuleDataSourceMapping> childRuleDataSourceMappings = objectMapper.readValue(ruleNodeRequest.getChildRuleDataSourceMappingsObject(),
-            new TypeReference<Set<RuleDataSourceMapping>>() {});
-        Set<AlarmConfig> childAlarmConfigs = objectMapper.readValue(ruleNodeRequest.getChildAlarmConfigsObject(), new TypeReference<Set<AlarmConfig>>() {});
-        Set<RuleVariable> childRuleVariables = objectMapper.readValue(ruleNodeRequest.getChildRuleVariablesObject(), new TypeReference<Set<RuleVariable>>() {});
-
-        childRule.setProject(projectInDb);
-        childRule.setTemplate(childTemplate);
-        childRule.setRuleGroup(ruleGroup);
-        Rule savedRule = ruleDao.saveRule(childRule);
-        LOGGER.info("Succeed to save child rule. Rule info is {}", savedRule.toString());
-        List<AlarmConfig> alarmConfigList = new ArrayList<>();
-        for (AlarmConfig alarmConfig : childAlarmConfigs) {
-            alarmConfig.setRule(savedRule);
-            alarmConfigList.add(alarmConfig);
-        }
-        List<RuleVariable> ruleVariablesList = new ArrayList<>();
-        for (RuleVariable ruleVariable : childRuleVariables) {
-            ruleVariable.setRule(savedRule);
-            ruleVariablesList.add(ruleVariable);
-        }
-        List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
-        for (RuleDataSource ruleDataSource : childRuleDataSources) {
-            ruleDataSource.setProjectId(projectInDb.getId());
-            ruleDataSource.setRule(savedRule);
-            ruleDataSourceList.add(ruleDataSource);
-        }
-        savedRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(alarmConfigList)));
-        savedRule.setRuleVariables(new HashSet<>(ruleVariableDao.saveAllRuleVariable(ruleVariablesList)));
-        savedRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
-        for (RuleDataSourceMapping ruleDataSourceMapping : childRuleDataSourceMappings) {
-            ruleDataSourceMapping.setRule(savedRule);
-            ruleDataSourceMappingDao.saveRuleDataSourceMapping(ruleDataSourceMapping);
-        }
-        savedRule.setParentRule(parentRule);
-        parentRule.setChildRule(savedRule);
-        LOGGER.info("Succeed to import child rule.");
-    }
-
-    public void updateImportedRule(Rule rule, Rule ruleInDb, RuleGroup ruleGroup,
-                            RuleNodeRequest ruleNodeRequest, Template template, Set<AlarmConfig> alarmConfigs,
-                            Set<RuleVariable> ruleVariables, Set<RuleDataSource> ruleDataSources, Set<RuleDataSourceMapping> ruleDataSourceMappings)
-                            throws UnExpectedRequestException, IOException {
-        ruleInDb.setRuleGroup(ruleGroup);
-        ruleInDb.setAlarm(rule.getAlarm());
-        ruleInDb.setAbortOnFailure(rule.getAbortOnFailure());
-        ruleInDb.setFromContent(rule.getFromContent());
-        ruleInDb.setWhereContent(rule.getWhereContent());
-        ruleInDb.setRuleType(rule.getRuleType());
-        ruleInDb.setRuleTemplateName(template.getName());
-        ruleInDb.setOutputName(rule.getOutputName());
-        ruleInDb.setFunctionType(rule.getFunctionType());
-        ruleInDb.setFunctionContent(rule.getFunctionContent());
-        ruleInDb.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
-        if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())) {
-            ruleTemplateService.deleteCustomTemplate(ruleInDb.getTemplate());
-            Template savedTemplate = ruleTemplateDao.saveTemplate(template);
-            Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>();
-            Set<TemplateOutputMeta> templateOutputMetaSet = new HashSet<>();
-            if (rule.getOutputName() != null && rule.getFunctionType() != null && rule.getFunctionContent() != null) {
-                templateStatisticsInputMetas = templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
-                    rule.getOutputName(), rule.getFunctionType(), rule.getFunctionContent(), savedTemplate.getSaveMidTable(), savedTemplate);
-                templateOutputMetaSet = templateOutputMetaService.getAndSaveTemplateOutputMeta(rule.getOutputName(),
-                    rule.getFunctionType(), savedTemplate.getSaveMidTable(), savedTemplate);
-            } else {
-                List<RuleMetric> ruleMetrics = alarmConfigs.stream().map(AlarmConfig::getRuleMetric).collect(Collectors.toList());
-                for (RuleMetric ruleMetric : ruleMetrics) {
-                    templateStatisticsInputMetas.addAll(templateStatisticsInputMetaService.getAndSaveTemplateStatisticsInputMeta(
-                        ruleMetric.getName(), FunctionTypeEnum.MAX_FUNCTION.getCode(), ruleMetric.getName(), savedTemplate.getSaveMidTable(), savedTemplate));
-                    templateOutputMetaSet.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(ruleMetric.getName(),
-                        FunctionTypeEnum.MAX_FUNCTION.getCode(), savedTemplate.getSaveMidTable(), savedTemplate));
-                }
-            }
-
-            savedTemplate.setStatisticAction(templateStatisticsInputMetas);
-            savedTemplate.setTemplateOutputMetas(templateOutputMetaSet);
-            ruleInDb.setTemplate(savedTemplate);
-        } else {
-            synchroRuleTemplate(ruleNodeRequest, ruleInDb, template, ruleDataSources);
-        }
-        alarmConfigService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all alarm_config. rule_id: {}", ruleInDb.getId());
-        Integer ruleType = ruleInDb.getRuleType();
-        if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(ruleType) || RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode().equals(ruleType)) {
-            ruleVariableService.deleteByRule(ruleInDb);
-            LOGGER.info("Succeed to delete all rule_variable. rule_id: {}", ruleInDb.getId());
-            if (RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode().equals(ruleType)) {
-                ruleDataSourceMappingService.deleteByRule(ruleInDb);
-                LOGGER.info("Succeed to delete all rule_dataSource_mapping. rule_id: {}", ruleInDb.getId());
-            }
-        }
-        ruleDataSourceService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all rule_dataSources. rule_id: {}", ruleInDb.getId());
-        Rule updateRule = ruleDao.saveRule(ruleInDb);
-        saveRuleInfo(updateRule, template, updateRule.getProject(), alarmConfigs, ruleVariables, ruleDataSources, ruleDataSourceMappings);
-        updateImportedChildRule(updateRule, ruleNodeRequest);
-    }
-
-    public void updateImportedChildRule(Rule parentRule, RuleNodeRequest ruleNodeRequest) throws IOException, UnExpectedRequestException {
-        if (parentRule.getChildRule() == null) {
+    public void importRule(RuleNodeRequest ruleNodeRequest, Project projectInDb, RuleGroup ruleGroupInDb, ObjectMapper objectMapper) throws UnExpectedRequestException, IOException {
+        if (StringUtils.isNotBlank(ruleNodeRequest.getCheckAlertRule())) {
+            LOGGER.info("Start to import check alert rule. Json:{}", ruleNodeRequest.getCheckAlertRule());
+            handleCheckAlertRule(ruleNodeRequest.getCheckAlertRule(), projectInDb, ruleGroupInDb, objectMapper);
+            LOGGER.info("Success to import check alert rule. ");
             return;
         }
-        LOGGER.info("Start to update imported child rule.");
-        ObjectMapper objectMapper = new ObjectMapper();
-        Rule childRule = parentRule.getChildRule();
-        Rule childRuleObject = objectMapper.readValue(ruleNodeRequest.getChildRuleObject(), Rule.class);
-        Template childTemplateObject = objectMapper.readValue(ruleNodeRequest.getChildTemplateObject(), Template.class);
-        Set<RuleDataSource> childRuleDataSources = objectMapper.readValue(ruleNodeRequest.getChildRuleDataSourcesObject(),
-            new TypeReference<Set<RuleDataSource>>() {});
-        Set<RuleDataSourceMapping> childRuleDataSourceMappings = objectMapper.readValue(ruleNodeRequest.getChildRuleDataSourceMappingsObject(),
-            new TypeReference<Set<RuleDataSourceMapping>>() {});
-        Set<AlarmConfig> childAlarmConfigs = objectMapper.readValue(ruleNodeRequest.getChildAlarmConfigsObject(), new TypeReference<Set<AlarmConfig>>() {});
-        Set<RuleVariable> childRuleVariables = objectMapper.readValue(ruleNodeRequest.getChildRuleVariablesObject(), new TypeReference<Set<RuleVariable>>() {});
-        childRule.setAlarm(childRuleObject.getAlarm());
-        childRule.setAbortOnFailure(childRuleObject.getAbortOnFailure());
-        childRule.setFromContent(childRuleObject.getFromContent());
-        childRule.setWhereContent(childRuleObject.getWhereContent());
-        childRule.setRuleType(childRuleObject.getRuleType());
-        childRule.setRuleTemplateName(childTemplateObject.getName());
-        childRule.setOutputName(childRuleObject.getOutputName());
-        childRule.setFunctionType(childRuleObject.getFunctionType());
-        childRule.setFunctionContent(childRuleObject.getFunctionContent());
-        Template childTemplateInDb = ruleTemplateService.checkRuleTemplate(childTemplateObject.getId());
-        if (childTemplateInDb == null) {
-            throw new UnExpectedRequestException("Child template [id = " + childTemplateObject.getId() + "] does not exist.");
-        }
-        alarmConfigService.deleteByRule(childRule);
-        LOGGER.info("Succeed to delete all alarm_config of child rule. rule_id: {}", childRule.getId());
-        ruleVariableService.deleteByRule(childRule);
-        LOGGER.info("Succeed to delete all rule_variable of child rule. rule_id: {}", childRule.getId());
-        ruleDataSourceService.deleteByRule(childRule);
-        LOGGER.info("Succeed to delete all rule_dataSources of child rule. rule_id: {}", childRule.getId());
-        ruleDataSourceMappingService.deleteByRule(childRule);
-        LOGGER.info("Succeed to delete all rule_dataSource_mapping. rule_id: {}", childRule.getId());
-        Rule updateRule = ruleDao.saveRule(childRule);
-        List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
-        for (RuleDataSource ruleDataSource : childRuleDataSources) {
-            ruleDataSource.setProjectId(parentRule.getProject().getId());
-            ruleDataSource.setRule(updateRule);
-            ruleDataSourceList.add(ruleDataSource);
-        }
-        List<AlarmConfig> alarmConfigList = new ArrayList<>();
-        for (AlarmConfig alarmConfig : childAlarmConfigs) {
-            alarmConfig.setRule(updateRule);
-            alarmConfigList.add(alarmConfig);
-        }
-        List<RuleVariable> ruleVariablesList = new ArrayList<>();
-        for (RuleVariable ruleVariable : childRuleVariables) {
-            ruleVariable.setRule(updateRule);
-            ruleVariablesList.add(ruleVariable);
-        }
-        updateRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(alarmConfigList)));
-        updateRule.setRuleVariables(new HashSet<>(ruleVariableDao.saveAllRuleVariable(ruleVariablesList)));
-        updateRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
-        for (RuleDataSourceMapping ruleDataSourceMapping : childRuleDataSourceMappings) {
-            ruleDataSourceMapping.setRule(updateRule);
-            ruleDataSourceMappingDao.saveRuleDataSourceMapping(ruleDataSourceMapping);
-        }
-        updateRule.setParentRule(parentRule);
-        parentRule.setChildRule(updateRule);
-    }
 
-    public void synchroRuleTemplate(RuleNodeRequest ruleNodeRequest, Rule rule, Template template, Set<RuleDataSource> ruleDataSources) throws IOException {
-        Template templateInDb = ruleTemplateDao.findById(template.getId());
-        Template templateNameInDb = null;
-        if (StringUtils.isNotBlank(template.getImportExportName())) {
-            templateNameInDb = ruleTemplateDao.findByImportExportName(template.getImportExportName());
-        }
-
-        if (templateInDb == null && templateNameInDb == null) {
-            LOGGER.info("Start to synchronize the rule template. Template: {}", template);
-            ObjectMapper objectMapper = new ObjectMapper();
-            // Template meta info.
-            Set<TemplateOutputMeta> templateOutputMetaSet = objectMapper.readValue(ruleNodeRequest.getTemplateTemplateOutputMetaObject(),
-                new TypeReference<Set<TemplateOutputMeta>>() {});
-            Set<TemplateMidTableInputMeta> templateMidTableInputMetaSet = objectMapper.readValue(ruleNodeRequest.getTemplateTemplateMidTableInputMetaObject(),
-                new TypeReference<Set<TemplateMidTableInputMeta>>() {});
-            Set<TemplateStatisticsInputMeta> templateStatisticsInputMetaSet = objectMapper.readValue(ruleNodeRequest.getTemplateTemplateStatisticsInputMetaObject(),
-                new TypeReference<Set<TemplateStatisticsInputMeta>>() {});
-
-            Template savedTemplate = ruleTemplateDao.saveTemplate(template);
-            Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>();
-            for (TemplateOutputMeta outputMeta : templateOutputMetaSet) {
-                outputMeta.setTemplate(savedTemplate);
-                templateOutputMetas.add(templateOutputMetaDao.saveTemplateOutputMeta(outputMeta));
-            }
-            savedTemplate.setTemplateOutputMetas(templateOutputMetas);
-            LOGGER.info("Success to save template output meta. TemplateOutputMetas: {}", savedTemplate.getTemplateOutputMetas());
-
-            List<TemplateMidTableInputMeta> templateMidTableInputMetas = new ArrayList<>();
-            for (TemplateMidTableInputMeta templateMidTableInputMeta : templateMidTableInputMetaSet) {
-                templateMidTableInputMeta.setTemplate(savedTemplate);
-                templateMidTableInputMetas.add(templateMidTableInputMeta);
-            }
-            templateMidTableInputMetas.sort(Comparator.comparing(TemplateMidTableInputMeta::getId));
-            savedTemplate.setTemplateMidTableInputMetas(templateMidTableInputMetaService.saveAll(templateMidTableInputMetas));
-            LOGGER.info("Success to save template mid_table input meta. TemplateMidTableInputMetas: {}", savedTemplate.getTemplateMidTableInputMetas());
-
-            List<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new ArrayList<>();
-            for (TemplateStatisticsInputMeta templateStatisticsInputMeta : templateStatisticsInputMetaSet) {
-                templateStatisticsInputMeta.setTemplate(savedTemplate);
-                templateStatisticsInputMetas.add(templateStatisticsInputMeta);
-            }
-            savedTemplate.setStatisticAction(templateStatisticsInputMetaService.saveAll(templateStatisticsInputMetas));
-            LOGGER.info("Success to save template statistics input meta. templateStatisticsInputMetas: {}", savedTemplate.getStatisticAction());
-            Set<Integer> templateDateTypes = ruleDataSources.stream()
-                .filter(currRuleDataSource -> currRuleDataSource.getDatasourceType() != null)
-                .map(RuleDataSource::getDatasourceType)
-                .collect(Collectors.toSet());
-            for (Integer templateDataType : templateDateTypes) {
-                TemplateDataSourceType templateDataSourceType = new TemplateDataSourceType(templateDataType, savedTemplate);
-                templateDataSourceTypeDao.save(templateDataSourceType);
-            }
-            LOGGER.info("Success to save template data types. Template data types: {}", Arrays.toString(templateDateTypes.toArray()));
-            LOGGER.info("Finished to synchronize the rule template. Template: {}", savedTemplate);
-            rule.setTemplate(savedTemplate);
-        } else if (templateInDb != null) {
-            rule.setTemplate(templateInDb);
-        } else if (templateNameInDb != null) {
-            rule.setTemplate(templateNameInDb);
-        } else {
-            rule.setTemplate(template);
+        Rule rule = objectMapper.readValue(ruleNodeRequest.getRuleObject(), Rule.class);
+        LOGGER.info("Find highest version of rule with same name={} and workflow name={}", rule.getName(), rule.getWorkFlowName());
+        Rule ruleInDb = ruleDao.findHighestVersionByProjectAndWorkFlowName(projectInDb, rule.getWorkFlowName(), rule.getName());
+        try {
+            ruleBatchService.handleRule(rule, ruleInDb, ruleNodeRequest.getRuleObject(), ruleNodeRequest.getTemplateObject()
+                , ruleNodeRequest.getTemplateDataVisibilityObject(), projectInDb, ruleGroupInDb.getRuleGroupName()
+                , null, null);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
-    public void saveRuleInfo(Rule savedRule, Template template, Project projectInDb, Set<AlarmConfig> alarmConfigs, Set<RuleVariable> ruleVariables,
-                                                            Set<RuleDataSource> ruleDataSources, Set<RuleDataSourceMapping> ruleDataSourceMappings) {
-        LOGGER.info("Start to save rule Info.");
-        List<AlarmConfig> alarmConfigList = new ArrayList<>();
-        for (AlarmConfig alarmConfig : alarmConfigs) {
-            alarmConfig.setRule(savedRule);
-            ruleMetricSycn(alarmConfig);
-            alarmConfig.setTemplateOutputMeta(savedRule.getTemplate().getTemplateOutputMetas().iterator().next());
-            alarmConfigList.add(alarmConfig);
-        }
-        List<RuleVariable> ruleVariablesList = new ArrayList<>();
-        TemplateStatisticsInputMeta templateStatisticsInputMeta = savedRule.getTemplate().getStatisticAction().iterator().next();
-        for (RuleVariable ruleVariable : ruleVariables) {
-            ruleVariable.setRule(savedRule);
-            ruleVariable.setTemplateStatisticsInputMeta(templateStatisticsInputMeta);
-            ruleVariablesList.add(ruleVariable);
-        }
-        if (template.getId().intValue() != savedRule.getTemplate().getId().intValue()) {
-            ruleVariablesList.sort(Comparator.comparing(RuleVariable::getId));
-            List<TemplateMidTableInputMeta> templateMidTableInputMetaList = new ArrayList<>();
-            if (savedRule.getTemplate().getTemplateMidTableInputMetas() != null) {
-                templateMidTableInputMetaList.addAll(savedRule.getTemplate().getTemplateMidTableInputMetas());
-                templateMidTableInputMetaList.sort(Comparator.comparing(TemplateMidTableInputMeta::getId));
-                Iterator iterator = templateMidTableInputMetaList.iterator();
-                for (RuleVariable ruleVariable : ruleVariablesList) {
-                    ruleVariable.setTemplateMidTableInputMeta( (TemplateMidTableInputMeta) iterator.next());
-                }
-            }
-        }
-        List<RuleDataSource> ruleDataSourceList = new ArrayList<>();
-        for (RuleDataSource ruleDataSource : ruleDataSources) {
-            ruleDataSource.setProjectId(projectInDb.getId());
-            ruleDataSource.setRule(savedRule);
-            ruleDataSourceList.add(ruleDataSource);
-        }
-        if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(savedRule.getRuleType())) {
-            List<AlarmConfig> customAlarmConfigs = new ArrayList<>();
-            for (AlarmConfig alarmConfig : alarmConfigList) {
-                TemplateOutputMeta templateOutputMetaInDb = savedRule.getTemplate().getTemplateOutputMetas().iterator().next();
-                AlarmConfig customAlarmConfig = new AlarmConfig();
-                customAlarmConfig.setRule(savedRule);
-                customAlarmConfig.setRuleMetric(alarmConfig.getRuleMetric());
-                customAlarmConfig.setThreshold(alarmConfig.getThreshold());
-                customAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
-                customAlarmConfig.setCheckTemplate(alarmConfig.getCheckTemplate());
-                Integer checkTemplateCode = alarmConfig.getCheckTemplate();
-                if (alarmConfig.getCheckTemplate().equals(CheckTemplateEnum.FIXED_VALUE.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.FULL_YEAR_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.HALF_YEAR_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.SEASON_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.MONTH_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.WEEK_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.DAY_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.HOUR_RING_GROWTH.getCode())
-                    || checkTemplateCode.equals(CheckTemplateEnum.YEAR_ON_YEAR.getCode())) {
-                    customAlarmConfig.setCompareType(alarmConfig.getCompareType());
-                }
-                customAlarmConfigs.add(customAlarmConfig);
-            }
-            savedRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(customAlarmConfigs)));
-            savedRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
+    private void handleCheckAlertRule(String checkAlertRule, Project projectInDb, RuleGroup ruleGroupInDb, ObjectMapper objectMapper) throws IOException {
+        CheckAlert checkAlert = objectMapper.readValue(checkAlertRule, CheckAlert.class);
+        CheckAlert checkAlertInDb = checkAlertDao.findByProjectAndWorkflowNameAndTopic(projectInDb, checkAlert.getWorkFlowName(), checkAlert.getTopic());
+
+        if (checkAlertInDb == null) {
+            LOGGER.info("Import in first time. That means adding.");
+
+            checkAlert.setId(null);
+            checkAlert.setProject(projectInDb);
+            checkAlert.setRuleGroup(ruleGroupInDb);
+            LOGGER.info("Success to import new check alert rule. {}", checkAlertDao.save(checkAlert).toString());
         } else {
-            savedRule.setAlarmConfigs(new HashSet<>(alarmConfigDao.saveAllAlarmConfig(alarmConfigList)));
-            savedRule.setRuleVariables(new HashSet<>(ruleVariableDao.saveAllRuleVariable(ruleVariablesList)));
-            savedRule.setRuleDataSources(new HashSet<>(ruleDataSourceDao.saveAllRuleDataSource(ruleDataSourceList)));
-            for (RuleDataSourceMapping ruleDataSourceMapping : ruleDataSourceMappings) {
-                ruleDataSourceMapping.setRule(savedRule);
-                ruleDataSourceMappingDao.saveRuleDataSourceMapping(ruleDataSourceMapping);
+            LOGGER.info("Import multiple times. That is to update.");
+
+            checkAlert.setId(checkAlertInDb.getId());
+
+            checkAlert.setProject(projectInDb);
+            checkAlert.setRuleGroup(ruleGroupInDb);
+            LOGGER.info("Success to import update check alert rule. {}", checkAlertDao.save(checkAlert).toString());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class}, propagation = Propagation.REQUIRED)
+    public void handleExecutionParamObject(RuleNodeRequests ruleNodeRequests) throws IOException, UnExpectedRequestException {
+        // Project
+        Project projectInDb = projectDao.findById(ruleNodeRequests.getNewProjectId());
+
+        projectInDb = handleProject(projectInDb, ruleNodeRequests);
+        List<String> finishedExecutionParameters = new ArrayList<>();
+        for (RuleNodeRequest ruleNodeRequest : ruleNodeRequests.getRuleNodeRequests()) {
+            if (StringUtils.isEmpty(ruleNodeRequest.getExecutionParamObject())) {
+                continue;
             }
+            // For execution parameters
+            if (finishedExecutionParameters.contains(ruleNodeRequest.getExecutionParamObject())) {
+                continue;
+            } else {
+                finishedExecutionParameters.add(ruleNodeRequest.getExecutionParamObject());
+            }
+            projectBatchService.handleExecutionParametersReal(ruleNodeRequest.getExecutionParamObject(), projectInDb.getCreateUser(), projectInDb.getId());
         }
     }
 }

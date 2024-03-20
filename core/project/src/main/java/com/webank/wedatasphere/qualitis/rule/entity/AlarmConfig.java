@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import javax.persistence.*;
 import java.util.Objects;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye
@@ -33,8 +34,11 @@ public class AlarmConfig {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @ManyToOne
+    @JsonIgnore
     private Rule rule;
+
     @ManyToOne
     private TemplateOutputMeta templateOutputMeta;
 

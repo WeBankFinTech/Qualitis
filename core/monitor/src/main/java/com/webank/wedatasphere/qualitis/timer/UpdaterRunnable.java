@@ -17,13 +17,10 @@
 package com.webank.wedatasphere.qualitis.timer;
 
 import com.webank.wedatasphere.qualitis.bean.JobChecker;
-import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.ha.AbstractServiceCoordinator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author allenzhou

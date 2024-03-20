@@ -18,10 +18,14 @@ package com.webank.wedatasphere.qualitis.entity;
 
 import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
-import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
-import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 /**
  * @author howeye
@@ -66,11 +70,12 @@ public class TaskRuleAlarmConfig {
     private Boolean deleteFailCheckResult;
 
     public TaskRuleAlarmConfig() {
+        // Default Constructor
     }
 
     public TaskRuleAlarmConfig(TaskRuleAlarmConfigBean taskRuleAlarmConfigBean, TaskRuleSimple taskRuleSimple) {
-        this.outputName = taskRuleAlarmConfigBean.getOutputName();
         this.checkTemplate = taskRuleAlarmConfigBean.getCheckTemplate();
+        this.outputName = taskRuleAlarmConfigBean.getOutputName();
         this.compareType = taskRuleAlarmConfigBean.getCompareType();
         this.threshold = taskRuleAlarmConfigBean.getThreshold();
         this.taskRuleSimple = taskRuleSimple;
@@ -79,6 +84,11 @@ public class TaskRuleAlarmConfig {
         this.uploadAbnormalValue = taskRuleAlarmConfigBean.getUploadAbnormalValue();
         this.uploadRuleMetricValue = taskRuleAlarmConfigBean.getUploadRuleMetricValue();
         this.deleteFailCheckResult = taskRuleAlarmConfigBean.getDeleteFailCheckResult();
+    }
+
+    public TaskRuleAlarmConfig(TaskRuleSimple taskRuleSimple) {
+        this.taskRuleSimple = taskRuleSimple;
+        this.status = AlarmConfigStatusEnum.PASS.getCode();
     }
 
     public Long getId() {

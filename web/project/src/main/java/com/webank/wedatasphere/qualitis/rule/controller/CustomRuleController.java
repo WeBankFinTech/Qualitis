@@ -16,23 +16,24 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteCustomRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 /**
@@ -58,15 +59,15 @@ public class CustomRuleController {
     @Path("add")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> addCustomRule(AddCustomRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<RuleResponse> addCustomRule(AddCustomRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            // Record project event.
-//            String loginUser = HttpUtils.getUserName(httpServletRequest);
-//            projectEventService.record(request.getProjectId(), loginUser, "add", "custom rule[name= " + request.getRuleName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
             return customRuleService.addCustomRule(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add custom rule, caused by system error: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_ADD_CUSTOM_RULE}", null);
@@ -83,13 +84,16 @@ public class CustomRuleController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse deleteCustomRule(DeleteCustomRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             String loginUser = HttpUtils.getUserName(httpServletRequest);
             return customRuleService.deleteCustomRule(request, loginUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete custom rule, caused by system error: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_CUSTOM_RULE}", null);
@@ -105,14 +109,14 @@ public class CustomRuleController {
     @GET
     @Path("{rule_id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getCustomRuleDetail(@PathParam("rule_id")Long ruleId) throws UnExpectedRequestException {
+    public GeneralResponse<CustomRuleDetailResponse> getCustomRuleDetail(@PathParam("rule_id")Long ruleId) throws UnExpectedRequestException {
         try {
             return customRuleService.getCustomRuleDetail(ruleId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
         } catch (Exception e) {
-            LOGGER.error("Failed to get custom rule detail, rule_id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
+            LOGGER.error("Failed to get custom rule detail, rule id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_GET_CUSTOM_RULE_DETAIL}", null);
         }
     }
@@ -127,12 +131,15 @@ public class CustomRuleController {
     @Path("modify")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> modifyCustomRule(ModifyCustomRuleRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<RuleResponse> modifyCustomRule(ModifyCustomRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return customRuleService.modifyCustomRule(request);
+            return customRuleService.modifyCustomRuleWithLock(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
 	        throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify custom rule, caused by system error: {}", e.getMessage(), e);
             return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_CUSTOM_RULE}", null);

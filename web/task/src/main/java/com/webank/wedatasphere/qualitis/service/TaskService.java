@@ -18,8 +18,7 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.TaskCheckResultResponse;
 
 /**
  * @author howeye
@@ -32,6 +31,13 @@ public interface TaskService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> getTaskDetail(Long taskId) throws UnExpectedRequestException;
+    GeneralResponse<TaskCheckResultResponse> getTaskDetail(Long taskId) throws UnExpectedRequestException;
+
+    /**
+     * To get number of task executing
+     * @param dataRangeInHours
+     * @return
+     */
+    Long getExecutingTaskNumber(int dataRangeInHours);
 
 }

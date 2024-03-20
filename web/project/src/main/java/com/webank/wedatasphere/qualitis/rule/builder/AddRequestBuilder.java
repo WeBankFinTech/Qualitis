@@ -4,8 +4,10 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractAddRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -33,11 +35,10 @@ public interface AddRequestBuilder {
      * @param abortOnFailure
      * @param execParams
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     AddRequestBuilder basicInfoWithDataSource(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
 
     /**
      * Set basic info for param 7.
@@ -49,11 +50,10 @@ public interface AddRequestBuilder {
      * @param abortOnFailure
      * @param execParams
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
 
     /**
      * Set basic info for param 8.
@@ -66,11 +66,28 @@ public interface AddRequestBuilder {
      * @param abortOnFailure
      * @param execParams
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     AddRequestBuilder basicInfoWithDataSource(String datasource, String regxOrRangeOrMapping, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
+
+    /**
+     * For handle special template argument.
+     * @param datasource
+     * @param templateArgumentRequests
+     * @param deleteFailCheckResult
+     * @param uploadRuleMetricValue
+     * @param uploadAbnormalValue
+     * @param alertInfo
+     * @param abortOnFailure
+     * @param execParams
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder basicInfoWithDataSource(String datasource,
+        List<TemplateArgumentRequest> templateArgumentRequests, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+        boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception;
 
     /**
      * Set basic info for param 9.
@@ -84,11 +101,10 @@ public interface AddRequestBuilder {
      * @param abortOnFailure
      * @param execParams
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     AddRequestBuilder basicInfoWithDataSource(String datasource, String param1, String param2, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
 
     /**
      * Set basic info for param 10.
@@ -103,11 +119,10 @@ public interface AddRequestBuilder {
      * @param abortOnFailure
      * @param execParams
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
 
     /**
      * Add rule metric.
@@ -116,6 +131,14 @@ public interface AddRequestBuilder {
      * @throws UnExpectedRequestException
      */
     AddRequestBuilder addRuleMetric(String ruleMetricName) throws UnExpectedRequestException;
+
+    /**
+     * Add execution parameter
+     * @param executionParameterName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException;
 
     /**
      * Add rule metric with sql check.
@@ -175,7 +198,7 @@ public interface AddRequestBuilder {
      * @param value
      * @return
      */
-    AddRequestBuilder mouthFlux(String value);
+    AddRequestBuilder monthFlux(String value);
 
     /**
      * Add check method
@@ -538,7 +561,7 @@ public interface AddRequestBuilder {
      * @param value
      * @return
      */
-    AddRequestBuilder mouthFlux(double value);
+    AddRequestBuilder monthFlux(double value);
 
     /**
      * Add check method
@@ -858,7 +881,7 @@ public interface AddRequestBuilder {
      * Request
      * @return
      */
-    AbstractAddRequest returnRequest();
+    AbstractCommonRequest returnRequest();
 
     /**
      * Set project
@@ -879,6 +902,12 @@ public interface AddRequestBuilder {
     void setRuleName(String ruleName);
 
     /**
+     * Set rule cn name
+     * @param ruleCnName
+     */
+    void setRuleCnName(String ruleCnName);
+
+    /**
      * Set rule detail
      * @param ruleDetail
      */
@@ -889,4 +918,76 @@ public interface AddRequestBuilder {
      * @param userName
      */
     void setUserName(String userName);
+
+    /**
+     * Set proxy user
+     * @param proxyUser
+     */
+    void setProxyUser(String proxyUser);
+
+    /**
+     * Set abnormal cluster and database
+     * @param clusterAndDbName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder setAbnormalDb(String clusterAndDbName) throws UnExpectedRequestException;
+
+    /**
+     * Disable
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder disable() throws UnExpectedRequestException;
+
+    /**
+     * Union all
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder unionAll() throws UnExpectedRequestException;
+
+    /**
+     * With group
+     * @param ruleGroupName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder withGroup(String ruleGroupName) throws UnExpectedRequestException;
+
+    /**
+     * Save just
+     * @return
+     */
+    AddRequestBuilder save();
+
+    /**
+     * Async
+     * @return
+     */
+    AddRequestBuilder async();
+
+    /**
+     * filter
+     * @param filter
+     * @return
+     */
+    AddRequestBuilder filter(String filter);
+
+    /**
+     * joinType
+     * @param joinType
+     * @return
+     */
+    AddRequestBuilder joinType(String joinType);
+
+    /**
+     * Env mapping
+     * @param envName
+     * @param dbAndTableName
+     * @param dbAliasName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder envMapping(String envName, String dbAndTableName, String dbAliasName) throws UnExpectedRequestException;
 }

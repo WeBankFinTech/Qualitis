@@ -8,20 +8,22 @@ import java.util.List;
  * @author allenzhou
  */
 public class RuleNodeRequests {
-    private Long newProjectId;
+    private String csId;
     private String userName;
+    private Long newProjectId;
     @JsonProperty("rule_node_rule")
-    private List<RuleNodeRequest> ruleNodeRequests;
+    private List<RuleNodeRequest> ruleNodeRequestList;
 
     public RuleNodeRequests() {
+        //Do nothing.
     }
 
-    public Long getNewProjectId() {
-        return newProjectId;
+    public String getCsId() {
+        return csId;
     }
 
-    public void setNewProjectId(Long newProjectId) {
-        this.newProjectId = newProjectId;
+    public void setCsId(String csId) {
+        this.csId = csId;
     }
 
     public String getUserName() {
@@ -32,18 +34,28 @@ public class RuleNodeRequests {
         this.userName = userName;
     }
 
+    public Long getNewProjectId() {
+        return newProjectId;
+    }
+
+    public void setNewProjectId(Long newProjectId) {
+        this.newProjectId = newProjectId;
+    }
+
     public List<RuleNodeRequest> getRuleNodeRequests() {
-        return ruleNodeRequests;
+        return ruleNodeRequestList;
     }
 
     public void setRuleNodeRequests(List<RuleNodeRequest> ruleNodeRequests) {
-        this.ruleNodeRequests = ruleNodeRequests;
+        this.ruleNodeRequestList = ruleNodeRequests;
     }
 
     @Override
     public String toString() {
         return "RuleNodeRequests{" +
-            "ruleNodeRequests=" + Arrays.toString(ruleNodeRequests.toArray()) +
+            "csId='" + csId + '\'' +
+            ", userName='" + userName + '\'' +
+            ", newProjectId=" + newProjectId +
             '}';
     }
 }

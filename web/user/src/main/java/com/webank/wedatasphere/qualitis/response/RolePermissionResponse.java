@@ -18,18 +18,21 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.RolePermission;
-import com.webank.wedatasphere.qualitis.entity.RolePermission;
 
 /**
  * @author howeye
  */
-public class RolePermissionResponse {
+public class RolePermissionResponse extends BaseResponse {
 
     private String uuid;
     @JsonProperty("role_id")
     private long roleId;
     @JsonProperty("permission_id")
     private long permissionId;
+    @JsonProperty("role_name")
+    private String roleName;
+    @JsonProperty("permission_name")
+    private String permissionName;
 
     public RolePermissionResponse() {
         // Default Constructor
@@ -39,6 +42,12 @@ public class RolePermissionResponse {
         this.uuid = rolePermission.getId();
         this.roleId = rolePermission.getRole().getId();
         this.permissionId = rolePermission.getPermission().getId();
+        this.roleName = rolePermission.getRole().getName();
+        this.permissionName = rolePermission.getPermission().getMethod() + " " + rolePermission.getPermission().getUrl();
+        this.createTime = rolePermission.getCreateTime();
+        this.createUser = rolePermission.getCreateUser();
+        this.modifyUser = rolePermission.getModifyUser();
+        this.modifyTime = rolePermission.getModifyTime();
     }
 
     public String getUuid() {
@@ -63,6 +72,22 @@ public class RolePermissionResponse {
 
     public void setPermissionId(long permissionId) {
         this.permissionId = permissionId;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+
+    public String getPermissionName() {
+        return permissionName;
+    }
+
+    public void setPermissionName(String permissionName) {
+        this.permissionName = permissionName;
     }
 
     @Override

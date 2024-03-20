@@ -18,8 +18,6 @@ package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.Role;
-import com.webank.wedatasphere.qualitis.entity.Role;
-import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -36,6 +34,16 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     Role findByName(String roleName);
 
     /**
+     * find By Role Name And Type
+     *
+     * @param roleName
+     * @param type
+     * @return
+     */
+    @Query(value = "select r from Role r where r.name = ?1 and r.roleType=?2")
+    Role findByRoleNameAndType(String roleName, Integer type);
+
+    /**
      * Find by department.
      * @param department
      * @return
@@ -50,4 +58,15 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
      */
     @Query(value = "select count(td.template) from TemplateDepartment td where td.department = ?1")
     Long checkTemplate(Department department);
+
+    /**
+     * Find by department.
+     *
+     * @param department
+     * @param roleType
+     * @return
+     */
+    @Query(value = "select r from Role r where r.department = ?1 and r.roleType=?2")
+    Role findByDepartmentAndRoleType(Department department, Integer roleType);
+
 }

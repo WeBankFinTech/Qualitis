@@ -17,30 +17,37 @@
 package com.webank.wedatasphere.qualitis.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
-import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
-import com.webank.wedatasphere.qualitis.request.DataSourceConnectRequest;
-import com.webank.wedatasphere.qualitis.request.DataSourceModifyRequest;
-import com.webank.wedatasphere.qualitis.request.DataSourceParamModifyRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
-import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
-import com.webank.wedatasphere.qualitis.request.MulDbRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
-import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
+import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
+import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
+import com.webank.wedatasphere.qualitis.request.DataSourceConnectRequest;
+import com.webank.wedatasphere.qualitis.request.DataSourceModifyRequest;
+import com.webank.wedatasphere.qualitis.request.DataSourceParamModifyRequest;
+import com.webank.wedatasphere.qualitis.request.GetUserClusterRequest;
+import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
+import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
+import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
+import com.webank.wedatasphere.qualitis.request.MulDbRequest;
+import com.webank.wedatasphere.qualitis.request.QueryDataSourceRequest;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import org.json.JSONException;
+
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,11 +77,10 @@ public interface MetaDataService {
      * Get Table by context service ID
      * @param request
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     GeneralResponse<GetAllResponse<CsTableInfoDetail>> getUserTableByCsId(GetUserTableByCsIdRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+        throws Exception;
 
     /**
      Get Column by user and table
@@ -89,11 +95,10 @@ public interface MetaDataService {
      Get Column by context service ID
      * @param request
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
     GeneralResponse<GetAllResponse<ColumnInfoDetail>> getUserColumnByCsId(GetUserColumnByCsRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException;
+            throws Exception;
 
     /**
      * Get Cluster by user
@@ -106,6 +111,51 @@ public interface MetaDataService {
         throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
+     * Get db from datamap
+     * @param searchKey
+     * @param clusterName
+     * @param proxyUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    String getDbFromDatamap(String searchKey, String clusterName, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
+     * Get dataset from datamap
+     * @param dbId
+     * @param datasetName
+     * @param clusterName
+     * @param proxyUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    Integer getDatasetFromDatamap(String dbId, String datasetName, String clusterName, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
+     * Get column from datamap
+     * @param datasetId
+     * @param fieldName
+     * @param proxyUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    Map<String, Object> getColumnFromDatamap(Long datasetId, String fieldName, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
+     * Get standard from datamap
+     * @param stdCode
+     * @param source
+     * @param proxyUser
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    Map<String, Object> getDataStandardDetailFromDatamap(String stdCode, String source, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
      * Add multi-db rules in batch.
      * @param request
      * @return
@@ -114,9 +164,10 @@ public interface MetaDataService {
      * @throws ClusterInfoNotConfigException
      * @throws TaskNotExistException
      * @throws IOException
+     * @throws Exception
      */
     String addMultiDbRules(MulDbRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, ClusterInfoNotConfigException, TaskNotExistException, IOException;
+            throws Exception;
 
     /**
      * Get all data source types.
@@ -126,7 +177,7 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<Map> getAllDataSourceTypes(String clusterName, String proxyUser)
+    GeneralResponse<Map<String, Object>> getAllDataSourceTypes(String clusterName, String proxyUser)
         throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
@@ -137,23 +188,17 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<Map> getDataSourceEnv(String clusterName, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> getDataSourceEnv(String clusterName, String proxyUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
-     * Get data source info pageable.
-     * @param clusterName
-     * @param proxyUser
-     * @param page
-     * @param size
-     * @param searchName
-     * @param typeId
+     * Get data source info pageable by advance condition
+     * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
-     * @throws UnsupportedEncodingException
+     * @throws IOException
      */
-    GeneralResponse<Map> getDataSourceInfoPage(String clusterName, String proxyUser, int page, int size, String searchName,
-        Long typeId) throws UnExpectedRequestException, MetaDataAcquireFailedException, UnsupportedEncodingException;
+    GeneralResponse<Map<String, Object>> getDataSourceInfoWithAdvance(QueryDataSourceRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
 
     /**
      * Get data source versions.
@@ -164,7 +209,7 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<Map> getDataSourceVersions(String clusterName, String proxyUser, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> getDataSourceVersions(String clusterName, String proxyUser, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
      * Get data source info detail.
@@ -173,10 +218,9 @@ public interface MetaDataService {
      * @param dataSourceId
      * @param versionId
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
-    GeneralResponse<Map> getDataSourceInfoDetail(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> getDataSourceInfoDetail(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws Exception;
 
     /**
      * Get data source key define.
@@ -187,7 +231,7 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<Map> getDataSourceKeyDefine(String clusterName, String proxyUser, Long keyId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> getDataSourceKeyDefine(String clusterName, String proxyUser, Long keyId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
      * Connect to data source.
@@ -198,9 +242,10 @@ public interface MetaDataService {
      * @throws IOException
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
+     * @throws JSONException
      */
-    GeneralResponse<Map> connectDataSource(String clusterName, String proxyUser, DataSourceConnectRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
+    GeneralResponse<Map<String, Object>> connectDataSource(String clusterName, String proxyUser, DataSourceConnectRequest request)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException, JSONException;
 
     /**
      * Publish data source.
@@ -211,8 +256,9 @@ public interface MetaDataService {
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
+     * @throws JSONException
      */
-    GeneralResponse<Map> publishDataSource(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> publishDataSource(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
      * Expire data source.
@@ -223,57 +269,64 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<Map> expireDataSource(String clusterName, String proxyUser, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    GeneralResponse<Map<String, Object>> expireDataSource(String clusterName, String proxyUser, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
      * Modify data source.
      * @param clusterName
-     * @param proxyUser
      * @param dataSourceId
      * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      * @throws JsonProcessingException
+     * @throws JSONException
+     * @throws IOException
+     * @throws Exception
      */
-    GeneralResponse<Map> modifyDataSource(String clusterName, String proxyUser, Long dataSourceId, DataSourceModifyRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException, JsonProcessingException;
+    GeneralResponse modifyDataSource(String clusterName, Long dataSourceId, DataSourceModifyRequest request)
+            throws Exception;
 
     /**
      * Modify data source param.
      * @param clusterName
-     * @param proxyUser
      * @param dataSourceId
      * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      * @throws IOException
+     * @throws JSONException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<Map> modifyDataSourceParam(String clusterName, String proxyUser, Long dataSourceId, DataSourceParamModifyRequest request)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
+    GeneralResponse modifyDataSourceParam(String clusterName, Long dataSourceId, DataSourceParamModifyRequest request)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException, JSONException, PermissionDeniedRequestException;
 
     /**
      * Create data source param.
      * @param clusterName
-     * @param proxyUser
      * @param request
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      * @throws JsonProcessingException
+     * @throws JSONException
+     * @throws IOException
+     * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<Map> createDataSource(String clusterName, String proxyUser, DataSourceModifyRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException, JsonProcessingException;
+    GeneralResponse createDataSource(String clusterName, DataSourceModifyRequest request)
+            throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException, JSONException, PermissionDeniedRequestException;
 
     /**
      * Get db by data source.
      * @param clusterName
      * @param proxyUser
      * @param dataSourceId
+     * @param envId
      * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
-    Map getDbsByDataSource(String clusterName, String proxyUser, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    Map<String, Object> getDbsByDataSource(String clusterName, String proxyUser, Long dataSourceId, Long envId) throws Exception;
 
     /**
      * Get table by data source.
@@ -281,11 +334,13 @@ public interface MetaDataService {
      * @param proxyUser
      * @param dataSourceId
      * @param dbName
+     * @param envId
      * @return
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
+     * @throws Exception
      */
-    Map getTablesByDataSource(String clusterName, String proxyUser, Long dataSourceId, String dbName) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    Map<String, Object> getTablesByDataSource(String clusterName, String proxyUser, Long dataSourceId, String dbName, Long envId) throws Exception;
 
     /**
      * Get column by data source.
@@ -294,9 +349,61 @@ public interface MetaDataService {
      * @param dataSourceId
      * @param dbName
      * @param tableName
+     * @param envId
+     * @return
+     * @throws Exception
+     */
+    GeneralResponse<GetAllResponse<ColumnInfoDetail>> getColumnsByDataSource(String clusterName, String proxyUser, Long dataSourceId, String dbName, String tableName, Long envId) throws Exception;
+
+    /**
+     * getEnvList
+     * @param clusterName
+     * @param proxyUser
+     * @param dataSourceId
+     * @param versionId
+     * @return
+     * @throws Exception
+     */
+    GeneralResponse<List<Map<String, Object>>> getEnvList(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws Exception;
+
+    /**
+     * find All Department By Source Type
+     * @param departmentSourceTypeEnum
      * @return
      * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
      */
-    GeneralResponse<GetAllResponse<ColumnInfoDetail>> getColumnsByDataSource(String clusterName, String proxyUser, Long dataSourceId, String dbName, String tableName) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    List<CmdbDepartmentResponse> findAllDepartment(DepartmentSourceTypeEnum departmentSourceTypeEnum) throws UnExpectedRequestException;
+
+    /**
+     * find Sub Department By Dept Code
+     * @param departmentSourceType
+     * @param deptCode
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<DepartmentSubResponse> getSubDepartmentByDeptCode(DepartmentSourceTypeEnum departmentSourceType, Integer deptCode) throws UnExpectedRequestException;
+
+    /**
+     * find department by role type
+     * @param departmentSourceType
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<CmdbDepartmentResponse> getDepartmentInfoListByRoleType(DepartmentSourceTypeEnum departmentSourceType) throws UnExpectedRequestException;
+
+    /**
+     *  find sub department by role type
+     * @param departmentSourceTypeEnum
+     * @param deptCode
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(DepartmentSourceTypeEnum departmentSourceTypeEnum, Integer deptCode) throws UnExpectedRequestException;
+
+    /**
+     * get Data Source Name List
+     * @return
+     */
+    List<String> getDataSourceNameList();
+
 }
