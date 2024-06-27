@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.project.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
@@ -58,11 +59,18 @@ public class WorkflowController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get workflow project, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_PROJECT}", null);
         }
     }
 
-    @GET
+    /**
+     * Maybe were deprecated
+     * @param projectId
+     * @param pageRequest
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    @POST
     @Path("detail/{projectId}")
     @Produces(MediaType.APPLICATION_JSON)
     public GeneralResponse<ProjectDetailResponse> getWorkflowProjectDetail(@PathParam("projectId") Long projectId, PageRequest pageRequest) throws UnExpectedRequestException {
@@ -72,7 +80,7 @@ public class WorkflowController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get workflow project detail, project_id: {}, caused by: {}", projectId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
         }
     }
 
@@ -89,7 +97,7 @@ public class WorkflowController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get project user, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_PROJECT}", null);
         }
     }
     /**
@@ -117,7 +125,7 @@ public class WorkflowController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get project rules, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PROJECT_DETAIL}", null);
         }
     }
 

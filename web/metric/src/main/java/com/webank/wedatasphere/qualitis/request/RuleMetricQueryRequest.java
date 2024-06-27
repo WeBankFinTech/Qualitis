@@ -153,4 +153,23 @@ public class RuleMetricQueryRequest {
     public void setModifyUser(String modifyUser) {
         this.modifyUser = modifyUser;
     }
+
+    @Override
+    public String toString() {
+        return "RuleMetricQueryRequest{" +
+                "subSystemName='" + subSystemName + '\'' +
+                ", ruleMetricName='" + ruleMetricName + '\'' +
+                ", type=" + type +
+                ", enCode='" + enCode + '\'' +
+                ", available=" + available +
+                ", multiEnvs=" + multiEnvs +
+                ", devDepartmentId='" + devDepartmentId + '\'' +
+                ", opsDepartmentId='" + opsDepartmentId + '\'' +
+                ", actionRange=" + actionRange +
+                ", createUser='" + createUser + '\'' +
+                ", modifyUser='" + modifyUser + '\'' +
+                ", page=" + page +
+                ", size=" + size +
+                '}';
+    }
 }

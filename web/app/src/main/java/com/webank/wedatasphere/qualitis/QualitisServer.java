@@ -21,12 +21,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * @author howeye
  */
-@SpringBootApplication(scanBasePackages = "com.webank.wedatasphere.qualitis")
+@SpringBootApplication(scanBasePackages = {"com.webank.wedatasphere.qualitis", "cn.webank.bdp.wedatasphere.components.servicis"})
 @ServletComponentScan(basePackages = "com.webank.wedatasphere.qualitis")
+@EnableScheduling
 @EnableRetry
 @EnableAsync
 public class QualitisServer {

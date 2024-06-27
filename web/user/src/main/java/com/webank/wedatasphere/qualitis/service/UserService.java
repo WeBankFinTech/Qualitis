@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.QueryUserRequest;
 import com.webank.wedatasphere.qualitis.request.user.ModifyDepartmentRequest;
+import com.webank.wedatasphere.qualitis.request.user.ModifyPasswordRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserAddRequest;
 import com.webank.wedatasphere.qualitis.request.user.UserRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -47,6 +48,14 @@ public interface UserService {
      */
     GeneralResponse<AddUserResponse> addUser(UserAddRequest request) throws UnExpectedRequestException, RoleNotFoundException;
 
+    /**
+     * add user from ITSM
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws RoleNotFoundException
+     */
+    User addItsmUser(UserAddRequest request) throws UnExpectedRequestException, RoleNotFoundException;
 
     /**
      * Delete user
@@ -54,7 +63,7 @@ public interface UserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> deleteUser(UserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteUser(UserRequest request) throws UnExpectedRequestException;
 
     /**
      * Initial password of user
@@ -73,10 +82,18 @@ public interface UserService {
     GeneralResponse<GetAllResponse<UserResponse>> findAllUser(QueryUserRequest request) throws UnExpectedRequestException;
 
     /**
-     * get all user_id and username
+     * Find all user names
      * @return
      */
-    GetAllResponse<Map<String ,Object>> findAllUserIdAndName();
+    List<String> findAllUserName();
+
+    /**
+     * Modify user password
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<Object> modifyPassword(ModifyPasswordRequest request)  throws UnExpectedRequestException;
 
     /**
      * Auto register user
@@ -86,12 +103,19 @@ public interface UserService {
     void autoAddUser(String username) throws RoleNotFoundException;
 
     /**
+     * add user if not exists
+     * @param username
+     * @throws RoleNotFoundException
+     */
+    void addUserIfNotExists(String username) throws RoleNotFoundException;
+
+    /**
      * Modify user department
      * @param request
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<?> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyDepartment(ModifyDepartmentRequest request) throws UnExpectedRequestException;
 
     /**
      * Find by username
@@ -120,4 +144,12 @@ public interface UserService {
      * @param departmentName
      */
     void syncSubDepartmentName(Long subDepartmentCode, String departmentName);
+
+    /**
+     * get User Permission
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse getUserPermission() throws UnExpectedRequestException;
+
 }

@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.converter;
 
+import com.webank.bsp.dpc.entity.AccountInfoSys;
+import com.webank.bsp.dpc.util.AccountInfoObtainer;
 import com.webank.wedatasphere.qualitis.EngineTypeEnum;
 import com.webank.wedatasphere.qualitis.LocalConfig;
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
@@ -25,23 +27,33 @@ import com.webank.wedatasphere.qualitis.bean.RuleTaskDetail;
 import com.webank.wedatasphere.qualitis.config.DpmConfig;
 import com.webank.wedatasphere.qualitis.config.FpsConfig;
 import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
-import com.webank.wedatasphere.qualitis.constant.OptTypeEnum;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.*;
 import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.net.LocalNetwork;
 import com.webank.wedatasphere.qualitis.rule.constant.*;
+import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.translator.AbstractTranslator;
 import com.webank.wedatasphere.qualitis.util.CryptoUtils;
 import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
 import com.webank.wedatasphere.qualitis.util.DateUtils;
+import com.webank.wedatasphere.qualitis.util.MyStringEscaper;
 import com.webank.wedatasphere.qualitis.util.QualitisCollectionUtils;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.StatementVisitorAdapter;
+import net.sf.jsqlparser.statement.select.*;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
@@ -51,6 +63,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -78,28 +92,59 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     @Autowired
     private FpsConfig fpsConfig;
 
+    @Value("${task.persistent.dbName}")
+    private String resultDbName;
+    @Value("${task.persistent.tableName}")
+    private String resultTableName;
+    @Value("${task.new_value.tableName}")
+    private String newValueTableName;
+
+    @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
     @Autowired
     private DataStandardClient dataStandardClient;
     @Value("${linkis.sql.communalTableName:common_table}")
     private String commonTableName;
 
+    @Value("${intellect.check.project_name:}")
+    private String intellectCheckProjectName;
+
+    @Value("${intellect.check.fields_count_project_name:}")
+    private String intellectCheckFieldsProjectName;
+
+    @Value("${intellect.check.table_collect_template_name}")
+    private String intellectCheckTableTemplateName;
+
+    @Value("${intellect.check.enum_collect_template_name}")
+    private String intellectCheckEnumTemplateName;
+
+    @Value("${intellect.check.origin_collect_template_name}")
+    private String intellectCheckOriginTemplateName;
+
+    @Value("${intellect.check.total_collect_template_name}")
+    private String intellectCheckTotalTemplateName;
+
+    @Value("${task.execute.trino_column_size:100}")
+    private Integer trinoColumnSize;
+
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(".*\\$\\{(.*)}.*");
     private static final Pattern AGGREGATE_FUNC_PATTERN = Pattern.compile("[a-zA-Z]+\\([0-9a-zA-Z_]+\\)");
+    private static final String FRONT_HALF = "[ `~!@#$%^&*()+=|{}':;',\\[\\]";
+    private static final String POSTERIOR_HALF = "<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]|\n|\r|\t";
+    private static final Pattern MID_TABLE_NAME_PATTERN = Pattern.compile(FRONT_HALF + POSTERIOR_HALF);
 
     private static final String SAVE_MID_TABLE_NAME_PLACEHOLDER = "${TABLE_NAME}";
     private static final String SPARK_SQL_TEMPLATE_PLACEHOLDER = "${SQL}";
     public static final String VARIABLE_NAME_PLACEHOLDER = "${VARIABLE}";
+    private static final String DATABASE_PLACEHOLDER = "${database}";
+    private static final String TABLE_PLACEHOLDER = "${table}";
     private static final String FILTER_PLACEHOLDER = "${filter}";
     private static final String FILTER_LEFT_PLACEHOLDER = "${filter_left}";
     private static final String FILTER_RIGHT_PLACEHOLDER = "${filter_right}";
     private static final Integer SINGLE_RULE = 1;
     private static final Integer CUSTOM_RULE = 2;
     private static final Integer MUL_SOURCE_RULE = 3;
-    /**
-     * Multi table solve.
-     */
-    private static final Long MUL_SOURCE_ACCURACY_TEMPLATE_ID = 17L;
-    private static final Long MUL_SOURCE_FULL_TEMPLATE_ID = 20L;
+
     /**
      * Dpm properties.
      */
@@ -186,6 +231,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @param setFlag
      * @param execParams
      * @param runDate
+     * @param runToday
      * @param clusterType
      * @param dataSourceMysqlConnect
      * @param user
@@ -193,6 +239,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @param rightCols
      * @param complexCols
      * @param createUser
+     * @param projectId
      * @return
      * @throws ConvertException
      * @throws DataQualityTaskException
@@ -201,20 +248,22 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      */
     @Override
     public DataQualityJob convert(DataQualityTask dataQualityTask, Date date, String setFlag, Map<String, String> execParams, String runDate
-            , String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols, List<String> complexCols, String createUser) throws Exception {
+            , String runToday, String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols, List<String> complexCols, String createUser, Long projectId) throws Exception {
 
-        boolean withSpark = CollectionUtils.isNotEmpty(complexCols) && Boolean.FALSE.equals(taskDataSourceConfig.getHiveSortUdfOpen());
+        boolean withSpark = Boolean.FALSE.equals(taskDataSourceConfig.getHiveSortUdfOpen());
         LOGGER.info("Start to convert template to actual code, task: " + dataQualityTask);
         if (null == dataQualityTask || dataQualityTask.getRuleTaskDetails().isEmpty()) {
             throw new DataQualityTaskException("Task can not be null or empty");
         }
         DataQualityJob job = new DataQualityJob();
+        job.setTaskId(dataQualityTask.getTaskId());
+        job.setIndex(dataQualityTask.getIndex());
 
         if (StringUtils.isNotBlank(setFlag)) {
             LOGGER.info("Start to solve with set flag. Spark set conf string: {}", setFlag);
             String[] setStrs = setFlag.split(SpecCharEnum.DIVIDER.getValue());
             for (String str : setStrs) {
-                job.getJobCode().add("spark.sql(\"set " + str + "\")");
+                job.getJobCode().add("spark.sql(\"SET " + str + "\")");
             }
             LOGGER.info("Finish to solve with set flag.");
         }
@@ -223,7 +272,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         String queueName = "";
         boolean engineReUse = true;
         boolean midTableReUse = true;
-        boolean unionAllForSaveResult = false;
+        int unionWay = 0;
         if (StringUtils.isNotBlank(startupParam)) {
             String[] startupParams = startupParam.split(SpecCharEnum.DIVIDER.getValue());
 
@@ -255,18 +304,14 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                         startupParam = startupParam.replace("mid_table_reuse=false", "");
                     }
                 }
-                if ("union_all_save".equals(key)) {
-                    if ("true".equals(value)) {
-                        unionAllForSaveResult = true;
-                        startupParam = startupParam.replace("union_all_save=true", "");
-                    } else {
-                        unionAllForSaveResult = false;
-                        startupParam = startupParam.replace("union_all_save=false", "");
-                    }
+                if ("union_way".equals(key)) {
+                    unionWay = Integer.valueOf(value);
+                    startupParam = startupParam.replace("union_way=" + value, "");
                 }
 
-                if ("qualitis.linkis.engineType".equals(key) && !EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(value)) {
+                if (QualitisConstants.QUALITIS_ENGINE_TYPE.equals(key) && !EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(value)) {
                     engineType = value;
+                    startupParam = startupParam.replace(QualitisConstants.QUALITIS_ENGINE_TYPE + SpecCharEnum.EQUAL.getValue() + value, "");
                 }
 
                 if ("wds.linkis.rm.yarnqueue".equals(key)) {
@@ -280,24 +325,30 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         if (execParams.keySet().contains(QualitisConstants.QUALITIS_MID_TABLE_REUSE) && Boolean.FALSE.equals(Boolean.parseBoolean(execParams.get(QualitisConstants.QUALITIS_MID_TABLE_REUSE)))) {
             midTableReUse = false;
         }
-        if (execParams.keySet().contains(QualitisConstants.QUALITIS_UNION_ALL_SAVE) && Boolean.TRUE.equals(Boolean.parseBoolean(execParams.get(QualitisConstants.QUALITIS_UNION_ALL_SAVE)))) {
-            unionAllForSaveResult = true;
+        if (execParams.keySet().contains(QualitisConstants.QUALITIS_UNION_WAY)) {
+            unionWay = Integer.valueOf(execParams.getOrDefault(QualitisConstants.QUALITIS_UNION_WAY, UnionWayEnum.NO_COLLECT_CALCULATE.getCode().toString()));
         }
         if (execParams.keySet().contains(QualitisConstants.QUALITIS_ENGINE_TYPE) && !EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(execParams.get(QualitisConstants.QUALITIS_ENGINE_TYPE))) {
-            engineType = EngineTypeEnum.SPARK_ENGINE.getMessage();
+            engineType = execParams.get(QualitisConstants.QUALITIS_ENGINE_TYPE);
         }
         List<String> initSentence = abstractTranslator.getInitSentence();
-        job.getJobCode().addAll(initSentence);
+        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || withSpark) {
+            job.getJobCode().addAll(initSentence);
+            job.getJobCode().add("spark.sql(\"SET spark.sql.hive.convertMetastoreOrc=false\")");
+        }
 
         List<String> envNames = new ArrayList<>();
         boolean shareConnect = CollectionUtils.isNotEmpty(dataQualityTask.getConnectShare());
-        List<String> communalSentence = getCommunalSentence(dataQualityTask, envNames);
-        job.getJobCode().addAll(communalSentence);
+        List<String> communalSentence = new ArrayList<>();
+        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || withSpark) {
+            communalSentence = getCommunalSentence(dataQualityTask, envNames, runDate, runToday, engineType);
+            job.getJobCode().addAll(communalSentence);
+        }
 
         int count = 0;
         for (RuleTaskDetail ruleTaskDetail : dataQualityTask.getRuleTaskDetails()) {
-            if (Boolean.TRUE.equals(ruleTaskDetail.getRule().getUnionAll())) {
-                unionAllForSaveResult = true;
+            if (Objects.nonNull(ruleTaskDetail.getRule().getUnionWay())) {
+                unionWay = ruleTaskDetail.getRule().getUnionWay();
             }
             // Get current rule left cols and right cols.
             List<String> currentRuleLeftCols = new ArrayList<>();
@@ -314,18 +365,35 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
             job.getJobCode().addAll(fpsCodes);
             // Handle hive engine task depend on startup param(qualitis.linkis.engineType=shell,spark(default))
-            if (CollectionUtils.isEmpty(fpsCodes) && !withSpark && taskDataSourceConfig.getMysqlsecOpen() && EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(engineType) && MUL_SOURCE_FULL_TEMPLATE_ID.equals(ruleTaskDetail.getRule().getTemplate().getId()) && CollectionUtils.isEmpty(dataSourceMysqlConnect.keySet())) {
-                job.getJobCode().clear();
-                // Hql
-                List<String> codes = generateShellSqlByTask(ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), count, runDate, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
-                job.setEngineType(EngineTypeEnum.DEFAULT_ENGINE.getMessage());
-                job.getJobCode().addAll(codes);
-                continue;
+            if (CollectionUtils.isEmpty(complexCols) && CollectionUtils.isEmpty(fpsCodes) && !withSpark && taskDataSourceConfig.getMysqlsecOpen()) {
+                boolean generated = false;
+                if (EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(engineType) && QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(ruleTaskDetail.getRule().getTemplate().getEnName())
+                        && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(ruleTaskDetail.getRule().getTemplate().getTemplateType())
+                        && CollectionUtils.isEmpty(dataSourceMysqlConnect.keySet())) {
+                    job.getJobCode().clear();
+                    // Hql
+                    List<String> codes = generateShellSqlByTask(ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), count, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
+                    job.setEngineType(EngineTypeEnum.DEFAULT_ENGINE.getMessage());
+                    job.getJobCode().addAll(codes);
+                    generated = true;
+                } else if (EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && ! QualitisConstants.isAcrossCluster(ruleTaskDetail.getRule().getTemplate().getEnName())) {
+                    // Tsql
+                    List<String> codes = generateTrinoSqlByTask(job, ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), execParams, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
+                    job.setEngineType(EngineTypeEnum.TRINO_ENGINE.getMessage());
+                    job.getJobCode().addAll(codes);
+                    generated = true;
+                }
+                if (generated) {
+                    continue;
+                }
             }
-
+            String sharePart = "";
+            if (StringUtils.isNotEmpty(dataQualityTask.getDbShare()) && StringUtils.isNotEmpty(dataQualityTask.getTableShare())) {
+                sharePart = dataQualityTask.getDbShare() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + dataQualityTask.getTableShare();
+            }
             List<String> codes = generateSparkSqlByTask(job, ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), ruleTaskDetail.getMidTableName()
-                , dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), execParams, runDate, dataSourceMysqlConnect, user, midTableReUse
-                , unionAllForSaveResult, currentRuleLeftCols, currentRuleRightCols, complexCols, createUser, shareConnect, dataQualityTask.getDbShare() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + dataQualityTask.getTableShare());
+                    , dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), execParams, runDate, runToday, dataSourceMysqlConnect, user, midTableReUse
+                    , unionWay, currentRuleLeftCols, currentRuleRightCols, complexCols, createUser, shareConnect, sharePart);
             job.setEngineType(EngineTypeEnum.SPARK_ENGINE.getMessage());
             job.getJobCode().addAll(codes);
 
@@ -345,20 +413,41 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             }
         }
         LOGGER.info("Succeed to convert all rule into actual scala code.");
-        job.setTaskId(dataQualityTask.getTaskId());
         job.setStartupParam(startupParam);
         job.setEngineReuse(engineReUse);
         return job;
     }
 
-    private List<String> getCommunalSentence(DataQualityTask dataQualityTask, List<String> envNames) throws UnExpectedRequestException {
+    private List<String> getCommunalSentence(DataQualityTask dataQualityTask, List<String> envNames, String runDate, String runToday, String engineType) throws UnExpectedRequestException {
         List<String> sqlList = new ArrayList<>();
         if (StringUtils.isEmpty(dataQualityTask.getDbShare()) || StringUtils.isEmpty(dataQualityTask.getTableShare())) {
             return sqlList;
         }
-        List<String> columnList = new ArrayList<>();
+        // 自定义规则不使用公共缓存
+        try {
+            Rule rule = dataQualityTask.getRuleTaskDetails().get(0).getRule();
+            if(compareProjectName(rule)){
+                return sqlList;
+            }
+            if(StringUtils.isNotBlank(intellectCheckFieldsProjectName) &&
+                    intellectCheckFieldsProjectName.equals(rule.getProject().getName())){
+                return sqlList;
+            }
 
+        } catch (Exception e) {
+            LOGGER.error("compare projectName error. can't get rule info");
+        }
+        List<String> columnList = new ArrayList<>();
         String filterPart = dataQualityTask.getFilterShare();
+        if (StringUtils.isNotEmpty(filterPart) && StringUtils.isNotEmpty(runDate)) {
+            filterPart = filterPart.replace("${run_date}", runDate);
+//            filterPart = filterPart.replace("${run_date_std}", runDate);
+        }
+        if (StringUtils.isNotEmpty(filterPart) && StringUtils.isNotEmpty(runToday)) {
+            filterPart = filterPart.replace("${run_today}", runToday);
+//            filterPart = filterPart.replace("${run_today_std}", runToday);
+        }
+
         String fromPart = dataQualityTask.getDbShare() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + dataQualityTask.getTableShare();
 
         String selectPart = "*";
@@ -371,7 +460,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 }
             }
         }
-
         if (CollectionUtils.isNotEmpty(columnList)) {
             selectPart = String.join(SpecCharEnum.COMMA.getValue(), columnList);
         }
@@ -382,6 +470,9 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 if (StringUtils.isEmpty(envName)) {
                     continue;
                 }
+                // Remove ip of dcn
+                envName = envName.split(SpecCharEnum.MINUS.getValue())[0];
+
                 envNames.add(envName);
                 String host = (String) connParams.get("host");
                 String port = (String) connParams.get("port");
@@ -410,7 +501,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     private List<String> generateShellSqlByTask(Rule rule, Date date, String applicationId, String createTime, StringBuilder partition, int count
-            , String runDate, List<String> leftCols, List<String> rightCols, List<String> complexCols, String queueName, String createUser) throws Exception {
+            , String runDate, String runToday, List<String> leftCols, List<String> rightCols, List<String> complexCols, String queueName, String createUser) throws Exception {
 
         List<String> sqlList = new ArrayList<>();
 
@@ -420,11 +511,10 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         Map<String, Long> ruleMetricMap = collectRuleMetric(rule);
         Map<String, String> dbTableMap = new HashMap<>(4);
         Map<String, String> filters = new HashMap<>(2);
-        StringBuilder realFilter = new StringBuilder();
         StringBuilder realColumn = new StringBuilder();
 
-        templateMidTableAction = getMultiDatasourceFiltesAndUpdateMidTableAction(rule, templateMidTableAction, date, filters);
-        replaceVariable(templateMidTableAction, inputMetaRuleVariables, partition.toString(), realFilter, realColumn, dbTableMap, date, createUser);
+        templateMidTableAction = getMultiDatasourceFiltesAndUpdateMidTableAction(rule, templateMidTableAction, date, filters, leftCols, rightCols, complexCols, null, runDate, runToday, false);
+        replaceVariable(templateMidTableAction, inputMetaRuleVariables, partition.toString(), realColumn, dbTableMap, date, rule.getStandardValueVersionId(), createUser, "", runDate, runToday, EngineTypeEnum.DEFAULT_ENGINE.getMessage());
 
         // If partition is not specified, replace with filter in rule configuration.
         if (StringUtils.isBlank(partition.toString())) {
@@ -460,7 +550,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         if (StringUtils.isNotEmpty(queueName)) {
             setQueue.append("set mapreduce.job.queuename=").append(queueName).append(";");
         }
-        String hiveSql = "count_result_" + count + "=`hive -S -e \"" + setQueue.toString() + createFunc.toString() + "select count(1) as diff_count from (select line_md5, count(1) as md5_count from (select md5(concat_ws(''," + leftConcat.toString() + ")) as line_md5 from " + dbTableMap.get("left_database") + dbTableMap.get("left_table") + " where " + filters.get("left_table") + ") left_tmp group by left_tmp.line_md5) qulaitis_left_tmp ${contrast_type} (select line_md5, count(1) as md5_count from (select md5(concat_ws(''," + rightConcat.toString() + ")) as line_md5 from " + dbTableMap.get("right_database") + dbTableMap.get("right_table") + " where " + filters.get("right_table") + ") right_tmp group by right_tmp.line_md5) qulaitis_right_tmp ON (qulaitis_left_tmp.line_md5 = qulaitis_right_tmp.line_md5 AND qulaitis_left_tmp.md5_count = qulaitis_right_tmp.md5_count) where (qulaitis_left_tmp.line_md5 is null AND qulaitis_left_tmp.md5_count is null) OR (qulaitis_right_tmp.line_md5 is null AND qulaitis_right_tmp.md5_count is null) ${outer_filter};\"`";
+        String hiveSql = "count_result_" + count + "=`hive -e \"" + setQueue.toString() + createFunc.toString() + "select count(1) as diff_count from (select line_md5, count(1) as md5_count from (select md5(concat_ws(''," + leftConcat.toString() + ")) as line_md5 from " + dbTableMap.get("left_database") + dbTableMap.get("left_table") + " where " + filters.get("left_table") + ") left_tmp group by left_tmp.line_md5) qulaitis_left_tmp ${contrast_type} (select line_md5, count(1) as md5_count from (select md5(concat_ws(''," + rightConcat.toString() + ")) as line_md5 from " + dbTableMap.get("right_database") + dbTableMap.get("right_table") + " where " + filters.get("right_table") + ") right_tmp group by right_tmp.line_md5) qulaitis_right_tmp ON (qulaitis_left_tmp.line_md5 = qulaitis_right_tmp.line_md5 AND qulaitis_left_tmp.md5_count = qulaitis_right_tmp.md5_count) where (qulaitis_left_tmp.line_md5 is null AND qulaitis_left_tmp.md5_count is null) OR (qulaitis_right_tmp.line_md5 is null AND qulaitis_right_tmp.md5_count is null) ${outer_filter};\"`";
         hiveSql = hiveSql.replace("${contrast_type}", ContrastTypeEnum.getJoinType(rule.getContrastType()));
         if (StringUtils.isNotEmpty(partition.toString())) {
             hiveSql = hiveSql.replace("${outer_filter}", "AND (" + partition.toString() + ")");
@@ -478,7 +568,11 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         sqlList.add(mysqlConn);
         String ruleVersion = rule.getWorkFlowVersion() == null ? "" : rule.getWorkFlowVersion();
         if (StringUtils.isEmpty(runDate)) {
-            runDate = "-1";
+            if (StringUtils.isNotBlank(runToday)) {
+                runDate = runToday;
+            } else {
+                runDate = "-1";
+            }
         }
         String insertSql = "sql_" + count + "=\"INSERT INTO qualitis_application_task_result (application_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) VALUES('" + applicationId + "', '" + createTime + "', 'Long', " + rule.getId() + ", $count_value_" + count + ", -1, " + runDate + ", '" + ruleVersion + "');\"";
         if (CollectionUtils.isNotEmpty(ruleMetricMap.values())) {
@@ -487,6 +581,264 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         sqlList.add(insertSql);
         sqlList.add("result=\"$($MYSQL -e\"$sql_" + count + "\")\"");
         return sqlList;
+    }
+
+    private List<String> generateTrinoSqlByTask(DataQualityJob job, Rule rule, Date date, String applicationId, String createTime, StringBuilder partition, Map<String, String> execParams, String runDate, String runToday, List<String> leftCols, List<String> rightCols, List<String> complexCols, String queueName, String createUser) throws UnExpectedRequestException, ConvertException, MetaDataAcquireFailedException {
+        List<String> sqlList = new ArrayList<>();
+        Map<String, String> filters = new HashMap<>(2);
+
+        // Collect rule metric and build in save sentence sql.
+        Map<String, Long> ruleMetricMap = collectRuleMetric(rule);
+
+        // Get SQL from template after remove '\n'
+        String templateMidTableAction = rule.getTemplate().getMidTableAction().replace("\n", " ");
+        // trino compatibility handling start
+        LOGGER.info("Before handle trino schema: {}", templateMidTableAction);
+        templateMidTableAction = templateMidTableAction.replace("${fields} not regexp '${regexp}'", "regexp_like(cast(${fields} as varchar), '${regexp}')");
+        templateMidTableAction = templateMidTableAction.replace("trim(${fields}) = ''", "trim(cast(${fields} as varchar)) = ''");
+        templateMidTableAction = templateMidTableAction.replace("concat_ws(',',${fields})", "concat_ws(',',cast(${fields} as varchar))");
+        LOGGER.info("After handle trino schema: {}", templateMidTableAction);
+        // trino compatibility handling end
+
+        templateMidTableAction = templateMidTableAction.replace("${database}.${table}", "hive.${database}.${table}");
+        templateMidTableAction = templateMidTableAction.replace("${left_database}.${left_table}", "hive.${left_database}.${left_table}");
+        templateMidTableAction = templateMidTableAction.replace("${right_database}.${right_table}", "hive.${right_database}.${right_table}");
+
+        if (MUL_SOURCE_RULE.intValue() == rule.getRuleType()) {
+            if (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
+                templateMidTableAction = templateMidTableAction.replace("hive.${left_database}.${left_table}", "(select * from " + "hive.${left_database}.${left_table} where " + "${filter_left})");
+                templateMidTableAction = templateMidTableAction.replace("hive.${right_database}.${right_table}", "(select * from " + "hive.${right_database}.${right_table} where " + "${filter_right})");
+                templateMidTableAction = "SELECT * from (" + templateMidTableAction + ") tmp3 where tmp3.compare_result = 0";
+            }
+            templateMidTableAction = getMultiDatasourceFiltesAndUpdateMidTableAction(rule, templateMidTableAction, date, filters, leftCols, rightCols, complexCols, job.getIndex(),
+                    runDate, runToday, true);
+        } else if (CUSTOM_RULE.intValue() == rule.getRuleType()) {
+            templateMidTableAction = customMidTableActionUpdate(rule, templateMidTableAction, date, execParams, partition, ruleMetricMap, runDate, runToday, EngineTypeEnum.TRINO_ENGINE.getMessage());
+        }
+
+        if (Boolean.TRUE.equals(rule.getTemplate().getFilterFields()) && RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType())) {
+            String filterColName = rule.getRuleDataSources().stream().filter(dataSource -> dataSource.getDatasourceIndex() == null).iterator().next().getColName();
+            List<String> filterColNameList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(filterColName)) {
+                StringBuilder repeat = new StringBuilder();
+                String[] realColumns = filterColName.split(SpecCharEnum.VERTICAL_BAR.getValue());
+                for (String column : realColumns) {
+                    String[] colInfo = column.split(SpecCharEnum.COLON.getValue());
+                    String colName = colInfo[0];
+                    filterColNameList.add("cast(" + colName + " as varchar)");
+                }
+                repeat.append("select md5, count(1) as md5_count from (select md5(cast(concat_ws('', ").append(Strings.join(filterColNameList, ',')).append(") as varbinary)) as md5 from (" + templateMidTableAction + ") template_source) template_group_source group by template_group_source.md5 having count(*) > 1");
+                templateMidTableAction = repeat.toString();
+            }
+        }
+
+        // Get statistics meta
+        Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = rule.getTemplate().getStatisticAction();
+        // Get select input meta
+        List<RuleVariable> inputMetaRuleVariables = rule.getRuleVariables().stream().filter(ruleVariable -> ruleVariable.getInputActionStep().equals(InputActionStepEnum.TEMPLATE_INPUT_META.getCode())).collect(Collectors.toList());
+
+        // If partition is not specified, replace with filter from rule datasource.
+        if (StringUtils.isBlank(partition.toString())) {
+            fillPartitionWithRuleConfiguration(partition, rule, templateMidTableAction, inputMetaRuleVariables);
+        }
+
+        // Get dbs and tables
+        Map<String, String> dbTableMap = new HashMap<>(4);
+        // Get column and filter
+        StringBuilder realColumn = new StringBuilder();
+        // Get template sql and replace all replaceholders
+        String midTableAction = replaceVariable(templateMidTableAction, inputMetaRuleVariables, partition.toString(), realColumn, dbTableMap, date, rule.getStandardValueVersionId(), createUser, "", runDate, runToday, EngineTypeEnum.TRINO_ENGINE.getMessage());
+
+        if (QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
+            midTableAction = addHivePrefixToTables(midTableAction);
+            midTableAction = "SELECT * from (" + midTableAction + ") tmp3 where tmp3.compare_result = 0";
+        }
+
+        StringBuilder trinoSql = new StringBuilder();
+        trinoSql.append("insert into mysql").append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(resultDbName).append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(resultTableName);
+        trinoSql.append(" (application_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) ");
+
+        String ruleVersion = rule.getWorkFlowVersion() == null ? "" : rule.getWorkFlowVersion();
+
+        if (StringUtils.isEmpty(runDate)) {
+            if (StringUtils.isNotBlank(runToday)) {
+                runDate = runToday;
+            } else {
+                runDate = "-1";
+            }
+        }
+        Long ruleMetricId = -1L;
+
+        if (ruleMetricMap != null && ruleMetricMap.size() > 0) {
+            for (String key : ruleMetricMap.keySet()) {
+                if (null != ruleMetricMap.get(key)) {
+                    ruleMetricId = ruleMetricMap.get(key);
+                }
+
+                if (CUSTOM_RULE.intValue() == rule.getRuleType()) {
+                    key = key.replace("-", "_");
+                    StringBuilder customTrinoSql = new StringBuilder(trinoSql.toString());
+                    customTrinoSql.append("select ")
+                            .append("'").append(applicationId).append("', ")
+                            .append("'").append(createTime).append("', ")
+                            .append("'").append("Long").append("', ")
+                            .append(rule.getId()).append(", ")
+                            .append("CAST(").append(key).append(" AS VARCHAR)").append(", ")
+                            .append(ruleMetricId).append(", ")
+                            .append(runDate).append(", ")
+                            .append("'").append(ruleVersion).append("'")
+                            .append(" from ").append("(")
+                            .append(midTableAction)
+                            .append(") tmp;");
+                    sqlList.add(customTrinoSql.toString());
+                }
+            }
+            if (CUSTOM_RULE.intValue() == rule.getRuleType()) {
+                return sqlList;
+            }
+        }
+
+        trinoSql.append("select ")
+                .append("'").append(applicationId).append("', ")
+                .append("'").append(createTime).append("', ")
+                .append("'").append("Long").append("', ")
+                .append(rule.getId()).append(", ")
+                .append("${value}").append(", ")
+                .append(ruleMetricId).append(", ")
+                .append(runDate).append(", ")
+                .append("'").append(ruleVersion).append("'")
+                .append(" from ").append("(")
+                .append(midTableAction)
+                .append(") tmp;");
+
+        for (TemplateStatisticsInputMeta templateStatisticsInputMeta : templateStatisticsInputMetas) {
+            String functionName = templateStatisticsInputMeta.getFuncName();
+            String value = templateStatisticsInputMeta.getValue();
+
+            String tsql = trinoSql.toString().replace("${value}", "CAST(" + functionName + "(" + value + ")" + " AS VARCHAR)");
+            sqlList.add(tsql);
+        }
+
+        // New value save
+        Set<TemplateMidTableInputMeta> templateMidTableInputMetas = rule.getTemplate().getTemplateMidTableInputMetas();
+        boolean saveNewValue = templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> Boolean.TRUE.equals(templateMidTableInputMeta.getWhetherNewValue()));
+        if (saveNewValue) {
+            StringBuilder basicNewValueSql = new StringBuilder();
+            basicNewValueSql.append("insert into mysql").append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(resultDbName).append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(newValueTableName);
+            basicNewValueSql.append(" (rule_id, status, create_user, rule_version, create_time, result_value) ");
+
+            boolean numRangeNewValue = templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> TemplateInputTypeEnum.INTERMEDIATE_EXPRESSION.getCode().equals(templateMidTableInputMeta.getInputType()));
+            boolean enumListNewValue = templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> TemplateInputTypeEnum.LIST.getCode().equals(templateMidTableInputMeta.getInputType()) || TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode().equals(templateMidTableInputMeta.getInputType()));
+
+            if (numRangeNewValue) {
+                StringBuilder numRangeNewValueSql = new StringBuilder(basicNewValueSql.toString());
+                numRangeNewValueSql.append("select ")
+                                   .append(rule.getId()).append(", ")
+                                   .append("1, ")
+                                   .append("'").append(createUser).append("', ")
+                                   .append("'").append(ruleVersion).append("', ")
+                                   .append("'").append(createTime).append("', ")
+                                   .append("CAST(custom_column AS VARCHAR)")
+                                   .append(" from ").append("(")
+                                   .append(midTableAction)
+                                   .append(") tmp;");
+                sqlList.add(numRangeNewValueSql.toString());
+            }
+
+            if (enumListNewValue) {
+                StringBuilder numRangeNewValueSql = new StringBuilder(basicNewValueSql.toString());
+                numRangeNewValueSql.append("select ")
+                        .append(rule.getId()).append(", ")
+                        .append("1, ")
+                        .append("'").append(createUser).append("', ")
+                        .append("'").append(ruleVersion).append("', ")
+                        .append("'").append(createTime).append("', ")
+                        .append("concat_ws(',', cast(" + realColumn.toString() + " as varchar))")
+                        .append(" from ").append("(")
+                        .append(midTableAction)
+                        .append(") tmp;");
+                sqlList.add(numRangeNewValueSql.toString());
+            }
+        }
+
+
+        return sqlList;
+    }
+
+    private String addHivePrefixToTables(String midTableAction) throws ConvertException{
+        try {
+            Statement statement = CCJSqlParserUtil.parse(midTableAction);
+            statement.accept(new StatementVisitorAdapter() {
+                @Override
+                public void visit(Select select) {
+                    select.getSelectBody().accept(new SelectVisitorAdapter() {
+                        @Override
+                        public void visit(PlainSelect plainSelect) {
+                            processFromItem(plainSelect.getFromItem());
+                            if (plainSelect.getJoins() != null) {
+                                plainSelect.getJoins().forEach(join -> processFromItem(join.getRightItem()));
+                            }
+                        }
+
+                        @Override
+                        public void visit(SetOperationList setOpList) {
+                            for (SelectBody selectBody : setOpList.getSelects()) {
+                                selectBody.accept(this);
+                            }
+                        }
+
+                        @Override
+                        public void visit(WithItem withItem) {
+                            withItem.getSubSelect().getSelectBody().accept(this);
+                        }
+                    });
+                }
+            });
+            return statement.toString();
+        } catch (JSQLParserException e) {
+            throw new ConvertException("Your sql cannot be parsed to get db and table, sql: " + midTableAction);
+        }
+    }
+
+    private void processFromItem(FromItem fromItem) {
+        if (fromItem instanceof Table) {
+            Table table = (Table) fromItem;
+            modifyTable(table);
+        } else if (fromItem instanceof SubSelect) {
+            SubSelect subSelect = (SubSelect) fromItem;
+            subSelect.getSelectBody().accept(new SelectVisitorAdapter() {
+                @Override
+                public void visit(PlainSelect plainSelect) {
+                    processFromItem(plainSelect.getFromItem());
+                    if (plainSelect.getJoins() != null) {
+                        plainSelect.getJoins().forEach(join -> processFromItem(join.getRightItem()));
+                    }
+                }
+
+                @Override
+                public void visit(SetOperationList setOpList) {
+                    for (SelectBody selectBody : setOpList.getSelects()) {
+                        selectBody.accept(this);
+                    }
+                }
+
+                @Override
+                public void visit(WithItem withItem) {
+                    withItem.getSubSelect().getSelectBody().accept(this);
+                }
+            });
+        }
+    }
+
+    private void modifyTable(Table table) {
+        String originalTableName = table.getFullyQualifiedName();
+        if (originalTableName.contains(".")) {
+            String[] parts = originalTableName.split("\\.", 2);
+            String dbName = parts[0];
+            String tableName = parts[1];
+            table.setSchemaName("hive." + dbName);
+            table.setName(tableName);
+        }
     }
 
     private List<String> dropHiveTable(Rule rule) {
@@ -622,7 +974,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @param runDate
      * @param dataSourceMysqlConnect
      * @param midTableReUse
-     * @param unionAllForSaveResult
+     * @param unionWay
      * @param leftCols
      * @param rightCols
      * @param complexCols
@@ -634,8 +986,10 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @throws RuleVariableNotFoundException
      */
     private List<String> generateSparkSqlByTask(DataQualityJob job, Rule rule, Date date, String applicationId, String midTableName, String createTime
-        , StringBuilder partition, Map<String, String> execParams, String runDate, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user
-        , boolean midTableReUse, boolean unionAllForSaveResult, List<String> leftCols, List<String> rightCols, List<String> complexCols, String createUser, boolean shareConnect, String shareFromPart) throws ConvertException, RuleVariableNotSupportException, RuleVariableNotFoundException, UnExpectedRequestException, MetaDataAcquireFailedException {
+            , StringBuilder partition, Map<String, String> execParams, String runDate, String runToday, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user
+            , boolean midTableReUse, int unionWay, List<String> leftCols, List<String> rightCols, List<String> complexCols
+            , String createUser, boolean shareConnect, String shareFromPart)
+            throws ConvertException, RuleVariableNotSupportException, RuleVariableNotFoundException, UnExpectedRequestException, MetaDataAcquireFailedException {
         List<String> sqlList = new ArrayList<>();
         Map<String, String> filters = new HashMap<>(2);
 
@@ -644,14 +998,35 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
         // Get SQL from template after remove '\n'
         String templateMidTableAction = rule.getTemplate().getMidTableAction().replace("\n", " ");
+        // Replace execution variable parameters
+        if(compareProjectName(rule) || intellectCheckFieldsProjectName.equals(rule.getProject().getName())) {
+            if (!MapUtils.isEmpty(execParams)) {
+                for (Map.Entry< String, String > entry : execParams.entrySet()) {
+                    String expressKey = entry.getKey();
+                    String expressValue = entry.getValue();
+                    templateMidTableAction = templateMidTableAction.replace("${" + expressKey + "}", expressValue);
+                }
+                if (execParams.containsKey("partition_attr") && execParams.containsKey("partition_day")) {
+                    String filter = "";
+                    if (execParams.get("partition_day").contains(",")) {
+                        filter = execParams.get("partition_attr") + " in (" + execParams.get("partition_day") + ")";
+                    } else {
+                        filter = execParams.get("partition_attr") + " = " + execParams.get("partition_day");
+                    }
+                    templateMidTableAction = templateMidTableAction.replace("${partition_filter}", filter);
+                }
+            }
+        }
         String templateEnName = StringUtils.isNotEmpty(rule.getTemplate().getEnName()) ? rule.getTemplate().getEnName() : "defaultCheckDF";
 
         if (MUL_SOURCE_RULE.intValue() == rule.getRuleType()) {
-            templateMidTableAction = getMultiDatasourceFiltesAndUpdateMidTableAction(rule, templateMidTableAction, date, filters);
+            templateMidTableAction = getMultiDatasourceFiltesAndUpdateMidTableAction(rule, templateMidTableAction, date, filters, leftCols, rightCols, complexCols, job.getIndex(),
+                    runDate, runToday, false);
         } else if (CUSTOM_RULE.intValue() == rule.getRuleType()) {
-            templateMidTableAction = customMidTableActionUpdate(rule, templateMidTableAction, date, execParams, partition, ruleMetricMap);
+            templateMidTableAction = customMidTableActionUpdate(rule, templateMidTableAction, date, execParams, partition, ruleMetricMap, runDate, runToday, EngineTypeEnum.SPARK_ENGINE.getMessage());
             templateEnName = "customCheckDF";
         }
+
 
         // Get statistics meta
         List<RuleVariable> statisticsRuleVariables = rule.getRuleVariables().stream().filter(ruleVariable -> ruleVariable.getInputActionStep().equals(InputActionStepEnum.STATISTICS_ARG.getCode())).collect(Collectors.toList());
@@ -667,9 +1042,8 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         Map<String, String> dbTableMap = new HashMap<>(4);
         // Get column and filter
         StringBuilder realColumn = new StringBuilder();
-        StringBuilder realFilter = new StringBuilder();
         // Get template sql and replace all replaceholders
-        String midTableAction = replaceVariable(templateMidTableAction, inputMetaRuleVariables, partition.toString(), realFilter, realColumn, dbTableMap, date, createUser);
+        String midTableAction = replaceVariable(templateMidTableAction, inputMetaRuleVariables, partition.toString(), realColumn, dbTableMap, date, rule.getStandardValueVersionId(), createUser, shareFromPart, runDate, runToday, EngineTypeEnum.SPARK_ENGINE.getMessage());
 
         // Prepare for multiple rule
         List<Map<String, Object>> sourceConnect = new ArrayList<>();
@@ -677,14 +1051,19 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         prepareDecrptedConnectParamForMultipleRule(sourceConnect, targetConnect, dataSourceMysqlConnect, rule);
 
         Map<String, String> selectResult = new LinkedHashMap<>(rule.getRuleDataSources().size());
-        String partOfVariableName = templateEnName.replace(" ", "") + SpecCharEnum.EQUAL.getValue() + rule.getName();
-        handleRuleSelectSql(rule, midTableName, partition, partOfVariableName, runDate, dataSourceMysqlConnect, sqlList, filters, dbTableMap, midTableAction, sourceConnect, targetConnect, selectResult, midTableReUse, unionAllForSaveResult, leftCols, rightCols, complexCols, shareConnect, shareFromPart);
+        String result = checkRuleNameWhetherContainSpecialCharacters(rule.getName());
+        String partOfVariableName = templateEnName.replace(" ", "") + SpecCharEnum.EQUAL.getValue() + result;
+
+        formatEnvNameForSpark(sourceConnect);
+        formatEnvNameForSpark(targetConnect);
+
+        handleRuleSelectSql(rule, midTableName, partition, partOfVariableName, runDate, runToday, dataSourceMysqlConnect, sqlList, filters, dbTableMap, midTableAction, sourceConnect, targetConnect, selectResult, midTableReUse, unionWay, leftCols, rightCols, complexCols, shareConnect, shareFromPart, execParams, job.getIndex(), job.getEngineType());
 
         Set<TemplateMidTableInputMeta> templateMidTableInputMetas = rule.getTemplate().getTemplateMidTableInputMetas();
         boolean saveNewValue = templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> Boolean.TRUE.equals(templateMidTableInputMeta.getWhetherNewValue()));
         boolean numRangeNewValue = saveNewValue && templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> TemplateInputTypeEnum.INTERMEDIATE_EXPRESSION.getCode().equals(templateMidTableInputMeta.getInputType()));
         boolean enumListNewValue = saveNewValue && templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> TemplateInputTypeEnum.LIST.getCode().equals(templateMidTableInputMeta.getInputType()) || TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode().equals(templateMidTableInputMeta.getInputType()));
-        sqlList.addAll(saveStatisticAndSaveMySqlSentence(rule.getWorkFlowVersion() != null ? rule.getWorkFlowVersion() : "", rule.getId(), ruleMetricMap, rule.getTemplate().getStatisticAction(), applicationId, statisticsRuleVariables, createTime, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionAllForSaveResult));
+        sqlList.addAll(saveStatisticAndSaveMySqlSentence(rule.getWorkFlowVersion() != null ? rule.getWorkFlowVersion() : "", rule.getId(), ruleMetricMap, rule.getTemplate().getStatisticAction(), applicationId, job.getTaskId(), statisticsRuleVariables, createTime, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionWay));
         job.setResultNum(selectResult.size());
         return sqlList;
     }
@@ -725,57 +1104,124 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return ruleMetricMap;
     }
 
-    private void handleRuleSelectSql(Rule rule, String midTableName, StringBuilder partition, String partOfVariableName, String runDate, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
-        , List<String> sqlList, Map<String, String> filters, Map<String, String> dbTableMap, String midTableAction, List<Map<String, Object>> sourceConnect, List<Map<String, Object>> targetConnect
-        , Map<String, String> selectResult, boolean midTableReUse, boolean unionAllForSaveResult, List<String> leftCols, List<String> rightCols, List<String> complexCols, boolean shareConnect, String shareFromPart) throws UnExpectedRequestException {
+    private void formatEnvNameForSpark(List<Map<String, Object>> sourceConnect) {
+        if (CollectionUtils.isEmpty(sourceConnect)) {
+            return;
+        }
+        for (Map<String, Object> connectMap: sourceConnect) {
+            if (connectMap.containsKey("envName")) {
+                String envNameForSpark = sparkEnvNameAdapter((String) connectMap.get("envName"));
+                connectMap.put("envName", envNameForSpark);
+            }
+        }
+    }
 
-        boolean systemCompareTemplate = rule.getTemplate().getId().longValue() == MUL_SOURCE_ACCURACY_TEMPLATE_ID.longValue() || rule.getTemplate().getId().longValue() == MUL_SOURCE_FULL_TEMPLATE_ID.longValue();
+    /**
+     * before: UR1-10.108.192.127-15202(epccmaindb_G-DCN_9F1_set_2)
+     * after: UR11010819212715202
+     * @param envName
+     * @return
+     */
+    private String sparkEnvNameAdapter(String envName) {
+        if (StringUtils.isBlank(envName)) {
+            return envName;
+        }
+        String input = envName;
+        if (input.indexOf("(") != -1 && input.indexOf(")") != -1) {
+            input = StringUtils.substring(input, 0, input.indexOf("("));
+        }
+        // Remove special characters
+        return input.replaceAll("[^a-zA-Z0-9_]", "");
+    }
+
+
+    private void handleRuleSelectSql(Rule rule, String midTableName, StringBuilder partition, String partOfVariableName, String runDate, String runToday, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
+            , List<String> sqlList, Map<String, String> filters, Map<String, String> dbTableMap, String midTableAction, List<Map<String, Object>> sourceConnect, List<Map<String, Object>> targetConnect
+            , Map<String, String> selectResult, boolean midTableReUse, int unionWay, List<String> leftCols, List<String> rightCols, List<String> complexCols, boolean shareConnect, String shareFromPart
+            , Map<String, String> execParams, Integer dataSourceIndex, String engineType) throws UnExpectedRequestException {
+        String templateEnName = rule.getTemplate().getEnName();
+        boolean systemCompareTemplate = (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType())) || (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
+                || (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
+                || (QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
+                || (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
+                || (QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()));
+
+
+        if ((UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay) || UnionWayEnum.NO_COLLECT_CALCULATE.getCode().equals(unionWay))
+                && CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect) && sourceConnect.size() != targetConnect.size()) {
+            throw new UnExpectedRequestException("Source envs'size can not be different from target envs'size.");
+        }
+
+        boolean unionAllForSaveResult = UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay);
         if (systemCompareTemplate && dbTableMap.size() > 0) {
-            if (rule.getTemplate().getId().longValue() == MUL_SOURCE_ACCURACY_TEMPLATE_ID.longValue()) {
+            if (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(templateEnName)) {
                 if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
-                        Map<String, Object> sourceConnectMap = sourceIterator.next();
-                        Map<String, Object> targetConnectMap = targetIterator.next();
-                        String sourceEnvName = (String) sourceConnectMap.get("envName");
-                        String targetEnvName = (String) targetConnectMap.get("envName");
-                        if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
                         }
-                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
-                        Map<String, Object> sourceConnectMap = sourceIterator.next();
-                        String sourceEnvName = (String) sourceConnectMap.get("envName");
-                        if (StringUtils.isEmpty(sourceEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, sourceIterator.next(), null, selectResult));
                         }
-                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, sourceIterator.next(), null, selectResult));
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else if (CollectionUtils.isNotEmpty(targetConnect) && CollectionUtils.isEmpty(sourceConnect)) {
-                    for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
-                        Map<String, Object> targetConnectMap = targetIterator.next();
-                        String targetEnvName = (String) targetConnectMap.get("envName");
-                        if (StringUtils.isEmpty(targetEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, null, targetIterator.next(), selectResult));
                         }
-                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, null, targetIterator.next(), selectResult));
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else {
-                    sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
-
-                    if (Boolean.TRUE.equals(rule.getTemplate().getSaveMidTable())) {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
+                    }
+                    if ((StringUtils.isNotEmpty(rule.getAbnormalDatabase())) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
                         sqlList.addAll(getSaveMidTableSentenceSettings());
-                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, midTableReUse));
+                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     }
                 }
-            } else if (rule.getTemplate().getId().longValue() == MUL_SOURCE_FULL_TEMPLATE_ID.longValue()) {
+            } else if (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
                 sqlList.add("val UUID = java.util.UUID.randomUUID.toString");
                 // Import sql function.
                 sqlList.addAll(getImportSql());
@@ -799,73 +1245,174 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     }
                 }
                 if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
-                        Map<String, Object> sourceConnectMap = sourceIterator.next();
-                        Map<String, Object> targetConnectMap = targetIterator.next();
-                        String sourceEnvName = (String) sourceConnectMap.get("envName");
-                        String targetEnvName = (String) targetConnectMap.get("envName");
-                        if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                                , sourceConnect, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                                    , sourceConnectMap, targetConnectMap, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                         }
-                        sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                , sourceIterator.next(), targetIterator.next(), rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
-                        Map<String, Object> sourceConnectMap = sourceIterator.next();
-                        String sourceEnvName = (String) sourceConnectMap.get("envName");
-                        if (StringUtils.isEmpty(sourceEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                                , sourceConnect, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                                    , sourceIterator.next(), null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                         }
-                        sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                , sourceIterator.next(), null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else if (CollectionUtils.isEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
-                        Map<String, Object> targetConnectMap = targetIterator.next();
-                        String targetEnvName = (String) targetConnectMap.get("envName");
-                        if (StringUtils.isEmpty(targetEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                                , null, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                                    , null, targetIterator.next(), rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                         }
-                        sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                , null, targetIterator.next(), rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
                     }
-
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else {
                     sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
-                            , null, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                                , null, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
 
-                    if (Boolean.TRUE.equals(rule.getTemplate().getSaveMidTable())) {
+                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
                         sqlList.addAll(getSaveMidTableSentenceSettings());
-                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, midTableReUse));
+                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     }
                 }
-            } else {
+            } else if (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(rule.getTemplate().getEnName()) || QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
                 if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
-                        Map<String, Object> sourceConnectMap = sourceIterator.next();
-                        Map<String, Object> targetConnectMap = targetIterator.next();
-                        String sourceEnvName = (String) sourceConnectMap.get("envName");
-                        String targetEnvName = (String) targetConnectMap.get("envName");
-                        if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
-                            continue;
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceCustomFromSqlList(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceCustomFromSql(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
                         }
-                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceIterator.next(), targetIterator.next(), selectResult));
+                    }
+
+                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
+                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
+                } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceCustomFromSqlList(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceCustomFromSql(midTableAction, dbTableMap
+                                    , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName
+                                    , sourceConnectMap, null, selectResult));
+                        }
+                    }
+                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
+                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
+                } else if (CollectionUtils.isNotEmpty(targetConnect) && CollectionUtils.isEmpty(sourceConnect)) {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceCustomFromSqlList(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceCustomFromSql(midTableAction, dbTableMap
+                                    , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName
+                                    , null, targetConnectMap, selectResult));
+                        }
                     }
                     String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
                     unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
                 } else {
-                    sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
-
-                    if (Boolean.TRUE.equals(rule.getTemplate().getSaveMidTable())) {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceCustomFromSqlList(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        sqlList.addAll(getMultiSourceCustomFromSql(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
+                    }
+                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
                         sqlList.addAll(getSaveMidTableSentenceSettings());
-                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, midTableReUse));
+                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
+                    }
+                }
+            } else if (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(rule.getTemplate().getEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(rule.getTemplate().getEnName()) ) {
+                sqlList.add("// 生成规则 " + partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + " 的校验查询代码");
+                if (QualitisConstants.LEFT_INDEX.equals(dataSourceIndex) && CollectionUtils.isNotEmpty(sourceConnect)) {
+                    getTableRowsWithEnvs(partOfVariableName, sourceConnect, midTableAction, sqlList);
+                } else if (QualitisConstants.RIGHT_INDEX.equals(dataSourceIndex) && CollectionUtils.isNotEmpty(targetConnect)) {
+                    getTableRowsWithEnvs(partOfVariableName, targetConnect, midTableAction, sqlList);
+                } else {
+                    sqlList.add(getSparkSqlSentence(midTableAction, partOfVariableName, "", "", "", RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())));
+                }
+                String variableFormer = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+                String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+                formatSchema(sqlList, partOfVariableName, variableFormer, variableLatter);
+            } else {
+                if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , sourceConnect, targetConnect, selectResult));
+                    } else {
+                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                            Map<String, Object> sourceConnectMap = sourceIterator.next();
+                            Map<String, Object> targetConnectMap = targetIterator.next();
+                            String sourceEnvName = (String) sourceConnectMap.get("envName");
+                            String targetEnvName = (String) targetConnectMap.get("envName");
+                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                                continue;
+                            }
+                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
+                        }
+                    }
+                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
+                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
+                } else {
+                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                                , null, null, selectResult));
+                    } else {
+                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
+                    }
+                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
+                        sqlList.addAll(getSaveMidTableSentenceSettings());
+                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     }
                 }
             }
@@ -904,8 +1451,47 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             } else {
                 decryptedMysqlInfo = decryptMysqlInfo(dataSourceMysqlConnect.get(ruleDataSource.getId()));
             }
-            sqlList.addAll(generateSparkSqlAndSaveSentence(midTableAction, midTableName, rule, partOfVariableName, decryptedMysqlInfo, runDate, selectResult, midTableReUse, unionAllForSaveResult, filterFields.toString(), tableEnvs, shareConnect, shareFromPart));
+            sqlList.addAll(generateSparkSqlAndSaveSentence(midTableAction, midTableName, rule, partOfVariableName, decryptedMysqlInfo, runDate, runToday, selectResult, midTableReUse, unionAllForSaveResult, filterFields.toString(), tableEnvs, shareConnect, shareFromPart, execParams));
         }
+    }
+
+    private void getTableRowsWithEnvs(String partOfVariableName, List<Map<String, Object>> connect, String midTableAction, List<String> sqlList) {
+        List<String> varList = new ArrayList<>(connect.size());
+        String prefix = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+        for (Iterator<Map<String, Object>> connectIterator = connect.iterator(); connectIterator.hasNext(); ) {
+            Map<String, Object> connectMap = connectIterator.next();
+            String envName = (String) connectMap.get("envName");
+            if (StringUtils.isEmpty(envName)) {
+                continue;
+            }
+
+            String host = (String) connectMap.get("host");
+            String port = (String) connectMap.get("port");
+            String user = (String) connectMap.get("username");
+            String pwd = (String) connectMap.get("password");
+            String dataType = (String) connectMap.get("dataType");
+            String var = prefix + "_" + envName;
+            String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, midTableAction).replace(VARIABLE_NAME_PLACEHOLDER, var)
+                .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                .replace("${MYSQL_IP}", host)
+                .replace("${MYSQL_PORT}", port)
+                .replace("${MYSQL_USER}", user)
+                .replace("${MYSQL_PASSWORD}", pwd);
+
+            sqlList.add(str);
+            varList.add(var);
+        }
+        StringBuilder stringBuilder = new StringBuilder("val " + prefix + " = ");
+        boolean firstVar = true;
+        for (String varName : varList) {
+            if (firstVar) {
+                stringBuilder.append(varName);
+                firstVar = false;
+            } else {
+                stringBuilder.append(".unionAll(").append(varName).append(")");
+            }
+        }
+        sqlList.add(stringBuilder.toString());
     }
 
     private String preSelectEnvsSql(RuleDataSource ruleDataSource, List<RuleDataSource> parsedRuleDataSource, List<List<String>> tableEnvs, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
@@ -984,6 +1570,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     currentConnectParams.put("password", password);
                 } else {
                     currentConnectParams.put("password", CryptoUtils.decode(password));
+                    currentConnectParams.put("needDecode", "false");
                 }
                 connParamMapsReal.add(currentConnectParams);
             }
@@ -993,31 +1580,31 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     private Map<String, Object> getUserNameAndPassword(Map<String, Object> connectParams) throws UnExpectedRequestException {
-//        String appId = (String) connectParams.get("appid");
-//        String objectId = (String) connectParams.get("objectid");
-//        String timestamp = (String) connectParams.get("timestamp");
-//
-//        String dk = (String) connectParams.get("dk");
-//        String datasourceInf = LocalNetwork.getNetCardName();
-//        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf);
-//        obtainer.init();
-//        try {
-//            AccountInfoSys accountInfoSys = obtainer.getAccountInfo_system(dk, timestamp, dpmConfig.getDatasourceSystemAppId()
-//                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId);
-//            String userName = accountInfoSys.getName();
-//            String passwordTest = accountInfoSys.getPassword();
-//
-//            connectParams.put("username", userName);
-//            connectParams.put("password", passwordTest);
-//        } catch (AccountInfoObtainException e) {
-//            LOGGER.error(e.getMessage(), e);
-//            throw new UnExpectedRequestException("{&FAILED_TO_GET_USERNAME_PASSWORD}", 500);
-//        }
+        String appId = (String) connectParams.get("appid");
+        String objectId = (String) connectParams.get("objectid");
+        String timestamp = (String) connectParams.get("timestamp");
+
+        String dk = (String) connectParams.get("dk");
+        String datasourceInf = LocalNetwork.getNetCardName();
+        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf, false);
+        obtainer.init();
+        try {
+            AccountInfoSys accountInfoSys = obtainer.getAccountInfo_system(dk, timestamp, dpmConfig.getDatasourceSystemAppId()
+                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId, "fakeIp", 0);
+            String userName = accountInfoSys.getName();
+            String passwordTest = accountInfoSys.getPassword();
+
+            connectParams.put("username", userName);
+            connectParams.put("password", passwordTest);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new UnExpectedRequestException("{&FAILED_TO_GET_USERNAME_PASSWORD}", 500);
+        }
         return connectParams;
     }
 
     private String customMidTableActionUpdate(Rule rule, String templateMidTableAction, Date date, Map<String, String> execParams,
-                                              StringBuilder partition, Map<String, Long> ruleMetricMap) throws UnExpectedRequestException {
+                                              StringBuilder partition, Map<String, Long> ruleMetricMap, String runDate, String runToday, String engineType) throws UnExpectedRequestException {
         if (StringUtils.isNotBlank(rule.getCsId())) {
             templateMidTableAction = templateMidTableAction.replace(RuleConstraintEnum.CUSTOM_DATABASE_PREFIS.getValue().concat(SpecCharEnum.PERIOD.getValue()), "");
         }
@@ -1031,6 +1618,15 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             String value = entry.getValue();
             templateMidTableAction = templateMidTableAction.replace("${" + key + "}", value);
         }
+        if (StringUtils.isNotBlank(runDate)) {
+            templateMidTableAction = templateMidTableAction.replace("${run_date}", runDate);
+//            templateMidTableAction = templateMidTableAction.replace("${run_date_std}", runDate);
+        }
+        if (StringUtils.isNotBlank(runToday)) {
+            templateMidTableAction = templateMidTableAction.replace("${run_today}", runToday);
+//            templateMidTableAction = templateMidTableAction.replace("${run_today_std}", runToday);
+        }
+
         templateMidTableAction = DateExprReplaceUtil.replaceRunDate(date, templateMidTableAction);
 
         Set<String> ruleMetricNames = ruleMetricMap.keySet();
@@ -1038,26 +1634,157 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             String cleanRuleMetricName = ruleMetricName.replace("-", "_");
             templateMidTableAction = templateMidTableAction.replace(ruleMetricName, cleanRuleMetricName);
         }
-
+        templateMidTableAction = MyStringEscaper.escapeStringForQuotes(templateMidTableAction);
+        if (EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType)) {
+            Set<RuleDataSource> ruleDataSourceSet = rule.getRuleDataSources();
+            if (CollectionUtils.isNotEmpty(ruleDataSourceSet)) {
+                for (RuleDataSource ruleDataSource : ruleDataSourceSet) {
+                    if (StringUtils.isNotBlank(ruleDataSource.getDbName()) && StringUtils.isNotBlank(ruleDataSource.getTableName())) {
+                        templateMidTableAction = templateMidTableAction.replace(SpecCharEnum.EMPTY.getValue() + ruleDataSource.getDbName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + ruleDataSource.getTableName()
+                        , SpecCharEnum.EMPTY.getValue() + "hive." + ruleDataSource.getDbName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + ruleDataSource.getTableName());
+                    }
+                }
+            }
+        }
         return templateMidTableAction;
     }
 
-    private String getMultiDatasourceFiltesAndUpdateMidTableAction(Rule rule, String templateMidTableAction, Date date, Map<String, String> filters) throws UnExpectedRequestException {
+    private String getMultiDatasourceFiltesAndUpdateMidTableAction(Rule rule, String templateMidTableAction, Date date, Map<String, String> filters, List<String> leftCols, List<String> rightCols, List<String> complexCols, Integer datasourceIndex, String runDate, String runToday, boolean trino) throws UnExpectedRequestException {
         Set<RuleDataSource> ruleDataSources = rule.getRuleDataSources();
+        if (datasourceIndex != null) {
+            return handleWithAcrossClusterDatasource(templateMidTableAction, rule.getRuleDataSources(), date, datasourceIndex, runDate, runToday);
+        }
         for (RuleDataSource ruleDataSource : ruleDataSources) {
+            String filter = ruleDataSource.getFilter();
+            if (StringUtils.isNotEmpty(filter) && StringUtils.isNotBlank(runDate)) {
+                filter = filter.replace("${run_date}", runDate);
+//                filter = filter.replace("${run_date_std}", runDate);
+            }
+            if (StringUtils.isNotEmpty(filter) && StringUtils.isNotBlank(runToday)) {
+                filter = filter.replace("${run_today}", runToday);
+//                filter = filter.replace("${run_today_std}", runToday);
+            }
+
             if (ruleDataSource.getDatasourceIndex().equals(0)) {
-                String leftFilter = ruleDataSource.getFilter();
-                leftFilter = DateExprReplaceUtil.replaceFilter(date, leftFilter);
-                templateMidTableAction = templateMidTableAction.replace(FILTER_LEFT_PLACEHOLDER, leftFilter);
-                filters.put("left_table", leftFilter);
+                filter = DateExprReplaceUtil.replaceFilter(date, filter);
+                templateMidTableAction = templateMidTableAction.replace(FILTER_LEFT_PLACEHOLDER, filter);
+                filters.put("left_table", filter);
             } else {
-                String rightFilter = ruleDataSource.getFilter();
-                rightFilter = DateExprReplaceUtil.replaceFilter(date, rightFilter);
-                templateMidTableAction = templateMidTableAction.replace(FILTER_RIGHT_PLACEHOLDER, rightFilter);
-                filters.put("right_table", rightFilter);
+                filter = DateExprReplaceUtil.replaceFilter(date, filter);
+                templateMidTableAction = templateMidTableAction.replace(FILTER_RIGHT_PLACEHOLDER, filter);
+                filters.put("right_table", filter);
             }
         }
-        if (rule.getTemplate().getId().longValue() != MUL_SOURCE_ACCURACY_TEMPLATE_ID.longValue()) {
+
+        StringBuilder leftConcat = new StringBuilder();
+        List<List<String>> leftConcatList = new ArrayList<>();
+        for (String col : leftCols) {
+            if (trino) {
+                if (CollectionUtils.isEmpty(leftConcatList)) {
+                    List<String> leftSubConcatList = new ArrayList<>();
+                    leftSubConcatList.add("coalesce(cast(" + col + " as varchar), '')");
+                    leftConcatList.add(leftSubConcatList);
+                    continue;
+                }
+
+                if (leftConcatList.get(leftConcatList.size() - 1).size() < trinoColumnSize) {
+                    leftConcatList.get(leftConcatList.size() - 1).add("coalesce(cast(" + col + " as varchar), '')");
+                } else {
+                    List<String> leftSubConcatList = new ArrayList<>();
+                    leftSubConcatList.add("coalesce(cast(" + col + " as varchar), '')");
+                    leftConcatList.add(leftSubConcatList);
+                }
+
+                continue;
+            }
+            if (Boolean.TRUE.equals(taskDataSourceConfig.getHiveSortUdfOpen()) && CollectionUtils.isNotEmpty(complexCols) && complexCols.contains(col)) {
+                leftConcat.append("nvl(").append(taskDataSourceConfig.getHiveSortUdf()).append("(").append(col).append("),''),");
+                continue;
+            }
+            leftConcat.append("nvl(cast(").append(col).append(" as string),''),");
+        }
+        if (StringUtils.isNotBlank(leftConcat.toString())) {
+            leftConcat.deleteCharAt(leftConcat.length() - 1);
+        }
+        StringBuilder leftTrinoConcat = new StringBuilder();
+        if (CollectionUtils.isNotEmpty(leftConcatList)) {
+            if (leftConcatList.size() == 1) {
+                leftTrinoConcat.append("md5(cast(concat(");
+                leftTrinoConcat.append(StringUtils.join(leftConcatList.iterator().next(), SpecCharEnum.COMMA.getValue()));
+                leftTrinoConcat.append(") as varbinary)) as line_md5");
+            } else {
+                leftTrinoConcat.append("concat(");
+                for (List<String> subLeftTrinoConcat : leftConcatList) {
+                    StringBuilder innerLeftTrinoConcat = new StringBuilder();
+                    if (subLeftTrinoConcat.size() == 1) {
+                        innerLeftTrinoConcat.append("md5(cast(").append(StringUtils.join(subLeftTrinoConcat, SpecCharEnum.COMMA.getValue())).append(" as varbinary))").append(SpecCharEnum.COMMA.getValue());
+                    } else {
+                        innerLeftTrinoConcat.append("md5(cast(concat(").append(StringUtils.join(subLeftTrinoConcat, SpecCharEnum.COMMA.getValue())).append(") as varbinary))").append(SpecCharEnum.COMMA.getValue());
+                    }
+                    leftTrinoConcat.append(innerLeftTrinoConcat.toString());
+                }
+                leftTrinoConcat.deleteCharAt(leftTrinoConcat.length() - 1);
+                leftTrinoConcat.append(") as line_md5");
+            }
+        }
+
+        StringBuilder rightConcat = new StringBuilder();
+        List<List<String>> rightConcatList = new ArrayList<>();
+        for (String col : rightCols) {
+            if (trino) {
+                if (CollectionUtils.isEmpty(rightConcatList)) {
+                    List<String> rightSubConcatList = new ArrayList<>();
+                    rightSubConcatList.add("coalesce(cast(" + col + " as varchar), '')");
+                    rightConcatList.add(rightSubConcatList);
+                    continue;
+                }
+
+                if (rightConcatList.get(rightConcatList.size() - 1).size() < trinoColumnSize) {
+                    rightConcatList.get(rightConcatList.size() - 1).add("coalesce(cast(" + col + " as varchar), '')");
+                } else {
+                    List<String> rightSubConcatList = new ArrayList<>();
+                    rightSubConcatList.add("coalesce(cast(" + col + " as varchar), '')");
+                    rightConcatList.add(rightSubConcatList);
+                }
+                continue;
+            }
+            if (Boolean.TRUE.equals(taskDataSourceConfig.getHiveSortUdfOpen()) && CollectionUtils.isNotEmpty(complexCols) && complexCols.contains(col)) {
+                rightConcat.append("nvl(").append(taskDataSourceConfig.getHiveSortUdf()).append("(").append(col).append("),''),");
+                continue;
+            }
+            rightConcat.append("nvl(cast(").append(col).append(" as string),''),");
+        }
+        if (StringUtils.isNotBlank(rightConcat.toString())) {
+            rightConcat.deleteCharAt(rightConcat.length() - 1);
+        }
+        StringBuilder rightTrinoConcat = new StringBuilder();
+        if (CollectionUtils.isNotEmpty(rightConcatList)) {
+            if (rightConcatList.size() == 1) {
+                rightTrinoConcat.append("md5(cast(concat(");
+                rightTrinoConcat.append(StringUtils.join(rightConcatList.iterator().next(), SpecCharEnum.COMMA.getValue()));
+                rightTrinoConcat.append(") as varbinary)) as line_md5");
+            } else {
+                rightTrinoConcat.append("concat(");
+                for (List<String> subrightTrinoConcat : rightConcatList) {
+                    StringBuilder innerrightTrinoConcat = new StringBuilder();
+                    if (subrightTrinoConcat.size() == 1) {
+                        innerrightTrinoConcat.append("md5(cast(").append(StringUtils.join(subrightTrinoConcat, SpecCharEnum.COMMA.getValue())).append(" as varbinary))").append(SpecCharEnum.COMMA.getValue());
+                    } else {
+                        innerrightTrinoConcat.append("md5(cast(concat(").append(StringUtils.join(subrightTrinoConcat, SpecCharEnum.COMMA.getValue())).append(") as varbinary))").append(SpecCharEnum.COMMA.getValue());
+                    }
+                    rightTrinoConcat.append(innerrightTrinoConcat.toString());
+                }
+                rightTrinoConcat.deleteCharAt(rightTrinoConcat.length() - 1);
+                rightTrinoConcat.append(") as line_md5");
+            }
+        }
+
+        templateMidTableAction = templateMidTableAction.replace("${left_columns}", StringUtils.isNotBlank(leftTrinoConcat.toString()) ? leftTrinoConcat.toString() : leftConcat.toString());
+        templateMidTableAction = templateMidTableAction.replace("${right_columns}", StringUtils.isNotBlank(rightTrinoConcat.toString()) ? rightTrinoConcat.toString() : rightConcat.toString());
+        if (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(rule.getTemplate().getEnName()) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType())) {
+            return templateMidTableAction;
+        }
+        if (CollectionUtils.isEmpty(rule.getRuleDataSourceMappings())) {
             return templateMidTableAction;
         }
         List<RuleDataSourceMapping> ruleDataSourceMappings = rule.getRuleDataSourceMappings().stream()
@@ -1067,15 +1794,49 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             StringBuilder compareColumns = new StringBuilder();
             int indexCol = 1;
             for (RuleDataSourceMapping ruleDataSourceMapping : ruleDataSourceMappings) {
-                compareColumns.append(ruleDataSourceMapping.getLeftStatement()).append(" AS ").append("col" + indexCol).append(", ");
-                indexCol++;
-                compareColumns.append(ruleDataSourceMapping.getRightStatement()).append(" AS ").append("col" + indexCol).append(", ");
-                indexCol++;
+                if (StringUtils.isNotEmpty(ruleDataSourceMapping.getLeftStatement())) {
+                    compareColumns.append(ruleDataSourceMapping.getLeftStatement()).append(" AS ").append("col" + indexCol).append(", ");
+                    indexCol++;
+                }
+                if (StringUtils.isNotEmpty(ruleDataSourceMapping.getRightStatement())) {
+                    compareColumns.append(ruleDataSourceMapping.getRightStatement()).append(" AS ").append("col" + indexCol).append(", ");
+                    indexCol++;
+                }
             }
 
             int index = templateMidTableAction.indexOf("CASE WHEN");
 
             templateMidTableAction = new StringBuffer(templateMidTableAction).insert(index, compareColumns.toString()).toString();
+        }
+        return templateMidTableAction;
+    }
+
+    private static String handleWithAcrossClusterDatasource(String templateMidTableAction, Set<RuleDataSource> ruleDataSources, Date date,
+                                                            Integer datasourceIndex, String runDate, String runToday) throws UnExpectedRequestException {
+        for (RuleDataSource ruleDataSource : ruleDataSources) {
+            String filter = ruleDataSource.getFilter();
+            if (datasourceIndex.equals(ruleDataSource.getDatasourceIndex()) && StringUtils.isNotBlank(filter)) {
+                if (StringUtils.isNotBlank(runDate)) {
+                    filter = filter.replace("${run_date}", runDate);
+//                    filter = filter.replace("${run_date_std}", runDate);
+                }
+                if (StringUtils.isNotBlank(runToday)) {
+                    filter = filter.replace("${run_today}", runToday);
+//                    filter = filter.replace("${run_today_std}", runToday);
+                }
+
+                filter = DateExprReplaceUtil.replaceFilter(date, filter);
+                templateMidTableAction = templateMidTableAction.replace(FILTER_PLACEHOLDER, filter);
+                if (StringUtils.isNotEmpty(ruleDataSource.getDbName())) {
+                    templateMidTableAction = templateMidTableAction.replace(DATABASE_PLACEHOLDER, ruleDataSource.getDbName());
+                } else {
+                    templateMidTableAction = templateMidTableAction.replace(DATABASE_PLACEHOLDER + SpecCharEnum.PERIOD_NO_ESCAPE.getValue(), "");
+                }
+                if (StringUtils.isNotEmpty(ruleDataSource.getTableName())) {
+                    templateMidTableAction = templateMidTableAction.replace(TABLE_PLACEHOLDER, ruleDataSource.getTableName());
+                }
+                return templateMidTableAction;
+            }
         }
         return templateMidTableAction;
     }
@@ -1100,13 +1861,112 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return templateMidTableAction;
     }
 
+    private List<String> getMultiSourceAccuracyFromSqlList(String midTableAction, Map<String, String> dbTableMap, Map<String, String> filters, String partOfOriginVariableName
+            , List<Map<String, Object>> sourceConnects, List<Map<String, Object>> targetConnects, Map<String, String> selectResult) {
+        // sql
+        List<String> transformSql = new ArrayList<>();
+        StringBuilder envName = new StringBuilder();
+        List<String> sourceSqlVariableNameList = new ArrayList<>();
+        StringBuilder sourceSql = new StringBuilder();
+        sourceSql.append("select *").append(" from ")
+                .append(dbTableMap.get("left_database")).append(dbTableMap.get("left_table"))
+                .append(" where ").append(filters.get("left_table"));
+        StringBuilder targetSql = new StringBuilder();
+        targetSql.append("select *").append(" from ")
+                .append(dbTableMap.get("right_database")).append(dbTableMap.get("right_table"))
+                .append(" where ").append(filters.get("right_table"));
+
+//         connect to databases with envs' connection info: spark.read.format("jdbc").option("driver","com.mysql.jdbc.Driver").option
+        if (CollectionUtils.isNotEmpty(sourceConnects)) {
+            for (Map<String, Object> sourceConnect: sourceConnects) {
+                String sourceEnvName = (String) sourceConnect.get("envName");
+                String partOfVariableName = partOfOriginVariableName + sourceEnvName;
+                String host = (String) sourceConnect.get("host");
+                String port = (String) sourceConnect.get("port");
+                String user = (String) sourceConnect.get("username");
+                String pwd = (String) sourceConnect.get("password");
+                String dataType = (String) sourceConnect.get("dataType");
+                String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName)
+                        .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                        .replace("${MYSQL_IP}", host)
+                        .replace("${MYSQL_PORT}", port)
+                        .replace("${MYSQL_USER}", user)
+                        .replace("${MYSQL_PASSWORD}", pwd);
+                transformSql.add(str);
+                envName.append("[").append((String) sourceConnect.get("envName")).append("]");
+                sourceSqlVariableNameList.add("originalDFLeft_" + partOfVariableName);
+            }
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfOriginVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()));
+            sourceSqlVariableNameList.add("originalDFLeft_" + partOfOriginVariableName);
+        }
+//        merge multi-environment with unionAll
+        String sourceCollectSqlName = "originalDFLeft_" + partOfOriginVariableName;
+        StringBuilder sourceCollectSql = new StringBuilder("val " + sourceCollectSqlName + " = ");
+        sourceCollectSql.append(sourceSqlVariableNameList.get(0));
+        for (int i = 1; i < sourceSqlVariableNameList.size(); i++) {
+            sourceCollectSql.append(".union(" + sourceSqlVariableNameList.get(i) + ")");
+        }
+        transformSql.add(sourceCollectSql.toString());
+//         register to a temporary table with multi-environment
+        transformSql.add(sourceCollectSqlName + ".registerTempTable(\"tmp1_" + partOfOriginVariableName + dbTableMap.get("left_table") + "\")");
+
+        List<String> targetSqlVariableNameList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(targetConnects)) {
+            for (Map<String, Object> targetConnect : targetConnects) {
+                String targetEnvName = (String) targetConnect.get("envName");
+                String partOfVariableName = partOfOriginVariableName + targetEnvName;
+                String host = (String) targetConnect.get("host");
+                String port = (String) targetConnect.get("port");
+                String user = (String) targetConnect.get("username");
+                String pwd = (String) targetConnect.get("password");
+                String dataType = (String) targetConnect.get("dataType");
+                String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName)
+                        .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                        .replace("${MYSQL_IP}", host)
+                        .replace("${MYSQL_PORT}", port)
+                        .replace("${MYSQL_USER}", user)
+                        .replace("${MYSQL_PASSWORD}", pwd);
+                transformSql.add(str);
+                envName.append("[").append((String) targetConnect.get("envName")).append("]");
+                targetSqlVariableNameList.add("originalDFRight_" + partOfVariableName);
+            }
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfOriginVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()));
+            targetSqlVariableNameList.add("originalDFRight_" + partOfOriginVariableName);
+        }
+//        merge multi-environment
+        String targetCollectSqlName = "originalDFRight_" + partOfOriginVariableName;
+        StringBuilder targetCollectSql = new StringBuilder("val " + targetCollectSqlName + " = ");
+        targetCollectSql.append(targetSqlVariableNameList.get(0));
+        for (int i = 1; i < targetSqlVariableNameList.size(); i++) {
+            targetCollectSql.append(".union(" + targetSqlVariableNameList.get(i) + ")");
+        }
+        transformSql.add(targetCollectSql.toString());
+//        register to temporary table
+        transformSql.add(targetCollectSqlName + ".registerTempTable(\"tmp2_" + partOfOriginVariableName + dbTableMap.get("right_table") + "\")");
+
+//        compare left database and right databases' result with their temporary table
+        String commonJoin = midTableAction
+                .replace(dbTableMap.get("left_database") + dbTableMap.get("left_table") + " ", "tmp1_" + partOfOriginVariableName + dbTableMap.get("left_table") + " ")
+                .replace(dbTableMap.get("right_database") + dbTableMap.get("right_table") + " ", "tmp2_" + partOfOriginVariableName + dbTableMap.get("right_table") + " ");
+        String variableFormer = getVariableNameByRule(OptTypeEnum.ORIGINAL_STATISTIC_DF.getMessage(), partOfOriginVariableName);
+        String joinSql = "val " + variableFormer + " = spark.sql(\"" + commonJoin + "\")";
+        transformSql.add(joinSql);
+        String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfOriginVariableName);
+        // Select compare_result = 0
+        transformSql.add("val " + variableLatter + " = " + variableFormer + ".where(" + variableFormer + "(\"compare_result\") === 0)");
+        selectResult.put(variableLatter, envName.toString());
+
+        return transformSql;
+    }
+
     private List<String> getMultiSourceAccuracyfromSql(String midTableAction, Map<String, String> dbTableMap, Map<String, String> filters, String partOfVariableName
             , Map<String, Object> sourceConnect, Map<String, Object> targetConnect, Map<String, String> selectResult) {
         // Solve partition, value, hash value
         List<String> transformSql = new ArrayList<>();
         StringBuilder sourceSql = new StringBuilder();
         StringBuilder targetSql = new StringBuilder();
-
         StringBuilder envName = new StringBuilder();
 
         sourceSql.append("select *").append(" from ")
@@ -1165,6 +2025,354 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return transformSql;
     }
 
+    private List<String> getMultiSourceCustomFromSqlList(String midTableAction, Map<String, String> dbTableMap, String partOfOriginVariableName
+            , List<Map<String, Object>> sourceConnects, List<Map<String, Object>> targetConnects, Map<String, String> selectResult) {
+        List<String> transformSql = new ArrayList<>();
+        StringBuilder sourceSql = new StringBuilder();
+        StringBuilder targetSql = new StringBuilder();
+        StringBuilder envName = new StringBuilder();
+        List<String> sourceSqlVariableNameList = new ArrayList<>();
+
+        String leftCollectSql = dbTableMap.get("left_collect_sql");
+        String rightCollectSql = dbTableMap.get("right_collect_sql");
+
+        sourceSql.append(leftCollectSql);
+        targetSql.append(rightCollectSql);
+
+//         spark.read.format("jdbc").option("driver","com.mysql.jdbc.Driver").option
+        if (CollectionUtils.isNotEmpty(sourceConnects)) {
+            for (Map<String, Object> sourceConnect: sourceConnects) {
+                String sourceEnvName = (String) sourceConnect.get("envName");
+                String partOfVariableName = partOfOriginVariableName + sourceEnvName;
+                String host = (String) sourceConnect.get("host");
+                String port = (String) sourceConnect.get("port");
+                String user = (String) sourceConnect.get("username");
+                String pwd = (String) sourceConnect.get("password");
+                String dataType = (String) sourceConnect.get("dataType");
+                String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName)
+                        .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                        .replace("${MYSQL_IP}", host)
+                        .replace("${MYSQL_PORT}", port)
+                        .replace("${MYSQL_USER}", user)
+                        .replace("${MYSQL_PASSWORD}", pwd);
+                transformSql.add(str);
+                envName.append("[").append((String) sourceConnect.get("envName")).append("]");
+                sourceSqlVariableNameList.add("originalDFLeft_" + partOfVariableName);
+            }
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfOriginVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()));
+            sourceSqlVariableNameList.add("originalDFLeft_" + partOfOriginVariableName);
+        }
+//        合并环境
+        String sourceCollectSqlName = "originalDFLeft_" + partOfOriginVariableName;
+        StringBuilder sourceCollectSql = new StringBuilder("val " + sourceCollectSqlName + " = ");
+        sourceCollectSql.append(sourceSqlVariableNameList.get(0));
+        for (int i = 1; i < sourceSqlVariableNameList.size(); i++) {
+            sourceCollectSql.append(".union(" + sourceSqlVariableNameList.get(i) + ")");
+        }
+        transformSql.add(sourceCollectSql.toString());
+//        注册hive临时表
+        transformSql.add(sourceCollectSqlName + ".registerTempTable(\"tmp1_" + partOfOriginVariableName + dbTableMap.get("left_table") + "\")");
+
+        List<String> targetSqlVariableNameList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(targetConnects)) {
+            for (Map<String, Object> targetConnect : targetConnects) {
+                String targetEnvName = (String) targetConnect.get("envName");
+                String partOfVariableName = partOfOriginVariableName + targetEnvName;
+                String host = (String) targetConnect.get("host");
+                String port = (String) targetConnect.get("port");
+                String user = (String) targetConnect.get("username");
+                String pwd = (String) targetConnect.get("password");
+                String dataType = (String) targetConnect.get("dataType");
+                String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName)
+                        .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                        .replace("${MYSQL_IP}", host)
+                        .replace("${MYSQL_PORT}", port)
+                        .replace("${MYSQL_USER}", user)
+                        .replace("${MYSQL_PASSWORD}", pwd);
+                transformSql.add(str);
+                envName.append("[").append((String) targetConnect.get("envName")).append("]");
+                targetSqlVariableNameList.add("originalDFRight_" + partOfVariableName);
+            }
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfOriginVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()));
+            targetSqlVariableNameList.add("originalDFRight_" + partOfOriginVariableName);
+        }
+//        合并环境
+        String targetCollectSqlName = "originalDFRight_" + partOfOriginVariableName;
+        StringBuilder targetCollectSql = new StringBuilder("val " + targetCollectSqlName + " = ");
+        targetCollectSql.append(targetSqlVariableNameList.get(0));
+        for (int i = 1; i < targetSqlVariableNameList.size(); i++) {
+            targetCollectSql.append(".union(" + targetSqlVariableNameList.get(i) + ")");
+        }
+        transformSql.add(targetCollectSql.toString());
+//        注册hive临时表
+        transformSql.add(targetCollectSqlName + ".registerTempTable(\"tmp2_" + partOfOriginVariableName + dbTableMap.get("right_table") + "\")");
+
+        String commonJoin = midTableAction
+                .replaceFirst("\\Q" + dbTableMap.get("left_collect_sql") + "\\E", "tmp1_" + partOfOriginVariableName + dbTableMap.get("left_table"))
+                .replaceFirst("\\Q" + dbTableMap.get("right_collect_sql") + "\\E", "tmp2_" + partOfOriginVariableName + dbTableMap.get("right_table"));
+
+        String variableFormer = getVariableNameByRule(OptTypeEnum.ORIGINAL_STATISTIC_DF.getMessage(), partOfOriginVariableName);
+        String joinSql = "val " + variableFormer + " = spark.sql(\"" + commonJoin + "\")";
+        transformSql.add(joinSql);
+        String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfOriginVariableName);
+        // Select compare_result = 0
+        transformSql.add("val " + variableLatter + " = " + variableFormer + ".where(" + variableFormer + "(\"compare_result\") === 0)");
+        selectResult.put(variableLatter, envName.toString());
+        return transformSql;
+    }
+
+    /**
+     *
+     * @param midTableAction
+     * @param dbTableMap
+     * @param partOfVariableName templateEnName + sourceEnvName + targetEnvName
+     * @param sourceConnect
+     * @param targetConnect
+     * @param selectResult
+     * @return
+     */
+    private List<String> getMultiSourceCustomFromSql(String midTableAction, Map<String, String> dbTableMap, String partOfVariableName
+            , Map<String, Object> sourceConnect, Map<String, Object> targetConnect, Map<String, String> selectResult) {
+        // Solve partition, value, hash value
+        List<String> transformSql = new ArrayList<>();
+        StringBuilder sourceSql = new StringBuilder();
+        StringBuilder targetSql = new StringBuilder();
+        StringBuilder envName = new StringBuilder();
+
+        sourceSql.append(dbTableMap.get("left_collect_sql"));
+        targetSql.append(dbTableMap.get("right_collect_sql"));
+
+        if (sourceConnect != null && sourceConnect.size() > 0) {
+            String host = (String) sourceConnect.get("host");
+            String port = (String) sourceConnect.get("port");
+            String user = (String) sourceConnect.get("username");
+            String pwd = (String) sourceConnect.get("password");
+            String dataType = (String) sourceConnect.get("dataType");
+            String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName)
+                    .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                    .replace("${MYSQL_IP}", host)
+                    .replace("${MYSQL_PORT}", port)
+                    .replace("${MYSQL_USER}", user)
+                    .replace("${MYSQL_PASSWORD}", pwd);
+            transformSql.add(str);
+            envName.append("[").append((String) sourceConnect.get("envName")).append("]");
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()));
+        }
+        if (targetConnect != null && targetConnect.size() > 0) {
+            String host = (String) targetConnect.get("host");
+            String port = (String) targetConnect.get("port");
+            String user = (String) targetConnect.get("username");
+            String pwd = (String) targetConnect.get("password");
+            String dataType = (String) targetConnect.get("dataType");
+            String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName)
+                    .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                    .replace("${MYSQL_IP}", host)
+                    .replace("${MYSQL_PORT}", port)
+                    .replace("${MYSQL_USER}", user)
+                    .replace("${MYSQL_PASSWORD}", pwd);
+            transformSql.add(str);
+            envName.append("[").append((String) targetConnect.get("envName")).append("]");
+        } else {
+            transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()));
+        }
+        String tmpTemplateName1 = "tmp1_" + partOfVariableName;
+        String tmpTemplateName2 = "tmp2_" + partOfVariableName;
+
+        transformSql.add("originalDFLeft_" + partOfVariableName + ".registerTempTable(\"" + tmpTemplateName1 + "\")");
+        transformSql.add("originalDFRight_" + partOfVariableName + ".registerTempTable(\"" + tmpTemplateName2 + "\")");
+
+//        To replace respectively the repeating part between left sql and right sql
+        String commonJoin = midTableAction
+                    .replaceFirst("\\Q" + dbTableMap.get("left_collect_sql") + "\\E", tmpTemplateName1)
+                    .replaceFirst("\\Q" + dbTableMap.get("right_collect_sql") + "\\E", tmpTemplateName2);
+
+        String variableFormer = getVariableNameByRule(OptTypeEnum.ORIGINAL_STATISTIC_DF.getMessage(), partOfVariableName);
+        String joinSql = "val " + variableFormer + " = spark.sql(\"" + commonJoin + "\")";
+        transformSql.add(joinSql);
+        String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName);
+        // Select compare_result = 0
+        transformSql.add("val " + variableLatter + " = " + variableFormer + ".where(" + variableFormer + "(\"compare_result\") === 0)");
+        selectResult.put(variableLatter, envName.toString());
+        return transformSql;
+    }
+
+    private List<String> getSpecialTransformSqlList(Map<String, String> dbTableMap, String partOfOriginalVariableName, String filter, Map<String, String> filters, String columns
+            , List<Map<String, Object>> sourceConnects, List<Map<String, Object>> targetConnects, Integer contrastType, List<String> leftCols, List<String> rightCols, List<String> complexCols, Map<String, String> selectResult) {
+        List<String> transformSql = new ArrayList<>();
+        StringBuilder envName = new StringBuilder();
+
+        StringBuilder tmpRegisterTableLeft = new StringBuilder();
+        StringBuilder tmpRegisterTableRight = new StringBuilder();
+        tmpRegisterTableLeft.append("md5_table_left_" + partOfOriginalVariableName);
+        tmpRegisterTableRight.append("md5_table_right_" + partOfOriginalVariableName);
+
+//        sql
+        if (CollectionUtils.isNotEmpty(sourceConnects)) {
+            List<String> unionLeftVariableNameList = new ArrayList<>();
+            for (Map<String, Object> sourceConnect: sourceConnects) {
+                StringBuilder sourceSql = new StringBuilder();
+                String partOfVariableName = (String) sourceConnect.get("envName");
+                if (StringUtils.isNotBlank(columns)) {
+                    sourceSql.append("select ").append(columns);
+                } else {
+                    if (taskDataSourceConfig.getHiveSortUdfOpen() && CollectionUtils.isNotEmpty(complexCols)) {
+                        List<String> leftColsReal = new ArrayList<>(leftCols.size());
+                        sourceSql.append("select ");
+                        for (String col : leftCols) {
+                            if (complexCols.contains(col)) {
+                                leftColsReal.add(taskDataSourceConfig.getHiveSortUdf() + "(" + col + ")");
+                            } else {
+                                leftColsReal.add(col);
+                            }
+                        }
+                        sourceSql.append(String.join(",", leftColsReal));
+                    } else {
+                        sourceSql.append("select *");
+                    }
+                }
+                sourceSql.append(" from ").append(dbTableMap.get("left_database")).append(dbTableMap.get("left_table")).append(" where ").append(filters.get("left_table"));
+                if (sourceConnect != null && sourceConnect.size() > 0) {
+                    String host = (String) sourceConnect.get("host");
+                    String port = (String) sourceConnect.get("port");
+                    String user = (String) sourceConnect.get("username");
+                    String pwd = (String) sourceConnect.get("password");
+                    String dataType = (String) sourceConnect.get("dataType");
+                    String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName)
+                            .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                            .replace("${MYSQL_IP}", host)
+                            .replace("${MYSQL_PORT}", port)
+                            .replace("${MYSQL_USER}", user)
+                            .replace("${MYSQL_PASSWORD}", pwd);
+                    transformSql.add(str);
+
+                    envName.append("[").append((String) sourceConnect.get("envName")).append("]");
+                } else {
+                    transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFLeft_" + partOfVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sourceSql.toString()));
+                }
+
+//                na.fill
+                transformSql.add("val fillNullDFLeft_" + partOfVariableName + " = originalDFLeft_" + partOfVariableName + ".na.fill(UUID)");
+                transformSql.add("val qualitis_names_left_" + partOfVariableName + " = fillNullDFLeft_" + partOfVariableName + ".schema.fieldNames");
+                transformSql.add("val fillNullWithFullLineWithHashDF_left_" + partOfVariableName + " = fillNullDFLeft_" + partOfVariableName + ".withColumn(\"qualitis_full_line_value\", to_json(struct($\"*\"))).withColumn(\"qualitis_full_line_hash_value\", md5(to_json(struct($\"*\"))))");
+                transformSql.add("val qualitis_names_left_" + partOfVariableName + "_buffer = qualitis_names_left_" + partOfVariableName + ".toBuffer");
+                transformSql.add("val finalDF_left_" + partOfVariableName + " = fillNullWithFullLineWithHashDF_left_" + partOfVariableName + ".drop(qualitis_names_left_" + partOfVariableName + ":_*)");
+                unionLeftVariableNameList.add("finalDF_left_" + partOfVariableName);
+            }
+            String sourceCollectSqlName = "collect_fillNullDFLeft_" + partOfOriginalVariableName;
+            if (unionLeftVariableNameList.size() > 1) {
+                StringBuilder sourceCollectSql = new StringBuilder("val " + sourceCollectSqlName + " = ");
+                sourceCollectSql.append(unionLeftVariableNameList.get(0));
+                for (int i = 1; i < unionLeftVariableNameList.size(); i++) {
+                    sourceCollectSql.append(".union(" + unionLeftVariableNameList.get(i) + ")");
+                }
+                transformSql.add(sourceCollectSql.toString());
+            } else {
+                sourceCollectSqlName = unionLeftVariableNameList.get(0);
+            }
+            transformSql.add(sourceCollectSqlName + ".registerTempTable(\"" + tmpRegisterTableLeft + "\")");
+        }
+
+        if (CollectionUtils.isNotEmpty(targetConnects)) {
+            List<String> unionRightVariableNameList = new ArrayList<>();
+            for (Map<String, Object> targetConnect: targetConnects) {
+                StringBuilder targetSql = new StringBuilder();
+                String partOfVariableName = (String) targetConnect.get("envName");
+                if (StringUtils.isNotBlank(columns)) {
+                    targetSql.append("select ").append(columns);
+                } else {
+                    if (taskDataSourceConfig.getHiveSortUdfOpen() && CollectionUtils.isNotEmpty(complexCols)) {
+                        List<String> rightColsReal = new ArrayList<>(rightCols.size());
+                        targetSql.append("select ");
+                        for (String col : leftCols) {
+                            if (complexCols.contains(col)) {
+                                rightColsReal.add(taskDataSourceConfig.getHiveSortUdf() + "(" + col + ")");
+                            } else {
+                                rightColsReal.add(col);
+                            }
+                        }
+                        targetSql.append(String.join(",", rightColsReal));
+                    } else {
+                        targetSql.append("select *");
+                    }
+                }
+                targetSql.append(" from ").append(dbTableMap.get("right_database")).append(dbTableMap.get("right_table")).append(" where ").append(filters.get("right_table"));
+                if (targetConnect != null && targetConnect.size() > 0) {
+                    String host = (String) targetConnect.get("host");
+                    String port = (String) targetConnect.get("port");
+                    String user = (String) targetConnect.get("username");
+                    String pwd = (String) targetConnect.get("password");
+                    String dataType = (String) targetConnect.get("dataType");
+                    String str = SPARK_MYSQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()).replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName)
+                            .replace("${JDBC_DRIVER}", JDBC_DRIVER.get(dataType))
+                            .replace("${MYSQL_IP}", host)
+                            .replace("${MYSQL_PORT}", port)
+                            .replace("${MYSQL_USER}", user)
+                            .replace("${MYSQL_PASSWORD}", pwd);
+                    transformSql.add(str);
+
+                    envName.append("[").append((String) targetConnect.get("envName")).append("]");
+                } else {
+                    transformSql.add(SPARK_SQL_TEMPLATE.replace(VARIABLE_NAME_PLACEHOLDER, "originalDFRight_" + partOfVariableName).replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, targetSql.toString()));
+                }
+
+//                na.fill
+                transformSql.add("val fillNullDFRight_" + partOfVariableName + " = originalDFRight_" + partOfVariableName + ".na.fill(UUID)");
+                transformSql.add("val qualitis_names_right_" + partOfVariableName + " = fillNullDFRight_" + partOfVariableName + ".schema.fieldNames");
+                transformSql.add("val fillNullWithFullLineWithHashDF_right_" + partOfVariableName + " = fillNullDFRight_" + partOfVariableName + ".withColumn(\"qualitis_full_line_value\", to_json(struct($\"*\"))).withColumn(\"qualitis_full_line_hash_value\", md5(to_json(struct($\"*\"))))");
+                transformSql.add("val qualitis_names_right_" + partOfVariableName + "_buffer = qualitis_names_right_" + partOfVariableName + ".toBuffer");
+                transformSql.add("val finalDF_right_" + partOfVariableName + " = fillNullWithFullLineWithHashDF_right_" + partOfVariableName + ".drop(qualitis_names_right_" + partOfVariableName + ":_*)");
+                unionRightVariableNameList.add("finalDF_right_" + partOfVariableName);
+            }
+
+            String targetCollectSqlName = "collect_fillNullDFRight_" + partOfOriginalVariableName;
+            if (unionRightVariableNameList.size() > 1) {
+                StringBuilder targetCollectSql = new StringBuilder("val " + targetCollectSqlName + " = ");
+                targetCollectSql.append(unionRightVariableNameList.get(0));
+                for (int i = 1; i < unionRightVariableNameList.size(); i++) {
+                    targetCollectSql.append(".union(" + unionRightVariableNameList.get(i) + ")");
+                }
+                transformSql.add(targetCollectSql.toString());
+            } else {
+                targetCollectSqlName = unionRightVariableNameList.get(0);
+            }
+            transformSql.add(targetCollectSqlName + ".registerTempTable(\"" + tmpRegisterTableRight + "\")");
+        }
+
+        String originalVariableName = getVariableNameByRule(OptTypeEnum.ORIGINAL_STATISTIC_DF.getMessage(), partOfOriginalVariableName);
+        String joinSql = "val " + originalVariableName + " = spark.sql(\"SELECT qulaitis_left_tmp.qualitis_full_line_hash_value as left_full_hash_line, qulaitis_left_tmp.qualitis_mul_db_accuracy_num as left_full_line_num, qulaitis_right_tmp.qualitis_full_line_hash_value as right_full_hash_line, qulaitis_right_tmp.qualitis_mul_db_accuracy_num as right_full_line_num FROM (SELECT qualitis_full_line_hash_value, count(1) as qualitis_mul_db_accuracy_num FROM " + tmpRegisterTableLeft.toString() + " WHERE true group by qualitis_full_line_hash_value) qulaitis_left_tmp ${contrast_type} (SELECT qualitis_full_line_hash_value, count(1) as qualitis_mul_db_accuracy_num FROM " + tmpRegisterTableRight.toString() + " WHERE true group by qualitis_full_line_hash_value) qulaitis_right_tmp ON (qulaitis_left_tmp.qualitis_full_line_hash_value = qulaitis_right_tmp.qualitis_full_line_hash_value AND qulaitis_left_tmp.qualitis_mul_db_accuracy_num = qulaitis_right_tmp.qualitis_mul_db_accuracy_num) WHERE (qulaitis_right_tmp.qualitis_full_line_hash_value is null AND qulaitis_right_tmp.qualitis_mul_db_accuracy_num is null) OR (qulaitis_left_tmp.qualitis_full_line_hash_value is null AND qulaitis_left_tmp.qualitis_mul_db_accuracy_num is null) ${outer_filter}\")";
+        joinSql = joinSql.replace("${contrast_type}", ContrastTypeEnum.getJoinType(contrastType));
+        if (StringUtils.isNotEmpty(filter)) {
+            joinSql = joinSql.replace("${outer_filter}", "AND (" + filter + ")");
+        } else {
+            joinSql = joinSql.replace("${outer_filter}", "");
+        }
+        transformSql.add(joinSql);
+        String statisticVariableName = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfOriginalVariableName);
+        if (fpsConfig.getLightweightQuery()) {
+            String leftVariableName = getVariableNameByRule(OptTypeEnum.LEFT_JOIN_STATISTIC_DF.getMessage(), partOfOriginalVariableName);
+            String rightVariableName = getVariableNameByRule(OptTypeEnum.RIGHT_JOIN_STATISTIC_DF.getMessage(), partOfOriginalVariableName);
+
+            transformSql.add(originalVariableName + ".registerTempTable(\"md5_table_total_" + partOfOriginalVariableName + "\")");
+            String joinSqlWithLeft = "val " + leftVariableName + " = spark.sql(\"\"\"SELECT \"left\" as source, " + tmpRegisterTableLeft.toString() + ".qualitis_full_line_value as full_line, md5_table_total_" + partOfOriginalVariableName + ".left_full_line_num FROM " + tmpRegisterTableLeft.toString() + " full outer join md5_table_total_" + partOfOriginalVariableName + " on " + tmpRegisterTableLeft.toString() + ".qualitis_full_line_hash_value = md5_table_total_" + partOfOriginalVariableName + ".left_full_hash_line where " + tmpRegisterTableLeft.toString() + ".qualitis_full_line_hash_value is not null and md5_table_total_" + partOfOriginalVariableName + ".left_full_hash_line is not null\"\"\")";
+            String joinSqlWithRight = "val " + rightVariableName + " = spark.sql(\"\"\"SELECT \"right\" as source, " + tmpRegisterTableRight.toString() + ".qualitis_full_line_value as full_line, md5_table_total_" + partOfOriginalVariableName + ".right_full_line_num FROM " + tmpRegisterTableRight.toString() + " full outer join md5_table_total_" + partOfOriginalVariableName + " on " + tmpRegisterTableRight.toString() + ".qualitis_full_line_hash_value = md5_table_total_" + partOfOriginalVariableName + ".right_full_hash_line where " + tmpRegisterTableRight.toString() + ".qualitis_full_line_hash_value is not null and md5_table_total_" + partOfOriginalVariableName + ".right_full_hash_line is not null\"\"\")";
+
+            transformSql.add(joinSqlWithLeft);
+            transformSql.add(joinSqlWithRight);
+
+            transformSql.add("val " + statisticVariableName + " = " + leftVariableName + ".union(" + rightVariableName + ")");
+        } else {
+            transformSql.add("val " + statisticVariableName + " = " + originalVariableName);
+        }
+        if (StringUtils.isNotEmpty(envName)) {
+            selectResult.put(statisticVariableName, envName.toString());
+        }
+
+        return transformSql;
+    }
+
     private List<String> getSpecialTransformSql(Map<String, String> dbTableMap, String partOfVariableName, String filter, Map<String, String> filters, String columns
             , Map<String, Object> sourceConnect, Map<String, Object> targetConnect, Integer contrastType, List<String> leftCols, List<String> rightCols, List<String> complexCols, Map<String, String> selectResult) {
 
@@ -1177,7 +2385,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         // Full line to MD5 with dataframe api transformation.
         StringBuilder tmpRegisterTableLeft = new StringBuilder();
         StringBuilder tmpRegisterTableRight = new StringBuilder();
-        fuleLineToHashLine(transformSql, partOfVariableName, tmpRegisterTableLeft, tmpRegisterTableRight);
+        fullLineToHashLine(transformSql, partOfVariableName, tmpRegisterTableLeft, tmpRegisterTableRight);
         String originalVariableName = getVariableNameByRule(OptTypeEnum.ORIGINAL_STATISTIC_DF.getMessage(), partOfVariableName);
         String joinSql = "val " + originalVariableName + " = spark.sql(\"SELECT qulaitis_left_tmp.qualitis_full_line_hash_value as left_full_hash_line, qulaitis_left_tmp.qualitis_mul_db_accuracy_num as left_full_line_num, qulaitis_right_tmp.qualitis_full_line_hash_value as right_full_hash_line, qulaitis_right_tmp.qualitis_mul_db_accuracy_num as right_full_line_num FROM (SELECT qualitis_full_line_hash_value, count(1) as qualitis_mul_db_accuracy_num FROM " + tmpRegisterTableLeft.toString() + " WHERE true group by qualitis_full_line_hash_value) qulaitis_left_tmp ${contrast_type} (SELECT qualitis_full_line_hash_value, count(1) as qualitis_mul_db_accuracy_num FROM " + tmpRegisterTableRight.toString() + " WHERE true group by qualitis_full_line_hash_value) qulaitis_right_tmp ON (qulaitis_left_tmp.qualitis_full_line_hash_value = qulaitis_right_tmp.qualitis_full_line_hash_value AND qulaitis_left_tmp.qualitis_mul_db_accuracy_num = qulaitis_right_tmp.qualitis_mul_db_accuracy_num) WHERE (qulaitis_right_tmp.qualitis_full_line_hash_value is null AND qulaitis_right_tmp.qualitis_mul_db_accuracy_num is null) OR (qulaitis_left_tmp.qualitis_full_line_hash_value is null AND qulaitis_left_tmp.qualitis_mul_db_accuracy_num is null) ${outer_filter}\")";
         joinSql = joinSql.replace("${contrast_type}", ContrastTypeEnum.getJoinType(contrastType));
@@ -1283,7 +2491,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         }
     }
 
-    private void fuleLineToHashLine(List<String> transformSql, String partOfVariableName, StringBuilder tmpRegisterTableLeft, StringBuilder tmpRegisterTableRight) {
+    private void fullLineToHashLine(List<String> transformSql, String partOfVariableName, StringBuilder tmpRegisterTableLeft, StringBuilder tmpRegisterTableRight) {
         transformSql.add("val fillNullDFLeft_" + partOfVariableName + " = originalDFLeft_" + partOfVariableName + ".na.fill(UUID)");
         transformSql.add("val qualitis_names_left_" + partOfVariableName + " = fillNullDFLeft_" + partOfVariableName + ".schema.fieldNames");
         transformSql.add("val fillNullWithFullLineWithHashDF_left_" + partOfVariableName + " = fillNullDFLeft_" + partOfVariableName + ".withColumn(\"qualitis_full_line_value\", to_json(struct($\"*\"))).withColumn(\"qualitis_full_line_hash_value\", md5(to_json(struct($\"*\"))))");
@@ -1311,11 +2519,379 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     private List<String> saveStatisticAndSaveMySqlSentence(String workFlowVersion, Long ruleId, Map<String, Long> ruleMetricIds
-            , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables, String createTime
-            , String partOfVariableName, String runDate, String user, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue,
-                                                           Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
-        return abstractTranslator.persistenceTranslate(workFlowVersion, ruleId, ruleMetricIds, templateStatisticsInputMetas, applicationId, ruleVariables, createTime
-                , partOfVariableName, runDate, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionAllForSaveResult);
+        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, Long taskId,
+        List<RuleVariable> ruleVariables, String createTime
+        , String partOfVariableName, String runDate,String runToday,String user, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue,
+        Map<String, String> selectResult, int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+        return abstractTranslator.persistenceTranslate(workFlowVersion, ruleId, ruleMetricIds, templateStatisticsInputMetas, applicationId, taskId, ruleVariables, createTime
+                , partOfVariableName, runDate, runToday, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionWay);
+    }
+
+    public static String jointVariableName(String prefix, String suffixes) {
+        return ScalaCodeConstant.jointVariableName(prefix, suffixes);
+    }
+
+    public static String stateValInitString(String fieldName,String fieldValue) {
+        return ScalaCodeConstant.stateValString(fieldName, fieldValue);
+    }
+
+    public static String stateVarInitString(String fieldName,String fieldValue) {
+        return ScalaCodeConstant.stateVarString(fieldName, fieldValue);
+    }
+
+    public static String stateValInitNumber(String fieldName, Object fieldValue) {
+        return ScalaCodeConstant.stateValNumber(fieldName, fieldValue);
+    }
+
+    public static String stateVarInitNumber(String fieldName, Object fieldValue) {
+        return ScalaCodeConstant.stateVarNumber(fieldName, fieldValue);
+    }
+
+    public static String stateNumber(String fieldName, Object fieldValue) {
+        return ScalaCodeConstant.stateNumber(fieldName, fieldValue);
+    }
+
+    public static String stateString(String fieldName, Object fieldValue) {
+        return ScalaCodeConstant.stateString(fieldName, fieldValue);
+    }
+
+    public static String stateVarInitEmptyString(String fieldName) {
+        return ScalaCodeConstant.stateVarString(fieldName, "");
+    }
+
+    private RuleDataSource getRuleDataSource(Rule rule){
+        // dataSources info
+        Set<RuleDataSource> ruleDataSources = rule.getRuleDataSources();
+        Iterator<RuleDataSource> it = ruleDataSources.iterator();
+        RuleDataSource ruleDataSource = new RuleDataSource();
+        while(it.hasNext()){
+            ruleDataSource = it.next();
+        }
+        return ruleDataSource;
+    }
+
+    private long initExecParams(List<String> sparkSqlList, Map<String, String> execParams, String partitionAttr){
+        if(MapUtils.isEmpty(execParams)){
+            return 0;
+        }
+        long dataTime = 0;
+        for (Map.Entry<String, String> entry : execParams.entrySet()) {
+            String entryKey = String.valueOf(entry.getKey());
+            String entryValue = String.valueOf(entry.getValue());
+            if ("partition_day".equals(entryKey)) {
+                dataTime = DateExprReplaceUtil.getDateTimeSeconds(entryValue);
+            }
+            if (StringUtils.isNotBlank(partitionAttr) && "partition_attr".equals(entryKey)) {
+                sparkSqlList.add(stateValInitString(partitionAttr, entryValue));
+            }
+        }
+        return dataTime;
+    }
+
+    private void analyseFieldsCountCode(List< String> sparkSqlList, Rule rule, String partOfVariableName, Map< String, String> execParams,String variableFormer) {
+        if(StringUtils.isBlank(intellectCheckFieldsProjectName) ||! intellectCheckFieldsProjectName.equals(rule.getProject().getName())){
+            return ;
+        }
+        String variableNamePrefix = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+        String partitionAttr = jointVariableName(variableNamePrefix, "partition_attr");
+        String values = jointVariableName(variableNamePrefix, "values");
+        String array = jointVariableName(variableNamePrefix, "array");
+        RuleDataSource ruleDataSource = getRuleDataSource(rule);
+        int datasourceTypeInt = ruleDataSource.getDatasourceType();
+        String databaseNameStr = ruleDataSource.getDbName();
+        String tableNameStr = ruleDataSource.getTableName();
+        String proxyUserStr = ruleDataSource.getProxyUser();
+        long dataTime = initExecParams(sparkSqlList, execParams, partitionAttr);
+        Long ruleId = rule.getId();
+
+        String rolName = "";
+        Set<RuleVariable> variableSet = rule.getRuleVariables();
+        for (RuleVariable ruleVariable : variableSet) {
+            String placeholder = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
+            if("fields".equals(placeholder) || "${fields}".equals(placeholder)){
+                rolName = ruleVariable.getValue();
+            }
+        }
+        String nowTime = DateUtils.now();
+        sparkSqlList.add(stateValInitNumber(array,variableFormer + ".collect"));
+        sparkSqlList.add(stateValInitNumber(values, array+ "(0)(0).toString"));
+
+        sparkSqlList.add(stateValInitNumber("conn",abstractTranslator.getDataSourceConn()));
+        sparkSqlList.add(stateVarInitNumber("stmt", "conn.prepareStatement(\"\",1)"));
+        String analyseFieldsUpsertSql = "\"INSERT INTO qualitis_imsmetric_fields_analyse (rule_id, analyse_type, datasource_type," +
+                "database_name,table_name,field_name,value,data_date,create_time,update_time,datasource_user,partition_attrs,remark) VALUES %s " +
+                "ON DUPLICATE KEY UPDATE value = values(value) , update_time = values(update_time)\"";
+        String analyseFieldsUpsertSqlValue = "(" + ruleId +", 1, " + datasourceTypeInt + ",'" + databaseNameStr + "','"
+                + tableNameStr + "','" + rolName +"',%s," + dataTime  + ",'" + nowTime + "','" + nowTime+ "','" + proxyUserStr +"','%s','') ";
+        String finalSql = String.format(analyseFieldsUpsertSql, analyseFieldsUpsertSqlValue);
+        sparkSqlList.add("stmt.executeUpdate(" + finalSql + ".format("+values+"," +partitionAttr+"))");
+    }
+
+    private void handleCustomRuleCode(List<String> sparkSqlList, Rule rule, String partOfVariableName,Map<String, String> execParams) {
+        if(compareProjectName(rule)){
+            String variableNamePrefix = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+            String ageing = jointVariableName(variableNamePrefix, "ageing");
+            String partitionAttr = jointVariableName(variableNamePrefix, "partition_attr");
+            // dataSources info
+            Set<RuleDataSource> ruleDataSources = rule.getRuleDataSources();
+            Iterator<RuleDataSource> it = ruleDataSources.iterator();
+            RuleDataSource ruleDataSource = new RuleDataSource();
+            while(it.hasNext()){
+                ruleDataSource = it.next();
+            }
+            int datasourceTypeInt = ruleDataSource.getDatasourceType();
+            String databaseNameStr = ruleDataSource.getDbName();
+            String tableNameStr = ruleDataSource.getTableName();
+            String proxyUserStr = ruleDataSource.getProxyUser();
+
+            // init exec params
+            int enumMaxLength = 1000;
+            int batchInsertSize = 1000;
+            long dataTime = 0;
+            if(!execParams.isEmpty()) {
+                for (Map.Entry<String, String> entry : execParams.entrySet()) {
+                    String entryKey = String.valueOf(entry.getKey());
+                    String entryValue = String.valueOf(entry.getValue());
+                    if ("partition_day".equals(entryKey)) {
+                        dataTime = DateExprReplaceUtil.getDateTimeSeconds(entryValue);
+                    }
+                    if ("ageing".equals(entryKey)) {
+                        sparkSqlList.add(stateValInitString(ageing, entryValue));
+                    }
+                    if ("partition_attr".equals(entryKey)) {
+                        sparkSqlList.add(stateValInitString(partitionAttr, entryValue));
+                    }
+                    if ("enum_max_length".equals(entryKey)) {
+                        try {
+                            if(StringUtils.isNotBlank(entryValue)){
+                                enumMaxLength = Integer.valueOf(entryValue);
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("exec param error");
+                        }
+                    }
+                    if ("batch_insert_size".equals(entryKey)) {
+                        try {
+                            if(StringUtils.isNotBlank(entryValue)){
+                                batchInsertSize = Integer.valueOf(entryValue);
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error("exec param error");
+                        }
+                    }
+                }
+            }
+            String rolName = "";
+            Set<RuleVariable> variableSet = rule.getRuleVariables();
+            for (RuleVariable ruleVariable : variableSet) {
+                String placeholder = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
+                if("fields".equals(placeholder) || "${fields}".equals(placeholder)){
+                    rolName = ruleVariable.getValue();
+                }
+            }
+
+            // add spark sql
+            int metricTypeInt = 1;
+            String templateEnName = rule.getTemplate().getEnName();
+            if(intellectCheckTableTemplateName.equals(templateEnName)){
+                metricTypeInt = MetricTypeEnum.TABLE_STATISTICS.getCode();
+            }else if(intellectCheckEnumTemplateName.equals(templateEnName)){
+                metricTypeInt = MetricTypeEnum.ENUM_STATISTICS.getCode();
+            }else if(intellectCheckOriginTemplateName.equals(templateEnName)){
+                metricTypeInt = MetricTypeEnum.ORIGIN_STATISTICS.getCode();
+            }else{
+                throw new RuntimeException(ScalaCodeConstant.NOT_SUPPORTED_METRIC_TYPE);
+            }
+
+            String datasourceType = jointVariableName(variableNamePrefix, "datasource_type");
+            String databaseName = jointVariableName(variableNamePrefix, "database_name");
+            String tableName = jointVariableName(variableNamePrefix, "table_name");
+            String metricType = jointVariableName(variableNamePrefix, "metric_type");
+            String attrName = jointVariableName(variableNamePrefix, "attr_name");
+            String rowkeyName = jointVariableName(variableNamePrefix, "rowkey_name");
+            String proxyUser = jointVariableName(variableNamePrefix, "proxy_user");
+            String dataArray = jointVariableName(variableNamePrefix, "array");
+            String errorList = jointVariableName(variableNamePrefix, "error_list");
+            String nowTime = jointVariableName(variableNamePrefix, "now_time");
+            String insertList = jointVariableName(variableNamePrefix, "insert_list");
+            String metricValue = jointVariableName(variableNamePrefix,"value");
+            String metricId = jointVariableName(variableNamePrefix,"metric_id");
+            String calcType = jointVariableName(variableNamePrefix,"calcType");
+            String errorMsg =  jointVariableName(variableNamePrefix,"error_msg");
+            String rowvalueenumName = jointVariableName(variableNamePrefix, "rowvalueenum_name");
+            String dsDateTime = jointVariableName(variableNamePrefix, "ds_date_time");
+            String querySql = jointVariableName(variableNamePrefix, "query_sql");
+            String insertSql = jointVariableName(variableNamePrefix, "insert_sql");
+            String insertCommonData = jointVariableName(variableNamePrefix, "insert_common_data");
+            String insertData = jointVariableName(variableNamePrefix, "insert_data");
+            String groupbyattrNames = jointVariableName(variableNamePrefix, "groupbyattr_names");
+            String identifyRs = jointVariableName(variableNamePrefix, "identify_rs");
+            String metricIdRs = jointVariableName(variableNamePrefix, "metricid_rs");
+            String splitList = jointVariableName(variableNamePrefix, "split_list");
+
+            sparkSqlList.add("import scala.math.BigDecimal");
+            sparkSqlList.add(stateValInitNumber("conn",abstractTranslator.getDataSourceConn()));
+            sparkSqlList.add(stateVarInitNumber("stmt", "conn.prepareStatement(\"\",1)"));
+            sparkSqlList.add(stateValInitNumber(dataArray,variableNamePrefix + ".collect"));
+            sparkSqlList.add(stateValInitNumber(datasourceType, datasourceTypeInt));
+            sparkSqlList.add(stateValInitString(databaseName, databaseNameStr));
+            sparkSqlList.add(stateValInitString(tableName, tableNameStr));
+            sparkSqlList.add(stateValInitString(proxyUser, proxyUserStr));
+            sparkSqlList.add(stateValInitNumber(metricType, metricTypeInt));
+            sparkSqlList.add(stateVarInitString(attrName, rolName));
+            sparkSqlList.add(stateVarInitEmptyString(rowkeyName + " : String"));
+            sparkSqlList.add(stateVarInitEmptyString(rowvalueenumName +  " : String"));
+            sparkSqlList.add(stateVarInitEmptyString(groupbyattrNames +  " : String"));
+            sparkSqlList.add(stateValInitString(nowTime, DateUtils.now()));
+            sparkSqlList.add(stateVarInitNumber(calcType,0));
+            sparkSqlList.add(stateVarInitNumber(metricId,0.0));
+            sparkSqlList.add(stateVarInitNumber(metricValue , "BigDecimal(\"0.0\")"));
+            sparkSqlList.add(stateVarInitNumber(insertList + " : List[String]" ,"List()"));
+            sparkSqlList.add(stateVarInitNumber(errorList + " : List[String]" ,"List()"));
+            sparkSqlList.add(stateValInitString(insertCommonData, ScalaCodeConstant.INSERT_DATA_COMMON_SQL));
+            sparkSqlList.add(stateValInitString(insertData, ScalaCodeConstant.getInsertDataSql(metricTypeInt, ruleDataSource, nowTime)));
+
+            sparkSqlList.add(stateVarInitEmptyString(errorMsg));
+            sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
+            if(MetricTypeEnum.ORIGIN_STATISTICS.getCode() == metricTypeInt) {
+                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
+                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
+                sparkSqlList.add("import java.text.SimpleDateFormat");
+                sparkSqlList.add(stateVarInitNumber("sdf", "new SimpleDateFormat(\"yyyyMMdd HH:mm:ss\")"));
+                sparkSqlList.add("try{");
+                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
+                sparkSqlList.add("try{");
+                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(0).toString)"));
+                sparkSqlList.add(stateNumber(calcType, dataArray + "(i)(1).toString.toInt"));
+                sparkSqlList.add(stateNumber(rowkeyName,dataArray + "(i)(2).toString"));
+                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
+                sparkSqlList.add(stateValInitNumber(dsDateTime,"sdf.parse(" + dataArray + "(i)(3).toString + \" 00:00:00\").getTime/1000"));
+                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + rowkeyName + "))"));
+                sparkSqlList.add("if(" + identifyRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
+                sparkSqlList.add("}else{");
+                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + rowkeyName + "), 1)"));
+                sparkSqlList.add("stmt.executeUpdate()");
+                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
+                sparkSqlList.add("if(" + metricIdRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
+                sparkSqlList.add("}");
+                sparkSqlList.add("}");
+                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dsDateTime +") +: " + insertList));
+                sparkSqlList.add("} catch {");
+            }else if(MetricTypeEnum.TABLE_STATISTICS.getCode() == metricTypeInt) {
+                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
+                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
+                sparkSqlList.add("try{");
+                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
+                sparkSqlList.add("for(j <- 0 to " + dataArray + "(i).length - 1){");
+                sparkSqlList.add("try{");
+                // 无数据补零
+                sparkSqlList.add("try{");
+                sparkSqlList.add("if(j == 0){");
+                sparkSqlList.add(stateNumber(calcType,1));
+                sparkSqlList.add("}else if(j == 1){");
+                sparkSqlList.add(stateNumber(calcType,5));
+                sparkSqlList.add("}");
+                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(j).toString)"));
+                sparkSqlList.add("} catch {");
+                sparkSqlList.add("case e: Exception => {");
+                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(\"0.0\")"));
+                sparkSqlList.add("}}");
+                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
+                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + calcType + "))"));
+                sparkSqlList.add("if(" + identifyRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
+                sparkSqlList.add("}else{");
+                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + calcType + "), 1)"));
+                sparkSqlList.add("stmt.executeUpdate()");
+                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
+                sparkSqlList.add("if(" + metricIdRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
+                sparkSqlList.add("}");
+                sparkSqlList.add("}");
+                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dataTime +") +: " + insertList));
+                sparkSqlList.add("} catch {");
+
+            }else if(MetricTypeEnum.ENUM_STATISTICS.getCode() == metricTypeInt){
+                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
+                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
+
+
+                sparkSqlList.add("if(" + dataArray + ".length > " + enumMaxLength + "){");
+                sparkSqlList.add("throw new RuntimeException(\"枚举类型规则计算数据量已超过最大长度，请检查分组字段\")");
+                sparkSqlList.add("}");
+                sparkSqlList.add("try{");
+                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
+                sparkSqlList.add("for(j <- 0 to " + dataArray + "(i).length - 2){");
+                sparkSqlList.add("try{");
+                sparkSqlList.add("if(j == 0){");
+                sparkSqlList.add(stateNumber(calcType,5));
+                sparkSqlList.add("}else if(j == 1){");
+                sparkSqlList.add(stateNumber(calcType,8));
+                sparkSqlList.add("}");
+                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowkeyName, calcType));
+                sparkSqlList.add("try{");
+                sparkSqlList.add(stateNumber(rowvalueenumName,dataArray + "(i)(2).toString"));
+                sparkSqlList.add("} catch {");
+                sparkSqlList.add("case e: Exception => {");
+                sparkSqlList.add(stateNumber(rowvalueenumName,"\"NULL\""));
+//                sparkSqlList.add(stateNumber(errorList, "(" + errorMsg + "+\",name为空,\") +: " + errorList));
+                sparkSqlList.add("}");
+                sparkSqlList.add("}");
+                sparkSqlList.add("try{");
+                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(j).toString)"));
+                sparkSqlList.add("} catch {");
+                sparkSqlList.add("case e: Exception =>  throw  new NullPointerException(\"metric_value值为空\")");
+                sparkSqlList.add("}");
+                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
+                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + rowvalueenumName + "," + calcType +"))"));
+                sparkSqlList.add("if(" + identifyRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
+                sparkSqlList.add("}else{");
+                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + calcType + "," + rowvalueenumName +"), 1)"));
+                sparkSqlList.add("stmt.executeUpdate()");
+                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
+                sparkSqlList.add("if(" + metricIdRs + ".next()){");
+                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
+                sparkSqlList.add("}");
+                sparkSqlList.add("}");
+                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dataTime +") +: " + insertList));
+                sparkSqlList.add("} catch {");
+
+            }
+
+            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("NullPointerException", errorList, "指标数据为空", errorMsg));
+            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("NumberFormatException", errorList, "指标数据为空", errorMsg));
+            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("Exception", errorList, "scala执行异常", errorMsg));
+            sparkSqlList.add("}");
+            sparkSqlList.add("}");
+            if(MetricTypeEnum.TABLE_STATISTICS.getCode() == metricTypeInt || MetricTypeEnum.ENUM_STATISTICS.getCode() == metricTypeInt) {
+                sparkSqlList.add("}");
+            }
+
+            sparkSqlList.add("try{");
+            sparkSqlList.add(insertList + ".grouped(" + batchInsertSize + ").toList.foreach { " + splitList + " =>");
+            sparkSqlList.add("stmt.executeUpdate(" + insertCommonData + ".format(" + splitList + ".reverse.mkString(\",\")))");
+            sparkSqlList.add("}");
+            sparkSqlList.add("}catch{");
+            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("Exception", errorList, "写入指标数据异常", errorMsg));
+            sparkSqlList.add("}");
+            sparkSqlList.add("if(!" + errorList + ".isEmpty){");
+            sparkSqlList.add("if(" + metricType + " == 1 && "  + errorList + ".reverse.mkString(\"\\n\").indexOf(\"指标数据为空:\") != -1" +  "){");
+            sparkSqlList.add(variableNamePrefix + " = " + variableNamePrefix + ".na.drop()");
+            sparkSqlList.add("}else{");
+            sparkSqlList.add("throw new RuntimeException(" + errorList + ".reverse.mkString(\"\\n\"))");
+            sparkSqlList.add("}");
+            sparkSqlList.add("}");
+            sparkSqlList.add("}catch{");
+            sparkSqlList.add("case e: Exception => throw e");
+            sparkSqlList.add("}finally{");
+            sparkSqlList.add("stmt.close()");
+            sparkSqlList.add("conn.close()");
+            sparkSqlList.add("}");
+
+        }
     }
 
     /**
@@ -1327,6 +2903,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @param partOfVariableName
      * @param connParamMaps
      * @param runDate
+     * @param runToday
      * @param selectResult
      * @param midTableReUse
      * @param unionAllForSaveResult
@@ -1337,10 +2914,10 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @return
      */
     private List<String> generateSparkSqlAndSaveSentence(String sql, String saveTableName, Rule rule, String partOfVariableName, List<Map<String, Object>> connParamMaps
-        , String runDate, Map<String, String> selectResult, boolean midTableReUse, boolean unionAllForSaveResult, String filterFields, List<List<String>> tableEnvs, boolean shareConnect, String shareFromPart) {
+            , String runDate, String runToday, Map<String, String> selectResult, boolean midTableReUse, boolean unionAllForSaveResult, String filterFields, List<List<String>> tableEnvs, boolean shareConnect, String shareFromPart, Map<String, String> execParams) {
         String sparkSqlSentence;
         List<String> sparkSqlList = new ArrayList<>();
-        boolean linePrimaryRepeat = QualitisConstants.EXPECT_LINES_NOT_REPEAT_ID.equals(rule.getTemplate().getId()) || QualitisConstants.EXPECT_DATA_NOT_REPEAT_ID.equals(rule.getTemplate().getId());
+        boolean linePrimaryRepeat = QualitisConstants.isRepeatDataCheck(rule.getTemplate().getEnName());
         if (CollectionUtils.isEmpty(connParamMaps)) {
 
             if (CollectionUtils.isNotEmpty(tableEnvs)) {
@@ -1350,7 +2927,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     StringBuilder envName = new StringBuilder();
                     for (String replaceStr : subList) {
                         String[] subStrs = replaceStr.split(SpecCharEnum.COLON.getValue());
-                        envName.append("[").append(subStrs[2]).append("]");
+                        envName.append("[").append(subStrs[2].split(SpecCharEnum.MINUS.getValue())[0]).append("]");
                         String registerTable = subStrs[1];
                         String realTable = subStrs[0];
 
@@ -1358,11 +2935,11 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     }
                     String partOfVariableNameWithEnv = partOfVariableName + envName.toString().replace("[", "").replace("]", "");
                     sparkSqlList.add("// 生成规则 " + partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + " 的校验查询代码");
-                    sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableNameWithEnv, "", "", "");
+                    sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableNameWithEnv, "", "", "", RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType()));
                     sparkSqlList.add(sparkSqlSentence);
 
-                    String variableFormer = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
-                    String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
+                    String variableFormer = getVariableNameByRule(partOfVariableNameWithEnv.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableNameWithEnv.split(SpecCharEnum.EQUAL.getValue())[1]);
+                    String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableNameWithEnv.split(SpecCharEnum.EQUAL.getValue())[1]);
                     formatSchema(sparkSqlList, partOfVariableName, variableFormer, variableLatter);
 
                     selectResult.put(variableLatter, envName.toString());
@@ -1373,10 +2950,18 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 if (linePrimaryRepeat) {
                     sparkSqlList.add("val UUID = java.util.UUID.randomUUID.toString");
                 }
-                sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableName, filterFields, shareFromPart, "");
+                if(compareProjectName(rule)){
+                    sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableName, filterFields);
+                }else if(StringUtils.isNotBlank(intellectCheckFieldsProjectName) && intellectCheckFieldsProjectName.equals(rule.getProject().getName())){
+                    sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableName, filterFields);
+                }else{
+                    sparkSqlSentence = getSparkSqlSentence(sql, partOfVariableName, filterFields, shareFromPart, "", RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType()));
+                }
                 LOGGER.info("Succeed to generate spark sql. sentence: {}", sparkSqlSentence);
                 sparkSqlList.add("// 生成规则 " + partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + " 的校验查询代码");
                 sparkSqlList.add(sparkSqlSentence);
+                // 特殊处理规则生成scala代码
+                handleCustomRuleCode(sparkSqlList, rule, partOfVariableName,execParams);
 
                 if (linePrimaryRepeat) {
                     handleLinePrimaryRepeat(sparkSqlList, partOfVariableName);
@@ -1385,27 +2970,22 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 String variableFormer = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
                 String variableLatter = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
                 formatSchema(sparkSqlList, partOfVariableName, variableFormer, variableLatter);
+                analyseFieldsCountCode(sparkSqlList, rule, partOfVariableName,execParams, variableFormer);
 
-                if (Boolean.TRUE.equals(rule.getTemplate().getSaveMidTable())) {
+                if (StringUtils.isNotEmpty(saveTableName) && ! MID_TABLE_NAME_PATTERN.matcher(saveTableName).find()) {
                     sparkSqlList.addAll(getSaveMidTableSentenceSettings());
-                    sparkSqlList.addAll(getSaveMidTableSentence(saveTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, midTableReUse));
+                    sparkSqlList.addAll(getSaveMidTableSentence(saveTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     LOGGER.info("Succeed to generate spark sql. sentence.");
                 }
             }
 
             return sparkSqlList;
         } else {
+            boolean saveMidTable = StringUtils.isNotEmpty(saveTableName) && ! MID_TABLE_NAME_PATTERN.matcher(saveTableName).find();
             // Repeat with envs. When polymerization, repeat one more time.
-            selectResult.putAll(getSparkSqlSententceWithMysqlConnParams(sql, partOfVariableName, connParamMaps, sparkSqlList, linePrimaryRepeat, rule.getTemplate().getSaveMidTable(), saveTableName, runDate, midTableReUse, unionAllForSaveResult, filterFields, shareConnect, shareFromPart));
+            selectResult.putAll(getSparkSqlSententceWithMysqlConnParams(rule, sql, partOfVariableName, connParamMaps, sparkSqlList, linePrimaryRepeat,  saveMidTable, saveTableName, runDate, runToday, midTableReUse, unionAllForSaveResult, filterFields, shareConnect, shareFromPart));
         }
         return sparkSqlList;
-    }
-
-    private void handleLinePrimaryRepeat(List<String> sparkSqlList, Integer count) {
-        sparkSqlList.add("val fillNullDF_" + count + " = " + getVariableName(count) + ".na.fill(UUID)");
-        sparkSqlList.add("val fillNullWithFullLineWithHashDF_" + count + " = fillNullDF_" + count + ".withColumn(\"qualitis_full_line_value\", to_json(struct($\"*\"))).withColumn(\"md5\", md5(to_json(struct($\"*\"))))");
-        sparkSqlList.add("fillNullWithFullLineWithHashDF_" + count + ".registerTempTable(\"tmp_table_" + count + "\")");
-        sparkSqlList.add("val " + getVariableName(count) + " = spark.sql(\"select md5, count(1) as md5_count from tmp_table_" + count + " group by md5 having count(*) > 1\")");
     }
 
     private void handleLinePrimaryRepeat(List<String> sparkSqlList, String fullName) {
@@ -1416,11 +2996,11 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         sparkSqlList.add("val " + getVariableNameByRule(fullName.split(SpecCharEnum.EQUAL.getValue())[0], suffix) + " = spark.sql(\"select md5, count(1) as md5_count from tmp_table_" + suffix + " group by md5 having count(*) > 1\")");
     }
 
-    private Map<String, String> getSparkSqlSententceWithMysqlConnParams(String sql, String partOfVariableName, List<Map<String, Object>> connParamMaps, List<String> sparkSqlList
-        , boolean linePrimaryRepeat, Boolean saveMidTable, String saveTableName, String runDate, boolean midTableReUse, boolean unionAllForSaveResult, String filterFields, boolean shareConnect, String shareFromPart) {
+    private Map<String, String> getSparkSqlSententceWithMysqlConnParams(Rule rule, String sql, String partOfVariableName, List<Map<String, Object>> connParamMaps, List<String> sparkSqlList
+            , boolean linePrimaryRepeat, Boolean saveMidTable, String saveTableName, String runDate, String runToday, boolean midTableReUse, boolean unionAllForSaveResult, String filterFields, boolean shareConnect, String shareFromPart) {
         Map<String, String> selectResult = new HashMap<>(connParamMaps.size());
         for (Map<String, Object> connParams : connParamMaps) {
-            String envName = (String) connParams.get("envName");
+            String envName = ((String) connParams.get("envName")).split(SpecCharEnum.MINUS.getValue())[0];
             if (StringUtils.isEmpty(envName)) {
                 continue;
             }
@@ -1429,7 +3009,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
             if (shareConnect) {
                 sparkSqlList.add("// 生成规则 " + partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "，在环境 " + envName + " 的校验查询代码");
-                sparkSqlList.add(getSparkSqlSentence(sql, tmpVariableName, filterFields, shareFromPart, SpecCharEnum.BOTTOM_BAR.getValue() + envName));
+                sparkSqlList.add(getSparkSqlSentence(sql, tmpVariableName, filterFields, shareFromPart, SpecCharEnum.BOTTOM_BAR.getValue() + envName, RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())));
             } else {
 
                 String tmp = sql.replace("\"", "\\\"");
@@ -1461,7 +3041,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
         if (saveMidTable) {
             sparkSqlList.addAll(getSaveMidTableSentenceSettings());
-            sparkSqlList.addAll(getSaveMidTableSentence(saveTableName, runDate, midTableReUse, selectResult));
+            sparkSqlList.addAll(getSaveMidTableSentence(saveTableName, runDate, runToday, midTableReUse, selectResult));
         }
 
         return selectResult;
@@ -1493,7 +3073,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         }
     }
 
-    private List<String> getSaveMidTableSentence(String saveMidTableName, String runDate, boolean midTableReUse, Map<String, String> selectResult) {
+    private List<String> getSaveMidTableSentence(String saveMidTableName, String runDate, String runToday, boolean midTableReUse, Map<String, String> selectResult) {
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, -7);
@@ -1519,13 +3099,13 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         for (Map.Entry<String, String> entry : selectResult.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION_WITH_ENV, value, key, saveMidTableName, runDate, date, format));
+            saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION_WITH_ENV, value, key, saveMidTableName, runDate, runToday, date, format));
         }
         saveSqls.add(ELSE_EXIST);
         for (Map.Entry<String, String> entry : selectResult.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE_WITH_ENV, value, key, saveMidTableName, runDate, date, format));
+            saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE_WITH_ENV, value, key, saveMidTableName, runDate, runToday, date, format));
         }
         saveSqls.add(END_EXIST);
         return saveSqls;
@@ -1543,9 +3123,9 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     private void formatSchema(List<String> sparkSqlList, String prefix, String variableFormer, String variableLatter) {
         if (QualitisConstants.BDAP.equals(localConfig.getCluster())) {
             prefix = prefix.split(SpecCharEnum.EQUAL.getValue())[1];
-            String str1 = "val " + prefix + "_schemas = " + variableFormer + ".schema.fields.map(f => f.name).toList";
-            String str2 = "val " + prefix + "_replacedSchemas = " + prefix + "_schemas.map(s => s.replaceAll(\"[()]\", \"\")).toList";
-            String str3 = "val " + variableLatter + " = " + variableFormer + ".toDF(" + prefix + "_replacedSchemas: _*)";
+            String str1 = "val "  + "schemas_" + prefix + " = " + variableFormer + ".schema.fields.map(f => f.name).toList";
+            String str2 = "val replacedSchemas_" + prefix + " = schemas_" + prefix + ".map(s => s.replaceAll(\"[()]\", \"\")).toList";
+            String str3 = "val " + variableLatter + " = " + variableFormer + ".toDF(" + "replacedSchemas_" + prefix + ": _*)";
             sparkSqlList.add(str1);
             sparkSqlList.add(str2);
             sparkSqlList.add(str3);
@@ -1563,7 +3143,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return settings;
     }
 
-    private List<String> getSaveMidTableSentence(String saveMidTableName, Integer count, String runDate, boolean midTableReUse) {
+    private List<String> getSaveMidTableSentence(String saveMidTableName, Integer count, String runDate, String runToday, boolean midTableReUse) {
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, -7);
@@ -1586,15 +3166,15 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         String foreachDrop = "partition_list_" + saveMidTableName.replace(SpecCharEnum.PERIOD_NO_ESCAPE.getValue(), SpecCharEnum.BOTTOM_BAR.getValue()) + ".foreach(f => spark.sql(\"alter table " + saveMidTableName + " drop if exists partition (qualitis_partition_key=\" + f + \")\"))";
         saveSqls.add(foreachDrop);
 
-        saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION, "", getVariableName(count), saveMidTableName, runDate, date, format));
+        saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION, "", getVariableName(count), saveMidTableName, runDate, runToday, date, format));
         saveSqls.add(ELSE_EXIST);
 
-        saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE, "", getVariableName(count), saveMidTableName, runDate, date, format));
+        saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE, "", getVariableName(count), saveMidTableName, runDate, runToday, date, format));
         saveSqls.add(END_EXIST);
         return saveSqls;
     }
 
-    private List<String> getSaveMidTableSentence(String saveMidTableName, String partOfVariableName, String runDate, boolean midTableReUse) {
+    private List<String> getSaveMidTableSentence(String saveMidTableName, String partOfVariableName, String runDate, String runToday, boolean midTableReUse) {
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, -7);
@@ -1617,25 +3197,25 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         String foreachDrop = "partition_list_" + saveMidTableName.replace(SpecCharEnum.PERIOD_NO_ESCAPE.getValue(), SpecCharEnum.BOTTOM_BAR.getValue()) + ".foreach(f => spark.sql(\"alter table " + saveMidTableName + " drop if exists partition (qualitis_partition_key=\" + f + \")\"))";
         saveSqls.add(foreachDrop);
 
-        saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION, "", getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), saveMidTableName, runDate, date, format));
+        saveSqls.addAll(parsefirstHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_INSERT_OVERWRITE_PARTITION, "", getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), saveMidTableName, runDate, runToday, date, format));
         saveSqls.add(ELSE_EXIST);
 
-        saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE, "", getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), saveMidTableName, runDate, date, format));
+        saveSqls.addAll(parseSecondHalf(SAVE_MID_TABLE_SENTENCE_TEMPLATE_CREATE, "", getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), saveMidTableName, runDate, runToday, date, format));
         saveSqls.add(END_EXIST);
         return saveSqls;
     }
 
     private List<String> parsefirstHalf(String saveMidTableSentenceTemplateInsertOverwritePartition, String envName, String val, String saveMidTableName
-            , String runDate, Date date, SimpleDateFormat format) {
+            , String runDate, String runToday, Date date, SimpleDateFormat format) {
         List<String> saveSqls = new ArrayList<>();
-
+        String result = getLastRunTime(runDate, runToday, date, format);
         if (StringUtils.isEmpty(envName) && StringUtils.isEmpty(val)) {
             saveSqls.add(saveMidTableSentenceTemplateInsertOverwritePartition
-                    .replace("${QUALITIS_PARTITION_KEY}", StringUtils.isBlank(runDate) ? format.format(date) : runDate)
+                    .replace("${QUALITIS_PARTITION_KEY}", result)
                     .replace(SAVE_MID_TABLE_NAME_PLACEHOLDER, saveMidTableName).replace(VARIABLE_NAME_PLACEHOLDER, val));
         } else {
             saveSqls.add(saveMidTableSentenceTemplateInsertOverwritePartition
-                    .replace("${QUALITIS_PARTITION_KEY}", StringUtils.isBlank(runDate) ? format.format(date) : runDate)
+                    .replace("${QUALITIS_PARTITION_KEY}", result)
                     .replace("${QUALITIS_PARTITION_KEY_ENV}", envName)
                     .replace(SAVE_MID_TABLE_NAME_PLACEHOLDER, saveMidTableName).replace(VARIABLE_NAME_PLACEHOLDER, val));
         }
@@ -1643,37 +3223,47 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return saveSqls;
     }
 
-    private List<String> parseSecondHalf(String saveMidTableSentenceTemplateCreate, String envName, String val, String saveMidTableName, String runDate
+    public String getLastRunTime(String runDate, String runToday, Date date, SimpleDateFormat format) {
+        if (StringUtils.isNotBlank(runDate)) {
+            return runDate;
+        }
+        return StringUtils.isNotBlank(runToday) ? runToday : format.format(date);
+    }
+
+    private List<String> parseSecondHalf(String saveMidTableSentenceTemplateCreate, String envName, String val, String saveMidTableName, String runDate, String runToday
             , Date date, SimpleDateFormat format) {
         List<String> saveSqls = new ArrayList<>();
+        String result = getLastRunTime(runDate, runToday, date, format);
         if (StringUtils.isEmpty(envName) && StringUtils.isEmpty(val)) {
             saveSqls.add(
-                    saveMidTableSentenceTemplateCreate.replace("${QUALITIS_PARTITION_KEY}", StringUtils.isBlank(runDate) ? format.format(date) : runDate)
+                    saveMidTableSentenceTemplateCreate.replace("${QUALITIS_PARTITION_KEY}", result)
                             .replace(SAVE_MID_TABLE_NAME_PLACEHOLDER, saveMidTableName).replace(VARIABLE_NAME_PLACEHOLDER, val));
         } else {
             saveSqls.add(
-                    saveMidTableSentenceTemplateCreate.replace("${QUALITIS_PARTITION_KEY}", StringUtils.isBlank(runDate) ? format.format(date) : runDate)
+                    saveMidTableSentenceTemplateCreate.replace("${QUALITIS_PARTITION_KEY}", result)
                             .replace("${QUALITIS_PARTITION_KEY_ENV}", envName)
                             .replace(SAVE_MID_TABLE_NAME_PLACEHOLDER, saveMidTableName).replace(VARIABLE_NAME_PLACEHOLDER, val));
         }
         return saveSqls;
     }
 
-    private String getSparkSqlSentence(String sql, Integer count, String filterFields) {
-        sql = sql.replace("\"", "\\\"");
-        String str = SPARK_SQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sql);
-        if (StringUtils.isNotEmpty(filterFields)) {
-            str += filterFields;
+    private String getSparkSqlSentence(String sql, String fullName, String filterFields, String shareFromPart, String envName, boolean isCustomRule) {
+        if (! isCustomRule) {
+            sql = sql.replace("\"", "\\\"");
         }
-        return str.replace(VARIABLE_NAME_PLACEHOLDER, getVariableName(count));
-    }
-
-    private String getSparkSqlSentence(String sql, String fullName, String filterFields, String shareFromPart, String envName) {
-        sql = sql.replace("\"", "\\\"");
 
         if (StringUtils.isNotEmpty(shareFromPart)) {
             sql = sql.replace(shareFromPart, commonTableName + envName);
         }
+        String str = SPARK_SQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sql);
+        if (StringUtils.isNotEmpty(filterFields)) {
+            str += filterFields;
+        }
+        return str.replace(VARIABLE_NAME_PLACEHOLDER, getVariableNameByRule(fullName.split(SpecCharEnum.EQUAL.getValue())[0], fullName.split(SpecCharEnum.EQUAL.getValue())[1]));
+    }
+
+    private String getSparkSqlSentence(String sql, String fullName, String filterFields) {
+        sql = sql.replace("\"", "\\\"");
         String str = SPARK_SQL_TEMPLATE.replace(SPARK_SQL_TEMPLATE_PLACEHOLDER, sql);
         if (StringUtils.isNotEmpty(filterFields)) {
             str += filterFields;
@@ -1687,24 +3277,37 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @param template
      * @param variables
      * @param filter
-     * @param realFilter
      * @param realColumn
      * @param dbTableMap             for pick up source db.table & target db.table
      * @param date
+     * @param standardValueVersionId
+     * @param shareFromPart
+     * @param runDate
+     * @param runToday
+     * @param engineType
      * @return
      * @throws ConvertException
      */
-    private String replaceVariable(String template, List<RuleVariable> variables, String filter, StringBuilder realFilter, StringBuilder realColumn
-            , Map<String, String> dbTableMap, Date date, String createUser) throws ConvertException, UnExpectedRequestException, MetaDataAcquireFailedException {
+    private String replaceVariable(String template, List<RuleVariable> variables, String filter, StringBuilder realColumn, Map<String, String> dbTableMap, Date date, Long standardValueVersionId, String createUser, String shareFromPart, String runDate, String runToday, String engineType) throws ConvertException, UnExpectedRequestException, MetaDataAcquireFailedException {
 
         String sqlAction = template;
+
+        if (StringUtils.isNotEmpty(shareFromPart)) {
+            sqlAction = sqlAction.replace(FILTER_PLACEHOLDER, "true");
+        }
         if (StringUtils.isNotBlank(filter)) {
+            if (StringUtils.isNotBlank(runDate)) {
+                filter = filter.replace("${run_date}", runDate);
+//                filter = filter.replace("${run_date_std}", runDate);
+            }
+            if (StringUtils.isNotBlank(runToday)) {
+                filter = filter.replace("${run_today}", runToday);
+//                filter = filter.replace("${run_today_std}", runToday);
+            }
+
             String tmpfilter = DateExprReplaceUtil.replaceFilter(date, filter);
             sqlAction = sqlAction.replace(FILTER_PLACEHOLDER, tmpfilter);
-            realFilter.append(tmpfilter);
             LOGGER.info("Succeed to replace {} into {}", FILTER_PLACEHOLDER, tmpfilter);
-        } else {
-            realFilter.append("true");
         }
         for (RuleVariable ruleVariable : variables) {
             String midInputMetaPlaceHolder = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
@@ -1726,8 +3329,73 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 } else {
                     dbTableMap.put("right_database", "");
                 }
+            } else if ("left_collect_sql".equals(midInputMetaPlaceHolder)) {
+                String value = ruleVariable.getValue();
+                if (StringUtils.isNotEmpty(value) && StringUtils.isNotBlank(runDate)) {
+                    value = value.replace("${run_date}", runDate);
+//                    value = value.replace("${run_date_std}", runDate);
+                }
+                if (StringUtils.isNotEmpty(value) && StringUtils.isNotBlank(runToday)) {
+                    value = value.replace("${run_today}", runToday);
+//                    value = value.replace("${run_today_std}", runToday);
+                }
+                ruleVariable.setOriginValue(DateExprReplaceUtil.replaceRunDate(date, value));
+                dbTableMap.put("left_collect_sql", ruleVariable.getOriginValue());
+            } else if ("right_collect_sql".equals(midInputMetaPlaceHolder)) {
+                String value = ruleVariable.getValue();
+                if (StringUtils.isNotEmpty(value) && StringUtils.isNotBlank(runDate)) {
+                    value = value.replace("${run_date}", runDate);
+//                    value = value.replace("${run_date_std}", runDate);
+                }
+                if (StringUtils.isNotEmpty(value) && StringUtils.isNotBlank(runToday)) {
+                    value = value.replace("${run_today}", runToday);
+//                    value = value.replace("${run_today_std}", runToday);
+                }
+                ruleVariable.setOriginValue(DateExprReplaceUtil.replaceRunDate(date, value));
+                dbTableMap.put("right_collect_sql", ruleVariable.getOriginValue());
             } else if (TemplateInputTypeEnum.FIELD.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) && Boolean.TRUE.equals(ruleVariable.getTemplateMidTableInputMeta().getFieldMultipleChoice())) {
                 realColumn.append(ruleVariable.getValue());
+            } else if (TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) && standardValueVersionId != null) {
+                LOGGER.info("Start to check current standard value version is or not the most new version. Version ID: " + standardValueVersionId);
+                StandardValueVersion standardValueVersion = standardValueVersionDao.findById(standardValueVersionId);
+                // DMS 实时数据同步  如何保证拉取全量的dms的"编码取值" size临时采用Integer.MAX_VALUE
+                // 1.没有编码，提交异常返回; 2.有编码，但编码为空串，覆盖
+                if (standardValueVersion != null) {
+                    LOGGER.info("Start to Real time synchronization of DMS encoding values");
+                    if (StringUtils.isNotBlank(standardValueVersion.getCode())) {
+                        Map<String, Object> standardCodeTable = dataStandardClient.getStandardCodeTable(0, Integer.MAX_VALUE, createUser, standardValueVersion.getCode());
+                        List<Map<String, Object>> encodingValueInfo = (List<Map<String, Object>>) standardCodeTable.get("content");
+                        if (CollectionUtils.isEmpty(encodingValueInfo)) {
+                            throw new UnExpectedRequestException("{&GET_ENCODING_VALUE_FROM_DATASHAPIS_IS_EMPTY}");
+                        }
+
+                        StringBuilder temp = new StringBuilder();
+                        for (Map<String, Object> map : encodingValueInfo) {
+                            if (map.get("codeTableValue") == null) {
+                                continue;
+                            }
+
+                            if (!"".equals(map.get("codeTableValue").toString())) {
+                                temp.append("'" + map.get("codeTableValue").toString() + "'").append(SpecCharEnum.COMMA.getValue());
+                            }
+                        }
+
+                        String result = temp != null && temp.length() > 0 ? temp.deleteCharAt(temp.length() - 1).toString() : "";
+                        standardValueVersion.setContent(result);
+                        standardValueVersionDao.saveStandardValueVersion(standardValueVersion);
+                        if (StringUtils.isNotBlank(result) && EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && "standard_value".equals(midInputMetaPlaceHolder) && ! result.contains("'") && ! result.contains("\"")) {
+                            result = StringUtils.join(Arrays.asList(result.split(SpecCharEnum.COMMA.getValue())).stream().map(ele -> "'" + ele + "'").collect(Collectors.toList()), SpecCharEnum.COMMA.getValue());
+                        }
+                        sqlAction = sqlAction.replaceAll(placeHolder, result);
+                    } else {
+                        String result = standardValueVersion.getContent();
+                        if (StringUtils.isNotBlank(result) && EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && "standard_value".equals(midInputMetaPlaceHolder) && ! result.contains("'") && ! result.contains("\"")) {
+                            result = StringUtils.join(Arrays.asList(result.split(SpecCharEnum.COMMA.getValue())).stream().map(ele -> "'" + ele + "'").collect(Collectors.toList()), SpecCharEnum.COMMA.getValue());
+                        }
+                        sqlAction = sqlAction.replaceAll(placeHolder, result);
+                    }
+                    continue;
+                }
             }
             // Fix issue of wedget node in the front.
             if ("\\$\\{fields}".equals(placeHolder)) {
@@ -1743,7 +3411,16 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             if (ruleVariable.getValue() == null || "".equals(ruleVariable.getValue())) {
                 sqlAction = sqlAction.replaceAll(placeHolder + ".", "");
             } else {
-                sqlAction = sqlAction.replaceAll(placeHolder, ruleVariable.getValue());
+                if (placeHolder.contains("left_collect_sql") || placeHolder.contains("right_collect_sql")) {
+                    sqlAction = sqlAction.replaceAll(placeHolder, ruleVariable.getOriginValue());
+                } else {
+                    String ruleVariableValue = ruleVariable.getValue();
+                    if (StringUtils.isNotBlank(ruleVariableValue) && EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && "enumerated_list".equals(midInputMetaPlaceHolder) && ! ruleVariableValue.contains("'") && ! ruleVariableValue.contains("\"")) {
+                        ruleVariableValue = StringUtils.join(Arrays.asList(ruleVariableValue.split(SpecCharEnum.COMMA.getValue())).stream().map(ele -> "'" + ele + "'").collect(Collectors.toList()), SpecCharEnum.COMMA.getValue());
+                    }
+
+                    sqlAction = sqlAction.replaceAll(placeHolder, ruleVariableValue);
+                }
             }
             LOGGER.info("Succeed to replace {} into {}", placeHolder, ruleVariable.getValue());
         }
@@ -1781,4 +3458,37 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     public String getVariableNameByRule(String optPhase, String partOfVariableName) {
         return optPhase + "Of" + partOfVariableName;
     }
+
+    /**
+     * check rule name does it contain special characters and replace it to hash value
+     *
+     * @param ruleName
+     * @return
+     */
+    private String checkRuleNameWhetherContainSpecialCharacters(String ruleName) {
+        String resultRuleName = MID_TABLE_NAME_PATTERN.matcher(ruleName).find() ?
+            MID_TABLE_NAME_PATTERN.matcher(ruleName).replaceAll("") + SpecCharEnum.BOTTOM_BAR.getValue() + generateShortHash(ruleName).toLowerCase() : ruleName;
+        if (StringUtils.isNotBlank(resultRuleName)) {
+            return resultRuleName;
+        } else {
+            return ruleName;
+        }
+    }
+
+    public static String generateShortHash(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(input.getBytes());
+            String base64Encoded = Base64.getEncoder().encodeToString(hash);
+            return base64Encoded.substring(0, 6);
+        } catch (NoSuchAlgorithmException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        return "";
+    }
+
+    private boolean compareProjectName(Rule rule){
+        return intellectCheckProjectName.equals(rule.getProject().getName());
+    }
+
 }

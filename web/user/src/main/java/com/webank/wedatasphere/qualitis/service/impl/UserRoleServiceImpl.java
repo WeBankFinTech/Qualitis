@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
@@ -132,7 +133,7 @@ public class UserRoleServiceImpl implements UserRoleService {
         UserRoleResponse response = new UserRoleResponse(savedUserRole);
 
         LOGGER.info("Succeed to add user_role: response: {}, current_user: {}", response, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&ADD_USER_ROLE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_USER_ROLE_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -154,7 +155,7 @@ public class UserRoleServiceImpl implements UserRoleService {
         //查询用户角色是否为部门管理员或系统管理员
         checkExistRoles(userRoleInDb);
         LOGGER.info("Succeed to delete user_role. uuid: {}, current_user: {}", request.getUuid(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&DELETE_USER_ROLE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_USER_ROLE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -196,7 +197,7 @@ public class UserRoleServiceImpl implements UserRoleService {
         addProjectPermission(roleId, userInDb);
         LOGGER.info("Succeed to modify user_role, uuid: {}, user_id: {}, role_id: {}, current_user: {}", uuid, savedUserRole.getUser().getId(),
                 savedUserRole.getRole().getId(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&MODIFY_USER_ROLE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_USER_ROLE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -222,7 +223,7 @@ public class UserRoleServiceImpl implements UserRoleService {
         responses.setData(userRoleResponses);
 
         LOGGER.info("Succeed to find all user_roles, response: {}, current_user: {}", responses, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&FIND_ALL_USER_ROLES_SUCCESSFULLY}", responses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_ALL_USER_ROLES_SUCCESSFULLY}", responses);
     }
 
     private void checkRequest(ModifyUserRoleRequest request) throws UnExpectedRequestException {

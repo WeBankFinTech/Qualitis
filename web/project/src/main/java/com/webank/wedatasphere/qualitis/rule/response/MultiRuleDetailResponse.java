@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
@@ -36,6 +38,7 @@ import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -55,10 +58,6 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
     private String ruleTemplateName;
     private MultiDataSourceConfigRequest source;
     private MultiDataSourceConfigRequest target;
-
-//    private List<MultiDataSourceJoinConfigRequest> mappings;
-//    @JsonProperty("compare_cols")
-//    private List<MultiDataSourceJoinConfigRequest> compareCols;
 
     @JsonProperty("contrast_type")
     private Integer contrastType;
@@ -85,6 +84,11 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
     @JsonProperty("alarm_variable")
     private List<AlarmConfigResponse> alarmVariable;
 
+    @JsonProperty("left_linkis_udf_names")
+    private List<String> leftLinkisUdfNames;
+    @JsonProperty("right_linkis_udf_names")
+    private List<String> rightLinkisUdfNames;
+
     public MultiRuleDetailResponse() {
     }
 
@@ -93,7 +97,7 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
         super.setRuleName(rule.getName());
         super.setRuleDetail(rule.getDetail());
         super.setRuleCnName(rule.getCnName());
-        this.clusterName = rule.getRuleDataSources().iterator().next().getClusterName();
+        this.clusterName = rule.getRuleDataSources().stream().filter(ruleDataSource -> StringUtils.isNotEmpty(ruleDataSource.getClusterName())).map(ruleDataSource -> ruleDataSource.getClusterName()).collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
         this.multiSourceRuleTemplateId = rule.getTemplate().getId();
         this.ruleTemplateName = rule.getTemplate().getName();
         super.setRuleGroupId(rule.getRuleGroup().getId());
@@ -109,6 +113,12 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
         this.contrastType = rule.getContrastType();
         this.source = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 0);
         this.target = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 1);
+
+        Boolean isCustomConsistence = QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName());
+        if (isCustomConsistence) {
+            this.source.setContextService(false);
+            this.target.setContextService(false);
+        }
 
         this.templateArguments = new ArrayList<>();
         for (TemplateMidTableInputMeta templateMidTableInputMeta : rule.getTemplate().getTemplateMidTableInputMetas()) {
@@ -126,7 +136,17 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
                         templateArgumentRequest.setArgumentStep(InputActionStepEnum.TEMPLATE_INPUT_META.getCode());
                         templateArgumentRequest.setArgumentId(templateMidTableInputMeta.getId());
                         templateArgumentRequest.setArgumentType(templateMidTableInputMeta.getInputType());
-                        templateArgumentRequest.setArgumentValue(value);
+
+                        String argumentValue = value;
+                        if (isCustomConsistence) {
+                            Integer inputType = templateMidTableInputMeta.getInputType();
+                            if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(inputType)) {
+                                argumentValue = value.replace("tmp1.", "");
+                            } else if (TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(inputType)) {
+                                argumentValue = value.replace("tmp2.", "");
+                            }
+                        }
+                        templateArgumentRequest.setArgumentValue(argumentValue);
 
                         this.templateArguments.add(templateArgumentRequest);
                     }
@@ -142,35 +162,8 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
                 this.templateArguments.add(templateArgumentRequest);
             }
         }
-
-        // 设置mapping
-//        this.mappings = new ArrayList<>();
-//        this.compareCols = new ArrayList<>();
-//
-//        for (RuleDataSourceMapping ruleDataSourceMapping : rule.getRuleDataSourceMappings()) {
-//            if (ruleDataSourceMapping.getMappingType() == null || 1 == ruleDataSourceMapping.getMappingType()) {
-//                this.mappings.add(new MultiDataSourceJoinConfigRequest(ruleDataSourceMapping));
-//            } else {
-//                this.compareCols.add(new MultiDataSourceJoinConfigRequest(ruleDataSourceMapping));
-//            }
-//        }
-
         // Set filterColNames
         addFilterColNames(rule);
-
-        // 设置filter
-
-        //处理 跨表模板->通用模板
-//        List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
-//                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.CONDITION.getCode())).collect(Collectors.toList());
-//        if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
-//            this.filter = filterRuleVariable.iterator().next().getValue();
-//        }
-//        List<RuleVariable> filterRuleVariable = rule.getRuleVariables().stream().filter(ruleVariable ->
-//                ruleVariable.getTemplateMidTableInputMeta().getInputType().equals(TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode())).collect(Collectors.toList());
-//        if (filterRuleVariable != null && filterRuleVariable.size() != 0) {
-//            this.filter = filterRuleVariable.iterator().next().getValue();
-//        }
 
         super.setAlarm(rule.getAlarm());
         // 设置alarmVariable
@@ -199,22 +192,22 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
                 super.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 super.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 super.setRuleEnable(rule.getEnable());
-                super.setUnionAll(executionParameters.getUnionAll());
+                super.setUnionWay(executionParameters.getUnionWay());
                 if (StringUtils.isNotBlank(executionParameters.getCluster()) || StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) || StringUtils.isNotBlank(executionParameters.getAbnormalDatabase())) {
                     this.abnormalDataStorage = true;
                 } else {
                     this.abnormalDataStorage = false;
                 }
             } else {
-                setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
+                setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
             }
         } else {
-            setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
+            setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable);
         }
 
     }
 
-    private void setBaseInfo(Boolean unionAll, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable) {
+    private void setBaseInfo(Integer unionWay, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable) {
         super.setSpecifyStaticStartupParam(specifyStaticStartupParam);
         if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
             super.setStaticStartupParam(staticStartupParam);
@@ -230,7 +223,7 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
         super.setAbnormalProxyUser(abnormalProxyUser);
         super.setDeleteFailCheckResult(deleteFailCheckResult);
         super.setRuleEnable(enable);
-        super.setUnionAll(unionAll);
+        super.setUnionWay(unionWay);
         if (StringUtils.isNotBlank(cluster) || StringUtils.isNotBlank(abnormalProxyUser) || StringUtils.isNotBlank(abnormalDatabase)) {
             this.abnormalDataStorage = true;
         } else {
@@ -375,6 +368,22 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
 
     public void setColNames(List<DataSourceColumnRequest> colNames) {
         this.colNames = colNames;
+    }
+
+    public List<String> getLeftLinkisUdfNames() {
+        return leftLinkisUdfNames;
+    }
+
+    public void setLeftLinkisUdfNames(List<String> leftLinkisUdfNames) {
+        this.leftLinkisUdfNames = leftLinkisUdfNames;
+    }
+
+    public List<String> getRightLinkisUdfNames() {
+        return rightLinkisUdfNames;
+    }
+
+    public void setRightLinkisUdfNames(List<String> rightLinkisUdfNames) {
+        this.rightLinkisUdfNames = rightLinkisUdfNames;
     }
 
     private void addAlarmVariable(Rule rule) {

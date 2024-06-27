@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.RuleMetricTypeConfig;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -52,7 +53,7 @@ public class RuleMetricController {
       throw e;
     }  catch (Exception e) {
       LOGGER.error("Failed to add rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_ADD_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_RULE_METRIC}", null);
     }
   }
 
@@ -72,7 +73,7 @@ public class RuleMetricController {
       throw e;
     } catch (Exception e) {
       LOGGER.error("Failed to modify rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_RULE_METRIC}", null);
     }
   }
 
@@ -95,7 +96,7 @@ public class RuleMetricController {
       throw new UnExpectedRequestException("{&RULE_METRIC_HAS_BEEN_USED_WITH_RULE_OR_TASK}");
     } catch (Exception e) {
       LOGGER.error("Failed to delete rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_METRIC}", null);
     }
   }
 
@@ -110,7 +111,7 @@ public class RuleMetricController {
       for (Long ruleMetricId : deleteBatchRuleMetricRequest.getRuleMetricIds()) {
         ruleMetricService.deleteRuleMetric(ruleMetricId);
       }
-      return new GeneralResponse<>("200", "{&DELETE_RULE_METRIC_SUCCESSFULLY}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_METRIC_SUCCESSFULLY}", null);
     } catch (UnExpectedRequestException e) {
       LOGGER.error(e.getMessage(), e);
       throw e;
@@ -122,7 +123,7 @@ public class RuleMetricController {
       throw new UnExpectedRequestException("{&RULE_METRIC_HAS_BEEN_USED_WITH_RULE_OR_TASK}");
     } catch (Exception e) {
       LOGGER.error("Failed to delete rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_METRIC}", null);
     }
   }
 
@@ -142,7 +143,7 @@ public class RuleMetricController {
       throw e;
     } catch (Exception e) {
       LOGGER.error("Failed to get rule metric detail, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_METRIC}", null);
     }
   }
 
@@ -155,7 +156,7 @@ public class RuleMetricController {
       return ruleMetricService.getAllRuleMetric(request);
     } catch (Exception e) {
       LOGGER.error("Failed to get rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_METRIC}", null);
     }
   }
 
@@ -171,7 +172,7 @@ public class RuleMetricController {
       throw e;
     } catch (Exception e) {
       LOGGER.error("Failed to get rule envs, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&GET_RULE_ENVIRONMENT_FAILED}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&GET_RULE_ENVIRONMENT_FAILED}", null);
     }
   }
 
@@ -181,10 +182,10 @@ public class RuleMetricController {
   @Consumes(MediaType.APPLICATION_JSON)
   public GeneralResponse<RuleMetricConditionResponse> getRuleMetricCondition() {
     try {
-      return new GeneralResponse<>("200", "{&INIT_RULE_METRIC_CONDITION_SUCCESS}", ruleMetricService.conditions());
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&INIT_RULE_METRIC_CONDITION_SUCCESS}", ruleMetricService.conditions());
     } catch (Exception e) {
       LOGGER.error("Failed to get rule metric condition, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_INIT_RULE_METRIC_CONDITION}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_INIT_RULE_METRIC_CONDITION}", null);
     }
   }
 
@@ -200,7 +201,7 @@ public class RuleMetricController {
       throw e;
     }  catch (Exception e) {
       LOGGER.error("Failed to get query rule metric, caused by system error: {}", e.getMessage());
-      return new GeneralResponse<>("500", "{&FAILED_TO_QUERY_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_RULE_METRIC}", null);
     }
   }
 
@@ -214,13 +215,13 @@ public class RuleMetricController {
     try {
       DataInfo<HiveRuleDetail> dataInfo =  ruleMetricService.getRuleByRuleMetric(id, page, size);
       LOGGER.info("Succeed to query rules.");
-      return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", dataInfo);
     } catch (UnExpectedRequestException e) {
       LOGGER.error(e.getMessage(), e);
       throw e;
     } catch (Exception e) {
       LOGGER.error("Failed to query rules, internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
@@ -231,15 +232,16 @@ public class RuleMetricController {
   public GeneralResponse<DataInfo<RuleMetricValueResponse>> ruleMetricValues(RuleMetricValuesRequest ruleMetricValuesRequest) {
     int page = ruleMetricValuesRequest.getPage();
     int size = ruleMetricValuesRequest.getSize();
+    LOGGER.info("get rule metric values request detail: {}", ruleMetricValuesRequest.toString());
     try {
       DataInfo<RuleMetricValueResponse> dataInfo = ruleMetricService.getResultsByRuleMetric(ruleMetricValuesRequest.getRuleMetricId(), ruleMetricValuesRequest.getStartTime()
           , ruleMetricValuesRequest.getEndTime(), ruleMetricValuesRequest.getEnvName(), page, size);
 
       LOGGER.info("Succeed to query rule metric values.");
-      return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", dataInfo);
     } catch (Exception e) {
       LOGGER.error("Failed to query rule metric values, internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
@@ -252,13 +254,13 @@ public class RuleMetricController {
       List<RuleMetricListValueResponse> responses = ruleMetricService.getResultsByRuleMetricList(ruleMetricListValuesRequest);
 
       LOGGER.info("Succeed to query rule metric values.");
-      return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", responses);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", responses);
     } catch (UnExpectedRequestException e) {
       LOGGER.error(e.getMessage(), e);
       throw e;
     } catch (Exception e) {
       LOGGER.error("Failed to query rule metric values, internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
@@ -275,7 +277,7 @@ public class RuleMetricController {
       throw e;
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      return new GeneralResponse<>("500", "{&FAILED_TO_DOWNLOAD_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DOWNLOAD_RULE_METRIC}", null);
     }
   }
 
@@ -292,7 +294,7 @@ public class RuleMetricController {
       throw e;
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      return new GeneralResponse<>("500", "{&FAILED_TO_UPLOAD_RULE_METRIC}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_UPLOAD_RULE_METRIC}", null);
     }
   }
 
@@ -305,7 +307,7 @@ public class RuleMetricController {
       return ruleMetricService.types();
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
-      return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_METRIC_TYPES}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_METRIC_TYPES}", null);
     }
   }
 }

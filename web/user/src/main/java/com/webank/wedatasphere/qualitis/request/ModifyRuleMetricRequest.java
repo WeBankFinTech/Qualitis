@@ -17,7 +17,7 @@ public class ModifyRuleMetricRequest {
   private String desc;
 
   @JsonProperty("sub_system_id")
-  private Integer subSystemId;
+  private String subSystemId;
   @JsonProperty("sub_system_name")
   private String subSystemName;
   @JsonProperty("full_cn_name")
@@ -121,11 +121,11 @@ public class ModifyRuleMetricRequest {
     this.desc = desc;
   }
 
-  public Integer getSubSystemId() {
+  public String getSubSystemId() {
     return subSystemId;
   }
 
-  public void setSubSystemId(Integer subSystemId) {
+  public void setSubSystemId(String subSystemId) {
     this.subSystemId = subSystemId;
   }
 

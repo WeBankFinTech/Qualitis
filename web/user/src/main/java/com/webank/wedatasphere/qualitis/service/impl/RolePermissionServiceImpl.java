@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.PermissionDao;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
@@ -115,7 +116,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         RolePermissionResponse response = new RolePermissionResponse(savedRolePermission);
 
         LOGGER.info("Succeed to add role_permission, response: {}, current_user: {}", response, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&ADD_ROLE_PERMISSION_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_ROLE_PERMISSION_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         rolePermissionDao.deleteRolePermission(rolePermissionInDb);
         LOGGER.info("Succeed to delete role_permission, uuid: {}, role_id: {}, permission_id: {}, current_user: {}", uuid, rolePermissionInDb.getRole().getId(),
                 rolePermissionInDb.getPermission().getId(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&DELETE_ROLE_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_ROLE_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -172,7 +173,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         RolePermission savedRolePermission = rolePermissionDao.saveRolePermission(rolePermissionInDb);
         LOGGER.info("Succeed to modify role_permission, uuid: {}, role_id: {}, permission_id: {}, current_user: {}", uuid, savedRolePermission.getRole().getId(),
                 savedRolePermission.getPermission().getId(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&MODIFY_ROLE_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_ROLE_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -194,7 +195,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
         responses.setTotal(total);
 
         LOGGER.info("Succeed to find all role_permission, response: {}, current_user: {}", responses, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&FIND_ALL_ROLE_PERMISSION_SUCCESSFULLY}", responses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_ALL_ROLE_PERMISSION_SUCCESSFULLY}", responses);
     }
 
     private void checkRequest(AddRolePermissionRequest request) throws UnExpectedRequestException {

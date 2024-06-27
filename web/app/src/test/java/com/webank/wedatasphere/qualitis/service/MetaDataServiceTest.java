@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.BaseTest;
 import com.webank.wedatasphere.qualitis.client.impl.MetaDataClientImpl;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
@@ -54,6 +55,6 @@ public class MetaDataServiceTest extends BaseTest {
         mockGeneralResponse.setCode("200");
         when(metaDataClient.getAllDataSourceTypes(clusterName, super.defaultLoginUserName)).thenReturn(mockGeneralResponse);
         GeneralResponse<Map<String, Object>> generalResponse = metaDataService.getAllDataSourceTypes(clusterName, null);
-        Assert.assertEquals("200", generalResponse.getCode());
+        Assert.assertEquals(ResponseStatusConstants.OK, generalResponse.getCode());
     }
 }

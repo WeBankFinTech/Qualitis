@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -95,14 +96,21 @@ public class RuleResponse {
     @JsonProperty("abnormal_proxy_user")
     private String abnormalProxyUser;
 
+    @JsonProperty("standard_value")
+    private Boolean standardValue;
+
     @JsonProperty("new_value_exists")
     private Integer newValueExists;
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
+    @JsonProperty("standard_value_version_en_name")
+    private String standardValueVersionEnName;
     @JsonProperty("work_flow_name")
     private String workFlowName;
     @JsonProperty("rule_enable")
     private Boolean ruleEnable;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
     @JsonProperty("work_flow_version")
     private String workFlowVersion;
     @JsonIgnore
@@ -115,6 +123,88 @@ public class RuleResponse {
 
     public RuleResponse(Long ruleGroupId) {
         this.ruleGroupId = ruleGroupId;
+    }
+
+    public RuleResponse (Rule rule, Map<String, ExecutionParameters> executionParameterNameMap, Map<Long, Long> taskNewValueMap) {
+        this.rule = rule;
+        this.ruleId = rule.getId();
+        this.ruleName = rule.getName();
+        this.ruleDetail = rule.getDetail();
+        this.ruleCnName = rule.getCnName();
+        this.ruleTemplateName = rule.getTemplate().getName();
+        this.ruleTemplateId = rule.getTemplate().getId();
+        this.ruleGroupId = rule.getRuleGroup().getId();
+        this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
+        this.projectId = rule.getProject().getId();
+        this.projectName = rule.getProject().getName();
+        this.ruleType = rule.getRuleType();
+        this.workFlowName = rule.getWorkFlowName();
+        this.workFlowVersion = rule.getWorkFlowVersion();
+        if (ruleType.equals(RuleTypeEnum.CUSTOM_RULE.getCode()) && StringUtils.isEmpty(rule.getFromContent())) {
+            // Just combine 2-2 code for sql check.
+            this.tableType = RuleTypeEnum.CUSTOM_RULE.getCode().toString();
+        }
+        clusterName = new ArrayList<>();
+        tableName = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(rule.getRuleDataSources())) {
+            for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
+                if (StringUtils.isBlank(ruleDataSource.getTableName())) {
+                    continue;
+                }
+                clusterName.add(ruleDataSource.getClusterName());
+                tableName.add(ruleDataSource.getDbName() + "." + ruleDataSource.getTableName());
+            }
+        }
+
+        this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
+        this.executionParametersName = rule.getExecutionParametersName();
+        this.standardValueVersionId = rule.getStandardValueVersionId();
+        this.standardValueVersionEnName = rule.getStandardValueVersionEnName();
+
+        if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
+            ExecutionParameters executionParameters = executionParameterNameMap.get(rule.getExecutionParametersName());
+            if (executionParameters != null) {
+                this.specifyStaticStartupParam = executionParameters.getSpecifyStaticStartupParam();
+                if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
+                    this.staticStartupParam = executionParameters.getStaticStartupParam();
+                }
+                this.abortOnFailure = executionParameters.getAbortOnFailure();
+                this.alert = executionParameters.getAlert();
+                if (alert) {
+                    this.alertLevel = executionParameters.getAlertLevel();
+                    this.alertReceiver = executionParameters.getAlertReceiver();
+                }
+                this.abnormalDatabase = executionParameters.getAbnormalDatabase();
+                this.cluster = executionParameters.getCluster();
+                this.abnormalProxyUser = executionParameters.getAbnormalProxyUser();
+                this.ruleEnable = rule.getEnable();
+                this.unionWay = executionParameters.getUnionWay();
+            } else {
+                setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
+            }
+        } else {
+            setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
+        }
+
+        //是否为标准值或新值判断
+        if (rule.getStandardValueVersionId() != null && StringUtils.isNotBlank(rule.getStandardValueVersionEnName())) {
+            this.standardValue = true;
+        } else {
+            this.standardValue = false;
+        }
+
+        //是否有新值
+        if (rule.getId() != null) {
+            Long matchTaskNewValue = taskNewValueMap.getOrDefault(rule.getId(), 0L);
+            if (matchTaskNewValue > 0) {
+                this.newValueExists = 1;
+            } else {
+                this.newValueExists = 0;
+            }
+
+        }
+
     }
 
     public RuleResponse(Rule rule) {
@@ -151,6 +241,8 @@ public class RuleResponse {
 
         this.deleteFailCheckResult = rule.getDeleteFailCheckResult();
         this.executionParametersName = rule.getExecutionParametersName();
+        this.standardValueVersionId = rule.getStandardValueVersionId();
+        this.standardValueVersionEnName = rule.getStandardValueVersionEnName();
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             ExecutionParameters executionParameters = SpringContextHolder.getBean(ExecutionParametersDao.class).findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
@@ -169,12 +261,19 @@ public class RuleResponse {
                 this.cluster = executionParameters.getCluster();
                 this.abnormalProxyUser = executionParameters.getAbnormalProxyUser();
                 this.ruleEnable = rule.getEnable();
-                this.unionAll = executionParameters.getUnionAll();
+                this.unionWay = executionParameters.getUnionWay();
             } else {
-                setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
+                setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
             }
         } else {
-            setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
+            setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser());
+        }
+
+        //是否为标准值或新值判断
+        if (rule.getStandardValueVersionId() != null && StringUtils.isNotBlank(rule.getStandardValueVersionEnName())) {
+            this.standardValue = true;
+        } else {
+            this.standardValue = false;
         }
 
         //是否有新值
@@ -190,10 +289,10 @@ public class RuleResponse {
 
     }
 
-    private void setBaseInfo(Boolean unionAll, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser) {
+    private void setBaseInfo(Integer unionWay, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser) {
         this.specifyStaticStartupParam = specifyStaticStartupParam;
         this.ruleEnable = enable;
-        this.unionAll = unionAll;
+        this.unionWay = unionWay;
         if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
             this.staticStartupParam = staticStartupParam;
         }
@@ -220,12 +319,20 @@ public class RuleResponse {
         isModifiedRule = modifiedRule;
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
+    }
+
+    public String getStandardValueVersionEnName() {
+        return standardValueVersionEnName;
+    }
+
+    public void setStandardValueVersionEnName(String standardValueVersionEnName) {
+        this.standardValueVersionEnName = standardValueVersionEnName;
     }
 
     public Boolean getRuleEnable() {
@@ -444,6 +551,14 @@ public class RuleResponse {
         this.staticStartupParam = staticStartupParam;
     }
 
+    public Boolean getStandardValue() {
+        return standardValue;
+    }
+
+    public void setStandardValue(Boolean standardValue) {
+        this.standardValue = standardValue;
+    }
+
     public Integer getNewValueExists() {
         return newValueExists;
     }
@@ -466,6 +581,14 @@ public class RuleResponse {
 
     public void setWorkFlowVersion(String workFlowVersion) {
         this.workFlowVersion = workFlowVersion;
+    }
+
+    public Integer getUnionWay() {
+        return unionWay;
+    }
+
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     @Override

@@ -32,6 +32,9 @@ import java.util.Map;
 public abstract class AbstractTaskDivider {
     /**
      * Divided rules into multi-task.
+     *
+     * @param clusterName
+     * @param datasourceIndex
      * @param rules
      * @param applicationId
      * @param createTime
@@ -48,7 +51,9 @@ public abstract class AbstractTaskDivider {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    public abstract List<DataQualityTask> divide(List<Rule> rules, String applicationId, String createTime, String partition, Date date,
+    public abstract List<DataQualityTask> divide(String clusterName, Integer datasourceIndex, List<Rule> rules, String applicationId,
+        String createTime,
+        String partition, Date date,
         Map<Long, Map<String, Object>> databaseMap,
         Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user,
         Integer threshold, String splitBy, String startupParam) throws ArgumentException, UnExpectedRequestException, MetaDataAcquireFailedException;

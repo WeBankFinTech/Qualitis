@@ -87,4 +87,10 @@ public class ProjectDaoImpl implements ProjectDao {
     public List<Project> findAllById(List<Long> projectIds) {
         return projectRepository.findAllById(projectIds);
     }
+
+    @Override
+    public Project saveAndFlush(Project project) {
+        return projectRepository.saveAndFlush(project);
+    }
+
 }

@@ -16,10 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.LoginFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.UserAndRoleResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.UserService;
@@ -30,18 +32,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 /**
  * @author howeye
  */
-@Path("api/v1")
+@Path("/auth/common")
 public class LoginController {
 
     @Autowired
@@ -59,7 +57,7 @@ public class LoginController {
     @Path("login/local")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> localLogin(LocalLoginRequest request, @Context HttpServletRequest httpServletRequest) throws LoginFailedException, UnExpectedRequestException {
+    public GeneralResponse localLogin(LocalLoginRequest request, @Context HttpServletRequest httpServletRequest) throws LoginFailedException, UnExpectedRequestException {
         try {
             return loginService.localLogin(request);
         } catch (LoginFailedException e) {
@@ -68,35 +66,21 @@ public class LoginController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to login. user: {}, caused by: {}", HttpUtils.getUserName(httpServletRequest), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_LOGIN}.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_LOGIN}.", null);
         }
     }
 
     @GET
     @Path("projector/role")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getRole(@Context HttpServletRequest httpServletRequest) {
+    public GeneralResponse<UserAndRoleResponse> getRole(@Context HttpServletRequest httpServletRequest) {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
             return roleService.getRoleByUser();
         } catch (Exception e) {
             LOGGER.error("Failed to get role of user: {}, caused by: {}, current_user: {}", username, e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ROLE_OF_USER} :" + username + ", caused by :" + e.getMessage(), null);
-        }
-    }
-
-    @GET
-    @Path("projector/proxy_user")
-    @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> getUserProxyUser(@Context HttpServletRequest httpServletRequest) {
-        String username = null;
-        try {
-            username = HttpUtils.getUserName(httpServletRequest);
-            return roleService.getProxyUserByUser();
-        } catch (Exception e) {
-            LOGGER.error("Failed to get proxy user of user: {}, caused by: {}, current_user: {}", username, e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROXY_USER_OF_USER}" + username + ", caused by " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ROLE_OF_USER} :" + username + ", caused by :" + e.getMessage(), null);
         }
     }
 
@@ -104,14 +88,14 @@ public class LoginController {
     @Path("logout")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<?> logout(@Context HttpServletRequest httpServletRequest, @Context HttpServletResponse httpServletResponse) {
+    public GeneralResponse logout(@Context HttpServletRequest httpServletRequest, @Context HttpServletResponse httpServletResponse) {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
             return loginService.logout(httpServletRequest, httpServletResponse);
         } catch (Exception e) {
             LOGGER.error("Failed to logout, user: {}, current_user: {}", username, username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_LOGOUT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_LOGOUT}", null);
         }
     }
 

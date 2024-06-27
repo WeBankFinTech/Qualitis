@@ -62,8 +62,8 @@ public class ExecutionParametersResponse {
     private Boolean uploadRuleMetricValue;
     @JsonProperty("upload_abnormal_value")
     private Boolean uploadAbnormalValue;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
     @JsonProperty("source_table_filter")
     private String sourceTableFilter;
     @JsonProperty("target_table_filter")
@@ -102,7 +102,7 @@ public class ExecutionParametersResponse {
         this.executionParametersId = executionParameters.getId();
         this.name = executionParameters.getName();
         this.abortOnFailure = executionParameters.getAbortOnFailure();
-        this.unionAll = executionParameters.getUnionAll();
+        this.unionWay = executionParameters.getUnionWay();
         this.specifyStaticStartupParam = executionParameters.getSpecifyStaticStartupParam();
         if (specifyStaticStartupParam) {
             this.staticStartupParam = executionParameters.getStaticStartupParam();
@@ -202,12 +202,12 @@ public class ExecutionParametersResponse {
 
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Integer getUnionWay() {
+        return unionWay;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Long getExecutionParametersId() {

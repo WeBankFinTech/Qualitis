@@ -52,7 +52,7 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @param applicationId
      * @return
      */
-    @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
+    @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (?4 IS NULL OR t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
     Double findAvgByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId);
 
 
@@ -65,7 +65,7 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @param applicationId
      * @return
      */
-    @Query("select count(t.id) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
+    @Query("select count(t.id) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (?4 IS NULL OR t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
     long countByCreateTimeBetweenAndRuleAndMetricAndApplication(String begin, String end, Long ruleId, Long ruleMetricId, String applicationId);
 
     /**
@@ -76,7 +76,7 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @param ruleMetricId
      * @return
      */
-    @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (t.ruleMetricId = ?4) and t.saveResult = 1")
+    @Query("select avg(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (?4 IS NULL OR t.ruleMetricId = ?4) and t.saveResult = 1")
     Double findAvgByCreateTimeBetweenAndRuleAndRuleMetric(String begin, String end, Long ruleId, Long ruleMetricId);
 
     /**
@@ -88,7 +88,7 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @param applicationId
      * @return
      */
-    @Query("select count(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
+    @Query("select count(value) from TaskResult t where (t.createTime between ?1 and ?2) and t.ruleId = ?3 and (?4 IS NULL OR t.ruleMetricId = ?4) and t.applicationId != ?5 and t.saveResult = 1")
     long countByCreateTimeBetweenAndRuleAndRuleMetric(String start, String end, Long ruleId, Long ruleMetricId, String applicationId);
 
     /**
@@ -138,7 +138,7 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      * @param ruleMetricId
      * @return
      */
-    @Query(value = "SELECT tr from TaskResult tr where tr.applicationId = ?1 and tr.ruleId = ?2 and tr.ruleMetricId = ?3")
+    @Query(value = "SELECT tr from TaskResult tr where tr.applicationId = ?1 and tr.ruleId = ?2 and (?3 IS NULL OR tr.ruleMetricId = ?3)")
     TaskResult findValue(String applicationId, Long ruleId, Long ruleMetricId);
 
     /**
@@ -158,4 +158,11 @@ public interface TaskResultRepository extends JpaRepository<TaskResult, Long> {
      */
     @Query(value = "SELECT tr from TaskResult tr where tr.applicationId = ?1")
     List<TaskResult> findByApplicationId(String applicationId);
+
+    /**
+     * Find all by application ID list
+     * @param applicationIdList
+     * @return
+     */
+    List<TaskResult> findByApplicationIdIn(List<String> applicationIdList);
 }

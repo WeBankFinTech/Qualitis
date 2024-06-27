@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.rule.adapter;
 
 import com.google.common.collect.ImmutableMap;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.ContrastTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.MappingOperationEnum;
@@ -37,12 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -68,11 +64,12 @@ public class AutoArgumentAdapter {
      * @return
      */
     public Map<String, String> getAdaptValue(TemplateMidTableInputMeta templateMidTableInputMeta, DataSourceRequest dataSourceRequest,
-        List<TemplateArgumentRequest> templateArgumentRequests) throws UnExpectedRequestException {
+                                             List<TemplateArgumentRequest> templateArgumentRequests) throws UnExpectedRequestException {
         Integer inputType = templateMidTableInputMeta.getInputType();
         if (inputType.equals(TemplateInputTypeEnum.LIST.getCode()) || inputType.equals(TemplateInputTypeEnum.FIXED_VALUE.getCode()) || inputType.equals(TemplateInputTypeEnum.INTERMEDIATE_EXPRESSION.getCode())
                 || inputType.equals(TemplateInputTypeEnum.VALUE_RANGE.getCode()) || inputType.equals(TemplateInputTypeEnum.MAXIMUM.getCode()) || inputType.equals(TemplateInputTypeEnum.MINIMUM.getCode())
-                || inputType.equals(TemplateInputTypeEnum.FRONT_CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.BEHIND_CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode())) {
+                || inputType.equals(TemplateInputTypeEnum.FRONT_CONDITION.getCode()) || inputType.equals(TemplateInputTypeEnum.BEHIND_CONDITION.getCode())
+                || inputType.equals(TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode()) || inputType.equals(TemplateInputTypeEnum.EXPRESSION.getCode())) {
             // Get value from request
             return ImmutableMap.of("value", findRequestById(templateMidTableInputMeta.getId(), templateArgumentRequests).getArgumentValue());
         } else if (inputType.equals(TemplateInputTypeEnum.REGEXP.getCode())) {
@@ -91,13 +88,14 @@ public class AutoArgumentAdapter {
     }
 
     public Map<String, String> getMultiSourceAdaptValue(Rule rule, TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName, MultiDataSourceConfigRequest firstDataSource
-        , MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames, String filter, String contrastType, String connFieldOriginValue, String compFieldOriginValue) {
+        , MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames, String filter, String contrastType, String connFieldOriginValue, String compFieldOriginValue
+        , String leftMetricSql, String rightMetricSql) {
 
         Integer inputType = templateMidTableInputMeta.getInputType();
         if (inputType.equals(TemplateInputTypeEnum.CONTRAST_TYPE.getCode())) {
             // Contrast type
-            rule.setContrastType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : "1"));
-            return ImmutableMap.of("value", ContrastTypeEnum.getJoinType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : "1")));
+            rule.setContrastType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : contrastType));
+            return ImmutableMap.of("value", ContrastTypeEnum.getJoinType(Integer.parseInt(StringUtils.isEmpty(contrastType) ? "2" : contrastType)));
         } else if (inputType.equals(TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode())) {
             // Comparison results for filter
             filter = StringUtils.isEmpty(filter) ? "" : filter;
@@ -108,10 +106,21 @@ public class AutoArgumentAdapter {
         } else if (inputType.equals(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode())) {
             // Comparison field settings
             return ImmutableMap.of("value", generateAndConcatStatement(mappings), "originValue", StringUtils.isNotBlank(compFieldOriginValue)?compFieldOriginValue:"");
+        } else if (inputType.equals(TemplateInputTypeEnum.LEFT_COLLECT_SQL.getCode())) {
+            Map<String, String> map = new HashMap<>(4);
+            map.put("value", leftMetricSql);
+            map.put("clusterName", firstDataSource.getClusterName());
+            return map;
+        } else if (inputType.equals(TemplateInputTypeEnum.RIGHT_COLLECT_SQL.getCode())) {
+            Map<String, String> map = new HashMap<>(4);
+            map.put("value", rightMetricSql);
+            map.put("clusterName", secondDataSource.getClusterName());
+            return map;
         } else {
             // Database, tables, fields
             return findValueFromMultiDataSourceConfig(templateMidTableInputMeta, clusterName, firstDataSource, secondDataSource, mappings, colNames);
         }
+
     }
 
     private Map<String, String> findValueFromMultiDataSourceConfig(TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName, MultiDataSourceConfigRequest firstDataSource, MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames) {
@@ -187,11 +196,21 @@ public class AutoArgumentAdapter {
         List<String> originStatement = new ArrayList<>();
         for (MultiDataSourceJoinConfigRequest mapping : mappings) {
             StringBuilder fullStatement = new StringBuilder();
-            fullStatement.append(mapping.getLeftStatement()).append(MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol()).append(mapping.getRightStatement());
+            String leftStatement = StringUtils.isNotBlank(mapping.getLeftStatement())?mapping.getLeftStatement():appendColumn(mapping.getLeft());
+            String rightStatement = StringUtils.isNotBlank(mapping.getRightStatement())?mapping.getRightStatement():appendColumn(mapping.getRight());
+            fullStatement.append(leftStatement).append(MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol()).append(rightStatement);
             originStatement.add(fullStatement.toString());
         }
 
         return generateStatementByConcatStr(originStatement, "AND");
+    }
+
+    private String appendColumn(List<MultiDataSourceJoinColumnRequest> columnList){
+        List<String> columnStrList = new ArrayList<>();
+        for (MultiDataSourceJoinColumnRequest request: columnList) {
+            columnStrList.add(request.getColumnName());
+        }
+        return StringUtils.join(columnStrList, SpecCharEnum.EMPTY.getValue());
     }
 
     private String getPlaceHolder(String str) {

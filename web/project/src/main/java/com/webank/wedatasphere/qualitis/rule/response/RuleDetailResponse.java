@@ -22,13 +22,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.dao.TaskNewVauleDao;
-import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
@@ -74,8 +68,14 @@ public class RuleDetailResponse extends AbstractCommonRequest {
     @JsonProperty("cluster")
     private String cluster;
 
+    @JsonProperty("standard_value")
+    private Boolean standardValue;
     @JsonProperty("new_value_exists")
     private Integer newValueExists;
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
+    @JsonProperty("standard_value_version_en_name")
+    private String standardValueVersionEnName;
     @JsonProperty("filter")
     private String filter;
     @JsonProperty("abnormal_data_storage")
@@ -85,7 +85,7 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         // Default Constructor
     }
 
-    public RuleDetailResponse(Rule rule) {
+    public RuleDetailResponse(Rule rule, List<RuleVariable> ruleVariableList) {
         super.setRuleId(rule.getId());
         super.setRuleName(rule.getName());
         super.setRuleType(rule.getRuleType());
@@ -113,9 +113,10 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         }
 
         this.templateArguments = new ArrayList<>();
-        for (TemplateMidTableInputMeta templateMidTableInputMeta : rule.getTemplate().getTemplateMidTableInputMetas()) {
+        Template template = rule.getTemplate();
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : template.getTemplateMidTableInputMetas()) {
             if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
-                for (RuleVariable ruleVariable : rule.getRuleVariables()) {
+                for (RuleVariable ruleVariable : ruleVariableList) {
                     TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
 
                     if (ruleVariable.getTemplateMidTableInputMeta().equals(templateMidTableInputMeta)) {
@@ -134,8 +135,7 @@ public class RuleDetailResponse extends AbstractCommonRequest {
                 }
             }
         }
-
-        for (TemplateStatisticsInputMeta templateStatisticsInputMeta : rule.getTemplate().getStatisticAction()) {
+        for (TemplateStatisticsInputMeta templateStatisticsInputMeta : template.getStatisticAction()) {
             if (TemplateStatisticsUtil.shouldResponse(templateStatisticsInputMeta)) {
                 TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
                 templateArgumentRequest.setArgumentStep(InputActionStepEnum.STATISTICS_ARG.getCode());
@@ -144,6 +144,9 @@ public class RuleDetailResponse extends AbstractCommonRequest {
             }
         }
 
+        this.standardValueVersionId = rule.getStandardValueVersionId();
+        this.standardValueVersionEnName = rule.getStandardValueVersionEnName();
+
         super.setAlarm(rule.getAlarm());
         // Set alarmVariable
         addAlarmVariable(rule);
@@ -151,8 +154,8 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         addDataSource(rule);
         // Set rule variable
         this.templateVariable = new ArrayList<>();
-        for (RuleVariable ruleVariable : rule.getRuleVariables()) {
-            this.templateVariable.add(new RuleVariableResponse(ruleVariable));
+        for (RuleVariable ruleVariable : ruleVariableList) {
+            this.templateVariable.add(new RuleVariableResponse(ruleVariable, this.standardValueVersionId));
         }
         super.setExecutionParametersName(rule.getExecutionParametersName());
 
@@ -177,7 +180,7 @@ public class RuleDetailResponse extends AbstractCommonRequest {
                 super.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 super.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 super.setRuleEnable(rule.getEnable());
-                super.setUnionAll(executionParameters.getUnionAll());
+                super.setUnionWay(executionParameters.getUnionWay());
                 if (StringUtils.isNotBlank(executionParameters.getCluster()) || StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) || StringUtils.isNotBlank(executionParameters.getAbnormalDatabase())) {
                     this.abnormalDataStorage = true;
                 } else {
@@ -185,10 +188,16 @@ public class RuleDetailResponse extends AbstractCommonRequest {
                 }
                 this.filter = executionParameters.getFilter();
             } else {
-                setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable, this.fileAlarmVariable);
+                setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable, this.fileAlarmVariable);
             }
         } else {
-            setBaseInfo(rule.getUnionAll(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable, this.fileAlarmVariable);
+            setBaseInfo(rule.getUnionWay(), rule.getEnable(), rule.getSpecifyStaticStartupParam(), rule.getStaticStartupParam(), rule.getAbortOnFailure(), rule.getAlert(), rule.getAlertLevel(), rule.getAlertReceiver(), rule.getAbnormalDatabase(), rule.getAbnormalCluster(), rule.getAbnormalProxyUser(), rule.getDeleteFailCheckResult(), this.alarmVariable, this.fileAlarmVariable);
+        }
+
+        if (StringUtils.isNotBlank(rule.getStandardValueVersionEnName())) {
+            this.standardValue = true;
+        } else {
+            this.standardValue = false;
         }
 
         //是否有新值
@@ -211,10 +220,10 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         }
     }
 
-    private void setBaseInfo(Boolean unionAll, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable, List<AlarmConfigResponse> fileAlarmVariable) {
+    private void setBaseInfo(Integer unionWay, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable, List<AlarmConfigResponse> fileAlarmVariable) {
         super.setSpecifyStaticStartupParam(specifyStaticStartupParam);
         super.setRuleEnable(enable);
-        super.setUnionAll(unionAll);
+        super.setUnionWay(unionWay);
         if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
             super.setStaticStartupParam(staticStartupParam);
         }
@@ -322,12 +331,36 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         this.cluster = cluster;
     }
 
+    public Boolean getStandardValue() {
+        return standardValue;
+    }
+
+    public void setStandardValue(Boolean standardValue) {
+        this.standardValue = standardValue;
+    }
+
     public Integer getNewValueExists() {
         return newValueExists;
     }
 
     public void setNewValueExists(Integer newValueExists) {
         this.newValueExists = newValueExists;
+    }
+
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
+    }
+
+    public String getStandardValueVersionEnName() {
+        return standardValueVersionEnName;
+    }
+
+    public void setStandardValueVersionEnName(String standardValueVersionEnName) {
+        this.standardValueVersionEnName = standardValueVersionEnName;
     }
 
     public List<TemplateArgumentRequest> getTemplateArguments() {

@@ -78,26 +78,23 @@ public class TaskDataSourceDaoImpl implements TaskDataSourceDao {
     }
 
     private Specification<TaskDataSource> getUserAndDataSourceSpecification(String username, String clusterName, String databaseName, String tableName) {
-        return new Specification<TaskDataSource>() {
-            @Override
-            public Predicate toPredicate(Root<TaskDataSource> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
-                List<Predicate> predicates = new ArrayList<>();
-                if (clusterName != null) {
-                    predicates.add(criteriaBuilder.equal(root.get("clusterName"), clusterName));
-                }
-                if (databaseName != null) {
-                    predicates.add(criteriaBuilder.equal(root.get("databaseName"), databaseName));
-                }
-                if (tableName != null) {
-                    predicates.add(criteriaBuilder.equal(root.get("tableName"), tableName));
-                }
-                predicates.add(criteriaBuilder.equal(root.get("createUser"), username));
-
-                Predicate[] p = new Predicate[predicates.size()];
-                query.where(criteriaBuilder.and(predicates.toArray(p)));
-
-                return query.getRestriction();
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (clusterName != null) {
+                predicates.add(criteriaBuilder.equal(root.get("clusterName"), clusterName));
             }
+            if (databaseName != null) {
+                predicates.add(criteriaBuilder.equal(root.get("databaseName"), databaseName));
+            }
+            if (tableName != null) {
+                predicates.add(criteriaBuilder.equal(root.get("tableName"), tableName));
+            }
+            predicates.add(criteriaBuilder.equal(root.get("createUser"), username));
+
+            Predicate[] p = new Predicate[predicates.size()];
+            query.where(criteriaBuilder.and(predicates.toArray(p)));
+
+            return query.getRestriction();
         };
     }
 

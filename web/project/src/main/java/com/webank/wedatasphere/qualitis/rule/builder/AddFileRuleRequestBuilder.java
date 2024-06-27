@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.rule.builder;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -185,6 +186,16 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
+    public AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return null;
+    }
+
+    @Override
+    public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return null;
+    }
+
+    @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, String regxOrRangeOrEnum, boolean deleteFailCheckResult,
                                                      boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
@@ -192,7 +203,7 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder basicInfoWithDataSource(String datasource,
+    public AddRequestBuilder basicInfoWithDataSource(String datasource, Long standardValueVersionId,
                                                      List<TemplateArgumentRequest> templateArgumentRequests,
                                                      boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure,
                                                      String execParams) throws Exception {
@@ -207,9 +218,19 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
+    public AddRequestBuilder basicInfoWithDataSourceAndCluster(String cluster, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        return this;
+    }
+
+    @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult,
                                                      boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder basicInfoWithoutDataSource(String cluster, String datasource, String param1, String param2, String param3, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
         return this;
     }
 
@@ -221,6 +242,24 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException {
         addFileRuleRequest.setExecutionParametersName(executionParameterName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCompleteEvent(String alarmEvents){
+        addFileRuleRequest.setExecutionCompleted(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckSuccessEvent(String alarmEvents){
+        addFileRuleRequest.setVerificationSuccessful(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckFailedEvent(String alarmEvents){
+        addFileRuleRequest.setVerificationFailed(alarmEvents);
         return this;
     }
 
@@ -1489,7 +1528,13 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder unionAll() throws UnExpectedRequestException {
-        addFileRuleRequest.setUnionAll(true);
+        addFileRuleRequest.setUnionWay(UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder unionWay(int unionWay) throws UnExpectedRequestException {
+        addFileRuleRequest.setUnionWay(unionWay);
         return this;
     }
 
@@ -1502,6 +1547,20 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
             RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
             addFileRuleRequest.setRuleGroupId(savedRuleGroup.getId());
         }
+        addFileRuleRequest.setRuleGroupName(ruleGroupName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder moveToGroup(String ruleGroupName) throws UnExpectedRequestException {
+        RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, project.getId());
+        if (ruleGroup != null) {
+            addFileRuleRequest.setNewRuleGroupId(ruleGroup.getId());
+        } else {
+            RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
+            addFileRuleRequest.setNewRuleGroupId(savedRuleGroup.getId());
+        }
+        addFileRuleRequest.setRuleGroupName(ruleGroupName);
         return this;
     }
 
@@ -1522,6 +1581,11 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder joinType(String joinType) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder addUdfs(String udfNames) throws UnExpectedRequestException {
         return this;
     }
 

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.util;
 
+import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
@@ -51,6 +52,9 @@ public class PassUtil {
     }
 
     public static Boolean notSafe(String taskId, Long ruleId, TaskRuleAlarmConfig alarmConfig, TaskResult taskResult, TaskResultDao taskResultDao) {
+        if (alarmConfig.getCompareType() == null && alarmConfig.getCheckTemplate() == null && AlarmConfigStatusEnum.PASS.getCode().equals(alarmConfig.getStatus())) {
+            return true;
+        }
         Integer checkTemplate = alarmConfig.getCheckTemplate();
         Double thresholds = alarmConfig.getThreshold();
         if (taskResult == null) {
@@ -63,6 +67,7 @@ public class PassUtil {
                 result = Double.parseDouble(taskResult.getValue());
             }
         } catch (NumberFormatException e) {
+            LOGGER.error("When value is not a number format, not pass it.");
             return false;
         }
         Date nowDate = new Date();
@@ -116,7 +121,7 @@ public class PassUtil {
                 return true;
             }
 
-            if (result != null && result.equals(Double.NaN)) {
+            if (result != null && Double.compare(result, Double.NaN) == 0) {
                 result = 0.0;
             }
             return moreThanThresholds(result, thresholds, compareType);

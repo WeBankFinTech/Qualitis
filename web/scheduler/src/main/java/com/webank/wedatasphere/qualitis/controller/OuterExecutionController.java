@@ -16,19 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
+import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
-import com.webank.wedatasphere.qualitis.request.ApplicationQueryRequest;
-import com.webank.wedatasphere.qualitis.request.BatchDeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.request.GeneralExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.GetRuleQueryRequest;
-import com.webank.wedatasphere.qualitis.request.GetTaskLogRequest;
+import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.timer.RuleLisingCallable;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
@@ -64,6 +63,8 @@ public class OuterExecutionController {
     private ProjectDao projectDao;
     @Autowired
     private ProjectService projectService;
+    @Autowired
+    private ProjectBatchService projectBatchService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OuterExecutionController.class);
 
@@ -80,6 +81,21 @@ public class OuterExecutionController {
             new ArrayBlockingQueue<>(1000),
             Executors.defaultThreadFactory(),
             new ThreadPoolExecutor.DiscardPolicy());
+
+
+    @POST
+    @Path("/rule/add")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<RuleResponse> addRule(GeneralAddRuleRequest request) {
+        try {
+            String loginUser = request.getCreateUser();
+            return outerExecutionService.addRule(request, loginUser);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "failed_add_rule" + e.getMessage(), null);
+        }
+    }
 
     @POST
     @Path("execution")
@@ -103,19 +119,19 @@ public class OuterExecutionController {
                     }
                 });
 
-                return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_SUBMIT_TASK}", null);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_ASYNC_SUBMIT_TASK}", null);
             } else {
                 return outerExecutionService.generalExecution(request,loginUser);
             }
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         }  catch (PermissionDeniedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to dispatch application, caused by: {}. Exception: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DISPATCH_APPLICATION}", e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DISPATCH_APPLICATION}", e);
         }
     }
 
@@ -127,10 +143,10 @@ public class OuterExecutionController {
             return outerExecutionService.killApplication(applicationId, executionUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to kill application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
         }
     }
 
@@ -142,10 +158,10 @@ public class OuterExecutionController {
             return outerExecutionService.getApplicationStatus(applicationId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
         }
     }
 
@@ -157,10 +173,10 @@ public class OuterExecutionController {
             return outerExecutionService.getApplicationDynamicStatus(applicationId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get application status. application_id: {}, caused by: {}", applicationId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_APPLICATION_STATUS}， caused by: " + e.getMessage(), e);
         }
     }
 
@@ -172,10 +188,10 @@ public class OuterExecutionController {
             return outerExecutionService.getApplicationSummary(applicationId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get result of application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
         }
     }
 
@@ -187,10 +203,10 @@ public class OuterExecutionController {
             return outerExecutionService.getApplicationResultValue(applicationId, executionUser);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get result of application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RESULT_OF_APPLICATION}: " + applicationId, e);
         }
     }
 
@@ -203,10 +219,10 @@ public class OuterExecutionController {
             return outerExecutionService.getTaskLog(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get log of the task: {}, cluster_id: {}", request.getTaskId(), request.getClusterId(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
         }
     }
 
@@ -219,10 +235,10 @@ public class OuterExecutionController {
             return outerExecutionService.getApplicationLog(applicationId);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to get log of the application: ID={}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_LOG_OF_THE_TASK}", e);
         }
     }
 
@@ -235,10 +251,10 @@ public class OuterExecutionController {
             return outerExecutionService.queryJobInfo(request.getJobId());
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to query application by job ID: {}", request.getJobId(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_QUERY_TASK}", e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_TASK}", e);
         }
     }
 
@@ -251,10 +267,10 @@ public class OuterExecutionController {
             return outerExecutionService.queryApplications(request.getJobId());
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error("Failed to query application by job ID: {}", request.getJobId(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_QUERY_TASK}: " + request.getJobId(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_TASK}: " + request.getJobId(), null);
         }
     }
 
@@ -266,40 +282,122 @@ public class OuterExecutionController {
         try {
             Future<ProjectDetailResponse> projectDetailResponse = POOL.submit(new RuleLisingCallable(request, ruleDao, projectDao, projectService));
 
-            return new GeneralResponse<>("200", "{&SUCCESS_GET_RULE_QUERY}", projectDetailResponse.get());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_GET_RULE_QUERY}", projectDetailResponse.get());
         } catch (Exception e) {
             LOGGER.error("Failed to get rule query. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_QUERY}", e.getMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_QUERY}", e.getMessage());
         }
     }
 
     @POST
-    @Path("query/delete/rule")
+    @Path("batch/delete/rule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse deleteRule(BatchDeleteRuleRequest request) {
         try {
-            POOL.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        outerExecutionService.deleteRule(request);
-                    } catch (UnExpectedRequestException e) {
-                        LOGGER.error(e.getMessage(), e);
-                    } catch (PermissionDeniedRequestException e) {
-                        LOGGER.error(e.getMessage(), e);
-                    } catch (Exception e) {
-                        LOGGER.error("Async failed exception.", e);
-                    }
-                }
-            });
-
-            return new GeneralResponse<>("200", "{&SUCCESS_DELETE_RULE_LIST}", null);
+            outerExecutionService.deleteRule(request);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_DELETE_RULE_LIST}", null);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
+        }  catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error("Failed to delete rule . caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_LIST}", e.getMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_LIST}", e.getMessage());
+        }
+
+    }
+
+    @POST
+    @Path("execution/script")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse executionScript(OmnisScriptRequest request) {
+        try {
+            return outerExecutionService.executionScript(request);
+        } catch (Exception e) {
+            LOGGER.error("Failed to delete rule . caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
         }
     }
 
+    @POST
+    @Path("query/identify")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse queryIdentifyConfig(OmnisScriptRequest request) {
+        try {
+            return outerExecutionService.queryIdentify(request);
+        } catch (Exception e) {
+            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+        }
+    }
+
+    @POST
+    @Path("query/ImsmetricData")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) {
+        try {
+            return outerExecutionService.queryImsmetricData(request);
+        } catch (Exception e) {
+            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+        }
+    }
+
+    @POST
+    @Path("batch/enable/rule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse batchEnableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        try {
+            return outerExecutionService.batchEnableOrDisableRule(request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (PermissionDeniedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Failed to batch enable or disable rule . caused by system error: {}. Exception: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_BATCH_ENABLE_OR_DISABLE_RULE}", e);
+        }
+    }
+
+    @POST
+    @Path("application/result")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getApplicationResult(ApplicationIdListQueryRequest request) {
+        try {
+            return outerExecutionService.getApplicationResult(request.getApplicationIdList());
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to get result of application: {}", e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
+        }
+    }
+
+    @POST
+    @Path("fieldsAnalyse/result")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+        try {
+            return outerExecutionService.getFieldsAnalyseResult(request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to get result of application: {}", e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
+        }
+    }
 
 }

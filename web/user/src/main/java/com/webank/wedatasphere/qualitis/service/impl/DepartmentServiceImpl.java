@@ -82,7 +82,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         department.setCreateTime(DateUtils.now());
         Department savedDepartment = departmentDao.saveDepartment(department);
         LOGGER.info("Succeed to create department, saved department info is : {}", savedDepartment.toString());
-        return new GeneralResponse<>("200", "{&ADD_DEPARTMENT_SUCCESSFULLY}", new DepartmentResponse(savedDepartment));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_DEPARTMENT_SUCCESSFULLY}", new DepartmentResponse(savedDepartment));
     }
 
     @Override
@@ -110,7 +110,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         departmentInDb.setModifyTime(DateUtils.now());
         Department savedDepartment = departmentDao.saveDepartment(departmentInDb);
         LOGGER.info("Succeed to modify department, saved department info is : {}", savedDepartment.toString());
-        return new GeneralResponse<>("200", "{&MODIFY_DEPARTMENT_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_DEPARTMENT_SUCCESSFULLY}", null);
     }
 
     /**
@@ -202,6 +202,15 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public List<Department> findAllDepartmentCodeAndName() {
         return departmentDao.findAllDepartmentCodeAndName();
+    }
+
+    @Override
+    public GeneralResponse<GetAllResponse<DepartmentResponse>> findFromTenantUser() {
+        List<Department> departmentList = departmentDao.findNullTenantUser();
+        List<DepartmentResponse> departmentResponses = departmentList.stream().map(DepartmentResponse::new).collect(Collectors.toList());
+        GetAllResponse<DepartmentResponse> responses = new GetAllResponse<>();
+        responses.setData(departmentResponses);
+        return new GeneralResponse(ResponseStatusConstants.OK, "{&GET_DEPARTMENT_SUCCESSFULLY}", responses);
     }
 
 }

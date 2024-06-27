@@ -12,56 +12,37 @@ import java.util.List;
  */
 public class BatchDeleteRuleRequest {
 
-    @JsonProperty("app_id")
-    private String appId;
-    private Long timestamp;
-    @JsonProperty("nonce")
-    private Long nonce;
-    @JsonProperty("signature")
-    private String signature;
-    @JsonProperty("rule_id_list")
-    private List<Long> ruleIdList;
+    @JsonProperty("rule_name")
+    private String ruleName;
+    @JsonProperty("project_name")
+    private String projectName;
+    @JsonProperty("create_user")
+    private String createUser;
     @JsonProperty("login_user")
     private String loginUser;
 
-    public String getAppId() {
-        return appId;
+    public String getRuleName() {
+        return ruleName;
     }
 
-    public void setAppId(String appId) {
-        this.appId = appId;
+    public void setRuleName(String ruleName) {
+        this.ruleName = ruleName;
     }
 
-    public Long getTimestamp() {
-        return timestamp;
+    public String getProjectName() {
+        return projectName;
     }
 
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
-    public Long getNonce() {
-        return nonce;
+    public String getCreateUser() {
+        return createUser;
     }
 
-    public void setNonce(Long nonce) {
-        this.nonce = nonce;
-    }
-
-    public String getSignature() {
-        return signature;
-    }
-
-    public void setSignature(String signature) {
-        this.signature = signature;
-    }
-
-    public List<Long> getRuleIdList() {
-        return ruleIdList;
-    }
-
-    public void setRuleIdList(List<Long> ruleIdList) {
-        this.ruleIdList = ruleIdList;
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
     }
 
     public String getLoginUser() {
@@ -74,16 +55,10 @@ public class BatchDeleteRuleRequest {
 
     public static void checkRequest(BatchDeleteRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
-        CommonChecker.checkString(request.getAppId(), "appId");
-        CommonChecker.checkObject(request.getTimestamp(),"timestamp");
-        CommonChecker.checkObject(request.getNonce(),"nonce");
-        CommonChecker.checkString(request.getSignature(), "signature");
+        CommonChecker.checkString(request.getRuleName(), "rule_name");
+        CommonChecker.checkString(request.getProjectName(), "project_name");
+        CommonChecker.checkString(request.getCreateUser(), "create_user");
         CommonChecker.checkString(request.getLoginUser(), "login_user");
-
-        if (request.getRuleIdList()== null && CollectionUtils.isEmpty(request.getRuleIdList())) {
-            throw new UnExpectedRequestException("rule id list" + " {&CAN_NOT_BE_NULL_OR_EMPTY}");
-        }
-
     }
 
 }

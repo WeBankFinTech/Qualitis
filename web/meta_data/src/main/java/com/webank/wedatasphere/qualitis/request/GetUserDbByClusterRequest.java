@@ -71,4 +71,14 @@ public class GetUserDbByClusterRequest {
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserDbByClusterRequest{" +
+                "startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                ", clusterName='" + clusterName + '\'' +
+                ", proxyUser='" + proxyUser + '\'' +
+                '}';
+    }
 }

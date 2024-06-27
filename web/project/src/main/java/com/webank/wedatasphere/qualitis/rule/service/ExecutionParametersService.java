@@ -9,6 +9,7 @@ import com.webank.wedatasphere.qualitis.rule.request.AddExecutionParametersReque
 import com.webank.wedatasphere.qualitis.rule.request.DeleteExecutionParametersRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyExecutionParametersRequest;
 import com.webank.wedatasphere.qualitis.rule.response.ExecutionParametersResponse;
+import java.text.ParseException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,5 +141,41 @@ public interface ExecutionParametersService {
      * handle ExecutionParameters Data Migration
      * @return
      */
-    GeneralResponse handleExecutionParametersDataMigration();
+    GeneralResponse<Object> handleExecutionParametersDataMigration();
+
+    /**
+     * get securities work days
+     * @param startTime
+     * @param endTime
+     * @return
+     * @throws ParseException
+     */
+    GeneralResponse<List<String>> getSecuritiesWorkDays(String startTime, String endTime) throws ParseException;
+
+    /**
+     * get bank work days
+     * @param startTime
+     * @param endTime
+     * @return
+     * @throws ParseException
+     */
+    GeneralResponse<List<String>> getBankWorkDays(String startTime, String endTime) throws ParseException;
+
+    /**
+     * Get current holidays
+     * @param startTime
+     * @param endTime
+     * @return
+     * @throws ParseException
+     */
+    GeneralResponse<List<String>> getCurrentHolidays(String startTime, String endTime) throws ParseException;
+
+    /**
+     * Get current weeks
+     * @param startTime
+     * @param endTime
+     * @return
+     * @throws ParseException
+     */
+    GeneralResponse<List<String>> getCurrentWeeks(String startTime, String endTime) throws ParseException;
 }

@@ -17,6 +17,8 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 
 /**
@@ -27,6 +29,10 @@ public class DataSourceEnvRequest {
     private Long envId;
     @JsonProperty("env_name")
     private String envName;
+    @JsonProperty("dcn_num")
+    private String dcnNum;
+    @JsonProperty("logic_area")
+    private String logicArea;
     
     public DataSourceEnvRequest() {
         // Default Constructor
@@ -35,6 +41,32 @@ public class DataSourceEnvRequest {
     public DataSourceEnvRequest(RuleDataSourceEnv env) {
         this.envId = env.getEnvId();
         this.envName = env.getEnvName();
+    }
+
+    public DataSourceEnvRequest(LinkisDataSourceEnv linkisDataSourceEnv) {
+        this.envId = linkisDataSourceEnv.getEnvId();
+        this.envName = linkisDataSourceEnv.getEnvName();
+        this.dcnNum = linkisDataSourceEnv.getDcnNum();
+        this.logicArea = linkisDataSourceEnv.getLogicArea();
+        if (this.envName != null) {
+            this.envName = this.envName.replace(linkisDataSourceEnv.getLinkisDataSourceId() + SpecCharEnum.BOTTOM_BAR.getValue(), "");
+        }
+    }
+
+    public String getDcnNum() {
+        return dcnNum;
+    }
+
+    public void setDcnNum(String dcnNum) {
+        this.dcnNum = dcnNum;
+    }
+
+    public String getLogicArea() {
+        return logicArea;
+    }
+
+    public void setLogicArea(String logicArea) {
+        this.logicArea = logicArea;
     }
 
     public Long getEnvId() {

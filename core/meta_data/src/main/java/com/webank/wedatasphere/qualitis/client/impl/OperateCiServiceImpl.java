@@ -2,14 +2,17 @@ package com.webank.wedatasphere.qualitis.client.impl;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.client.config.MetricPropertiesConfig;
-import com.webank.wedatasphere.qualitis.client.config.OperateCiConfig;
 import com.webank.wedatasphere.qualitis.client.constant.OperateEnum;
 import com.webank.wedatasphere.qualitis.client.request.OperateRequest;
+import com.webank.wedatasphere.qualitis.config.OperateCiConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.metadata.response.*;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +20,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,6 +31,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author allenzhou@webank.com
@@ -45,21 +48,10 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${department.data_source_from: custom}")
-    private String departmentSourceType;
-
-    @Value("${deploy.environment: open_source}")
-    private String deployEnvType;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(OperateCiServiceImpl.class);
 
     @Override
     public List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException {
-//       仅限开源环境
-        if ("open_source".equals(deployEnvType)) {
-            return Collections.emptyList();
-        }
-
         Map<String, Object> response = requestCmdb(OperateEnum.SUB_SYSTEM, "A problem occurred when converting the request body to json.", "{&FAILED_TO_GET_SUB_SYSTEM_INFO}", "Start to get sub_system info from cmdb. url: {}, method: {}, body: {}", "Succeed to get sub_system info from cmdb. response.");
 
         List<Object> content = checkResponse(response);
@@ -69,65 +61,108 @@ public class OperateCiServiceImpl implements OperateCiService {
         for (int i = 0; i < content.size(); i++) {
             SubSystemResponse tempResponse = new SubSystemResponse();
             Object current = content.get(i);
+            if (!(current instanceof Map)) {
+                LOGGER.warn("Error data format. original content: {}", CustomObjectMapper.transObjectToJson(current));
+                break;
+            }
+            Map<String, Object> currentMap = (Map<String, Object>) current;
 
-            Integer currentSubsystemId = ((Map<String, Integer>) current).get("subsystem_id");
+            String currentSubsystemId = null;
+            try {
+                currentSubsystemId = currentMap.get("subsystem_id").toString();
+            } catch (Exception e) {
+                LOGGER.warn("Current subsystem ID cannot be number. error: {}", e.getMessage());
+            }
             tempResponse.setSubSystemId(currentSubsystemId);
 
-            String currentSubSystemName = ((Map<String, String>) current).get("subsystem_name");
+            String currentSubSystemName = MapUtils.getString(currentMap, "subsystem_name");
             tempResponse.setSubSystemName(currentSubSystemName);
 
-            String currentFullCnmName = ((Map<String, String>) current).get("full_cn_name");
+            String currentFullCnmName = MapUtils.getString(currentMap, "full_cn_name");
             tempResponse.setSubSystemFullCnName(currentFullCnmName);
 
-            List<Map<String, Object>> opsList = (List) ((Map<String, Object>) current).get("pro_oper_group");
-            List<Map<String, Object>> deptList = (List) ((Map<String, Object>) current).get("busiResDept");
-            List<Map<String, Object>> devList = (List) ((Map<String, Object>) current).get("devdept");
+            List<Map<String, Object>> opsList = (List) currentMap.get("pro_oper_group");
+            List<Map<String, Object>> deptList = (List) currentMap.get("busiResDept");
+            List<Map<String, Object>> devList = (List) currentMap.get("devdept");
 
             String dept = "";
             String opsDept = "";
             String devDept = "";
 
-            if (CollectionUtils.isNotEmpty(deptList)) {
-                dept = (String) (deptList.iterator().next()).get("v");
-                tempResponse.setDepartmentName(dept);
-            }
-
-            if (CollectionUtils.isNotEmpty(opsList)) {
-                opsDept = (String) (opsList.iterator().next()).get("v");
-                if (StringUtils.isEmpty(dept)) {
-                    String[] infos = opsDept.split(SpecCharEnum.MINUS.getValue());
-                    if (infos.length == 2) {
-                        dept = infos[0];
-                        tempResponse.setDepartmentName(dept);
-                        tempResponse.setOpsDepartmentName(infos[1]);
-                    } else {
-                        tempResponse.setOpsDepartmentName(infos[0]);
-                    }
-                } else {
-                    tempResponse.setOpsDepartmentName(opsDept.replace(dept + "-", ""));
+            try {
+                if (CollectionUtils.isNotEmpty(deptList)) {
+                    dept = (String) (deptList.iterator().next()).getOrDefault("v", "");
+                    tempResponse.setDepartmentName(dept);
                 }
-            }
 
-            if (CollectionUtils.isNotEmpty(devList)) {
-                devDept = (String) (devList.iterator().next()).get("v");
-                if (StringUtils.isEmpty(dept)) {
-                    String[] infos = devDept.split(SpecCharEnum.MINUS.getValue());
-                    if (infos.length == 2) {
-                        dept = infos[0];
-                        tempResponse.setDepartmentName(dept);
-                        tempResponse.setDevDepartmentName(infos[1]);
+                if (CollectionUtils.isNotEmpty(opsList)) {
+                    opsDept = (String) (opsList.iterator().next()).getOrDefault("v", "");
+                    if (StringUtils.isEmpty(dept)) {
+                        String[] infos = opsDept.split(SpecCharEnum.MINUS.getValue());
+                        if (infos.length == 2) {
+                            dept = infos[0];
+                            tempResponse.setDepartmentName(dept);
+                            tempResponse.setOpsDepartmentName(infos[1]);
+                        } else {
+                            tempResponse.setOpsDepartmentName(infos[0]);
+                        }
                     } else {
-                        tempResponse.setDevDepartmentName(infos[0]);
+                        tempResponse.setOpsDepartmentName(opsDept.replace(StringUtils.trimToEmpty(dept) + "-", ""));
                     }
-                } else {
-                    tempResponse.setDevDepartmentName(devDept.replace(dept + "-", ""));
                 }
-            }
 
+                if (CollectionUtils.isNotEmpty(devList)) {
+                    devDept = (String) (devList.iterator().next()).getOrDefault("v", "");
+                    if (StringUtils.isEmpty(dept)) {
+                        String[] infos = devDept.split(SpecCharEnum.MINUS.getValue());
+                        if (infos.length == 2) {
+                            dept = infos[0];
+                            tempResponse.setDepartmentName(dept);
+                            tempResponse.setDevDepartmentName(infos[1]);
+                        } else {
+                            tempResponse.setDevDepartmentName(infos[0]);
+                        }
+                    } else {
+                        tempResponse.setDevDepartmentName(devDept.replace(StringUtils.trimToEmpty(dept) + "-", ""));
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to format data: {}", CustomObjectMapper.transObjectToJson(current), e );
+            }
             responses.add(tempResponse);
         }
 
         return responses;
+    }
+
+    @Override
+    public String getSubSystemIdByName(String subSystemName) throws UnExpectedRequestException {
+        Map<String, Object> response = requestCmdb(OperateEnum.SUB_SYSTEM, "A problem occurred when converting the request body to json.", "{&FAILED_TO_GET_SUB_SYSTEM_INFO}", "Start to get sub_system info from cmdb. url: {}, method: {}, body: {}", "Succeed to get sub_system info from cmdb. response.");
+
+        List<Object> content = checkResponse(response);
+        for (int i = 0; i < content.size(); i++) {
+            Object current = content.get(i);
+            String currentSubSystemName = ((Map<String, String>) current).get("subsystem_name");
+            if (!subSystemName.equals(currentSubSystemName)) {
+                continue;
+            }
+
+            String currentSubsystemId;
+            try {
+                currentSubsystemId = ((Map<String, Integer>) current).get("subsystem_id").toString();
+            } catch (Exception e1) {
+                try {
+                    currentSubsystemId = ((Map<String, String>) current).get("subsystem_id");
+                } catch (Exception e2) {
+                    LOGGER.warn("Current subsystem ID cannot be number.");
+                    continue;
+                }
+            }
+            if (null != currentSubsystemId) {
+                return currentSubsystemId;
+            }
+        }
+        return null;
     }
 
     private Map<String, Object> requestCmdb(OperateEnum subSystem, String problemDescribe, String international, String requestInfo, String successInfo) throws UnExpectedRequestException {
@@ -150,7 +185,6 @@ public class OperateCiServiceImpl implements OperateCiService {
         }
         LOGGER.info(requestInfo, url, javax.ws.rs.HttpMethod.POST, entity);
         Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
-        LOGGER.info(successInfo);
         return response;
     }
 
@@ -172,10 +206,6 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<ProductResponse> getAllProductInfo()
             throws UnExpectedRequestException {
-        if ("open_source".equals(deployEnvType)) {
-            return Collections.emptyList();
-        }
-
         String url = UriBuilder.fromUri(operateCiConfig.getHost()).path(operateCiConfig.getUrl()).toString();
 
         HttpHeaders headers = new HttpHeaders();
@@ -293,7 +323,8 @@ public class OperateCiServiceImpl implements OperateCiService {
     }
 
     @Override
-    public GeneralResponse<DcnResponse> getDcn(Long subSystemId) throws UnExpectedRequestException {
+    public GeneralResponse getDcn(String subSystemId, String dcnRangeType, List<String> dcnRangeValues) throws UnExpectedRequestException {
+
         String url = UriBuilder.fromUri(operateCiConfig.getHost()).path(operateCiConfig.getIntegrateUrl()).toString();
 
         HttpHeaders headers = new HttpHeaders();
@@ -302,7 +333,7 @@ public class OperateCiServiceImpl implements OperateCiService {
         // Construct request body.
         OperateRequest request = new OperateRequest(OperateEnum.SUB_SYSTEM_FIND_DCN.getCode());
         request.setUserAuthKey(operateCiConfig.getNewUserAuthKey());
-        request.getFilter().put("subsystem_id", subSystemId.toString());
+        request.getFilter().put("subsystem_id", subSystemId);
         HttpEntity<Object> entity;
         try {
             String jsonRequest = objectMapper.writeValueAsString(request);
@@ -315,40 +346,34 @@ public class OperateCiServiceImpl implements OperateCiService {
         LOGGER.info("Start to get dcn by subsystem.", url, javax.ws.rs.HttpMethod.POST, entity);
         Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
         LOGGER.info("Finished to get dcn by subsystem.");
+        List<Map<String, Object>> maps = (List<Map<String, Object>>) ((Map<String, Object>) response.get("data")).get("content");
 
-        DcnResponse dcnResponse = new DcnResponse((List<Map<String, Object>>) ((Map<String, Object>) response.get("data")).get("content"));
+        filterDcn(maps, dcnRangeType, dcnRangeValues);
 
-        // Filter MASTER
-        if (Boolean.TRUE.equals(operateCiConfig.getOnlySlave())) {
-            filterDcn(dcnResponse);
-        }
-
-        return new GeneralResponse<>("200", "Success to get dcn by subsystem", dcnResponse);
-    }
-
-    private void filterDcn(DcnResponse dcnResponse) {
-        Map<Object, Map<Object, List<Map<String, Object>>>> resMap = dcnResponse.getRes();
-        Iterator<Map.Entry<Object, Map<Object, List<Map<String, Object>>>>> resIterator = resMap.entrySet().iterator();
-        while (resIterator.hasNext()) {
-            Map.Entry<Object, Map<Object, List<Map<String, Object>>>> res = resIterator.next();
-            Map<Object, List<Map<String, Object>>> dcnMap = res.getValue();
-            Iterator<Map.Entry<Object, List<Map<String, Object>>>> dcnIterator = dcnMap.entrySet().iterator();
-            while (dcnIterator.hasNext()) {
-                List<Map<String, Object>> logicDcns = dcnIterator.next().getValue();
-                ListIterator<Map<String, Object>> logicDcnIterator = logicDcns.listIterator();
-                while (logicDcnIterator.hasNext()) {
-                    Map<String, Object> dcn = logicDcnIterator.next();
-                    if ("MASTER".equals(dcn.get("set_type"))) {
-                        logicDcnIterator.remove();
-                    }
-                }
-                if (CollectionUtils.isEmpty(logicDcns)) {
-                    dcnIterator.remove();
-                }
-            }
-            if (MapUtils.isEmpty(dcnMap)) {
-                resIterator.remove();
-            }
+        if(Arrays.asList(QualitisConstants.CMDB_KEY_DCN_NUM, QualitisConstants.CMDB_KEY_LOGIC_AREA)
+                .contains(dcnRangeType)) {
+            Map<Object, List<Map<String, Object>>> res = maps.stream()
+                    .collect(Collectors.groupingBy(
+                            map -> map.get(dcnRangeType)
+                    ));
+            return new GeneralResponse(ResponseStatusConstants.OK, "Success to get dcn by subsystem", res);
+        } else {
+            return new GeneralResponse(ResponseStatusConstants.OK, "Success to get dcn by subsystem", maps);
         }
     }
+
+    private void filterDcn(List<Map<String, Object>> maps, String dcnRangeType, List<String> dcnRangeValues) {
+        ListIterator<Map<String, Object>> dcnIterator = maps.listIterator();
+        while (dcnIterator.hasNext()) {
+            Map<String, Object> dcn = dcnIterator.next();
+            if (Boolean.TRUE.equals(operateCiConfig.getOnlySlave()) && "MASTER".equals(dcn.get("set_type"))) {
+                dcnIterator.remove();
+            }
+            if (CollectionUtils.isNotEmpty(dcnRangeValues) && !dcnRangeValues.contains(dcn.get(dcnRangeType))) {
+                dcnIterator.remove();
+            }
+        }
+
+    }
+
 }

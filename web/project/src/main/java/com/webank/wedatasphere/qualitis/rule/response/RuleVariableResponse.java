@@ -48,7 +48,7 @@ public class RuleVariableResponse {
     public RuleVariableResponse() {
     }
 
-    public RuleVariableResponse(RuleVariable ruleVariable) {
+    public RuleVariableResponse(RuleVariable ruleVariable, Long standardValueVersionId) {
         if (ruleVariable != null) {
             this.actionStep = ruleVariable.getInputActionStep();
             if (this.actionStep.equals(InputActionStepEnum.TEMPLATE_INPUT_META.getCode())) {
@@ -58,10 +58,14 @@ public class RuleVariableResponse {
             } else {
                 this.statisticArgId = ruleVariable.getTemplateStatisticsInputMeta().getId();
             }
-            if (TemplateInputTypeEnum.CONNECT_FIELDS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) || TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
-                this.value = ruleVariable.getOriginValue();
+            if (null != standardValueVersionId && TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
+                this.value = standardValueVersionId.toString();
             } else {
-                this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+                if (TemplateInputTypeEnum.CONNECT_FIELDS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) || TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
+                    this.value = ruleVariable.getOriginValue();
+                } else {
+                    this.value = StringEscapeUtils.unescapeJava(ruleVariable.getValue());
+                }
             }
         }
 

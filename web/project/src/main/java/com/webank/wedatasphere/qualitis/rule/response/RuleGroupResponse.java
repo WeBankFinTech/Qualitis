@@ -17,13 +17,10 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,12 +57,10 @@ public class RuleGroupResponse {
 
     }
 
-    public RuleGroupResponse(RuleGroup ruleGroup, List<RuleResponse> ruleList) {
+    public RuleGroupResponse(RuleGroup ruleGroup, List<RuleResponse> ruleList, List<Rule> rules) {
         this.ruleGroupId = ruleGroup.getId();
         this.ruleGroupName = ruleGroup.getRuleGroupName();
 
-        List<Rule> rules = SpringContextHolder.getBean(RuleDao.class).findByRuleGroup(ruleGroup)
-                .stream().filter(item -> StringUtils.isNotBlank(item.getCsId())).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(rules)) {
             contextService = true;
             csId = rules.stream().map(Rule::getCsId).collect(Collectors.toSet()).iterator().next();

@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import javax.persistence.*;
@@ -45,6 +46,8 @@ public class LinkisDataSource {
     private String dcnSequence;
     @Column(name = "sub_system")
     private String subSystem;
+    @Column(name = "dcn_range_type")
+    private String dcnRangeType;
     @Column
     private String labels;
     @Column(name = "datasource_desc")
@@ -61,6 +64,14 @@ public class LinkisDataSource {
     private Integer verifyType;
     @Column
     private Long versionId;
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
+    }
 
     public Long getVersionId() {
         return versionId;
@@ -118,10 +129,12 @@ public class LinkisDataSource {
         this.verifyType = verifyType;
     }
 
+    @Deprecated
     public String getEnvs() {
         return envs;
     }
 
+    @Deprecated
     public void setEnvs(String envs) {
         this.envs = envs;
     }

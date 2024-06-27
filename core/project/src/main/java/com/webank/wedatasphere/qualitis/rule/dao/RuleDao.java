@@ -60,9 +60,10 @@ public interface RuleDao {
      * Find all rule id, name by project
      *
      * @param project
+     * @param ruleName
      * @return
      */
-    List<Map<String, Object>> findSpecialInfoByProject(Project project);
+    List<Map<String, Object>> findSpecialInfoByProject(Project project, String ruleName);
 
     /**
      * find rules <id, name> by project and some conditions
@@ -189,20 +190,7 @@ public interface RuleDao {
      * @param ruleType
      * @return
      */
-    List<Rule> findByRuleGroupWithPage(int page, int size, RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType);
-
-    /**
-     * count by rule group with page
-     *
-     * @param ruleGroup
-     * @param templateId
-     * @param name
-     * @param cnName
-     * @param cols
-     * @param ruleType
-     * @return
-     */
-    Long countByRuleGroupWithPage(RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType);
+    Page<Rule> findByRuleGroupWithPage(int page, int size, RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType);
 
     /**
      * find By Rule Group And File Out Name With Page
@@ -241,13 +229,29 @@ public interface RuleDao {
     List<Rule> findByTemplate(Template templateInDb);
 
     /**
+     * Find rule by idList
+     *
+     * @param idList
+     * @return
+     */
+    List<Rule> getDeployStandardVersionIdList(List<Long> idList);
+
+    /**
+     * Find rule by StandardVersionId
+     *
+     * @param standardVersionId
+     * @return
+     */
+    List<Rule> getDeployStandardVersionId(long standardVersionId);
+
+    /**
      * Find rule by projectId，name
      *
      * @param projectId
      * @param name
      * @return
      */
-    List<Rule> getDeployExecutionParameters(Long projectId, String name);
+    Long countDeployExecutionParameters(Long projectId, String name);
 
     /**
      * Paging Rule by datasource
@@ -313,11 +317,10 @@ public interface RuleDao {
     /**
      * find Exist Standard Vaule
      *
-     * @param templateId
      * @param projectId
      * @return
      */
-    List<Rule> findExistStandardVaule(Long templateId, Long projectId);
+    List<Rule> findExistStandardVaule(Long projectId);
 
     /**
      * find Custom Rule Type By Project
@@ -336,4 +339,12 @@ public interface RuleDao {
      */
     List<Map<String,Object>> findWorkFlowFiled(Long projectId);
 
+    /**
+     * find ByIds And Project
+     *
+     * @param ruleIds
+     * @param projectId
+     * @return
+     */
+    List<Rule> findByIdsAndProject(List<Long> ruleIds, Long projectId);
 }

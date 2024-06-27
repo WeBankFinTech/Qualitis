@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.converter;
 
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +30,13 @@ public abstract class AbstractTemplateConverter {
 
     /**
      * Convert Task into code that can be executed.
+     *
      * @param dataQualityTask
      * @param date
      * @param setFlag
      * @param execParams
      * @param runDate
+     * @param runToday
      * @param clusterType
      * @param dataSourceMysqlConnect
      * @param user
@@ -41,10 +44,11 @@ public abstract class AbstractTemplateConverter {
      * @param rightCols
      * @param comelexCols
      * @param createUser
+     * @param projectId
      * @return
      * @throws Exception
      */
     public abstract DataQualityJob convert(DataQualityTask dataQualityTask, Date date, String setFlag, Map<String, String> execParams, String runDate,
-        String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols,
-        List<String> comelexCols,String createUser) throws Exception;
+                                           String runToday, String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols,
+                                           List<String> comelexCols, String createUser, Long projectId) throws Exception;
 }

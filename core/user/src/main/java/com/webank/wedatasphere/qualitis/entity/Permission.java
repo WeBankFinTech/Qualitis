@@ -16,9 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.entity;
 
-import java.util.List;
-import java.util.Objects;
-
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -27,6 +24,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author howeye
@@ -61,6 +60,12 @@ public class Permission {
 
     @Column(name = "modify_time")
     private String modifyTime;
+
+    @Column(name = "cn_name")
+    private String cnName;
+
+    @Column(name = "en_name")
+    private String enName;
 
     public String getCreateUser() {
         return createUser;
@@ -135,6 +140,22 @@ public class Permission {
 
     public void setUserSpecPermissions(List<UserSpecPermission> userSpecPermissions) {
         this.userSpecPermissions = userSpecPermissions;
+    }
+
+    public String getCnName() {
+        return cnName;
+    }
+
+    public void setCnName(String cnName) {
+        this.cnName = cnName;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
     }
 
     @Override

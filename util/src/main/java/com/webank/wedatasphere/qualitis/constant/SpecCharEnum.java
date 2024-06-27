@@ -12,6 +12,8 @@ public enum SpecCharEnum {
     PERIOD_NO_ESCAPE("."),
     LEFT_BIG_BRACKET("{"),
     LEFT_BRACKET("["),
+    LEFT_SMALL_BRACKET("("),
+    RIGHT_SMALL_BRACKET(")"),
     RIGHT_BRACKET("]"),
     VERTICAL_BAR("\\|"),
     BOTTOM_BAR("_"),

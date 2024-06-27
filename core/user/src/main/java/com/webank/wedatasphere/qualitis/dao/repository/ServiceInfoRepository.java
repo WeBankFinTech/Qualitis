@@ -18,12 +18,12 @@ package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.ServiceInfo;
 import com.webank.wedatasphere.qualitis.entity.TenantUser;
-import java.util.List;
-import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -60,4 +60,11 @@ public interface ServiceInfoRepository extends JpaRepository<ServiceInfo, Long> 
      * @return
      */
     List<ServiceInfo> findByTenantUser(TenantUser tenantUser);
+
+    /**
+     * find Null Tenant User
+     * @return
+     */
+    @Query(value = "SELECT si FROM ServiceInfo si WHERE si.tenantUser is null")
+    List<ServiceInfo> findNullTenantUser();
 }

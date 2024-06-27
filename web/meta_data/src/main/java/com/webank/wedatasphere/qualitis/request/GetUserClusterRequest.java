@@ -51,4 +51,12 @@ public class GetUserClusterRequest {
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserClusterRequest{" +
+                "startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                '}';
+    }
 }

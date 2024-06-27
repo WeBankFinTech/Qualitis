@@ -53,7 +53,7 @@ public enum TemplateDataSourceTypeEnum {
                 return templateDataSourceTypeEnum.getMessage();
             }
         }
-        return null;
+        return "";
     }
 
     public static Integer getCode(String message) {

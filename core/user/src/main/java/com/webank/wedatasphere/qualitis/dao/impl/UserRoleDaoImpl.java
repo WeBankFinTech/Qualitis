@@ -59,6 +59,11 @@ public class UserRoleDaoImpl implements UserRoleDao {
     }
 
     @Override
+    public void deleteByUser(User user) {
+        userRoleRepository.deleteByUser(user.getId());
+    }
+
+    @Override
     public List<UserRole> findAllUserRole(String userName, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "user_id");
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -88,6 +93,11 @@ public class UserRoleDaoImpl implements UserRoleDao {
     @Override
     public long countPositionRole(Long id,Integer roleType) {
         return userRoleRepository.countPositionRole(id,roleType);
+    }
+
+    @Override
+    public List<UserRole> findByUserId(User user) {
+        return userRoleRepository.findByUserId(user.getId());
     }
 
 }

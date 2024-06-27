@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.bean.LogResult;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.service.JobService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -53,7 +54,7 @@ public class JobController {
             throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to find task log. task_id: {}, cluster_name: {}, caused by: {}", taskId, clusterName, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_TASK_LOG}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_TASK_LOG}", null);
         }
     }
 

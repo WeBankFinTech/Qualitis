@@ -29,7 +29,8 @@ public enum RuleTemplateTypeEnum {
     SINGLE_SOURCE_TEMPLATE(1, "单表模版"),
     CUSTOM(2, "自定义模版"),
     MULTI_SOURCE_TEMPLATE(3, "跨表模版"),
-    FILE_COUSTOM(4, "文件自定义模版");
+    FILE_COUSTOM(4, "文件自定义模版"),
+    METRIC_COLLECT(5, "指标采集模版");
 
     private Integer code;
     private String message;

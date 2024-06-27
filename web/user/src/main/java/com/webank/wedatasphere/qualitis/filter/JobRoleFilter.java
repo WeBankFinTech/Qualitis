@@ -1,9 +1,9 @@
 package com.webank.wedatasphere.qualitis.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
 import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
 import com.webank.wedatasphere.qualitis.entity.Role;
@@ -27,7 +27,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,9 +39,6 @@ public class JobRoleFilter implements Filter {
 
     @Autowired
     private UserRoleDao userRoleDao;
-    @Autowired
-    private AuthFilterUrlConfig authFilterUrlConfig;
-
 
     @Value("${devOps.enable}")
     private Boolean enable;
@@ -55,15 +51,10 @@ public class JobRoleFilter implements Filter {
     private static final String MODIFY_OPERATION = "modify";
     private static final String DELETE_OPERATION = "delete";
     private static final String OPS_ROLE = "Ops";
-    private List<String> permitUrlList = null;
 
     @Override
     public void init(FilterConfig filterConfig) {
-        permitUrlList = authFilterUrlConfig.getUnFilterUrls();
-        if (permitUrlList == null) {
-            permitUrlList = new ArrayList<>();
-        }
-
+        // init operation
     }
 
     @Override
@@ -72,16 +63,10 @@ public class JobRoleFilter implements Filter {
         //资源对象：项目、规则组、规则、任务、指标、标准值、规则模板、数据源、引擎
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-        BodyReaderHttpServletRequestWrapper requestWrapper = new BodyReaderHttpServletRequestWrapper(request);
-        String requestUrl = request.getRequestURI();
-        if (permitUrlList.contains(requestUrl)) {
-            filterChain.doFilter(requestWrapper, response);
-            return;
-        }
 
         //获取当前用户名
         String username = HttpUtils.getUserName(request);
-        LOGGER.info(" >>>>>>>>>> Current Login Username : <<<<<<<<<<" + username);
+        LOGGER.info(" >>>>>>>>>> Current Login Username : <<<<<<<<<< " + username);
         //获取用户
         User user = userDao.findByUsername(username);
         //获取用户角色
@@ -89,7 +74,7 @@ public class JobRoleFilter implements Filter {
         if (CollectionUtils.isEmpty(userRoles)) {
             //用户没有配置角色 返给前端页面
             ServletOutputStream out = response.getOutputStream();
-            GeneralResponse generalResponse = new GeneralResponse<>("500", "Error! User does not have a role configured!", null);
+            GeneralResponse generalResponse = new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Error! User does not have a role configured!", null);
             out.write(objectMapper.writeValueAsBytes(generalResponse));
             out.flush();
             return;
@@ -105,7 +90,7 @@ public class JobRoleFilter implements Filter {
 
         //获取请求url
         String url = request.getRequestURI();
-        LOGGER.info(" >>>>>>>>>> Request url : <<<<<<<<<<" + url);
+        LOGGER.info(" >>>>>>>>>> Request url : <<<<<<<<<< " + url);
 
         if (checkPositionEnv(rolePosition, roleSystem, url, response, enable)) {
             LOGGER.info("Request accepted, roleSystem='{}', rolePosition='{}', url='{}'", roleSystem, rolePosition, url);
@@ -135,7 +120,7 @@ public class JobRoleFilter implements Filter {
                     return true;
                 } else {
                     ServletOutputStream out = response.getOutputStream();
-                    GeneralResponse generalResponse = new GeneralResponse<>("500", "Error! Only when the operation and maintenance mode is enabled can the operation and maintenance role and system administrator edit resource objects!", null);
+                    GeneralResponse generalResponse = new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Error! Only when the operation and maintenance mode is enabled can the operation and maintenance role and system administrator edit resource objects!", null);
                     out.write(objectMapper.writeValueAsBytes(generalResponse));
                     out.flush();
                     return false;

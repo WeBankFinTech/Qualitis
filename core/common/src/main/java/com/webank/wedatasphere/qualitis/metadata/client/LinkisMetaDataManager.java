@@ -6,8 +6,10 @@ import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceEnvRequ
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.ModifyDataSourceParameterRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceParamsResponse;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_minminghe@webank.com
@@ -52,7 +54,7 @@ public interface LinkisMetaDataManager {
      * @throws UnExpectedRequestException
      * @throws MetaDataAcquireFailedException
      */
-    List<LinkisDataSourceEnvRequest> createDataSourceEnv(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList, String clusterName, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+    List<LinkisDataSourceEnvRequest> createDataSourceEnvAndSetEnvId(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList, String clusterName, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
      * modify Data Source Env
@@ -91,4 +93,21 @@ public interface LinkisMetaDataManager {
      */
     void deleteDataSource(Long linkisDataSourceId, String clusterName, String userName) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
+
+    /**
+     * Getting mapping relation between name and id of dataSourceType
+     * @return key: name of dataSourceType, value: id of dataSourceType
+     */
+    Map<String, Long> getDataSourceTypeNameAndIdMap();
+
+    /**
+     * connect
+     *
+     * @param linkisDataSourceId
+     * @param versionId
+     * @return
+     * @throws Exception
+     * @throws MetaDataAcquireFailedException
+     */
+    GeneralResponse connect(Long linkisDataSourceId, Long versionId) throws Exception;
 }

@@ -27,6 +27,11 @@ public class RuleDatasourceEnvDaoImpl implements RuleDatasourceEnvDao {
     }
 
     @Override
+    public void deleteByEnvId(Long envId) {
+        ruleDatasourceEnvRepository.deleteByEnvId(envId);
+    }
+
+    @Override
     public void saveAllRuleDataSourceEnv(List<RuleDataSourceEnv> datasourceEnvList) {
         ruleDatasourceEnvRepository.saveAll(datasourceEnvList);
     }
@@ -49,6 +54,11 @@ public class RuleDatasourceEnvDaoImpl implements RuleDatasourceEnvDao {
     @Override
     public List<RuleDataSourceEnv> findByRuleDataSourceList(List<RuleDataSource> ruleDataSourceList) {
         return ruleDatasourceEnvRepository.findByRuleDataSourceIn(ruleDataSourceList);
+    }
+
+    @Override
+    public List<RuleDataSourceEnv> findByDataSourceId(Long datasourceId) {
+        return ruleDatasourceEnvRepository.findByDataSourceId(datasourceId);
     }
 
 }

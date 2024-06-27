@@ -19,15 +19,21 @@ package com.webank.wedatasphere.qualitis.project.service.impl;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
-import com.webank.wedatasphere.qualitis.entity.*;
+import com.webank.wedatasphere.qualitis.entity.ProxyUser;
+import com.webank.wedatasphere.qualitis.entity.Role;
+import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
+import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
+import com.webank.wedatasphere.qualitis.project.constant.ProjectStatusEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.constant.SwitchTypeEnum;
@@ -39,7 +45,15 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectEvent;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
-import com.webank.wedatasphere.qualitis.project.request.*;
+import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
+import com.webank.wedatasphere.qualitis.project.request.ModifyProjectGitRelationRequest;
+import com.webank.wedatasphere.qualitis.project.request.ProjectTypeRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetail;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectEventResponse;
@@ -47,6 +61,8 @@ import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectUserService;
+import com.webank.wedatasphere.qualitis.report.dao.SubscribeOperateReportProjectsDao;
+import com.webank.wedatasphere.qualitis.report.entity.SubscribeOperateReportProjects;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
@@ -65,6 +81,7 @@ import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -83,7 +100,19 @@ import javax.management.relation.RoleNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.File;
-import java.util.*;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -123,6 +152,9 @@ public class ProjectServiceImpl implements ProjectService {
     private UserProxyUserRepository userProxyUserRepository;
 
     @Autowired
+    private SubscribeOperateReportProjectsDao subscribeOperateReportProjectsDao;
+
+    @Autowired
     private ProjectUserService projectUserService;
     @Autowired
     private ProjectEventService projectEventService;
@@ -141,6 +173,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
@@ -169,7 +203,7 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectDetailResponse response = new ProjectDetailResponse(savedProject, null);
         LOGGER.info("Succeed to add project, response: {}", response);
 
-        return new GeneralResponse<>("200", "{&ADD_PROJECT_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_PROJECT_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -184,7 +218,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Save project.
         Project newProject = new Project(projectName, cnName, projectDescription, user.getUsername(), user.getChineseName()
-            , user.getDepartment() != null ? user.getDepartment().getName() : "", QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+                , user.getDepartment() != null ? user.getDepartment().getName() : "", QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
         Project savedProject = projectDao.saveProject(newProject);
         autoAuthAdminAndProxy(user, savedProject);
 
@@ -227,7 +261,7 @@ public class ProjectServiceImpl implements ProjectService {
                         continue;
                     }
                     ProjectUser bussmanProject = new ProjectUser(ProjectUserPermissionEnum.BUSSMAN.getCode(), savedProject, realUser.getUsername(),
-                        realUser.getChineseName(), SwitchTypeEnum.AUTO_MATIC.getCode());
+                            realUser.getChineseName(), SwitchTypeEnum.HAND_MOVEMENT.getCode());
                     projectUsers.add(bussmanProject);
                 }
                 projectUserDao.saveAll(projectUsers);
@@ -241,7 +275,7 @@ public class ProjectServiceImpl implements ProjectService {
         GetAllResponse<ProjectResponse> response = getAllProjectByUserReal(request, ProjectTypeEnum.NORMAL_PROJECT.getCode());
 
         LOGGER.info("Succeed to get all project, response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -250,7 +284,7 @@ public class ProjectServiceImpl implements ProjectService {
         String userName = HttpUtils.getUserName(httpServletRequest);
         // Paging get project
         Page<ProjectUser> projectUsers = projectUserDao.findByAdvanceConditions(userName, projectType
-                , request.getProjectName(), request.getSubsystemName(), request.getCreateUser(), request.getDb()
+                , request.getProjectName(), request.getSubsystemId(), request.getCreateUser(), request.getDb()
                 , request.getTable(), request.getStartTime(), request.getEndTime(), request.getPage(), request.getSize());
 
         List<ProjectResponse> projectResponses = new ArrayList<>(projectUsers.getSize());
@@ -263,7 +297,7 @@ public class ProjectServiceImpl implements ProjectService {
         response.setTotal(projectUsers.getTotalElements());
 
         LOGGER.info("Succeed to get projects by advance conditions, response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -289,13 +323,13 @@ public class ProjectServiceImpl implements ProjectService {
             ProjectDetailResponse projectDetailResponse = new ProjectDetailResponse();
             projectDetailResponse.setProjectDetail(new ProjectDetail());
             projectDetailResponse.setRuleDetails(Collections.emptyList());
-            return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
         }
 
         ProjectDetailResponse projectDetailResponse = new ProjectDetailResponse(projectInDb, rulePage.getContent());
         projectDetailResponse.setTotal(Long.valueOf(rulePage.getTotalElements()).intValue());
         LOGGER.info("Succeed to get project rules. project_id: {}, response: {}", projectId, projectDetailResponse);
-        return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
     }
 
     @Override
@@ -320,7 +354,7 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectDetailResponse projectDetailResponse = new ProjectDetailResponse(projectInDb, rules);
         projectDetailResponse.setTotal(total);
         LOGGER.info("Succeed to get project detail. project_id: {}, response: {}", projectId, projectDetailResponse);
-        return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
     }
 
     @Override
@@ -363,7 +397,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Check project name
         Project otherProject = projectDao.findByNameAndCreateUser(request.getProjectName(), user.getUsername());
-        if (otherProject != null && ! otherProject.getId().equals(projectInDb.getId())) {
+        if (otherProject != null && !otherProject.getId().equals(projectInDb.getId())) {
             throw new UnExpectedRequestException(String.format("Project name: %s already exist", request.getProjectName()));
         }
         // Record modify field detail.
@@ -399,7 +433,51 @@ public class ProjectServiceImpl implements ProjectService {
         }
         authorizeUsers(projectInDb, user, request.getAuthorizeProjectUserRequests(), true);
 
-        return new GeneralResponse<>("200", "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        // Check Arguments
+        ModifyProjectGitRelationRequest.checkRequest(request);
+
+        // Check existence of project
+        Project projectInDb = projectDao.findById(request.getProjectId());
+        if (projectInDb == null) {
+            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
+        }
+        LOGGER.info("Succeed to get project. project: {}", projectInDb);
+
+        // Get user
+        User user;
+        Long userId = HttpUtils.getUserId(httpServletRequest);
+
+        if (userId == null) {
+            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
+        } else {
+            user = userDao.findById(userId);
+            if (user == null) {
+                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
+            }
+        }
+        // Check if user has permission modifying project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        checkProjectPermission(projectInDb, user.getUsername(), permissions);
+
+        // Record modify field detail.
+        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
+        projectInDb.setGitRepo(request.getGitRepo());
+        projectInDb.setGitType(request.getGitType());
+
+        projectInDb.setGitBranch(StringUtils.isEmpty(request.getGitBranch()) ? QualitisConstants.MASTER : request.getGitBranch());
+        projectInDb.setGitRootDir(StringUtils.isEmpty(request.getGitRootDir()) ? "dqm".concat(File.separator).concat(projectInDb.getName()) : request.getGitRootDir());
+
+        Project savedProject = projectDao.saveProject(projectInDb);
+        LOGGER.info("Succeed to modify project. Project: {}", savedProject);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
     }
 
     @Override
@@ -422,7 +500,11 @@ public class ProjectServiceImpl implements ProjectService {
         // Check existence of project
         Project projectInDb = projectDao.findById(request.getProjectId());
         if (projectInDb == null) {
-            throw new UnExpectedRequestException("project_id {&DOES_NOT_EXIST}");
+            throw new UnExpectedRequestException("project ID {&DOES_NOT_EXIST}");
+        }
+        List<SubscribeOperateReportProjects> subscribeOperateReportProjects = subscribeOperateReportProjectsDao.findByProjectId(request.getProjectId());
+        if (CollectionUtils.isNotEmpty(subscribeOperateReportProjects)) {
+            throw new UnExpectedRequestException("There is a project subscription record. Please confirm the cleanup before deleting the project.");
         }
         User user;
         if (!workflow) {
@@ -438,6 +520,9 @@ public class ProjectServiceImpl implements ProjectService {
         List<Integer> permissions = new ArrayList<>();
         permissions.add(ProjectUserPermissionEnum.CREATOR.getCode());
         checkProjectPermission(projectInDb, user.getUsername(), permissions);
+
+        // before delete executionParameters
+        scheduledTaskService.deleteAllUnreleasedSchedules(projectInDb);
 
         //Delete executionParameters
         List<ExecutionParameters> executionParametersList = executionParametersDao.getAllExecutionParameters(projectInDb.getId());
@@ -458,7 +543,7 @@ public class ProjectServiceImpl implements ProjectService {
         ruleGroupDao.deleteAll(ruleGroupList);
 
         LOGGER.info("Succeed to delete project. project_id: {}", request.getProjectId());
-        return new GeneralResponse<>("200", "{&DELETE_PROJECT_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_PROJECT_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -508,7 +593,7 @@ public class ProjectServiceImpl implements ProjectService {
         Page<ProjectEvent> projectEventPage = projectEventDao.findWithPage(pageRequest.getPage(), pageRequest.getSize(), projectInDb.getId());
         List<ProjectEventResponse> projectEventResponses = projectEventPage.getContent().stream().map(ProjectEventResponse::new).collect(Collectors.toList());
         GetAllResponse<ProjectEventResponse> response = new GetAllResponse<>(projectEventPage.getTotalElements(), projectEventResponses);
-        return new GeneralResponse<>("200", "{&SUCCESS_TO_GET_PROJECT_EVENT}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_GET_PROJECT_EVENT}", response);
     }
 
     @Override
@@ -523,14 +608,28 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public GetAllResponse<ProjectResponse> getAllProjectByUserReal() {
+    public GetAllResponse<ProjectResponse> getAllProjectByUserReal(ProjectTypeRequest request) {
         // Get username
         String loginUser = HttpUtils.getUserName(httpServletRequest);
+        Integer projectType = null;
+        if (null != request) {
+            projectType = request.getProjectType();
+        }
+        List<Map<String, Object>> projects = projectUserDao.findProjectByUserName(loginUser, projectType);
+        //双层排序，根据名称排序然后根据id排序
+        List<Map<String, Object>> newList = new ArrayList<>();
+        Comparator<Object> comparator = Collator.getInstance(java.util.Locale.CHINA);
+        Map<String, List<Map<String, Object>>> projectName = projects.stream().filter(item -> item.get("project_name") != null).collect(Collectors.groupingBy(item -> item.get("project_name").toString()));
+        Set<String> objects = projectName.keySet();
+        String[] result = objects.toArray(new String[objects.size()]);
+        Arrays.sort(result, comparator);
+        for (String temp : result) {
+            newList.addAll(projectName.get(temp).stream().sorted(Comparator.comparing(m -> m.get("project_id").toString())).collect(Collectors.toList()));
+        }
 
-        List<Map<String, Object>> projects = projectUserDao.findProjectByUserName(loginUser);
-        long total = projectUserDao.countProjectByUserName(loginUser);
+        long total = projectUserDao.countProjectByUserName(loginUser, projectType);
         List<ProjectResponse> projectResponses = new ArrayList<>();
-        for (Map<String, Object> project : projects) {
+        for (Map<String, Object> project : newList) {
             projectResponses.add(new ProjectResponse(project));
         }
 
@@ -629,7 +728,7 @@ public class ProjectServiceImpl implements ProjectService {
         checkProjectPermission(projectInDb, username, permissions);
 
         // Find rules by project
-        List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb);
+        List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb, null);
         List<RuleGroup> notExistsRuleGroups = ruleGroupDao.findByProjectIdAndNotExistRule(projectId);
         if (CollectionUtils.isNotEmpty(notExistsRuleGroups)) {
             LOGGER.info("Delete groups which has no rules. Rule group names: {}", Strings.join(notExistsRuleGroups.stream().map(ruleGroup -> ruleGroup.getRuleGroupName()).collect(Collectors.toList()), ','));
@@ -638,12 +737,17 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectDetailResponse projectDetailResponse = new ProjectDetailResponse(rules);
         projectDetailResponse.setTotal(rules != null ? rules.size() : 0);
         LOGGER.info("Succeed to get project rules. project_id: {}, response: {}", projectId, projectDetailResponse);
-        return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", projectDetailResponse);
     }
 
     private void checkAndDeleteEmptyRuleGroups(List<RuleGroup> ruleGroups) {
-        for (RuleGroup ruleGroup: ruleGroups) {
-            ruleGroupDao.delete(ruleGroup);
+        for (RuleGroup ruleGroup : ruleGroups) {
+            try {
+                scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleGroup);
+                ruleGroupDao.delete(ruleGroup);
+            } catch (UnExpectedRequestException e) {
+                LOGGER.error("Failed to delete RuleGroup: relate to schedule task");
+            }
         }
     }
 
@@ -660,4 +764,61 @@ public class ProjectServiceImpl implements ProjectService {
         return projectInDb;
     }
 
+    @Override
+    public GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        CommonChecker.checkObject(request.getProjectId(), "Project ID");
+
+        // Check existence of project
+        Project projectInDb = projectDao.findById(request.getProjectId());
+        if (projectInDb == null) {
+            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
+        }
+        LOGGER.info("Succeed to get project. project: {}", projectInDb);
+
+        // Get user
+        User user;
+        Long userId = HttpUtils.getUserId(httpServletRequest);
+
+        if (userId == null) {
+            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
+        } else {
+            user = userDao.findById(userId);
+            if (user == null) {
+                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
+            }
+        }
+        // Check if user has permission modifying project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        checkProjectPermission(projectInDb, user.getUsername(), permissions);
+
+        // Record modify field detail.
+        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
+        projectInDb.setGitType(null);
+        projectInDb.setGitRepo("");
+        projectInDb.setGitBranch("");
+        projectInDb.setGitRootDir("");
+
+        Project savedProject = projectDao.saveProject(projectInDb);
+        LOGGER.info("Succeed to delete project git relation. Project: {}", savedProject);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Succeed to delete git relation of project", new ProjectDetailResponse(savedProject, null));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public Project saveAndFlushProject(Project project) {
+       return projectDao.saveAndFlush(project);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public void batchSaveAndFlushProject(List<Project> projects) {
+        if (CollectionUtils.isNotEmpty(projects)) {
+            for (Project project : projects) {
+                project.setRunStatus(ProjectStatusEnum.OPERABLE_STATUS.getCode());
+                projectDao.saveAndFlush(project);
+            }
+        }
+    }
 }

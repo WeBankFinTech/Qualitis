@@ -4,13 +4,13 @@ import com.webank.wedatasphere.qualitis.dao.ServiceInfoDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ServiceInfoRepository;
 import com.webank.wedatasphere.qualitis.entity.ServiceInfo;
 import com.webank.wedatasphere.qualitis.entity.TenantUser;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -56,5 +56,10 @@ public class ServiceInfoDaoImpl implements ServiceInfoDao {
     @Override
     public List<ServiceInfo> findByTenantUser(TenantUser tenantUser) {
         return serviceInfoRepository.findByTenantUser(tenantUser);
+    }
+
+    @Override
+    public List<ServiceInfo> findNonRelatedTenantUser() {
+        return serviceInfoRepository.findNullTenantUser();
     }
 }

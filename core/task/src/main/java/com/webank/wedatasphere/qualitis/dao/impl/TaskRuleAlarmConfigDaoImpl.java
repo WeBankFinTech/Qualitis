@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.dao.impl;
 import com.webank.wedatasphere.qualitis.dao.TaskRuleAlarmConfigDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskRuleAlarmConfigRepository;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -18,4 +19,10 @@ public class TaskRuleAlarmConfigDaoImpl implements TaskRuleAlarmConfigDao {
     public TaskRuleAlarmConfig findById(Long taskRuleAlarmConfigId) {
         return taskRuleAlarmConfigRepository.findTaskRuleAlarmConfig(taskRuleAlarmConfigId);
     }
+
+    @Override
+    public void saveAll(List<TaskRuleAlarmConfig> taskRuleAlarmConfigs) {
+        taskRuleAlarmConfigRepository.saveAll(taskRuleAlarmConfigs);
+    }
+
 }

@@ -19,8 +19,8 @@ package com.webank.wedatasphere.qualitis.dao;
 
 import com.webank.wedatasphere.qualitis.entity.ServiceInfo;
 import com.webank.wedatasphere.qualitis.entity.TenantUser;
+
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author allenzhou
@@ -78,4 +78,10 @@ public interface ServiceInfoDao {
      * @return
      */
     List<ServiceInfo> findByTenantUser(TenantUser tenantUser);
+
+    /**
+     * find Non Related Tenant User
+     * @return
+     */
+    List<ServiceInfo> findNonRelatedTenantUser();
 }

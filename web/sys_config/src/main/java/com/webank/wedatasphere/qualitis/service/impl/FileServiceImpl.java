@@ -1,14 +1,14 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.FileService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import jodd.util.StringUtil;
@@ -59,6 +59,6 @@ public class FileServiceImpl implements FileService {
             throw new UnExpectedRequestException("Failed to store file locally.");
         }
         LOGGER.info("{} upload file finished: {}", userName, fileName);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_UPLOAD_FILE}", filePath.toString());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_UPLOAD_FILE}", filePath.toString());
     }
 }

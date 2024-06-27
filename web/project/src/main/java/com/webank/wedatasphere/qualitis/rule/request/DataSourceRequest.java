@@ -70,6 +70,8 @@ public class DataSourceRequest {
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
     @JsonProperty("linkis_datasource_envs")
     private List<DataSourceEnvRequest> dataSourceEnvRequests;
 
@@ -78,6 +80,8 @@ public class DataSourceRequest {
 
     @JsonProperty("type")
     private String type;
+    @JsonProperty("collect_sql")
+    private String collectSql;
 
     public DataSourceRequest() {
         // Default Constructor
@@ -126,6 +130,22 @@ public class DataSourceRequest {
             colNames.add(columnRequest);
         }
         return colNames;
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
+    }
+
+    public String getCollectSql() {
+        return collectSql;
+    }
+
+    public void setCollectSql(String collectSql) {
+        this.collectSql = collectSql;
     }
 
     public String getClusterName() {
@@ -256,10 +276,12 @@ public class DataSourceRequest {
         this.dataSourceEnvRequests = dataSourceEnvRequests;
     }
 
-    public static void checkRequest(DataSourceRequest request, boolean cs, boolean fps) throws UnExpectedRequestException {
+    public static void checkRequest(DataSourceRequest request, boolean cs, boolean fps, boolean tableStructureConsistent) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
-        CommonChecker.checkString(request.getFilter(), "filter");
-        CommonChecker.checkStringLength(request.getFilter(), 1000, "filter");
+        if (!tableStructureConsistent) {
+            CommonChecker.checkString(request.getFilter(), "filter");
+            CommonChecker.checkStringLength(request.getFilter(), 1000, "filter");
+        }
         CommonChecker.checkString(request.getTableName(), "table_name");
         if (! (cs || fps)) {
             CommonChecker.checkString(request.getDbName(), "db_name");

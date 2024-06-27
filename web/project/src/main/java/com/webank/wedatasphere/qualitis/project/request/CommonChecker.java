@@ -127,7 +127,7 @@ public class CommonChecker {
         }
     }
 
-    public static boolean compareIdentical(Boolean unionAll, Boolean abortOnFailure, Boolean specifyStaticStartupParam, String staticStartupParam, String abnormalDatabase
+    public static boolean compareIdentical(Integer unionWay, Boolean abortOnFailure, Boolean specifyStaticStartupParam, String staticStartupParam, String abnormalDatabase
             , String cluster, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalProxyUser, Boolean deleteFailCheckResult, Boolean uploadRuleMetricValue, Boolean uploadAbnormalValue, ExecutionParameters executionParameters) {
         boolean flag = false;
         boolean compareEqual = ((abortOnFailure == null && executionParameters.getAbortOnFailure() == null) || (abortOnFailure != null && abortOnFailure.equals(executionParameters.getAbortOnFailure()))) &&
@@ -142,7 +142,7 @@ public class CommonChecker {
                 ((deleteFailCheckResult == null && executionParameters.getDeleteFailCheckResult() == null) || (deleteFailCheckResult != null && deleteFailCheckResult.equals(executionParameters.getDeleteFailCheckResult()))) &&
                 ((uploadRuleMetricValue == null && executionParameters.getUploadRuleMetricValue() == null) || (uploadRuleMetricValue != null && uploadRuleMetricValue.equals(executionParameters.getUploadRuleMetricValue()))) &&
                 ((uploadAbnormalValue == null && executionParameters.getUploadAbnormalValue() == null) || (uploadAbnormalValue != null && uploadAbnormalValue.equals(executionParameters.getUploadAbnormalValue()))) &&
-                ((unionAll == null && executionParameters.getUnionAll() == null) || (unionAll != null && unionAll.equals(executionParameters.getUnionAll())));
+                ((unionWay == null && executionParameters.getUnionWay() == null) || (unionWay != null && unionWay.equals(executionParameters.getUnionWay())));
         if (compareEqual) {
             flag = true;
         }

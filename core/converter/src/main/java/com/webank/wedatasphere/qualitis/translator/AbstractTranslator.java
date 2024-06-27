@@ -36,27 +36,37 @@ public abstract class AbstractTranslator {
      * @param ruleMetricMaps
      * @param templateStatisticsInputMetas
      * @param applicationId
+     * @param taskId
      * @param ruleVariables
      * @param createTime
      * @param partOfVariableName
      * @param date
      * @param runDate
+     * @param runToday
      * @param realColumn
      * @param enumListNewValue
      * @param numRangeNewValue
      * @param selectResult
-     * @param unionAllForSaveResult
+     * @param unionWay
      * @return
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
      */
     public abstract List<String> persistenceTranslate(String persistenceTranslate, Long ruleId, Map<String, Long> ruleMetricMaps
-        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables, String createTime
-        , String partOfVariableName, String date, String runDate, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
+        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, Long taskId,
+        List<RuleVariable> ruleVariables, String createTime
+        , String partOfVariableName, String date, String runDate,String runToday,StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue,
+        Map<String, String> selectResult, int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException;
 
     /**
      * Generate initial statement.
      * @return
      */
     public abstract List<String> getInitSentence();
+
+    /**
+     * get DataSource conn.
+     * @return
+     */
+    public abstract String getDataSourceConn();
 }

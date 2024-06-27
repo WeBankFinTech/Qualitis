@@ -50,9 +50,9 @@ public class RuleLisingCallable implements Callable<ProjectDetailResponse> {
         try {
             GetRuleQueryRequest.checkRequest(request);
             // Check existence of project
-            Project projectInDb = projectDao.findByName(request.getProjectName());
+            Project projectInDb = projectDao.findByNameAndCreateUser(request.getProjectName(),request.getCreateUser());
             if (projectInDb == null) {
-                throw new UnExpectedRequestException("Project Name {&DOES_NOT_EXIST}");
+                throw new UnExpectedRequestException("Project {&DOES_NOT_EXIST}");
             }
 
             // Check if user has permission get project.
@@ -61,7 +61,7 @@ public class RuleLisingCallable implements Callable<ProjectDetailResponse> {
             projectService.checkProjectPermission(projectInDb, request.getLoginUser(), permissions);
 
             // Find rules by project
-            List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb);
+            List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb, null);
             projectDetailResponse = new ProjectDetailResponse(rules);
             projectDetailResponse.setTotal(rules != null ? rules.size() : 0);
 

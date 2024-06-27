@@ -124,6 +124,7 @@ public abstract class AbstractJobSubmitter {
 
     /**
      * Shell job
+     *
      * @param code
      * @param engineName
      * @param user
@@ -131,10 +132,26 @@ public abstract class AbstractJobSubmitter {
      * @param clusterName
      * @param taskId
      * @param startupParam
+     * @param engineReUse
      * @param tenantUserName
      * @return
      * @throws Exception
      */
-    public abstract JobSubmitResult submitShellJobNew(String code, String engineName, String user, String linkisAddress, String clusterName, Long taskId, String startupParam, String tenantUserName)
-        throws Exception;
+    public abstract JobSubmitResult submitShellJobNew(String code, String engineName, String user, String linkisAddress, String clusterName, Long taskId, String startupParam, boolean engineReUse, String tenantUserName)
+            throws Exception;
+
+    /**
+     * Trino job
+     * @param code
+     * @param engineName
+     * @param s
+     * @param linkisAddress
+     * @param clusterName
+     * @param taskId
+     * @param startupParam
+     * @param b
+     * @param tenantUserName
+     * @return
+     */
+    public abstract JobSubmitResult submitTrinoJobNew(String code, String engineName, String s, String linkisAddress, String clusterName, Long taskId, String startupParam, boolean b, String tenantUserName) throws Exception;
 }

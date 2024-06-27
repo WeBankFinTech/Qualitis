@@ -16,12 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.FindClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
+import com.webank.wedatasphere.qualitis.response.ClusterInfoResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
@@ -57,7 +59,7 @@ public class ClusterInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add cluster_info. request: {}, caused by: {}", request, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_CLUSTER_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_CLUSTER_INFO}", null);
         }
     }
 
@@ -65,7 +67,7 @@ public class ClusterInfoController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
         try {
             return clusterInfoService.deleteClusterInfo(request);
         } catch (UnExpectedRequestException e) {
@@ -73,14 +75,14 @@ public class ClusterInfoController {
             throw  e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete cluster_info. cluster_info_id: {}, caused by: {}", request.getClusterInfoId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_CLUSTER_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_CLUSTER_INFO}", null);
         }
     }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
         try {
             return clusterInfoService.modifyClusterInfo(request);
         } catch (UnExpectedRequestException e) {
@@ -88,7 +90,7 @@ public class ClusterInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify cluster_info, cluster_info_id: {}, caused by: {}", request.getClusterInfoId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_CLUSTER_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_CLUSTER_INFO}", null);
         }
     }
 
@@ -96,7 +98,7 @@ public class ClusterInfoController {
     @Path("all")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<GetAllResponse<ClusterInfo>> findAllClusterInfo(FindClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<ClusterInfoResponse>> findAllClusterInfo(FindClusterInfoRequest request) throws UnExpectedRequestException {
         try {
             return clusterInfoService.findClusterInfoLikeName(request);
         } catch (UnExpectedRequestException e) {
@@ -104,7 +106,7 @@ public class ClusterInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find cluster_infos. page: {}, size: {}, caused by: {}", request.getPage(), request.getSize(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_CLUSTER_INFOS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_CLUSTER_INFOS}", null);
         }
     }
 

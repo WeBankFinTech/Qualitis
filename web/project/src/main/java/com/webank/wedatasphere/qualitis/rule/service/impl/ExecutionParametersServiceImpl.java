@@ -2,7 +2,11 @@ package com.webank.wedatasphere.qualitis.rule.service.impl;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.dao.SystemConfigDao;
+import com.webank.wedatasphere.qualitis.entity.SystemConfig;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
@@ -43,8 +47,15 @@ import com.webank.wedatasphere.qualitis.rule.request.StaticExecutionParametersRe
 import com.webank.wedatasphere.qualitis.rule.response.ExecutionParametersResponse;
 import com.webank.wedatasphere.qualitis.rule.service.ExecutionParametersService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +69,7 @@ import javax.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,6 +95,8 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
     private NoiseEliminationManagementDao noiseEliminationManagementDao;
     @Autowired
     private ExecutionVariableDao executionVariableDao;
+    @Autowired
+    private SystemConfigDao systemConfigDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionParametersServiceImpl.class);
 
@@ -113,8 +127,8 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         AddExecutionParametersRequest.checkRequest(request, false);
 
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         // Check existence of project
         Project projectInDb = projectService.checkProjectExistence(request.getProjectId(), loginUser);
@@ -133,7 +147,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
 
         ExecutionParametersResponse response = new ExecutionParametersResponse(savedExecutionParameters);
         LOGGER.info("Succeed to add ExecutionParameters, execution_parameters_id: {}", response.getExecutionParametersId());
-        return new GeneralResponse<>("200", "{&ADD_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
     }
 
     private void setBasicInfo(ExecutionParameters executionParameters, String loginUser, AddExecutionParametersRequest request) {
@@ -152,7 +166,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         executionParameters.setAbnormalDatabase(request.getAbnormalDatabase());
         executionParameters.setAbnormalProxyUser(request.getAbnormalProxyUser());
         executionParameters.setAbnormalDataStorage(request.getAbnormalDataStorage());
-        executionParameters.setUnionAll(request.getUnionAll());
+        executionParameters.setUnionWay(request.getUnionWay());
 
         executionParameters.setFilter(request.getFilter());
         executionParameters.setSpecifyFilter(request.getSpecifyFilter());
@@ -232,7 +246,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
     }
 
     @Override
-    public GeneralResponse handleExecutionParametersDataMigration() {
+    public GeneralResponse<Object> handleExecutionParametersDataMigration() {
         List<ExecutionParameters> executionParameters = executionParametersDao.selectAllExecutionParameters();
         List<ExecutionParameters> collect = executionParameters.stream().filter(item -> StringUtils.isNotBlank(item.getExecutionParam())).collect(Collectors.toList());
         LOGGER.info("Start synchronizing executionParameters executionParam data to ExecutionVariable object");
@@ -270,7 +284,95 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         }
         LOGGER.info("end to synchronizing  executionParameters executionParam data to executionVariable object");
 
-        return new GeneralResponse<>("200", "{&SYNCHRONIZATION_EXECUTION_VARIABLE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SYNCHRONIZATION_EXECUTION_VARIABLE_SUCCESSFULLY}", null);
+    }
+
+    @Override
+    public GeneralResponse<List<String>> getSecuritiesWorkDays(String startTime, String endTime) throws ParseException {
+        List<String> results = new ArrayList<>();
+        // Only this year, 01 express January
+        SystemConfig systemConfig = systemConfigDao.findByKeyName("current_years_securities_work_days");
+        if (systemConfig == null || StringUtils.isEmpty(systemConfig.getValue())) {
+            return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+        }
+        String[] holidays = systemConfig.getValue().split(SpecCharEnum.COMMA.getValue());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date start = dateFormat.parse(startTime);
+        Date end = dateFormat.parse(endTime);
+
+
+        for (String holiday : holidays) {
+            Date holidayDate = dateFormat.parse(holiday);
+            if (start.before(holidayDate) && holidayDate.before(end)) {
+                results.add(holiday);
+            }
+        }
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+    }
+
+    @Override
+    public GeneralResponse<List<String>> getBankWorkDays(String startTime, String endTime) throws ParseException {
+        List<String> results = new ArrayList<>();
+        // Only this year, 01 express January
+        SystemConfig systemConfig = systemConfigDao.findByKeyName("current_years_bank_work_days");
+        if (systemConfig == null || StringUtils.isEmpty(systemConfig.getValue())) {
+            return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+        }
+        String[] holidays = systemConfig.getValue().split(SpecCharEnum.COMMA.getValue());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date start = dateFormat.parse(startTime);
+        Date end = dateFormat.parse(endTime);
+
+
+        for (String holiday : holidays) {
+            Date holidayDate = dateFormat.parse(holiday);
+            if (start.before(holidayDate) && holidayDate.before(end)) {
+                results.add(holiday);
+            }
+        }
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+    }
+
+    @Override
+    public GeneralResponse<List<String>> getCurrentHolidays(String startTime, String endTime) throws ParseException {
+        List<String> results = new ArrayList<>();
+        // Only this year, 01 express January
+        SystemConfig systemConfig = systemConfigDao.findByKeyName("current_years_holidays");
+        if (systemConfig == null || StringUtils.isEmpty(systemConfig.getValue())) {
+            return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+        }
+        String[] holidays = systemConfig.getValue().split(SpecCharEnum.COMMA.getValue());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date start = dateFormat.parse(startTime);
+        Date end = dateFormat.parse(endTime);
+
+
+        for (String holiday : holidays) {
+            Date holidayDate = dateFormat.parse(holiday);
+            if (start.before(holidayDate) && holidayDate.before(end)) {
+                results.add(holiday);
+            }
+        }
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", results);
+    }
+
+    @Override
+    public GeneralResponse<List<String>> getCurrentWeeks(String startTime, String endTime) throws ParseException {
+        List<String> weekendDates = new ArrayList<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date start = dateFormat.parse(startTime);
+        Date end = dateFormat.parse(endTime);
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(start);
+        while (calendar.getTime().before(end) || DateUtils.isSameDay(calendar.getTime(), end)) {
+            if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                weekendDates.add(dateFormat.format(calendar.getTime()));
+            }
+            calendar.add(Calendar.DATE, 1);
+        }
+
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", weekendDates);
     }
 
 
@@ -289,8 +391,8 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         ModifyExecutionParametersRequest.checkRequest(request);
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         // Check existence of ExecutionParameters
         ExecutionParameters executionParameters = executionParametersDao.findById(request.getExecutionParametersId());
@@ -304,26 +406,20 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
         projectService.checkProjectPermission(projectInDb, loginUser, permissions);
 
+//        是否修改了执行参数模板名称
         if (!executionParameters.getName().equals(request.getName())) {
             checkExecutionParametersName(request.getName(), projectInDb.getId());
+
+            //检测该执行参数是否已被规则引用，如果被引用，则不允许更新
+            Long ruleCount = ruleDao.countDeployExecutionParameters(executionParameters.getProjectId(), executionParameters.getName());
+            if (ruleCount > 0) {
+                throw new UnExpectedRequestException("The execution parameter has been referenced by rules.");
+            }
         }
         staticExecutionParametersDao.deleteByExecutionParameters(executionParameters);
         alarmArgumentsExecutionParametersDao.deleteByExecutionParameters(executionParameters);
         noiseEliminationManagementDao.deleteByExecutionParameters(executionParameters);
         executionVariableDao.deleteByExecutionParameters(executionParameters);
-        //修改执行参数模板，同时更新已在规则中使用的执行参数名称
-        List<Rule> ruleList = ruleDao.getDeployExecutionParameters(executionParameters.getProjectId(), executionParameters.getName());
-        if (CollectionUtils.isNotEmpty(ruleList)) {
-            String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
-            ruleList.stream().map(u -> {
-                u.setExecutionParametersName(StringUtils.isNotBlank(request.getName()) ? request.getName() : u.getExecutionParametersName());
-                u.setModifyUser(loginUser);
-                u.setModifyTime(nowDate);
-                return u;
-            }).collect(Collectors.toList());
-            //批量修改规则
-            ruleDao.saveRules(ruleList);
-        }
         setBasicInfo(executionParameters, loginUser, request);
         ExecutionParameters savedExecutionParameters = executionParametersDao.saveExecutionParameters(executionParameters);
         LOGGER.info("Succeed to modify ExecutionParameters, execution_parameters_id: {}", savedExecutionParameters.getId());
@@ -331,7 +427,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         batchHandleStaticAndAlarmArguments(savedExecutionParameters, request.getStaticExecutionParametersRequests(), request.getAlarmArgumentsExecutionParametersRequests(), request.getNoiseEliminationManagementRequests(), request.getExecutionManagementRequests());
 
         ExecutionParametersResponse response = new ExecutionParametersResponse(savedExecutionParameters);
-        return new GeneralResponse<>("200", "{&MODIFY_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
     }
 
     private void batchHandleStaticAndAlarmArguments(ExecutionParameters savedExecutionParameters, List<StaticExecutionParametersRequest> staticExecutionParametersRequests, List<AlarmArgumentsExecutionParametersRequest> alarmArgumentsExecutionParametersRequests, List<NoiseEliminationManagementRequest> noiseEliminationManagementRequests, List<ExecutionExecutionParametersRequest> executionManagementRequests) throws UnExpectedRequestException {
@@ -356,6 +452,8 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
                     )
                     .map(staticExecutionParametersRequest -> staticExecutionParametersRequest.getParameterName() + SpecCharEnum.EQUAL.getValue() + staticExecutionParametersRequest.getParameterValue())
                     .collect(Collectors.joining(SpecCharEnum.DIVIDER.getValue()));
+
+            sameParameterVerificationMethod(SpecCharEnum.EQUAL.getValue(), staticStartupParam, "{&DYNAMIC_ENGINE_HAVE_THE_SAME_VARIABLE_NAME}: ");
 
             savedExecutionParameters.setStaticStartupParam(staticStartupParam);
         }
@@ -415,9 +513,25 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
                     .collect(Collectors.joining(SpecCharEnum.DIVIDER.getValue()));
             //并发粒度：库粒度、表粒度，引擎复用参数，拼接到执行变量------>因规则执行时，表单的默认会传发粒度、引擎复用等且优先级最高，所以这里不需拼接；
 
+            sameParameterVerificationMethod(SpecCharEnum.COLON.getValue(), executionParam, "{&EXECUTION_VARIABLES_HAVE_THE_SAME_VARIABLE_NAME}: ");
+
             savedExecutionParameters.setExecutionParam(executionParam);
         }
+    }
 
+    private void sameParameterVerificationMethod(String type, String executionParam, String abnormalInformation) throws UnExpectedRequestException {
+        if (StringUtils.isNotBlank(executionParam)) {
+            Map<String, String> map = new HashMap<>();
+            for (String pair : executionParam.split(SpecCharEnum.DIVIDER.getValue())) {
+                String[] parts = pair.split(type);
+
+                if (!map.containsKey(parts[0])) {
+                    map.put(parts[0], parts[1]);
+                } else {
+                    throw new UnExpectedRequestException(abnormalInformation + parts[0]);
+                }
+            }
+        }
     }
 
     private void setBasicInfo(ExecutionParameters executionParameters, String loginUser, ModifyExecutionParametersRequest request) {
@@ -425,6 +539,9 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         executionParameters.setName(request.getName());
         executionParameters.setAbortOnFailure(request.getAbortOnFailure());
         executionParameters.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
+        if (Boolean.FALSE.equals(request.getSpecifyStaticStartupParam())) {
+            executionParameters.setStaticStartupParam("");
+        }
         executionParameters.setAlert(request.getAlert());
         executionParameters.setAlertLevel(request.getAlertLevel());
         executionParameters.setAlertReceiver(request.getAlertReceiver());
@@ -436,7 +553,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         executionParameters.setAbnormalDatabase(request.getAbnormalDatabase());
         executionParameters.setAbnormalProxyUser(request.getAbnormalProxyUser());
         executionParameters.setAbnormalDataStorage(request.getAbnormalDataStorage());
-        executionParameters.setUnionAll(request.getUnionAll());
+        executionParameters.setUnionWay(request.getUnionWay());
 
         executionParameters.setFilter(request.getFilter());
         executionParameters.setSpecifyFilter(request.getSpecifyFilter());
@@ -448,6 +565,9 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         executionParameters.setWhetherNoise(request.getWhetherNoise());
 
         executionParameters.setExecutionVariable(request.getExecutionVariable());
+        if (Boolean.FALSE.equals(request.getExecutionVariable())) {
+            executionParameters.setExecutionParam("");
+        }
         executionParameters.setAdvancedExecution(request.getAdvancedExecution());
         executionParameters.setEngineReuse(request.getEngineReuse());
         executionParameters.setConcurrencyGranularity(request.getConcurrencyGranularity());
@@ -483,9 +603,9 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
         projectService.checkProjectPermission(projectInDb, loginUser, permissions);
 
         //校验规则是否存在有配置了该模板name
-        List<Rule> ruleList = ruleDao.getDeployExecutionParameters(executionParameters.getProjectId(), executionParameters.getName());
-        if (CollectionUtils.isNotEmpty(ruleList)) {
-            LOGGER.info("This is ruleList", Arrays.toString(ruleList.toArray()));
+        Long ruleCount = ruleDao.countDeployExecutionParameters(executionParameters.getProjectId(), executionParameters.getName());
+        if (ruleCount > 0) {
+            LOGGER.info("The rules are not empty: {}", ruleCount);
             throw new UnExpectedRequestException("{&EXECUTIONPARAMETERS_ALREADY_CONFIGURED_IN_THE_RULE}.");
         } else {
             // Delete ExecutionParameters
@@ -493,14 +613,14 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
             LOGGER.info("Succeed to delete ExecutionParameters. execution_parameters_id: {}", executionParameters.getId());
         }
 
-        return new GeneralResponse<>("200", "{&DELETE_EXECUTIONPARAMETERS_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_EXECUTIONPARAMETERS_SUCCESSFULLY}", null);
     }
 
     @Override
     public GeneralResponse<GetAllResponse<ExecutionParametersResponse>> getAllExecutionParameters(ExecutionParametersRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         GetAllResponse<ExecutionParametersResponse> response = getExecutionParameters(request);
         LOGGER.info("Succeed to get all ExecutionParameters, response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_ALL_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ALL_EXECUTIONPARAMETERS_SUCCESSFULLY}", response);
 
     }
 
@@ -520,7 +640,7 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
 
         ExecutionParametersResponse response = new ExecutionParametersResponse(executionParameters);
         LOGGER.info("Succeed to get ExecutionParameters detail. execution_parameters_id: {}", executionParametersId);
-        return new GeneralResponse<>("200", "{&GET_EXECUTIONPARAMETERS_DETAIL_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_EXECUTIONPARAMETERS_DETAIL_SUCCESSFULLY}", response);
     }
 
     public GetAllResponse<ExecutionParametersResponse> getExecutionParameters(ExecutionParametersRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {

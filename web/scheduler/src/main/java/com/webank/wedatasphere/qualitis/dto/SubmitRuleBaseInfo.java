@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.dto;
 
 import com.webank.wedatasphere.qualitis.entity.Application;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,16 +27,19 @@ public class SubmitRuleBaseInfo {
     private Map<String, String> execParams;
     private String execParamStr;
     private StringBuilder runDate;
+    private StringBuilder runToday;
     private StringBuilder splitBy;
     private Integer invokeCode;
     private Application pendingApplication;
-    private Long subSystemId;
+    private String subSystemId;
     private String partitionFullSize;
     private Boolean engineReuse;
+    private String envNames;
 
     public static SubmitRuleBaseInfo build(String jobId, StringBuilder partition, String createUser, String executionUser, String nodeName, Long projectId
             , Long ruleGroupId, String fpsFileId, String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams
-            , String execParamStr, StringBuilder runDate, StringBuilder splitBy, Integer invokeCode, Application pendingApplication, Long subSystemId, String partitionFullSize,Boolean engineReuse) {
+            , String execParamStr, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, Integer invokeCode, Application pendingApplication, String subSystemId, String partitionFullSize, Boolean engineReuse
+            , String envNames) {
         SubmitRuleBaseInfo submitRuleBaseInfo = new SubmitRuleBaseInfo();
         submitRuleBaseInfo.setJobId(jobId);
         submitRuleBaseInfo.setPartition(partition);
@@ -52,12 +56,14 @@ public class SubmitRuleBaseInfo {
         submitRuleBaseInfo.setExecParams(execParams);
         submitRuleBaseInfo.setExecParamStr(execParamStr);
         submitRuleBaseInfo.setRunDate(runDate);
+        submitRuleBaseInfo.setRunToday(runToday);
         submitRuleBaseInfo.setSplitBy(splitBy);
         submitRuleBaseInfo.setInvokeCode(invokeCode);
         submitRuleBaseInfo.setPendingApplication(pendingApplication);
         submitRuleBaseInfo.setSubSystemId(subSystemId);
         submitRuleBaseInfo.setPartitionFullSize(partitionFullSize);
         submitRuleBaseInfo.setEngineReuse(engineReuse);
+        submitRuleBaseInfo.setEnvNames(envNames);
 
         return submitRuleBaseInfo;
     }
@@ -65,6 +71,14 @@ public class SubmitRuleBaseInfo {
     public SubmitRuleBaseInfo jobId(String jobId) {
         this.jobId = jobId;
         return this;
+    }
+
+    public String getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(String envNames) {
+        this.envNames = envNames;
     }
 
     public String getJobId() {
@@ -211,11 +225,11 @@ public class SubmitRuleBaseInfo {
         this.pendingApplication = pendingApplication;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -233,5 +247,13 @@ public class SubmitRuleBaseInfo {
 
     public void setEngineReuse(Boolean engineReuse) {
         this.engineReuse = engineReuse;
+    }
+
+    public StringBuilder getRunToday() {
+        return runToday;
+    }
+
+    public void setRunToday(StringBuilder runToday) {
+        this.runToday = runToday;
     }
 }

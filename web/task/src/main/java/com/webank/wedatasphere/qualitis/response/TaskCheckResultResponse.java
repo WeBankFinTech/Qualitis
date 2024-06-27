@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
@@ -28,23 +29,31 @@ import java.util.*;
  * @author howeye
  */
 public class TaskCheckResultResponse {
-
+    @JsonProperty("cross_cluster")
+    private Boolean crossCluster;
     @JsonProperty("cluster_name")
     private String clusterName;
     @JsonProperty("saved_db")
     private String savedDb;
     @JsonProperty("check_datasource")
     private CheckDataSourceResponse checkDataSourceResponse;
-    
+
     public TaskCheckResultResponse() {
     }
 
     public TaskCheckResultResponse(Task task, Map<TaskRuleSimple, List<TaskDataSource>> singleRuleDataSourceMap,
-        Map<TaskRuleSimple, List<TaskDataSource>> customRuleDataSourceMap,
-        Map<TaskRuleSimple, List<TaskDataSource>> multiRuleDataSourceMap,
-        Map<TaskRuleSimple, List<TaskDataSource>> fileRuleDataSourceMap,
-        Map<Long, List<TaskResult>> taskResultMap) {
+                                   Map<TaskRuleSimple, List<TaskDataSource>> customRuleDataSourceMap,
+                                   Map<TaskRuleSimple, List<TaskDataSource>> multiRuleDataSourceMap,
+                                   Map<TaskRuleSimple, List<TaskDataSource>> fileRuleDataSourceMap,
+                                   Map<Long, List<TaskResult>> taskResultMap) {
         this.clusterName = task.getClusterName();
+        boolean allMatch = task.getTaskRuleSimples().stream().anyMatch(taskRuleSimple -> (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())
+                || QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.CROSS_CLUSTER_TABLE_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())));
+        if (allMatch) {
+            crossCluster = true;
+        } else {
+            crossCluster = false;
+        }
         this.savedDb = task.getApplication().getSavedDb();
         this.checkDataSourceResponse = new CheckDataSourceResponse();
         List<CheckSingleDataSourceResponse> single = new ArrayList<>();
@@ -138,6 +147,14 @@ public class TaskCheckResultResponse {
             map.put(taskRuleSimple.getRuleId(), taskRuleSimple);
         }
         return map;
+    }
+
+    public Boolean getCrossCluster() {
+        return crossCluster;
+    }
+
+    public void setCrossCluster(Boolean crossCluster) {
+        this.crossCluster = crossCluster;
     }
 
     public String getClusterName() {

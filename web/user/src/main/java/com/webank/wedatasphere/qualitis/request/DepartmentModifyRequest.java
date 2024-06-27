@@ -69,5 +69,18 @@ public class DepartmentModifyRequest {
             throw new UnExpectedRequestException("source type {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
 
+        if (!validateInteger(request.getDepartmentCode())) {
+            throw new UnExpectedRequestException("Error parameter: sub_department_code must be number.");
+        }
+
+    }
+
+    private static boolean validateInteger(String param) {
+        try {
+            Integer.parseInt(param);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

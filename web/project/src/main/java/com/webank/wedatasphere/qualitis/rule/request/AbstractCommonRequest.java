@@ -26,6 +26,8 @@ public abstract class AbstractCommonRequest {
     private Long projectId;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
+    @JsonProperty("new_rule_group_id")
+    private Long newRuleGroupId;
     @JsonProperty("cs_id")
     private String csId;
     @JsonProperty("rule_group_name")
@@ -42,8 +44,8 @@ public abstract class AbstractCommonRequest {
     private String workFlowVersion;
     @JsonProperty("rule_enable")
     private Boolean ruleEnable;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
     private int ruleNo;
 
     @JsonProperty("alert")
@@ -77,6 +79,13 @@ public abstract class AbstractCommonRequest {
     private String workFlowProject;
     @JsonProperty("node_name")
     private String nodeName;
+
+    @JsonProperty("verification_successful")
+    private String verificationSuccessful;
+    @JsonProperty("verification_failed")
+    private String verificationFailed;
+    @JsonProperty("execution_completed")
+    private String executionCompleted;
 
     public Long getRuleId() {
         return ruleId;
@@ -118,6 +127,14 @@ public abstract class AbstractCommonRequest {
         this.ruleCnName = ruleCnName;
     }
 
+    public Integer getUnionWay() {
+        return unionWay;
+    }
+
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
+    }
+
     public Boolean getAlarm() {
         return alarm;
     }
@@ -140,6 +157,14 @@ public abstract class AbstractCommonRequest {
 
     public void setRuleGroupId(Long ruleGroupId) {
         this.ruleGroupId = ruleGroupId;
+    }
+
+    public Long getNewRuleGroupId() {
+        return newRuleGroupId;
+    }
+
+    public void setNewRuleGroupId(Long newRuleGroupId) {
+        this.newRuleGroupId = newRuleGroupId;
     }
 
     public String getCsId() {
@@ -212,14 +237,6 @@ public abstract class AbstractCommonRequest {
 
     public void setRuleEnable(Boolean ruleEnable) {
         this.ruleEnable = ruleEnable;
-    }
-
-    public Boolean getUnionAll() {
-        return unionAll;
-    }
-
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
     }
 
     public int getRuleNo() {
@@ -358,39 +375,71 @@ public abstract class AbstractCommonRequest {
         this.nodeName = nodeName;
     }
 
+    public String getVerificationSuccessful() {
+        return verificationSuccessful;
+    }
+
+    public void setVerificationSuccessful(String verificationSuccessful) {
+        this.verificationSuccessful = verificationSuccessful;
+    }
+
+    public String getVerificationFailed() {
+        return verificationFailed;
+    }
+
+    public void setVerificationFailed(String verificationFailed) {
+        this.verificationFailed = verificationFailed;
+    }
+
+    public String getExecutionCompleted() {
+        return executionCompleted;
+    }
+
+    public void setExecutionCompleted(String executionCompleted) {
+        this.executionCompleted = executionCompleted;
+    }
+
     @Override
     public String toString() {
         return "AbstractCommonRequest{" +
-            "ruleId=" + ruleId +
-            ", ruleName='" + ruleName + '\'' +
-            ", ruleDetail='" + ruleDetail + '\'' +
-            ", ruleType=" + ruleType +
-            ", ruleCnName='" + ruleCnName + '\'' +
-            ", alarm=" + alarm +
-            ", projectId=" + projectId +
-            ", ruleGroupId=" + ruleGroupId +
-            ", csId='" + csId + '\'' +
-            ", datasource=" + datasource +
-            ", bashContent='" + bashContent + '\'' +
-            ", ruleMetricNamesForBdpClient=" + ruleMetricNamesForBdpClient +
-            ", executionParametersName='" + executionParametersName + '\'' +
-            ", workFlowName='" + workFlowName + '\'' +
-            ", workFlowVersion='" + workFlowVersion + '\'' +
-            ", ruleEnable=" + ruleEnable +
-            ", unionAll=" + unionAll +
-            ", ruleNo=" + ruleNo +
-            ", alert=" + alert +
-            ", alertLevel=" + alertLevel +
-            ", alertReceiver='" + alertReceiver + '\'' +
-            ", specifyStaticStartupParam=" + specifyStaticStartupParam +
-            ", staticStartupParam='" + staticStartupParam + '\'' +
-            ", abortOnFailure=" + abortOnFailure +
-            ", deleteFailCheckResult=" + deleteFailCheckResult +
-            ", abnormalCluster='" + abnormalCluster + '\'' +
-            ", abnormalDatabase='" + abnormalDatabase + '\'' +
-            ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
-            ", uploadRuleMetricValue=" + uploadRuleMetricValue +
-            ", uploadAbnormalValue=" + uploadAbnormalValue +
-            '}';
+                "ruleTemplateId=" + ruleTemplateId +
+                ", ruleId=" + ruleId +
+                ", ruleName='" + ruleName + '\'' +
+                ", ruleDetail='" + ruleDetail + '\'' +
+                ", ruleType=" + ruleType +
+                ", ruleCnName='" + ruleCnName + '\'' +
+                ", alarm=" + alarm +
+                ", projectId=" + projectId +
+                ", ruleGroupId=" + ruleGroupId +
+                ", csId='" + csId + '\'' +
+                ", ruleGroupName='" + ruleGroupName + '\'' +
+                ", datasource=" + datasource +
+                ", bashContent='" + bashContent + '\'' +
+                ", ruleMetricNamesForBdpClient=" + ruleMetricNamesForBdpClient +
+                ", executionParametersName='" + executionParametersName + '\'' +
+                ", workFlowName='" + workFlowName + '\'' +
+                ", workFlowVersion='" + workFlowVersion + '\'' +
+                ", ruleEnable=" + ruleEnable +
+                ", unionWay=" + unionWay +
+                ", ruleNo=" + ruleNo +
+                ", alert=" + alert +
+                ", alertLevel=" + alertLevel +
+                ", alertReceiver='" + alertReceiver + '\'' +
+                ", specifyStaticStartupParam=" + specifyStaticStartupParam +
+                ", staticStartupParam='" + staticStartupParam + '\'' +
+                ", abortOnFailure=" + abortOnFailure +
+                ", deleteFailCheckResult=" + deleteFailCheckResult +
+                ", abnormalCluster='" + abnormalCluster + '\'' +
+                ", abnormalDatabase='" + abnormalDatabase + '\'' +
+                ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+                ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+                ", uploadAbnormalValue=" + uploadAbnormalValue +
+                ", workFlowSpace='" + workFlowSpace + '\'' +
+                ", workFlowProject='" + workFlowProject + '\'' +
+                ", nodeName='" + nodeName + '\'' +
+                ", verificationSuccessful='" + verificationSuccessful + '\'' +
+                ", verificationFailed='" + verificationFailed + '\'' +
+                ", executionCompleted='" + executionCompleted + '\'' +
+                '}';
     }
 }

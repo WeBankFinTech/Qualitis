@@ -43,7 +43,7 @@ public class RuleQueryRequest {
   @JsonProperty("relation_object_type")
   private Integer relationObjectType;
   @JsonProperty("sub_system_id")
-  private Long subSystemId;
+  private String subSystemId;
   @JsonProperty("department_name")
   private String departmentName;
   @JsonProperty("dev_department_name")
@@ -193,11 +193,11 @@ public class RuleQueryRequest {
     isPartitionField = partitionField;
   }
 
-  public Long getSubSystemId() {
+  public String getSubSystemId() {
     return subSystemId;
   }
 
-  public void setSubSystemId(Long subSystemId) {
+  public void setSubSystemId(String subSystemId) {
     this.subSystemId = subSystemId;
   }
 

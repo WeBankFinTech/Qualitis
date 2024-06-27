@@ -75,10 +75,11 @@ public interface CustomRuleService {
     /**
      * delete custom rule real
      * @param rule
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deleteCustomRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse deleteCustomRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException;
 
     /**
      * Get custom rule detail

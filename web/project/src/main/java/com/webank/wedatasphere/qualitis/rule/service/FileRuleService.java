@@ -71,10 +71,11 @@ public interface FileRuleService {
     /**
      * Delete rule real
      * @param rule
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deleteRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse deleteRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException;
 
     /**
      * Modify rule detail

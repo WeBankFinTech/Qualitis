@@ -57,13 +57,13 @@ public interface TaskRuleSimpleRepository extends JpaRepository<TaskRuleSimple, 
     List<Long> countByCreateUserAndProjectId(String createUser, Long projectId);
 
     /**
-     * Find by application and rule
-     * @param applicationId
+     * Find by rule and application
      * @param ruleId
+     * @param applicationId
      * @return
      */
-    @Query(value = "select trs from TaskRuleSimple trs where trs.applicationId = ?1 and trs.ruleId = ?2")
-    TaskRuleSimple findByApplicationAndRule(String applicationId, Long ruleId);
+    @Query(value = "select trs from TaskRuleSimple trs where trs.ruleId = ?1 and trs.applicationId = ?2")
+    List<TaskRuleSimple> findByRuleAndApplication(Long ruleId, String applicationId);
 
     /**
      * Find task rule simple by task

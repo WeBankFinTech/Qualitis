@@ -13,7 +13,7 @@ public enum DepartmentSourceTypeEnum {
     CUSTOM(1, "custom");
 
     private Integer code;
-    public String value;
+    private String value;
 
     DepartmentSourceTypeEnum(Integer code, String value) {
         this.code = code;

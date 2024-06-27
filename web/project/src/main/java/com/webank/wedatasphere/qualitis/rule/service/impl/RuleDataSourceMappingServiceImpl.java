@@ -23,6 +23,7 @@ import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinCo
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceMappingService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,11 +57,11 @@ public class RuleDataSourceMappingServiceImpl implements RuleDataSourceMappingSe
             ruleDataSourceMapping.setLeftColumnNames(String.join(",", mapping.getLeft().stream()
                     .map(MultiDataSourceJoinColumnRequest::getColumnName).collect(Collectors.toList())));
             ruleDataSourceMapping.setLeftColumnTypes(String.join("|", mapping.getLeft().stream()
-                .map(MultiDataSourceJoinColumnRequest::getColumnType).collect(Collectors.toList())));
+                .map(MultiDataSourceJoinColumnRequest::getColumnType).filter(StringUtils::isNotBlank).collect(Collectors.toList())));
             ruleDataSourceMapping.setRightColumnNames(String.join(",", mapping.getRight().stream()
                     .map(MultiDataSourceJoinColumnRequest::getColumnName).collect(Collectors.toList())));
             ruleDataSourceMapping.setRightColumnTypes(String.join("|", mapping.getRight().stream()
-                .map(MultiDataSourceJoinColumnRequest::getColumnType).collect(Collectors.toList())));
+                .map(MultiDataSourceJoinColumnRequest::getColumnType).filter(StringUtils::isNotBlank).collect(Collectors.toList())));
             ruleDataSourceMapping.setRule(rule);
             ruleDataSourceMapping.setMappingType(type);
             RuleDataSourceMapping savedRuleDataSourceMapping = ruleDataSourceMappingDao.saveRuleDataSourceMapping(ruleDataSourceMapping);

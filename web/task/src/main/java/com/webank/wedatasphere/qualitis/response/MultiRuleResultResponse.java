@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.webank.wedatasphere.qualitis.entity.TaskResult;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author howeye
@@ -30,7 +31,7 @@ public class MultiRuleResultResponse {
 
     public MultiRuleResultResponse(TaskResult taskResult, String envName) {
         this.value = taskResult == null ? null : taskResult.getValue();
-        this.envName = envName;
+        this.envName = StringUtils.isNotBlank(envName) ? envName : "";
     }
 
     public String getEnvName() {

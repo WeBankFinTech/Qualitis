@@ -27,6 +27,7 @@ public class TaskRule {
     private String cnName;
     private String ruleDetail;
     private String templateName;
+    private String templateEnName;
     private String ruleGroupName;
     private Integer ruleType;
     private Integer alertLevel;
@@ -66,6 +67,14 @@ public class TaskRule {
 
     public void setTemplateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    public String getTemplateEnName() {
+        return templateEnName;
+    }
+
+    public void setTemplateEnName(String templateEnName) {
+        this.templateEnName = templateEnName;
     }
 
     public String getRuleDetail() {

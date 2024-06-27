@@ -18,7 +18,9 @@ package com.webank.wedatasphere.qualitis.divider;
 
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.bean.RuleTaskDetail;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.ArgumentException;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
@@ -49,12 +51,13 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
 
 
     @Override
-    public List<DataQualityTask> divide(List<Rule> rules, String applicationId, String createTime, String partition, Date date, Map<Long, Map<String, Object>> ruleReplaceInfo
+    public List<DataQualityTask> divide(String clusterName, Integer datasourceIndex, List<Rule> rules, String applicationId,
+        String createTime, String partition,
+        Date date, Map<Long, Map<String, Object>> ruleReplaceInfo
         , Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, Integer threshold, String splitBy, String startupParam) throws ArgumentException {
         LOGGER.info("Start to classify rules by datasource");
         Map<String, List<Rule>> sameDataSourceRule = new HashMap<>(4);
         Map<String, String> keyUsers = new HashMap<>(2);
-        StringBuilder columns = new StringBuilder();
         for (Rule rule : rules) {
             StringBuilder realUser = new StringBuilder();
             if (StringUtils.isEmpty(splitBy) && StringUtils.isNotEmpty(rule.getExecutionParametersName())) {
@@ -63,7 +66,7 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
                     splitBy = concurrentcyGranularity.split(":")[1];
                 }
             }
-            String key = getKey(rule, user, realUser, partition, splitBy, columns);
+            String key = getKey(rule, user, realUser, partition, splitBy);
 
             if (ruleReplaceInfo.get(rule.getId()).get("qualitis_startup_param") != null && StringUtils.isNotEmpty((String) ruleReplaceInfo.get(rule.getId()).get("qualitis_startup_param"))) {
                 key = key + ":" + ruleReplaceInfo.get(rule.getId()).get("qualitis_startup_param");
@@ -81,14 +84,15 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
         LOGGER.info("Succeed to classify rules by datasource maybe contains static params. Result: {}", sameDataSourceRule.keySet().stream().collect(Collectors.joining(",")));
 
         List<DataQualityTask> result = new ArrayList<>();
-        handleSameDataSourceRule(applicationId, createTime, user, keyUsers, partition, ruleReplaceInfo, dataSourceMysqlConnect, threshold, sameDataSourceRule, result, startupParam, columns.toString());
+        handleSameDataSourceRule(datasourceIndex, applicationId, createTime, keyUsers, partition, ruleReplaceInfo, dataSourceMysqlConnect, threshold, sameDataSourceRule, result, startupParam);
         LOGGER.info("Succeed to divide all rules into tasks. Result: {}", result);
         return result;
     }
 
-    private void handleSameDataSourceRule(String applicationId, String createTime, String user
+    private void handleSameDataSourceRule(Integer datasourceIndex, String applicationId, String createTime
         , Map<String, String> keyUsers, String partition, Map<Long, Map<String, Object>> ruleReplaceInfo
-        , Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, Integer threshold, Map<String, List<Rule>> sameDataSourceRule, List<DataQualityTask> result, String startupParam, String columns) throws ArgumentException {
+        , Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, Integer threshold, Map<String, List<Rule>> sameDataSourceRule,
+        List<DataQualityTask> result, String startupParam) throws ArgumentException {
 
         for (String key : sameDataSourceRule.keySet()) {
             List<Rule> ruleList = sameDataSourceRule.get(key);
@@ -115,11 +119,7 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
                 String tableName = generateTable(rule);
                 String database = (String) ruleReplaceInfo.get(rule.getId()).get("qualitis_abnormal_database");
 
-                if (database.equals(user.concat("_ind")) && StringUtils.isNotBlank(proxyUser) && database.contains("_ind")) {
-                    database = proxyUser.concat("_ind");
-                }
-
-                String midTableName = database + "." + tableName;
+                String midTableName = StringUtils.isNotEmpty(database) ? (database + "." + tableName) : "";
 
                 LOGGER.info("Rule detail list size is: {}", ruleTaskDetails.size());
                 if (ruleTaskDetails.size() < threshold) {
@@ -128,8 +128,10 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
                     List<RuleTaskDetail> ruleTaskDetailCopy = new ArrayList<>();
                     ruleTaskDetailCopy.addAll(ruleTaskDetails);
                     DataQualityTask tmp = new DataQualityTask(applicationId, createTime, partition, ruleTaskDetailCopy);
-                    checkAndSaveStartupParamAndShareData(tmp, dynamicParam, startupParam, proxyUser, key, partition, currentRuleDataSource, dataSourceMysqlConnect, columns);
-
+                    checkAndSaveStartupParamAndShareData(tmp, dynamicParam, startupParam, proxyUser, key, partition, currentRuleDataSource, dataSourceMysqlConnect, "");
+                    if (datasourceIndex != null) {
+                        tmp.setIndex(datasourceIndex);
+                    }
                     result.add(tmp);
                     ruleTaskDetails = new ArrayList<>();
                     LOGGER.info("Create new rule detail list");
@@ -138,8 +140,10 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
             }
             if (ruleTaskDetails.size() > 0) {
                 DataQualityTask tmp = new DataQualityTask(applicationId, createTime, partition, ruleTaskDetails);
-                checkAndSaveStartupParamAndShareData(tmp, dynamicParam, startupParam, proxyUser, key, partition, currentRuleDataSource, dataSourceMysqlConnect, columns);
-
+                checkAndSaveStartupParamAndShareData(tmp, dynamicParam, startupParam, proxyUser, key, partition, currentRuleDataSource, dataSourceMysqlConnect, "");
+                if (datasourceIndex != null) {
+                    tmp.setIndex(datasourceIndex);
+                }
                 result.add(tmp);
                 LOGGER.info("Succeed to divide rules: {} into a task {}", ruleIdList, tmp);
             }
@@ -185,8 +189,8 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
         return name.toString();
     }
 
-    private String getKey(Rule rule, String user, StringBuilder realUser, String partition, String splitBy, StringBuilder columns) {
-        List<RuleDataSource> ruleDataSourceList = rule.getRuleDataSources().stream().filter(dataSource -> StringUtils.isNotBlank(dataSource.getDbName()) && StringUtils.isNotBlank(dataSource.getTableName())).collect(Collectors.toList());
+    private String getKey(Rule rule, String user, StringBuilder realUser, String partition, String splitBy) {
+        List<RuleDataSource> ruleDataSourceList = rule.getRuleDataSources().stream().filter(dataSource -> (StringUtils.isNotBlank(dataSource.getDbName()) && StringUtils.isNotBlank(dataSource.getTableName())) || StringUtils.isNotEmpty(dataSource.getCollectSql())).collect(Collectors.toList());
 
         if (CollectionUtils.isNotEmpty(ruleDataSourceList)) {
             RuleDataSource ruleDataSource = ruleDataSourceList.iterator().next();
@@ -202,9 +206,6 @@ public class SameDataSourceTaskDivider extends AbstractTaskDivider {
             } else {
                 if (StringUtils.isEmpty(partition)) {
                     partition = ruleDataSource.getFilter();
-                }
-                if (StringUtils.isNotEmpty(ruleDataSource.getColName())) {
-                    columns.append(ruleDataSource.getColName()).append("|");
                 }
                 String envNames = ".";
                 List<RuleDataSourceEnv> ruleDataSourceEnvs = ruleDataSource.getRuleDataSourceEnvs();

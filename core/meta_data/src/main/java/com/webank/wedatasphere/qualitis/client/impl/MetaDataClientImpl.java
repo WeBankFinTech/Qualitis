@@ -24,6 +24,7 @@ import com.webank.wedatasphere.qualitis.client.request.AskLinkisParameter;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.LinkisResponseKeyEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -51,6 +52,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -507,7 +510,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
 
-        return new GeneralResponse<>("200", "Success to get all datasource types", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get all datasource types", data);
     }
 
     @Override
@@ -521,7 +524,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source env by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource env", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource env", data);
     }
 
     @Override
@@ -535,7 +538,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPostBringJsonArray(clusterInfo, authUser, url, "batch create data source env param by user and cluster by linkis."
                 , new JSONArray(datasourceEnvs));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to create datasource env connect params", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to create datasource env connect params", data);
     }
 
     @Override
@@ -550,7 +553,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPutBringJsonArray(clusterInfo, authUser, url, "modify data source env by user and cluster by linkis."
                 ,new JSONArray(datasourceEnvs));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to modify datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource", data);
     }
 
     @Override
@@ -564,7 +567,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source env by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource version", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource version", data);
     }
 
     @Override
@@ -588,13 +591,13 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source info by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource info", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource info", data);
     }
 
     @Override
     public GeneralResponse<Map<String, Object>> getDataSourceInfoByIds(String clusterName, String userName, List<Long> dataSourceIds) throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException {
         if (CollectionUtils.isEmpty(dataSourceIds)) {
-            return new GeneralResponse<>("200", "Success to get datasource info by ids", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource info by ids", null);
         }
         // Check existence of cluster name
         ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
@@ -606,7 +609,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, userName, url, "get data source info by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource info by ids", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource info by ids", data);
     }
 
     @Override
@@ -619,7 +622,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source versions by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource version", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource version", data);
     }
 
     @Override
@@ -635,7 +638,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGetRetry(clusterInfo, authUser, url, "get data source info detail by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource detail info", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource detail info", data);
     }
 
     @Override
@@ -649,7 +652,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source info detail by user and cluster and name by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource info detail by datasource name", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource info detail by datasource name", data);
     }
 
     @Override
@@ -662,7 +665,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, authUser, url, "get data source key define by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to get datasource key define", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource key define", data);
     }
 
     @Override
@@ -675,7 +678,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "connect data source by user and cluster by linkis.",new JSONObject(jsonRequest));
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "{&CONNECT_SUCCESS}", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&CONNECT_SUCCESS}", data);
     }
 
 
@@ -693,7 +696,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
 
-        return new GeneralResponse<>("200", "Success to get datasource connect params", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get datasource connect params", data);
     }
 
     @Override
@@ -706,7 +709,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPost(clusterInfo, authUser, url, "publish data source by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to publish datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to publish datasource", data);
     }
 
     @Override
@@ -719,7 +722,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPut(clusterInfo, authUser, url, "expire data source by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to expire datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to expire datasource", data);
     }
 
     @Override
@@ -732,7 +735,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
         Map<String, Object> response = gainResponseLinkisByPutBringJson(clusterInfo, authUser, url, "modify data source by user and cluster by linkis.",new JSONObject(jsonRequest));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to modify datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource", data);
     }
 
     @Override
@@ -746,7 +749,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "modify data source param by user and cluster by linkis.",new JSONObject(jsonRequest));
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to modify datasource connect params", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource connect params", data);
     }
 
     @Override
@@ -759,7 +762,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
         Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "create data source by user and cluster by linkis.", new JSONObject(jsonRequest));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to create datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to create datasource", data);
     }
 
     @Override
@@ -771,7 +774,19 @@ public class MetaDataClientImpl implements MetaDataClient {
         Map<String, Object> response = gainResponseLinkisByDelete(clusterInfo, userName, url, "delete data source by user and cluster by linkis.");
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to delete datasource", data);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to delete datasource", data);
+    }
+
+    @Override
+    public GeneralResponse<Map<String, Object>> deleteEnv(String clusterName, String userName, Long envId) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        // Check existence of cluster name
+        ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
+        // send request to get dbs
+        String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getEnvDelete()).toString().replace("{ENV_ID}", envId.toString());
+        Map<String, Object> response = gainResponseLinkisByDelete(clusterInfo, userName, url, "delete env by user and cluster by linkis.");
+
+        Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to delete env", data);
     }
 
     @Override
@@ -911,6 +926,18 @@ public class MetaDataClientImpl implements MetaDataClient {
     @Override
     public LinkisDataSourceInfoDetail getDataSourceInfoById(String clusterName, String userName, Long dataSourceId) throws Exception {
         GeneralResponse<Map<String, Object>> generalResponse = getDataSourceInfoDetail(clusterName, userName, dataSourceId, null);
+        if (MapUtils.isEmpty(generalResponse.getData()) || !generalResponse.getData().containsKey(INFO)) {
+            throw new MetaDataAcquireFailedException("Failed to acquire data source by id");
+        }
+        Map<String, Object> infoMap = (Map<String, Object>) generalResponse.getData().get("info");
+        ObjectMapper objectMapper = new ObjectMapper();
+        String infoJson = objectMapper.writeValueAsString(infoMap);
+        return objectMapper.readValue(infoJson, LinkisDataSourceInfoDetail.class);
+    }
+
+    @Override
+    public LinkisDataSourceInfoDetail getDataSourceInfoById(String clusterName, String userName, Long dataSourceId, Long versionId) throws Exception {
+        GeneralResponse<Map<String, Object>> generalResponse = getDataSourceInfoDetail(clusterName, userName, dataSourceId, versionId);
         if (MapUtils.isEmpty(generalResponse.getData()) || !generalResponse.getData().containsKey(INFO)) {
             throw new MetaDataAcquireFailedException("Failed to acquire data source by id");
         }
@@ -1240,18 +1267,6 @@ public class MetaDataClientImpl implements MetaDataClient {
         }
         LOGGER.error("");
         return;
-    }
-
-    @Override
-    public GeneralResponse<Map<String, Object>> deleteEnv(String clusterName, String userName, Long envId) throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        // Check existence of cluster name
-        ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
-        // send request to get dbs
-        String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getEnvDelete()).toString().replace("{ENV_ID}", envId.toString());
-        Map<String, Object> response = gainResponseLinkisByDelete(clusterInfo, userName, url, "delete env by user and cluster by linkis.");
-
-        Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
-        return new GeneralResponse<>("200", "Success to delete env", data);
     }
 
     private ClusterInfo checkClusterNameExists(String clusterName) throws UnExpectedRequestException {

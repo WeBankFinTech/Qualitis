@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
@@ -71,7 +72,7 @@ public class RuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add rule. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_RULE}", null);
         }
     }
 
@@ -91,7 +92,7 @@ public class RuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete rule, rule id: {}, caused by system error: {}", request.getRuleGroupId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE}", null);
         }
     }
 
@@ -112,7 +113,7 @@ public class RuleController {
 	        throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify rule detail, rule id: {}, caused by system error: {}", request.getRuleId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_RULE_DETAIL}", null);
         }
     }
 
@@ -128,7 +129,7 @@ public class RuleController {
 	        throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get rule detail, rule id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_DETAIL}", null);
         }
     }
 
@@ -148,7 +149,7 @@ public class RuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to enable rule , caused by system error: {}",  e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ENABLE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ENABLE_RULE}", null);
         }
 
     }

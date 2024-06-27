@@ -13,10 +13,6 @@ public class ConfigurationResponse {
 
     private List<SettingsResponse> settings;
 
-    private String editName;
-
-    private String operation;
-
     public String getName() {
         return name;
     }
@@ -39,21 +35,5 @@ public class ConfigurationResponse {
 
     public void setSettings(List<SettingsResponse> settings) {
         this.settings = settings;
-    }
-
-    public String getEditName() {
-        return editName;
-    }
-
-    public void setEditName(String editName) {
-        this.editName = editName;
-    }
-
-    public String getOperation() {
-        return operation;
-    }
-
-    public void setOperation(String operation) {
-        this.operation = operation;
     }
 }

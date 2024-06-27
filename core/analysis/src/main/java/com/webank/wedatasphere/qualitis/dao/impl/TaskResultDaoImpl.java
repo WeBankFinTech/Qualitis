@@ -110,4 +110,8 @@ public class TaskResultDaoImpl implements TaskResultDao {
         return resultRepository.findByApplicationId(applicationId);
     }
 
+    @Override
+    public List<TaskResult> findByApplicationIdIn(List< String> applicationIdList) {
+        return resultRepository.findByApplicationIdIn(applicationIdList);
+    }
 }

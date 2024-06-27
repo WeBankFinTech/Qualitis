@@ -16,38 +16,26 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
+import cn.hutool.crypto.digest.DigestUtil;
+import cn.webank.bdp.wedatasphere.components.servicis.ServicisApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
-import com.webank.wedatasphere.qualitis.dao.AuthListDao;
-import com.webank.wedatasphere.qualitis.encoder.Sha256Encoder;
-import com.webank.wedatasphere.qualitis.entity.AuthList;
-import com.webank.wedatasphere.qualitis.request.DataSourceParamModifyRequest;
+import com.webank.wedatasphere.qualitis.config.ItsmConfig;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.util.QualitisCollectionUtils;
-import java.io.File;
+import com.webank.wedatasphere.qualitis.response.RetResponse;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.BufferedHttpEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author howeye
@@ -55,7 +43,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class Filter2TokenFilter implements Filter {
 
     @Autowired
-    private AuthListDao authListDao;
+    private ServicisApi servicisApi;
+    @Value("${itsm.path}")
+    private String itsmPath;
+    @Autowired
+    private ItsmConfig itsmConfig;
+    /**
+     * 5min
+     */
+    private static final long SIGN_VALIDITY_PERIOD = 5 * 60 * 1000L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Filter2TokenFilter.class);
 
@@ -69,9 +65,22 @@ public class Filter2TokenFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
-        FilterChain filterChain) throws IOException, ServletException {
+                         FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
+
+        if (request.getRequestURI().startsWith(itsmPath)) {
+            LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+            RetResponse retResponse = verifyRequestFromITSM(request);
+            if (retResponse.getRetCode() != 0) {
+                ServletOutputStream out = response.getOutputStream();
+                out.write(objectMapper.writeValueAsBytes(retResponse));
+                out.flush();
+                return;
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String appId = request.getParameter("app_id");
         String nonce = request.getParameter("nonce");
@@ -84,28 +93,60 @@ public class Filter2TokenFilter implements Filter {
         if (interval >= invalidInterval) {
             ServletOutputStream out = response.getOutputStream();
             GeneralResponse generalResponse = new GeneralResponse<>("401", "Timestamp is invalid",
-                null);
+                    null);
             out.write(objectMapper.writeValueAsBytes(generalResponse));
             out.flush();
             return;
         }
 
         if (appId != null) {
-            // Find appToken by appId
-            AuthList authList = authListDao.findByAppId(appId);
-            if (authList != null && validateSignature(nonce, timestamp, authList.getAppToken(),
-                appId, signature)) {
+            boolean passed;
+            try {
+                passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
+            } catch (Exception e) {
+                LOGGER.error("Validate signature via Servicis failed with error: ", e);
+                throw new ServletException(e);
+            }
+
+            if (passed) {
                 LOGGER.info(
-                    "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
-                    appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+                        "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
+                        appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
                 filterChain.doFilter(request, response);
                 return;
             }
         }
 
         LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
-            appId, nonce, timestamp, signature);
+                appId, nonce, timestamp, signature);
         writeToResponse("Forbidden! please check appid and token", response);
+    }
+
+    private RetResponse verifyRequestFromITSM(HttpServletRequest httpServletRequest)  {
+        try {
+            String requestSign = httpServletRequest.getHeader("sign");
+            String requestTimestamp = httpServletRequest.getHeader("timeStamp");
+            if (StringUtils.isBlank(requestSign)) {
+                throw new IllegalAccessException("The sign must be not null.");
+            }
+            if (StringUtils.isBlank(requestTimestamp)) {
+                throw new IllegalAccessException("The timeStamp must be not null.");
+            }
+            long timeStamp = System.currentTimeMillis();
+            if ((timeStamp - Long.valueOf(requestTimestamp)) > SIGN_VALIDITY_PERIOD) {
+                throw new IllegalAccessException("The request has expired.");
+            }
+            String sign = DigestUtil.sha256Hex(itsmConfig.getSecretKey() + requestTimestamp);
+            if (!sign.equals(requestSign)) {
+                throw new IllegalAccessException("Forbidden!please check your sign.");
+            }
+        } catch (IllegalAccessException e) {
+            return new RetResponse(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage(), null);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            return new RetResponse(HttpServletResponse.SC_UNAUTHORIZED, "Forbidden!please check your sign and timestamp.", null);
+        }
+        return new RetResponse(null);
     }
 
     private void writeToResponse(String message, ServletResponse response) throws IOException {
@@ -115,55 +156,52 @@ public class Filter2TokenFilter implements Filter {
         out.flush();
     }
 
-    public boolean validateSignature(String nonce, String timestamp, String appToken,
-        String appId, String signature) {
-        return getSignature(nonce, timestamp, appToken, appId).equals(signature);
-    }
-
-    public String getSignature(String nonce, String timestamp, String appToken, String appId) {
-        return Sha256Encoder
-            .encode(Sha256Encoder.encode(appId + nonce + timestamp) + appToken);
-    }
-
-
     @Override
     public void destroy() {
         // Destroy operation
     }
 
-    public static void main(String[] args) {
-        Filter2TokenFilter filter2TokenFilter = new Filter2TokenFilter();
-
-        String nonce = "16895";
-        String timeStamp = String.valueOf(System.currentTimeMillis());
-        System.out.println(timeStamp);
-        MessageDigest hash;
-
-        StringBuilder resultInner = new StringBuilder();
-        StringBuilder resultOuter = new StringBuilder();
-
-        String plain = "linkis_id" + nonce + timeStamp;
-
-        try {
-            hash = MessageDigest.getInstance("SHA-256");
-            hash.update(plain.getBytes("UTF-8"));
-            resultInner.append(new BigInteger(1, hash.digest()).toString(16));
-            String inner = StringUtils.leftPad(resultInner.toString(), 32, '0');
-
-            hash.reset();
-
-            hash.update(inner.concat("***REMOVED***").getBytes("UTF-8"));
-            resultOuter.append(new BigInteger(1, hash.digest()).toString(16));
-            String outer = StringUtils.leftPad(resultOuter.toString(), 32, '0');
-
-            System.out.println(filter2TokenFilter.getSignature(nonce, timeStamp, "***REMOVED***", "linkis_id"));
-            System.out.println(outer);
-
-        } catch (NoSuchAlgorithmException e) {
-            LOGGER.error("Signature exception.", e);
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.error("Upsupported encoding exception.", e);
-        }
+    public static void main(String[] args) throws UnsupportedEncodingException {
+        String result = hashEncrypt(hashEncrypt("linkis_id" + "98032" + "1718424156436",
+                "SHA-256", true, true, 32, '0') + "***REMOVED***", "SHA-256",
+                true, true, 32, '0');
+        System.out.println("Result: " + result);
     }
 
+    public static String hashEncrypt(String input, String hashAlg, boolean strippedLeadingZeroBytesAlg,
+                                     boolean leftPad, int padSize, char padChar) throws UnsupportedEncodingException {
+        MessageDigest messageDigest;
+        String encrypted = StringUtils.EMPTY;
+        byte[] bytes = input.getBytes("UTF-8");
+        try {
+            if (StringUtils.isBlank(hashAlg)) {
+                hashAlg = "SHA-256";
+            }
+            messageDigest = MessageDigest.getInstance(hashAlg);
+            messageDigest.update(bytes);
+            encrypted = bytes2Hex(messageDigest.digest(), strippedLeadingZeroBytesAlg);
+            if (leftPad) {
+                encrypted = StringUtils.leftPad(encrypted, padSize, padChar);
+            }
+        } catch (NoSuchAlgorithmException ignored) {
+            ignored.printStackTrace();
+        }
+        return encrypted;
+    }
+
+    public static String bytes2Hex(byte[] bytes, boolean strippedLeadingZeroBytesAlg) {
+        String hex = StringUtils.EMPTY;
+        if (strippedLeadingZeroBytesAlg) {
+            hex = new BigInteger(1, bytes).toString(16);
+        } else {
+            for (int i = 0; i < bytes.length; i++) {
+                String tmp = Integer.toHexString(bytes[i] & 0xFF);
+                if (tmp.length() == 1) {
+                    hex += "0";
+                }
+                hex += tmp;
+            }
+        }
+        return hex;
+    }
 }
