@@ -24,6 +24,12 @@ public interface RuleDatasourceEnvRepository extends JpaRepository<RuleDataSourc
     RuleDataSourceEnv findByEnvId(Long envId);
 
     /**
+     * delete By Env Id
+     * @param envId
+     */
+    void deleteByEnvId(Long envId);
+
+    /**
      * Find All Env Name
      * @return
      */
@@ -44,4 +50,12 @@ public interface RuleDatasourceEnvRepository extends JpaRepository<RuleDataSourc
      * @return
      */
     List<RuleDataSourceEnv> findByRuleDataSourceIn(List<RuleDataSource> ruleDataSourceList);
+
+    /**
+     * find By DataSourceId
+     * @param datasourceId
+     * @return
+     */
+    @Query(value = "SELECT * FROM qualitis_rule_datasource_env where rule_data_source_id=?1", nativeQuery = true)
+    List<RuleDataSourceEnv> findByDataSourceId(Long datasourceId);
 }

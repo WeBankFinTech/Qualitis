@@ -7,6 +7,7 @@ import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.checkalert.service.CheckAlertService;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDepartmentUserDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -23,10 +24,55 @@ import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.config.RuleConfig;
-import com.webank.wedatasphere.qualitis.rule.constant.*;
-import com.webank.wedatasphere.qualitis.rule.dao.*;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.constant.GroupTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.MappingTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.AlarmArgumentsExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
+import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.dao.ExecutionVariableDao;
+import com.webank.wedatasphere.qualitis.rule.dao.NoiseEliminationManagementDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
+import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
+import com.webank.wedatasphere.qualitis.rule.dao.StaticExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateDataSourceTypeDao;
+import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
+import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.BatchExecutionParametersRequest;
+import com.webank.wedatasphere.qualitis.rule.request.CopyRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.CopyRuleWithDatasourceRequest;
+import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
+import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequests;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
@@ -35,7 +81,20 @@ import com.webank.wedatasphere.qualitis.rule.response.CopyRuleWithDatasourceResp
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponses;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
+import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
+import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
+import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceMappingService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleNodeService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeCallable;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeThreadFactory;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
@@ -63,8 +122,18 @@ import javax.management.relation.RoleNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -156,6 +225,8 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
     private ExecutionParametersDao executionParametersDao;
     @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
+    @Autowired
     private NoiseEliminationManagementDao noiseEliminationManagementDao;
     @Autowired
     private ExecutionVariableDao executionVariableDao;
@@ -196,7 +267,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         RuleGroup ruleGroupInDb = ruleGroupDao.findById(request.getRuleGroupId());
 
         if (ruleGroupInDb == null) {
-            return new GeneralResponse<>("200", "No rule group to be delete", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "No rule group to be delete", null);
         }
 
         if (GroupTypeEnum.CHECK_ALERT_GROUP.getCode().equals(ruleGroupInDb.getType())) {
@@ -207,19 +278,19 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 checkAlertDao.deleteAll(checkAlerts);
             }
             LOGGER.info("Success to delete check alert. Rule group id: {}.", ruleGroupId.toString());
-            return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_SUCCESSFULLY}", null);
         }
 
         List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
         if (CollectionUtils.isEmpty(rules)) {
-            return new GeneralResponse<>("200", "No rules to be delete", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "No rules to be delete", null);
         }
         for (Rule ruleInDb : rules) {
             LOGGER.info("Start to delete rule. Rule group ID: {}.", ruleGroupId.toString());
-            ruleService.deleteRuleReal(ruleInDb);
+            ruleService.deleteRuleReal(ruleInDb, null);
         }
         LOGGER.info("Success to delete rule. Rule group ID: {}.", ruleGroupId.toString());
-        return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -234,14 +305,14 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         RuleGroup ruleGroupInDb = ruleGroupDao.findById(request.getRuleGroupId());
 
         if (ruleGroupInDb == null) {
-            return new GeneralResponse<>("200", "No rule group to be modify", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "No rule group to be modify", null);
         }
 
         if (GroupTypeEnum.CHECK_ALERT_GROUP.getCode().equals(ruleGroupInDb.getType())) {
             List<CheckAlert> checkAlerts = checkAlertDao.findByRuleGroup(ruleGroupInDb);
             LOGGER.info("Start to modify check alert. Rule group id: {}.", ruleGroupId.toString());
             if (CollectionUtils.isEmpty(checkAlerts)) {
-                return new GeneralResponse<>("200", "No check alerts to be modify", null);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "No check alerts to be modify", null);
             }
             checkAlerts = checkAlerts.stream().map(checkAlert -> {
                 checkAlert.setNodeName(request.getNodeName());
@@ -249,12 +320,12 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             }).collect(Collectors.toList());
             checkAlertDao.saveAll(checkAlerts);
             LOGGER.info("Success to modify check alert. Rule group id: {}.", ruleGroupId.toString());
-            return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_SUCCESSFULLY}", null);
         }
 
         List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
         if (CollectionUtils.isEmpty(rules)) {
-            return new GeneralResponse<>("200", "No rules to be modify", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "No rules to be modify", null);
         }
         rules = rules.stream().map(rule -> {
             rule.setNodeName(request.getNodeName());
@@ -262,7 +333,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         }).collect(Collectors.toList());
         ruleDao.saveRules(rules);
         LOGGER.info("Success to modify rule. Rule group ID: {}.", ruleGroupId.toString());
-        return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -290,11 +361,11 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             }
         } catch (IOException e) {
             LOGGER.error("Failed to export rule because of JSON serialization opeartions.", e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXPORT_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXPORT_RULE}", null);
         }
         LOGGER.info("Succeed to export rule. Rule info: {}", Arrays.toString(responses.toArray()));
         RuleNodeResponses ruleNodeResponseList = new RuleNodeResponses(responses);
-        return new GeneralResponse<>("200", "{&EXPORT_RULE_SUCCESSFULLY}", ruleNodeResponseList);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&EXPORT_RULE_SUCCESSFULLY}", ruleNodeResponseList);
     }
 
     private RuleNodeResponse ruleNodeResponse(CheckAlert checkAlert) throws IOException {
@@ -384,7 +455,6 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
         ruleGroup.setId(null);
         ruleGroup.setProjectId(projectInDb.getId());
-        RuleGroup ruleGroupInDb = ruleGroupDao.saveRuleGroup(ruleGroup);
 
         // Dev copy project, mainly about the project copy of different dss.
         if (Boolean.TRUE.equals(localConfig.getSupportMigrate())) {
@@ -393,6 +463,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
         List<Future<List<Exception>>> exceptionList = new ArrayList<>();
         if (ruleGroupExists == null) {
+            RuleGroup ruleGroupInDb = ruleGroupDao.saveRuleGroup(ruleGroup);
             updateRuleGroupDatasource(ruleGroupInDb, ruleDataSourceSet);
             ruleNodeRequestFuture(ruleNodeRequests, projectInDb, objectMapper, ruleGroupInDb, exceptionList);
             if (CollectionUtils.isNotEmpty(exceptionList)) {
@@ -403,13 +474,13 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                     }
                 }
                 if (StringUtils.isNotEmpty(exceptionMessage.toString())) {
-                    return new GeneralResponse<>("500", "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
+                    return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
                 }
             }
             disableRules(ruleGroupInDb);
-            modifyRuleContextService(ruleGroupInDb, ruleNodeRequests.getCsId());
+            modifyRuleContextService(ruleGroupInDb, ruleNodeRequests.getCsId(), ruleNodeRequests.getUserName());
             LOGGER.info("Imported rule group ID: {}", ruleGroupInDb.getId());
-            return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupInDb.getId()));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupInDb.getId()));
         } else {
             updateRuleGroupDatasource(ruleGroupExists, ruleDataSourceSet);
             ruleNodeRequestFuture(ruleNodeRequests, projectInDb, objectMapper, ruleGroupExists, exceptionList);
@@ -422,17 +493,17 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 }
 
                 if (StringUtils.isNotEmpty(exceptionMessage.toString())) {
-                    return new GeneralResponse<>("500", "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
+                    return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_IMPORT_RULE}, caused by " + exceptionMessage.toString(), null);
                 }
             }
             disableRules(ruleGroupExists);
-            modifyRuleContextService(ruleGroupExists, ruleNodeRequests.getCsId());
+            modifyRuleContextService(ruleGroupExists, ruleNodeRequests.getCsId(), ruleNodeRequests.getUserName());
             LOGGER.info("Imported rule group ID: {}", ruleGroupExists.getId());
-            return new GeneralResponse<>("200", "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupExists.getId()));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&IMPORT_RULE_SUCCESSFULLY}", new RuleResponse(ruleGroupExists.getId()));
         }
     }
 
-    private void modifyRuleContextService(RuleGroup ruleGroupInDb, String csId) {
+    private void modifyRuleContextService(RuleGroup ruleGroupInDb, String csId, String userName) {
         LOGGER.info("Rules need to update contextID: {}", csId);
         List<Rule> rules = ruleDao.findByRuleGroup(ruleGroupInDb);
         if (CollectionUtils.isNotEmpty(rules) && StringUtils.isNotEmpty(csId)) {
@@ -441,6 +512,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                     continue;
                 }
                 LOGGER.info(rule.getName() + " " + " update contextID.");
+                rule.setModifyUser(userName);
                 rule.setCsId(csId);
             }
             ruleDao.saveRules(rules);
@@ -511,7 +583,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                     userService.autoAddUser(userName);
                     currentUser = userDao.findByUsername(userName);
                 } catch (RoleNotFoundException e) {
-                    LOGGER.error("Role cannot be found. Exception: {}", e);
+                    throw new UnExpectedRequestException("Role cannot be found. Exception: " + e.getMessage());
                 }
             }
 
@@ -668,18 +740,18 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 }
             }
             if (CollectionUtils.isEmpty(exceptions)) {
-                modifyRuleContextService(targetRuleGroup, request.getCsId());
-                return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
+                modifyRuleContextService(targetRuleGroup, request.getCsId(), "");
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
             } else {
                 for (Exception e : exceptions) {
                     exceptionMessage.append(e.getMessage()).append("\n");
                 }
 
-                return new GeneralResponse<>("500", "{&FAILED_TO_COPY_RULE_DETAIL}, caused by " + exceptionMessage.toString(), null);
+                return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_COPY_RULE_DETAIL}, caused by " + exceptionMessage.toString(), null);
             }
         }
-        modifyRuleContextService(targetRuleGroup, request.getCsId());
-        return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
+        modifyRuleContextService(targetRuleGroup, request.getCsId(), "");
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
     }
 
     private void updateRuleGroupDatasource(RuleGroup targetRuleGroup, Set<RuleDataSource> ruleDataSourceSet) {
@@ -803,10 +875,10 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         }
 
         if (totalFinish != rules.size()) {
-            return new GeneralResponse<>("400", "{&COPY_RULE_FAILED}", new RuleResponse(ruleGroupId));
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "{&COPY_RULE_FAILED}", new RuleResponse(ruleGroupId));
         }
 
-        return new GeneralResponse<>("200", "{&COPY_RULE_SUCCESSFULLY}", new CopyRuleWithDatasourceResponse(ruleGroup.getProjectId(), ruleGroupId, request.getRuleIdList()));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&COPY_RULE_SUCCESSFULLY}", new CopyRuleWithDatasourceResponse(ruleGroup.getProjectId(), ruleGroupId, request.getRuleIdList()));
     }
 
     @Override
@@ -826,7 +898,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
                 ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), ruleInDb.getProject().getId());
                 if (groupRules || executionParameters != null) {
                     ruleInDb.setExecutionParametersName(request.getExecutionParametersName());
-                    ruleInDb.setUnionAll(executionParameters.getUnionAll());
+                    ruleInDb.setUnionWay(executionParameters.getUnionWay());
 
                     alarmConfigDao.saveAllAlarmConfig(ruleInDb.getAlarmConfigs().stream().map(temp -> {
                         temp.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue() != null ? executionParameters.getUploadRuleMetricValue() : false);
@@ -873,7 +945,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             Rule savedRule = ruleDao.saveRule(ruleInDb);
             LOGGER.info("Succeed to update rule. Rule id: {}", savedRule.getId());
         }
-        return new GeneralResponse<>("200", "{&BATCH_MODIFY_RULE_SUCCESSFULLY}", request.getRuleIdList());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&BATCH_MODIFY_RULE_SUCCESSFULLY}", request.getRuleIdList());
     }
 
     private void setDataSourceRequest(DataSourceRequest dataSourceRequest, DataSourceRequest dataSourceRequestReal) {
@@ -903,7 +975,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
         addFileRuleRequest.setCsId(rule.getCsId());
         addFileRuleRequest.setRuleEnable(rule.getEnable());
-        addFileRuleRequest.setUnionAll(rule.getUnionAll());
+        addFileRuleRequest.setUnionWay(rule.getUnionWay());
         addFileRuleRequest.setRuleGroupId(ruleGroup.getId());
         addFileRuleRequest.setProjectId(ruleGroup.getProjectId());
         addFileRuleRequest.setRuleTemplateId(rule.getTemplate().getId());
@@ -996,7 +1068,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addMultiSourceRuleRequest.setRuleGroupId(ruleGroup.getId());
         addMultiSourceRuleRequest.setRuleDetail(rule.getDetail());
         addMultiSourceRuleRequest.setRuleEnable(rule.getEnable());
-        addMultiSourceRuleRequest.setUnionAll(rule.getUnionAll());
+        addMultiSourceRuleRequest.setUnionWay(rule.getUnionWay());
         addMultiSourceRuleRequest.setClusterName(clusterName);
         addMultiSourceRuleRequest.setCsId(rule.getCsId());
 
@@ -1154,7 +1226,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addCustomRuleRequest.setProjectId(ruleGroup.getProjectId());
         addCustomRuleRequest.setRuleGroupId(ruleGroup.getId());
         addCustomRuleRequest.setRuleEnable(rule.getEnable());
-        addCustomRuleRequest.setUnionAll(rule.getUnionAll());
+        addCustomRuleRequest.setUnionWay(rule.getUnionWay());
         addCustomRuleRequest.setCsId(rule.getCsId());
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
@@ -1246,11 +1318,12 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addRuleRequest.setTemplateArgumentRequests(constructTemplateArgumentRequest(rule));
         addRuleRequest.setDatasource(constructDataSourceRequest(rule.getRuleDataSources()));
 
+        addRuleRequest.setStandardValueVersionId(rule.getStandardValueVersionId());
         addRuleRequest.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
         addRuleRequest.setProjectId(ruleGroup.getProjectId());
         addRuleRequest.setRuleGroupId(ruleGroup.getId());
         addRuleRequest.setRuleEnable(rule.getEnable());
-        addRuleRequest.setUnionAll(rule.getUnionAll());
+        addRuleRequest.setUnionWay(rule.getUnionWay());
         addRuleRequest.setCsId(rule.getCsId());
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
@@ -1409,12 +1482,13 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         }
 
         Rule rule = objectMapper.readValue(ruleNodeRequest.getRuleObject(), Rule.class);
+        rule.setId(Long.MAX_VALUE);
         LOGGER.info("Find highest version of rule with same name={} and workflow name={}", rule.getName(), rule.getWorkFlowName());
         Rule ruleInDb = ruleDao.findHighestVersionByProjectAndWorkFlowName(projectInDb, rule.getWorkFlowName(), rule.getName());
         try {
             ruleBatchService.handleRule(rule, ruleInDb, ruleNodeRequest.getRuleObject(), ruleNodeRequest.getTemplateObject()
-                , ruleNodeRequest.getTemplateDataVisibilityObject(), projectInDb, ruleGroupInDb.getRuleGroupName()
-                , null, null);
+                , ruleNodeRequest.getTemplateDataVisibilityObject(), projectInDb, ruleGroupInDb
+                , null, new ArrayList<>());
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }

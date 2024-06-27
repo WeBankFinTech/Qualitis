@@ -295,6 +295,9 @@ public class GeneralExecutionRequest {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getCreateUser(), "Create User");
         CommonChecker.checkString(request.getExecutionUser(), "Execution User");
+
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getExecutionParam(), "{&EXECUTION_VARIABLES_HAVE_THE_SAME_VARIABLE_NAME}: ");
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getStartupParamName(), "{&DYNAMIC_ENGINE_HAVE_THE_SAME_VARIABLE_NAME}: ");
     }
 
     @Override

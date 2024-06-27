@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
@@ -63,7 +64,7 @@ public class MultiRuleTemplateController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get multi rule_template. multi_rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
 

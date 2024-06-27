@@ -16,8 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.translator;
 
+import bsp.encrypt.EncryptUtil;
 import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
 import com.webank.wedatasphere.qualitis.constant.OptTypeEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.converter.SqlTemplateConverter;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.exception.RuleVariableNotFoundException;
@@ -26,6 +29,8 @@ import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -40,8 +45,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Generate scala code of connecting mysql and save data into mysql
@@ -59,7 +68,7 @@ public class JdbcTranslator extends AbstractTranslator {
     @Value("${task.persistent.username}")
     private String mysqlUsername;
     @Value("${task.persistent.password}")
-    private String mysqlSecret;
+    private String mysqlPassword;
     @Value("${task.persistent.address}")
     private String mysqlAddress;
     @Value("${task.persistent.tableName}")
@@ -68,8 +77,6 @@ public class JdbcTranslator extends AbstractTranslator {
     private String newValueTableName;
     @Value("${task.new_value.save}")
     private String newValueTableSave;
-    @Value("${task.persistent.encrypt: false}")
-    private Boolean isEncrypt;
 
     @Autowired
     private RuleMetricDao ruleMetricDao;
@@ -81,6 +88,7 @@ public class JdbcTranslator extends AbstractTranslator {
     private static final String STATISTICS_VALUE_FIELD_NAME = "value";
     private static final String STATISTICS_RULE_ID_FIELD_NAME = "rule_id";
     private static final String STATISTICS_APPLICATION_ID_FIELD_NAME = "application_id";
+    private static final String STATISTICS_TASK_ID_FIELD_NAME = "task_id";
     private static final String STATISTICS_RULE_METRIC_ID_FIELD_NAME = "rule_metric_id";
     private static final String STATISTICS_RUN_DATE_FIELD_NAME = "run_date";
     private static final String STATISTICS_ENV_NAME_FIELD_NAME = "env_name";
@@ -101,6 +109,7 @@ public class JdbcTranslator extends AbstractTranslator {
     private static final String STATISTICS_RUN_DATE_PLACEHOLDER = "${RUN_DATE}";
     private static final String STATISTICS_ENV_NAME_PLACEHOLDER = "${ENV_NAME}";
     private static final String STATISTICS_APPLICATION_ID_PLACEHOLDER = "${APPLICATION_ID}";
+    private static final String STATISTICS_TASK_ID_PLACEHOLDER = "${TASK_ID}";
     private static final String STATISTICS_RULE_METRIC_ID_PLACEHOLDER = "${RULE_METRIC_ID}";
     private static final String STATISTICS_RESULT_TYPE_PLACEHOLDER = "${RESULT_TYPE}";
     private static final String STATISTICS_CREATE_TIME_PLACEHOLDER = "${CREATE_TIME}";
@@ -120,10 +129,16 @@ public class JdbcTranslator extends AbstractTranslator {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcTranslator.class);
+
     private HttpServletRequest httpServletRequest;
 
     public JdbcTranslator(@Context HttpServletRequest httpServletRequest) {
         this.httpServletRequest = httpServletRequest;
+    }
+
+    @Override
+    public String getDataSourceConn() {
+        return "DriverManager.getConnection(\"" + mysqlAddress + "\", \"" + mysqlUsername + "\", \"" + mysqlPassword + "\")";
     }
 
     /**
@@ -132,20 +147,18 @@ public class JdbcTranslator extends AbstractTranslator {
     @PostConstruct
     public void init() {
         usernamePropSentence = PROP_VARIABLE_NAME + ".setProperty(\"user\", \"" + mysqlUsername + "\");";
-        if (isEncrypt) {
-//            String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
-//            try {
-//                mysqlSecret = EncryptUtil.decrypt(passwordPrivateKey, taskDataSourceConfig.getPassword());
-//            } catch (Exception e) {
-//                LOGGER.error("Decrypt mysqlsec password exception.", e);
-//            }
-        } else {
-            mysqlSecret = taskDataSourceConfig.getPassword();
+        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
+        String password = taskDataSourceConfig.getPassword();
+        try {
+            mysqlPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
+        } catch (Exception e) {
+            LOGGER.error("Decrypt mysqlsec password exception.", e);
         }
-        passwordPropSentence = PROP_VARIABLE_NAME + ".setProperty(\"password\", \"" + mysqlSecret + "\");";
+        passwordPropSentence = PROP_VARIABLE_NAME + ".setProperty(\"password\", \"" + mysqlPassword + "\");";
         statisticsAndSaveResultTemplate = SqlTemplateConverter.VARIABLE_NAME_PLACEHOLDER + ".selectExpr(\"" +
                 STATISTICS_VALUE_PLACEHOLDER + " as " + STATISTICS_VALUE_FIELD_NAME + "\", \"'" +
                 STATISTICS_APPLICATION_ID_PLACEHOLDER + "' as " + STATISTICS_APPLICATION_ID_FIELD_NAME + "\", \"'" +
+                STATISTICS_TASK_ID_PLACEHOLDER + "' as " + STATISTICS_TASK_ID_FIELD_NAME + "\", \"'" +
                 STATISTICS_RESULT_TYPE_PLACEHOLDER + "' as " + STATISTICS_RESULT_FILED_TYPE + "\", \"'" +
                 STATISTICS_RULE_ID_PLACEHOLDER + "' as " + STATISTICS_RULE_ID_FIELD_NAME + "\", \"'" +
                 STATISTICS_VERSION_PLACEHOLDER + "' as " + STATISTICS_VERSION + "\", \"'" +
@@ -186,6 +199,7 @@ public class JdbcTranslator extends AbstractTranslator {
      * @param ruleMetricMaps
      * @param templateStatisticsInputMetas
      * @param applicationId
+     * @param taskId
      * @param ruleVariables
      * @param createTime
      * @param partOfVariableName
@@ -195,17 +209,20 @@ public class JdbcTranslator extends AbstractTranslator {
      * @param enumListNewValue
      * @param numRangeNewValue
      * @param selectResult
-     * @param unionAllForSaveResult
+     * @param unionWay
      * @return
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
      */
     @Override
-    public List<String> persistenceTranslate(String workFlowVersion, Long ruleId, Map<String, Long> ruleMetricMaps, Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas,
-        String applicationId, List<RuleVariable> ruleVariables, String createTime, String partOfVariableName, String runDate, String user, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+    public List<String> persistenceTranslate(String workFlowVersion, Long ruleId, Map<String, Long> ruleMetricMaps,
+        Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas,
+        String applicationId, Long taskId, List<RuleVariable> ruleVariables, String createTime, String partOfVariableName, String runDate,String runToday,
+        String user, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue, Map<String, String> selectResult,
+        int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
         List<String> list = new ArrayList<>();
-        list.addAll(getStatisticsAndSaveSentence(workFlowVersion,ruleId, ruleMetricMaps, templateStatisticsInputMetas, applicationId, ruleVariables, createTime, partOfVariableName
-            , runDate, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionAllForSaveResult));
+        list.addAll(getStatisticsAndSaveSentence(workFlowVersion, ruleId, ruleMetricMaps, templateStatisticsInputMetas, applicationId, taskId, ruleVariables, createTime, partOfVariableName
+                , runDate, runToday, user, realColumn, enumListNewValue, numRangeNewValue, selectResult, unionWay));
         return list;
     }
 
@@ -226,22 +243,25 @@ public class JdbcTranslator extends AbstractTranslator {
      * @param ruleMetricMap
      * @param templateStatisticsInputMetas
      * @param applicationId
+     * @param taskId
      * @param ruleVariables
      * @param createTime
      * @param partOfVariableName
      * @param runDate
+     * @param runToday
      * @param realColumn
      * @param enumListNewValue
      * @param numRangeNewValue
      * @param selectResult
-     * @param unionAllForSaveResult
+     * @param unionWay
      * @return
      * @throws RuleVariableNotSupportException
      * @throws RuleVariableNotFoundException
      */
     private List<String> getStatisticsAndSaveSentence(String workFlowVersion, Long ruleId, Map<String, Long> ruleMetricMap
-        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, List<RuleVariable> ruleVariables
-        , String createTime, String partOfVariableName, String runDate, String user, StringBuilder realColumn, boolean enumListNewValue, boolean numRangeNewValue, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+        , Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, String applicationId, Long taskId, List<RuleVariable> ruleVariables
+            , String createTime, String partOfVariableName, String runDate, String runToday, String user, StringBuilder realColumn, boolean enumListNewValue,
+        boolean numRangeNewValue, Map<String, String> selectResult, int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
 
         List<String> list = new ArrayList<>();
         Map<String, Long> newRuleMetricMap = new HashMap<>(2);
@@ -252,22 +272,31 @@ public class JdbcTranslator extends AbstractTranslator {
                 newRuleMetricMap.put(key.replace("-", "_"), value);
             }
         }
+        if (StringUtils.isNotBlank(runToday) && StringUtils.isBlank(runDate)) {
+            runDate = runToday;
+        }
         if (StringUtils.isBlank(runDate)) {
-            sentenceWithoutRunDate(workFlowVersion, templateStatisticsInputMetas, ruleVariables, list, applicationId, createTime, partOfVariableName, ruleId, newRuleMetricMap, user, enumListNewValue, numRangeNewValue, realColumn, selectResult, unionAllForSaveResult);
+            sentenceWithoutRunDate(workFlowVersion, templateStatisticsInputMetas, ruleVariables, list, applicationId, taskId, createTime, partOfVariableName, ruleId, newRuleMetricMap, user, enumListNewValue, numRangeNewValue, realColumn, selectResult, unionWay);
         } else {
-            sentenceWithRunDate(workFlowVersion, templateStatisticsInputMetas, ruleVariables, list, applicationId, createTime, partOfVariableName, ruleId, newRuleMetricMap, user, runDate, enumListNewValue, numRangeNewValue, realColumn, selectResult, unionAllForSaveResult);
+            sentenceWithRunDate(workFlowVersion, templateStatisticsInputMetas, ruleVariables, list, applicationId, taskId, createTime, partOfVariableName, ruleId, newRuleMetricMap, user, runDate, enumListNewValue, numRangeNewValue, realColumn, selectResult, unionWay);
         }
 
         return list;
     }
 
     private void sentenceWithRunDate(String workFlowVersion, Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas,
-        List<RuleVariable> ruleVariables, List<String> list, String applicationId, String createTime, String partOfVariableName, Long ruleId, Map<String, Long> ruleMetricMap,
-        String user, String runDate, boolean enumListNewValue, boolean numRangeNewValue, StringBuilder realColumn, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+        List<RuleVariable> ruleVariables, List<String> list, String applicationId, Long taskId, String createTime,
+        String partOfVariableName, Long ruleId, Map<String, Long> ruleMetricMap,
+        String user, String runDate, boolean enumListNewValue, boolean numRangeNewValue, StringBuilder realColumn, Map<String, String> selectResult,
+        int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
         Date runRealDate;
 
         try {
-            runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
+            if (runDate.contains(SpecCharEnum.MINUS.getValue())) {
+                runRealDate = new SimpleDateFormat("yyyy-MM-dd").parse(runDate);
+            } else {
+                runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
+            }
         } catch (ParseException e) {
             LOGGER.error(e.getMessage(), e);
             throw new RuleVariableNotSupportException("{&FAILED_TO_PARSE_RUN_DATE}");
@@ -280,12 +309,12 @@ public class JdbcTranslator extends AbstractTranslator {
             List<String> varList = selectResult.keySet().stream().collect(Collectors.toList());
 
             for (String variable : varList) {
-                // 聚合处理
-                if (unionAllForSaveResult) {
-                    constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, createTime, ruleId, variable, selectResult.get(variable), workFlowVersion, ruleMetricMap, list);
+                // 如果聚合处理结果，说明只有一个校验结果，那么只需调用一次constructStaticSqlWithRunDate
+                if (UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay)) {
+                    constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, taskId, createTime, ruleId, variable, selectResult.get(variable), workFlowVersion, ruleMetricMap, list);
                     break;
                 }
-                constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, createTime, ruleId, variable, selectResult.get(variable), workFlowVersion, ruleMetricMap, list);
+                constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, taskId, createTime, ruleId, variable, selectResult.get(variable), workFlowVersion, ruleMetricMap, list);
             }
             list.add("} catch {");
             list.add("\tcase e: Exception => println(\"JDBC operations failed because of \", e.getMessage())");
@@ -297,7 +326,7 @@ public class JdbcTranslator extends AbstractTranslator {
             return;
         }
 
-        constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, createTime, ruleId, getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), "", workFlowVersion, ruleMetricMap, list);
+        constructStaticSqlWithRunDate(templateStatisticsInputMetas, ruleVariables, runRealDate, applicationId, taskId, createTime, ruleId, getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName), "", workFlowVersion, ruleMetricMap, list);
 
         list.add("} catch {");
         list.add("\tcase e: Exception => println(\"JDBC operations failed because of \", e.getMessage())");
@@ -309,8 +338,10 @@ public class JdbcTranslator extends AbstractTranslator {
         handleNewValue(workFlowVersion, user, realColumn, createTime, partOfVariableName, ruleId, list, enumListNewValue, numRangeNewValue, "");
     }
 
-    private void constructStaticSqlWithRunDate(Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, List<RuleVariable> ruleVariables, Date runRealDate
-        , String applicationId, String createTime, Long ruleId, String variable, String envName, String workFlowVersion, Map<String, Long> ruleMetricMap, List<String> list) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+    private void constructStaticSqlWithRunDate(Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, List<RuleVariable> ruleVariables,
+        Date runRealDate
+        , String applicationId, Long taskId, String createTime, Long ruleId, String variable, String envName, String workFlowVersion,
+        Map<String, Long> ruleMetricMap, List<String> list) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
         for (TemplateStatisticsInputMeta s : templateStatisticsInputMetas) {
             String funcName = s.getFuncName();
             String value = getValue(ruleVariables, s);
@@ -318,6 +349,7 @@ public class JdbcTranslator extends AbstractTranslator {
                 .replace(STATISTICS_VALUE_PLACEHOLDER, funcName + "(" + value + ")")
                 .replace(STATISTICS_RESULT_TYPE_PLACEHOLDER, s.getResultType())
                 .replace(STATISTICS_APPLICATION_ID_PLACEHOLDER, applicationId)
+                .replace(STATISTICS_TASK_ID_PLACEHOLDER, taskId + "")
                 .replace(STATISTICS_CREATE_TIME_PLACEHOLDER, createTime)
                 .replace(STATISTICS_RULE_ID_PLACEHOLDER, ruleId + "")
                 .replace(STATISTICS_ENV_NAME_PLACEHOLDER, envName)
@@ -358,84 +390,88 @@ public class JdbcTranslator extends AbstractTranslator {
             persistSentence = persistSentence.replace(STATISTICS_RULE_METRIC_ID_PLACEHOLDER, ruleMetricMap.get(value) + "");
             selectSql.append("val selectSql").append("_").append(variable)
                     .append(" = \"(select * from ").append(resultTableName).append(" where rule_id = ").append(ruleId)
+                    .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                     .append(" and rule_metric_id = ").append(ruleMetricMap.get(value))
-                    .append(" and save_result = 1")
                     .append(" and env_name = '").append(envName).append("'")
-                    .append(" and (run_date = ").append(runRealDate.getTime())
-                    .append(")) qualitis_tmp_table\"");
+                    .append(" and save_result = 1")
+                    .append(") qualitis_tmp_table\"");
             updateSql.append("val updateSql").append("_").append(variable)
                     .append(" = \"update ").append(resultTableName).append(" set value = \"").append(" + ").append(realValueName).append(" + ").append("\" where rule_id = ").append(ruleId)
+                    .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                     .append(" and rule_metric_id = ").append(ruleMetricMap.get(value))
-                    .append(" and save_result = 1")
                     .append(" and env_name = '").append(envName).append("'")
-                    .append(" and (run_date = ").append(runRealDate.getTime())
-                    .append(")\"");
+                    .append(" and save_result = 1")
+                    .append("\"");
         } else {
             if (CollectionUtils.isNotEmpty(ruleMetricMap.values())) {
                 persistSentence = persistSentence.replace(STATISTICS_RULE_METRIC_ID_PLACEHOLDER, ruleMetricMap.values().iterator().next() + "");
                 selectSql.append("val selectSql").append("_").append(variable)
                         .append(" = \"(select * from ").append(resultTableName).append(" where rule_id = ").append(ruleId)
+                        .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                         .append(" and rule_metric_id = ").append(ruleMetricMap.values().iterator().next())
-                        .append(" and save_result = 1")
                         .append(" and env_name = '").append(envName).append("'")
-                        .append(" and (run_date = ").append(runRealDate.getTime())
-                        .append(")) qualitis_tmp_table\"");
+                        .append(" and save_result = 1")
+                        .append(") qualitis_tmp_table\"");
                 updateSql.append("val updateSql").append("_").append(variable)
                         .append(" = \"update ").append(resultTableName).append(" set value = \"").append(" + ").append(realValueName).append(" + ").append("\" where rule_id = ").append(ruleId)
+                        .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                         .append(" and rule_metric_id = ").append(ruleMetricMap.values().iterator().next())
-                        .append(" and save_result = 1")
                         .append(" and env_name = '").append(envName).append("'")
-                        .append(" and (run_date = ").append(runRealDate.getTime())
-                        .append(")\"");
+                        .append(" and save_result = 1")
+                        .append("\"");
             } else {
                 persistSentence = persistSentence.replace(STATISTICS_RULE_METRIC_ID_PLACEHOLDER, "-1");
                 selectSql.append("val selectSql").append("_").append(variable)
                         .append(" = \"(select * from ").append(resultTableName).append(" where rule_id = ").append(ruleId)
+                        .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                         .append(" and rule_metric_id = ").append("-1")
-                        .append(" and save_result = 1")
                         .append(" and env_name = '").append(envName).append("'")
-                        .append(" and (run_date = ").append(runRealDate.getTime())
-                        .append(")) qualitis_tmp_table\"");
+                        .append(" and save_result = 1")
+                        .append(") qualitis_tmp_table\"");
                 updateSql.append("val updateSql").append("_").append(variable)
                         .append(" = \"update ").append(resultTableName).append(" set value = \"").append(" + ").append(realValueName).append(" + ").append("\" where rule_id = ").append(ruleId)
+                        .append(" and (run_date = ").append(runRealDate.getTime()).append(")")
                         .append(" and rule_metric_id = ").append("-1")
-                        .append(" and save_result = 1")
                         .append(" and env_name = '").append(envName).append("'")
-                        .append(" and (run_date = ").append(runRealDate.getTime())
-                        .append(")\"");
+                        .append(" and save_result = 1")
+                        .append("\"");
             }
         }
         return persistSentence;
     }
 
     private void sentenceWithoutRunDate(String workFlowVersion, Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas
-        , List<RuleVariable> ruleVariables, List<String> list, String applicationId, String createTime, String partOfVariableName, Long ruleId
-        , Map<String, Long> ruleMetricMap, String user, boolean enumListNewValue, boolean numRangeNewValue, StringBuilder realColumn, Map<String, String> selectResult, boolean unionAllForSaveResult) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+        , List<RuleVariable> ruleVariables, List<String> list, String applicationId, Long taskId, String createTime,
+        String partOfVariableName, Long ruleId
+        , Map<String, Long> ruleMetricMap, String user, boolean enumListNewValue, boolean numRangeNewValue, StringBuilder realColumn,
+        Map<String, String> selectResult, int unionWay) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
         if (selectResult != null && CollectionUtils.isNotEmpty(selectResult.keySet())) {
             List<String> varList = selectResult.keySet().stream().collect(Collectors.toList());
 
             for (String variable : varList) {
-                // 聚合处理
-                if (unionAllForSaveResult) {
-                    constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, variable, selectResult.get(variable));
+                // 如何是聚合处理，说明只有一个产出的结果值，那么只需确保通知一次即可
+                if (UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay)) {
+                    constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, taskId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, variable, selectResult.get(variable));
                     // Handle new value
                     handleNewValue(workFlowVersion, user, realColumn, createTime, partOfVariableName, ruleId, list, enumListNewValue, numRangeNewValue, variable);
                     break;
                 }
-                constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, variable, selectResult.get(variable));
+                constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, taskId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, variable, selectResult.get(variable));
                 // Handle new value
                 handleNewValue(workFlowVersion, user, realColumn, createTime, partOfVariableName, ruleId, list, enumListNewValue, numRangeNewValue, variable);
             }
             return;
         }
-        constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, "", "");
+        constructStaticSql(templateStatisticsInputMetas, ruleVariables, applicationId, taskId, createTime, partOfVariableName, ruleId, workFlowVersion, ruleMetricMap, list, "", "");
 
         // Handle new value
         handleNewValue(workFlowVersion, user, realColumn, createTime, partOfVariableName, ruleId, list, enumListNewValue, numRangeNewValue, "");
     }
 
-    private void constructStaticSql(Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, List<RuleVariable> ruleVariables, String applicationId
-        , String createTime, String partOfVariableName, Long ruleId, String workFlowVersion, Map<String, Long> ruleMetricMap, List<String> list, String realVariable, String envName) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
+    private void constructStaticSql(Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas, List<RuleVariable> ruleVariables,
+        String applicationId
+        , Long taskId, String createTime, String partOfVariableName, Long ruleId, String workFlowVersion, Map<String, Long> ruleMetricMap,
+        List<String> list, String realVariable, String envName) throws RuleVariableNotSupportException, RuleVariableNotFoundException {
         for (TemplateStatisticsInputMeta s : templateStatisticsInputMetas) {
             String funcName = s.getFuncName();
             String value = getValue(ruleVariables, s);
@@ -443,6 +479,7 @@ public class JdbcTranslator extends AbstractTranslator {
                 .replace(STATISTICS_VALUE_PLACEHOLDER, funcName + "(" + value + ")")
                 .replace(STATISTICS_RESULT_TYPE_PLACEHOLDER, s.getResultType())
                 .replace(STATISTICS_APPLICATION_ID_PLACEHOLDER, applicationId)
+                .replace(STATISTICS_TASK_ID_PLACEHOLDER, taskId + "")
                 .replace(STATISTICS_CREATE_TIME_PLACEHOLDER, createTime)
                 .replace(STATISTICS_RULE_ID_PLACEHOLDER, ruleId + "")
                 .replace(STATISTICS_ENV_NAME_PLACEHOLDER, envName + "")

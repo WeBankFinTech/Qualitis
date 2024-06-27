@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.dao;
 
 import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.project.entity.Project;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -210,7 +211,8 @@ public interface ApplicationDao {
    * @param databaseName
    * @param tableName
    * @param projectId
-   * @param status
+   * @param taskStatus
+   * @param applicationStatus
    * @param commentType
    * @param startTime
    * @param endTime
@@ -220,7 +222,7 @@ public interface ApplicationDao {
    * @param size
    * @return
    */
-  List<Application> findApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser, Integer page,
+  List<Application> findApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer taskStatus, Integer applicationStatus, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser, Integer page,
         Integer size);
 
   /**
@@ -230,7 +232,8 @@ public interface ApplicationDao {
    * @param databaseName
    * @param tableName
    * @param projectId
-   * @param status
+   * @param taskStatus
+   * @param applicationStatus
    * @param commentType
    * @param startTime
    * @param endTime
@@ -238,7 +241,7 @@ public interface ApplicationDao {
    * @param executeUser
    * @return
    */
-  long countApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer status, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser);
+  long countApplicationByAdvanceConditionsWithDatasource(String userName, String clusterName, String databaseName, String tableName, Long projectId, Integer taskStatus, Integer applicationStatus, Integer commentType, String startTime, String endTime, Long ruleGroupId,String executeUser);
 
   /**
    * Get service with application num
@@ -266,5 +269,12 @@ public interface ApplicationDao {
    * @return
    */
   List<String> getAllExecuteUser(String userName);
+
+  /**
+   * find By Project
+   * @param project
+   * @return
+   */
+  List<Application> findByProject(Project project);
 
 }

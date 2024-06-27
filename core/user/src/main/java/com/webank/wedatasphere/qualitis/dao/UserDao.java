@@ -112,4 +112,10 @@ public interface UserDao {
      * @return
      */
     List<User> findBySubDepartmentCode(Long subDepartmentCode);
+
+    /**
+     * find All User
+     * @return
+     */
+    List<User> findAll();
 }

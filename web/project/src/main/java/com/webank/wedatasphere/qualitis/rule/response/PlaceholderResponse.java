@@ -53,6 +53,8 @@ public class PlaceholderResponse {
     private String enDescription;
     @JsonProperty("field_multiple_choice")
     private Boolean fieldMultipleChoice;
+    @JsonProperty("whether_standard_value")
+    private Boolean whetherStandardValue;
     @JsonProperty("whether_new_value")
     private Boolean whetherNewValue;
     @JsonProperty("name")
@@ -72,6 +74,7 @@ public class PlaceholderResponse {
         this.cnDescription = templateMidTableInputMeta.getCnDescription();
         this.enDescription = templateMidTableInputMeta.getEnDescription();
         this.fieldMultipleChoice = templateMidTableInputMeta.getFieldMultipleChoice();
+        this.whetherStandardValue = templateMidTableInputMeta.getWhetherStandardValue();
         this.whetherNewValue = templateMidTableInputMeta.getWhetherNewValue();
         this.name = templateMidTableInputMeta.getName();
         this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("cnMessage").toString();
@@ -88,6 +91,7 @@ public class PlaceholderResponse {
         this.cnDescription = templateDefaultInputMeta.getCnDesc();
         this.enDescription = templateDefaultInputMeta.getEnDesc();
         this.fieldMultipleChoice = templateDefaultInputMeta.getSupportFields();
+        this.whetherStandardValue = templateDefaultInputMeta.getSupportStandard();
         this.whetherNewValue = templateDefaultInputMeta.getSupportNewValue();
         this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateDefaultInputMeta.getType()).get("cnMessage").toString();
         this.inputEnName = TemplateInputTypeEnum.getTemplateData(templateDefaultInputMeta.getType()).get("enMessage").toString();
@@ -103,6 +107,7 @@ public class PlaceholderResponse {
         this.cnDescription = templateMidTableInputMeta.getCnDescription();
         this.enDescription = templateMidTableInputMeta.getEnDescription();
         this.fieldMultipleChoice = templateMidTableInputMeta.getFieldMultipleChoice();
+        this.whetherStandardValue = templateMidTableInputMeta.getWhetherStandardValue();
         this.whetherNewValue = templateMidTableInputMeta.getWhetherNewValue();
         this.name = templateMidTableInputMeta.getName();
         this.inputCnName = TemplateInputTypeEnum.getTemplateData(templateMidTableInputMeta.getInputType()).get("cnMessage").toString();
@@ -192,6 +197,14 @@ public class PlaceholderResponse {
 
     public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
         this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherStandardValue() {
+        return whetherStandardValue;
+    }
+
+    public void setWhetherStandardValue(Boolean whetherStandardValue) {
+        this.whetherStandardValue = whetherStandardValue;
     }
 
     public Boolean getWhetherNewValue() {

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.project.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
@@ -33,6 +34,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
+import com.webank.wedatasphere.qualitis.util.RequestParametersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +57,7 @@ public class OuterWorkflowController {
     public GeneralResponse<ProjectDetailResponse> addWorkflowProject(AddProjectRequest request, @Context HttpServletRequest httpServletRequest)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
+            RequestParametersUtils.transcoding(request);
             return outerWorkflowService.addWorkflowProject(request, request.getUsername());
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
@@ -63,7 +67,7 @@ public class OuterWorkflowController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add workflow project. caused by : {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_PROJECT}", null);
         }
     }
 
@@ -73,6 +77,7 @@ public class OuterWorkflowController {
     public GeneralResponse<ProjectDetailResponse> modifyWorkflowProjectDetail(ModifyProjectDetailRequest request)
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
+            RequestParametersUtils.transcoding(request);
             return outerWorkflowService.modifyWorkflowProjectDetail(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
@@ -82,7 +87,7 @@ public class OuterWorkflowController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify workflow project. project_id: {}, caused by: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_PROJECT}", null);
         }
     }
 
@@ -101,7 +106,7 @@ public class OuterWorkflowController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete workflow project. project_id: {}, caused by: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_PROJECT}", null);
         }
     }
 
@@ -112,14 +117,14 @@ public class OuterWorkflowController {
     public GeneralResponse<ProjectDetailResponse> getWorkflowProject(GetProjectRequest request) throws UnExpectedRequestException {
         try {
             GetProjectRequest.checkRequest(request);
-            LOGGER.info("Get project request: ", request.toString());
+            LOGGER.info("Get project request: {}", request.toString());
             return outerWorkflowService.getWorkflowProject(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get workflow project. Project name: {}, caused by: {}", request.getName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PROJECT}", null);
         }
     }
 

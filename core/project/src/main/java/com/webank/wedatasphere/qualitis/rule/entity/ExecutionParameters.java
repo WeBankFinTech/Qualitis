@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.rule.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.util.Objects;
 import java.util.Set;
@@ -99,8 +100,8 @@ public class ExecutionParameters {
     @Column(name = "upload_abnormal_value")
     private Boolean uploadAbnormalValue;
 
-    @Column(name="union_all")
-    private Boolean unionAll;
+    @Column(name = "union_way")
+    private Integer unionWay;
 
     @OneToMany(mappedBy = "executionParameters", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     private Set<StaticExecutionParameters> staticExecutionParameters;
@@ -340,12 +341,12 @@ public class ExecutionParameters {
         this.uploadAbnormalValue = uploadAbnormalValue;
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Integer getUnionWay() {
+        return unionWay;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Set<StaticExecutionParameters> getStaticExecutionParameters() {
@@ -462,14 +463,38 @@ public class ExecutionParameters {
                 ", abortOnFailure=" + abortOnFailure +
                 ", specifyStaticStartupParam=" + specifyStaticStartupParam +
                 ", staticStartupParam='" + staticStartupParam + '\'' +
+                ", executionParam='" + executionParam + '\'' +
                 ", alert=" + alert +
                 ", alertLevel=" + alertLevel +
                 ", alertReceiver='" + alertReceiver + '\'' +
                 ", projectId=" + projectId +
+                ", abnormalDataStorage=" + abnormalDataStorage +
+                ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+                ", abnormalDatabase='" + abnormalDatabase + '\'' +
+                ", cluster='" + cluster + '\'' +
                 ", createUser='" + createUser + '\'' +
                 ", createTime='" + createTime + '\'' +
                 ", modifyUser='" + modifyUser + '\'' +
                 ", modifyTime='" + modifyTime + '\'' +
+                ", specifyFilter=" + specifyFilter +
+                ", filter='" + filter + '\'' +
+                ", sourceTableFilter='" + sourceTableFilter + '\'' +
+                ", targetTableFilter='" + targetTableFilter + '\'' +
+                ", deleteFailCheckResult=" + deleteFailCheckResult +
+                ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+                ", uploadAbnormalValue=" + uploadAbnormalValue +
+                ", unionWay=" + unionWay +
+                ", staticExecutionParameters=" + staticExecutionParameters +
+                ", alarmArgumentsExecutionParameters=" + alarmArgumentsExecutionParameters +
+                ", noiseEliminationManagement=" + noiseEliminationManagement +
+                ", executionVariableSets=" + executionVariableSets +
+                ", whetherNoise=" + whetherNoise +
+                ", executionVariable=" + executionVariable +
+                ", advancedExecution=" + advancedExecution +
+                ", engineReuse=" + engineReuse +
+                ", concurrencyGranularity='" + concurrencyGranularity + '\'' +
+                ", dynamicPartitioning=" + dynamicPartitioning +
+                ", topPartition='" + topPartition + '\'' +
                 '}';
     }
 }

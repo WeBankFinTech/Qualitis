@@ -37,6 +37,7 @@ import org.json.JSONException;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Set;
 
@@ -86,6 +87,14 @@ public interface ProjectBatchService {
         throws IOException, UnExpectedRequestException;
 
     /**
+     * Replace json value
+     * @param jsonDiffVariableRequestList
+     * @param jsonStr
+     * @return
+     */
+    String replaceJsonValue(List<DiffVariableRequest> jsonDiffVariableRequestList, String jsonStr);
+
+    /**
      * Create datasource
      * @param ruleDataSourcesFromJson
      * @param object
@@ -112,9 +121,10 @@ public interface ProjectBatchService {
      * @throws PermissionDeniedRequestException
      * @throws JSONException
      * @throws MetaDataAcquireFailedException
+     * @throws ParseException
      */
     GeneralResponse uploadProjectFromAomp(InputStream fileInputStream, FormDataContentDisposition fileName, String userName)
-        throws IOException, UnExpectedRequestException, PermissionDeniedRequestException, JSONException, MetaDataAcquireFailedException;
+            throws IOException, UnExpectedRequestException, PermissionDeniedRequestException, JSONException, MetaDataAcquireFailedException, ParseException;
 
     /**
      * Get table group
@@ -153,9 +163,10 @@ public interface ProjectBatchService {
      * @throws IOException
      * @throws JSONException
      * @throws MetaDataAcquireFailedException
+     * @throws ParseException
      */
     GeneralResponse uploadProjectFromLocalOrGit(UploadProjectRequest request, boolean aomp)
-        throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException, ParseException;
 
     /**
      * Download to local
@@ -165,13 +176,23 @@ public interface ProjectBatchService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      * @throws IOException
+     * @throws ParseException
      */
     GeneralResponse downloadProjectsToLocalOrGit(DownloadProjectRequest downloadProjectRequest, HttpServletResponse response)
-        throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
+            throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, ParseException;
 
     /**
      * List diff variable
      * @return
      */
     GeneralResponse diffVariables();
+
+    /**
+     * batch save And Flush
+     * @param projectIds
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<Project> checkProjects(List<Long> projectIds) throws UnExpectedRequestException;
+
 }

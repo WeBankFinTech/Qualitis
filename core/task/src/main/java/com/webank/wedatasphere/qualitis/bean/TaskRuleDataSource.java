@@ -29,10 +29,11 @@ public class TaskRuleDataSource {
     private String databaseName;
     private String tableName;
     private String colName;
+    private String filter;
 
     private Integer datasourceIndex;
     private Integer datasourceType;
-    private Long subSystemId;
+    private String subSystemId;
 
     public TaskRuleDataSource() {
         // Default Constructor
@@ -86,6 +87,14 @@ public class TaskRuleDataSource {
         this.colName = colName;
     }
 
+    public String getFilter() {
+        return filter;
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
     public Integer getDatasourceIndex() {
         return datasourceIndex;
     }
@@ -102,11 +111,11 @@ public class TaskRuleDataSource {
         this.datasourceType = datasourceType;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 }

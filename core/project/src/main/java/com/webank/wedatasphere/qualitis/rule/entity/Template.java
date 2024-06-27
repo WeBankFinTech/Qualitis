@@ -45,7 +45,7 @@ public class Template {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(length = 180, updatable = false)
+    @Column(length = 180)
     private String name;
 
     @Column(name = "cluster_num")
@@ -228,6 +228,9 @@ public class Template {
      */
     @Column(name="custom_zh_code")
     private String customZhCode;
+
+    @Column(name = "calcu_unit_id")
+    private Long calcuUnitId;
 
     public Template() {
         // Default Constructor
@@ -583,6 +586,14 @@ public class Template {
 
     public void setCustomZhCode(String customZhCode) {
         this.customZhCode = customZhCode;
+    }
+
+    public Long getCalcuUnitId() {
+        return calcuUnitId;
+    }
+
+    public void setCalcuUnitId(Long calcuUnitId) {
+        this.calcuUnitId = calcuUnitId;
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.QueryUserRequest;
 import com.webank.wedatasphere.qualitis.request.userrole.AddUserRoleRequest;
@@ -63,7 +64,7 @@ public class UserRoleController {
         } catch (Exception e) {
             LOGGER.error("Failed to add user_role, user_id: {}, role_id: {}, caused by: {}, current_user: {}", request.getUserId(), request.getRoleId(),
                     e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_USE_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_USE_ROLE}", null);
         }
     }
 
@@ -80,7 +81,7 @@ public class UserRoleController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete user_role, uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USE_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_USE_ROLE}", null);
         }
     }
 
@@ -96,7 +97,7 @@ public class UserRoleController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify user_role, uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_USE_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_USE_ROLE}", null);
         }
     }
 
@@ -114,7 +115,7 @@ public class UserRoleController {
         } catch (Exception e) {
             LOGGER.error("Failed to find user_role, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(),
                     e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_USE_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_USE_ROLE}", null);
         }
     }
 

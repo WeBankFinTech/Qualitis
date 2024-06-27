@@ -33,6 +33,8 @@ public class DataSourceModifyRequest {
      * 环境配置
      */
     private List<DataSourceEnv> dataSourceEnvs;
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
     @JsonProperty("dev_department_name")
     private String devDepartmentName;
     @JsonProperty("ops_department_name")
@@ -43,6 +45,14 @@ public class DataSourceModifyRequest {
     private Long opsDepartmentId;
     @JsonProperty("visibility_department_list")
     private List<DepartmentSubInfoRequest> visibilityDepartmentList;
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
+    }
 
     public List<String> getDcnSequence() {
         return dcnSequence;
@@ -170,5 +180,27 @@ public class DataSourceModifyRequest {
 
     public void setDataSourceEnvs(List<DataSourceEnv> dataSourceEnvs) {
         this.dataSourceEnvs = dataSourceEnvs;
+    }
+
+    @Override
+    public String toString() {
+        return "DataSourceModifyRequest{" +
+                "labels=" + labels +
+                ", createSystem='" + createSystem + '\'' +
+                ", dataSourceDesc='" + dataSourceDesc + '\'' +
+                ", dataSourceName='" + dataSourceName + '\'' +
+                ", dataSourceTypeId=" + dataSourceTypeId +
+                ", subSystem='" + subSystem + '\'' +
+                ", connectParams=" + connectParams +
+                ", inputType=" + inputType +
+                ", verifyType=" + verifyType +
+                ", dcnSequence=" + dcnSequence +
+                ", dataSourceEnvs=" + dataSourceEnvs +
+                ", devDepartmentName='" + devDepartmentName + '\'' +
+                ", opsDepartmentName='" + opsDepartmentName + '\'' +
+                ", devDepartmentId=" + devDepartmentId +
+                ", opsDepartmentId=" + opsDepartmentId +
+                ", visibilityDepartmentList=" + visibilityDepartmentList +
+                '}';
     }
 }

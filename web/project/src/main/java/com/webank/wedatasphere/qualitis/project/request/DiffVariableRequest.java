@@ -17,12 +17,14 @@
 package com.webank.wedatasphere.qualitis.project.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.DiffRequestTypeEnum;
 
 /**
  * @author allenzhou
  */
 public class DiffVariableRequest {
+    @JsonProperty("type")
+    private Integer type;
     @JsonProperty("name")
     private String name;
     @JsonProperty("value")
@@ -35,6 +37,28 @@ public class DiffVariableRequest {
     public DiffVariableRequest(String name, String value) {
         this.name = name;
         this.value = value;
+    }
+
+    public DiffVariableRequest(String fileName, String name, String value) {
+        if (fileName.startsWith(DiffRequestTypeEnum.SYSTEM_INNER.getPrefixFile())) {
+            this.type = DiffRequestTypeEnum.SYSTEM_INNER.getCode();
+        } else if (fileName.startsWith(DiffRequestTypeEnum.DATASOURCE_ENV.getPrefixFile())) {
+            this.type = DiffRequestTypeEnum.DATASOURCE_ENV.getCode();
+        } else if (fileName.startsWith(DiffRequestTypeEnum.SQL_REPLACEMENT.getPrefixFile())) {
+            this.type = DiffRequestTypeEnum.SQL_REPLACEMENT.getCode();
+        } else if (fileName.startsWith(DiffRequestTypeEnum.JSON_REPLACEMENT.getPrefixFile())) {
+            this.type = DiffRequestTypeEnum.JSON_REPLACEMENT.getCode();
+        }
+        this.name = name;
+        this.value = value;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     public String getName() {

@@ -26,6 +26,7 @@ import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailed
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
+import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
@@ -40,10 +41,13 @@ import com.webank.wedatasphere.qualitis.request.GetUserColumnByTableIdRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserDbByClusterRequest;
 import com.webank.wedatasphere.qualitis.request.GetUserTableByDbIdRequest;
 import com.webank.wedatasphere.qualitis.request.MulDbRequest;
-import com.webank.wedatasphere.qualitis.request.QueryDataSourceRequest;
+import com.webank.wedatasphere.qualitis.request.GetDataSourceRequest;
+import com.webank.wedatasphere.qualitis.request.UdfRequest;
+import com.webank.wedatasphere.qualitis.request.UdfResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllClusterResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import org.json.JSONException;
 
 import java.io.IOException;
@@ -198,7 +202,7 @@ public interface MetaDataService {
      * @throws MetaDataAcquireFailedException
      * @throws IOException
      */
-    GeneralResponse<Map<String, Object>> getDataSourceInfoWithAdvance(QueryDataSourceRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
+    GeneralResponse<Map<String, Object>> getDataSourceInfoWithAdvance(GetDataSourceRequest request) throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException;
 
     /**
      * Get data source versions.
@@ -358,13 +362,12 @@ public interface MetaDataService {
     /**
      * getEnvList
      * @param clusterName
-     * @param proxyUser
      * @param dataSourceId
-     * @param versionId
+     * @param dcnRangeType
      * @return
      * @throws Exception
      */
-    GeneralResponse<List<Map<String, Object>>> getEnvList(String clusterName, String proxyUser, Long dataSourceId, Long versionId) throws Exception;
+    GeneralResponse getEnvList(String clusterName, Long dataSourceId, String dcnRangeType) throws Exception;
 
     /**
      * find All Department By Source Type
@@ -401,9 +404,103 @@ public interface MetaDataService {
     List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(DepartmentSourceTypeEnum departmentSourceTypeEnum, Integer deptCode) throws UnExpectedRequestException;
 
     /**
+     * Add udf
+     * @param udfRequest
+     * @return
+     * @throws PermissionDeniedRequestException
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     * @throws JSONException
+     * @throws IOException
+     */
+    GeneralResponse<UdfResponse> addUdf(UdfRequest udfRequest)
+        throws PermissionDeniedRequestException, MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException;
+
+    /**
+     * Modify udf
+     * @param udfRequest
+     * @return
+     * @throws PermissionDeniedRequestException
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     * @throws JSONException
+     * @throws IOException
+     */
+    GeneralResponse<UdfResponse> modifyUdf(UdfRequest udfRequest) throws PermissionDeniedRequestException, MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException;
+
+    /**
+     * Get udf detail
+     * @param udfId
+     * @return
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<UdfResponse> getUdfDetail(Long udfId)
+        throws MetaDataAcquireFailedException, UnExpectedRequestException;
+
+    /**
+     * Get all udf with page
+     * @param udfRequest
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<DataInfo<UdfResponse>> getUdfAllWithPage(UdfRequest udfRequest) throws UnExpectedRequestException;
+
+    /**
+     * Get directory
+     * @param category
+     * @param clusterName
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    GeneralResponse<List<String>> getDirectory(String category, String clusterName) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
+     * Delete udf
+     * @param udfRequest
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws MetaDataAcquireFailedException
+     * @throws JSONException
+     * @throws IOException
+     */
+    GeneralResponse<UdfResponse> deleteUdf(UdfRequest udfRequest)
+        throws UnExpectedRequestException, PermissionDeniedRequestException, MetaDataAcquireFailedException, JSONException, IOException;
+
+    /**
+     * Switch udf status
+     * @param id
+     * @param isLoad
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<UdfResponse> switchUdfStatus(Long id, Boolean isLoad)
+        throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException;
+
+    /**
      * get Data Source Name List
      * @return
      */
     List<String> getDataSourceNameList();
 
+    /**
+     * get Rules Related To
+     * @param linkisDataSourceId
+     * @return
+     */
+    List<Rule> getRulesRelatedTo(Long linkisDataSourceId);
+
+    /**
+     * get DCN instances
+     * @param subSystemId
+     * @param dcnRangeType
+     * @param dcnRangeValues
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    Object getDcnList(String subSystemId, String dcnRangeType, List<String> dcnRangeValues) throws UnExpectedRequestException;
 }

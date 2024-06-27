@@ -71,4 +71,16 @@ public class RuleMetricValuesRequest {
   public void setSize(Integer size) {
     this.size = size;
   }
+
+  @Override
+  public String toString() {
+    return "RuleMetricValuesRequest{" +
+            "ruleMetricId=" + ruleMetricId +
+            ", startTime='" + startTime + '\'' +
+            ", endTime='" + endTime + '\'' +
+            ", envName='" + envName + '\'' +
+            ", page=" + page +
+            ", size=" + size +
+            '}';
+  }
 }

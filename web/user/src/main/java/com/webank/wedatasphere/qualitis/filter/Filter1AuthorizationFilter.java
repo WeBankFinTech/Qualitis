@@ -16,31 +16,27 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
-import com.google.common.io.CharStreams;
+import cn.webank.bdp.microfrontend.utils.FilterUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
-import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.Permission;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.UserService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.AntPathMatcher;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
 import javax.management.relation.RoleNotFoundException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -54,125 +50,171 @@ import java.util.stream.Collectors;
  * @author howeye
  */
 public class Filter1AuthorizationFilter implements Filter {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(Filter1AuthorizationFilter.class);
+
+    private static final String NOT_FILTER_METHOD = "OPTIONS";
+
+    private static final String FACADIS_PROXY_USER_ENTRANCE = "PROXY_USER_ENTRANCE";
+
+    private static final String FACADIS_PROXY_USER_LOGIN = "PROXY_USER_LOGIN";
+
+    private static final String TRICKY_FE_NULL_STRING = "null";
+
+    @Value("${facade.gov-core.ips}")
+    private String facadeGovCoreIPs;
+
+    @Value("${dss.origin-urls}")
+    private String dssOriginUrls;
+
     @Autowired
     private FrontEndConfig frontEndConfig;
+
     @Autowired
     private AuthFilterUrlConfig authFilterUrlConfig;
 
     @Autowired
     private UserDao userDao;
+
     @Autowired
     private UserService userService;
+
     @Autowired
     private LoginService loginService;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Filter1AuthorizationFilter.class);
-
     private List<String> permitUrlList = null;
-    private List<String> uploadUrlList = null;
 
-    private static final String NOT_FILTER_METHOD = "OPTIONS";
+    private List<String> uploadUrlList = null;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void init(FilterConfig filterConfig) {
-      permitUrlList = authFilterUrlConfig.getUnFilterUrls();
-      uploadUrlList = authFilterUrlConfig.getUploadUrls();
-      if (permitUrlList == null) {
-          permitUrlList = new ArrayList<>();
-      }
-      if (uploadUrlList == null) {
-          uploadUrlList = new ArrayList<>();
-      }
+        permitUrlList = authFilterUrlConfig.getUnFilterUrls();
+        uploadUrlList = authFilterUrlConfig.getUploadUrls();
+        if (permitUrlList == null) {
+            permitUrlList = new ArrayList<>();
+        }
+        if (uploadUrlList == null) {
+            uploadUrlList = new ArrayList<>();
+        }
     }
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
-        HttpServletRequest request = (HttpServletRequest) servletRequest;
-        String requestUrl = request.getRequestURI();
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+        String requestURI = httpServletRequest.getRequestURI();
         // Pass if file upload url accepted
         AntPathMatcher matcher = new AntPathMatcher();
         for (String uploadUrl : uploadUrlList) {
-            if (matcher.match(uploadUrl, requestUrl)) {
-                filterChain.doFilter(request, response);
+            if (matcher.match(uploadUrl, requestURI)) {
+                filterChain.doFilter(httpServletRequest, servletResponse);
                 return;
             }
         }
-        BodyReaderHttpServletRequestWrapper requestWrapper = new BodyReaderHttpServletRequestWrapper(request);
-        printReceiveLog(requestWrapper);
-        if (NOT_FILTER_METHOD.equals(requestWrapper.getMethod())) {
-            filterChain.doFilter(requestWrapper, response);
+
+        printReceiveLog(httpServletRequest);
+        if (NOT_FILTER_METHOD.equals(httpServletRequest.getMethod())) {
+            filterChain.doFilter(httpServletRequest, servletResponse);
             return;
         }
-        HttpSession session = requestWrapper.getSession();
-        if (! permitUrlList.contains(requestUrl)) {
-            Object permissionObj = session.getAttribute("permissions");
-            Object user = session.getAttribute("user");
-            if (null == permissionObj || null == user) {
-                String username = request.getRemoteUser();
-                if (username == null) {
-                    // Redirect to login page
-                    LOGGER.info("Can not get username from sso, it will redirect to local login page");
-                    writeRedirectHome(response);
+
+        String username = FilterUtil.shouldPass(httpServletRequest, dssOriginUrls, facadeGovCoreIPs) ? getFacadisProxyUser(httpServletRequest) : getLoginUser(httpServletRequest);
+        if (isLoginURI(requestURI)) {
+            LOGGER.info("Login username: {}", username);
+            if (StringUtils.isBlank(username)) {
+                throw new ServletException("Intrusion without authentication when LOGIN.");
+            }
+        } else if (isApiURI(requestURI)) {
+            LOGGER.debug("API username: {}", username);
+            if (StringUtils.isBlank(username)) {
+                throw new ServletException("Intrusion without authentication when API.");
+            }
+        } else if (isLogoutURI(requestURI)) {
+            LOGGER.info("Logout username: {}", username);
+            if (StringUtils.isBlank(username)) {
+                throw new ServletException("Intrusion without authentication when LOGOUT.");
+            }
+
+            // Clean session
+            HttpSession httpSession = httpServletRequest.getSession(false);
+            if (httpSession != null) {
+                httpSession.removeAttribute("permissions");
+                httpSession.removeAttribute("user");
+                httpSession.removeAttribute("proxyUser");
+                httpSession.invalidate();
+                LOGGER.info("Session for {} has been invalidated.", username);
+            }
+            // Clean cookies
+            Cookie[] cookies = httpServletRequest.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    cookie.setValue(StringUtils.EMPTY);
+                    cookie.setMaxAge(0);
+                    httpServletResponse.addCookie(cookie);
+                }
+            }
+            filterChain.doFilter(httpServletRequest, servletResponse);
+            return;
+        } else {
+            throw new ServletException("Unrecognized url: " + requestURI);
+        }
+
+        if (!permitUrlList.contains(requestURI)) {
+            if (HttpUtils.getUser(httpServletRequest) == null || StringUtils.isBlank(HttpUtils.getUserName(httpServletRequest))
+                    || !StringUtils.equals(username, HttpUtils.getUserName(httpServletRequest)) || HttpUtils.getPermissions(httpServletRequest) == null) {
+                if (StringUtils.isBlank(HttpUtils.getUserName(httpServletRequest))) {
+                    LOGGER.warn("No available session at present or EMPTY user name stored, refresh session!~");
+                } else if (StringUtils.equals(TRICKY_FE_NULL_STRING, HttpUtils.getUserName(httpServletRequest))) {
+                    LOGGER.warn("Tricky [null] user name stored in session, refresh session!~");
+                } else if (StringUtils.equals(TRICKY_FE_NULL_STRING, username)) {
+                    LOGGER.warn("Tricky [null] user name from FE, skip it!~");
+                    return;
+                }
+
+                // 查询数据库，看用户是否存在
+                LOGGER.info("Achieving stored user data in DB with name: {}", username);
+                User userInDb = userDao.findByUsername(username);
+                if (userInDb != null) {
+                    // 放入session
+                    loginService.addToSession(username, httpServletRequest);
                 } else {
-                    // 查询数据库，看用户是否存在
-                    User userInDb = userDao.findByUsername(username);
-                    if (userInDb != null) {
-                        // 放入session
-                        loginService.addToSession(username, request);
-                        loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
-                        ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
-                    } else {
-                        // 自动创建用户
-                        LOGGER.warn("user: {}, do not exist, trying to create user", username);
-                        try {
-                            userService.autoAddUser(username);
-                            loginService.addToSession(username, request);
-                            loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
-                            ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
-                        } catch (RoleNotFoundException e) {
-                            LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);
-                        }
+                    // 自动创建用户
+                    LOGGER.warn("user: {}, do not exist, trying to create user", username);
+                    try {
+                        userService.autoAddUser(username);
+                        loginService.addToSession(username, httpServletRequest);
+                    } catch (RoleNotFoundException e) {
+                        LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);
+                        return;
                     }
                 }
-                return;
             }
 
+            // Check login users' permissions
+            Object permissionObj = HttpUtils.getPermissions(httpServletRequest);
             List<Permission> permissions = (List<Permission>) permissionObj;
-            String method = requestWrapper.getMethod();
-            if (!checkPermission(requestUrl, method, permissions)) {
-                writeForbidden("no permissions", response);
-                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", user, requestWrapper.getRequestURI());
+            String method = httpServletRequest.getMethod();
+            if (!checkPermission(requestURI, method, permissions)) {
+                writeForbidden("no permissions", servletResponse);
+                LOGGER.warn("User: {} failed to access url: {}, caused by: No permissions", HttpUtils.getUser(httpServletRequest), httpServletRequest.getRequestURI());
                 return;
             }
-        }
-        Object user = session.getAttribute("user");
-        LOGGER.info("User: {} succeed to access url: {}", user, requestWrapper.getRequestURI());
-        filterChain.doFilter(requestWrapper, response);
-    }
-
-    private void printReceiveLog(HttpServletRequest request) throws IOException {
-        String requestUrl = request.getRequestURI();
-        if (RequestMethod.GET.name().equalsIgnoreCase(request.getMethod())) {
-            LOGGER.info("Receive request:[{}], method:[{}]", requestUrl, request.getMethod());
+            LOGGER.info("User: {} succeed to access url: {}", HttpUtils.getUser(httpServletRequest), httpServletRequest.getRequestURI());
         } else {
-            String body = CharStreams.toString(request.getReader());
-            LOGGER.info("Receive request:[{}], method:[{}], body:\n{}", requestUrl, request.getMethod(), body);
+            LOGGER.info("Permitted url: {}", httpServletRequest.getRequestURI());
         }
+        filterChain.doFilter(httpServletRequest, servletResponse);
     }
 
-    private void writeRedirectHome(ServletResponse response) throws IOException {
-        ((HttpServletResponse)response).setStatus(Response.Status.UNAUTHORIZED.getStatusCode());
-        ServletOutputStream out = response.getOutputStream();
-        GeneralResponse generalResponse = new GeneralResponse<>("401", "please login", null);
-        out.write(objectMapper.writeValueAsBytes(generalResponse));
-        out.flush();
+    private void printReceiveLog(HttpServletRequest request) {
+        String requestUrl = request.getRequestURI();
+        LOGGER.info("Receive request:[{}], method:[{}]", requestUrl, request.getMethod());
     }
 
     private void writeForbidden(String message, ServletResponse response) throws IOException {
-        ((HttpServletResponse)response).setStatus(Response.Status.FORBIDDEN.getStatusCode());
+        ((HttpServletResponse) response).setStatus(Response.Status.FORBIDDEN.getStatusCode());
         ServletOutputStream out = response.getOutputStream();
         GeneralResponse generalResponse = new GeneralResponse<>("403", message, null);
         out.write(objectMapper.writeValueAsBytes(generalResponse));
@@ -182,6 +224,7 @@ public class Filter1AuthorizationFilter implements Filter {
 
     /**
      * Return true if pass permissions, otherwise return false
+     *
      * @param url
      * @param method
      * @param permissions
@@ -195,8 +238,60 @@ public class Filter1AuthorizationFilter implements Filter {
         return !left.isEmpty();
     }
 
+    private String getFacadisProxyUser(HttpServletRequest httpServletRequest) {
+        // Generally requests come from Facadis
+        String username = StringUtils.EMPTY;
+        Cookie[] cookies = httpServletRequest.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (StringUtils.equals(FACADIS_PROXY_USER_ENTRANCE, cookie.getName()) || StringUtils.equals(FACADIS_PROXY_USER_LOGIN, cookie.getName())) {
+                    username = cookie.getValue();
+                    break;
+                }
+            }
+        }
+        // Fxxking shit request come from damn DSS AppConn
+        if (StringUtils.isBlank(username)) {
+            LOGGER.warn("Maybe shit request from DSS AppConn, try hard to achieving user from session.");
+            username = HttpUtils.getUserName(httpServletRequest);
+        }
+        return username;
+    }
+
+    private String getLoginUser(HttpServletRequest httpServletRequest) {
+        String username = httpServletRequest.getRemoteUser();
+        if (StringUtils.isBlank(username)) {
+            username = HttpUtils.getUserName(httpServletRequest);
+            if (StringUtils.isBlank(username)) {
+                Cookie[] cookies = httpServletRequest.getCookies();
+                if (cookies != null) {
+                    for (Cookie cookie : cookies) {
+                        if (StringUtils.equals(FACADIS_PROXY_USER_ENTRANCE, cookie.getName()) || StringUtils.equals(FACADIS_PROXY_USER_LOGIN, cookie.getName())) {
+                            username = cookie.getValue();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return username;
+    }
+
+    private boolean isLoginURI(String requestURI) {
+        return StringUtils.contains(requestURI, "/auth/common/projector/role");
+    }
+
+    private boolean isApiURI(String requestURI) {
+        return StringUtils.contains(requestURI, "/api/v1");
+    }
+
+    private boolean isLogoutURI(String requestURI) {
+        return StringUtils.contains(requestURI, "/auth/common/logout");
+    }
+
     @Override
     public void destroy() {
         // destroy operation
     }
+
 }

@@ -36,6 +36,12 @@ import java.util.Map;
 public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, Long>, JpaSpecificationExecutor<RuleDataSource> {
 
     /**
+     * Find RuleDataSource by linkisDataSourceId
+     * @param linkisDataSourceId
+     * @return
+     */
+    List<RuleDataSource> findByLinkisDataSourceId(Long linkisDataSourceId);
+    /**
      * Delete rule datasource by rule
      * @param rule
      */
@@ -157,7 +163,7 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
             " and (?10 is null or dsv.envName = ?10) group by ds.clusterName, ds.dbName, ds.tableName, dsv.envName"
             )
     List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName,
-        Integer datasourceType, Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, Pageable pageable);
+        Integer datasourceType, String subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, Pageable pageable);
 
     /**
      * find tags by login user
@@ -192,7 +198,7 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
             " and (?6 is null or ds.sub_system_id = ?6) and (?7 is null or ds.department_name like ?7) and (?8 is null or ds.dev_department_name like ?8) and (?9 is null or ds.tag_code = ?9) and (?10 is null or dsv.linkis_env_name = ?10) group by ds.cluster_name, ds.db_name, ds.table_name, dsv.linkis_env_name" +
             " order by null) as a"
             , nativeQuery = true)
-    long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType, Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName);
+    long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType, String subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName);
 
     /**
      * Find all datasources by user.
@@ -269,5 +275,5 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
     @Modifying
     @Query(value = "update qualitis_rule_datasource set sub_system_id=?2, sub_system_name=?3, department_code=?4, department_name=?5, dev_department_name=?6" +
             ", tag_code=?7, tag_name=?8 where id = ?1", nativeQuery = true)
-    void updateMetadataFields(Long id, Long subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
+    void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
 }

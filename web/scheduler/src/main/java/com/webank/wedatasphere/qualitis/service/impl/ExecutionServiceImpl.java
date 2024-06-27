@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
@@ -79,7 +80,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Value("${execution.schedule.maxNum:400}")
     private Integer maxScheduleNum;
 
-    @Value("${execution.controller.async: false}")
+    @Value("${execution.controller.async:false}")
     private Boolean enableAsyncRequest;
 
     public ExecutionServiceImpl(@Context HttpServletRequest httpRequest) {
@@ -160,6 +161,10 @@ public class ExecutionServiceImpl implements ExecutionService {
                 if (groupExecutionRequest.getDyNamicPartitionPrefix() == null) {
                     groupExecutionRequest.setDyNamicPartitionPrefix("");
                 }
+                if (StringUtils.isNotBlank(request.getSplitBy())) {
+                    groupExecutionRequest.setSplitBy(request.getSplitBy());
+                }
+
                 outerExecutionService.groupExecution(groupExecutionRequest, invokeCode, loginUser);
             } catch (UnExpectedRequestException e) {
                 throw e;
@@ -171,7 +176,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             }
         }
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
     }
 
     @Override
@@ -210,16 +215,17 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
         if (enableAsyncRequest) {
             LOGGER.info("The task has been submitted asynchronously");
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
         }
         if (applicationProjectResponse != null && StringUtils.isBlank(applicationProjectResponse.get().getExceptionMessage())) {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse.get());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse.get());
         }
 
         if (applicationProjectResponse != null) {
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + applicationProjectResponse.get().getExceptionMessage(), null);
+            return new GeneralResponse<>(
+                ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + applicationProjectResponse.get().getExceptionMessage(), null);
         } else {
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + null, null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + null, null);
         }
 
     }
@@ -229,16 +235,16 @@ public class ExecutionServiceImpl implements ExecutionService {
         Future<ApplicationTaskSimpleResponse> applicationTaskSimpleResponse = ruleExecutionThreadPool.submit(new RuleGroupSumbitCallable(groupListExecutionRequest, InvokeTypeEnum.UI_INVOKE.getCode(), executionService, loginUser));
         if (enableAsyncRequest) {
             LOGGER.info("The task has been submitted asynchronously");
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
         }
         if (applicationTaskSimpleResponse != null && StringUtils.isBlank(applicationTaskSimpleResponse.get().getExceptionMessage())) {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
         }
 
         if (applicationTaskSimpleResponse != null) {
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + applicationTaskSimpleResponse.get().getExceptionMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + applicationTaskSimpleResponse.get().getExceptionMessage(), null);
         } else {
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + null, null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXECUTE_PROJECT}, caused by: " + null, null);
         }
 
     }

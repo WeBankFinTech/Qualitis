@@ -105,4 +105,9 @@ public class DepartmentDaoImpl implements DepartmentDao {
         return departmentRepository.findByParentId(parentId);
     }
 
+    @Override
+    public List<Department> findNullTenantUser() {
+        return departmentRepository.findNullTenantUser();
+    }
+
 }

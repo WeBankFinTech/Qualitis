@@ -38,6 +38,8 @@ public class ProjectExecutionRequest {
     private String fpsHashValue;
     @JsonProperty("fps_file_id")
     private String fpsFileId;
+    @JsonProperty("env_names")
+    private String envNames;
 
     @JsonProperty("cluster_name")
     private String clusterName;
@@ -117,6 +119,14 @@ public class ProjectExecutionRequest {
 
     public void setFpsHashValue(String fpsHashValue) {
         this.fpsHashValue = fpsHashValue;
+    }
+
+    public String getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(String envNames) {
+        this.envNames = envNames;
     }
 
     public String getClusterName() {
@@ -212,5 +222,8 @@ public class ProjectExecutionRequest {
         CommonChecker.checkObject(request.getProjectId(), "Project_id");
         CommonChecker.checkString(request.getCreateUser(), "Create_user");
         CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
+
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getExecutionParam(), "{&EXECUTION_VARIABLES_HAVE_THE_SAME_VARIABLE_NAME}: ");
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getStartupParamName(), "{&DYNAMIC_ENGINE_HAVE_THE_SAME_VARIABLE_NAME}: ");
     }
 }

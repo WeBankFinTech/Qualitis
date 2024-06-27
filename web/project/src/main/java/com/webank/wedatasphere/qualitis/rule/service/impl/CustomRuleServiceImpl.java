@@ -16,7 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
@@ -38,6 +40,7 @@ import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -76,6 +79,8 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     @Autowired
     private RuleDao ruleDao;
     @Autowired
+    private RuleUdfDao ruleUdfDao;
+    @Autowired
     private RuleGroupDao ruleGroupDao;
     @Autowired
     private RuleDataSourceDao ruleDatasourceDao;
@@ -95,6 +100,9 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
     @Autowired
     private RuleLockService ruleLockService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomRuleServiceImpl.class);
 
@@ -123,11 +131,12 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         AddCustomRuleRequest.checkRequest(request);
+        LOGGER.info("add custom rule request detail: {}", request.toString());
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
 
@@ -150,6 +159,15 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         String ruleGroupName = request.getRuleGroupName();
         if (request.getRuleGroupId() != null) {
             ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup == null) {
+                throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
+            }
+            if (StringUtils.isNotEmpty(ruleGroupName)) {
+                ruleGroup.setRuleGroupName(ruleGroupName);
+            }
+            ruleGroup = ruleGroupDao.saveRuleGroup(ruleGroup);
+        } else if (request.getNewRuleGroupId() != null) {
+            ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
             if (ruleGroup == null) {
                 throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
             }
@@ -187,6 +205,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         handleRelatedObject(request, projectInDb, newRule);
         Rule savedRule = ruleDao.saveRule(newRule);
 
+        saveRuleUdf(request.getLinkisUdfNames(), savedRule);
         LOGGER.info("Succeed to save custom rule, rule id: {}", savedRule.getId());
 
         super.recordEvent(loginUser, savedRule, OperateTypeEnum.CREATE_RULES);
@@ -194,16 +213,18 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         exctrationAlarmConfigAndRuleDatasource(loginUser, cs, fps, sqlCheck, savedRule, request.getAlarm(), request.getAlarmVariable(), request.getUploadRuleMetricValue()
                 , request.getUploadAbnormalValue(), request.getDeleteFailCheckResult(), request.getClusterName(), request.getFileId(), request.getFileTableDesc(), request.getFileDb()
                 , request.getFileTable(), request.getFileDelimiter(), request.getFileType(), request.getFileHeader(), request.getProxyUser(), request.getFileHashValues(), request.getLinkisDataSourceId()
-                , request.getLinkisDataSourceVersionId(), request.getLinkisDataSourceName(), request.getLinkisDataSourceType(), request.getDataSourceEnvRequests(), request.getDataSourceEnvMappingRequests());
+                , request.getLinkisDataSourceVersionId(), request.getLinkisDataSourceName(), request.getLinkisDataSourceType(), request.getDataSourceEnvRequests(), request.getDataSourceEnvMappingRequests()
+        , request.getDcnRangeType());
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to add custom rule, rule id: {}", savedRule.getId());
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_ADD_CUSTOM_RULE}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_CUSTOM_RULE}", response);
     }
 
     private void exctrationAlarmConfigAndRuleDatasource(String loginUser, boolean cs, boolean fps, boolean sqlCheck, Rule savedRule, Boolean alarm, List<CustomAlarmConfigRequest> alarmVariable
             , Boolean uploadRuleMetricValue, Boolean uploadAbnormalValue, Boolean deleteFailCheckResult, String clusterName, String fileId, String fileTableDesc, String fileDb, String fileTable, String fileDelimiter, String fileType
-            , Boolean fileHeader, String proxyUser, String fileHashValues, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName, String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
+            , Boolean fileHeader, String proxyUser, String fileHashValues, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName, String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests
+    , String dcnRangeType) throws UnExpectedRequestException {
         List<AlarmConfig> savedAlarmConfigs = new ArrayList<>();
         if (alarm) {
             alarmVariable.stream().map(alarmConfigRequest -> {
@@ -218,7 +239,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
         List<RuleDataSource> ruleDataSources = ruleDataSourceService.checkAndSaveCustomRuleDataSource(clusterName, fileId, fileTableDesc, fileDb, fileTable
                 , fileDelimiter, fileType, fileHeader, proxyUser, fileHashValues, loginUser, savedRule, cs, fps, sqlCheck, linkisDataSourceId, linkisDataSourceVersionId
-                , linkisDataSourceName, linkisDataSourceType, dataSourceEnvRequests, dataSourceEnvMappingRequests);
+                , linkisDataSourceName, linkisDataSourceType, dataSourceEnvRequests, dataSourceEnvMappingRequests, dcnRangeType);
         savedRule.setAlarmConfigs(new HashSet<>(savedAlarmConfigs));
         if (CollectionUtils.isNotEmpty(ruleDataSources)) {
             savedRule.setRuleDataSources(new HashSet<>(ruleDataSources));
@@ -230,7 +251,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (executionParameters != null) {
                 newRule.setExecutionParametersName(request.getExecutionParametersName());
-                newRule.setUnionAll(executionParameters.getUnionAll());
+                newRule.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -252,7 +273,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         // For startup parameters.
         newRule.setStaticStartupParam(request.getStaticStartupParam());
         newRule.setEnable(request.getRuleEnable());
-        newRule.setUnionAll(request.getUnionAll());
+        newRule.setUnionWay(request.getUnionWay());
         newRule.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
         newRule.setAbnormalCluster(StringUtils.isNotBlank(request.getAbnormalCluster()) ? request.getAbnormalCluster() : null);
         newRule.setAbnormalDatabase(StringUtils.isNotBlank(request.getAbnormalDatabase()) ? request.getAbnormalDatabase() : null);
@@ -308,6 +329,17 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         ruleInDb.setNodeName(request.getNodeName());
     }
 
+    private void saveRuleUdf(List<String> linkisUdfNames, Rule ruleInDb) {
+        if (CollectionUtils.isNotEmpty(linkisUdfNames)) {
+            List<RuleUdf> ruleUdfs = new ArrayList<>(linkisUdfNames.size());
+            for (String udfName : linkisUdfNames) {
+                RuleUdf ruleUdf = new RuleUdf(udfName, ruleInDb);
+                ruleUdfs.add(ruleUdf);
+            }
+            ruleInDb.setRuleUdfs(new HashSet<>(ruleUdfDao.saveAll(ruleUdfs)));
+        }
+    }
+
     /**
      * Delete custom rules, including template of custom rules
      *
@@ -321,6 +353,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     public GeneralResponse deleteCustomRule(DeleteCustomRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteCustomRuleRequest.checkRequest(request);
+        LOGGER.info("delete custom rule request detail: {}", request.toString());
         // Check existence of rule by ruleId
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null) {
@@ -337,29 +370,31 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
             throw new UnExpectedRequestException("Rule id: [" + request.getRuleId() + "]) {&IS_NOT_A_CUSTOM_RULE}");
         }
 
-        return deleteCustomRuleReal(ruleInDb);
+        return deleteCustomRuleReal(ruleInDb,null);
     }
 
     @Override
-    public GeneralResponse deleteCustomRuleReal(Rule rule) throws UnExpectedRequestException {
+    public GeneralResponse deleteCustomRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException {
         // Delete bdp-client history
         BdpClientHistory bdpClientHistory = bdpClientHistoryDao.findByRuleId(rule.getId());
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
         // Delete template of custom rule
         ruleTemplateService.deleteCustomTemplate(rule.getTemplate());
         LOGGER.info("Succeed to delete custom rule, rule id: {}", rule.getId());
 
-        super.recordEvent(HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
+        super.recordEvent(StringUtils.isNotBlank(loginUser) ? loginUser : HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
 
-        return new GeneralResponse<>("200", "{&DELETE_CUSTOM_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_CUSTOM_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
     public GeneralResponse<CustomRuleDetailResponse> getCustomRuleDetail(Long ruleId) throws UnExpectedRequestException {
+        LOGGER.info("get custom rule request detail: {}", ruleId);
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(ruleId);
         if (ruleInDb == null) {
@@ -377,7 +412,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
         CustomRuleDetailResponse response = new CustomRuleDetailResponse(ruleInDb);
         LOGGER.info("Succeed to get custom rule detail. response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_CUSTOM_RULE_DETAIL}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_CUSTOM_RULE_DETAIL}", response);
     }
 
     /**
@@ -428,11 +463,12 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     private GeneralResponse<RuleResponse> modifyCustomRuleReal(ModifyCustomRuleRequest request, String loginUser)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         ModifyCustomRuleRequest.checkRequest(request);
+        LOGGER.info("modify custom rule request detail: {}", request.toString());
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null) {
@@ -454,6 +490,11 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         ruleDataSourceService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all rule_dataSources, rule id: {}", ruleInDb.getId());
 
+        // Delete rule udfs
+        if (CollectionUtils.isNotEmpty(ruleInDb.getRuleUdfs())) {
+            ruleUdfDao.deleteByRule(ruleInDb);
+        }
+        saveRuleUdf(request.getLinkisUdfNames(), ruleInDb);
         // Save template, alarm config, rule datasource of custom rule
         AddCustomRuleRequest addCustomRuleRequest = new AddCustomRuleRequest();
 
@@ -462,6 +503,18 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
         // Modify custom rule and save
         setBasicInfo(ruleInDb, template, loginUser, nowDate, request);
+        if (request.getRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
+        if (request.getNewRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
         String ruleGroupName = request.getRuleGroupName();
         if (StringUtils.isNotEmpty(ruleGroupName)) {
             ruleInDb.getRuleGroup().setRuleGroupName(ruleGroupName);
@@ -487,10 +540,10 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
         // Save alarm config and rule datasource
         exctrationAlarmConfigAndRuleDatasource(loginUser, cs, fps, sqlCheck, savedRule, request.getAlarm(), request.getAlarmVariable(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), request.getDeleteFailCheckResult(), request.getClusterName(), request.getFileId(), request.getFileTableDesc(), request.getFileDb(), request.getFileTable(), request.getFileDelimiter(), request.getFileType(), request.getFileHeader(), request.getProxyUser(), request.getFileHashValues(), request.getLinkisDataSourceId(), request.getLinkisDataSourceVersionId(), request.getLinkisDataSourceName(), request.getLinkisDataSourceType(),
-                request.getDataSourceEnvRequests(), request.getDataSourceEnvMappingRequests());
+                request.getDataSourceEnvRequests(), request.getDataSourceEnvMappingRequests(), request.getDcnRangeType());
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to modify custom rule, rule id: {}", savedRule.getId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_CUSTOM_RULE}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_CUSTOM_RULE}", response);
     }
 
     private void handleExecutionParametersInfo(ModifyCustomRuleRequest request, Rule ruleInDb, Project projectInDb) {
@@ -498,7 +551,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (executionParameters != null) {
                 ruleInDb.setExecutionParametersName(request.getExecutionParametersName());
-                ruleInDb.setUnionAll(executionParameters.getUnionAll());
+                ruleInDb.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -519,7 +572,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
         ruleInDb.setStaticStartupParam(request.getStaticStartupParam());
         ruleInDb.setEnable(request.getRuleEnable());
-        ruleInDb.setUnionAll(request.getUnionAll());
+        ruleInDb.setUnionWay(request.getUnionWay());
         ruleInDb.setSpecifyStaticStartupParam(request.getSpecifyStaticStartupParam());
         ruleInDb.setAbnormalCluster(StringUtils.isNotBlank(request.getAbnormalCluster()) ? request.getAbnormalCluster() : null);
         ruleInDb.setAbnormalDatabase(StringUtils.isNotBlank(request.getAbnormalDatabase()) ? request.getAbnormalDatabase() : null);
@@ -527,12 +580,12 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     }
 
     private Boolean handleObjectEqual(AddCustomRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
     private Boolean handleObjectEqual(ModifyCustomRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 

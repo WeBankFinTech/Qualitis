@@ -32,6 +32,8 @@ public class ModifyRuleRequest extends AbstractCommonRequest{
     private List<TemplateArgumentRequest> templateArgumentRequests;
     @JsonProperty("project_name")
     private String projectName;
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
     private String fifter;
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
@@ -57,6 +59,14 @@ public class ModifyRuleRequest extends AbstractCommonRequest{
         this.projectName = projectName;
     }
 
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
+    }
+
     public String getFifter() {
         return fifter;
     }
@@ -79,5 +89,16 @@ public class ModifyRuleRequest extends AbstractCommonRequest{
         AddRuleRequest addRuleRequest = new AddRuleRequest();
         BeanUtils.copyProperties(request, addRuleRequest);
         AddRuleRequest.checkRequest(addRuleRequest, true);
+    }
+
+    @Override
+    public String toString() {
+        return "ModifyRuleRequest{" +
+                "templateArgumentRequests=" + templateArgumentRequests +
+                ", projectName='" + projectName + '\'' +
+                ", standardValueVersionId=" + standardValueVersionId +
+                ", fifter='" + fifter + '\'' +
+                ", alarmVariable=" + alarmVariable +
+                "} " + super.toString();
     }
 }

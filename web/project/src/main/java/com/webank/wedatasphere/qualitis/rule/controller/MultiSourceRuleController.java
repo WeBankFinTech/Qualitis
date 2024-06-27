@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
@@ -73,7 +74,7 @@ public class MultiSourceRuleController {
             throw e;
         }  catch (Exception e) {
             LOGGER.error("Failed to add multi_source rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_MULTI_SOURCE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_MULTI_SOURCE_RULE}", null);
         }
     }
 
@@ -83,10 +84,10 @@ public class MultiSourceRuleController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getConstrastEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_CONSTRAST_DIRECTION_ENUMN_SUCCESSFULLY}", multiSourceRuleService.getAllConstrastEnum());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CONSTRAST_DIRECTION_ENUMN_SUCCESSFULLY}", multiSourceRuleService.getAllConstrastEnum());
         } catch (Exception e) {
             LOGGER.error("Failed to get Scheduled System enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_CONSTRAST_DIRECTION_ENUMN}", e.getMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_CONSTRAST_DIRECTION_ENUMN}", e.getMessage());
         }
     }
 
@@ -111,7 +112,7 @@ public class MultiSourceRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete multi_source rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_MULTI_SOURCE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_MULTI_SOURCE_RULE}", null);
         }
     }
 
@@ -135,7 +136,7 @@ public class MultiSourceRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify multi_source rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_MULTI_SOURCE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_MULTI_SOURCE_RULE}", null);
         }
     }
 
@@ -155,7 +156,7 @@ public class MultiSourceRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get details of multi_source rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_DETAILS_OF_MULTI_SOURCE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_DETAILS_OF_MULTI_SOURCE_RULE}", null);
         }
     }
 

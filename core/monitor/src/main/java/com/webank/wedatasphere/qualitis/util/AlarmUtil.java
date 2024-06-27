@@ -1,33 +1,15 @@
 package com.webank.wedatasphere.qualitis.util;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.client.AlarmClient;
 import com.webank.wedatasphere.qualitis.config.ImsConfig;
-import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.AlertTypeEnum;
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.ImsLevelEnum;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
-import com.webank.wedatasphere.qualitis.dao.AlarmInfoDao;
-import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
-import com.webank.wedatasphere.qualitis.dao.RoleDao;
-import com.webank.wedatasphere.qualitis.dao.TaskResultStatusDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
-import com.webank.wedatasphere.qualitis.entity.AlarmInfo;
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.ApplicationComment;
-import com.webank.wedatasphere.qualitis.entity.Role;
-import com.webank.wedatasphere.qualitis.entity.RuleMetric;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskResultStatus;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserRole;
+import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
@@ -39,14 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -96,14 +72,43 @@ public class AlarmUtil {
         return taskRuleSimples;
     }
 
-    public static void sendAlarmMessage(Application application, List<TaskRuleSimple> checkFailedRules, ImsConfig imsConfig, AlarmClient client
-            , AlarmInfoDao alarmInfoDao, UserDao userDao, TaskResultStatusDao taskResultStatusDao, Integer alert, String alertReceiver, Boolean flag) {
+    public static void sendAlarmMessage(Application application, List<TaskRuleSimple> checkAlarmRules, ImsConfig imsConfig, AlarmClient client
+            , AlarmInfoDao alarmInfoDao, UserDao userDao, TaskResultStatusDao taskResultStatusDao, Integer alert, String alertReceiver, Boolean flag, Boolean isAbort) {
         boolean bdap = imsConfig.getTitlePrefix().contains("BDAP");
         // 获取告警内容
         StringBuilder alertInfo = new StringBuilder();
-        List<Map<String, Object>> requestList = new ArrayList<>(checkFailedRules.size());
+        List<Map<String, Object>> requestList = new ArrayList<>(checkAlarmRules.size());
+
+        List<TaskRuleSimple> checkAlarmAcrossClusters = checkAlarmRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        Map<Long, List<TaskRuleSimple>> taskRuleSimpleMap = null;
+        List<Long> alarmedRuleIds = null;
+
+        if (CollectionUtils.isNotEmpty(checkAlarmAcrossClusters)) {
+            alarmedRuleIds = new ArrayList<>(checkAlarmAcrossClusters.size());
+            taskRuleSimpleMap = new HashMap<>(checkAlarmAcrossClusters.size());
+
+            for (TaskRuleSimple taskRuleSimple : checkAlarmAcrossClusters) {
+                Long ruleId = taskRuleSimple.getRuleId();
+                if (taskRuleSimpleMap.keySet().contains(ruleId)) {
+                    taskRuleSimpleMap.get(ruleId).add(taskRuleSimple);
+                } else {
+                    List<TaskRuleSimple> tmpTaskRuleSimples = new ArrayList<>();
+                    tmpTaskRuleSimples.add(taskRuleSimple);
+                    taskRuleSimpleMap.put(ruleId, tmpTaskRuleSimples);
+                }
+            }
+        }
+
         // 遍历每一个规则
-        for (TaskRuleSimple taskRuleSimpleTemp : checkFailedRules) {
+        for (TaskRuleSimple taskRuleSimpleTemp : checkAlarmRules) {
+            boolean isAcrossCluster = false;
+            if (CollectionUtils.isNotEmpty(alarmedRuleIds) && alarmedRuleIds.contains(taskRuleSimpleTemp.getRuleId())) {
+                continue;
+            }
+            if (checkAlarmAcrossClusters.contains(taskRuleSimpleTemp)) {
+                alarmedRuleIds.add(taskRuleSimpleTemp.getRuleId());
+                isAcrossCluster = true;
+            }
             Map<String, Object> request = new HashMap<>(6);
             // 获取告警标题
             String cnName = taskRuleSimpleTemp.getCnName();
@@ -118,56 +123,41 @@ public class AlarmUtil {
             alertInfo.append(getDepartAlerters(taskRuleSimpleTemp, userDao, AlertTypeEnum.TASK_FAIL_CHECKOUT.getCode(), StringUtils.isNotBlank(alertReceiver) ? alertReceiver : taskRuleSimpleTemp.getAlertReceiver())).append("\n");
             if (flag) {
                 alertTitle = imsConfig.getNewTitleSucceedPrefix() + "【" + realRuleName + "】";
-                alertInfo.append("Qualitis项目: ").append(realProjectName).append("， 技术规则: ").append(realRuleName).append(" 任务校验通过.\n");
+                alertInfo.append("Qualitis项目: ").append(realProjectName).append("，技术规则: ").append(realRuleName).append(" 任务校验通过。\n");
             } else {
                 alertTitle = imsConfig.getNewTitlePrefix() + "【" + realRuleName + "】";
-                alertInfo.append("Qualitis项目: ").append(realProjectName).append("， 技术规则: ").append(realRuleName).append(" 任务校验不通过.\n");
+                alertInfo.append("Qualitis项目: ").append(realProjectName).append("，技术规则: ").append(realRuleName).append(" 任务校验不通过");
+                if (isAbort) {
+                    alertInfo.append("，已阻断任务执行");
+                }
+                alertInfo.append("。\n");
             }
-            alertInfo.append("库表信息：").append(retrieveDatasource(taskRuleSimpleTemp)).append("\n");
-
             List<TaskRuleAlarmConfig> taskRuleAlarmConfigList = taskRuleSimpleTemp.getTaskRuleAlarmConfigList();
-            Map<Long, TaskRuleAlarmConfig> taskRuleAlarmConfigMap = taskRuleAlarmConfigList.stream().collect(Collectors.toMap(TaskRuleAlarmConfig::getId, t -> t, (oValue, nValue) -> nValue));
             List<TaskResultStatus> taskResultStatusList = taskResultStatusDao.findByStatus(application.getId(), taskRuleSimpleTemp.getRuleId(), AlarmConfigStatusEnum.NOT_PASS.getCode());
-            for (TaskResultStatus taskResultStatus : taskResultStatusList) {
-                TaskRuleAlarmConfig alarmConfig = taskRuleAlarmConfigMap.get(taskResultStatus.getTaskRuleAlarmConfigId());
-                if (null == alarmConfig) {
-                    continue;
-                }
-                TaskResult taskResult = taskResultStatus.getTaskResult();
-                String value = StringUtils.isBlank(taskResult.getValue()) ? "empty value" : taskResult.getValue();
-                String compareValue = StringUtils.isBlank(taskResult.getCompareValue()) ? "empty value" : taskResult.getCompareValue();
-                if (alarmConfig.getRuleMetric() == null || alarmConfig.getRuleMetric().getId().equals(taskResult.getRuleMetricId())) {
-                    alarmStringAppend(alertInfo, alarmConfig, value, compareValue, realRuleName, realProjectName, taskResult.getEnvName());
+            Map<Long, TaskRuleAlarmConfig> taskRuleAlarmConfigMap = taskRuleAlarmConfigList.stream().collect(Collectors.toMap(TaskRuleAlarmConfig::getId, t -> t, (oValue, nValue) -> nValue));
+            if (isAcrossCluster) {
+                alarmAcrossCluster(alertInfo, taskRuleSimpleMap.get(taskRuleSimpleTemp.getRuleId()), taskResultStatusList);
+            } else {
+                alertInfo.append("库表信息：").append(retrieveDatasource(taskRuleSimpleTemp)).append("\n");
+                for (TaskResultStatus taskResultStatus : taskResultStatusList) {
+                    TaskRuleAlarmConfig alarmConfig = taskRuleAlarmConfigMap.get(taskResultStatus.getTaskRuleAlarmConfigId());
+                    if (null == alarmConfig) {
+                        continue;
+                    }
+                    TaskResult taskResult = taskResultStatus.getTaskResult();
+                    String value = StringUtils.isBlank(taskResult.getValue()) ? "empty value" : taskResult.getValue();
+                    String compareValue = StringUtils.isBlank(taskResult.getCompareValue()) ? "empty value" : taskResult.getCompareValue();
+                    if (alarmConfig.getRuleMetric() == null || alarmConfig.getRuleMetric().getId().equals(taskResult.getRuleMetricId())) {
+                        alarmStringAppend(alertInfo, alarmConfig, value, compareValue, realRuleName, realProjectName, taskResult.getEnvName());
+                    }
                 }
             }
-
             alertInfo.append("\n也可进入 Qualitis 系统查看详情。");
             List<RuleMetric> ruleMetrics = taskRuleSimpleTemp.getTaskRuleAlarmConfigList().stream().map(TaskRuleAlarmConfig::getRuleMetric)
                     .filter(ruleMetric -> ruleMetric != null).collect(Collectors.toList());
             // 获取告警规则关联子系统
-            int subSystemId = QualitisConstants.SUB_SYSTEM_ID;
-            if (CollectionUtils.isEmpty(ruleMetrics)) {
-                LOGGER.info("Qualitis find project's subsystem ID or datasource's subsystem ID because there is no rule metric. Rule name: " + realRuleName);
-                if (null != application.getSubSystemId()) {
-                    subSystemId = application.getSubSystemId().intValue();
-                }
-                if (taskRuleSimpleTemp.getTask() != null && CollectionUtils.isNotEmpty(taskRuleSimpleTemp.getTask().getTaskDataSources())) {
-                    List<Long> subSystemIds = taskRuleSimpleTemp.getTask().getTaskDataSources().stream()
-                            .map(taskDataSource -> taskDataSource.getSubSystemId()).filter(ele -> ele != null).collect(
-                                    Collectors.toList());
-                    if (CollectionUtils.isNotEmpty(subSystemIds)) {
-                        Long currentSubSystemId = subSystemIds.iterator().next();
-                        if (currentSubSystemId != null) {
-                            subSystemId = currentSubSystemId.intValue();
-                        }
-                    }
-                }
-            } else {
-                // 获取子系统
-                if (ruleMetrics.iterator().next().getSubSystemId() != null) {
-                    subSystemId = ruleMetrics.iterator().next().getSubSystemId();
-                }
-            }
+            String subSystemId = getAlarmSubSystemId(ruleMetrics, application, taskRuleSimpleTemp, realRuleName);
+
             // 获取告警级别
             int alertLevel = alert != null ? alert.intValue() : taskRuleSimpleTemp.getAlertLevel().intValue();
             // 获取告警人
@@ -187,7 +177,7 @@ public class AlarmUtil {
 
             if (bdap) {
                 client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel));
+                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
             }
 
             alertInfo.delete(0, alertInfo.length());
@@ -197,21 +187,57 @@ public class AlarmUtil {
         }
     }
 
+    private static String getAlarmSubSystemId(List<RuleMetric> ruleMetrics, Application application, TaskRuleSimple taskRuleSimpleTemp, String realRuleName) {
+        String subSystemId = QualitisConstants.SUB_SYSTEM_ID;
+        if (CollectionUtils.isEmpty(ruleMetrics)) {
+            LOGGER.info("Qualitis find project's subsystem ID or datasource's subsystem ID because there is no rule metric. Rule name: " + realRuleName);
+            if (StringUtils.isNotBlank(application.getSubSystemId())) {
+                subSystemId = application.getSubSystemId();
+            }
+            if (taskRuleSimpleTemp.getTask() != null && CollectionUtils.isNotEmpty(taskRuleSimpleTemp.getTask().getTaskDataSources())) {
+                List<String> subSystemIds = taskRuleSimpleTemp.getTask().getTaskDataSources().stream()
+                        .map(taskDataSource -> taskDataSource.getSubSystemId()).filter(ele -> ele != null).collect(
+                                Collectors.toList());
+                if (CollectionUtils.isNotEmpty(subSystemIds)) {
+                    String currentSubSystemId = subSystemIds.iterator().next();
+                    if (currentSubSystemId != null) {
+                        subSystemId = currentSubSystemId;
+                    }
+                }
+            }
+        } else {
+            // 获取子系统
+            if (ruleMetrics.iterator().next().getSubSystemId() != null) {
+                subSystemId = ruleMetrics.iterator().next().getSubSystemId();
+            }
+        }
+
+        return subSystemId;
+    }
+
     private static String retrieveDatasource(TaskRuleSimple taskRuleSimpleTemp) {
         if (CollectionUtils.isNotEmpty(taskRuleSimpleTemp.getTask().getTaskDataSources())) {
-            String dbAndTable = taskRuleSimpleTemp.getTask().getTaskDataSources().stream().filter(taskDataSource -> taskDataSource.getRuleId().equals(taskRuleSimpleTemp.getRuleId())).map(taskDataSource ->
-                    (StringUtils.isNotEmpty(taskDataSource.getDatabaseName()) ? taskDataSource.getDatabaseName() : "") + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() +
+            String dbAndTable = taskRuleSimpleTemp.getTask().getTaskDataSources().stream().filter(taskDataSource ->
+                           taskDataSource.getRuleId().equals(taskRuleSimpleTemp.getRuleId())).map(taskDataSource ->
+                            (StringUtils.isNotEmpty(taskDataSource.getDatabaseName()) ? taskDataSource.getDatabaseName() : "") + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() +
                             (StringUtils.isNotEmpty(taskDataSource.getTableName()) ? taskDataSource.getTableName() : "") + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() +
-                            (StringUtils.isNotEmpty(taskDataSource.getColName()) ? taskDataSource.getColName() : "[]"))
-                    .collect(Collectors.joining(SpecCharEnum.DIVIDER.getValue()));
+                            (StringUtils.isNotEmpty(taskDataSource.getColName()) ? taskDataSource.getColName() : "[]") + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() +
+                            (StringUtils.isNotEmpty(taskDataSource.getFilter()) ? taskDataSource.getFilter() : ""))
+                            .collect(Collectors.joining(SpecCharEnum.DIVIDER.getValue()));
             return dbAndTable;
         }
         return "";
     }
 
-    private static void packageAlarm(StringBuilder alertInfo, Map<String, Object> request, String alertTitle, int subSystemId, int alertLevel,
+    private static void packageAlarm(StringBuilder alertInfo, Map<String, Object> request, String alertTitle, String subSystemId, int alertLevel,
                                      List<String> receivers, String alertObj, ImsConfig imsConfig) {
-        request.put("alert_reciver", StringUtils.join(receivers, ","));
+//            企业微信群
+        Map<String, String> advancedAlertReceiverMap = extractAlertReceivers(receivers);
+        if (advancedAlertReceiverMap.containsKey("erp_group_id")) {
+            request.put("erp_group_id", advancedAlertReceiverMap.get("erp_group_id"));
+        }
+        // 封装告警
+        request.put("alert_reciver", advancedAlertReceiverMap.get("alert_reciver"));
         request.put("alert_info", alertInfo.toString());
         request.put("sub_system_id", subSystemId);
         request.put("alert_title", alertTitle);
@@ -232,16 +258,25 @@ public class AlarmUtil {
      */
     public static String getDepartAlerters(TaskRuleSimple taskRuleSimple, UserDao userDao, Integer alarmCode, String alertReceiver) {
         User creator = userDao.findByUsername(taskRuleSimple.getProjectCreator());
+        String creatorName = "";
+        if (creator != null) {
+            creatorName = creator.getUsername();
+        }
         StringBuilder alerters = new StringBuilder("请通知：");
-        String creatorName = creator.getUsername();
-        alerters.append("告警接收人").append(alertReceiver);
+
+        //        从告警人中移除企业微信群ID
+        String receiverWithoutErpGroupId = removeErpGroupId(alertReceiver);
+
+        alerters.append("告警接收人").append(receiverWithoutErpGroupId);
         Set<String> departAlerters = new HashSet<>();
 
         if (alarmCode.equals(AlertTypeEnum.TASK_FAILED.getCode())) {
             Role role = SpringContextHolder.getBean(RoleDao.class).findByRoleName(ADMIN);
             Set<String> admins = SpringContextHolder.getBean(UserRoleDao.class).findByRole(role).stream().map(UserRole::getUser).map(User::getUsername).collect(Collectors.toSet());
             departAlerters.addAll(admins);
-            departAlerters.remove(creatorName);
+            if (StringUtils.isNotBlank(creatorName)) {
+                departAlerters.remove(creatorName);
+            }
 
             if (departAlerters.isEmpty()) {
                 return alerters.toString();
@@ -314,8 +349,8 @@ public class AlarmUtil {
         Integer checkTemplate = alarmConfig.getCheckTemplate();
         String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(checkTemplate);
         alertInfo.append("Qualitis项目: ").append(projectName).
-                append(" 技术规则: ").append(ruleName)
-                .append(" 任务运行完成, 不符合数据质量要求。原因: ")
+                append("，技术规则: ").append(ruleName)
+                .append("，任务运行完成, 不符合数据质量要求。原因: ")
                 .append(alarmConfig.getOutputName() + " - [").append(StringUtils.isEmpty(value) ? "" : value)
                 .append(alarmConfig.getOutputUnit() == null ? "" : alarmConfig.getOutputUnit()).append("]")
                 .append(", 不符合设定阈值: [").append(alarmConfig.getThreshold()).append(alarmConfig.getOutputUnit() == null ? "" : alarmConfig.getOutputUnit())
@@ -343,6 +378,22 @@ public class AlarmUtil {
             alertInfo.append("。环境名称: [").append(envName).append("]");
         }
         alertInfo.append("\n");
+    }
+
+    private static void alarmAcrossCluster(StringBuilder alertInfo, List<TaskRuleSimple> taskRuleSimples, List<TaskResultStatus> taskResultStatusList) {
+        alertInfo.append("表行数比对不一致，详情如下： \n");
+
+        for (TaskRuleSimple taskRuleSimple : taskRuleSimples) {
+            TaskDataSource taskDataSource = taskRuleSimple.getTask().getTaskDataSources().iterator().next();
+            alertInfo.append("库名称：").append(taskDataSource.getDatabaseName()).append("，").append("表名称：").append(taskDataSource.getTableName()).append("，").append("分区：").append(taskDataSource.getFilter());
+
+            for (TaskResultStatus taskResultStatus : taskResultStatusList) {
+                if (taskResultStatus.getTaskResult().getTaskId().equals(taskRuleSimple.getTask().getId())) {
+                    alertInfo.append("的数据量为：").append(taskResultStatus.getTaskResult().getValue());
+                }
+            }
+            alertInfo.append("\n");
+        }
     }
 
     public static List<String> getReceivers(TaskRuleSimple taskRuleSimple, Integer alarmCode, String alertReceiver) {
@@ -423,8 +474,19 @@ public class AlarmUtil {
         // 获取告警内容
         StringBuilder alertInfo = new StringBuilder();
         List<Map<String, Object>> requestList = new ArrayList<>(failedRules.size());
+        List<TaskRuleSimple> failedAcrossClusters = failedRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        List<Long> alarmedRuleIds = null;
+        if (CollectionUtils.isNotEmpty(failedAcrossClusters)) {
+            alarmedRuleIds = new ArrayList<>(failedAcrossClusters.size());
+        }
 
         for (TaskRuleSimple taskRuleSimpleTemp : failedRules) {
+            if (CollectionUtils.isNotEmpty(alarmedRuleIds) && alarmedRuleIds.contains(taskRuleSimpleTemp.getRuleId())) {
+                continue;
+            }
+            if (failedAcrossClusters.contains(taskRuleSimpleTemp)) {
+                alarmedRuleIds.add(taskRuleSimpleTemp.getRuleId());
+            }
             Map<String, Object> request = new HashMap<>(6);
             // 获取告警标题
             String cnName = taskRuleSimpleTemp.getCnName();
@@ -436,7 +498,7 @@ public class AlarmUtil {
             String realPorjectName = StringUtils.isNotEmpty(cnProjectName) ? cnProjectName : enProjectName;
             String alertTitle = imsConfig.getNewTitlePrefix() + "【" + realRuleName + "】";
             alertInfo.append(getDepartAlerters(taskRuleSimpleTemp, userDao, AlertTypeEnum.TASK_FAILED.getCode(), StringUtils.isNotBlank(alertReceiver) ? alertReceiver : taskRuleSimpleTemp.getAlertReceiver())).append("\n");
-            alertInfo.append("Qualitis项目: ").append(realPorjectName).append("， 技术规则: ").append(realRuleName).append(" 任务执行失败.\n");
+            alertInfo.append("Qualitis项目: ").append(realPorjectName).append("，技术规则: ").append(realRuleName).append(" 任务执行失败.\n");
             alertInfo.append("任务编号: ").append(application.getId()).append(". ");
             if (null != application.getApplicationComment()) {
                 ApplicationComment applicationComment = SpringContextHolder.getBean(ApplicationCommentDao.class).getByCode(application.getApplicationComment());
@@ -446,29 +508,7 @@ public class AlarmUtil {
             alertInfo.append("\n也可进入 Qualitis 系统查看详情。");
             List<RuleMetric> ruleMetrics = taskRuleSimpleTemp.getTaskRuleAlarmConfigList().stream().map(TaskRuleAlarmConfig::getRuleMetric)
                     .filter(ruleMetric -> ruleMetric != null).collect(Collectors.toList());
-            int subSystemId = QualitisConstants.SUB_SYSTEM_ID;
-            if (CollectionUtils.isEmpty(ruleMetrics)) {
-                LOGGER.info("Qualitis find project's subsystem ID or datasource's subsystem ID because there is no rule metric. Rule name: " + realRuleName);
-                if (null != application.getSubSystemId()) {
-                    subSystemId = application.getSubSystemId().intValue();
-                }
-                if (taskRuleSimpleTemp.getTask() != null && CollectionUtils.isNotEmpty(taskRuleSimpleTemp.getTask().getTaskDataSources())) {
-                    List<Long> subSystemIds = taskRuleSimpleTemp.getTask().getTaskDataSources().stream()
-                            .map(taskDataSource -> taskDataSource.getSubSystemId()).filter(ele -> ele != null).collect(
-                                    Collectors.toList());
-                    if (CollectionUtils.isNotEmpty(subSystemIds)) {
-                        Long currentSubSystemId = subSystemIds.iterator().next();
-                        if (currentSubSystemId != null) {
-                            subSystemId = currentSubSystemId.intValue();
-                        }
-                    }
-                }
-            } else {
-                // 获取子系统
-                if (ruleMetrics.iterator().next().getSubSystemId() != null) {
-                    subSystemId = ruleMetrics.iterator().next().getSubSystemId();
-                }
-            }
+            String subSystemId = getAlarmSubSystemId(ruleMetrics, application, taskRuleSimpleTemp, realRuleName);
             // 获取告警人
             List<String> receivers = getReceivers(taskRuleSimpleTemp, AlertTypeEnum.TASK_FAILED.getCode(), StringUtils.isNotBlank(alertReceiver) ? alertReceiver : taskRuleSimpleTemp.getAlertReceiver());
 
@@ -476,8 +516,15 @@ public class AlarmUtil {
             int alertLevel = alertRank != null ? alertRank.intValue() : taskRuleSimpleTemp.getAlertLevel();
             // Alert object: database1[table1,table2];database2[table3,table4]
             String alertObj = contructAlertObj(taskRuleSimpleTemp.getTask().getTaskDataSources());
+
+//            企业微信群
+            Map<String, String> advancedAlertReceiverMap = extractAlertReceivers(receivers);
+            if (advancedAlertReceiverMap.containsKey("erp_group_id")) {
+                request.put("erp_group_id", advancedAlertReceiverMap.get("erp_group_id"));
+            }
             // 封装告警
-            request.put("alert_reciver", StringUtils.join(receivers, ","));
+            request.put("alert_reciver", advancedAlertReceiverMap.get("alert_reciver"));
+
             request.put("alert_info", alertInfo.toString());
             request.put("sub_system_id", subSystemId);
             request.put("alert_title", alertTitle);
@@ -497,7 +544,7 @@ public class AlarmUtil {
 
             if (bdap) {
                 client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel));
+                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
             }
             alertInfo.delete(0, alertInfo.length());
         }
@@ -507,8 +554,28 @@ public class AlarmUtil {
         }
     }
 
+    private static Map<String, String> extractAlertReceivers(List<String> alertReceivers) {
+        AtomicReference<String> erpGroupId = new AtomicReference<>();
+        List<String> defaultReceivers = new ArrayList<>();
+        alertReceivers.forEach(item -> {
+            if (item.startsWith(SpecCharEnum.LEFT_BRACKET.getValue()) && item.endsWith(SpecCharEnum.RIGHT_BRACKET.getValue())) {
+                erpGroupId.set(item.substring(1, item.length() - 1));
+            } else {
+                defaultReceivers.add(item);
+            }
+        });
+        Map<String, String> resultMap = Maps.newHashMapWithExpectedSize(2);
+        if (erpGroupId.get() != null) {
+            resultMap.put("erp_group_id", erpGroupId.get());
+        }
+        if (CollectionUtils.isNotEmpty(defaultReceivers)) {
+            resultMap.put("alert_reciver", Joiner.on(SpecCharEnum.COMMA.getValue()).join(defaultReceivers));
+        }
+        return resultMap;
+    }
+
     private static String contructAlertObj(Set<TaskDataSource> taskDataSources) {
-        Map<String, List<String>> dbAndTables = new HashMap<>(taskDataSources.size());
+        Map<String, Set<String>> dbAndTables = new HashMap<>(taskDataSources.size());
         for (TaskDataSource taskDataSource : taskDataSources) {
             String databaseName = taskDataSource.getDatabaseName();
             String tableName = taskDataSource.getTableName();
@@ -516,7 +583,7 @@ public class AlarmUtil {
             if (dbAndTables.keySet().contains(databaseName)) {
                 dbAndTables.get(databaseName).add(tableName);
             } else {
-                List<String> tables = new ArrayList<>();
+                Set<String> tables = new HashSet<>();
                 tables.add(tableName);
 
                 dbAndTables.put(databaseName, tables);
@@ -525,9 +592,9 @@ public class AlarmUtil {
 
         List<String> dbs = new ArrayList<>(dbAndTables.keySet().size());
         StringBuilder tempDb = new StringBuilder();
-        for (Map.Entry<String, List<String>> entry : dbAndTables.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : dbAndTables.entrySet()) {
             String key = entry.getKey();
-            Object value = entry.getValue();
+            Set<String> value = entry.getValue();
             dbs.add(tempDb.append(key).append("[").append(StringUtils.join(value, ",")).append("]").toString());
             tempDb.delete(0, tempDb.length());
         }
@@ -560,49 +627,64 @@ public class AlarmUtil {
             if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
                 ExecutionParameters executionParameters = SpringContextHolder.getBean(ExecutionParametersDao.class).findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
                 if (executionParameters != null) {
-                    //兼容旧规则数据
+                    // When saved in execution parameters' alert info
                     if (StringUtils.isNotBlank(executionParameters.getAlertReceiver())) {
-                        if (!alerters.toString().contains(executionParameters.getAlertReceiver())) {
-                            alerters.append(
-                                    StringUtils.isNotEmpty(executionParameters.getAlertReceiver()) ? executionParameters.getAlertReceiver() : "未设置")
-                                    .append("或创建用户")
-                                    .append(rule.getCreateUser())
-                                    .append(";");
+                        //        从告警人中移除企业微信群ID
+                        String alertReceiver = removeErpGroupId(executionParameters.getAlertReceiver());
+                        if (!alerters.toString().contains(alertReceiver)) {
+                            alerters.append(alertReceiver).append(";");
                         }
 
                         maxLevel = getMaxLevelAndReceivers(maxLevel, receivers, executionParameters);
                         continue;
                     }
 
-                    //0.23.0版本
+                    // 0.23.0
                     if (CollectionUtils.isNotEmpty(executionParameters.getAlarmArgumentsExecutionParameters())) {
                         for (AlarmArgumentsExecutionParameters parameters : executionParameters.getAlarmArgumentsExecutionParameters()) {
-                            if (!alerters.toString().contains(parameters.getAlarmReceiver())) {
-                                alerters.append(StringUtils.isNotEmpty(parameters.getAlarmReceiver()) ? parameters.getAlarmReceiver() : "未设置")
-                                        .append("或创建用户")
-                                        .append(rule.getCreateUser())
-                                        .append(";");
+                            if (StringUtils.isBlank(parameters.getAlarmReceiver())) {
+                                continue;
                             }
-                            // Fix: add receivers when init failed.
-                            if (StringUtils.isNotEmpty(parameters.getAlarmReceiver())) {
-                                receivers.addAll(Arrays.asList(parameters.getAlarmReceiver().split(SpecCharEnum.COMMA.getValue())));
+                            //        从告警人中移除企业微信群ID
+                            String alertReceiver = removeErpGroupId(parameters.getAlarmReceiver());
+
+                            if (!alerters.toString().contains(alertReceiver)) {
+                                alerters.append(alertReceiver).append(";");
                             }
+
+                            receivers.addAll(Arrays.asList(alertReceiver.split(SpecCharEnum.COMMA.getValue())));
                             if (parameters.getAlarmLevel() != null && parameters.getAlarmLevel() < maxLevel) {
                                 maxLevel = parameters.getAlarmLevel();
                             }
                         }
-
+                        continue;
                     }
 
+                    if (StringUtils.isNotEmpty(rule.getCreateUser()) && !alerters.toString().contains(rule.getCreateUser())) {
+                        alerters.append("未设置，").append("创建用户")
+                            .append(rule.getCreateUser())
+                            .append(";");
+                        receivers.add(rule.getCreateUser());
+                        continue;
+                    }
                 }
             } else {
-                alerters.append(StringUtils.isNotEmpty(rule.getAlertReceiver()) ? rule.getAlertReceiver() : "未设置")
-                        .append("或创建用户")
+                if (StringUtils.isNotEmpty(rule.getAlertReceiver()) && alerters.toString().contains(rule.getAlertReceiver())) {
+                    continue;
+                }
+                if (StringUtils.isNotEmpty(rule.getCreateUser()) && alerters.toString().contains(rule.getCreateUser())) {
+                    continue;
+                }
+
+                alerters.append(StringUtils.isNotEmpty(rule.getAlertReceiver()) ? rule.getAlertReceiver() : "未设置").append("或创建用户")
                         .append(rule.getCreateUser())
                         .append(";");
-                // Fix: add receivers when init failed.
+
                 if (StringUtils.isNotEmpty(rule.getAlertReceiver())) {
                     receivers.addAll(Arrays.asList(rule.getAlertReceiver().split(SpecCharEnum.COMMA.getValue())));
+                }
+                if (StringUtils.isNotEmpty(rule.getCreateUser())) {
+                    receivers.add(rule.getCreateUser());
                 }
             }
         }
@@ -640,8 +722,12 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "");
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "", null);
         }
+    }
+
+    private static String removeErpGroupId(String alertReceiver) {
+        return Arrays.stream(StringUtils.split(alertReceiver, SpecCharEnum.COMMA.getValue())).filter(receiver -> !receiver.startsWith(SpecCharEnum.LEFT_BRACKET.getValue())).collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
     }
 
     public static void sendInitFailedMessage(Application application, CheckAlert checkAlert, ImsConfig imsConfig, AlarmClient client, AlarmInfoDao alarmInfoDao) {
@@ -675,7 +761,7 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode());
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode(), null);
         }
     }
 

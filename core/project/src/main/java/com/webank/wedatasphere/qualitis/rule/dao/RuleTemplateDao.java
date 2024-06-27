@@ -38,6 +38,13 @@ public interface RuleTemplateDao {
     Template findById(Long ruleTemplateId);
 
     /**
+     * find by ids
+     * @param templateIds
+     * @return
+     */
+    List<Template> findByIds(List<Long> templateIds);
+
+    /**
      * Find all rule template
      *
      * @param page
@@ -166,7 +173,18 @@ public interface RuleTemplateDao {
      * @return
      */
     Page<Template> findTemplates(Integer type,
-                                 Integer dataSourceTypeCode, String tableDataType, List<Long> dataVisibilityDeptList, Long createUserId, String cnName, String enName, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, int page, int size);
+                                 Integer dataSourceTypeCode, String tableDataType, List<Long> dataVisibilityDeptList, Long createUserId, String cnName, String enName
+                                , Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange
+                                , String createStartTime, String createEndTime, String updateStartTime, String updateEndTime
+                                , Long templateId, String description
+                                , int page, int size);
+
+    Page<Template> findTemplatesWithAdmin(Integer type,
+                                 Integer dataSourceTypeCode, String tableDataType, String cnName, String enName
+            , Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange
+            , String createStartTime, String createEndTime, String updateStartTime, String updateEndTime
+            , Long templateId, String description
+            , int page, int size);
 
     /**
      * Count templates.
@@ -216,6 +234,23 @@ public interface RuleTemplateDao {
     List<Map<String, Object>> findAllTemplatesOptionList(Integer templateType);
 
     /**
+     * find All Templates By Project Id
+     *
+     * @param projectId
+     * @return
+     */
+    List<Map<String, Object>> findAllTemplatesByProjectId(Long projectId);
+
+    /**
+     * find Hive Data Source Type All Templates
+     *
+     * @param dataSourceTypes
+     * @param code
+     * @return
+     */
+    List<Map<String, Object>> findHiveDataSourceTypeAllTemplates(List<Integer> dataSourceTypes, Integer code);
+
+    /**
      * Get default or multi template by name
      *
      * @param templateName
@@ -226,10 +261,10 @@ public interface RuleTemplateDao {
     /**
      * getTemplateMidTableInputMeta
      *
-     * @param ids
+     * @param enNames
      * @return
      */
-    List<Map<String, Object>> getTemplateDefaultInputMeta(List<Integer> ids);
+    List<Map<String, Object>> getTemplateDefaultInputMeta(List<String> enNames);
 
     /**
      * find Template By EnName
@@ -237,5 +272,13 @@ public interface RuleTemplateDao {
      * @param templateEnName
      * @return
      */
-    List<Template> findTemplateByEnName(String templateEnName);
+    Template findTemplateByEnName(String templateEnName);
+
+    /**
+     * query templates by calcu_unit_ids
+     *
+     * @param calcuUnitIds
+     * @return
+     */
+    List<Template> findMetricCollectTemplates(List<Long> calcuUnitIds);
 }

@@ -20,6 +20,7 @@ import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
@@ -56,6 +57,7 @@ import com.webank.wedatasphere.qualitis.rule.timer.MetadataOnRuleDataSourceUpdat
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
@@ -140,7 +142,12 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
                 fps = true;
             }
             // Check Arguments
-            DataSourceRequest.checkRequest(request, cs, fps);
+            Boolean isTableRowsConsistency = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isTableRowsConsistency(rule.getTemplate().getEnName());
+            Boolean isCustomColumnConsistence = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName());
+            Boolean isTableStructureConsistent = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isTableStructureConsistent(rule.getTemplate().getEnName());
+            if (!isTableRowsConsistency && !isCustomColumnConsistence) {
+                DataSourceRequest.checkRequest(request, cs, fps, isTableStructureConsistent);
+            }
             if (StringUtils.isNotBlank(request.getLinkisDataSourceType())) {
                 newRuleDataSource.setDatasourceType(TemplateDataSourceTypeEnum.getCode(request.getLinkisDataSourceType()));
                 newRuleDataSource.setLinkisDataSourceVersionId(request.getLinkisDataSourceVersionId());
@@ -172,6 +179,9 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
                 newRuleDataSource.setRuleGroup(ruleGroup);
                 newRuleDataSource.setProjectId(ruleGroup.getProjectId());
             }
+            newRuleDataSource.setCollectSql(request.getCollectSql());
+            String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType())?request.getDcnRangeType():QualitisConstants.DCN_RANGE_TYPE_ALL;
+            newRuleDataSource.setDcnRangeType(dcnRangeType);
 
             ruleDataSources.add(newRuleDataSource);
             LOGGER.info("Succeed to save rule_datasource. rule_datasource: {}", newRuleDataSource);
@@ -244,7 +254,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     public List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String fileId, String fpsTableDesc, String fileDb
         , String fileTable, String fileDelimiter, String fileType, Boolean fileHeader, String proxyUser, String fileHashValues, String loginUser
         , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName
-        , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) {
+        , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests, String dcnRangeType) {
 
         List<RuleDataSource> ruleDataSources = new ArrayList<>();
         List<RuleDataSourceEnv> ruleDataSourceEnvs = new ArrayList<>();
@@ -263,6 +273,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
             ruleDataSource.setFileDelimiter(SpecCharEnum.STAR.getValue().equals(fileDelimiter) ? " " : fileDelimiter);
             ruleDataSource.setDatasourceType(TemplateDataSourceTypeEnum.FPS.getCode());
             ruleDataSource.setFileType(fileType);
+            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType)?dcnRangeType:QualitisConstants.DCN_RANGE_TYPE_ALL);
             if (Objects.isNull(fileHeader)) {
                 ruleDataSource.setFileHeader(Boolean.FALSE);
             } else {
@@ -296,7 +307,9 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
             } else {
                 ruleDataSource.setDatasourceType(TemplateDataSourceTypeEnum.HIVE.getCode());
             }
+            ruleDataSource.setProjectId(savedRule.getProject().getId());
             ruleDataSource.setDatasourceIndex(QualitisConstants.ORIGINAL_INDEX);
+            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType)?dcnRangeType:QualitisConstants.DCN_RANGE_TYPE_ALL);
             ruleDataSources.add(ruleDataSource);
             LOGGER.info("Start to save custom rule datasource with cluster name and proxy user.");
         }
@@ -425,6 +438,8 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
         newRuleDataSource.setProxyUser(request.getProxyUser());
         newRuleDataSource.setRule(rule);
         newRuleDataSource.setProjectId(rule.getProject().getId());
+        String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType())?request.getDcnRangeType():QualitisConstants.DCN_RANGE_TYPE_ALL;
+        newRuleDataSource.setDcnRangeType(dcnRangeType);
 
         RuleDataSource ruleDataSourceInDb = ruleDatasourceDao.saveRuleDataSource(newRuleDataSource);
 
@@ -471,47 +486,50 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     }
 
     @Override
-    public GeneralResponse<DataMapResultInfo> syncMetadata(String userName) {
+    public GeneralResponse<DataMapResultInfo<String>> syncMetadata(String userName) {
         LOGGER.info("Ready to sync metadata, loginUser: {}", userName);
         Map<String, Object> dataMap = Maps.newHashMapWithExpectedSize(1);
         if (isRepeatSubmitOnSyncMetadata()) {
             dataMap.put("type", SYNC_METADATA_STATUS_REPEATED_SUBMIT);
-            return new GeneralResponse("200", "failed",
-                    new DataMapResultInfo("200", "已在同步，请勿重复提交", dataMap));
+            return new GeneralResponse(ResponseStatusConstants.OK, "failed",
+                    new DataMapResultInfo(ResponseStatusConstants.OK, "已在同步，请勿重复提交", dataMap));
         }
 
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
         Map<String, String> clusterNameAndTypeMap = getClusterNameAndTypeMap();
         int maxSize = ruleDatasourceMaxSize >= 0 ? ruleDatasourceMaxSize: Long.valueOf(ruleDataSourceRepository.count()).intValue();
         int perSize = ruleDatasourcePerSize < maxSize ? ruleDatasourcePerSize: maxSize;
         int totalPage = maxSize / perSize + 1;
-        Thread syncThread = new Thread(() -> {
-            isEndedStatusOnSyncMetadata.set(Boolean.FALSE);
-            try {
-                for (int page = 0; page < totalPage; page++) {
-                    List<RuleDataSource> ruleDataSourceList = ruleDatasourceDao.findAllWithPage(page, perSize).getContent();
-                    if (CollectionUtils.isEmpty(ruleDataSourceList)) {
-                        LOGGER.info("List of RuleDataSource is empty");
-                        break;
+        try {
+            executor.execute(() -> {
+                isEndedStatusOnSyncMetadata.set(Boolean.FALSE);
+                try {
+                    for (int page = 0; page < totalPage; page++) {
+                        List<RuleDataSource> ruleDataSourceList = ruleDatasourceDao.findAllWithPage(page, perSize).getContent();
+                        if (CollectionUtils.isEmpty(ruleDataSourceList)) {
+                            LOGGER.info("List of RuleDataSource is empty");
+                            break;
+                        }
+                        LOGGER.info("Query data from qualitis_rule_datasource, page: {}, count: {}", page, ruleDataSourceList.size());
+                        List<MetadataOnRuleDataSourceTask> metadataOnRuleDataSourceTaskList = ruleDataSourceList.stream().map(ruleDataSource -> new MetadataOnRuleDataSourceTask(ruleDataSource, userName)).collect(Collectors.toList());
+                        metadataOnRuleDataSourceUpdater.executeBatchUpdate(metadataOnRuleDataSourceTaskList, clusterNameAndTypeMap);
+                        try {
+                            Thread.sleep(60000);
+                        } catch (InterruptedException e) {
+                            LOGGER.warn("Thread was interrupted", e);
+                        }
                     }
-                    LOGGER.info("Query data from qualitis_rule_datasource, page: {}, count: {}", page, ruleDataSourceList.size());
-                    List<MetadataOnRuleDataSourceTask> metadataOnRuleDataSourceTaskList = ruleDataSourceList.stream().map(ruleDataSource -> new MetadataOnRuleDataSourceTask(ruleDataSource, userName)).collect(Collectors.toList());
-                    metadataOnRuleDataSourceUpdater.executeBatchUpdate(metadataOnRuleDataSourceTaskList, clusterNameAndTypeMap);
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException e) {
-                        LOGGER.warn("Thread was interrupted", e);
-                    }
+                } finally {
+                    isEndedStatusOnSyncMetadata.set(Boolean.TRUE);
+                    LOGGER.info("Finished to sync metadata to qualitis_rule_datasource ");
                 }
-            } finally {
-                isEndedStatusOnSyncMetadata.set(Boolean.TRUE);
-                LOGGER.info("Finished to sync metadata to qualitis_rule_datasource ");
-            }
-        });
-        syncThread.setName("RuleDataSource-SyncMetadata-Thread");
-        syncThread.start();
+            });
+        } finally {
+            executor.shutdown();
+        }
 
         dataMap.put("type", SYNC_METADATA_STATUS_SUCCESS);
-        return new GeneralResponse("200", "success", new DataMapResultInfo("200", "正在同步", dataMap));
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", new DataMapResultInfo(ResponseStatusConstants.OK, "正在同步", dataMap));
     }
 
     @Override

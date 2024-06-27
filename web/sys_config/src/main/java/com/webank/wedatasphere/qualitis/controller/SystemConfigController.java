@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.SystemConfig;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.ModifySystemConfigRequest;
@@ -37,7 +38,7 @@ public class SystemConfigController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("{&FAILED_TO_MODIFY_SYSTEM_CONFIG} key_name: {}, value: {}, caused by: {}", request.getKeyName(), request.getValue(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_SYSTEM_CONFIG}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_SYSTEM_CONFIG}", null);
         }
     }
 
@@ -51,7 +52,7 @@ public class SystemConfigController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("{&FAILED_TO_FIND_SYSTEM_CONFIG}. key: {}, caused by: {}", keyName, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_SYSTEM_CONFIG}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_SYSTEM_CONFIG}", null);
         }
     }
 

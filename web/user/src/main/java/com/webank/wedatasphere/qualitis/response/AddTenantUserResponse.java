@@ -17,13 +17,14 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.ServiceInfo;
 import com.webank.wedatasphere.qualitis.entity.TenantUser;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
-import javax.persistence.Column;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author allenzhou
@@ -67,12 +68,22 @@ public class AddTenantUserResponse {
         this.tenantUserName = tenantUser.getTenantName();
 
         if (CollectionUtils.isNotEmpty(tenantUser.getDepts())) {
-            deptIds = tenantUser.getDepts().stream().map(department -> department.getId()).collect(Collectors.toList());
-            deptNames = tenantUser.getDepts().stream().map(department -> department.getName()).collect(Collectors.toList());
+            Set<Department> depts = tenantUser.getDepts();
+            this.deptIds = new ArrayList<>();
+            this.deptNames = new ArrayList<>();
+            for (Department dept : depts) {
+                this.deptIds.add(dept.getId());
+                this.deptNames.add(dept.getName());
+            }
         }
         if (CollectionUtils.isNotEmpty(tenantUser.getServiceInfos())) {
-            services = tenantUser.getServiceInfos().stream().map(serviceInfo -> serviceInfo.getId()).collect(Collectors.toList());
-            serviceNames = tenantUser.getServiceInfos().stream().map(serviceInfo -> serviceInfo.getIp()).collect(Collectors.toList());
+            Set<ServiceInfo> serviceInfoSet = tenantUser.getServiceInfos();
+            this.services = new ArrayList<>();
+            this.serviceNames = new ArrayList<>();
+            for (ServiceInfo serviceInfo : serviceInfoSet) {
+                this.services.add(serviceInfo.getId());
+                this.serviceNames.add(serviceInfo.getIp());
+            }
         }
         this.createUser = tenantUser.getCreateUser();
         this.createTime = tenantUser.getCreateTime();

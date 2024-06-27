@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddTenantUserRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteTenantUserRequest;
@@ -26,11 +27,8 @@ import com.webank.wedatasphere.qualitis.response.AddTenantUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.service.TenantUserService;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +55,7 @@ public class TenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to create tenant user, tenant user: {}, caused by: {}", request.getTenantUserName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CREATE_TENANT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CREATE_TENANT_USER}", null);
         }
     }
 
@@ -72,7 +70,7 @@ public class TenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete tenant user, tenant user id: {}, caused by: {}", request.getTenantUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_TENANT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_TENANT_USER}", null);
         }
     }
 
@@ -86,7 +84,7 @@ public class TenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify tenant user name to {}, tenant user id: {}, caused by: {}", request.getTenantUserName(), request.getTenantUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_TENANT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_TENANT_USER}", null);
         }
     }
 
@@ -101,7 +99,7 @@ public class TenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all tenant users, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_TENANT_USERS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_TENANT_USERS}", null);
         }
     }
 

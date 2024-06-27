@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.AddProxyUserResponse;
@@ -51,7 +52,7 @@ public class ProxyUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to create proxy user, proxy user: {}, caused by: {}", request.getProxyUserName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CREATE_PROXY_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CREATE_PROXY_USER}", null);
         }
     }
 
@@ -59,28 +60,28 @@ public class ProxyUserController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.deleteProxyUser(request);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete proxy user, proxy_user_id: {}, caused by: {}", request.getProxyUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_PROXY_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_PROXY_USER}", null);
         }
     }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return proxyUserService.modifyProxyUser(request);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify proxy user name to {}, proxy_user_id: {}, caused by: {}", request.getProxyUserName(), request.getProxyUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_PROXY_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_PROXY_USER}", null);
         }
     }
 
@@ -95,7 +96,7 @@ public class ProxyUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all proxy users, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
         }
     }
 
@@ -105,10 +106,10 @@ public class ProxyUserController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<List<String>> getAllProxyUserName() {
         try {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_PROXYUSERS}", proxyUserService.getAllProxyUserName());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_ALL_PROXYUSERS}", proxyUserService.getAllProxyUserName());
         } catch (Exception e) {
             LOGGER.error("Failed to get all proxy user names, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_PROXY_USERS}", null);
         }
     }
 

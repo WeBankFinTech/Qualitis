@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.ImmutableMap;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -56,13 +57,13 @@ public class TransferUserServiceImpl implements TransferUserService {
         Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUsername());
         HttpSession httpSession = httpServletRequest.getSession();
         httpSession.setAttribute("proxyUser", userMap);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_TRANSFER_TO_PROXYUSER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_TRANSFER_TO_PROXYUSER}", null);
     }
 
     @Override
     public GeneralResponse exitUser() {
         HttpSession httpSession = httpServletRequest.getSession();
         httpSession.setAttribute("proxyUser", null);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_EXIT_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_EXIT_USER}", null);
     }
 }

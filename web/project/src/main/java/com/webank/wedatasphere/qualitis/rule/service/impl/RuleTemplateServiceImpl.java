@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.service.impl;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -79,6 +80,7 @@ import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateMidTableInputMetaRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplatePullDownRequest;
 import com.webank.wedatasphere.qualitis.rule.response.NamingConventionsResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplatePlaceholderResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
@@ -115,7 +117,14 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -224,7 +233,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         response.setData(responseList);
 
         LOGGER.info("Succeed to get custom rule_template. response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_CUSTOM_RULE_TEMPLATE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CUSTOM_RULE_TEMPLATE_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -370,8 +379,12 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
     @Override
     public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException {
+        LOGGER.info("get default rule template request detail: {}", request.toString());
         String dataSourceType = request.getDataSourceType();
         Integer dataSourceTypeCode = TemplateDataSourceTypeEnum.getCode(dataSourceType);
+        if (StringUtils.isNotBlank(dataSourceType) && dataSourceTypeCode == null) {
+            throw new UnExpectedRequestException("Illegal parameter: data_source_type");
+        }
 
         List<Template> templates;
         long total = 0;
@@ -401,11 +414,11 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
                 departmentIds.add(userInDb.getDepartment().getId());
             }
             List<Long> devAndOpsInfoWithDeptList = subDepartmentPermissionService.getSubDepartmentIdList(departmentIds);
-            Page<Template> resultPage = ruleTemplateDao.findTemplates(request.getTemplateType(), dataSourceTypeCode, TableDataTypeEnum.RULE_TEMPLATE.getCode(), devAndOpsInfoWithDeptList.isEmpty() ? null : devAndOpsInfoWithDeptList, userInDb.getId(), request.getCnName(), request.getEnName(), request.getVerificationLevel(), request.getVerificationType(), request.getCreateName(), request.getModifyName(), request.getDevDepartmentId(), request.getOpsDepartmentId(),actionRangeSet, request.getPage(), request.getSize());
+            Page<Template> resultPage = ruleTemplateDao.findTemplates(request.getTemplateType(), dataSourceTypeCode, TableDataTypeEnum.RULE_TEMPLATE.getCode(), devAndOpsInfoWithDeptList.isEmpty() ? null : devAndOpsInfoWithDeptList, userInDb.getId(), request.getCnName(), request.getEnName(), request.getVerificationLevel(), request.getVerificationType(), request.getCreateName(), request.getModifyName(), request.getDevDepartmentId(), request.getOpsDepartmentId(), actionRangeSet, request.getCreateStartTime(), request.getCreateEndTime(), request.getModifyStartTime(), request.getModifyEndTime(), request.getTemplateId(), request.getDescription(), request.getPage(), request.getSize());
             templates = resultPage.getContent();
             total = resultPage.getTotalElements();
         } else {
-            Page<Template> resultPage = ruleTemplateDao.findTemplates(request.getTemplateType(), dataSourceTypeCode, TableDataTypeEnum.RULE_TEMPLATE.getCode(), Arrays.asList(userInDb.getSubDepartmentCode()), userInDb.getId(), request.getCnName(), request.getEnName(), request.getVerificationLevel(), request.getVerificationType(), request.getCreateName(), request.getModifyName(), request.getDevDepartmentId(), request.getOpsDepartmentId(),actionRangeSet, request.getPage(), request.getSize());
+            Page<Template> resultPage = ruleTemplateDao.findTemplates(request.getTemplateType(), dataSourceTypeCode, TableDataTypeEnum.RULE_TEMPLATE.getCode(), Arrays.asList(userInDb.getSubDepartmentCode()), userInDb.getId(), request.getCnName(), request.getEnName(), request.getVerificationLevel(), request.getVerificationType(), request.getCreateName(), request.getModifyName(), request.getDevDepartmentId(), request.getOpsDepartmentId(), actionRangeSet, request.getCreateStartTime(), request.getCreateEndTime(), request.getModifyStartTime(), request.getModifyEndTime(), request.getTemplateId(), request.getDescription(), request.getPage(), request.getSize());
             templates = resultPage.getContent();
             total = resultPage.getTotalElements();
         }
@@ -417,7 +430,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         GetAllResponse<RuleTemplateResponse> response = new GetAllResponse<>(total, responseList);
 
         LOGGER.info("Succeed to find default rule_template. response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_SUCCESSFULLY}", response);
     }
 
     private void setDatasourceTypeToResp(List<RuleTemplateResponse> responseList) {
@@ -469,7 +482,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateOutputMetas, types);
 
         LOGGER.info("Succeed to get rule_template. rule_template_id: {}", ruleTemplateId);
-        return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -482,7 +495,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
         TemplateInputDemandResponse templateInputDemandResponse = new TemplateInputDemandResponse(templateInDb, regexpExprMapperRepository);
         LOGGER.info("Succeed to get the input of rule_template. rule_template_id: {}", ruleTemplateId);
-        return new GeneralResponse<>("200", "{&GET_TEMPLATE_RULE_DEMAND_SUCCESSFULLY}", templateInputDemandResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_TEMPLATE_RULE_DEMAND_SUCCESSFULLY}", templateInputDemandResponse);
     }
 
     @Override
@@ -516,7 +529,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
             // return show_sql of template and template output
             TemplateInputDemandResponse templateInputDemandResponse = new TemplateInputDemandResponse(templateInDb, templateInDb.getTemplateType());
             LOGGER.info("Succeed to get the input of rule_template. rule_template_id: {}", templateId);
-            return new GeneralResponse<>("200", "{&GET_TEMPLATE_RULE_DEMAND_SUCCESSFULLY}", templateInputDemandResponse);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_TEMPLATE_RULE_DEMAND_SUCCESSFULLY}", templateInputDemandResponse);
         } else {
             throw new UnExpectedRequestException("Template : [" + templateId + "] {&IS_NOT_A_MULTI_OR_A_FILE_TEMPLATE}");
         }
@@ -613,7 +626,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 //        GetAllResponse<RuleTemplateResponse> response = new GetAllResponse<>(total, responseList);
 //
 //        LOGGER.info("Succeed to find multi rule_template. response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_MULTI_RULE_TEMPLATE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_MULTI_RULE_TEMPLATE_SUCCESSFULLY}", null);
     }
 
     /**
@@ -638,7 +651,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         TemplateMetaResponse response = new TemplateMetaResponse(templateInDb, templateOutputMetas, types);
 
         LOGGER.info("Succeed to get rule_template, rule template id: {}", ruleTemplateId);
-        return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_META_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -767,10 +780,11 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
             templateMidTableInputMeta.setCnDescription(templateMidTableInputMetaRequest.getCnDescription());
             templateMidTableInputMeta.setEnDescription(templateMidTableInputMetaRequest.getEnDescription());
             templateMidTableInputMeta.setFieldMultipleChoice(templateMidTableInputMetaRequest.getFieldMultipleChoice() != null ? templateMidTableInputMetaRequest.getFieldMultipleChoice() : false);
+            templateMidTableInputMeta.setWhetherStandardValue(templateMidTableInputMetaRequest.getWhetherStandardValue() != null ? templateMidTableInputMetaRequest.getWhetherStandardValue() : false);
             templateMidTableInputMeta.setWhetherNewValue(templateMidTableInputMetaRequest.getWhetherNewValue() != null ? templateMidTableInputMetaRequest.getWhetherNewValue() : false);
             templateMidTableInputMeta.setFieldType(templateMidTableInputMetaRequest.getFieldType());
             templateMidTableInputMeta.setInputType(templateMidTableInputMetaRequest.getInputType());
-            templateMidTableInputMeta.setPlaceholder(templateMidTableInputMetaRequest.getPlaceholder().replaceAll("\\p{Punct}", ""));
+            templateMidTableInputMeta.setPlaceholder(templateMidTableInputMetaRequest.getPlaceholder());
             templateMidTableInputMeta.setPlaceholderDescription(templateMidTableInputMetaRequest.getPlaceholderDescription());
             templateMidTableInputMeta.setRegexpType(templateMidTableInputMetaRequest.getRegexpType());
             templateMidTableInputMeta.setReplaceByRequest(templateMidTableInputMetaRequest.getReplaceByRequest());
@@ -820,6 +834,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         templateMidTableInputMeta.setPlaceholderDescription(QualitisConstants.INTERMEDIATE_PLACEHOLDER_DESCRIPTION);
         templateMidTableInputMeta.setReplaceByRequest(false);
         templateMidTableInputMeta.setWhetherNewValue(false);
+        templateMidTableInputMeta.setWhetherStandardValue(false);
         templateMidTableInputMeta.setFieldMultipleChoice(false);
         templateMidTableInputMeta.setTemplate(template);
         templateMidTableInputMetas.add(templateMidTableInputMeta);
@@ -831,6 +846,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         maxTemplateMidTableInputMeta.setPlaceholderDescription(QualitisConstants.MAXIMUM_PLACEHOLDER_DESCRIPTION);
         maxTemplateMidTableInputMeta.setReplaceByRequest(false);
         maxTemplateMidTableInputMeta.setWhetherNewValue(false);
+        maxTemplateMidTableInputMeta.setWhetherStandardValue(false);
         maxTemplateMidTableInputMeta.setFieldMultipleChoice(false);
         maxTemplateMidTableInputMeta.setTemplate(template);
         templateMidTableInputMetas.add(maxTemplateMidTableInputMeta);
@@ -842,6 +858,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         minTemplateMidTableInputMeta.setPlaceholderDescription(QualitisConstants.MINIMUM_PLACEHOLDER_DESCRIPTION);
         minTemplateMidTableInputMeta.setReplaceByRequest(false);
         minTemplateMidTableInputMeta.setWhetherNewValue(false);
+        minTemplateMidTableInputMeta.setWhetherStandardValue(false);
         minTemplateMidTableInputMeta.setFieldMultipleChoice(false);
         minTemplateMidTableInputMeta.setTemplate(template);
         templateMidTableInputMetas.add(minTemplateMidTableInputMeta);
@@ -858,8 +875,8 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     }
 
     private void checkTemplateEnName(String enName) throws UnExpectedRequestException {
-        List<Template> templateList = ruleTemplateDao.findTemplateByEnName(enName);
-        if (CollectionUtils.isNotEmpty(templateList)) {
+        Template template = ruleTemplateDao.findTemplateByEnName(enName);
+        if (null != template) {
             throw new UnExpectedRequestException("Template En name {&ALREADY_EXIST}");
         }
     }
@@ -884,6 +901,8 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     public RuleTemplateResponse modifyRuleTemplate(ModifyRuleTemplateRequest request)
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         AddRuleTemplateRequest addRuleTemplateRequest = ModifyRuleTemplateRequest.checkRequest(request);
+        LOGGER.info("modify default rule template request detail: {}", request.toString());
+
         // Check template existence
         Template templateInDb = checkRuleTemplate(request.getTemplateId());
 
@@ -902,6 +921,9 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
         String createUser = Objects.nonNull(templateInDb.getCreateUser()) ? templateInDb.getCreateUser().getUsername() : null;
         subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, createUser, request.getDevDepartmentId(), request.getOpsDepartmentId(), allVisibility);
+
+        // Check rules of template
+        ruleService.checkRuleOfTemplate(templateInDb);
 
         // delete output meta
         templateOutputMetaService.deleteByTemplate(templateInDb);
@@ -1002,6 +1024,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteRuleTemplate(Long templateId) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        LOGGER.info("delete rule template request detail: {}", templateId);
         // Check template existence
         Template templateInDb = checkRuleTemplate(templateId);
 
@@ -1054,6 +1077,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
 
     @Override
     public RuleTemplateResponse getModifyRuleTemplateDetail(Long templateId) throws UnExpectedRequestException {
+        LOGGER.info("get modify rule template request detail: {}", templateId);
         // Check template existence
         Template templateInDb = checkRuleTemplate(templateId);
         DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
@@ -1100,6 +1124,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
             templateMidTableInputMetaResponse.setCnDescription(templateMidTableInputMeta.getCnDescription());
             templateMidTableInputMetaResponse.setEnDescription(templateMidTableInputMeta.getEnDescription());
             templateMidTableInputMetaResponse.setFieldMultipleChoice(templateMidTableInputMeta.getFieldMultipleChoice());
+            templateMidTableInputMetaResponse.setWhetherStandardValue(templateMidTableInputMeta.getWhetherStandardValue());
             templateMidTableInputMetaResponse.setWhetherNewValue(templateMidTableInputMeta.getWhetherNewValue());
             midTableInputMetaResponses.add(templateMidTableInputMetaResponse);
         }
@@ -1128,19 +1153,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         if (flag) {
             User createUser = templateInDb.getCreateUser();
             String createUserName = Objects.nonNull(createUser) ? createUser.getUsername() : Strings.EMPTY;
-//             不调用CMDB
-            String userName = HttpUtils.getUserName(httpServletRequest);
-            User loginUser = userDao.findByUsername(userName);
-            List<UserRole> userRoles = userRoleDao.findByUser(loginUser);
-            Integer roleType = roleService.getRoleType(userRoles);
-            List<Long> departmentIds = userRoles.stream().map(UserRole::getRole)
-                    .filter(Objects::nonNull).map(Role::getDepartment)
-                    .filter(Objects::nonNull).map(Department::getId)
-                    .collect(Collectors.toList());
-            if (Objects.nonNull(loginUser.getDepartment())) {
-                departmentIds.add(loginUser.getDepartment().getId());
-            }
-            boolean isEditable = subDepartmentPermissionService.isEditable(roleType, loginUser, createUserName, templateInDb.getDevDepartmentId(), templateInDb.getOpsDepartmentId(), Collections.emptyList());
+            boolean isEditable = subDepartmentPermissionService.isEditable(createUserName, templateInDb.getDevDepartmentId(), templateInDb.getOpsDepartmentId());
             response.setEditable(isEditable);
         }
     }
@@ -1181,8 +1194,13 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
     }
 
     @Override
-    public List<Map<String, Object>> getAllTemplateInRule() {
-        return ruleTemplateDao.findTemplatesOptionListInRule();
+    public List<Map<String, Object>> getAllTemplateInRule(TemplatePullDownRequest request) {
+        if (Objects.nonNull(request.getProjectId())) {
+            return ruleTemplateDao.findAllTemplatesByProjectId(request.getProjectId());
+        } else {
+            List<Integer> templateTypes = Arrays.asList(RuleTemplateTypeEnum.SINGLE_SOURCE_TEMPLATE.getCode(), RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode(), RuleTemplateTypeEnum.FILE_COUSTOM.getCode());
+            return ruleTemplateDao.findHiveDataSourceTypeAllTemplates(templateTypes, TemplateDataSourceTypeEnum.HIVE.getCode());
+        }
     }
 
     @Override

@@ -11,8 +11,14 @@ import java.util.Map;
 public enum DataSelectMethodEnum {
     /**
      * 按天选择
+     * 按交易日选择
+     * 按节假日选择
      */
-    ACCORDING_DAYS(1, "按天选择");
+    ACCORDING_DAYS(1, "按天选择"),
+    ACCORDING_SECURITIES_WORK_DAYS(2, "按银行交易日选择"),
+    ACCORDING_BANK_WORK_DAYS(3, "按证券交易日选择"),
+    ACCORDING_HOLIDAYS(4, "按节假日选择"),
+    ACCORDING_WEEKS(5, "按周六日选择");
 
     private Integer code;
     private String message;

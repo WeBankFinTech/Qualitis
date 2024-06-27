@@ -19,10 +19,11 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.hive.visitor.HiveSchemaStatVisitor;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.stat.TableStat.Name;
-import com.alibaba.druid.util.JdbcConstants;
+import com.alibaba.druid.support.json.JSONUtils;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -39,15 +40,18 @@ import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContextManager;
 import com.webank.wedatasphere.qualitis.config.ImsConfig;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
 import com.webank.wedatasphere.qualitis.config.SystemKeyConfig;
 import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.constants.WhiteListTypeEnum;
 import com.webank.wedatasphere.qualitis.dao.*;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskDataSourceRepository;
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.*;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
@@ -59,35 +63,46 @@ import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetai
 import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.PartitionStatisticsInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableStatisticsInfo;
-import com.webank.wedatasphere.qualitis.parser.HiveSqlParser;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
+import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.rule.constant.GroupTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.response.RuleEnableResponse;
+import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
+import com.webank.wedatasphere.qualitis.rule.service.FpsService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.service.TaskService;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.*;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.logging.log4j.util.Strings;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -101,6 +116,8 @@ import org.springframework.web.client.ResourceAccessException;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
@@ -112,6 +129,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class OuterExecutionServiceImpl implements OuterExecutionService {
+    @Autowired
+    private SpecialProjectRuleConfig specialProjectRuleConfig;
     @Autowired
     private ImsAlarmClient imsAlarmClient;
     @Autowired
@@ -149,6 +168,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Autowired
     private ExecutionParametersDao executionParametersDao;
     @Autowired
+    private LinkisUdfDao linkisUdfDao;
+    @Autowired
     private AbnormalDataRecordInfoDao abnormalDataRecordInfoDao;
     @Autowired
     private CheckAlertWhiteListRepository checkAlertWhiteListRepository;
@@ -158,6 +179,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private TaskRuleSimpleDao taskRuleSimpleDao;
     @Autowired
     private RuleMetricDao ruleMetricDao;
+    @Autowired
+    private RuleService ruleService;
+
+    @Autowired
+    private ImsmetricIdentifyDao imsmetricIdentifyDao;
+    @Autowired
+    private ImsmetricDataDao imsmetricDataDao;
 
     @Autowired
     private MonitorManager monitorManager;
@@ -181,9 +209,19 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private LocaleParser localeParser;
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private RuleTemplateService ruleTemplateService;
+    @Autowired
+    private RuleTemplateDao ruleTemplateDao;
 
     @Autowired
     private TaskService taskService;
+    @Autowired
+    private ProjectEventService projectEventService;
+    @Autowired
+    private FieldsAnalyseDao fieldsAnalyseDao;
 
     @Value("${task.create_and_submit.limit_size:1000}")
     private Long thresholdValue;
@@ -201,6 +239,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private static final String USERNAME_FORMAT_PLACEHOLDER = "${USERNAME}";
     private static final String PARTITION = "partition";
     private static final String RUN_DATE = "run_date";
+    private static final String RUN_TODAY = "run_today";
     private static final String SPLIT_BY = "split_by";
     private static final String ENGINE_REUSE = "engine_reuse";
     private static final Gson GSON = new Gson();
@@ -209,11 +248,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private static final String SET_FLAG = "set_flag";
     private static final String FPS_ID = "fps_id";
     private static final String FPS_HASH = "fps_hash";
+    private static final String ENV_NAMES = "env_names";
 
-    private static final String NULL_TABLE_SIZE = "0B";
     private static final Integer ORIGINAL_INDEX = -1;
     private static final String AND = "and";
     private static final Integer DATASOURCE_SIZE = 2;
+
+    private final String CONTENT_FORMAT = "规则名称: %s, 规则ID: %d ;";
 
     private static final Map<Integer, Integer> ERR_CODE_TYPE = new HashMap<Integer, Integer>(1);
 
@@ -240,6 +281,15 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     public OuterExecutionServiceImpl(@Context HttpServletRequest httpRequest) {
         this.httpServletRequest = httpRequest;
     }
+
+
+    @Override
+    public GeneralResponse<RuleResponse> addRule(AddRuleRequest request, String loginUser) throws Exception {
+        GeneralResponse< TemplateInputDemandResponse > ruleTemplateInputMeta = ruleTemplateService.getRuleTemplateInputMeta(request.getRuleTemplateId());
+        request.getAlarmVariable().get(0).setOutputMetaId(ruleTemplateInputMeta.getData().getTemplateOutput().get(0).getOutputId());
+        return ruleService.addRule(request,loginUser,false);
+    }
+
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
@@ -325,13 +375,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse projectExecution(ProjectExecutionRequest request, Integer invokeCode, String landUser)
             throws UnExpectedRequestException, PermissionDeniedRequestException {
-        LOGGER.info("Execute application by project. project_id: {}", request.getProjectId());
+        LOGGER.info("Execute application by project. project ID: {}", request.getProjectId());
         // Check Arguments
         ProjectExecutionRequest.checkRequest(request);
         String executionUser = request.getExecutionUser();
         String loginUser = getLoginUser(landUser, request.getCreateUser(), request.getAsync());
 
-        LOGGER.info("Execute parameter entry. execution_param: {}", request.getExecutionParam());
+        LOGGER.info("Execute parameter entry. execution param: {}", request.getExecutionParam());
         // Parse set flag in execution parameters, such as: qualitis.spark.set.xx=xx
         Map<String, Object> resultMaps = handleSetFlagParameters(request.getExecutionParam());
         if (!resultMaps.isEmpty()) {
@@ -371,10 +421,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (multipleParameterMaps.get(FPS_HASH) != null) {
                 request.setFpsHashValue(multipleParameterMaps.get(FPS_HASH).toString());
             }
+            if (multipleParameterMaps.get(ENV_NAMES) != null) {
+                request.setEnvNames(multipleParameterMaps.get(ENV_NAMES).toString());
+            }
 
         }
         LOGGER.info("fps_file_id: {}", request.getFpsFileId());
         LOGGER.info("fps_hash: {}", request.getFpsHashValue());
+        LOGGER.info("env_names: {}", request.getEnvNames());
 
         LOGGER.info("Qualitis execution user: {}", executionUser);
         LOGGER.info("Qualitis login or create user: {}", loginUser);
@@ -383,6 +437,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         if (null == projectInDb) {
             throw new UnExpectedRequestException("Project_id " + request.getProjectId() + " {&DOES_NOT_EXIST}");
         }
+
         // Check permissions of project
         List<Integer> permissions = new ArrayList<>();
         permissions.add(ProjectUserPermissionEnum.OPERATOR.getCode());
@@ -397,6 +452,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         // Parse partition and run date and split by from execution parameters.
         StringBuilder partition = new StringBuilder();
         StringBuilder runDate = new StringBuilder();
+        StringBuilder runToday = new StringBuilder();
         StringBuilder splitBy = new StringBuilder();
 
         Map<String, String> execParamMap = new HashMap<>(5);
@@ -418,7 +474,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             lastExecutionParam.append(StringUtils.isNotBlank(lastExecutionParam.toString()) ? SpecCharEnum.DIVIDER.getValue() + specialEngineReuse.toString() : specialEngineReuse.toString());
         }
 
-        parseExecParams(partition, runDate, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
+        parseExecParams(partition, runDate, runToday, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
 
         ApplicationProjectResponse applicationProjectResponse = new ApplicationProjectResponse();
         List<ApplicationSubmitRequest> applicationSubmitRequests = new ArrayList<>(ruleGroups.size());
@@ -451,11 +507,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             }
             GeneralResponse<?> generalResponse = outerExecutionService.submitRulesAndUpdateRule(applicationSubmitRequest.getJobId(), applicationSubmitRequest.getRuleIds(), applicationSubmitRequest.getPartition(), loginUser, executionUser, QualitisConstants.DEFAULT_NODE_NAME
                     , projectInDb.getId(), applicationSubmitRequest.getRuleGroupId(), request.getFpsFileId(), request.getFpsHashValue(), request.getStartupParamName()
-                    , request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, splitBy, invokeCode, null
-                    , projectInDb.getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse());
+                    , request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, runToday, splitBy, invokeCode, null
+                    , projectInDb.getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse(), request.getEnvNames());
             applicationProjectResponse.getApplicationTaskSimpleResponses().add((ApplicationTaskSimpleResponse) generalResponse.getData());
         }
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
     }
 
     private void submitRulesFromRuleGroups(ProjectExecutionRequest request, Integer invokeCode, String executionUser, Project projectInDb, List<RuleGroup> ruleGroups, StringBuilder partition, List<ApplicationSubmitRequest> applicationSubmitRequests) throws UnExpectedRequestException {
@@ -552,6 +608,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         if (dynamicPartition) {
             for (Rule rule : rules) {
+//                Skipping if the template is the custom consistence check
+                if (QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName())) {
+                    continue;
+                }
                 RuleDataSource ruleDataSource = rule.getRuleDataSources().iterator().next();
                 if (ruleDataSource == null) {
                     throw new UnExpectedRequestException("Rule datasource has been broken.");
@@ -588,11 +648,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private boolean checkSkipPartitionCreateTime(String clusterName, String dbName, String tableName, ApplicationSubmitRequest request, String executionUser, String startTime, String endTime) throws java.text.ParseException {
         boolean skipPartition = false;
         Long createTime = null;
-        String partitionFuleSize = null;
+        String partitionFullSize = null;
         try {
             PartitionStatisticsInfo response = metaDataClient.getPartitionStatisticsInfo(clusterName, dbName, tableName, filterToPartitionPath(request.getPartition().toString()), executionUser);
             createTime = response.getModificationTime();
-            partitionFuleSize = response.getPartitionSize();
+            partitionFullSize = response.getPartitionSize();
         } catch (Exception e) {
             LOGGER.error("Check partition create time failed, should not execute.");
         }
@@ -601,7 +661,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             return true;
         }
 
-        request.setPartitionFullSize(partitionFuleSize);
+        request.setPartitionFullSize(partitionFullSize);
 
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
         if (StringUtils.isNotEmpty(startTime) && StringUtils.isNotEmpty(endTime)) {
@@ -769,6 +829,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         Map<String, String> execParamMap = new HashMap<>(8);
         StringBuilder partition = new StringBuilder();
         StringBuilder runDate = new StringBuilder();
+        StringBuilder runToday = new StringBuilder();
         StringBuilder splitBy = new StringBuilder();
 
         //alone split by parameter
@@ -789,10 +850,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             lastExecutionParam.append(StringUtils.isNotBlank(lastExecutionParam.toString()) ? SpecCharEnum.DIVIDER.getValue() + specialEngineReuse.toString() : specialEngineReuse.toString());
         }
 
-        parseExecParams(partition, runDate, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
+        parseExecParams(partition, runDate, runToday, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
 
         if (CollectionUtils.isEmpty(ruleIds)) {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
         }
         // Save gateway job info in new transaction.
         if (StringUtils.isNotBlank(request.getJobId())) {
@@ -802,13 +863,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         GeneralResponse<ApplicationTaskSimpleResponse> generalResponse = outerExecutionService.submitRulesAndUpdateRule(request.getJobId(), ruleIds
                 , partition, loginUser, request.getExecutionUser(), request.getNodeName(), projectInDb.getId(), ruleGroupInDb.getId(), request.getFpsFileId(), request.getFpsHashValue()
-                , request.getStartupParamName(), request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, splitBy, invokeCode, null
-                , projectInDb.getSubSystemId(), null, request.getEngineReuse());
+                , request.getStartupParamName(), request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, runToday, splitBy, invokeCode, null
+                , projectInDb.getSubSystemId(), null, request.getEngineReuse(), request.getEnvNames());
         return generalResponse;
     }
 
 
-    private Map<String, Object> handleFpsIdAndValueParameters(String executionParam, String fpsFileId, String fpsHashValue) {
+    private static Map<String, Object> handleFpsIdAndValueParameters(String executionParam, String fpsFileId, String fpsHashValue) {
         //原执行变量的fpsFileId和fpsHashValue是单独做处理的，0.25.0版本是把用户配置该两参数放到executionParam
         //处理fps_id
         Map<String, Object> maps = Maps.newHashMap();
@@ -856,27 +917,46 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 }
             }
 
-        } else {
-            if (StringUtils.isNotEmpty(executionParam) && executionParam.contains(FPS_HASH) && StringUtils.isEmpty(fpsHashValue)) {
-                StringBuilder fpsHash = new StringBuilder();
-                StringBuilder tmpExecParams = new StringBuilder();
-                String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
-                for (String str : setStrs) {
-                    if (str.startsWith(FPS_HASH)) {
-                        fpsHash.append(str.replace(FPS_HASH, "").replace(SpecCharEnum.COLON.getValue(), ""));
-                    } else {
-                        tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
+        } else if (StringUtils.isNotEmpty(executionParam)) {
+                if (executionParam.contains(FPS_HASH) && StringUtils.isEmpty(fpsHashValue)) {
+                    StringBuilder fpsHash = new StringBuilder();
+                    StringBuilder tmpExecParams = new StringBuilder();
+                    String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
+                    for (String str : setStrs) {
+                        if (str.startsWith(FPS_HASH)) {
+                            fpsHash.append(str.replace(FPS_HASH, "").replace(SpecCharEnum.COLON.getValue(), ""));
+                        } else {
+                            tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
+                        }
+                    }
+
+                    if (StringUtils.isNotEmpty(fpsHash.toString())) {
+                        maps.put(FPS_HASH, fpsHash.toString());
+                    }
+
+                    if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
+                        maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
+                    }
+                } else if (executionParam.contains(ENV_NAMES)) {
+                    StringBuilder envNames = new StringBuilder();
+                    StringBuilder tmpExecParams = new StringBuilder();
+                    String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
+                    for (String str : setStrs) {
+                        if (str.startsWith(ENV_NAMES)) {
+                            envNames.append(str.replace(ENV_NAMES, "").replace(SpecCharEnum.COLON.getValue(), ""));
+                        } else {
+                            tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
+                        }
+                    }
+
+                    if (StringUtils.isNotEmpty(envNames.toString())) {
+                        maps.put(ENV_NAMES, envNames.toString());
+                    }
+
+                    if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
+                        maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
                     }
                 }
-
-                if (StringUtils.isNotEmpty(fpsHash.toString())) {
-                    maps.put(FPS_HASH, fpsHash.toString());
-                }
-
-                if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
-                    maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
-                }
-            }
 
         }
 
@@ -935,7 +1015,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
 
         Map<String, String> execParamMap = new HashMap<>(checkAlertsInDb.size());
-        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
+        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
 
         String startupParam = "";
         Boolean engineReuse = Boolean.TRUE;
@@ -969,7 +1049,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         boolean accept = checkLinkisAccept(newApplication, clusterInfo.getClusterName(), executionUser);
         if (!accept) {
-            return new GeneralResponse<>("200", "Add pending application successfully.",
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
                     new ApplicationTaskSimpleResponse(newApplication.getId()));
         }
         String[] dbAndTables = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
@@ -980,7 +1060,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         } catch (Exception e) {
             throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
         }
-        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getMajorAlertCol()) && !columns.contains(currentCheckAlert.getMajorAlertCol()))) {
+        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol()) && !columns.contains(currentCheckAlert.getAdvancedAlertCol()))) {
             throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
         }
 
@@ -993,17 +1073,17 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
             // Print and save abnormal application.
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), currentCheckAlert, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
 
         saveApplication.setTotalTaskNum(taskSubmitResults.size());
         LOGGER.info("Succeed to submit application. Result: {}", taskSubmitResults);
         Application applicationInDb = applicationDao.saveApplication(saveApplication);
         LOGGER.info("Succeed to save application. Application: {}", applicationInDb);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
     }
 
-    private void parseExecParams(StringBuilder partition, StringBuilder runDate, StringBuilder splitBy, String execParams, Map<String, String> execParamMap) {
+    private void parseExecParams(StringBuilder partition, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String execParams, Map<String, String> execParamMap) {
         if (StringUtils.isNotBlank(execParams)) {
             String[] execParamStrs = execParams.split(SpecCharEnum.DIVIDER.getValue());
             for (String str : execParamStrs) {
@@ -1028,7 +1108,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                         splitBy.append(execParamValue);
                     }
                     continue;
+                } else if (RUN_TODAY.equals(execParamKey)) {
+                    if (runToday.length() == 0) {
+                        runToday.append(execParamValue);
+                    }
+                    continue;
                 }
+
                 execParamMap.put(str.split(SpecCharEnum.COLON.getValue())[0], str.split(SpecCharEnum.COLON.getValue())[1]);
             }
         }
@@ -1091,10 +1177,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (multipleParameterMaps.get(FPS_HASH) != null) {
                 request.setFpsHashValue(multipleParameterMaps.get(FPS_HASH).toString());
             }
+            if (multipleParameterMaps.get(ENV_NAMES) != null) {
+                request.setEnvNames(multipleParameterMaps.get(ENV_NAMES).toString());
+            }
 
         }
         LOGGER.info("fps_file_id: {}", request.getFpsFileId());
         LOGGER.info("fps_hash: {}", request.getFpsHashValue());
+        LOGGER.info("env_names: {}", request.getEnvNames());
 
         // Check the existence of rule.
         List<Rule> rules = request.getExecutableRuleList();
@@ -1117,6 +1207,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         StringBuilder partition = new StringBuilder();
         StringBuilder runDate = new StringBuilder();
         StringBuilder splitBy = new StringBuilder();
+        StringBuilder runToday = new StringBuilder();
 
         Map<String, String> execParamMap = new HashMap<>(5);
         //alone split by parameter
@@ -1137,7 +1228,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             lastExecutionParam.append(StringUtils.isNotBlank(lastExecutionParam.toString()) ? SpecCharEnum.DIVIDER.getValue() + specialEngineReuse.toString() : specialEngineReuse.toString());
         }
 
-        parseExecParams(partition, runDate, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
+        parseExecParams(partition, runDate, runToday, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
 
         ApplicationProjectResponse applicationProjectResponse = new ApplicationProjectResponse();
         List<ApplicationSubmitRequest> applicationSubmitRequests = new ArrayList<>(rules.size());
@@ -1166,11 +1257,12 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             }
             List<Long> currentRuleIds = applicationSubmitRequest.getRuleIds();
             List<Rule> currentRules = rules.stream().filter(rule -> currentRuleIds.contains(rule.getId())).collect(Collectors.toList());
+
             SubmitRuleBaseInfo submitRuleBaseInfo = SubmitRuleBaseInfo.build(applicationSubmitRequest.getJobId()
                     , applicationSubmitRequest.getPartition(), loginUser, request.getExecutionUser(), QualitisConstants.DEFAULT_NODE_NAME
                     , applicationSubmitRequest.getProjectId(), applicationSubmitRequest.getRuleGroupId(), request.getFpsFileId(), request.getFpsHashValue(), request.getStartupParamName()
-                    , request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, splitBy, invokeCode, null
-                    , projects.iterator().next().getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse());
+                    , request.getClusterName(), request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, runToday, splitBy, invokeCode, null
+                    , projects.iterator().next().getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse(), request.getEnvNames());
 
             if (Objects.nonNull(request.getRuleContext())) {
                 updateRuleConsistentWithContext(request.getRuleContext(), currentRules);
@@ -1183,7 +1275,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         }
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
     }
 
     private void updateRuleConsistentWithContext(RuleContext ruleContext, List<Rule> rules) {
@@ -1332,6 +1424,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         // Parse partition and run date and split by from execution parameters.
         StringBuilder partition = new StringBuilder();
         StringBuilder runDate = new StringBuilder();
+        StringBuilder runToday = new StringBuilder();
         StringBuilder splitBy = new StringBuilder();
 
         Map<String, String> execParamMap = new HashMap<>(5);
@@ -1353,7 +1446,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             lastExecutionParam.append(StringUtils.isNotBlank(lastExecutionParam.toString()) ? SpecCharEnum.DIVIDER.getValue() + specialEngineReuse.toString() : specialEngineReuse.toString());
         }
 
-        parseExecParams(partition, runDate, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
+        parseExecParams(partition, runDate, runToday, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
         List<Project> projects = rules.stream().map(Rule::getProject).distinct().collect(Collectors.toList());
 
         handleProjectData(request, loginUser, rules, applicationSubmitRequests, partition, projects);
@@ -1381,11 +1474,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                     , applicationSubmitRequest.getRuleIds()
                     , applicationSubmitRequest.getPartition(), loginUser, request.getExecutionUser(), QualitisConstants.DEFAULT_NODE_NAME, applicationSubmitRequest.getProjectId()
                     , applicationSubmitRequest.getRuleGroupId(), request.getFpsFileId(), request.getFpsHashValue(), request.getStartupParamName(), request.getClusterName()
-                    , request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, splitBy, InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode(), null
-                    , projects.iterator().next().getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse());
+                    , request.getSetFlag(), execParamMap, request.getExecutionParam(), runDate, runToday, splitBy, InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode(), null
+                    , projects.iterator().next().getSubSystemId(), applicationSubmitRequest.getPartitionFullSize(), request.getEngineReuse(), request.getEnvNames());
             applicationProjectResponse.getApplicationTaskSimpleResponses().add(generalResponse.getData());
         }
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", applicationProjectResponse);
     }
 
     private void handleProjectData(DataSourceExecutionRequest request, String loginUser, List<Rule> rules, List<ApplicationSubmitRequest> applicationSubmitRequests, StringBuilder partition, List<Project> projects) throws PermissionDeniedRequestException {
@@ -1469,7 +1562,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         ApplicationTaskResponse response = new ApplicationTaskResponse(application, tasks);
 
         LOGGER.info("Succeed to get application status. response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_STATUS}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATION_STATUS}", response);
     }
 
     @Override
@@ -1481,7 +1574,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
         LOGGER.info("Succeed to find application. application: {}", application);
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_STATUS}", new ApplicationTaskResponse(application));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATION_STATUS}", new ApplicationTaskResponse(application));
     }
 
     @Override
@@ -1544,7 +1637,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         String resultMessage = passMessage.toString() + failedMessage.toString() + notPassMessage.toString();
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
                 new ApplicationResultResponse(passNum, failedNum, notPassNum, resultMessage));
     }
 
@@ -1566,14 +1659,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         List<TaskResult> taskResults = taskResultDao.findByApplicationId(applicationId);
         if (CollectionUtils.isEmpty(taskResults)) {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS_BUT_FIND_NO_RESULTS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS_BUT_FIND_NO_RESULTS}", null);
         }
         List<ApplicationResultValueResponse> applicationResultValueResponses = new ArrayList<>(taskResults.size());
 
         for (TaskResult taskResult : taskResults) {
             ApplicationResultValueResponse applicationResultValueResponse = new ApplicationResultValueResponse(taskResult);
 
-            TaskRuleSimple taskRuleSimple = taskRuleSimpleDao.findByApplicationAndRule(applicationId, taskResult.getRuleId());
+            TaskRuleSimple taskRuleSimple = taskRuleSimpleDao.findByApplicationAndRule(applicationId, taskResult.getRuleId()).iterator().next();
             if (taskRuleSimple != null) {
                 applicationResultValueResponse.setRuleName(taskRuleSimple.getRuleName());
             }
@@ -1588,7 +1681,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             applicationResultValueResponses.add(applicationResultValueResponse);
         }
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}", applicationResultValueResponses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATION_RESULT}", applicationResultValueResponses);
     }
 
     @Override
@@ -1625,7 +1718,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
 
         LOGGER.info("Succeed to get log of the task. task_id: {}, cluster_id: {}", request.getTaskId(), request.getClusterId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", logResult.getLog());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_TASK_LOG}", logResult.getLog());
     }
 
     @Override
@@ -1637,7 +1730,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
 
         if (ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode().equals(applicationInDb.getStatus())) {
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", applicationInDb.getExceptionMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_TASK_LOG}", applicationInDb.getExceptionMessage());
         }
         List<Task> tasks = taskDao.findByApplication(applicationInDb);
         StringBuilder log = new StringBuilder();
@@ -1668,7 +1761,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
 
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", log.toString());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_TASK_LOG}", log.toString());
     }
 
     @Override
@@ -1691,7 +1784,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             String realExecutionUser = applicationInDb.getExecuteUser();
             return executionManager.killApplication(applicationInDb, realExecutionUser);
         } else {
-            return new GeneralResponse<>("400", "{&APPLICATION_IS_FINISHED}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "{&APPLICATION_IS_FINISHED}", null);
         }
     }
 
@@ -1711,11 +1804,15 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<ApplicationTaskSimpleResponse> submitRulesAndUpdateRule(String jobId, List<Long> ruleIds, StringBuilder partition, String createUser, String executionUser
             , String nodeName, Long projectId, Long ruleGroupId, String fpsFileId, String fpsHashValue, String startupParam, String clusterName
-            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder splitBy, Integer invokeCode
-            , Application pendingApplication, Long subSystemId, String partitionFullSize, Boolean engineReuse) {
+            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, Integer invokeCode
+            , Application pendingApplication, String subSystemId, String partitionFullSize, Boolean engineReuse, String envNames) {
         List<Rule> rules = ruleDao.findByIds(ruleIds);
         updateFilterToRuleDataSource(rules);
-        return commonSubmitRules(jobId, rules, partition, createUser, executionUser, nodeName, projectId, ruleGroupId, fpsFileId, fpsHashValue, startupParam, clusterName, setFlag, execParams, execParamStr, runDate, splitBy, invokeCode, pendingApplication, subSystemId, partitionFullSize, engineReuse);
+        return commonSubmitRules(jobId, rules, partition, createUser, executionUser
+                , nodeName, projectId, ruleGroupId, fpsFileId, fpsHashValue
+                , startupParam, clusterName, setFlag, execParams, execParamStr
+                , runDate, runToday, splitBy, invokeCode, pendingApplication, subSystemId
+                , partitionFullSize, engineReuse, envNames);
     }
 
     @Override
@@ -1724,8 +1821,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         return commonSubmitRules(submitRuleBaseInfo.getJobId(), rules, submitRuleBaseInfo.getPartition(), submitRuleBaseInfo.getCreateUser(), submitRuleBaseInfo.getExecutionUser()
                 , submitRuleBaseInfo.getNodeName(), submitRuleBaseInfo.getProjectId(), submitRuleBaseInfo.getRuleGroupId(), submitRuleBaseInfo.getFpsFileId(), submitRuleBaseInfo.getFpsHashValue()
                 , submitRuleBaseInfo.getStartupParam(), submitRuleBaseInfo.getClusterName(), submitRuleBaseInfo.getSetFlag(), submitRuleBaseInfo.getExecParams(), submitRuleBaseInfo.getExecParamStr()
-                , submitRuleBaseInfo.getRunDate(), submitRuleBaseInfo.getSplitBy(), submitRuleBaseInfo.getInvokeCode(), submitRuleBaseInfo.getPendingApplication(), submitRuleBaseInfo.getSubSystemId()
-                , submitRuleBaseInfo.getPartitionFullSize(), submitRuleBaseInfo.getEngineReuse());
+                , submitRuleBaseInfo.getRunDate(), submitRuleBaseInfo.getRunToday(), submitRuleBaseInfo.getSplitBy(), submitRuleBaseInfo.getInvokeCode(), submitRuleBaseInfo.getPendingApplication(), submitRuleBaseInfo.getSubSystemId()
+                , submitRuleBaseInfo.getPartitionFullSize(), submitRuleBaseInfo.getEngineReuse(), submitRuleBaseInfo.getEnvNames());
     }
 
     /**
@@ -1753,25 +1850,27 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
      */
     private GeneralResponse<ApplicationTaskSimpleResponse> commonSubmitRules(String jobId, List<Rule> rules, StringBuilder partition, String createUser, String executionUser
             , String nodeName, Long projectId, Long ruleGroupId, String fpsFileId, String fpsHashValue, String startupParam, String clusterName
-            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder splitBy, Integer invokeCode
-            , Application pendingApplication, Long subSystemId, String partitionFullSize, Boolean engineReuse) {
+            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, Integer invokeCode
+            , Application pendingApplication, String subSystemId, String partitionFullSize, Boolean engineReuse, String envNames) {
         Date date = new Date();
         Application newApplication;
         Set<String> clusterNames = rules.stream().map(Rule::getRuleDataSources).flatMap(ruleDataSources -> ruleDataSources.stream()).map(RuleDataSource::getClusterName).collect(
                 Collectors.toSet());
         if (pendingApplication != null) {
             newApplication = pendingApplication;
-            clusterName = newApplication.getClusterName();
+            if (StringUtils.isNotEmpty(newApplication.getClusterName()) && ! newApplication.getClusterName().contains(SpecCharEnum.COMMA.getValue())) {
+                clusterName = newApplication.getClusterName();
+            }
         } else {
             try {
                 newApplication = outerExecutionService.generateApplicationInfo(createUser, executionUser, date, invokeCode, jobId);
             } catch (UnExpectedRequestException e) {
                 LOGGER.error(e.getMessage(), e);
-                return new GeneralResponse<>("500", e.getMessage(), null);
+                return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
             }
             newApplication.setProjectName(rules.stream().map(rule -> rule.getProject().getName()).distinct().collect(Collectors.joining(SpecCharEnum.COMMA.getValue())));
             List<Long> ruleIds = rules.stream().map(Rule::getId).distinct().collect(Collectors.toList());
-            setApplicationBaseInfo(ruleIds, partition, nodeName, projectId, ruleGroupId, fpsFileId, fpsHashValue, startupParam, clusterName, setFlag, execParams, execParamStr, runDate, splitBy, subSystemId, newApplication, engineReuse);
+            setApplicationBaseInfo(ruleIds, partition, nodeName, projectId, ruleGroupId, fpsFileId, fpsHashValue, startupParam, clusterName, setFlag, execParams, execParamStr, runDate, runToday, splitBy, subSystemId, newApplication, engineReuse, envNames);
         }
 
         // Check linkis how many tasks can be accepted, if 0, skip this submit.
@@ -1779,7 +1878,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (StringUtils.isNotBlank(clusterName)) {
                 boolean accept = checkLinkisAccept(newApplication, clusterName, executionUser);
                 if (!accept) {
-                    return new GeneralResponse<>("200", "Add pending application successfully.",
+                    return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
                             new ApplicationTaskSimpleResponse(newApplication.getId()));
                 }
             } else {
@@ -1787,7 +1886,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 for (String currentClusterName : clusterNames) {
                     boolean accept = checkLinkisAccept(newApplication, currentClusterName, executionUser);
                     if (!accept) {
-                        return new GeneralResponse<>("200", "Add pending application successfully.",
+                        return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
                                 new ApplicationTaskSimpleResponse(newApplication.getId()));
                     }
                 }
@@ -1797,50 +1896,50 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         ApplicationTaskSimpleResponse response;
         try {
             response = outerExecutionService.commonExecution(rules, partition, executionUser, nodeName, fpsFileId, fpsHashValue, startupParam
-                    , clusterName, setFlag, execParams, newApplication, date, runDate, splitBy, partitionFullSize, engineReuse, createUser);
+                    , clusterName, setFlag, execParams, newApplication, date, runDate, runToday, splitBy, partitionFullSize, engineReuse, createUser, envNames);
         } catch (BothNullDatasourceException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.BOTH_NULL_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.FINISHED.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (LeftNullDatasourceException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.LEFT_NULL_DATA_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.NOT_PASS.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (RightNullDatasourceException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.RIGHT_NULL_DATA_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.NOT_PASS.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (MetaDataAcquireFailedException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.METADATA_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", "{&THE_CHECK_FIELD_HAS_BEEN_MODIFIED}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&THE_CHECK_FIELD_HAS_BEEN_MODIFIED}", null);
         } catch (DataSourceMoveException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.PERMISSION_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (DataSourceOverSizeException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.PERMISSION_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (ParseException e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.GRAMMAR_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&PARSE_SQL_FAILED_PLEASE_CHECKOUT_YOUR_CUSTOM_SQL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&PARSE_SQL_FAILED_PLEASE_CHECKOUT_YOUR_CUSTOM_SQL}", null);
         } catch (JobSubmitException e) {
             Integer commentCode = ERR_CODE_TYPE.get(e.getErrCode());
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
@@ -1848,16 +1947,16 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
             catchAndSolve(e, commentCode != null ? commentCode : code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (Exception e) {
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
             Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
         LOGGER.info("Succeed to dispatch task. response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DISPATCH_TASK}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", response);
     }
 
     private void updateFilterToRuleDataSource(List<Rule> rules) {
@@ -1892,7 +1991,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
     }
 
-    private void setApplicationBaseInfo(List<Long> ruleIds, StringBuilder partition, String nodeName, Long projectId, Long ruleGroupId, String fpsFileId, String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder splitBy, Long subSystemId, Application newApplication, Boolean engineReuse) {
+    private void setApplicationBaseInfo(List<Long> ruleIds, StringBuilder partition, String nodeName, Long projectId, Long ruleGroupId
+            , String fpsFileId, String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams, String execParamStr
+            , StringBuilder runDate,StringBuilder runToday, StringBuilder splitBy, String subSystemId, Application newApplication, Boolean engineReuse, String envNames) {
         newApplication.setProjectId(projectId);
         newApplication.setRuleGroupId(ruleGroupId);
         newApplication.setPartition(partition.toString());
@@ -1905,6 +2006,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         newApplication.setFpsFileId(fpsFileId);
         newApplication.setFpsHashValue(fpsHashValue);
         newApplication.setRunDate(runDate.toString());
+        newApplication.setRunToday(runToday.toString());
+        newApplication.setEnvNames(envNames);
 
         newApplication.setNodeName(nodeName);
         newApplication.setEngineReuse(engineReuse);
@@ -1980,7 +2083,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 int execNum = 1;
                 int alarmNum = 0;
                 long currentTime = System.currentTimeMillis();
-                int subSystemId = QualitisConstants.SUB_SYSTEM_ID;
+                String subSystemId = QualitisConstants.SUB_SYSTEM_ID;
 
                 if (ruleMetric.getSubSystemId() != null) {
                     subSystemId = ruleMetric.getSubSystemId();
@@ -2068,7 +2171,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             TenantUser tenantUser = department.getTenantUser();
             if (tenantUser != null) {
                 application.setTenantUserName(tenantUser.getTenantName());
-
+                LOGGER.info("Gnerate application with tenant: " + tenantUser.getTenantName());
                 List<String> ipList = tenantUser.getServiceInfos().stream().filter(u -> ServiceInfoStatusEnum.RUNNING.getCode().equals(u.getStatus())).map(u -> u.getIp()).collect(Collectors.toList());
                 ip = sortAndGetMostIdleIp(ipList);
                 LOGGER.info("Gnerate application with ip tag: " + ip);
@@ -2127,12 +2230,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Override
     public ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, StringBuilder partition, String executionUser, String nodeName
             , String fpsFileId, String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams, Application newApplication
-            , Date date, StringBuilder runDate, StringBuilder splitBy, String partitionFullSize, Boolean engineReuse, String createUser) throws Exception {
+            , Date date, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String partitionFullSize, Boolean engineReuse, String createUser, String envNames) throws Exception {
         // current user
         String userName = executionUser;
 
+//      env_names in exec_param
+        StringBuilder execParamEnvs = new StringBuilder(StringUtils.trimToEmpty(envNames));
         // Generate database name.
-        Map<Long, Map<String, Object>> ruleReplaceInfo = ruleReplaceInfo(userName, execParams, rules);
+        Map<Long, Map<String, Object>> ruleReplaceInfo = ruleReplaceInfo(userName, execParams, rules, runDate, runToday, execParamEnvs);
 
         // Save application
         newApplication.setRuleSize(rules.size());
@@ -2143,26 +2248,33 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
         List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
         List<Rule> fileRules = new ArrayList<>();
+        List<Rule> tableStructureRules = new ArrayList<>();
         List<String> leftCols = new ArrayList<>();
         List<String> rightCols = new ArrayList<>();
         List<String> comelexCols = new ArrayList<>();
         Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect = new HashMap<>(2);
-        handleRule(rules, partition, nodeName, fpsFileId, fpsHashValue, clusterName, execParams, newApplication, date, userName, ruleReplaceInfo, fileRules, dataSourceMysqlConnect, leftCols, rightCols, comelexCols, partitionFullSize);
+        handleRule(rules, partition, nodeName, fpsFileId, fpsHashValue, clusterName, execParams, newApplication, date, userName, ruleReplaceInfo, fileRules, dataSourceMysqlConnect, leftCols, rightCols, comelexCols, partitionFullSize
+                , runDate.toString(), runToday.toString(), tableStructureRules, execParamEnvs.toString(), startupParam);
         String submitTime = QualitisConstants.PRINT_TIME_FORMAT.format(date);
         // General task.
         if (!rules.isEmpty()) {
             taskSubmitResults.addAll(executionManager.submitApplication(rules, nodeName, submitTime, userName, ruleReplaceInfo, partition
-                    , date, saveApplication, clusterName, startupParam, setFlag, execParams, runDate, splitBy, dataSourceMysqlConnect, newApplication.getTenantUserName(), leftCols, rightCols, comelexCols, createUser));
+                    , date, saveApplication, clusterName, startupParam, setFlag, execParams, runDate, runToday, splitBy, dataSourceMysqlConnect, newApplication.getTenantUserName(), leftCols, rightCols, comelexCols, createUser));
         }
+
         // Execute file rule task and save task result.
         List<Rule> fileShellRules = fileRules.stream().filter(rule -> "目录文件数".equals(rule.getTemplate().getName())).collect(Collectors.toList());
         if (! fileShellRules.isEmpty()) {
-            taskSubmitResults.addAll(executionManager.executeFileRuleWithShell(fileShellRules, submitTime, saveApplication, userName, clusterName, runDate.toString(), ruleReplaceInfo, startupParam, engineReuse, EngineTypeEnum.DEFAULT_ENGINE.getMessage()));
+            taskSubmitResults.addAll(executionManager.executeFileRuleWithShell(fileShellRules, submitTime, saveApplication, userName, clusterName, runDate.toString(), runToday.toString(), ruleReplaceInfo, startupParam, engineReuse, EngineTypeEnum.DEFAULT_ENGINE.getMessage()));
             fileRules.removeAll(fileShellRules);
         }
         if (!fileRules.isEmpty()) {
-            taskSubmitResults.add(executionManager.executeFileRule(fileRules, submitTime, saveApplication, userName, clusterName, runDate, ruleReplaceInfo));
+            taskSubmitResults.add(executionManager.executeFileRule(fileRules, submitTime, saveApplication, userName, clusterName, runDate, runToday, ruleReplaceInfo));
         }
+        if (!tableStructureRules.isEmpty()) {
+            taskSubmitResults.add(executionManager.executeTableStructureRule(tableStructureRules, submitTime, saveApplication, userName, clusterName, runDate, runToday, ruleReplaceInfo, nodeName));
+        }
+
         saveApplication.setTotalTaskNum(taskSubmitResults.size());
         LOGGER.info("Succeed to submit application. result: {}", taskSubmitResults);
         Application applicationInDb = applicationDao.saveApplication(saveApplication);
@@ -2173,18 +2285,37 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private void handleRule(List<Rule> rules, StringBuilder partition, String nodeName, String fpsFileId, String fpsHashValue, String clusterName,
                             Map<String, String> execParams, Application newApplication, Date date, String userName, Map<Long, Map<String, Object>> ruleReplaceInfo,
                             List<Rule> fileRules, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, List<String> leftCols, List<String> rightCols,
-                            List<String> comelexCols, String partitionFullSize) throws Exception {
+                            List<String> comelexCols, String partitionFullSize, String runDate, String runToday
+            , List<Rule> tableStructureRules, String envNames, String startupParam) throws Exception {
+        boolean engineTypeInStartupParam = false;
+        if ((StringUtils.isNotBlank(startupParam) && startupParam.contains(QualitisConstants.QUALITIS_ENGINE_TYPE))
+                || execParams.containsKey(QualitisConstants.QUALITIS_ENGINE_TYPE)) {
+            engineTypeInStartupParam = true;
+        }
+
         for (Iterator<Rule> iterator = rules.iterator(); iterator.hasNext(); ) {
             Rule currentRule = iterator.next();
             if (currentRule.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
                 // Replace with execution parameter and parse datasource to save.
-                customReSaveDateSource(currentRule, execParams, clusterName, date);
+                customReSaveDateSource(currentRule, execParams, clusterName, date, runDate, runToday);
             }
             List<Map<String, String>> mappingCols = new ArrayList<>();
             getMappingCols(currentRule, mappingCols);
             // Check datasource before submit job.
             try {
-                checkDatasource(currentRule, userName, partition, mappingCols, fpsFileId, fpsHashValue, nodeName, clusterName, dataSourceMysqlConnect, leftCols, rightCols, comelexCols, partitionFullSize);
+                if (!engineTypeInStartupParam) {
+                    Map<String, Object> currentRuleReplaceInfo = ruleReplaceInfo.get(currentRule.getId());
+                    boolean hasStartupParam = MapUtils.isNotEmpty(currentRuleReplaceInfo)
+                            && currentRuleReplaceInfo.keySet().stream().anyMatch(key -> key.contains(QualitisConstants.QUALITIS_STARTUP_PARAM));
+                    if (hasStartupParam) {
+                        Object startupParamWithinRule = currentRuleReplaceInfo.get(QualitisConstants.QUALITIS_STARTUP_PARAM);
+                        if (null != startupParamWithinRule && StringUtils.isNotBlank(startupParamWithinRule.toString())) {
+                            List<String> startUpParams = Arrays.asList(startupParamWithinRule.toString().split(SpecCharEnum.DIVIDER.getValue()));
+                            engineTypeInStartupParam = startUpParams.stream().anyMatch(key -> key.startsWith(QualitisConstants.QUALITIS_ENGINE_TYPE));
+                        }
+                    }
+                }
+                checkDatasource(currentRule, userName, partition, mappingCols, fpsFileId, fpsHashValue, nodeName, clusterName, dataSourceMysqlConnect, leftCols, rightCols, comelexCols, partitionFullSize, envNames, execParams, engineTypeInStartupParam);
             } catch (BothNullDatasourceException e) {
                 Task taskInDb = taskDao.save(new Task(newApplication, newApplication.getSubmitTime(), TaskStatusEnum.PASS_CHECKOUT.getCode()));
                 taskInDb.setClusterName(clusterName);
@@ -2224,6 +2355,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 LOGGER.info("Succeed to find file rule. Rule: {}", currentRule.getId() + " " + currentRule.getName());
                 iterator.remove();
             }
+            if (QualitisConstants.isTableStructureConsistent(currentRule.getTemplate().getEnName())) {
+                tableStructureRules.add(currentRule);
+                LOGGER.info("Succeed to table structure rule. Rule: {}", currentRule.getId() + " " + currentRule.getName());
+                iterator.remove();
+            }
         }
     }
 
@@ -2241,10 +2377,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
         GatewayJobInfo gatewayJobInfo = gatewayJobInfoDao.getByJobId(jobId);
         if (gatewayJobInfo == null) {
-            return new GeneralResponse<>("200", "Gateway job info is preparing.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Gateway job info is preparing.", null);
         }
         GatewayJobInfoResponse response = new GatewayJobInfoResponse(gatewayJobInfo.getApplicationNum(), gatewayJobInfo.getApplicationQueryTimeOut());
-        return new GeneralResponse<>("200", "Success to get job info.", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to get job info.", response);
     }
 
     @Override
@@ -2266,40 +2402,52 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             ApplicationTaskSimpleResponse applicationTaskSimpleResponse = new ApplicationTaskSimpleResponse(application.getId(), application.getStatus());
             applicationProjectResponse.getApplicationTaskSimpleResponses().add(applicationTaskSimpleResponse);
         }
-        return new GeneralResponse<>("200", "Success to query application tasks", applicationProjectResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to query application tasks", applicationProjectResponse);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public void deleteRule(BatchDeleteRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         BatchDeleteRuleRequest.checkRequest(request);
-        //权限检验没做判断，  目前loginUser为null
-        List<Long> ruleIdList = request.getRuleIdList();
-        for (Long ruleId : ruleIdList) {
-            // Check existence of rule
-            Rule ruleInDb = ruleDao.findById(ruleId);
-            if (ruleInDb == null) {
-                throw new UnExpectedRequestException("rule_id [" + ruleId + "] {&DOES_NOT_EXIST}");
-            }
-            // Check existence of project
-            Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(),
-                    request.getLoginUser());
-            // Check permissions of project
-            List<Integer> permissions = new ArrayList<>();
-            permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
-            projectService.checkProjectPermission(projectInDb, request.getLoginUser(), permissions);
-
-            if (ruleInDb.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {
-                SpringContextHolder.getBean(RuleService.class).deleteRuleReal(ruleInDb);
-            } else if (ruleInDb.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
-                SpringContextHolder.getBean(CustomRuleService.class).deleteCustomRuleReal(ruleInDb);
-            } else if (ruleInDb.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
-                SpringContextHolder.getBean(MultiSourceRuleService.class).deleteMultiRuleReal(ruleInDb);
-            } else if (ruleInDb.getRuleType().equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
-                SpringContextHolder.getBean(FileRuleService.class).deleteRuleReal(ruleInDb);
-            }
+        // Check existence of project
+        Project project = projectDao.findByNameAndCreateUser(request.getProjectName(), request.getCreateUser());
+        if (null == project) {
+            throw new UnExpectedRequestException("project {&DOES_NOT_EXIST}");
         }
+        // Check permissions of project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        projectService.checkProjectPermission(project, request.getLoginUser(), permissions);
 
+        // Semicolon separated
+        String[] setStrs = request.getRuleName().split(SpecCharEnum.DIVIDER.getValue());
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String str : setStrs) {
+            // Check existence of rule
+            Rule ruleInDb = ruleDao.findByProjectAndRuleName(project, str);
+            if (null == ruleInDb) {
+                throw new UnExpectedRequestException("rule_name [" + str + "] {&DOES_NOT_EXIST}");
+            }
+            stringBuilder.append(String.format(CONTENT_FORMAT, ruleInDb.getName(), ruleInDb.getId()));
+
+            // Delete bdp-client history
+            BdpClientHistory bdpClientHistory = SpringContextHolder.getBean(BdpClientHistoryDao.class).findByRuleId(ruleInDb.getId());
+            if (bdpClientHistory != null) {
+                SpringContextHolder.getBean(BdpClientHistoryDao.class).delete(bdpClientHistory);
+            }
+            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+            // Delete rule
+            ruleDao.deleteRule(ruleInDb);
+            LOGGER.info("Succeed to delete rule. rule id: {}", ruleInDb.getId());
+
+            if (ruleInDb.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
+                // Delete template of custom rule
+                ruleTemplateService.deleteCustomTemplate(ruleInDb.getTemplate());
+            }
+
+        }
+        // Merge operation logs
+        projectEventService.record(project, request.getLoginUser(), stringBuilder.toString(), OperateTypeEnum.DELETE_RULES);
     }
 
     @Override
@@ -2307,8 +2455,321 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         handleCheckAlert(executeUser, ruleGroupDao.findById(ruleGroupId), projectDao.findById(projectId), executionParam);
     }
 
-    private void customReSaveDateSource(Rule currentRule, Map<String, String> execParams, String clusterName, Date date)
-            throws UnExpectedRequestException, SemanticException, ParseException {
+    @Override
+    public GeneralResponse executionScript(OmnisScriptRequest request) throws JSONException {
+        Integer runModel = request.getRunModel();
+        if (null == runModel){
+            return new GeneralResponse<>("5001", "runModel not null", null);
+        }
+        LOGGER.info("executionScript request={}",request.toString());
+        if (StringUtils.isBlank(request.getUploadPath())){
+            return new GeneralResponse<>("5001", "uploadPath not null check param", null);
+        }
+        String uploadPath = request.getUploadPath();
+        String command = combineCommand(request,uploadPath);
+        LOGGER.info("executionScript command={}", command);
+        if (null == command){
+            return new GeneralResponse<>("5001", "envPath not null", null);
+        }
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+        try {
+            Process process = processBuilder.start();
+            // 获取脚本执行结果
+            BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                LOGGER.info("executionScript print={}",line);
+            }
+            // 等待脚本执行完成
+            int exitCode = process.waitFor();
+            LOGGER.info("executionScript exitCode={}",exitCode);
+        } catch (Exception e) {
+            LOGGER.error("Failed run processBuilder", e);
+        }
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "executionScript succeed", null);
+    }
+
+    @Override
+    public GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request) {
+        String metricIds = request.getMetricIds();
+        List<ImsmetricIdentify> imsmetricIdentifyList;
+        if (StringUtils.isBlank(metricIds)){
+            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate());
+        }else {
+            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate(),metricIds);
+        }
+
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryIdentify succeed", imsmetricIdentifyList);
+    }
+
+    @Override
+    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException {
+        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        CommonChecker.checkString(request.getOperateUser(), "operate_user");
+        User userInDb = userDao.findByUsername(request.getOperateUser());
+        if (null == userInDb) {
+            throw new UnExpectedRequestException("operate_user: " + request.getOperateUser() + " {&DOES_NOT_EXIST}");
+        }
+
+        if (CollectionUtils.isEmpty(request.getProjectEnableList()) && CollectionUtils.isEmpty(request.getGroupEnableList())
+                && CollectionUtils.isEmpty(request.getDatasourceEnableList()) && CollectionUtils.isEmpty(request.getTemplateEnableList())
+                && CollectionUtils.isEmpty(request.getRuleNameEnableList())) {
+            throw new UnExpectedRequestException("project_enable_list、group_enable_list、data_source_enable_list、template_enable_list、rule_name_enable_list the parameters cannot all be empty");
+        }
+
+        List<Rule> rulesList = Lists.newArrayList();
+        //项目维度
+        if (CollectionUtils.isNotEmpty(request.getProjectEnableList())) {
+            for (DifferentDimensionsRequest differentDimensionsRequest : request.getProjectEnableList()) {
+                setProjectIdAttribute(differentDimensionsRequest, null);
+            }
+            List<Long> projectIds = request.getProjectEnableList().stream().map(DifferentDimensionsRequest::getProjectId).distinct().collect(Collectors.toList());
+            List<Rule> rules = checkProjectsAndGetRule(projectIds, request.getOperateUser(), "project", null, null, null);
+
+            Map<Long, Boolean> ruleEnableMap = request.getProjectEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getRuleEnable, (oldVal, newVal) -> oldVal));
+            handleRuleEnable(rules, ruleEnableMap, rulesList);
+            rulesList.addAll(rules);
+        }
+
+        //规则组维度
+        if (CollectionUtils.isNotEmpty(request.getGroupEnableList())) {
+            List<RuleGroup> ruleGroups = Lists.newArrayList();
+            for (DifferentDimensionsRequest differentDimensionsRequest : request.getGroupEnableList()) {
+                setProjectIdAttribute(differentDimensionsRequest, "ruleGroup");
+                RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(differentDimensionsRequest.getRuleGroupName(), differentDimensionsRequest.getProjectId());
+                if (null == ruleGroup) {
+                    throw new UnExpectedRequestException("RuleGroup {&DOES_NOT_EXIST}");
+                }
+                differentDimensionsRequest.setRuleGroupId(ruleGroup.getId());
+                ruleGroups.add(ruleGroup);
+            }
+
+            List<Long> projectIds = ruleGroups.stream().map(RuleGroup::getProjectId).distinct().collect(Collectors.toList());
+            List<Rule> rules = checkProjectsAndGetRule(projectIds, request.getOperateUser(), Strings.EMPTY, null, null, null);
+
+            for (RuleGroup ruleGroup : ruleGroups) {
+                rules.addAll(ruleDao.findByRuleGroup(ruleGroup));
+            }
+            Map<Long, Boolean> groupEnableMap = request.getGroupEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getRuleGroupId, DifferentDimensionsRequest::getRuleEnable, (oldVal, newVal) -> oldVal));
+
+            for (Rule rule : rules) {
+                if (CollectionUtils.isNotEmpty(rulesList)) {
+                    //操作相同规则时，对不同的操作(enable为true或false)做覆盖处理，可能存在其他维度对该rule enable做了操作，这里做一致判断
+                    List<Rule> result = rulesList.stream().filter(item -> item.getId().toString().equals(rule.getId().toString())).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(result) && !result.get(0).getEnable().equals(groupEnableMap.get(rule.getRuleGroup().getId()))) {
+                        groupEnableMap.put(rule.getRuleGroup().getId(), result.get(0).getEnable());
+                    }
+
+                }
+                ruleService.setExecutionParametersInfo(rule, groupEnableMap.get(rule.getRuleGroup().getId()), rule.getProject().getId());
+                rule.setEnable(groupEnableMap.get(rule.getRuleGroup().getId()));
+            }
+
+            rulesList.addAll(rules);
+        }
+
+        //数据源维度
+        if (CollectionUtils.isNotEmpty(request.getDatasourceEnableList())) {
+            for (DifferentDimensionsRequest differentDimensionsRequest : request.getDatasourceEnableList()) {
+                setProjectIdAttribute(differentDimensionsRequest, "dataSource");
+            }
+
+            List<Long> projectIds = request.getDatasourceEnableList().stream().map(DifferentDimensionsRequest::getProjectId).distinct().collect(Collectors.toList());
+            Map<Long, String> dbAndTableMap = request.getDatasourceEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getDbAndTable, (oldVal, newVal) -> oldVal));
+            List<Rule> rules = checkProjectsAndGetRule(projectIds, request.getOperateUser(), Strings.EMPTY, dbAndTableMap, null, null);
+
+            Map<Long, Boolean> ruleEnableMap = request.getDatasourceEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getRuleEnable, (oldVal, newVal) -> oldVal));
+            handleRuleEnable(rules, ruleEnableMap, rulesList);
+
+            rulesList.addAll(rules);
+        }
+
+        //模板维度
+        if (CollectionUtils.isNotEmpty(request.getTemplateEnableList())) {
+            for (DifferentDimensionsRequest differentDimensionsRequest : request.getTemplateEnableList()) {
+                setProjectIdAttribute(differentDimensionsRequest, "template");
+
+                Template template = ruleTemplateDao.findTemplateByEnName(differentDimensionsRequest.getTemplateEnName());
+                if (null == template) {
+                    throw new UnExpectedRequestException(String.format("Template en name: %s no exist", differentDimensionsRequest.getTemplateEnName()));
+                }
+                differentDimensionsRequest.setTemplateId(template.getId().toString());
+            }
+
+            List<Long> projectIds = request.getTemplateEnableList().stream().map(DifferentDimensionsRequest::getProjectId).distinct().collect(Collectors.toList());
+            Map<Long, String> templateIdMap = request.getTemplateEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getTemplateId, (oldVal, newVal) -> oldVal));
+            List<Rule> rules = checkProjectsAndGetRule(projectIds, request.getOperateUser(), Strings.EMPTY, null, templateIdMap, null);
+
+            Map<Long, Boolean> ruleEnableMap = request.getTemplateEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getRuleEnable, (oldVal, newVal) -> oldVal));
+            handleRuleEnable(rules, ruleEnableMap, rulesList);
+
+            rulesList.addAll(rules);
+        }
+
+        //规则名称列表
+        if (CollectionUtils.isNotEmpty(request.getRuleNameEnableList())) {
+            for (DifferentDimensionsRequest differentDimensionsRequest : request.getRuleNameEnableList()) {
+                setProjectIdAttribute(differentDimensionsRequest, "ruleName");
+            }
+
+            List<Long> projectIds = request.getRuleNameEnableList().stream().map(DifferentDimensionsRequest::getProjectId).distinct().collect(Collectors.toList());
+            Map<Long, String> ruleNameMap = request.getRuleNameEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getRuleName, (oldVal, newVal) -> oldVal));
+            List<Rule> rules = checkProjectsAndGetRule(projectIds, request.getOperateUser(), Strings.EMPTY, null, null, ruleNameMap);
+
+            Map<Long, Boolean> ruleEnableMap = request.getRuleNameEnableList().stream().collect(Collectors.toMap(DifferentDimensionsRequest::getProjectId, DifferentDimensionsRequest::getRuleEnable, (oldVal, newVal) -> oldVal));
+            handleRuleEnable(rules, ruleEnableMap, rulesList);
+
+            rulesList.addAll(rules);
+        }
+
+        // 操作日志，根据项目分组拼接规则名称、id，实现操作一个项目，只有一条操作记录入库
+        Map<Project, List<Rule>> collectMap = rulesList.stream().collect(Collectors.groupingBy(item -> item.getProject()));
+        for (Project project : collectMap.keySet()) {
+            Set<Rule> ruleList = collectMap.get(project).stream().collect(Collectors.toSet());
+            StringBuilder stringBuilder = new StringBuilder();
+            for (Rule rule : ruleList) {
+                stringBuilder.append(String.format(CONTENT_FORMAT, rule.getName(), rule.getId()));
+            }
+            if (stringBuilder != null && stringBuilder.length() > 0) {
+                projectEventService.record(project, request.getOperateUser(), stringBuilder.toString(), OperateTypeEnum.ENABLE_OR_DISABLE_RULES);
+            }
+        }
+
+        // 批量操作
+        Set<Rule> collectRule = rulesList.stream().collect(Collectors.toSet());
+        List<Rule> rulesLists = ruleDao.saveRules(collectRule.stream().collect(Collectors.toList()));
+        List<Long> ruleIdList = rulesLists.stream().map(o -> o.getId()).collect(Collectors.toList());
+        RuleEnableResponse ruleEnableResponse = new RuleEnableResponse();
+        ruleEnableResponse.setRuleList(ruleIdList);
+
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_BATCH_ENABLE_OR_DISABLE_RULE}", ruleEnableResponse);
+    }
+
+    private void setProjectIdAttribute(DifferentDimensionsRequest differentDimensionsRequest, String type) throws UnExpectedRequestException {
+        DifferentDimensionsRequest.checkRequest(differentDimensionsRequest, type);
+        Project project = projectDao.findByNameAndCreateUser(differentDimensionsRequest.getProjectName(), differentDimensionsRequest.getCreateUser());
+        if (null == project) {
+            throw new UnExpectedRequestException(String.format("project name、create user: %s %s {&DOES_NOT_EXIST}", differentDimensionsRequest.getProjectName(), differentDimensionsRequest.getCreateUser()));
+        }
+        differentDimensionsRequest.setProjectId(project.getId());
+    }
+
+    private void handleRuleEnable(List<Rule> rules, Map<Long, Boolean> ruleEnableMap, List<Rule> rulesList) {
+        for (Rule rule : rules) {
+            if (rulesList != null && rulesList.size() != 0) {
+                //操作相同规则时，对不同的操作(enable为true或false)做覆盖处理，可能存在其他维度对该rule enable做了操作，这里做一致判断
+                List<Rule> result = rulesList.stream().filter(item -> item.getId().toString().equals(rule.getId().toString())).collect(Collectors.toList());
+                if (CollectionUtils.isNotEmpty(result) && !result.get(0).getEnable().equals(ruleEnableMap.get(rule.getProject().getId()))) {
+                    ruleEnableMap.put(rule.getProject().getId(), result.get(0).getEnable());
+                }
+
+            }
+            ruleService.setExecutionParametersInfo(rule, ruleEnableMap.get(rule.getProject().getId()), rule.getProject().getId());
+            rule.setEnable(ruleEnableMap.get(rule.getProject().getId()));
+        }
+    }
+
+    private List<Rule> checkProjectsAndGetRule(List<Long> projectIds, String operateUser, String type, Map<Long, String> dbAndTableMap,
+                                               Map<Long, String> templateIdMap, Map<Long, String> ruleNameMap) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        List<Project> projects = projectDao.findAllById(projectIds);
+
+        // Check permissions of project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        List<Rule> rules = Lists.newArrayList();
+        for (Project project : projects) {
+            // 项目维度
+            if ("project".equals(type)) {
+                rules.addAll(ruleDao.findByProject(project));
+            }
+            // 数据源维度
+            if (dbAndTableMap != null) {
+                List<RuleDataSource> ruleDataSources = ruleDataSourceDao.findByProjectId(project.getId());
+                Set<RuleDataSource> resultRuleDataSource = ruleDataSources.stream().filter(item -> StringUtils.isNotBlank(item.getDbName()) && StringUtils.isNotBlank(item.getTableName())).collect(Collectors.toSet());
+
+                String dbAndTable = dbAndTableMap.get(project.getId());
+                String[] setStrs = dbAndTable.split(SpecCharEnum.DIVIDER.getValue());
+                for (String str : setStrs) {
+                    String[] splitData = str.split(SpecCharEnum.PERIOD.getValue());
+                    rules.addAll(resultRuleDataSource.stream().filter(item -> item.getDbName().equals(splitData[0]) && item.getTableName().equals(splitData[1])).map(RuleDataSource::getRule).collect(Collectors.toSet()));
+                }
+            }
+
+            // 模板维度
+            if (templateIdMap != null) {
+                List<Rule> currentRules = ruleDao.findByProject(project);
+                String templateIds = templateIdMap.get(project.getId());
+                String[] setStrs = templateIds.split(SpecCharEnum.DIVIDER.getValue());
+                for (String str : setStrs) {
+                    rules.addAll(currentRules.stream().filter(item -> item.getTemplate().getId().toString().equals(str)).collect(Collectors.toSet()));
+                }
+            }
+
+            //规则名称维度
+            if (ruleNameMap != null) {
+                List<Rule> currentRules = ruleDao.findByProject(project);
+                String ruleNames = ruleNameMap.get(project.getId());
+                String[] setStrs = ruleNames.split(SpecCharEnum.DIVIDER.getValue());
+                for (String str : setStrs) {
+                    rules.addAll(currentRules.stream().filter(item -> item.getName().equals(str)).collect(Collectors.toSet()));
+                }
+            }
+            projectService.checkProjectPermission(project, operateUser, permissions);
+        }
+
+        return rules;
+    }
+
+    private String combineCommand(OmnisScriptRequest request,String scriptUploadPath) throws JSONException {
+        String command = null;
+        String anacondaEnvPath = request.getEnvPath();
+        if (StringUtils.isBlank(anacondaEnvPath)){
+            return command;
+        }
+        if (request.getRunModel() ==1){
+            command = anacondaEnvPath + " " + scriptUploadPath +" predict ";
+        }else if (request.getRunModel() ==2){
+            command = anacondaEnvPath +" "+ scriptUploadPath +" backtest " ;
+        }else {
+            command = anacondaEnvPath +" "+ scriptUploadPath + " train " ;
+        }
+
+        Map reqMap = new HashMap();
+        if (StringUtils.isNotBlank(request.getStartDate())){
+            reqMap.put("start_date",request.getStartDate());
+        }
+        if (StringUtils.isNotBlank(request.getEndDate())){
+            reqMap.put("end_date",request.getEndDate());
+        }
+        if (StringUtils.isNotBlank(request.getQueryDate())){
+            reqMap.put("query_date",request.getQueryDate());
+        }
+        if (StringUtils.isNotBlank(request.getMetricIds())){
+            reqMap.put("metric_ids",request.getMetricIds());
+        }
+        String param = request.getParam();
+        if (StringUtils.isNotEmpty(param)){
+            JSONObject jsonObject = new JSONObject(param);
+            Iterator keys = jsonObject.keys();
+            while (keys.hasNext()){
+                String next = (String) keys.next();
+                reqMap.put(next,jsonObject.get(next));
+            }
+        }
+        String reqJsonString = JSONUtils.toJSONString(reqMap);
+        reqJsonString = reqJsonString.replace("\"","\'");
+        command = command +reqJsonString;
+        return command;
+    }
+
+    private void customReSaveDateSource(Rule currentRule, Map<String, String> execParams, String clusterName, Date date, String runDate, String runToday) throws UnExpectedRequestException {
         String midTableAction = currentRule.getTemplate().getMidTableAction();
         if (StringUtils.isNotBlank(currentRule.getWhereContent())) {
             midTableAction = midTableAction.replace("${filter}", currentRule.getWhereContent());
@@ -2319,6 +2780,15 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             String value = entry.getValue();
             midTableAction = midTableAction.replace("${" + key + "}", value);
         }
+        if (StringUtils.isNotBlank(runDate)) {
+            midTableAction = midTableAction.replace("${run_date}", runDate);
+//            midTableAction = midTableAction.replace("${run_date_std}", runDate);
+        }
+        if (StringUtils.isNotBlank(runToday)) {
+            midTableAction = midTableAction.replace("${run_today}", runToday);
+//            midTableAction = midTableAction.replace("${run_today_std}", runToday);
+        }
+
         midTableAction = DateExprReplaceUtil.replaceRunDate(date, midTableAction);
         // Save datasource in first execution(Only possible data sources related to fps).
         boolean firstExecution = CollectionUtils.isEmpty(currentRule.getRuleDataSources().stream().filter(ruleDataSource -> !ORIGINAL_INDEX.equals(ruleDataSource.getDatasourceIndex())).collect(
@@ -2347,9 +2817,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         Integer datasourceType = TemplateDataSourceTypeEnum.HIVE.getCode();
         if (originalRuleDataSource.getLinkisDataSourceId() != null) {
             datasourceType = originalRuleDataSource.getDatasourceType();
-            DbType dbType = JdbcConstants.MYSQL;
             MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
-            List<SQLStatement> stmtList = SQLUtils.parseStatements(midTableAction, dbType);
+            List<SQLStatement> stmtList = SQLUtils.parseStatements(midTableAction, DbType.mysql);
 
             for (int i = 0; i < stmtList.size(); i++) {
                 SQLStatement stmt = stmtList.get(i);
@@ -2359,8 +2828,18 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 dbAndTables = toDbAndTables(dbAndTables, tableStatMap);
             }
         } else {
-            HiveSqlParser hiveSqlParser = new HiveSqlParser();
-            dbAndTables = hiveSqlParser.checkSelectSqlAndGetDbAndTable(midTableAction);
+//            HiveSqlParser hiveSqlParser = new HiveSqlParser();
+//            dbAndTables = hiveSqlParser.checkSelectSqlAndGetDbAndTable(midTableAction);
+            HiveSchemaStatVisitor visitor = new HiveSchemaStatVisitor();
+            List<SQLStatement> stmtList = SQLUtils.parseStatements(midTableAction, DbType.hive);
+
+            for (int i = 0; i < stmtList.size(); i++) {
+                SQLStatement stmt = stmtList.get(i);
+                stmt.accept(visitor);
+                Map<Name, TableStat> tableStatMap = visitor.getTables();
+
+                dbAndTables = toDbAndTables(dbAndTables, tableStatMap);
+            }
         }
 
         LOGGER.info("Db and tables: " + dbAndTables.toString());
@@ -2409,7 +2888,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     private void checkDatasource(Rule currentRule, String userName, StringBuilder partition, List<Map<String, String>> mappingCols, String fpsFileId
             , String fpsHashValue, String nodeName, String clusterName, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, List<String> leftCols
-            , List<String> rightCols, List<String> comelexCols, String partitionFullSize) throws Exception {
+            , List<String> rightCols, List<String> comelexCols, String partitionFullSize, String envNames, Map<String, String> execParams, boolean engineTypeInStartupParam) throws Exception {
         // For multi source rule to check tables' size before submit.
         List<Double> datasourceSizeList = new ArrayList<>(currentRule.getRuleDataSources().size());
 
@@ -2423,7 +2902,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             List<Map<String, Object>> connectParamMaps = new ArrayList<>();
             if (ORIGINAL_INDEX.equals(ruleDataSource.getDatasourceIndex())) {
                 if (CollectionUtils.isNotEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
-                    getAllEnvConnectParams(connectParamMaps, ruleDataSource);
+                    getAllEnvConnectParams(connectParamMaps, ruleDataSource, envNames);
                     dataSourceMysqlConnect.put(ruleDataSource.getId(), connectParamMaps);
                 } else if (ruleDataSource.getLinkisDataSourceId() != null) {
                     // Before 0.21.0 rdms execution
@@ -2450,7 +2929,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (ruleDataSource.getLinkisDataSourceId() != null) {
                 LOGGER.info("Start to solve relationship datasource info.");
                 if (CollectionUtils.isNotEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
-                    getAllEnvConnectParams(connectParamMaps, ruleDataSource);
+                    getAllEnvConnectParams(connectParamMaps, ruleDataSource, envNames);
                 } else {
                     // Before 0.21.0 rdms execution
                     getDatasourceMainParams(connectParamMaps, clusterName, ruleDataSource);
@@ -2461,7 +2940,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
             // Fps file check.
             boolean fps = ruleDataSource != null && StringUtils.isNotBlank(ruleDataSource.getFileId());
-            checkTableOrPartition(currentRule, userName, partition, fpsFileId, fpsHashValue, nodeName, clusterName, datasourceSizeList, ruleDataSource, mappingCol, leftCols, rightCols, comelexCols, fps, partitionFullSize);
+//             Skipping if the template is the custom consistence template
+            if (!QualitisConstants.isCustomColumnConsistence(currentRule.getTemplate().getEnName())) {
+                checkTableOrPartition(currentRule, userName, partition, fpsFileId, fpsHashValue, nodeName, clusterName, datasourceSizeList, ruleDataSource, mappingCol, leftCols, rightCols, comelexCols, fps, partitionFullSize, execParams, engineTypeInStartupParam);
+            }
         }
         if (CollectionUtils.isNotEmpty(datasourceSizeList) && currentRule.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode())) {
             if (datasourceSizeList.size() != DATASOURCE_SIZE) {
@@ -2496,14 +2978,37 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         connectParamMaps.add(connectParams);
     }
 
-    private void getAllEnvConnectParams(List<Map<String, Object>> connectParamMaps, RuleDataSource ruleDataSource) throws Exception {
+    private void getAllEnvConnectParams(List<Map<String, Object>> connectParamMaps, RuleDataSource ruleDataSource
+            , String envNames) throws Exception {
         List<RuleDataSourceEnv> envList = ruleDataSource.getRuleDataSourceEnvs();
         GeneralResponse<Map<String, Object>> dataSourceInfoDetail = metaDataClient.getDataSourceInfoDetail(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), ruleDataSource.getLinkisDataSourceId()
                 , ruleDataSource.getLinkisDataSourceVersionId());
 
         checkRdmsSqlMetaInfo(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), ruleDataSource);
 
+//        By default, if the envNames is empty within the built-in variable, then execute a rule with all Environment;
+//        Otherwise, execute a rule with it.
+        List<String> specifiedEnvNameList = Collections.emptyList();
+        if (StringUtils.isNotBlank(envNames)) {
+            String specifiedEnvName = envNames;
+//            if a rule is multi-table
+            if (envNames.indexOf("|") != -1) {
+                String[] mulitiEnvs = StringUtils.split(envNames, "|");
+                if (Integer.valueOf(0).equals(ruleDataSource.getDatasourceIndex())) {
+                    specifiedEnvName = mulitiEnvs[0];
+                } else {
+                    specifiedEnvName = mulitiEnvs[1];
+                }
+            }
+            specifiedEnvNameList = Arrays.asList(StringUtils.split(specifiedEnvName, SpecCharEnum.COMMA.getValue()));
+        }
+
         for (RuleDataSourceEnv env : envList) {
+            if (CollectionUtils.isNotEmpty(specifiedEnvNameList) && !specifiedEnvNameList.contains(env.getEnvName())) {
+                LOGGER.info("The env were skipped: {}", env.getEnvName());
+                continue;
+            }
+
             GeneralResponse<Map<String, Object>> envMap = metaDataClient.getDatasourceEnvById(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), env.getEnvId());
 
             Map<String, Object> connectParams = (Map<String, Object>) ((Map<String, Object>) envMap.getData().get("env")).get("connectParams");
@@ -2530,7 +3035,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     private void checkTableOrPartition(Rule currentRule, String userName, StringBuilder partition, String fpsFileId, String fpsHashValue,
                                        String nodeName, String clusterName, List<Double> datasourceSizeList, RuleDataSource ruleDataSource, Map<String, String> mappingCol,
-                                       List<String> leftCols, List<String> rightCols, List<String> complexCols, boolean fps, String partitionFullSize) throws Exception {
+                                       List<String> leftCols, List<String> rightCols, List<String> complexCols, boolean fps, String partitionFullSize,
+                                       Map<String, String> execParams, boolean engineTypeInStartupParam) throws Exception {
+        List<String> filterColNameList = new ArrayList<>();
         if (fps) {
             LOGGER.info("Start to prepare fps params in rule datasource service.");
             // Upload fps file.
@@ -2550,9 +3057,16 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 if (CollectionUtils.isEmpty(cols)) {
                     throw new DataSourceMoveException("Table[" + ruleDataSource.getTableName() + "]. {&RULE_DATASOURCE_BE_MOVED}");
                 }
+                if (!metaDataClient.fieldExist(ruleDataSource.getColName(), cols, mappingCol)) {
+                    throw new DataSourceMoveException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+                }
+                // Table structure consistency verification does not require checking table size and partitions
+                if (QualitisConstants.isTableStructureConsistent(currentRule.getTemplate().getEnName())) {
+                    return;
+                }
+
                 if (currentRule.getRuleType().equals(RuleTypeEnum.MULTI_TEMPLATE_RULE.getCode()) && QualitisConstants.LEFT_INDEX.equals(ruleDataSource.getDatasourceIndex())) {
                     String filterColName = ruleDataSource.getColName();
-                    List<String> filterColNameList = new ArrayList<>();
                     if (StringUtils.isNotEmpty(filterColName)) {
                         String[] realColumns = filterColName.split(SpecCharEnum.VERTICAL_BAR.getValue());
                         for (String column : realColumns) {
@@ -2583,25 +3097,60 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                     partition.delete(0, partition.length());
                 }
 
-                ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
-                if (clusterInfo != null && StringUtils.isNotBlank(clusterInfo.getSkipDataSize())) {
-                    if (partitionTable && partition.length() > 0) {
-                        // Check partition size.
-                        checkPartitionSize(userName, partition, clusterInfo, datasourceSizeList, ruleDataSource, partitionFullSize);
-                    } else {
-                        // Check table size.
-                        checkTableSize(userName, clusterInfo, datasourceSizeList, ruleDataSource);
-                    }
-                }
+//                switching engine type by the data size of partition or table
+                switchEngineType(userName, partition, clusterName, datasourceSizeList, ruleDataSource, partitionFullSize, execParams, partitionTable, engineTypeInStartupParam);
 
                 if (currentRule.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
                     return;
                 }
-                if (!metaDataClient.fieldExist(ruleDataSource.getColName(), cols, mappingCol)) {
-                    throw new DataSourceMoveException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
-                }
             } else if (StringUtils.isNotBlank(currentRule.getCsId())) {
-                checkDatasourceInContextService(ruleDataSource, mappingCol, clusterName, userName, nodeName, currentRule.getCsId());
+                checkDatasourceInContextService(ruleDataSource, mappingCol, clusterName, userName, nodeName, currentRule.getCsId(), leftCols, rightCols, complexCols, filterColNameList);
+            }
+        }
+    }
+
+    /**
+     * switching engine type by the data size of partition or table
+     * @param userName
+     * @param partition
+     * @param clusterName
+     * @param datasourceSizeList
+     * @param ruleDataSource
+     * @param partitionFullSize
+     * @param execParams
+     * @param partitionTable
+     * @param engineTypeInStartupParam If contained engineType in startupParam
+     * @throws Exception
+     */
+    private void switchEngineType(String userName, StringBuilder partition, String clusterName, List<Double> datasourceSizeList
+            , RuleDataSource ruleDataSource, String partitionFullSize, Map<String, String> execParams, boolean partitionTable, boolean engineTypeInStartupParam) throws Exception {
+        if (QualitisConstants.LEFT_INDEX.equals(ruleDataSource.getDatasourceIndex())) {
+            ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
+            if (!engineTypeInStartupParam && clusterInfo != null && StringUtils.isNotBlank(clusterInfo.getSkipDataSize())) {
+                Template ruleTemplate = ruleDataSource.getRule().getTemplate();
+                if (ruleTemplate != null && QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(ruleTemplate.getEnName())) {
+                    boolean exceededThreshold;
+                    if (partitionTable) {
+                        // Check partition size.
+                        if (StringUtils.isBlank(partition.toString())) {
+                            exceededThreshold = checkIfExceedPartitionSize(userName, ruleDataSource.getFilter(), clusterInfo, datasourceSizeList, ruleDataSource, partitionFullSize);
+                        } else {
+                            exceededThreshold = checkIfExceedPartitionSize(userName, partition.toString(), clusterInfo, datasourceSizeList, ruleDataSource, partitionFullSize);
+                        }
+                    } else {
+                        // Check table size.
+                        exceededThreshold = checkIfExceedTableSize(userName, clusterInfo, datasourceSizeList, ruleDataSource);
+                    }
+
+    //                 1. 表/分区大小超过阈值 -》执行参数中指定了引擎类型 -》引擎类型类型是spark && 规则类型是行数据一致性 -》 替换引擎类型为shell
+                    if (exceededThreshold) {
+                        execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.DEFAULT_ENGINE.getMessage());
+                    } else {
+                        if (ruleDataSource.getProjectId() != null && specialProjectRuleConfig.getProjectNames().contains(ruleDataSource.getProjectId().toString())) {
+                            execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.TRINO_ENGINE.getMessage());
+                        }
+                    }
+                }
             }
         }
     }
@@ -2629,21 +3178,21 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         }
     }
 
-    private void checkPartitionSize(String userName, StringBuilder partition, ClusterInfo clusterInfo, List<Double> datasourceSizeList, RuleDataSource ruleDataSource
+    private boolean checkIfExceedPartitionSize(String userName, String partition, ClusterInfo clusterInfo, List<Double> datasourceSizeList, RuleDataSource ruleDataSource
             , String partitionFullSize) throws Exception {
 
         String fullSize = partitionFullSize;
 
         if (StringUtils.isEmpty(fullSize)) {
             PartitionStatisticsInfo partitionStatisticsInfo = metaDataClient.getPartitionStatisticsInfo(clusterInfo.getClusterName()
-                    , ruleDataSource.getDbName(), ruleDataSource.getTableName(), filterToPartitionPath(partition.toString()), userName);
+                    , ruleDataSource.getDbName(), ruleDataSource.getTableName(), filterToPartitionPath(partition), userName);
             fullSize = partitionStatisticsInfo.getPartitionSize();
         }
 
         if (StringUtils.isNotBlank(fullSize)) {
             double number = 0;
             String unit = "B";
-            if (!NULL_TABLE_SIZE.equals(fullSize)) {
+            if (!QualitisConstants.NULL_TABLE_SIZE.equals(fullSize)) {
                 number = Double.parseDouble(fullSize.split(" ")[0]);
                 unit = fullSize.split(" ")[1];
             }
@@ -2652,12 +3201,13 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             double res = UnitTransfer.alarmconfigToTaskResult(number, skipDataSize[1], unit);
             LOGGER.info("Check datasource[" + fullSize + "] if or not oversize with system config[" + clusterInfo.getSkipDataSize() + "]");
             if (res > Double.parseDouble(skipDataSize[0])) {
-                throw new DataSourceOverSizeException("Table[" + ruleDataSource.getTableName() + "]. {&TABLE_IS_OVERSIZE_WITH_SYSTEM_CONFIG}:[" + clusterInfo.getSkipDataSize() + "]");
+                return Boolean.TRUE;
             }
         }
+        return Boolean.FALSE;
     }
 
-    private void checkTableSize(String userName, ClusterInfo clusterInfo, List<Double> datasourceSizeList, RuleDataSource ruleDataSource) throws Exception {
+    private boolean checkIfExceedTableSize(String userName, ClusterInfo clusterInfo, List<Double> datasourceSizeList, RuleDataSource ruleDataSource) throws Exception {
         TableStatisticsInfo tableStatisticsInfo = metaDataClient.getTableStatisticsInfo(clusterInfo.getClusterName()
                 , ruleDataSource.getDbName(), ruleDataSource.getTableName(), userName);
         String fullSize = tableStatisticsInfo.getTableSize();
@@ -2666,17 +3216,21 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             LOGGER.info("Check datasource[" + fullSize + "] if or not oversize with system config[" + clusterInfo.getSkipDataSize() + "]");
             double number = 0;
             String unit = "B";
-            if (!NULL_TABLE_SIZE.equals(fullSize)) {
+            if (!QualitisConstants.NULL_TABLE_SIZE.equals(fullSize)) {
                 number = Double.parseDouble(fullSize.split(" ")[0]);
                 unit = fullSize.split(" ")[1];
             }
-            datasourceSizeList.add(number);
+            // Skip size checks for non-partitioned tables and view tables
+            if (CollectionUtils.isNotEmpty(tableStatisticsInfo.getPartitions())) {
+                datasourceSizeList.add(number);
+            }
             String[] skipDataSize = clusterInfo.getSkipDataSize().split(" ");
             double res = UnitTransfer.alarmconfigToTaskResult(number, skipDataSize[1], unit);
             if (res > Double.parseDouble(skipDataSize[0])) {
-                throw new DataSourceOverSizeException("Table[" + ruleDataSource.getTableName() + "] is oversize with system config:[" + clusterInfo.getSkipDataSize() + "]");
+                return Boolean.TRUE;
             }
         }
+        return Boolean.FALSE;
     }
 
     private void checkRdmsSqlMetaInfo(String clusterName, String userName, RuleDataSource ruleDataSource) throws Exception {
@@ -2695,17 +3249,18 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     private void checkDatasourceInContextService(RuleDataSource ruleDataSource, Map<String, String> mappingCol, String clusterName, String userName
-            , String nodeName, String csId) throws Exception {
+            , String nodeName, String csId, List<String> leftCols, List<String> rightCols, List<String> complexCols,
+                                                 List<String> filterColNameList) throws Exception {
         GetUserTableByCsIdRequest getUserTableByCsIdRequest = new GetUserTableByCsIdRequest();
         getUserTableByCsIdRequest.setClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
         getUserTableByCsIdRequest.setLoginUser(userName);
         getUserTableByCsIdRequest.setCsId(csId);
         if (StringUtils.isBlank(nodeName)) {
-            getUserTableByCsIdRequest.setNodeName(RuleConstraintEnum.DEFAULT_NODENAME.getValue());
+            getUserTableByCsIdRequest.setNodeName(ruleDataSource.getRule().getNodeName());
         } else {
             getUserTableByCsIdRequest.setNodeName(nodeName);
         }
-        DataInfo<CsTableInfoDetail> csTableInfoDetails = null;
+        DataInfo<CsTableInfoDetail> csTableInfoDetails;
         try {
             csTableInfoDetails = metaDataClient.getTableByCsId(getUserTableByCsIdRequest);
         } catch (Exception e) {
@@ -2728,6 +3283,18 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 }
                 if (!metaDataClient.fieldExist(ruleDataSource.getColName(), cols, mappingCol)) {
                     throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + ":" + ruleDataSource.getColName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+                }
+                for (ColumnInfoDetail columnInfoDetail : cols) {
+                    complexCols.add(columnInfoDetail.getFieldName());
+                    if (CollectionUtils.isNotEmpty(filterColNameList) && !filterColNameList.contains(columnInfoDetail.getFieldName())) {
+                        continue;
+                    }
+                    if (ruleDataSource.getDatasourceIndex() != null && ruleDataSource.getDatasourceIndex().equals(0)) {
+                        leftCols.add(ruleDataSource.getRule().getId() + SpecCharEnum.MINUS.getValue() + columnInfoDetail.getFieldName());
+                    }
+                    if (ruleDataSource.getDatasourceIndex() != null && ruleDataSource.getDatasourceIndex().equals(1)) {
+                        rightCols.add(ruleDataSource.getRule().getId() + SpecCharEnum.MINUS.getValue() + columnInfoDetail.getFieldName());
+                    }
                 }
             }
         }
@@ -2810,13 +3377,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         mappingCols.add(rightCols);
     }
 
-    private Map<Long, Map<String, Object>> ruleReplaceInfo(String username, Map<String, String> executionParamOuter, List<Rule> rules) throws SystemConfigException {
-        SystemConfig systemConfigInDb = systemConfigDao.findByKeyName(systemKeyConfig.getSaveDatabasePattern());
-
-        if (systemConfigInDb == null || StringUtils.isBlank(systemConfigInDb.getValue())) {
-            throw new SystemConfigException(String.format("System Config: %s, can not be null or empty", systemKeyConfig.getSaveDatabasePattern()));
-        }
-
+    private Map<Long, Map<String, Object>> ruleReplaceInfo(String username, Map<String, String> executionParamOuter, List<Rule> rules, StringBuilder runDate, StringBuilder runToday, StringBuilder execParamEnvs) {
         Map<Long, Map<String, Object>> ruleReplaceInfo = new HashMap<>(8);
         for (Rule rule : rules) {
             Map<String, Object> ruleRealExecParams = new HashMap<>(8);
@@ -2830,12 +3391,12 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (StringUtils.isNotBlank(rule.getAbnormalDatabase()) && StringUtils.isNotBlank(rule.getAbnormalCluster())) {
                 ruleRealExecParams.put("qualitis_abnormal_database", rule.getAbnormalDatabase());
             } else {
-                ruleRealExecParams.put("qualitis_abnormal_database", systemConfigInDb.getValue().replace(USERNAME_FORMAT_PLACEHOLDER, username));
+                ruleRealExecParams.put("qualitis_abnormal_database", "");
             }
 
             if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
                 ExecutionParameters executionParametersInDb = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
-                ruleRealExecParams.put("union_all_save", executionParametersInDb.getUnionAll());
+                ruleRealExecParams.put(QualitisConstants.QUALITIS_UNION_WAY, executionParametersInDb.getUnionWay());
                 ruleRealExecParams.put("qualitis_alert_level", executionParametersInDb.getAlertLevel());
                 ruleRealExecParams.put("qualitis_alert_receivers", executionParametersInDb.getAlertReceiver());
 
@@ -2882,6 +3443,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 }
                 ruleRealExecParams.put("qualitis_startup_param", staticStartupParam);
 
+                // 调整优先级，页面表单提交的参数>执行参数模板配置的执行变量配置   run_date、run_today单独拿出处理
                 Map<String, String> executionParamInner = new HashMap<>();
                 if (StringUtils.isNotBlank(executionParametersInDb.getExecutionParam())) {
                     parseExecParams(executionParametersInDb.getExecutionParam(), executionParamInner);
@@ -2891,6 +3453,27 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                         if (!executionParamOuter.keySet().contains(key)) {
                             executionParamOuter.put(key, value);
                         }
+
+                        if (runDate != null && runDate.length() > 0 && executionParamOuter.keySet().contains(RUN_DATE)) {
+                            executionParamOuter.remove(RUN_DATE);
+                            executionParamOuter.put(RUN_DATE, runDate.toString());
+                        }
+                        if (runDate.length() == 0 && RUN_DATE.equals(key)) {
+                            runDate.append(value);
+                        }
+
+                        if (runToday != null && runToday.length() > 0 && executionParamOuter.keySet().contains(RUN_TODAY)) {
+                            executionParamOuter.remove(RUN_TODAY);
+                            executionParamOuter.put(RUN_TODAY, runToday.toString());
+                        }
+                        if (runToday.length() == 0 && RUN_TODAY.equals(key)) {
+                            runToday.append(value);
+                        }
+
+                        if (execParamEnvs.length() == 0 && ENV_NAMES.equals(key)) {
+                            execParamEnvs.append(value);
+                        }
+
                     }
                 }
             }
@@ -2925,6 +3508,27 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             }
         }
         throw new PermissionDeniedRequestException("Create user: " + createUser + " {&HAS_NO_PERMISSION_PROXYING_EXECUTE_USER}: " + executeUser, 403);
+    }
+
+    @Override
+    public GeneralResponse< ApplicationListResultResponse > getApplicationResult(List< String> applicationIdList)  {
+        Map<String, String> result = new HashMap<>();
+        for (String applicationId : applicationIdList) {
+            result.put(applicationId, null);
+        }
+        List<TaskResult> taskResultList = taskResultDao.findByApplicationIdIn(applicationIdList);
+        for (TaskResult taskResult : taskResultList) {
+            result.put(taskResult.getApplicationId(), taskResult.getValue());
+        }
+        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
+                new ApplicationListResultResponse(result));
+    }
+
+    @Override
+    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
+        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
+                new FieldsAnalyseResultResponse(taskResultList));
     }
 
 }

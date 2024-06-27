@@ -42,4 +42,13 @@ public class RuleMetricListValuesRequest {
   public void setEndTime(String endTime) {
     this.endTime = endTime;
   }
+
+  @Override
+  public String toString() {
+    return "RuleMetricListValuesRequest{" +
+            "ruleMetricIdList=" + ruleMetricIdList +
+            ", startTime='" + startTime + '\'' +
+            ", endTime='" + endTime + '\'' +
+            '}';
+  }
 }

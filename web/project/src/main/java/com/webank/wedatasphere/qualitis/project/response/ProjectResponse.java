@@ -21,7 +21,6 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,12 +49,15 @@ public class ProjectResponse {
     @JsonProperty("sub_system_name")
     private String subSystemName;
     @JsonProperty("sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
+    @JsonProperty("project_type")
+    private Integer projectType;
 
     public ProjectResponse() {
     }
 
     public ProjectResponse(Project project) {
+        this.projectType = project.getProjectType();
         this.projectId = project.getId();
         this.cnName = project.getCnName();
         this.projectName = project.getName();
@@ -77,11 +79,11 @@ public class ProjectResponse {
         this.projectName = (String) project.get("project_name");
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -165,15 +167,23 @@ public class ProjectResponse {
         this.modifyTime = modifyTime;
     }
 
+    public Integer getProjectType() {
+        return projectType;
+    }
+
+    public void setProjectType(Integer projectType) {
+        this.projectType = projectType;
+    }
+
     @Override
     public String toString() {
         return "ProjectResponse{" +
-            "projectId=" + projectId +
-            ", projectName='" + projectName + '\'' +
-            ", projectLabel=" + projectLabel +
-            ", createTime='" + createTime + '\'' +
-            ", modifyUser='" + modifyUser + '\'' +
-            ", modifyTime='" + modifyTime + '\'' +
-            '}';
+                "projectId=" + projectId +
+                ", projectName='" + projectName + '\'' +
+                ", projectLabel=" + projectLabel +
+                ", createTime='" + createTime + '\'' +
+                ", modifyUser='" + modifyUser + '\'' +
+                ", modifyTime='" + modifyTime + '\'' +
+                '}';
     }
 }

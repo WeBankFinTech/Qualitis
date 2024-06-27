@@ -63,13 +63,20 @@ public class ModifyFileRuleRequest extends AbstractCommonRequest{
         this.fileAlarmVariable = fileAlarmVariable;
     }
 
-
-
     public static void checkRequest(ModifyFileRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkObject(request.getRuleId(), "rule_id");
         AddFileRuleRequest addFileRuleRequest = new AddFileRuleRequest();
         BeanUtils.copyProperties(request, addFileRuleRequest);
         AddFileRuleRequest.checkRequest(addFileRuleRequest, true);
+    }
+
+    @Override
+    public String toString() {
+        return "ModifyFileRuleRequest{" +
+                "projectName='" + projectName + '\'' +
+                ", fifter='" + fifter + '\'' +
+                ", fileAlarmVariable=" + fileAlarmVariable +
+                "} " + super.toString();
     }
 }

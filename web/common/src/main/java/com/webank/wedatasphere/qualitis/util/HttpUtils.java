@@ -16,7 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.Map;
 
 /**
@@ -25,45 +29,70 @@ import java.util.Map;
  */
 public class HttpUtils {
 
-  private HttpUtils() {
-    // Default Constructor
-  }
+    private static Logger LOGGER = LoggerFactory.getLogger(HttpUtils.class);
 
-  private static Map<String, Object> getUser(HttpServletRequest request) {
-    if (request == null || request.getSession() == null) {
-      return null;
+    private HttpUtils() {
+        // Default Constructor
     }
-    Object proxyUserObj = request.getSession().getAttribute("proxyUser");
-    if (proxyUserObj != null) {
-      return (Map<String, Object>) request.getSession().getAttribute("proxyUser");
-    }
-    return (Map<String, Object>) request.getSession().getAttribute("user");
-  }
 
-  public static Long getUserId(HttpServletRequest request) {
-    Map<String, Object> user = getUser(request);
-    if (user == null) {
-      return null;
-    }
-    return (Long) user.get("userId");
-  }
+    public static Map<String, Object> getUser(HttpServletRequest request) {
+        if (request == null) {
+            LOGGER.warn("No request provided!~");
+            return null;
+        }
 
-  public static String getUserName(HttpServletRequest request) {
-    Map<String, Object> user = getUser(request);
-    if (user == null) {
-      return null;
-    }
-    return (String) user.get("username");
-  }
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            LOGGER.warn("No current session found!~");
+            return null;
+        }
 
-  /**
-   * 把字符串IP转换成Integer
-   *
-   * @param ipStr 字符串IP
-   * @return IP对应的int值
-   */
-  public static Integer ip2Integer(String ipStr) {
-    String[] ip = ipStr.split("\\.");
-    return Integer.valueOf(ip[0])  * 256 * 256 * 256 + Integer.valueOf(ip[1])  * 256 * 256 + Integer.valueOf(ip[2]) * 256 + Integer.valueOf(ip[3]);
-  }
+        Object proxyUserObj = session.getAttribute("proxyUser");
+        if (proxyUserObj != null) {
+            return (Map<String, Object>) session.getAttribute("proxyUser");
+        }
+        return (Map<String, Object>) session.getAttribute("user");
+    }
+
+    public static Object getPermissions(HttpServletRequest request) {
+        if (request == null) {
+            LOGGER.warn("No request provided!~");
+            return null;
+        }
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            LOGGER.warn("No current session found!~");
+            return null;
+        }
+
+        return session.getAttribute("permissions");
+    }
+
+    public static Long getUserId(HttpServletRequest request) {
+        Map<String, Object> user = getUser(request);
+        if (user == null) {
+            return null;
+        }
+        return (Long) user.get("userId");
+    }
+
+    public static String getUserName(HttpServletRequest request) {
+        Map<String, Object> user = getUser(request);
+        if (user == null) {
+            return null;
+        }
+        return (String) user.get("username");
+    }
+
+    /**
+     * 把字符串IP转换成Integer
+     *
+     * @param ipStr 字符串IP
+     * @return IP对应的int值
+     */
+    public static Integer ip2Integer(String ipStr) {
+        String[] ip = ipStr.split("\\.");
+        return Integer.valueOf(ip[0]) * 256 * 256 * 256 + Integer.valueOf(ip[1]) * 256 * 256 + Integer.valueOf(ip[2]) * 256 + Integer.valueOf(ip[3]);
+    }
 }

@@ -1,12 +1,10 @@
 package com.webank.wedatasphere.qualitis.metadata.client;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.response.DcnResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.ProductResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.SubSystemResponse;
-
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
 import java.util.List;
@@ -23,6 +21,14 @@ public interface OperateCiService {
      * @throws UnExpectedRequestException
      */
     List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException;
+
+    /**
+     * Get the specific sub-system by its name
+     * @param subSystemName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    String getSubSystemIdByName(String subSystemName) throws UnExpectedRequestException;
 
     /**
      * Get all product info from http of cmdb, incloud: id,cn name.
@@ -52,8 +58,10 @@ public interface OperateCiService {
     /**
      * Get dcn
      * @param subSystemId
+     * @param dcnRangeType
+     * @param dcnRangeValues
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<DcnResponse> getDcn(Long subSystemId) throws UnExpectedRequestException;
+    GeneralResponse getDcn(String subSystemId, String dcnRangeType, List<String> dcnRangeValues) throws UnExpectedRequestException;
 }

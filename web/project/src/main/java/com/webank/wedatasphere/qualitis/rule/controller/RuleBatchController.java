@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
@@ -63,7 +64,7 @@ public class RuleBatchController {
             throw e;
         }catch (Exception e) {
             LOGGER.error("Failed to download rules, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DOWNLOAD_RULES}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DOWNLOAD_RULES}", null);
         }
     }
 
@@ -80,7 +81,7 @@ public class RuleBatchController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to upload rules, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_UPLOAD_RULES}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_UPLOAD_RULES}", null);
         }
     }
 

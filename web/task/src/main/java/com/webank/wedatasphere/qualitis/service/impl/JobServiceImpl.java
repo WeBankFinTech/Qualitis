@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.bean.LogResult;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
@@ -101,6 +102,6 @@ public class JobServiceImpl implements JobService {
             logResult.setEnMessage(applicationComment.getEnMessage());
         }
         LOGGER.info("Succeed to get task log, task_id: {}, cluster_id: {}", taskId, clusterName);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_LOG}", logResult);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_TASK_LOG}", logResult);
     }
 }

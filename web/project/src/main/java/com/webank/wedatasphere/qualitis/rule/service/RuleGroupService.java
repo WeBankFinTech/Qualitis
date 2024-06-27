@@ -19,13 +19,21 @@ package com.webank.wedatasphere.qualitis.rule.service;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
-import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.request.AddBatchRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddGroupRulesRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleGroupRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyGroupRulesRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleGroupRequest;
+import com.webank.wedatasphere.qualitis.rule.request.QueryGroupRulesRequest;
+import com.webank.wedatasphere.qualitis.rule.request.RuleGroupPageRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleGroupResponse;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -120,6 +128,18 @@ public interface RuleGroupService {
      * @return
      */
     List<Map<String, Object>> getOptionList(RuleGroupPageRequest request);
+
+    /**
+     * Creating batch rule by template
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws IOException
+     */
+    GeneralResponse addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException, InterruptedException, ExecutionException, IOException;
 
     /**
      * Generate

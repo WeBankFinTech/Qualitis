@@ -62,4 +62,10 @@ public class AddFileRuleRequest extends AbstractCommonRequest {
         CommonChecker.checkStringLength(request.getRuleName(), 128, "rule name");
     }
 
+    @Override
+    public String toString() {
+        return "AddFileRuleRequest{" +
+                "fileAlarmVariable=" + fileAlarmVariable +
+                "} " + super.toString();
+    }
 }

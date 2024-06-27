@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -54,7 +55,7 @@ public class RuleLockController {
             return new GeneralResponse<>("403", "{&RULE_LOCK_ACQUIRE_FAILED}", false);
         }
         if (ruleLockService.tryAcquire(ruleLockId, ruleLockRangeEnum, loginUser)) {
-            return new GeneralResponse<>("200", "success", true);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "success", true);
         }
         return new GeneralResponse<>("403", "{&RULE_LOCK_ACQUIRE_FAILED}", false);
     }
@@ -76,6 +77,6 @@ public class RuleLockController {
         } catch (RuleLockException e) {
             LOGGER.warn("Failed to release lock", e);
         }
-        return new GeneralResponse<>("200", "Success", true);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Success", true);
     }
 }

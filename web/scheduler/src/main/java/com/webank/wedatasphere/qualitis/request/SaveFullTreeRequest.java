@@ -6,14 +6,9 @@ import java.util.Map;
 
 /**
  * @author allenzhou@webank.com
- * @date 2021/5/7 14:56
+ * @date 2021/5/7 14:55
  */
 public class SaveFullTreeRequest {
-    @JsonProperty("creator")
-    private String creator;
-
-    @JsonProperty("full_tree_queue_name")
-    private List<Map<String, Object>> queueName;
 
     @JsonProperty("full_tree")
     private List<Map<String, Object>> fullTree;
@@ -34,22 +29,6 @@ public class SaveFullTreeRequest {
 
     public void setUserName(String userName) {
         this.userName = userName;
-    }
-
-    public String getCreator() {
-        return creator;
-    }
-
-    public void setCreator(String creator) {
-        this.creator = creator;
-    }
-
-    public List<Map<String, Object>> getQueueName() {
-        return queueName;
-    }
-
-    public void setQueueName(List<Map<String, Object>> queueName) {
-        this.queueName = queueName;
     }
 
     public List<Map<String, Object>> getFullTree() {

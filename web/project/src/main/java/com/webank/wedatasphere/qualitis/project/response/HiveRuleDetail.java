@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author howeye
@@ -58,6 +60,10 @@ public class HiveRuleDetail {
     private Long ruleTemplateId;
     @JsonProperty("template_name")
     private String templateName;
+    @JsonProperty("cluster_name")
+    private String clusterName;
+    @JsonProperty("cluster_num")
+    private Integer clusterNum;
     @JsonProperty("datasource")
     private List<HiveDataSourceDetail> hiveDataSource;
     @JsonProperty("rule_group_id")
@@ -81,8 +87,8 @@ public class HiveRuleDetail {
     private String nodeName;
     @JsonProperty("rule_enable")
     private Boolean ruleEnable;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
     @JsonProperty("create_user")
     private String createUser;
     @JsonProperty("modify_user")
@@ -131,13 +137,13 @@ public class HiveRuleDetail {
             ExecutionParameters executionParameters = SpringContextHolder.getBean(ExecutionParametersDao.class).findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
             if (executionParameters != null) {
                 this.ruleEnable = rule.getEnable();
-                this.unionAll = executionParameters.getUnionAll();
+                this.unionWay = executionParameters.getUnionWay();
             } else {
-                this.unionAll = rule.getUnionAll();
+                this.unionWay = rule.getUnionWay();
                 this.ruleEnable = rule.getEnable();
             }
         } else {
-            this.unionAll = rule.getUnionAll();
+            this.unionWay = rule.getUnionWay();
             this.ruleEnable = rule.getEnable();
         }
         if (CollectionUtils.isNotEmpty(rule.getRuleGroup().getRuleDataSources())) {
@@ -165,20 +171,36 @@ public class HiveRuleDetail {
         this.hiveDataSource = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(rule.getRuleDataSources())) {
             for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
-                String tableName = ruleDataSource.getTableName();
-                if (StringUtils.isEmpty(tableName)) {
-                    continue;
-                }
-                // UUID remove.
-                if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(tableName) && tableName.contains(SpecCharEnum.BOTTOM_BAR.getValue())
-                        && tableName.length() - UuidGenerator.generate().length() - 1 > 0) {
-                    tableName = tableName.substring(0, tableName.length() - UuidGenerator.generate().length() - 1);
-                }
                 // If type equals to data source
-                hiveDataSource.add(new HiveDataSourceDetail(ruleDataSource.getClusterName(), ruleDataSource.getDbName(), tableName));
+                hiveDataSource.add(new HiveDataSourceDetail(ruleDataSource.getClusterName(), ruleDataSource.getDbName(), handleTableName(ruleDataSource)));
             }
         }
 
+        Stream<String> clusterStream = hiveDataSource.stream().filter(item -> StringUtils.isNotEmpty(item.getCluster()))
+                .map(hiveDataSourceDetail -> hiveDataSourceDetail.getCluster());
+
+//            Don't to distinct if template is multi-cluster
+        if (QualitisConstants.isAcrossCluster(rule.getTemplate().getEnName())) {
+            this.clusterName = clusterStream
+                    .collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
+            this.clusterNum = 2;
+        } else {
+            this.clusterName = clusterStream
+                    .distinct()
+                    .collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
+            this.clusterNum = 1;
+        }
+
+    }
+
+    private String handleTableName(RuleDataSource ruleDataSource) {
+        String tableName = ruleDataSource.getTableName();
+        // UUID remove.
+        if (StringUtils.isNotBlank(ruleDataSource.getFileId()) && StringUtils.isNotBlank(tableName) && tableName.contains(SpecCharEnum.BOTTOM_BAR.getValue())
+                && tableName.length() - UuidGenerator.generate().length() - 1 > 0) {
+            tableName = tableName.substring(0, tableName.length() - UuidGenerator.generate().length() - 1);
+        }
+        return tableName;
     }
 
     public String getProjectName() {
@@ -195,6 +217,14 @@ public class HiveRuleDetail {
 
     public void setRuleEnable(Boolean ruleEnable) {
         this.ruleEnable = ruleEnable;
+    }
+
+    public Integer getClusterNum() {
+        return clusterNum;
+    }
+
+    public void setClusterNum(Integer clusterNum) {
+        this.clusterNum = clusterNum;
     }
 
     public Integer getProjectType() {
@@ -261,6 +291,14 @@ public class HiveRuleDetail {
         this.templateName = templateName;
     }
 
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
     public List<HiveDataSourceDetail> getHiveDataSource() {
         return hiveDataSource;
     }
@@ -309,6 +347,14 @@ public class HiveRuleDetail {
         this.tableGroup = tableGroup;
     }
 
+    public Integer getUnionWay() {
+        return unionWay;
+    }
+
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
+    }
+
     public String getWorkFlowName() {
         return workFlowName;
     }
@@ -323,14 +369,6 @@ public class HiveRuleDetail {
 
     public void setWorkFlowVersion(String workFlowVersion) {
         this.workFlowVersion = workFlowVersion;
-    }
-
-    public Boolean getUnionAll() {
-        return unionAll;
-    }
-
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
     }
 
     public String getCreateUser() {

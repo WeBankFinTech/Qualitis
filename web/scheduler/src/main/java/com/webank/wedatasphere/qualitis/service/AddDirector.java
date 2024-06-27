@@ -3,10 +3,12 @@ package com.webank.wedatasphere.qualitis.service;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.TemplateFunctionNameEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -19,6 +21,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.lang3.StringUtils;
@@ -64,20 +67,25 @@ public class AddDirector {
 
     private ProjectDao projectDao;
 
+    private LinkisUdfDao linkisUdfDao;
+
     private RuleGroupDao ruleGroupDao;
 
     private RuleTemplateDao ruleTemplateDao;
+
+    private StandardValueVersionDao standardValueVersionDao;
+
+    private LinkisDataSourceEnvService linkisDataSourceEnvService;
+
+    private LinkisDataSourceDao linkisDataSourceDao;
 
     private BdpClientHistoryDao bdpClientHistoryDao;
 
     private LinkisConfig linkisConfig;
 
-    private static Integer TWO = 2;
-    private static Integer THREE = 3;
-
     public AddDirector(SubDepartmentPermissionService subDepartmentPermissionService, ProjectService projectService, MetaDataClient metaDataClient
-        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, RuleGroupDao ruleGroupDao
-        , RuleTemplateDao ruleTemplateDao, BdpClientHistoryDao bdpClientHistoryDao, LinkisConfig linkisConfig) {
+        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, LinkisUdfDao linkisUdfDao, RuleGroupDao ruleGroupDao
+        , RuleTemplateDao ruleTemplateDao, StandardValueVersionDao standardValueVersionDao, LinkisDataSourceEnvService linkisDataSourceEnvService, LinkisDataSourceDao linkisDataSourceDao, BdpClientHistoryDao bdpClientHistoryDao, LinkisConfig linkisConfig) {
         this.subDepartmentPermissionService = subDepartmentPermissionService;
         this.projectService = projectService;
         this.metaDataClient = metaDataClient;
@@ -85,8 +93,12 @@ public class AddDirector {
         this.ruleDao = ruleDao;
         this.userDao = userDao;
         this.projectDao = projectDao;
+        this.linkisUdfDao = linkisUdfDao;
         this.ruleGroupDao = ruleGroupDao;
         this.ruleTemplateDao = ruleTemplateDao;
+        this.standardValueVersionDao = standardValueVersionDao;
+        this.linkisDataSourceEnvService = linkisDataSourceEnvService;
+        this.linkisDataSourceDao = linkisDataSourceDao;
         this.bdpClientHistoryDao = bdpClientHistoryDao;
         this.linkisConfig = linkisConfig;
     }
@@ -94,13 +106,13 @@ public class AddDirector {
     public AddRequestBuilder expectColumnNotNull(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, linkisDataSourceDao, metaDataClient, linkisConfig);
 
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMN_NOT_NULL.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMN_NOT_NULL.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMN_NOT_NULL.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -111,7 +123,7 @@ public class AddDirector {
 
     private void getCurrentNameFromDatasource(Map<String, String> names, String datasource, String templateFuncName) throws UnExpectedRequestException {
         String[] datasourceStrs = datasource.split(SpecCharEnum.PERIOD.getValue());
-        if (datasourceStrs.length < THREE) {
+        if (datasourceStrs.length < QualitisConstants.LENGTH_THREE) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
 
@@ -136,15 +148,50 @@ public class AddDirector {
         bdpClientHistoryFix(currentBdpClientHistory, currentProjectName);
     }
 
+    private void getCurrentNameFromMultiCluster(Map<String, String> names, String clusters, String templateFuncName) {
+        String[] multiClusterStrs = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        Boolean isMultiCluster = multiClusterStrs.length == QualitisConstants.LENGTH_TWO ? true: false;
+        String currentProjectName;
+        String currentRuleName;
+        if (isMultiCluster) {
+            String leftCluster = multiClusterStrs[0];
+            String rightCluster = multiClusterStrs[1];
+            currentProjectName = leftCluster+"_"+rightCluster;
+            currentRuleName = currentProjectName + "_" + templateFuncName + "_" + UuidGenerator.generate();
+        } else {
+            String cluster = multiClusterStrs[0];
+            currentProjectName = cluster;
+            currentRuleName = currentProjectName + "_" + templateFuncName + "_" + UuidGenerator.generate();
+        }
+
+        names.put("project", currentProjectName);
+        names.put("rule", currentRuleName);
+
+        if (bdpClientHistory != null) {
+            bdpClientHistory.setProjectName(StringUtils.isNotBlank(projectName) ? projectName : currentProjectName);
+            bdpClientHistory.setDatasource(currentProjectName);
+            bdpClientHistory.setTemplateFunction(templateFuncName);
+        }
+
+        // Find in bdp-client history.
+        BdpClientHistory currentBdpClientHistory = bdpClientHistoryDao.findByTemplateFunctionAndDatasourceAndProjectName(templateFuncName
+                , currentProjectName
+                , StringUtils.isNotBlank(projectName) ? projectName : currentProjectName);
+        if (currentBdpClientHistory == null) {
+            return;
+        }
+        bdpClientHistoryFix(currentBdpClientHistory, currentProjectName);
+    }
+
     private void getCurrentNameFromDatasource(Map<String, String> names, String cluster, String datasource, String templateFuncName) throws UnExpectedRequestException {
         String[] multiDatasourceStrs = datasource.split(SpecCharEnum.VERTICAL_BAR.getValue());
         String sourcStr = multiDatasourceStrs[0];
         String[] datasourceStrs = sourcStr.split(SpecCharEnum.COLON.getValue());
-        if (datasourceStrs.length > TWO) {
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
         String[] datasources = datasourceStrs[0].split(SpecCharEnum.PERIOD.getValue());
-        if (datasources.length != TWO) {
+        if (datasources.length != QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
         String database = datasources[0];
@@ -236,13 +283,13 @@ public class AddDirector {
     public AddRequestBuilder expectColumnsPrimaryNotRepeat(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
 
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -254,12 +301,12 @@ public class AddDirector {
     public AddRequestBuilder expectTableRows(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_TABLE_ROWS.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -271,12 +318,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnAvg(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_AVG.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_AVG.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_AVG.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -288,12 +335,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnSum(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_SUM.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_SUM.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_SUM.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -304,12 +351,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnMax(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_MAX.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MAX.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MAX.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -321,12 +368,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnMin(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_MIN.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MIN.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MIN.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -338,12 +385,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnMatchRegx(String datasource, String regx, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_REGX.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_REGX.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_REGX.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -355,12 +402,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnMatchDate(String datasource, String dateRegx, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(9L);
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_DATE.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_DATE.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -372,12 +419,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnMatchNum(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_NUM.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_NUM.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_NUM.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -389,12 +436,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnInList(String datasource, String seriesOfValues, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -406,12 +453,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnInListNewValueCheck(String datasource, String seriesOfValues, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -420,15 +467,44 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder expectColumnInStandardValueListNewValueCheck(String datasource, String standardValueEnName, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+        boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+        // Project and rule related with builder.
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getName());
+        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
+        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
+
+        StandardValueVersion standardValueVersion = standardValueVersionDao.findByEnName(standardValueEnName);
+        if (standardValueVersion == null) {
+            throw new UnExpectedRequestException(standardValueEnName + "{&DOES_NOT_EXIST}");
+        }
+        List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>();
+        // Handle special template argument
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : templateInDb.getTemplateMidTableInputMetas()) {
+            if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), standardValueVersion.getId().toString()));
+            }
+        }
+
+        addRequestBuilder.basicInfoWithDataSource(datasource, standardValueVersion.getId(), templateArgumentRequests, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnInRange(String datasource, String range, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -439,12 +515,12 @@ public class AddDirector {
 
     public AddRequestBuilder expectColumnInRangeNewValueCheck(String datasource, int min, String range, int max, boolean deleteFailCheckResult
         , boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE_NEW_VALUE.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE_NEW_VALUE.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE_NEW_VALUE.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -459,19 +535,19 @@ public class AddDirector {
                 templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), range));
             }
         }
-        addRequestBuilder.basicInfoWithDataSource(datasource, templateArgumentRequests, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        addRequestBuilder.basicInfoWithDataSource(datasource, null, templateArgumentRequests, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
         return addRequestBuilder;
     }
 
     public AddRequestBuilder expectColumnMatchIdCard(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_ID_CARD.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_ID_CARD.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_ID_CARD.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -483,12 +559,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnLogicCheck(String datasource, String condition1, String condition2, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_LOGIC_CHECK.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_LOGIC_CHECK.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_LOGIC_CHECK.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -500,12 +576,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnNotEmpty(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_EMPTY.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_EMPTY.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_EMPTY.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -517,12 +593,12 @@ public class AddDirector {
     public AddRequestBuilder expectColumnNotNullNotEmpty(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_NULL_NOT_EMPTY.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_NULL_NOT_EMPTY.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_NULL_NOT_EMPTY.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -534,12 +610,12 @@ public class AddDirector {
     public AddRequestBuilder expectTableConsistent(String cluster, String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_TABLE_CONSISTENT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_CONSISTENT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, cluster, datasource, TemplateFunctionNameEnum.EXPECT_TABLE_CONSISTENT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -565,12 +641,12 @@ public class AddDirector {
     public AddRequestBuilder expectSpecifiedColumnConsistent(String cluster, String datasource, String mappings, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, cluster, datasource, TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -597,17 +673,95 @@ public class AddDirector {
     public AddRequestBuilder expectSpecifiedColumnConsistent(String cluster, String datasource, String mapping, String compareCols, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, cluster, datasource, TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(cluster, datasource, mapping, compareCols, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder expectCustomColumnConsistent(String clusters, String datasource, String mappings, String compareCols, String collectSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+                                                          boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        int clusterNum = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue()).length;
+//        distinguish single-cluster rule or multi-cluster rule with the numbers of clusters
+        TemplateFunctionNameEnum templateFunctionName;
+        if (clusterNum == QualitisConstants.LENGTH_TWO) {
+            templateFunctionName = TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_MULTI_CLUSTER;
+        } else {
+            templateFunctionName = TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_SINGLE_CLUSTER;
+        }
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(templateFunctionName.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+        // Project and rule related with builder.
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromMultiCluster(names, clusters, templateFunctionName.getName());
+        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
+        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
+
+        addRequestBuilder.basicInfoWithoutDataSource(clusters, datasource, mappings, compareCols, collectSqls, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+
+    public AddRequestBuilder expectTableStructureConsistent(String clusters,String datasource,String dbAndTable,boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+                                                            boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)throws Exception{
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        int clusterNum = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue()).length;
+        // distinguish single-cluster rule or multi-cluster rule with the numbers of clusters
+        TemplateFunctionNameEnum templateFunctionName;
+        if (clusterNum == 2) {
+            templateFunctionName = TemplateFunctionNameEnum.EXPECT_TABLE_STRUCTURE_CONSISTENT_MULTI_CLUSTER;
+        } else {
+            templateFunctionName = TemplateFunctionNameEnum.EXPECT_TABLE_STRUCTURE_CONSISTENT_SINGLE_CLUSTER;
+        }
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(templateFunctionName.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+        // Project and rule related with builder.
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromMultiCluster(names, clusters, templateFunctionName.getName());
+        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
+        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
+
+        addRequestBuilder.basicInfoWithDataSourceAndCluster(clusters,datasource,dbAndTable,deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder expectTableRowsConsistent(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+                                                          boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+
+        String[] datasourceStrs = datasource.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (datasourceStrs.length != QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("Datasource param is illegle");
+        }
+        String sourceCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_O].split(SpecCharEnum.COLON.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
+        String targetCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_1].split(SpecCharEnum.COLON.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
+
+        // Template
+        Template templateInDb;
+        if (sourceCluster.equals(targetCluster)) {
+            templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_SINGLE_CLUSTER.getEnName());
+        } else {
+            templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_MULTI_CLUSTER.getEnName());
+        }
+        addRequestBuilder.setTemplate(templateInDb);
+        // Project and rule related with builder.
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_MULTI_CLUSTER.getName());
+        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
+        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
+
+        addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
         return addRequestBuilder;
     }
 
@@ -618,7 +772,7 @@ public class AddDirector {
         Template templateInDb = ruleTemplateDao.findByName("分区数");
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_FILE_AMOUNT_COUNT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -634,7 +788,7 @@ public class AddDirector {
         Template templateInDb = ruleTemplateDao.findByName("目录文件数");
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_FILE_AMOUNT_COUNT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -650,7 +804,7 @@ public class AddDirector {
         Template templateInDb = ruleTemplateDao.findByName("目录容量");
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_FILE_SIZE_PASS.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -661,7 +815,7 @@ public class AddDirector {
 
     public AddRequestBuilder expectSqlPass(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster(), subDepartmentPermissionService);
+        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisUdfDao, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
         // Project and rule related with builder.
         setProject(project, projectName);
         setRule(rule, ruleName);
@@ -673,13 +827,13 @@ public class AddDirector {
     public AddRequestBuilder expectLinesNotRepeat(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
 
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_LINES_NOT_REPEAT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_LINES_NOT_REPEAT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
         getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
@@ -691,14 +845,14 @@ public class AddDirector {
     public AddRequestBuilder expectDataNotRepeat(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig.getDatasourceCluster());
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
 
         // Template
-        Template templateInDb = ruleTemplateDao.findById(TemplateFunctionNameEnum.EXPECT_DATA_NOT_REPEAT.getCode());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_DATA_NOT_REPEAT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
         // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(TWO);
-        getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getName());
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_DATA_NOT_REPEAT.getName());
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 

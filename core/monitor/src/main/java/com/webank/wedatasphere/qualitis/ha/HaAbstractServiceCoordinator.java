@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+
 /**
  * @author howeye
  */
@@ -33,6 +35,7 @@ public class HaAbstractServiceCoordinator extends AbstractServiceCoordinator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HaAbstractServiceCoordinator.class);
 
+    @PostConstruct
     @Override
     public void init() {
         LOGGER.info("Start to create zookeeper client");

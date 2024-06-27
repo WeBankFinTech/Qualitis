@@ -88,4 +88,17 @@ public class DepartmentController {
         }
     }
 
+    @GET
+    @Path("tenant_user/list")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse<DepartmentResponse>> findFromTenantUser() throws UnExpectedRequestException{
+        try {
+            return departmentService.findFromTenantUser();
+        } catch (Exception e) {
+            LOGGER.error("Failed to get department, caused by: {}", e.getMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_DEPARTMENT}", null);
+        }
+    }
+
 }

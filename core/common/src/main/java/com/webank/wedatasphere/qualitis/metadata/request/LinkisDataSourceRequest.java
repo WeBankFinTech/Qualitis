@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.metadata.request;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +29,26 @@ public class LinkisDataSourceRequest {
     private Map<String, Object> connectParams = new HashMap<>();
     @JsonIgnore
     private LinkisConnectParamsRequest sharedConnectParams;
+    @JsonIgnore
+    private String dcnRangeType;
+    @JsonIgnore
+    private List<LinkisDataSourceEnvRequest> dataSourceEnvs;
+
+    public List<LinkisDataSourceEnvRequest> getDataSourceEnvs() {
+        return dataSourceEnvs;
+    }
+
+    public void setDataSourceEnvs(List<LinkisDataSourceEnvRequest> dataSourceEnvs) {
+        this.dataSourceEnvs = dataSourceEnvs;
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
+    }
 
     public String getSubSystem() {
         return subSystem;

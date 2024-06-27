@@ -84,8 +84,8 @@ public class MulDbRequest {
     private Boolean uploadAbnormalValue;
     @JsonProperty("rule_enable")
     private Boolean ruleEnable;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
 
     @JsonProperty("contrast_type")
     private Integer contrastType;
@@ -94,12 +94,12 @@ public class MulDbRequest {
         // Do nothing because of X and Y.
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Integer getUnionWay() {
+        return unionWay;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Boolean getRuleEnable() {
@@ -369,19 +369,41 @@ public class MulDbRequest {
     @Override
     public String toString() {
         return "MulDbRequest{" +
-            "ruleName='" + ruleName + '\'' +
-            ", clusterName='" + clusterName + '\'' +
-            ", projectId=" + projectId +
-            ", sourceDb='" + sourceDb + '\'' +
-            ", targetDb='" + targetDb + '\'' +
-            ", alert=" + alert +
-            ", alertLevel=" + alertLevel +
-            ", alertReceiver='" + alertReceiver + '\'' +
-            ", abortOnFailure=" + abortOnFailure +
-            ", proxyUser='" + proxyUser + '\'' +
-            ", specifyStaticStartupParam=" + specifyStaticStartupParam +
-            ", staticStartupParam='" + staticStartupParam + '\'' +
-            '}';
+                "ruleName='" + ruleName + '\'' +
+                ", cnName='" + cnName + '\'' +
+                ", ruleDetail='" + ruleDetail + '\'' +
+                ", clusterName='" + clusterName + '\'' +
+                ", projectId=" + projectId +
+                ", sourceDb='" + sourceDb + '\'' +
+                ", sourceLinkisDataSourceId=" + sourceLinkisDataSourceId +
+                ", sourceLinkisDataSourceName='" + sourceLinkisDataSourceName + '\'' +
+                ", sourceLinkisDataSourceType='" + sourceLinkisDataSourceType + '\'' +
+                ", targetDb='" + targetDb + '\'' +
+                ", targetLinkisDataSourceId=" + targetLinkisDataSourceId +
+                ", targetLinkisDataSourceName='" + targetLinkisDataSourceName + '\'' +
+                ", targetLinkisDataSourceType='" + targetLinkisDataSourceType + '\'' +
+                ", alert=" + alert +
+                ", alertLevel=" + alertLevel +
+                ", alertReceiver='" + alertReceiver + '\'' +
+                ", abortOnFailure=" + abortOnFailure +
+                ", proxyUser='" + proxyUser + '\'' +
+                ", whiteList=" + whiteList +
+                ", blackList=" + blackList +
+                ", filterRequests=" + filterRequests +
+                ", specifyStaticStartupParam=" + specifyStaticStartupParam +
+                ", staticStartupParam='" + staticStartupParam + '\'' +
+                ", executionParametersName='" + executionParametersName + '\'' +
+                ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+                ", abnormalDatabase='" + abnormalDatabase + '\'' +
+                ", abnormalCluster='" + abnormalCluster + '\'' +
+                ", workFlowName='" + workFlowName + '\'' +
+                ", workFlowVersion='" + workFlowVersion + '\'' +
+                ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+                ", uploadAbnormalValue=" + uploadAbnormalValue +
+                ", ruleEnable=" + ruleEnable +
+                ", unionWay=" + unionWay +
+                ", contrastType=" + contrastType +
+                '}';
     }
 
     public static void checkRequst(MulDbRequest request) throws UnExpectedRequestException {

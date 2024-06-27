@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.client;
 
+import bsp.encrypt.EncryptUtil;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.webank.wedatasphere.qualitis.bean.JobKillResult;
@@ -26,16 +27,26 @@ import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
 import com.webank.wedatasphere.qualitis.constant.LinkisResponseKeyEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.repository.UserTenantUserRepository;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.entity.Task;
+import com.webank.wedatasphere.qualitis.entity.UserTenantUser;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.LogPartialException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import com.webank.wedatasphere.qualitis.request.SendLinkisRequst;
 import com.webank.wedatasphere.qualitis.response.DemandLinkis;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.ws.rs.core.UriBuilder;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,13 +58,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
-import javax.ws.rs.core.UriBuilder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author howeye
@@ -91,7 +95,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
     @Override
     public JobSubmitResult submitJob(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId,
-        String csId, String nodeName, String startupParam) throws Exception {
+                                     String csId, String nodeName, String startupParam) throws Exception {
         String url = getPath(remoteAddress).path(linkisConfig.getSubmitJob()).toString();
 
         Gson gson = new Gson();
@@ -122,9 +126,9 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
                 String value = params[1];
                 Matcher matcher = NUBBER_PATTERN.matcher(value);
 
-                if(matcher.matches()){
+                if (matcher.matches()) {
                     startup.put(key, Integer.parseInt(value));
-                }else{
+                } else {
                     startup.put(key, value);
                 }
             }
@@ -136,14 +140,14 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         map.put("params", params);
         Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis."), gson.toJson(map));
 
-        Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
-        String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
+        Long jobId = ((Integer) ((Map<String, Object>) response.get("data")).get("taskID")).longValue();
+        String execId = (String) ((Map<String, Object>) response.get("data")).get("execID");
         return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
     }
 
     @Override
     public JobSubmitResult submitJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String csId
-        , String nodeName, String startupParam, boolean engineReUse, String tenantUserName) throws Exception {
+            , String nodeName, String startupParam, boolean engineReUse, String tenantUserName) throws Exception {
 
         String url = getPath(remoteAddress).path(linkisConfig.getSubmitJobNew()).toString();
 
@@ -166,9 +170,10 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         configuration.put("runtime", runtime);
         Map<String, Object> startup;
         Map<String, String> labels = Maps.newHashMapWithExpectedSize(4);
-        if (! engineReUse) {
+        if (!engineReUse) {
             labels.put("executeOnce", "");
         }
+
         if (StringUtils.isNotBlank(startupParam)) {
             String[] startupParams = startupParam.split(SpecCharEnum.DIVIDER.getValue());
             startup = new HashMap<>(startupParams.length);
@@ -196,7 +201,10 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
                 }
 
             }
+            handleStartupMap(engineReUse, configuration, startup);
             configuration.put("startup", startup);
+        } else {
+            handleStartupMap(engineReUse, configuration, Maps.newHashMap());
         }
         putDefaultLabelConfig(labels);
         params.put("configuration", configuration);
@@ -213,9 +221,16 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
         Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis new."), gson.toJson(map));
 
-        Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
-        String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
+        Long jobId = ((Integer) ((Map<String, Object>) response.get("data")).get("taskID")).longValue();
+        String execId = (String) ((Map<String, Object>) response.get("data")).get("execID");
         return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
+    }
+
+    private void handleStartupMap(boolean engineReUse, Map<String, Map<String, Object>> configuration, Map<String, Object> startup) {
+        if (engineReUse && !startup.containsKey(QualitisConstants.SPARK_ENGINE_REUSE_LIMIT)) {
+            startup.put(QualitisConstants.SPARK_ENGINE_REUSE_LIMIT, linkisConfig.getEngineLimit());
+            configuration.put("startup", startup);
+        }
     }
 
     private void putDefaultLabelConfig(Map<String, String> labels) {
@@ -236,7 +251,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
     @Override
     public JobKillResult killJob(String user, String clusterName, Task task) throws ClusterInfoNotConfigException, JobKillException {
         String url = getPath(task.getSubmitAddress()).path(linkisConfig.getKillJob()).path(task.getTaskExecId()).path("kill")
-            .queryParam("taskID", task.getTaskRemoteId()).toString();
+                .queryParam("taskID", task.getTaskRemoteId()).toString();
         LOGGER.info("Finish to construct kill job url. Url: {}", url);
 
         HttpHeaders headers = new HttpHeaders();
@@ -248,7 +263,7 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
         LOGGER.info("Finish to kill job to linkis. response: {}", response);
 
-        if (! checkResponse(response)) {
+        if (!checkResponse(response)) {
             String message = (String) response.get("message");
             throw new JobKillException("{&FAILED_TO_KILL_TO_LINKIS}. Exception: " + message);
         }
@@ -261,18 +276,18 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
     public String getTaskStatus(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
         Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
 
-        return (String) ((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
+        return (String) ((Map) ((Map) response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
     }
 
     @Override
     public Map<String, Object> getTaskStatusAndProgressAndErrCode(Long taskId, String user, String remoteAddress, String clusterName) throws TaskNotExistException, ClusterInfoNotConfigException {
         Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
 
-        String status = (String) ((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
+        String status = (String) ((Map) ((Map) response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.STATUS.getKey());
         Double progress = 0.0;
-        Integer errCode = (Integer) ((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.ERROR_CODE.getKey());
-        if (((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()) != null) {
-            progress = Double.parseDouble(((Map)((Map)response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()).toString());
+        Integer errCode = (Integer) ((Map) ((Map) response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.ERROR_CODE.getKey());
+        if (((Map) ((Map) response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()) != null) {
+            progress = Double.parseDouble(((Map) ((Map) response.get(LinkisResponseKeyEnum.DATA.getKey())).get(LinkisResponseKeyEnum.TASK.getKey())).get(LinkisResponseKeyEnum.PROGRESS.getKey()).toString());
         }
         Map<String, Object> taskInfos = Maps.newHashMapWithExpectedSize(2);
         taskInfos.put("status", status);
@@ -290,9 +305,9 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         String execId = null;
         try {
             Map<String, Object> response = getTaskDetail(taskId, user, remoteAddress, clusterName);
-            logPath = (String) ((Map)((Map)response.get("data")).get("task")).get("logPath");
-            jobStatus = (String) ((Map)((Map)response.get("data")).get("task")).get("status");
-            execId = (String) ((Map)((Map)response.get("data")).get("task")).get("strongerExecId");
+            logPath = (String) ((Map) ((Map) response.get("data")).get("task")).get("logPath");
+            jobStatus = (String) ((Map) ((Map) response.get("data")).get("task")).get("status");
+            execId = (String) ((Map) ((Map) response.get("data")).get("task")).get("strongerExecId");
         } catch (TaskNotExistException e) {
             throw new LogPartialException(e);
         }
@@ -312,11 +327,11 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
             LOGGER.info("Succeed to get job log from linkis. repsonse: {}", response);
 
-            if (! checkResponse(response)) {
+            if (!checkResponse(response)) {
                 throw new LogPartialException("Failed to get partial logs, task ID: " + taskId);
             }
 
-            log = (String) ((List)((Map)response.get("data")).get("log")).get(3);
+            log = (String) ((List) ((Map) response.get("data")).get("log")).get(3);
         } else {
             String url = getPath(remoteAddress).path(linkisConfig.getFinishLog()).toString() + "?path=" + logPath;
 
@@ -330,11 +345,11 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
             LOGGER.info("Succeed to get job log from linkis. repsonse: {}", response);
 
-            if (! checkResponse(response)) {
+            if (!checkResponse(response)) {
                 throw new LogPartialException("Failed to get partial logs, task ID: " + taskId);
             }
 
-            log = (String) ((List)((Map)response.get("data")).get("log")).get(3);
+            log = (String) ((List) ((Map) response.get("data")).get("log")).get(3);
         }
 
         // 将账号敏感信息脱敏替换成 ******
@@ -344,8 +359,8 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
     }
 
     @Override
-    public JobSubmitResult submitShellJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String startupParam, String tenantUserName)
-        throws Exception {
+    public JobSubmitResult submitShellJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String startupParam, boolean engineReUse, String tenantUserName)
+            throws Exception {
         String url = getPath(remoteAddress).path(linkisConfig.getSubmitJobNew()).toString();
 
         Gson gson = new Gson();
@@ -390,7 +405,10 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
                 }
 
             }
+            handleStartupMap(engineReUse, configuration, startup);
             configuration.put("startup", startup);
+        } else {
+            handleStartupMap(engineReUse, configuration, Maps.newHashMap());
         }
         putDefaultLabelConfig(labels);
         params.put("configuration", configuration);
@@ -407,8 +425,79 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
 
         Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis 1.0."), gson.toJson(map));
 
-        Long jobId = ((Integer) ((Map<String, Object>)response.get("data")).get("taskID")).longValue();
-        String execId = (String) ((Map<String, Object>)response.get("data")).get("execID");
+        Long jobId = ((Integer) ((Map<String, Object>) response.get("data")).get("taskID")).longValue();
+        String execId = (String) ((Map<String, Object>) response.get("data")).get("execID");
+        return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
+    }
+
+    @Override
+    public JobSubmitResult submitTrinoJobNew(String code, String engineName, String user, String remoteAddress, String clusterName, Long taskId, String startupParam, boolean engineReUse, String tenantUserName)
+            throws Exception {
+        String url = getPath(remoteAddress).path(linkisConfig.getSubmitJobNew()).toString();
+
+        Gson gson = new Gson();
+        Map<String, Object> map = Maps.newHashMapWithExpectedSize(4);
+
+        Map<String, String> executionContent = Maps.newHashMapWithExpectedSize(2);
+        executionContent.put("code", code);
+        executionContent.put("runType", "tsql");
+        map.put("executionContent", executionContent);
+        map.put("executeUser", user);
+
+        Map<String, Map<String, Map<String, Object>>> params = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Object> runtime = Maps.newHashMapWithExpectedSize(2);
+        Map<String, Map<String, Object>> configuration = Maps.newHashMapWithExpectedSize(2);
+        configuration.put("runtime", runtime);
+        Map<String, Object> startup;
+        Map<String, String> labels = Maps.newHashMapWithExpectedSize(4);
+        if (StringUtils.isNotBlank(startupParam)) {
+            String[] startupParams = startupParam.split(SpecCharEnum.DIVIDER.getValue());
+            startup = new HashMap<>(startupParams.length);
+
+            for (String param : startupParams) {
+                if (StringUtils.isBlank(param)) {
+                    continue;
+                }
+                String[] paramStrs = param.split("=");
+                if (paramStrs.length < 2) {
+                    continue;
+                }
+                String key = paramStrs[0];
+                String value = paramStrs[1];
+                Matcher matcher = NUBBER_PATTERN.matcher(value);
+                if (key.startsWith(LABLE_PRFIX)) {
+                    labels.put(key.replace(LABLE_PRFIX + ".", ""), value);
+                    continue;
+                }
+
+                if (matcher.matches()) {
+                    startup.put(key, Integer.parseInt(value));
+                } else {
+                    startup.put(key, value);
+                }
+
+            }
+            handleStartupMap(engineReUse, configuration, startup);
+            configuration.put("startup", startup);
+        } else {
+            handleStartupMap(engineReUse, configuration, Maps.newHashMap());
+        }
+        putDefaultLabelConfig(labels);
+        params.put("configuration", configuration);
+        map.put("params", params);
+
+        labels.put("engineType", linkisConfig.getTrinoEngineName() + "-" + linkisConfig.getTrinoEngineVersion());
+
+        if (StringUtils.isNotEmpty(tenantUserName)) {
+            labels.put("tenant", tenantUserName);
+        }
+        labels.put("userCreator", user + "-" + linkisConfig.getAppName());
+        map.put("labels", labels);
+
+        Map<String, Object> response = demandLinkis.getLinkisResponseBringJsonRetry(new SendLinkisRequst(url, getToken(clusterName), user, "submit job to linkis 1.0."), gson.toJson(map));
+
+        Long jobId = ((Integer) ((Map<String, Object>) response.get("data")).get("taskID")).longValue();
+        String execId = (String) ((Map<String, Object>) response.get("data")).get("execID");
         return new JobSubmitResult(taskId, clusterName, remoteAddress, jobId, execId);
     }
 
@@ -447,13 +536,20 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             }
             log = log.replace(envValue, "******");
         }
-        String realSecret = taskDataSourceConfig.getPassword();
-        if (realSecret.length() > 0 && realSecret.length() < PASS_LEN) {
-            log = log.replace(realSecret, "******");
+        String realPassword = "";
+        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
+        String password = taskDataSourceConfig.getPassword();
+        try {
+            realPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
+        } catch (Exception e) {
+            LOGGER.error("Decrypt mysqlsec password exception.", e);
+        }
+        if (realPassword.length() > 0 && realPassword.length() < PASS_LEN) {
+            log = log.replace(realPassword, "******");
         }
         // 0.16.0 mask jdbc user name and password.
         Matcher matcher = JDBC_USER_PASSWORD_PATTERN.matcher(log);
-        while(matcher.find()) {
+        while (matcher.find()) {
             int index = log.indexOf(matcher.group(0));
             int firstIndex = index + matcher.group(0).length();
             int lastIndex = log.indexOf("\"", firstIndex);
@@ -477,11 +573,11 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
         Map<String, Object> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
         LOGGER.info("Succeed to get job detail from linkis. response: {}", response);
 
-        if (! checkResponse(response)) {
+        if (!checkResponse(response)) {
             throw new TaskNotExistException("Can not get detail of task, task ID: " + taskId);
         }
 
-        Object taskObj = ((Map)response.get("data")).get("task");
+        Object taskObj = ((Map) response.get("data")).get("task");
         if (taskObj == null) {
             throw new TaskNotExistException("Job ID: " + taskId + " {&DOES_NOT_EXIST}");
         }

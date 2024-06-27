@@ -17,19 +17,13 @@
 package com.webank.wedatasphere.qualitis.filter;
 
 import com.webank.wedatasphere.qualitis.config.JerseyConfig;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.controller.RedirectController;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
 /**
@@ -38,14 +32,17 @@ import java.io.IOException;
 public class UnFilterUrlFilter implements Filter {
 
     private static final String LOGOUT_URL = JerseyConfig.APPLICATION_PATH + "/api/v1/logout";
-    private static final String LOGIN_RANDOM = "loginRandom";
+    private static final String REDIRECT_URL = JerseyConfig.APPLICATION_PATH + "/api/v1/redirect";
 
     @Autowired
     private LoginService loginService;
 
+    @Autowired
+    private RedirectController redirectController;
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-
+        // Do nothing
     }
 
     @Override
@@ -54,14 +51,9 @@ public class UnFilterUrlFilter implements Filter {
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         String requestUrl = ((HttpServletRequest) request).getRequestURI();
         if (requestUrl.equals(LOGOUT_URL)) {
-            HttpSession session = ((HttpServletRequest) request).getSession();
-            Integer loginRandom = (Integer) session.getAttribute(LOGIN_RANDOM);
-            String queryParam = ((HttpServletRequest) request).getQueryString();
-            if (loginRandom != null && queryParam != null && queryParam.equals(LOGIN_RANDOM + SpecCharEnum.EQUAL.getValue() + loginRandom.intValue())) {
-                loginService.logout(httpServletRequest, httpServletResponse);
-            } else {
-                return;
-            }
+            loginService.logout(httpServletRequest, httpServletResponse);
+        } else if (requestUrl.equals(REDIRECT_URL)) {
+            redirectController.redirectToCoordinatePage(httpServletRequest, httpServletResponse);
         } else {
             chain.doFilter(request, response);
         }
@@ -69,6 +61,6 @@ public class UnFilterUrlFilter implements Filter {
 
     @Override
     public void destroy() {
-
+        // Do nothing
     }
 }

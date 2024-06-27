@@ -62,10 +62,11 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     /**
      * Find all rule id, name by project
      * @param project
+     * @param ruleName
      * @return
      */
-    @Query(value = "SELECT new map(qr.id as rule_id, qr.name as rule_name, qr.ruleGroup.id as rule_group_id, qr.ruleGroup.ruleGroupName as rule_group_name, qr.template as template,qr.workFlowName as work_flow_name,qr.workFlowVersion as work_flow_version,qr.enable as rule_enable,qr.workFlowSpace as work_flow_space,qr.nodeName as node_name ) FROM Rule qr where qr.project = ?1")
-    List<Map<String, Object>> findSpecialInfoByProject(Project project);
+    @Query(value = "SELECT new map(qr.id as rule_id, qr.name as rule_name, qr.ruleGroup.id as rule_group_id, qr.ruleGroup.ruleGroupName as rule_group_name, qr.template as template,qr.workFlowName as work_flow_name,qr.workFlowVersion as work_flow_version,qr.enable as rule_enable,qr.workFlowSpace as work_flow_space,qr.nodeName as node_name ) FROM Rule qr where qr.project = ?1 and (?2 is null or qr.name = ?2)")
+    List<Map<String, Object>> findSpecialInfoByProject(Project project, String ruleName);
 
     /**
      * Query rules
@@ -131,13 +132,29 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     List<Rule> findByTemplate(Template templateInDb);
 
     /**
+     * Find rule by idList
+     * @param idList
+     * @return
+     */
+    @Query(value = "select q from Rule q where q.standardValueVersionId in(?1)")
+    List<Rule> getDeployStandardVersionIdList(List<Long> idList);
+
+    /**
+     * Find rule by standardVersionId
+     * @param standardVersionId
+     * @return
+     */
+    @Query(value = "select q from Rule q where q.standardValueVersionId =?1")
+    List<Rule> getDeployStandardVersionId(long standardVersionId);
+
+    /**
      * Find rule by projectId，name
      * @param projectId
      * @param name
      * @return
      */
-    @Query(value = "select q from Rule q where q.project.id =?1  AND q.executionParametersName=?2 ")
-    List<Rule> getDeployExecutionParameters(Long projectId,String name);
+    @Query(value = "select count(q) from Rule q where q.project.id =?1  AND q.executionParametersName=?2 ")
+    Long countDeployExecutionParameters(Long projectId,String name);
 
     /**
      * Count by rule group
@@ -149,7 +166,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
 
     /**
      * Find rule by group with conditions
-     * @param ruleGroup
+     * @param ruleGroupId
      * @param templateId
      * @param name
      * @param cnName
@@ -158,23 +175,10 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param pageable
      * @return
      */
-    @Query(value = "SELECT qr FROM Rule qr WHERE (?5 IS NULL OR EXISTS (SELECT qrd.rule FROM RuleDataSource qrd WHERE qr = qrd.rule AND qrd.colName in ?5)) AND qr.ruleGroup = ?1 AND (?2 IS NULL OR template.id = ?2) AND (LENGTH(?3) = 0 OR name like ?3) AND (LENGTH(?4) = 0 OR cnName like ?4)" +
-            " AND (?6 is null OR qr.ruleType = ?6)")
-    Page<Rule> findByRuleGroupWithPage(RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType, Pageable pageable);
-
-    /**
-     * count By Rule Group With Page
-     * @param ruleGroup
-     * @param templateId
-     * @param name
-     * @param cnName
-     * @param cols
-     * @param ruleType
-     * @return
-     */
-    @Query(value = "SELECT count(qr)  FROM Rule qr WHERE (?5 IS NULL OR EXISTS (SELECT qrd.rule FROM RuleDataSource qrd WHERE qr = qrd.rule AND qrd.colName in ?5)) AND qr.ruleGroup = ?1 AND (?2 IS NULL OR template.id = ?2) AND (LENGTH(?3) = 0 OR name like ?3) AND (LENGTH(?4) = 0 OR cnName like ?4)" +
-            " AND (?6 is null OR qr.ruleType = ?6)")
-    Long countByRuleGroupWithPage(RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType);
+    @Query(value = "select qr.* from qualitis_rule qr where qr.rule_group_id = ?1 and (?2 is null or qr.template_id = ?2) " +
+            "and (length(?3) = 0 or name like ?3) and (length(?4) = 0 or cn_name like ?4) " +
+            "and (coalesce(?5) is null or exists (select qrd.rule_id from qualitis_rule_datasource qrd where qr.id = qrd.rule_id and qrd.col_name in (?5))) and (?6 is null or qr.rule_type = ?6)", nativeQuery = true)
+    Page<Rule> findByRuleGroupWithPage(Long ruleGroupId, Long templateId, String name, String cnName, List<String> cols, Integer ruleType, Pageable pageable);
 
     /**
      * Find rule by group with conditions, join qualitis_rule_alarm_config
@@ -217,12 +221,21 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     Rule findByProjectAndRuleName(Long projectId, String ruleName);
 
     /**
+     * Find by project and rule name
+     * @param projectId
+     * @param ruleName
+     * @return
+     */
+    @Query(value = "SELECT q.* from qualitis_rule q where q.project_id = ?1 AND q.name = ?2", nativeQuery = true)
+    List<Rule> findRules(Long projectId, String ruleName);
+
+    /**
      * Find Highest WorkFlowVersion
      * @param projectId
      * @param ruleName
      * @return
      */
-    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 ORDER BY workFlowVersion DESC limit 1 ",nativeQuery = true)
+    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 ORDER BY workFlowVersion DESC limit 1 ", nativeQuery = true)
     Rule findHighestWorkFlowVersion(Long projectId, String ruleName);
 
     /**
@@ -232,7 +245,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param ruleName
      * @return
      */
-    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?3 and q.work_flow_name = ?2 and q.project_id =?1 ORDER BY workFlowVersion DESC limit 1 ",nativeQuery = true)
+    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?3 and q.work_flow_name = ?2 and q.project_id =?1 ORDER BY workFlowVersion DESC limit 1 ", nativeQuery = true)
     Rule findHighestVersionByProjectAndWorkFlowName(Long projectId, String workflowName, String ruleName);
 
     /**
@@ -241,7 +254,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param ruleName
      * @return
      */
-    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 ORDER BY workFlowVersion ASC limit 1 ",nativeQuery = true)
+    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 ORDER BY workFlowVersion ASC limit 1 ", nativeQuery = true)
     Rule findLowestWorkFlowVersion(Long projectId, String ruleName);
 
     /**
@@ -304,12 +317,11 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
     /**
      * find Exist Standard Vaule
      *
-     * @param templateId
      * @param projectId
      * @return
      */
-    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.template_id = ?1 and qr.project_id=?2 and qr.standard_value_version_id is not null and qr.standard_value_version_en_name is not null ", nativeQuery = true)
-    List<Rule> findExistStandardVaule(Long templateId, Long projectId);
+    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.project_id=?1 and qr.standard_value_version_id is not null and qr.standard_value_version_en_name is not null ", nativeQuery = true)
+    List<Rule> findExistStandardVaule(Long projectId);
 
 
     /**
@@ -338,6 +350,16 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
             " qualitis_rule qa,qualitis_project qp where qa.project_id =qp.id and project_id =?1 and qa.work_flow_name is not null " +
             " union " +
             " select DISTINCT '' as workFlowSpace,'' as workFlowProject,'' as workFlowName,qa.node_name as nodeName from " +
-            " qualitis_rule qa,qualitis_project qp where qa.project_id =qp.id and project_id =?1 and qa.node_name is not null ",nativeQuery = true)
+            " qualitis_rule qa,qualitis_project qp where qa.project_id =qp.id and project_id =?1 and qa.node_name is not null ", nativeQuery = true)
     List<Map<String,Object>> findWorkFlowFiled(Long projectId);
+
+    /**
+     * find ByIds And Project
+     *
+     * @param ruleIds
+     * @param projectId
+     * @return
+     */
+    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.id in(?1) and qr.project_id=?2 ", nativeQuery = true)
+    List<Rule> findByIdsAndProject(List<Long> ruleIds, Long projectId);
 }

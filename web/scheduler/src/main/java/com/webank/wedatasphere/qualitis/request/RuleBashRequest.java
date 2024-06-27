@@ -166,4 +166,21 @@ public class RuleBashRequest {
         this.workFlowSpace = workFlowSpace;
     }
 
+    @Override
+    public String toString() {
+        return "RuleBashRequest{" +
+                "ruleGroupId=" + ruleGroupId +
+                ", templateFunctions='" + templateFunctions + '\'' +
+                ", projectId=" + projectId +
+                ", projectName='" + projectName + '\'' +
+                ", ruleName='" + ruleName + '\'' +
+                ", ruleCnName='" + ruleCnName + '\'' +
+                ", ruleDetail='" + ruleDetail + '\'' +
+                ", nodeName='" + nodeName + '\'' +
+                ", proxyUser='" + proxyUser + '\'' +
+                ", workFlowName='" + workFlowName + '\'' +
+                ", workFlowVersion='" + workFlowVersion + '\'' +
+                ", workFlowSpace='" + workFlowSpace + '\'' +
+                '}';
+    }
 }

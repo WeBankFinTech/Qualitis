@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.project.service.impl;
 
 import com.google.gson.Gson;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
@@ -92,7 +93,7 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
             if (projectInDb.getProjectType().equals(ProjectTypeEnum.WORKFLOW_PROJECT.getCode())) {
                 ProjectDetailResponse response = new ProjectDetailResponse(projectInDb, null);
                 LOGGER.info("Succeed to find exists workflow project, response: {}", response);
-                return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", response);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", response);
             } else {
                 needSuffix = true;
             }
@@ -105,7 +106,7 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
         projectService.authorizeUsers(savedProject, userInDb, request.getAuthorizeProjectUserRequests(), false);
         ProjectDetailResponse response = new ProjectDetailResponse(savedProject, null);
         LOGGER.info("Succeed to add workflow project, response: {}", response);
-        return new GeneralResponse<>("200", "{&ADD_PROJECT_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_PROJECT_SUCCESSFULLY}", response);
     }
 
 
@@ -141,9 +142,9 @@ public class OuterWorkflowProjectServiceImpl implements OuterWorkflowService {
         GetProjectRequest.checkRequest(request);
         Project projectInDb = projectDao.findByNameAndCreateUser(request.getName(), request.getUsername());
         if (projectInDb == null) {
-            return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(Long.parseLong("-1")));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(Long.parseLong("-1")));
         }
 
-        return new GeneralResponse<>("200", "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(projectInDb));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(projectInDb));
     }
 }

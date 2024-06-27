@@ -7,13 +7,15 @@ import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
-
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 /**
  * @author allenzhou@webank.com
@@ -24,7 +26,8 @@ public class DatasourceEnvUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatasourceEnvUtil.class);
 
     public static void constructDatasourceAndEnv(StringBuilder datasourceId, StringBuilder datasourceName, StringBuilder datasourceType
-        , List<DataSourceEnvRequest> ruleDataSourceEnvs, StringBuilder envsStringBuffer, String userName, String clusterName, MetaDataClient metaDataClient, String database, String table, List<ColumnInfoDetail> cols) throws Exception {
+        , List<DataSourceEnvRequest> ruleDataSourceEnvs, StringBuilder envsStringBuffer, String userName, String clusterName
+            , MetaDataClient metaDataClient, String database, String table, List<ColumnInfoDetail> cols) throws Exception {
         if (StringUtils.isNotBlank(datasourceId.toString())) {
             LOGGER.info("Find data source connect. Data source ID: " + datasourceId.toString());
             GeneralResponse<Map<String, Object>> response = metaDataClient.getDataSourceInfoDetail(clusterName, userName, Long.parseLong(datasourceId.toString()), null);
@@ -50,14 +53,14 @@ public class DatasourceEnvUtil {
                     DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
                     GeneralResponse<Map<String, Object>> envResMap = metaDataClient.getDatasourceEnvById(clusterName, userName, Long.parseLong(currentEnvId));
                     Map<String, Object> envMap = (Map) envResMap.getData().get("env");
-                    String envName = (String) envMap.get("envName");
+                    String envName = removePrefixOfEnvName(Integer.valueOf(datasourceId.toString()), (String) envMap.get("envName"));
                     dataSourceEnvRequest.setEnvName(envName);
 
                     dataSourceEnvRequest.setEnvId(Long.parseLong(currentEnvId));
                     ruleDataSourceEnvs.add(dataSourceEnvRequest);
                 }
             } else {
-                throw new UnExpectedRequestException("Missing datasource env parameters");
+                LOGGER.warn("Missing datasource env parameters");
             }
         } else if (StringUtils.isNotBlank(datasourceName.toString())) {
             LOGGER.info("Find data source connect. Data source name: " + datasourceName.toString());
@@ -81,7 +84,8 @@ public class DatasourceEnvUtil {
                     DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
                     GeneralResponse<Map<String, Object>> envResMap = metaDataClient.getDatasourceEnvById(clusterName, userName, Long.parseLong(currentEnvId));
                     Map<String, Object> envMap = (Map) envResMap.getData().get("env");
-                    String envName = (String) envMap.get("envName");
+                    String envName = removePrefixOfEnvName(currentDataSourceId, (String) envMap.get("envName"));
+//                    判断用户指定的环境名称是否匹配实际保存落库的环境名称
                     if (! envNames.contains(envName)) {
                         continue;
                     }
@@ -94,10 +98,14 @@ public class DatasourceEnvUtil {
                     throw new UnExpectedRequestException("Datasource env parameters {&DOES_NOT_EXIST}");
                 }
             } else {
-                throw new UnExpectedRequestException("Missing datasource env parameters");
+                LOGGER.warn("Missing datasource env parameters");
             }
         }
 
+    }
+
+    private static String removePrefixOfEnvName(Integer dataSourceId, String linkisEnvName) {
+        return linkisEnvName.replace(dataSourceId + SpecCharEnum.BOTTOM_BAR.getValue(), "");
     }
 
     public static void getDatasourceIdOrName(StringBuilder datasourceId, StringBuilder datasourceName, StringBuilder envsStringBuffer, StringBuilder dbAndTableOrCluster) {
@@ -116,13 +124,61 @@ public class DatasourceEnvUtil {
                 String group = matcherName.group();
                 int startIndex = dbAndTableOrCluster.toString().toUpperCase().indexOf(group);
                 String replaceStr = dbAndTableOrCluster.substring(startIndex, startIndex + group.length());
-                datasourceName.append(replaceStr.replace(".(", "").replace(")", "").split("=")[1]);
+                replaceStr = replaceStr.replace(".(", "");
+                replaceStr = replaceStr.substring(0, replaceStr.lastIndexOf(")"));
+                datasourceName.append(replaceStr.split("=")[1]);
                 dbAndTableOrCluster.delete(startIndex, startIndex + group.length());
                 handleDatasourceEnvs(envsStringBuffer, datasourceName);
             }
         }
     }
 
+    public static void main(String[] args) {
+        StringBuilder datasourceId = new StringBuilder();
+        StringBuilder datasourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        getDataSourceAndEnv(datasourceId, datasourceName, envsStringBuffer, "NAME=testDcnNo{asdasd}");
+        System.out.println("datasourceName: " + datasourceName);
+        System.out.println("envsStringBuffer: " + envsStringBuffer);
+    }
+
+    /**
+     * Extract envs and (dataSourceId or dataSourceName) from datasourceExpress
+     * @param datasourceId
+     * @param datasourceName
+     * @param envsStringBuffer
+     * @param datasourceExpress
+     */
+    public static void getDataSourceAndEnv(StringBuilder datasourceId, StringBuilder datasourceName, StringBuilder envsStringBuffer, String datasourceExpress) {
+        Matcher datasourceNameMatcher = QualitisConstants.DATASOURCE_NAME_ENV_REGEX.matcher(datasourceExpress.toUpperCase());
+        Matcher datasourceIdMatcher = QualitisConstants.DATASOURCE_ID_ENV_REGEX.matcher(datasourceExpress.toUpperCase());
+        if (datasourceNameMatcher.find()) {
+            // 提取"data_source"和"env"字段
+            String dataSource = datasourceNameMatcher.group();
+            dataSource = dataSource.replace("NAME=", "");
+            if (dataSource.indexOf(SpecCharEnum.LEFT_BIG_BRACKET.getValue()) != -1) {
+                datasourceName.append(StringUtils.substring(dataSource, 0, dataSource.indexOf(SpecCharEnum.LEFT_BIG_BRACKET.getValue())));
+                envsStringBuffer.append(StringUtils.substring(dataSource, dataSource.indexOf(SpecCharEnum.LEFT_BIG_BRACKET.getValue()) + 1, dataSource.indexOf(SpecCharEnum.RIGHT_BIG_BRACKET.getValue())));
+            } else  {
+                datasourceName.append(dataSource);
+            }
+        }
+        if (datasourceIdMatcher.find()) {
+            // 提取"data_source"和"env"字段
+            String dataSource = datasourceIdMatcher.group();
+            dataSource = dataSource.replace("ID=", "");
+
+            datasourceId.append(StringUtils.substring(dataSource, 0, dataSource.indexOf(SpecCharEnum.LEFT_BIG_BRACKET.getValue())));
+            envsStringBuffer.append(StringUtils.substring(dataSource, dataSource.indexOf(SpecCharEnum.LEFT_BIG_BRACKET.getValue()) + 1, dataSource.indexOf(SpecCharEnum.RIGHT_BIG_BRACKET.getValue())));
+        }
+    }
+
+    /**
+     *
+     * @param envsStringBuffer
+     * @param datasourceIdOrName {env_name}
+     * @return
+     */
     private static String handleDatasourceEnvs(StringBuilder envsStringBuffer, StringBuilder datasourceIdOrName) {
         if (datasourceIdOrName.toString().contains(SpecCharEnum.LEFT_BIG_BRACKET.getValue()) && datasourceIdOrName.toString().contains(SpecCharEnum.RIGHT_BIG_BRACKET.getValue())) {
             int lastIndex = datasourceIdOrName.indexOf(SpecCharEnum.RIGHT_BIG_BRACKET.getValue());

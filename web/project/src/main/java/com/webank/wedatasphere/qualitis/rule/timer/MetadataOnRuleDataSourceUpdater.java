@@ -173,7 +173,7 @@ public class MetadataOnRuleDataSourceUpdater {
             List<TableMetadataInfo.SubSystem> subSystems = tableMetadataInfo.getSubSystemSet();
             if (CollectionUtils.isNotEmpty(subSystems)) {
                 TableMetadataInfo.SubSystem subSystem = subSystems.get(0);
-                resultValue.setSubSystemId(Long.valueOf(subSystem.getFid()));
+                resultValue.setSubSystemId(subSystem.getFid());
                 resultValue.setSubSystemName(subSystem.getName());
             }
             resultValue.setDevDepartmentName(tableMetadataInfo.getDevDept());

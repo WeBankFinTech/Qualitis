@@ -361,7 +361,41 @@ public class AddRuleTemplateRequest {
                 TemplateMidTableInputMetaRequest.checkRequest(templateMidTableInputMetaRequest);
             }
         }
-
     }
 
+    @Override
+    public String toString() {
+        return "AddRuleTemplateRequest{" +
+                "templateName='" + templateName + '\'' +
+                ", datasourceType=" + datasourceType +
+                ", actionType=" + actionType +
+                ", midTableAction='" + midTableAction + '\'' +
+                ", templateType=" + templateType +
+                ", saveMidTable=" + saveMidTable +
+                ", templateMidTableInputMetaRequests=" + templateMidTableInputMetaRequests +
+                ", devDepartmentName='" + devDepartmentName + '\'' +
+                ", opsDepartmentName='" + opsDepartmentName + '\'' +
+                ", devDepartmentId=" + devDepartmentId +
+                ", opsDepartmentId=" + opsDepartmentId +
+                ", visibilityDepartmentList=" + visibilityDepartmentList +
+                ", enName='" + enName + '\'' +
+                ", description='" + description + '\'' +
+                ", verificationLevel=" + verificationLevel +
+                ", verificationType=" + verificationType +
+                ", filterFields=" + filterFields +
+                ", whetherUsingFunctions=" + whetherUsingFunctions +
+                ", udfFunctionName=" + udfFunctionName +
+                ", countFunctionName='" + countFunctionName + '\'' +
+                ", countFunctioAlias='" + countFunctioAlias + '\'' +
+                ", verificationCnName='" + verificationCnName + '\'' +
+                ", verificationEnName='" + verificationEnName + '\'' +
+                ", samplingContent='" + samplingContent + '\'' +
+                ", namingMethod=" + namingMethod +
+                ", whetherSolidification=" + whetherSolidification +
+                ", checkTemplate=" + checkTemplate +
+                ", majorType='" + majorType + '\'' +
+                ", templateNumber='" + templateNumber + '\'' +
+                ", customZhCode='" + customZhCode + '\'' +
+                '}';
+    }
 }
