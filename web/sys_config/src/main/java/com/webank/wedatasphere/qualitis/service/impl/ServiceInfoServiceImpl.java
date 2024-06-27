@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.ServiceInfoCollectStatusEnum;
 import com.webank.wedatasphere.qualitis.constant.ServiceInfoStatusEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.ServiceInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ServiceInfo;
@@ -16,6 +18,7 @@ import com.webank.wedatasphere.qualitis.service.ServiceInfoService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
@@ -53,12 +56,13 @@ public class ServiceInfoServiceImpl implements ServiceInfoService {
         ServiceInfo serviceInfo = new ServiceInfo();
         serviceInfo.setIp(request.getIp());
         serviceInfo.setStatus(ServiceInfoStatusEnum.RUNNING.getCode());
+        serviceInfo.setCollectStatus(ServiceInfoCollectStatusEnum.CLOSED.getCode());
         serviceInfo.setUpdatingApplicationNum(Long.parseLong("0"));
         serviceInfo.setCreateUser(HttpUtils.getUserName(httpServletRequest));
         serviceInfo.setCreateTime(DateUtils.now());
         ServiceInfo savedServiceInfo = serviceInfoDao.save(serviceInfo);
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_ADD_SERVICE_INFO}", new ServiceInfoResponse(savedServiceInfo));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_SERVICE_INFO}", new ServiceInfoResponse(savedServiceInfo));
     }
 
     @Override
@@ -74,7 +78,7 @@ public class ServiceInfoServiceImpl implements ServiceInfoService {
             throw new UnExpectedRequestException("{&USERD_TENANT}");
         }
         serviceInfoDao.delete(request.getId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DELETE_SERVICE_INFO}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_SERVICE_INFO}", null);
     }
 
     @Override
@@ -83,18 +87,22 @@ public class ServiceInfoServiceImpl implements ServiceInfoService {
             throw new UnExpectedRequestException("ID {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
         ServiceInfo serviceInfo = serviceInfoDao.findById(request.getId());
-        if (request.getStatus().equals(ServiceInfoStatusEnum.STOPED.getCode())) {
+        if (ServiceInfoStatusEnum.STOPED.getCode().equals(request.getStatus())) {
             int num = applicationDao.countNotFinishApplicationNum(serviceInfo.getIp());
             if (num > 0) {
                 throw new UnExpectedRequestException("{&CAN_NOT_CLOSE_RUNNING_SERVICE_WITH_NOT_FINISH_APPLICATION}");
             }
+            if (ServiceInfoCollectStatusEnum.OPEN.getCode().equals(request.getCollectStatus())) {
+                throw new UnExpectedRequestException("Please close collect first.");
+            }
         }
         serviceInfo.setStatus(request.getStatus());
+        serviceInfo.setCollectStatus(request.getCollectStatus());
         serviceInfo.setModifyUser(HttpUtils.getUserName(httpServletRequest));
         serviceInfo.setModifyTime(DateUtils.now());
 
         ServiceInfo savedServiceInfo = serviceInfoDao.save(serviceInfo);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_SERVICE_INFO}", new ServiceInfoResponse(savedServiceInfo));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_SERVICE_INFO}", new ServiceInfoResponse(savedServiceInfo));
     }
 
     @Override
@@ -135,6 +143,18 @@ public class ServiceInfoServiceImpl implements ServiceInfoService {
         response.setData(serviceInfoResponses);
         response.setTotal(total);
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_SERVICE_INFOS}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_SERVICE_INFOS}", response);
+    }
+
+    @Override
+    public GeneralResponse<GetAllResponse<ServiceInfoResponse>> findFromTenantUser() {
+        List<ServiceInfo> serviceInfoMapList = serviceInfoDao.findNonRelatedTenantUser();
+
+        List<ServiceInfoResponse> serviceInfoResponses = serviceInfoMapList.stream().map(ServiceInfoResponse::new).collect(Collectors.toList());
+
+        GetAllResponse<ServiceInfoResponse> response = new GetAllResponse<>();
+        response.setData(serviceInfoResponses);
+
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_SERVICE_INFOS}", response);
     }
 }

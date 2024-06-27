@@ -25,6 +25,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
@@ -367,7 +368,7 @@ public class DataStandardClientImpl implements DataStandardClient {
             LOGGER.error(e.getMessage(), e);
             throw new UnExpectedRequestException("A error occured when pick up a algorithm of hash to construct datamap http request.", 500);
         }
-        md.update(str.getBytes());
+        md.update(str.getBytes(StandardCharsets.UTF_8));
         byte[] digest = md.digest();
         String hashStr = DatatypeConverter.printHexBinary(digest).toLowerCase();
         return hashStr;

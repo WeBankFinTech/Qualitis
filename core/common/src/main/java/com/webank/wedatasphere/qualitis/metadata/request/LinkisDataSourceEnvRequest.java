@@ -16,17 +16,35 @@ public class LinkisDataSourceEnvRequest {
     private String envName;
     private String envDesc;
     private Long dataSourceTypeId;
-    private String database;
+    private String databaseInstance;
+    private String dcnNum;
+    private String logicArea;
     private Map<String, Object> connectParams = new HashMap<>();
     @JsonIgnore
     private LinkisConnectParamsRequest connectParamsRequest;
 
-    public String getDatabase() {
-        return database;
+    public String getDcnNum() {
+        return dcnNum;
     }
 
-    public void setDatabase(String database) {
-        this.database = database;
+    public void setDcnNum(String dcnNum) {
+        this.dcnNum = dcnNum;
+    }
+
+    public String getLogicArea() {
+        return logicArea;
+    }
+
+    public void setLogicArea(String logicArea) {
+        this.logicArea = logicArea;
+    }
+
+    public String getDatabaseInstance() {
+        return databaseInstance;
+    }
+
+    public void setDatabaseInstance(String databaseInstance) {
+        this.databaseInstance = databaseInstance;
     }
 
     public Long getDataSourceTypeId() {

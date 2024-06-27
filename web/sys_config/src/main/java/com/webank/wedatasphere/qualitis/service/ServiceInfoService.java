@@ -62,5 +62,11 @@ public interface ServiceInfoService {
      */
     GeneralResponse<GetAllResponse<ServiceInfoResponse>> findAllServiceInfo(FindServiceInfoRequest request) throws UnExpectedRequestException;
 
+    /**
+     * find From Tenant User
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse<GetAllResponse<ServiceInfoResponse>> findFromTenantUser() throws UnExpectedRequestException;
 
 }

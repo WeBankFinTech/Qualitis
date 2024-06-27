@@ -16,23 +16,15 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import java.util.List;
-import java.util.Objects;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.CascadeType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Id;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
-import org.codehaus.jackson.annotate.JsonIgnore;
+
+import javax.persistence.*;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author howeye
@@ -118,7 +110,7 @@ public class RuleDataSource {
     private Integer datasourceType;
 
     @Column(name = "sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
     @Column(name = "sub_system_name")
     private String subSystemName;
     @Column(name = "department_code")
@@ -131,6 +123,10 @@ public class RuleDataSource {
     private String tagCode;
     @Column(name = "tag_name")
     private String tagName;
+    @Column(name = "collect_sql")
+    private String collectSql;
+    @Column(name = "dcn_range_type")
+    private String dcnRangeType;
 
     public RuleDataSource() {
         // Default Constructor
@@ -152,6 +148,14 @@ public class RuleDataSource {
         this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
         this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
         this.datasourceType = ruleDataSource.getDatasourceType();
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
     }
 
     public String getFileSheetName() {
@@ -354,11 +358,11 @@ public class RuleDataSource {
         this.ruleGroup = ruleGroup;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -408,6 +412,14 @@ public class RuleDataSource {
 
     public void setTagName(String tagName) {
         this.tagName = tagName;
+    }
+
+    public String getCollectSql() {
+        return collectSql;
+    }
+
+    public void setCollectSql(String collectSql) {
+        this.collectSql = collectSql;
     }
 
     @Override

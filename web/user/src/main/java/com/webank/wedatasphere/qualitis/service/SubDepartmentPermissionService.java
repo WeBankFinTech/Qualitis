@@ -66,4 +66,14 @@ public interface SubDepartmentPermissionService {
      * @throws UnExpectedRequestException
      */
     void checkAccessiblePermission(Long tableDataId, TableDataTypeEnum tableDataTypeEnum, DataVisibilityPermissionDto dataVisibilityPermissionDto) throws UnExpectedRequestException;
+
+    /**
+     * checking accessible permission
+     * @param loginUser
+     * @param tableDataId
+     * @param tableDataTypeEnum
+     * @param dataVisibilityPermissionDto
+     * @throws UnExpectedRequestException
+     */
+    void checkAccessiblePermission(User loginUser, Long tableDataId, TableDataTypeEnum tableDataTypeEnum, DataVisibilityPermissionDto dataVisibilityPermissionDto) throws UnExpectedRequestException;
 }

@@ -86,6 +86,7 @@ public interface RuleDataSourceService {
      * @param linkisDataSourceType
      * @param dataSourceEnvRequests
      * @param dataSourceEnvMappingRequests
+     * @param dcnRangeType
      * @return
      * @throws UnExpectedRequestException
      */
@@ -95,7 +96,7 @@ public interface RuleDataSourceService {
         , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId,
         String linkisDataSourceName
         , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests,
-        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests) throws UnExpectedRequestException;
+        List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests, String dcnRangeType) throws UnExpectedRequestException;
 
     /**
      * Check cluster name supported
@@ -143,5 +144,5 @@ public interface RuleDataSourceService {
      * @param userName
      * @return
      */
-    GeneralResponse<DataMapResultInfo> syncMetadata(String userName);
+    GeneralResponse<DataMapResultInfo<String>> syncMetadata(String userName);
 }

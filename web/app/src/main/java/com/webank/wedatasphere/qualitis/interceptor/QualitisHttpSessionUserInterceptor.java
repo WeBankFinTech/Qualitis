@@ -6,18 +6,15 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.management.relation.RoleNotFoundException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author allenzhou@webank.com
@@ -25,17 +22,24 @@ import java.util.List;
  */
 @Component
 public class QualitisHttpSessionUserInterceptor implements HttpSessionUserInterceptor {
-    @Autowired
-    private UserDao userDao;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private LoginService loginService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QualitisHttpSessionUserInterceptor.class);
 
+    @Autowired
+    private UserDao userDao;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private LoginService loginService;
+
     @Override
     public void addUserToSession(String userName, HttpServletRequest request) {
+        if (StringUtils.isBlank(userName)) {
+            LOGGER.warn("Tricky DSS appconn user session triggered without username, skip it!~");
+            return;
+        }
         // 查询数据库，看用户是否存在
         User userInDb = userDao.findByUsername(userName);
         if (userInDb != null) {
@@ -52,20 +56,6 @@ public class QualitisHttpSessionUserInterceptor implements HttpSessionUserInterc
                 LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);
             }
         }
-        HttpSession session = request.getSession();
-        final Cookie cookie = new Cookie("JSESSIONID", session.getId());
-        cookie.setPath("/");
-        HttpServletRequestWrapper requestWrapper = new HttpServletRequestWrapper(request) {
-            @Override
-            public Cookie[] getCookies() {
-                List<Cookie> cookieList = new ArrayList<>();
-                cookieList.add(cookie);
-                final Cookie[] cookies = (Cookie[]) cookieList.toArray(new Cookie[0]);
-                return cookies;
-            }
-        };
-
-        request = (HttpServletRequest) requestWrapper.getRequest();
     }
 
     @Override

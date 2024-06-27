@@ -126,4 +126,9 @@ public class UserDaoImpl implements UserDao {
         return userRepository.findBySubDepartmentCode(subDepartmentCode);
     }
 
+    @Override
+    public List<User> findAll() {
+        return userRepository.findAllUser();
+    }
+
 }

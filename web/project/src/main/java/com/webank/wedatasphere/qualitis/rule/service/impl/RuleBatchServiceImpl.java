@@ -22,11 +22,13 @@ import com.alibaba.excel.metadata.Sheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.constant.DiffRequestTypeEnum;
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -40,6 +42,7 @@ import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.DiffVariableRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
@@ -47,6 +50,7 @@ import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -82,6 +86,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
     @Autowired
     private RuleDao ruleDao;
     @Autowired
+    private RuleUdfDao ruleUdfDao;
+    @Autowired
     private ProjectDao projectDao;
     @Autowired
     private RuleGroupDao ruleGroupDao;
@@ -97,6 +103,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
     private DataVisibilityDao dataVisibilityDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+    @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
     @Autowired
     private RuleDataSourceMappingDao ruleDataSourceMappingDao;
     @Autowired
@@ -167,9 +175,9 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             ruleLists = ruleDao.findByIds(request.getRuleIds());
 
             List<Long> ruleIds = ruleLists.stream().map(Rule::getId).distinct().collect(Collectors.toList());
-            List<Long> notExistRules = request.getRuleIds().stream().filter(currId -> ! ruleIds.contains(currId)).collect(Collectors.toList());
+            List<Long> notExistRules = request.getRuleIds().stream().filter(currId -> !ruleIds.contains(currId)).collect(Collectors.toList());
 
-            if (! notExistRules.isEmpty()) {
+            if (!notExistRules.isEmpty()) {
                 throw new UnExpectedRequestException("{&THE_IDS_OF_RULE}: " + notExistRules.toString() + " {&DOES_NOT_EXIST}");
             }
         }
@@ -200,7 +208,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
     }
 
     private GeneralResponse uploadRulesReal(InputStream fileInputStream, String fileName, String userName, Long projectId) throws UnExpectedRequestException
-        , IOException, PermissionDeniedRequestException {
+            , IOException, PermissionDeniedRequestException {
 
         if (userName == null) {
             return new GeneralResponse<>("401", "{&PLEASE_LOGIN}", null);
@@ -229,38 +237,68 @@ public class RuleBatchServiceImpl implements RuleBatchService {
 
         getAndSaveRule(excelRuleListener.getExcelRuleContent(), projectInDb, null, userName, null);
 
-        fileInputStream.close();
+        if (fileInputStream != null) {
+            fileInputStream.close();
+        }
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_UPLOAD_FILE}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_UPLOAD_FILE}", null);
     }
 
     @Override
     public void getAndSaveRule(List<ExcelRuleByProject> excelRuleContentList, Project projectInDb, List<String> newRuleNames, String userName, List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException {
+        List<DiffVariableRequest> ruleJsonDiffVariableRequestList = diffVariableRequestList.stream()
+                .filter(diffVariableRequest -> DiffRequestTypeEnum.JSON_REPLACEMENT.getCode().equals(diffVariableRequest.getType()))
+                .filter(diffVariableRequest -> diffVariableRequest.getName().startsWith(ExcelSheetName.RULE_NAME + "$"))
+                .collect(Collectors.toList());
+
         for (ExcelRuleByProject excelRuleByProject : excelRuleContentList) {
-            Rule rule = objectMapper.readValue(excelRuleByProject.getRuleJsonObject(), Rule.class);
+            String jsonStr = excelRuleByProject.getRuleJsonObject();
+
+            // Replace json value with diff variable request.
+            String modifiedJsonStr = projectBatchService.replaceJsonValue(ruleJsonDiffVariableRequestList, jsonStr);
+
+            Rule rule = objectMapper.readValue(modifiedJsonStr, Rule.class);
+            rule.setId(Long.MAX_VALUE);
             Rule ruleInDb = ruleDao.findByProjectAndRuleName(projectInDb, rule.getName());
             LOGGER.info("{} start to handle rule {}", userName, rule.getName());
+            String ruleGroupName = excelRuleByProject.getRuleGroupName();
+            RuleGroup realRuleGroup;
+            if (ruleInDb != null) {
+                RuleGroup ruleGroupInDb = ruleInDb.getRuleGroup();
 
-            handleRule(rule, ruleInDb, excelRuleByProject.getRuleJsonObject(), excelRuleByProject.getRuleTemplateJsonObject(), excelRuleByProject.getRuleTemplateVisibilityObject(), projectInDb, excelRuleByProject.getRuleGroupName(), newRuleNames, diffVariableRequestList);
+                ruleGroupInDb.setRuleGroupName(ruleGroupName);
+                realRuleGroup = ruleGroupDao.saveRuleGroup(ruleGroupInDb);
+            } else {
+                RuleGroup ruleGroupInDb = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, projectInDb.getId());
+                if (ruleGroupInDb != null) {
+                    realRuleGroup = ruleGroupInDb;
+                } else {
+                    realRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, projectInDb.getId()));
+                }
+            }
+            handleRule(rule, ruleInDb, modifiedJsonStr, excelRuleByProject.getRuleTemplateJsonObject(), excelRuleByProject.getRuleTemplateVisibilityObject(), projectInDb, realRuleGroup, newRuleNames, diffVariableRequestList);
             LOGGER.info("Finish to handle rule");
         }
     }
 
     @Override
     public void handleRule(Rule rule, Rule ruleInDb, String ruleJsonObject, String ruleTemplateJsonObject
-        , String ruleTemplateVisibilityObject, Project projectInDb, String ruleGroupName, List<String> newRuleNames
-        , List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException {
+            , String ruleTemplateVisibilityObject, Project projectInDb, RuleGroup realRuleGroup, List<String> newRuleNames
+            , List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException {
 
         Set<RuleDataSourceMapping> ruleDataSourceMappings = rule.getRuleDataSourceMappings();
         Set<RuleDataSource> ruleDataSources = rule.getRuleDataSources();
         Set<RuleVariable> ruleVariables = rule.getRuleVariables();
         Set<AlarmConfig> alarmConfigs = rule.getAlarmConfigs();
+        Set<RuleUdf> ruleUdfs = rule.getRuleUdfs();
 
         Template template = objectMapper.readValue(ruleTemplateJsonObject, Template.class);
 
         Template templateInDb;
-        if (! template.getTemplateType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())) {
-            templateInDb = templateDao.findByName(template.getName());
+        if (!template.getTemplateType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())) {
+            //原代码templateInDb = templateDao.findByName(template.getName());  因为1.2.0版本存在相同模板name，所以该逻辑要改动
+            Template templateByEnName = templateDao.findTemplateByEnName(template.getEnName());
+            templateInDb = templateByEnName;
         } else {
             templateInDb = null;
         }
@@ -269,40 +307,43 @@ public class RuleBatchServiceImpl implements RuleBatchService {
         if (ruleInDb != null) {
             rule.setId(ruleInDb.getId());
             rule.setTemplate(templateInDb);
+            rule.setRuleGroup(realRuleGroup);
             rule.setProject(ruleInDb.getProject());
-
-            RuleGroup ruleGroupInDb = ruleInDb.getRuleGroup();
-
-            ruleGroupInDb.setRuleGroupName(ruleGroupName);
-            rule.setRuleGroup(ruleGroupDao.saveRuleGroup(ruleGroupInDb));
+            rule.setCreateTime(ruleInDb.getCreateTime());
+            rule.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
 
             // Clear
             ruleDataSourceMappingService.deleteByRule(ruleInDb);
             projectBatchService.clearDatasourceEnv(ruleInDb);
             ruleVariableService.deleteByRule(ruleInDb);
             alarmConfigService.deleteByRule(ruleInDb);
+            ruleUdfDao.deleteByRule(ruleInDb);
         } else {
             rule.setId(null);
             rule.setProject(projectInDb);
             rule.setTemplate(templateInDb);
-
-            RuleGroup ruleGroupInDb = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, projectInDb.getId());
-            if (ruleGroupInDb != null) {
-                rule.setRuleGroup(ruleGroupInDb);
-            } else {
-                rule.setRuleGroup(ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, projectInDb.getId())));
-            }
+            rule.setRuleGroup(realRuleGroup);
 
             rule.setRuleDataSourceMappings(null);
             rule.setRuleDataSources(null);
             rule.setRuleVariables(null);
             rule.setAlarmConfigs(null);
+            rule.setRuleUdfs(null);
+        }
+        if (StringUtils.isNotEmpty(rule.getStandardValueVersionEnName())) {
+            StandardValueVersion standardValueVersion = standardValueVersionDao.findByEnName(rule.getStandardValueVersionEnName());
+            if (standardValueVersion != null) {
+                rule.setStandardValueVersionId(standardValueVersion.getId());
+            } else {
+                rule.setStandardValueVersionId(null);
+            }
         }
         ruleInDb = ruleDao.saveRule(rule);
         projectBatchService.createDatasourceEnv(ruleDataSources, ruleInDb, diffVariableRequestList);
         createDatasourceMapping(ruleDataSourceMappings, ruleInDb);
         createRuleVariable(ruleVariables, ruleInDb);
         createAlarmConfig(alarmConfigs, ruleInDb);
+        createRuleUdf(ruleUdfs, ruleInDb);
 
         Rule savedRule = ruleDao.saveRule(ruleInDb);
         if (newRuleNames != null) {
@@ -311,7 +352,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
     }
 
     private Template chooseTemplate(Rule rule, Template template, Template templateInDb, Project projectInDb, List<DiffVariableRequest> diffVariableRequestList, String ruleTemplateVisibilityObject)
-        throws IOException {
+            throws IOException {
         if (templateInDb != null) {
             LOGGER.info("Template {} already exists.", templateInDb.getName());
         } else {
@@ -332,10 +373,12 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             template.setTemplateDataSourceType(null);
             template.setTemplateMidTableInputMetas(null);
 
-            if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
+            List<DiffVariableRequest> sqlDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                    diffVariableRequest -> DiffRequestTypeEnum.SQL_REPLACEMENT.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(sqlDiffVariableRequestList)) {
                 String midTableAction = template.getMidTableAction();
-                for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
-                    midTableAction = midTableAction.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                for (DiffVariableRequest diffVariableRequest : sqlDiffVariableRequestList) {
+                    midTableAction = midTableAction.replace(diffVariableRequest.getName(), diffVariableRequest.getValue());
                 }
                 template.setMidTableAction(midTableAction);
             }
@@ -393,7 +436,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             }
 
             if (StringUtils.isNotEmpty(ruleTemplateVisibilityObject)) {
-                List<DataVisibility> dataVisibilityList = objectMapper.readValue(ruleTemplateVisibilityObject, new TypeReference<List<DataVisibility>>(){});
+                List<DataVisibility> dataVisibilityList = objectMapper.readValue(ruleTemplateVisibilityObject, new TypeReference<List<DataVisibility>>() {
+                });
                 dataVisibilityList = dataVisibilityList.stream().map(dataVisibility -> {
                     dataVisibility.setId(null);
                     dataVisibility.setTableDataId(savedTemplate.getId());
@@ -405,6 +449,20 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             templateInDb = templateDao.saveTemplate(savedTemplate);
         }
         return templateInDb;
+    }
+
+    private void createRuleUdf(Set<RuleUdf> ruleUdfs, Rule ruleInDb) {
+        List<RuleUdf> ruleUdfList = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(ruleUdfs)) {
+            for (RuleUdf ruleUdf : ruleUdfs) {
+                ruleUdf.setId(null);
+                ruleUdf.setRule(ruleInDb);
+
+                ruleUdfList.add(ruleUdf);
+            }
+            ruleInDb.setRuleUdfs(new HashSet<>(ruleUdfDao.saveAll(ruleUdfList)));
+        }
     }
 
     private void createAlarmConfig(Set<AlarmConfig> alarmConfigs, Rule ruleInDb) {
@@ -468,6 +526,10 @@ public class RuleBatchServiceImpl implements RuleBatchService {
                 ruleVariable.setRule(ruleInDb);
                 if (ruleVariable.getTemplateMidTableInputMeta() != null) {
                     ruleVariable.setTemplateMidTableInputMeta(templateMidTableInputMetaMap.get(ruleVariable.getTemplateMidTableInputMeta().getEnName()));
+                    // 同步规则的标准值ID
+                    if (TemplateInputTypeEnum.STANDARD_VALUE_EXPRESSION.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType())) {
+                        ruleVariable.setValue(null != ruleInDb.getStandardValueVersionId() ? ruleInDb.getStandardValueVersionId().toString() : null);
+                    }
                 }
                 if (ruleVariable.getTemplateStatisticsInputMeta() != null) {
                     ruleVariable.setTemplateStatisticsInputMeta(templateStatisticsInputMetaHashMap.get(ruleVariable.getTemplateStatisticsInputMeta().getPureName()));
@@ -571,12 +633,12 @@ public class RuleBatchServiceImpl implements RuleBatchService {
         outputStream.flush();
 
         LOGGER.info("Succeed to download all rules in type of excel");
-        return new GeneralResponse<>("200", "SUCCESS", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "SUCCESS", null);
     }
 
     private void writeExcelToOutput(List<ExcelRuleByProject> templateRules,
-        List<ExcelGroupByProject> excelGroupByProjects, List<ExcelExecutionParametersByProject> excelExecutionParametersByProject,
-        OutputStream outputStream) throws WriteExcelException, IOException {
+                                    List<ExcelGroupByProject> excelGroupByProjects, List<ExcelExecutionParametersByProject> excelExecutionParametersByProject,
+                                    OutputStream outputStream) throws WriteExcelException, IOException {
         try {
             LOGGER.info("Start to write excel");
             ExcelWriter writer = new ExcelWriter(outputStream, ExcelTypeEnum.XLSX, true);
@@ -617,13 +679,47 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             ruleLine.setRuleTemplateJsonObject(objectMapper.writeValueAsString(rule.getTemplate()));
             // Template visibility department name list
             List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(rule.getTemplate().getId(), TableDataTypeEnum.RULE_TEMPLATE);
+            // Template preview
+            if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())) {
+                ruleLine.setRuleTemplatePreview(rule.getTemplate().getMidTableAction());
+            } else if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(rule.getRuleType())){
+                String templatePreview = getTemplatePreview(rule.getRuleDataSources(), rule.getRuleVariables(), rule.getTemplate().getMidTableAction());
+                ruleLine.setRuleTemplatePreview(templatePreview);
+            }
 
             if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
-                ruleLine.setRuleTemplateVisibilityObject(objectMapper.writerWithType(new TypeReference<List<DataVisibility>>() {}).writeValueAsString(dataVisibilityList));
+                ruleLine.setRuleTemplateVisibilityObject(objectMapper.writerWithType(new TypeReference<List<DataVisibility>>() {
+                }).writeValueAsString(dataVisibilityList));
             }
             lines.add(ruleLine);
         }
 
         return lines;
+    }
+
+    private String getTemplatePreview(Set<RuleDataSource> ruleDataSources, Set<RuleVariable> ruleVariables, String midTableAction) {
+        if (CollectionUtils.isNotEmpty(ruleDataSources)) {
+            ruleDataSources = ruleDataSources.stream().filter(ruleDataSource -> StringUtils.isNotBlank(ruleDataSource.getFilter())).collect(Collectors.toSet());
+            if (CollectionUtils.isNotEmpty(ruleDataSources)) {
+                String filter = ruleDataSources.iterator().next().getFilter();
+                midTableAction = midTableAction.replace("${filter}", filter);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(ruleVariables)) {
+            for (RuleVariable ruleVariable : ruleVariables) {
+                if (ruleVariable.getTemplateMidTableInputMeta() == null) {
+                    continue;
+                }
+                String midInputMetaPlaceHolder = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
+                String placeHolder = "\\$\\{" + midInputMetaPlaceHolder + "}";
+
+                if (StringUtils.isNotBlank(ruleVariable.getValue())) {
+                    midTableAction = midTableAction.replaceAll(placeHolder, ruleVariable.getValue());
+                    LOGGER.info("Succeed to replace {} into {}", placeHolder, ruleVariable.getValue());
+                }
+            }
+        }
+
+        return midTableAction;
     }
 }

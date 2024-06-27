@@ -55,6 +55,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -107,6 +108,8 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     private ClusterInfoDao clusterInfoDao;
     @Autowired
     private DataStandardClient dataStandardClient;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     private HttpServletRequest httpServletRequest;
 
@@ -117,7 +120,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
 
     @Override
     public DataInfo<RuleQueryDataSource> filter(PageRequest pageRequest, String user, String clusterName, String dbName, String tableName,
-                                                Integer datasourceType, Long subSystemId, String tagCode, String departmentName, String devDepartmentName, String envName) {
+                                                Integer datasourceType, String subSystemId, String tagCode, String departmentName, String devDepartmentName, String envName) {
         DataInfo<RuleQueryDataSource> dataInfo = new DataInfo<>();
         List<Map<String, Object>> results = ruleDataSourceDao.filterProjectDsByUserPage(user, clusterName, dbName, tableName, datasourceType,
                 subSystemId, departmentName, devDepartmentName, tagCode, envName
@@ -389,6 +392,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
             List<Integer> permissions = new ArrayList<>();
             permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
             projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule, rule id: {}", ruleInDb.getId());
@@ -416,7 +420,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     }
 
     @Override
-    public int count(String user, String clusterName, String dbName, String tableName, Integer datasourceType, Long subSystemId,
+    public int count(String user, String clusterName, String dbName, String tableName, Integer datasourceType, String subSystemId,
                      String departmentName, String devDepartmentName, String tagCode, String envName) {
         long count = ruleDataSourceDao.countProjectDsByUser(user, clusterName, dbName, tableName, datasourceType, subSystemId, departmentName, devDepartmentName, tagCode, envName);
         return (int) count;

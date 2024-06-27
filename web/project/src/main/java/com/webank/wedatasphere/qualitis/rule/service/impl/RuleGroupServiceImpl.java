@@ -1,8 +1,12 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
@@ -10,16 +14,14 @@ import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.config.RuleConfig;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleLockRangeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
 import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
@@ -35,13 +37,16 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -75,6 +80,9 @@ public class RuleGroupServiceImpl implements RuleGroupService {
 
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
+
+    @Autowired
+    private RuleVariableService ruleVariableService;
 
     @Autowired
     private RuleDao ruleDao;
@@ -242,8 +250,8 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             if (addGroupRuleRequest.getRuleEnable() == null) {
                 addGroupRuleRequest.setRuleEnable(true);
             }
-            if (addGroupRuleRequest.getUnionAll() == null) {
-                addGroupRuleRequest.setUnionAll(false);
+            if (addGroupRuleRequest.getUnionWay() == null) {
+                addGroupRuleRequest.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
             }
             if (StringUtils.isNotBlank(addGroupRuleRequest.getFilter())) {
                 dataSourceRequests = dataSourceRequests.stream().map((dataSourceRequest) -> {
@@ -274,9 +282,9 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         // Check
         StringBuilder exceptionMessage = new StringBuilder();
         if (judgeExistsException(exceptionList, exceptionMessage)) {
-            return new RuleGroupResponse("200", ruleGroupInDb, "All rules successfully finished");
+            return new RuleGroupResponse(ResponseStatusConstants.OK, ruleGroupInDb, "All rules successfully finished");
         }
-        return new RuleGroupResponse("400", ruleGroupInDb, "Some rules failed to add, detail message: " + exceptionMessage.toString());
+        return new RuleGroupResponse(ResponseStatusConstants.BAD_REQUEST, ruleGroupInDb, "Some rules failed to add, detail message: " + exceptionMessage.toString());
     }
 
     private boolean judgeExistsException(List<Future<List<Exception>>> exceptionList, StringBuilder exceptionMessage) throws InterruptedException, ExecutionException {
@@ -368,8 +376,8 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             if (modifyGroupRuleRequest.getRuleEnable() == null) {
                 modifyGroupRuleRequest.setRuleEnable(true);
             }
-            if (modifyGroupRuleRequest.getUnionAll() == null) {
-                modifyGroupRuleRequest.setUnionAll(false);
+            if (modifyGroupRuleRequest.getUnionWay() == null) {
+                modifyGroupRuleRequest.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
             }
             String filter = map.get(modifyGroupRuleRequest.getExecutionParametersName()).getFilter();
             if (StringUtils.isNotBlank(filter)) {
@@ -412,9 +420,9 @@ public class RuleGroupServiceImpl implements RuleGroupService {
 
         StringBuilder exceptionMessage = new StringBuilder();
         if (judgeExistsException(exceptionList, exceptionMessage)) {
-            return new RuleGroupResponse("200", ruleGroupInDb, "All rules successfully finished");
+            return new RuleGroupResponse(ResponseStatusConstants.OK, ruleGroupInDb, "All rules successfully finished");
         }
-        return new RuleGroupResponse("400", ruleGroupInDb, "Some rules failed to modify, detail message:" + exceptionMessage.toString());
+        return new RuleGroupResponse(ResponseStatusConstants.BAD_REQUEST, ruleGroupInDb, "Some rules failed to modify, detail message:" + exceptionMessage.toString());
     }
 
     private void modifyRulesConcurrent(List<ModifyGroupRuleRequest> updateModifyGroupRuleRequestList, String loginUser, List<Future<List<Exception>>> exceptionList) throws InterruptedException {
@@ -485,14 +493,16 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             total = ruleDao.countByRuleGroupAndFileOutName(ruleGroupInDb, request.getTemplateId(), request.getName()
                     , request.getCnName(), request.getColumns(), request.getRuleType());
         } else {
-            rules = ruleDao.findByRuleGroupWithPage(request.getPage(), request.getSize(), ruleGroupInDb, request.getTemplateId(), request.getName()
+            Page<Rule> rulePage = ruleDao.findByRuleGroupWithPage(request.getPage(), request.getSize(), ruleGroupInDb, request.getTemplateId(), request.getName()
                     , request.getCnName(), request.getColumns(), request.getRuleType());
-            total = ruleDao.countByRuleGroupWithPage(ruleGroupInDb, request.getTemplateId(), request.getName()
-                    , request.getCnName(), request.getColumns(), request.getRuleType());
+            rules = rulePage.getContent();
+            total = rulePage.getTotalElements();
         }
+        List<RuleVariable> ruleVariableList = ruleVariableService.queryByRules(rules);
+        Map<Long, List<RuleVariable>> ruleVariableMap = ruleVariableList.stream().collect(Collectors.groupingBy(ruleVariable -> ruleVariable.getRule().getId()));
         List<RuleDetailResponse> ruleResponses = new ArrayList<>(rules.size());
         for (Rule rule : rules) {
-            RuleDetailResponse ruleResponse = new RuleDetailResponse(rule);
+            RuleDetailResponse ruleResponse = new RuleDetailResponse(rule, ruleVariableMap.getOrDefault(rule.getId(), Collections.emptyList()));
             ruleResponses.add(ruleResponse);
         }
         response.setData(ruleResponses);
@@ -520,6 +530,32 @@ public class RuleGroupServiceImpl implements RuleGroupService {
     }
 
     @Override
+    public GeneralResponse addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, InterruptedException, ExecutionException, PermissionDeniedRequestException, IOException {
+        checkAddBatchRuleRequest(request);
+        Project project = projectDao.findById(request.getProjectId());
+        if (project == null) {
+            throw new UnExpectedRequestException("Project {&DOES_NOT_EXIST}");
+        }
+
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        String ruleGroupName = "Template_Group_" + UuidGenerator.generate();
+        RuleGroup ruleGroup = new RuleGroup(ruleGroupName, request.getProjectId());
+        ruleGroupDao.saveRuleGroup(ruleGroup);
+
+        setRuleMetricIfNotExists(request.getCheckObjectList(), loginUser);
+        List<ModifyGroupRuleRequest> groupRuleRequestList = convert2ModifyGroupRuleRequest(project, ruleGroup, request);
+
+        List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+        modifyRulesConcurrent(groupRuleRequestList, loginUser, exceptionList);
+
+        StringBuilder exceptionMessage = new StringBuilder();
+        if (judgeExistsException(exceptionList, exceptionMessage)) {
+            return new GeneralResponse(ResponseStatusConstants.OK, "All rules successfully finished", new RuleGroupResponse(ruleGroup));
+        }
+        return new GeneralResponse(ResponseStatusConstants.BAD_REQUEST, "Some rules failed to modify, detail message:" + exceptionMessage.toString(), new RuleGroupResponse(ruleGroup));
+    }
+
+    @Override
     public RuleGroup generate(Long ruleGroupId, String ruleGroupName, Project projectInDb, int groupType) throws UnExpectedRequestException {
         RuleGroup ruleGroup;
         if (ruleGroupId != null) {
@@ -538,6 +574,117 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             ruleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, projectInDb.getId(), groupType));
         }
         return ruleGroup;
+    }
+
+    private void checkAddBatchRuleRequest(AddBatchRuleRequest request) throws UnExpectedRequestException {
+        List<AddBatchRuleRequest.AddBatchCheckObjectRequest> checkObjectList = request.getCheckObjectList();
+
+        List<String> ruleMetricNameList = checkObjectList.stream().map(AddBatchRuleRequest.AddBatchCheckObjectRequest::getRuleMetricName).filter(StringUtils::isNotEmpty).collect(Collectors.toList());
+        long ruleMetricCount = ruleMetricNameList.stream().distinct().count();
+        if (ruleMetricNameList.size() > ruleMetricCount) {
+            throw new UnExpectedRequestException("校验指标不能重复，一个校验对象对应一个校验指标!");
+        }
+
+        long datasourceCount = checkObjectList.stream().map(checkObject -> {
+            StringBuilder dataSourceInfo = new StringBuilder();
+            dataSourceInfo.append(checkObject.getClusterName());
+            dataSourceInfo.append(checkObject.getDbName());
+            dataSourceInfo.append(checkObject.getTableName());
+            if (CollectionUtils.isNotEmpty(checkObject.getColNames())) {
+                checkObject.getColNames().forEach(column -> dataSourceInfo.append(column.getColumnName()));
+            }
+            return dataSourceInfo.toString();
+        }).distinct().count();
+        if (datasourceCount < checkObjectList.size()) {
+            throw new UnExpectedRequestException("校验对象的数据源信息不能相同!");
+        }
+    }
+
+    private void setRuleMetricIfNotExists(List<AddBatchRuleRequest.AddBatchCheckObjectRequest> checkObjectList, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
+        for (AddBatchRuleRequest.AddBatchCheckObjectRequest AddBatchCheckObjectRequest: checkObjectList) {
+            if (Objects.isNull(AddBatchCheckObjectRequest.getRuleMetricId()) && StringUtils.isNotEmpty(AddBatchCheckObjectRequest.getRuleMetricName())) {
+                String ruleMetricName = AddBatchCheckObjectRequest.getRuleMetricName();
+                RuleMetric ruleMetric = ruleMetricDao.findByName(ruleMetricName);
+                if (ruleMetric == null) {
+                    ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(ruleMetricName, loginUser, CollectionUtils.isNotEmpty(AddBatchCheckObjectRequest.getDataSourceEnvRequests()));
+                }
+                AddBatchCheckObjectRequest.setRuleMetricId(ruleMetric.getId());
+                AddBatchCheckObjectRequest.setRuleMetricEnCode(ruleMetric.getEnCode());
+            }
+        }
+    }
+
+    private List<ModifyGroupRuleRequest> convert2ModifyGroupRuleRequest(Project project, RuleGroup ruleGroup, AddBatchRuleRequest request) {
+        List<AddBatchRuleRequest.AddBatchCheckObjectRequest> checkObjectList = request.getCheckObjectList();
+        List<ModifyGroupRuleRequest> groupRuleRequestList = Lists.newArrayListWithExpectedSize(checkObjectList.size());
+        ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), request.getProjectId());
+        Map<String, ExecutionParameters> executionParametersMap = new HashMap<>();
+        executionParametersMap.put(request.getExecutionParametersName(), executionParameters);
+
+        int ruleSeq = 1;
+        for (AddBatchRuleRequest.AddBatchCheckObjectRequest checkObject: checkObjectList) {
+            ModifyGroupRuleRequest groupRuleRequest = new ModifyGroupRuleRequest();
+            String ruleName = request.getRuleName() + SpecCharEnum.BOTTOM_BAR.getValue() + ruleSeq;
+            ruleName = ruleName.replace(" ", "");
+            String ruleCnName = request.getRuleCnName() + SpecCharEnum.BOTTOM_BAR.getValue() + ruleSeq;
+            ruleCnName = ruleCnName.replace(" ", "");
+
+            groupRuleRequest.setProjectId(project.getId());
+            groupRuleRequest.setRuleGroupId(ruleGroup.getId());
+            groupRuleRequest.setRuleGroupName(ruleGroup.getRuleGroupName());
+            groupRuleRequest.setRuleName(ruleName);
+            groupRuleRequest.setRuleCnName(ruleCnName);
+            groupRuleRequest.setRuleType(request.getRuleType());
+            groupRuleRequest.setRuleTemplateId(request.getRuleTemplateId());
+            groupRuleRequest.setRuleDetail(request.getRuleDetail());
+            groupRuleRequest.setExecutionParametersName(request.getExecutionParametersName());
+
+            Rule rule = ruleDao.findByProjectAndRuleName(project, ruleName);
+            if (rule != null) {
+                groupRuleRequest.setRuleId(rule.getId());
+                groupRuleRequest.setRuleGroupId(rule.getRuleGroup().getId());
+                groupRuleRequest.setRuleGroupName(rule.getRuleGroup().getRuleGroupName());
+            }
+
+            setRuleMetricForAlarmConfig(checkObject, request.getCheckVariableList());
+            setAlarmVariable(groupRuleRequest, request);
+
+            DataSourceRequest dataSourceRequest = new DataSourceRequest();
+            BeanUtils.copyProperties(checkObject, dataSourceRequest);
+            groupRuleRequest.setDatasource(Arrays.asList(dataSourceRequest));
+
+            // Set attrbutes from execution parameter.
+            setByExecutionParam(executionParametersMap, groupRuleRequest);
+
+            groupRuleRequestList.add(groupRuleRequest);
+
+            ++ruleSeq;
+        }
+
+        return groupRuleRequestList;
+    }
+
+    private void setRuleMetricForAlarmConfig(AddBatchRuleRequest.AddBatchCheckObjectRequest checkObject, List<FileAlarmConfigRequest> checkVariableList) {
+        if (CollectionUtils.isNotEmpty(checkVariableList)) {
+            FileAlarmConfigRequest fileAlarmConfigRequest = checkVariableList.get(0);
+            fileAlarmConfigRequest.setRuleMetricEnCode(checkObject.getRuleMetricEnCode());
+            fileAlarmConfigRequest.setRuleMetricName(checkObject.getRuleMetricName());
+        }
+    }
+
+    private void setAlarmVariable(ModifyGroupRuleRequest groupRuleRequest, AddBatchRuleRequest request) {
+        if (RuleTypeEnum.FILE_TEMPLATE_RULE.getCode().equals(request.getRuleType())) {
+            groupRuleRequest.setFileAlarmVariable(request.getCheckVariableList());
+        } else {
+            List<AlarmConfigRequest> alarmConfigRequestList = request.getCheckVariableList().stream().map(checkVariable -> {
+                AlarmConfigRequest alarmConfigRequest = new AlarmConfigRequest();
+                BeanUtils.copyProperties(checkVariable, alarmConfigRequest);
+                return alarmConfigRequest;
+            }).collect(Collectors.toList());
+            groupRuleRequest.setAlarmVariable(alarmConfigRequestList);
+        }
+        groupRuleRequest.setTemplateArgumentRequests(request.getTemplateArgumentRequests());
+        groupRuleRequest.setAlarm(true);
     }
 
     private void setByExecutionParam(Map<String, ExecutionParameters> map, AddGroupRuleRequest request) {

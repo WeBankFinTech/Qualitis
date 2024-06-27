@@ -74,6 +74,10 @@ public class ProjectDetailResponse {
                 ruleDetails.add(new HiveRuleDetail(rule));
             }
         }
+        projectDetail.setGitRepo(project.getGitRepo());
+        projectDetail.setGitType(project.getGitType());
+        projectDetail.setGitBranch(project.getGitBranch());
+        projectDetail.setGitRootDir(project.getGitRootDir());
     }
 
     public ProjectDetailResponse(List<Map<String, Object>> rules) {

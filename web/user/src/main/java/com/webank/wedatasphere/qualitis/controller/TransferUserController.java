@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.TransferUserService;
@@ -51,7 +52,7 @@ public class TransferUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to transfer to user: {}, caused by: {}", proxyUsername, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_TRANSFER_TO_USER}: " + proxyUsername +", caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_TRANSFER_TO_USER}: " + proxyUsername +", caused by: " + e.getMessage(), null);
         }
     }
 
@@ -64,7 +65,7 @@ public class TransferUserController {
             return transferUserService.exitUser();
         } catch (Exception e) {
             LOGGER.error("Failed to exit user: {}, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXIT_USER}, caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXIT_USER}, caused by: " + e.getMessage(), null);
         }
     }
 

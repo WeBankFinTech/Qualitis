@@ -70,4 +70,16 @@ public class GetUserTableByCsIdRequest {
     public void setLoginUser(String loginUser) {
         this.loginUser = loginUser;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserTableByCsIdRequest{" +
+                "csId='" + csId + '\'' +
+                ", nodeName='" + nodeName + '\'' +
+                ", clusterName='" + clusterName + '\'' +
+                ", startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                ", loginUser='" + loginUser + '\'' +
+                '}';
+    }
 }

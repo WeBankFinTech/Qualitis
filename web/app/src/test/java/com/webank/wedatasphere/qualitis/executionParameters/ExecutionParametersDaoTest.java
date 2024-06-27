@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.executionParameters;
 
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import org.junit.Test;
@@ -73,7 +74,7 @@ public class ExecutionParametersDaoTest {
         entity.setDeleteFailCheckResult(false);
         entity.setUploadAbnormalValue(false);
         entity.setUploadRuleMetricValue(false);
-        entity.setUnionAll(false);
+        entity.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         entity.setWhetherNoise(false);
         entity.setExecutionVariable(false);
         entity.setEngineReuse(true);

@@ -19,6 +19,7 @@ package com.webank.wedatasphere.qualitis.dao;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -54,6 +55,12 @@ public interface UserRoleDao {
      * @param userRole
      */
     void deleteUserRole(UserRole userRole);
+
+    /**
+     * Delete user role by user
+     * @param user
+     */
+    void deleteByUser(User user);
 
     /**
      * Paging find all user role
@@ -101,5 +108,11 @@ public interface UserRoleDao {
      */
     long countPositionRole(Long id,Integer roleType);
 
-
+    /**
+     * find By user Id
+     *
+     * @param user
+     * @return
+     */
+    List<UserRole> findByUserId(User user);
 }

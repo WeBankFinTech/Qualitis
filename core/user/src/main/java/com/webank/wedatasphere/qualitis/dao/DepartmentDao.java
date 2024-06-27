@@ -93,4 +93,10 @@ public interface DepartmentDao {
      * @return
      */
     List<Department> findByParentId(long parentId);
+
+    /**
+     * find Null Tenant User
+     * @return
+     */
+    List<Department> findNullTenantUser();
 }

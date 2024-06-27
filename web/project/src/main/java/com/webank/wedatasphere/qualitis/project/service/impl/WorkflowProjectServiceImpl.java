@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.project.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
@@ -49,7 +50,7 @@ public class WorkflowProjectServiceImpl implements WorkflowProjectService {
         GetAllResponse<ProjectResponse> response = projectService.getAllProjectByUserReal(request, ProjectTypeEnum.WORKFLOW_PROJECT.getCode());
 
         LOGGER.info("Succeed to get all workflow project, response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ALL_PROJECT_SUCCESSFULLY}", response);
     }
 
     @Override

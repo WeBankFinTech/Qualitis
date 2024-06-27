@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserDepartmentRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
@@ -118,12 +119,12 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         LOGGER.info("Succeed to save proxyUser. proxy_user: {}", savedProxyUser.getProxyUserName());
 
         AddProxyUserResponse response = new AddProxyUserResponse(savedProxyUser);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_SAVE_PROXYUSER}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_SAVE_PROXYUSER}", response);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         DeleteProxyUserRequest.checkRequest(request);
 
@@ -137,12 +138,12 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         proxyUserRepository.delete(proxyUserInDb);
         LOGGER.info("Succeed to delete proxy user. proxy_user: {}", proxyUserInDb.getProxyUserName());
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DELETE_PROXY_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_PROXY_USER}", null);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         ModifyProxyUserRequest.checkRequest(request);
 
@@ -173,7 +174,7 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         proxyUserRepository.save(proxyUserInDb);
 
         LOGGER.info("Succeed to modify proxy user. old proxy_user name: {}, new proxy_user name: {}", oldProxyUserName, proxyUserInDb.getProxyUserName());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_PROXY_USER_NAME}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_PROXY_USER_NAME}", null);
     }
 
     @Override
@@ -204,7 +205,7 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         response.setData(proxyUserResponses);
 
         LOGGER.info("Succeed to find all proxyUsers, response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_PROXYUSERS}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_ALL_PROXYUSERS}", response);
     }
 
     @Override
@@ -248,6 +249,16 @@ public class ProxyUserServiceImpl implements ProxyUserService {
     @Override
     public List<ProxyUserDepartment> findBySubDepartmentCode(Long subDepartmentCode) {
         return proxyUserDepartmentRepository.findBySubDepartmentCode(subDepartmentCode);
+    }
+
+    @Override
+    public void addProxyUserIfNotExists(String proxyUserName) {
+        if (proxyUserRepository.findByProxyUserName(proxyUserName) != null) {
+            return;
+        }
+        ProxyUser proxyUser = new ProxyUser();
+        proxyUser.setProxyUserName(proxyUserName);
+        proxyUserRepository.save(proxyUser);
     }
 
     private Page<ProxyUser> findAllProxyUser(String proxyUserName, String departmentCode, Long subDepartmentCode, int page, int size) {

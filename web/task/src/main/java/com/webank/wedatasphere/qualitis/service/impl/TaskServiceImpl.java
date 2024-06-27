@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
 import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
@@ -127,7 +128,7 @@ public class TaskServiceImpl implements TaskService {
 
         TaskCheckResultResponse taskCheckResultResponse = new TaskCheckResultResponse(taskInDb, singleRuleDataSourceMap, customRuleDataSourceMap
             , multiRuleDataSourceMap, fileRuleDataSourceMap, allResultMap);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_TASK_DETAIL}", taskCheckResultResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_TASK_DETAIL}", taskCheckResultResponse);
     }
 
     @Override

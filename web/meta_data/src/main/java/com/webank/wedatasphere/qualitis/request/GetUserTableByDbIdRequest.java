@@ -88,4 +88,15 @@ public class GetUserTableByDbIdRequest {
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserTableByDbIdRequest{" +
+                "startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                ", clusterName='" + clusterName + '\'' +
+                ", dbName='" + dbName + '\'' +
+                ", proxyUser='" + proxyUser + '\'' +
+                '}';
+    }
 }

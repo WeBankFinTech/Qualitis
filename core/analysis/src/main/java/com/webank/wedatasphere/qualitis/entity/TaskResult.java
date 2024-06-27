@@ -33,6 +33,8 @@ public class TaskResult {
     private String applicationId;
     @Column(name = "rule_id")
     private Long ruleId;
+    @Column(name = "task_id")
+    private Long taskId;
     private String value;
     @Column(name = "result_type")
     private String resultType;
@@ -83,6 +85,14 @@ public class TaskResult {
 
     public void setRuleId(Long ruleId) {
         this.ruleId = ruleId;
+    }
+
+    public Long getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(Long taskId) {
+        this.taskId = taskId;
     }
 
     public String getValue() {

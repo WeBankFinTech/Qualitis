@@ -47,6 +47,6 @@ public interface RuleClient {
      * @return
      * @throws MetaDataAcquireFailedException
      */
-    DataInfo<TableTagInfo> getTagList(String loginUser, int page, int size) throws MetaDataAcquireFailedException, UnExpectedRequestException;
+    DataInfo<TableTagInfo> getTagList(String loginUser, int page, int size) throws MetaDataAcquireFailedException;
 
 }

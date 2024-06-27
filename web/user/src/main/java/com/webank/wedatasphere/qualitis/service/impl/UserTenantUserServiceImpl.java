@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.TenantUser;
@@ -67,7 +68,7 @@ public class UserTenantUserServiceImpl implements UserTenantUserService {
         LOGGER.info("Succeed to save user tenant user. User tenant user id: {}", savedUserTenantUser.getId());
 
         AddUserTenantUserResponse response = new AddUserTenantUserResponse(savedUserTenantUser);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_CREATE_USER_TENANT_USER}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_CREATE_USER_TENANT_USER}", response);
     }
 
     @Override
@@ -83,7 +84,7 @@ public class UserTenantUserServiceImpl implements UserTenantUserService {
 
         userTenantUserRepository.delete(userTenantUserInDb);
         LOGGER.info("Succeed to delete user tenant user. user_Tenant_user_id: {}", request.getUserTenantUserId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DELETE_USER_TENANT_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_USER_TENANT_USER}", null);
     }
 
     @Override
@@ -115,6 +116,6 @@ public class UserTenantUserServiceImpl implements UserTenantUserService {
         response.setData(userTenantUserResponses);
 
         LOGGER.info("Succeed to find all user tenant users by tenant user name, response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_USER_TENANT_USERS}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_ALL_USER_TENANT_USERS}", response);
     }
 }

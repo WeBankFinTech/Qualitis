@@ -1,7 +1,10 @@
 package com.webank.wedatasphere.qualitis.rule.builder;
 
 import com.google.common.collect.Lists;
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -9,24 +12,18 @@ import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.ContrastTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.MappingTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.*;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
-import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinConfigRequest;
+import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.rule.util.DatasourceEnvUtil;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,11 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -64,15 +57,10 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     private String proxyUser;
 
-    private String datasourceCluster;
+    private LinkisConfig linkisConfig;
 
-    private static Integer TWO = 2;
-
-    private static Integer FOUR = 4;
-    private static final String COMMA = ".";
-
-    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<String, Integer>();
-    private static final Map<String, Integer> OPERATION_CODE = new LinkedHashMap<String, Integer>();
+    private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<>();
+    private static final Map<String, Integer> OPERATION_CODE = new LinkedHashMap<>();
 
     static {
         ALERT_LEVEL_CODE.put("CRITICAL", 1);
@@ -98,6 +86,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     private RuleGroupDao ruleGroupDao;
     private RuleMetricDao ruleMetricDao;
     private MetaDataClient metaDataClient;
+    private LinkisDataSourceEnvService linkisDataSourceEnvService;
     private static final Logger LOGGER = LoggerFactory.getLogger(AddMultiRuleRequestBuilder.class);
 
     public AddMultiRuleRequestBuilder() {
@@ -110,19 +99,13 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
     }
 
-    public AddMultiRuleRequestBuilder(RuleMetricDao ruleMetricDao, MetaDataClient metaDataClient, String datasourceCluster) {
-        this.ruleMetricDao = ruleMetricDao;
-        this.metaDataClient = metaDataClient;
-        this.datasourceCluster = datasourceCluster;
-        addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
-    }
-
-    public AddMultiRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, String datasourceCluster) {
+    public AddMultiRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, LinkisConfig linkisConfig, LinkisDataSourceEnvService linkisDataSourceEnvService) {
         this.ruleGroupDao = ruleGroupDao;
         this.ruleMetricDao = ruleMetricDao;
         this.metaDataClient = metaDataClient;
-        this.datasourceCluster = datasourceCluster;
         addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
+        this.linkisConfig = linkisConfig;
+        this.linkisDataSourceEnvService = linkisDataSourceEnvService;
     }
 
     @Override
@@ -139,9 +122,127 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-                                                     boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-            throws UnExpectedRequestException, MetaDataAcquireFailedException {
+                                                     boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        // Init template argument.
+        templateArgumentSettingInit();
+        solveDatasource(datasource);
+
+        addMultiSourceRuleRequest.setLoginUser(userName);
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+        // Alert info.
+        alertSetting(alertInfo);
+        // Task running info.
+        taskSetting(deleteFailCheckResult, abortOnFailure, execParams);
+
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+        initAlarm(alarmVariable, uploadRuleMetricValue, uploadAbnormalValue);
         return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception {
+        String[] dcnNumArr = dcnNums.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (dcnNumArr.length != 2) {
+            throw new UnExpectedRequestException("Error parameter: dcn_num.");
+        }
+        String sourceDcnNum = dcnNumArr[0];
+        String targetDcnNum = dcnNumArr[1];
+        if (Objects.isNull(addMultiSourceRuleRequest.getSource()) || Objects.isNull(addMultiSourceRuleRequest.getTarget())) {
+            LOGGER.warn("DataSource is null.");
+            return this;
+        }
+        Long sourceDataSourceId = this.addMultiSourceRuleRequest.getSource().getLinkisDataSourceId();
+        Long targetDataSourceId = this.addMultiSourceRuleRequest.getTarget().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(sourceDataSourceId);
+        request.setDcnNums(Arrays.asList(StringUtils.split(sourceDcnNum, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> sourceLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+        request.setLinkisDataSourceId(targetDataSourceId);
+        request.setDcnNums(Arrays.asList(StringUtils.split(targetDcnNum, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> targetLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+
+        if (sourceLinkisDataSourceEnvs.size() != targetLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> sourceDataSourceEnvRequest = sourceLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getSource().setDataSourceEnvRequests(sourceDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getSource().setDcnRangeType(QualitisConstants.CMDB_KEY_DCN_NUM);
+
+        List<DataSourceEnvRequest> targetDataSourceEnvRequest = targetLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getTarget().setDataSourceEnvRequests(targetDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getTarget().setDcnRangeType(QualitisConstants.CMDB_KEY_DCN_NUM);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        String[] logicAreaArr = logicAreas.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (logicAreaArr.length != 2) {
+            throw new UnExpectedRequestException("Error parameter: logic_area.");
+        }
+        String sourceLogicArea = logicAreaArr[0];
+        String targetLogicArea = logicAreaArr[1];
+        if (Objects.isNull(addMultiSourceRuleRequest.getSource()) || Objects.isNull(addMultiSourceRuleRequest.getTarget())) {
+            LOGGER.warn("DataSource is null.");
+            return this;
+        }
+        Long sourceDataSourceId = this.addMultiSourceRuleRequest.getSource().getLinkisDataSourceId();
+        Long targetDataSourceId = this.addMultiSourceRuleRequest.getTarget().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(sourceDataSourceId);
+        request.setLogicAreas(Arrays.asList(StringUtils.split(sourceLogicArea, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> sourceLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+        request.setLinkisDataSourceId(targetDataSourceId);
+        request.setLogicAreas(Arrays.asList(StringUtils.split(targetLogicArea, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> targetLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+        if (sourceLinkisDataSourceEnvs.size() != targetLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> sourceDataSourceEnvRequest = sourceLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getSource().setDataSourceEnvRequests(sourceDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getSource().setDcnRangeType(QualitisConstants.CMDB_KEY_LOGIC_AREA);
+
+        List<DataSourceEnvRequest> targetDataSourceEnvRequest = targetLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getTarget().setDataSourceEnvRequests(targetDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getTarget().setDcnRangeType(QualitisConstants.CMDB_KEY_LOGIC_AREA);
+        return this;
+    }
+
+    private void solveDatasource(String datasource) throws UnExpectedRequestException {
+        MultiDataSourceConfigRequest source;
+        MultiDataSourceConfigRequest target;
+
+        String[] datasourceStrs = datasource.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("Datasource param is illegle");
+        }
+
+        String sourcStr = datasourceStrs[0];
+        String targetStr = datasourceStrs[1];
+        target = toRequest(targetStr);
+        source = toRequest(sourcStr);
+        addMultiSourceRuleRequest.setTarget(target);
+        addMultiSourceRuleRequest.setSource(source);
+    }
+
+    private MultiDataSourceConfigRequest toRequest(String dataSourcStr) throws UnExpectedRequestException {
+        String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+
+        String[] datasourceStrs = dataSourcStr.split(SpecCharEnum.COLON.getValue());
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("Datasource param is illegle");
+        }
+        String[] datasources = datasourceStrs[0].split(SpecCharEnum.PERIOD.getValue());
+        String filter = datasourceStrs[1];
+        String cluster = datasources[0];
+        String database = datasources[1];
+        String table = datasources[2];
+
+        return new MultiDataSourceConfigRequest(cluster, database, table, filter, realUserName);
     }
 
     @Override
@@ -183,7 +284,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder basicInfoWithDataSource(String datasource,
+    public AddRequestBuilder basicInfoWithDataSource(String datasource, Long standardValueVersionId,
                                                      List<TemplateArgumentRequest> templateArgumentRequests,
                                                      boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure,
                                                      String execParams) throws Exception {
@@ -261,7 +362,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         addMultiSourceRuleRequest.setTarget(target);
         addMultiSourceRuleRequest.setSource(source);
 
-        if (datasourceStrs.length > TWO) {
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
 
@@ -281,17 +382,76 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return colsMap;
     }
 
+    private void solveMultiClusterDatasource(Boolean isMultiCluster, String[] clusterArr, String datasources) throws Exception {
+
+        if (StringUtils.isBlank(datasources)) {
+            String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+            MultiDataSourceConfigRequest source = new MultiDataSourceConfigRequest(clusterArr[0], "", "", "", realUserName);
+            MultiDataSourceConfigRequest target = new MultiDataSourceConfigRequest(isMultiCluster?clusterArr[1]: clusterArr[0], "", "", "", realUserName);
+            addMultiSourceRuleRequest.setTarget(target);
+            addMultiSourceRuleRequest.setSource(source);
+            return;
+        }
+
+        String[] datasourceStrs = datasources.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("Datasource param is illegal");
+        }
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[0]);
+        MultiDataSourceConfigRequest source = toRequestWithoutTable(clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer,"","");
+        addMultiSourceRuleRequest.setSource(source);
+
+        dataSourceId = new StringBuilder();
+        dataSourceName = new StringBuilder();
+        envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[1]);
+        MultiDataSourceConfigRequest target = toRequestWithoutTable(isMultiCluster?clusterArr[1]:clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer,"","");
+        addMultiSourceRuleRequest.setTarget(target);
+
+    }
+
+    private void handleMultiClusterDataSource(Boolean isMultiCluster, String[] clusterArr, String datasources, String dbAndTable) throws Exception {
+        String[] datasourceStrs = datasources.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("Datasource param is illegal");
+        }
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[0]);
+
+        String[] dbAndTableStrs = dbAndTable.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (dbAndTableStrs.length > QualitisConstants.LENGTH_TWO) {
+            throw new UnExpectedRequestException("DbAndTable param is illegal");
+        }
+        String[] sourceDbAndTable = dbAndTableStrs[0].split(SpecCharEnum.PERIOD.getValue());
+        String[] targetDbAndTable = dbAndTableStrs[1].split(SpecCharEnum.PERIOD.getValue());
+        MultiDataSourceConfigRequest source = toRequestWithoutTable(clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer, sourceDbAndTable[0], sourceDbAndTable[1]);
+        addMultiSourceRuleRequest.setSource(source);
+
+        dataSourceId = new StringBuilder();
+        dataSourceName = new StringBuilder();
+        envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[1]);
+        MultiDataSourceConfigRequest target = toRequestWithoutTable(isMultiCluster ? clusterArr[1] : clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer, targetDbAndTable[0], targetDbAndTable[1]);
+        addMultiSourceRuleRequest.setTarget(target);
+    }
+
     private MultiDataSourceConfigRequest toRequest(String dataSourcStr, StringBuilder dataSourceId, StringBuilder dataSourceName) throws Exception {
         String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
-        String realClusterName = this.datasourceCluster;
+        String realClusterName = this.linkisConfig.getDatasourceCluster();
 
         String[] datasourceStrs = dataSourcStr.split(SpecCharEnum.COLON.getValue());
-        if (datasourceStrs.length > TWO) {
+        if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
         String[] datasources = datasourceStrs[0].split(SpecCharEnum.PERIOD.getValue());
         String filter = datasourceStrs[1];
-        if (datasources.length != TWO) {
+
+        if (datasources.length != 2) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
         String database = datasources[0];
@@ -299,13 +459,42 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         StringBuilder dataSourceType = new StringBuilder();
         StringBuilder envsStringBuffer = new StringBuilder();
         List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>();
-        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, realUserName, realClusterName, metaDataClient, "", "", new ArrayList<ColumnInfoDetail>());
+        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, linkisConfig.getDatasourceAdmin(), realClusterName, metaDataClient, "", "", new ArrayList<ColumnInfoDetail>());
 
         if (StringUtils.isNotEmpty(dataSourceId.toString()) || StringUtils.isNotEmpty(dataSourceName.toString())) {
             return new MultiDataSourceConfigRequest(database, table, filter, Long.parseLong(dataSourceId.toString()), dataSourceName.toString(), dataSourceType.toString());
         }
 
         return new MultiDataSourceConfigRequest(database, table, filter, realUserName);
+    }
+
+    private MultiDataSourceConfigRequest toRequestWithoutTable(String cluster, StringBuilder dataSourceId, StringBuilder dataSourceName, StringBuilder envsStringBuffer, String db, String table) throws Exception {
+        String realClusterName = this.linkisConfig.getDatasourceCluster();
+
+        StringBuilder dataSourceType = new StringBuilder();
+        List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>();
+        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, linkisConfig.getDatasourceAdmin(), realClusterName, metaDataClient, db, table, new ArrayList<ColumnInfoDetail>());
+
+        MultiDataSourceConfigRequest multiDataSourceConfigRequest;
+        if (StringUtils.isNotEmpty(dataSourceId.toString())) {
+            multiDataSourceConfigRequest = new MultiDataSourceConfigRequest(db, table, "", Long.parseLong(dataSourceId.toString()), dataSourceName.toString(), dataSourceType.toString());
+        } else {
+            multiDataSourceConfigRequest = new MultiDataSourceConfigRequest(db, table, "", null, dataSourceName.toString(), dataSourceType.toString());
+        }
+
+//        If the user haven't to specific envs, execute all envs inside the dataSource by default.
+        if (StringUtils.isNotEmpty(dataSourceId.toString()) && StringUtils.isEmpty(envsStringBuffer.toString())) {
+            LOGGER.info("Start to get all envs.");
+            List<LinkisDataSourceEnv> linkisDataSourceEnvs = linkisDataSourceEnvService.queryAllEnvs(Long.parseLong(dataSourceId.toString()));
+            for (LinkisDataSourceEnv linkisDataSourceEnv : linkisDataSourceEnvs) {
+                DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest(linkisDataSourceEnv);
+                dataSourceEnvRequests.add(dataSourceEnvRequest);
+            }
+        }
+
+        multiDataSourceConfigRequest.setClusterName(cluster);
+        multiDataSourceConfigRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
+        return multiDataSourceConfigRequest;
     }
 
     @Override
@@ -336,13 +525,77 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder basicInfoWithDataSourceAndCluster(String cluster, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        String[] clusterArr = cluster.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        boolean isMultiCluster = clusterArr.length == 2;
+        handleMultiClusterDataSource(isMultiCluster, clusterArr, datasource, dbAndTable);
+
+        addMultiSourceRuleRequest.setLoginUser(userName);
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+        // Alert info.
+        alertSetting(alertInfo);
+
+        // Task running info.
+        taskSetting(deleteFailCheckResult, abortOnFailure, execParams);
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+        initAlarm(alarmVariable, uploadRuleMetricValue, uploadAbnormalValue);
+        return this;
+    }
+
+    private void solveCustomMapping(String mappingCols, Integer mappingType) {
+        List<MultiDataSourceJoinConfigRequest> requests = new ArrayList<>();
+        String[] mappingColStrs = mappingCols.toLowerCase().split(AND);
+
+        for (String currentMappingCol : mappingColStrs) {
+            List<MultiDataSourceJoinColumnRequest> leftDataSourceCols = new ArrayList<>();
+            List<MultiDataSourceJoinColumnRequest> rightDataSourceCols = new ArrayList<>();
+
+            MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
+
+            multiDataSourceJoinConfigRequest.setOperation(1);
+            String[] statements = currentMappingCol.split("=");
+
+            String leftCol = statements[0];
+            String rightCol = statements[1];
+            MultiDataSourceJoinColumnRequest leftColumn = new MultiDataSourceJoinColumnRequest();
+            leftColumn.setColumnName(leftCol);
+            leftDataSourceCols.add(leftColumn);
+            MultiDataSourceJoinColumnRequest rightColumn = new MultiDataSourceJoinColumnRequest();
+            rightColumn.setColumnName(rightCol);
+            rightDataSourceCols.add(rightColumn);
+
+            multiDataSourceJoinConfigRequest.setLeft(leftDataSourceCols);
+            multiDataSourceJoinConfigRequest.setRight(rightDataSourceCols);
+
+            requests.add(multiDataSourceJoinConfigRequest);
+
+            List<TemplateArgumentRequest> templateArgumentRequests= Lists.newArrayList();
+            if (MappingTypeEnum.CONNECT_FIELDS.getCode().equals(mappingType)) {
+                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+                templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.CONNECT_FIELDS.getCode());
+                templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
+                templateArgumentRequests.add(templateArgumentRequest);
+            } else if (MappingTypeEnum.MATCHING_FIELDS.getCode().equals(mappingType)) {
+                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+                templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode());
+                templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
+                templateArgumentRequests.add(templateArgumentRequest);
+            }
+            addMultiSourceRuleRequest.getTemplateArgumentRequests().addAll(templateArgumentRequests);
+        }
+    }
+
     private void solveMapping(String mappings, Map<String, List<ColumnInfoDetail>> colsMap, Integer mappingType) {
         List<MultiDataSourceJoinConfigRequest> requests = new ArrayList<>();
         String[] mappingStrs = mappings.toLowerCase().split(AND);
 
         for (String currentMapping : mappingStrs) {
-            List<MultiDataSourceJoinColumnRequest> left = new ArrayList<>();
-            List<MultiDataSourceJoinColumnRequest> right = new ArrayList<>();
+            List<MultiDataSourceJoinColumnRequest> leftDataSourceCols = new ArrayList<>();
+            List<MultiDataSourceJoinColumnRequest> rightDataSourceCols = new ArrayList<>();
 
             MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
 
@@ -356,11 +609,11 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
                     multiDataSourceJoinConfigRequest.setRightStatement(rightStatement);
 
                     // Statement to request
-                    parseStatementColumns(colsMap.get(TMP_1), left, leftStatement);
-                    parseStatementColumns(colsMap.get(TMP_2), right, rightStatement);
+                    parseStatementColumns(colsMap.get(TMP_1), leftDataSourceCols, leftStatement);
+                    parseStatementColumns(colsMap.get(TMP_2), rightDataSourceCols, rightStatement);
 
-                    multiDataSourceJoinConfigRequest.setLeft(left);
-                    multiDataSourceJoinConfigRequest.setRight(right);
+                    multiDataSourceJoinConfigRequest.setLeft(leftDataSourceCols);
+                    multiDataSourceJoinConfigRequest.setRight(rightDataSourceCols);
                     break;
                 }
             }
@@ -389,6 +642,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         while (m.find()) {
             String element = m.group();
             String colNameWithOutTmp = element.replace("tmp1.", "").replace("tmp2.", "");
+//            cols中的字段是从linkis侧取的全量数据。获取请求列的类型
             String type = cols.stream().filter(field -> field.getFieldName().equals(colNameWithOutTmp)).map(ColumnInfoDetail::getDataType).collect(Collectors.joining());
             joinColumnRequests.add(new MultiDataSourceJoinColumnRequest(element, type));
         }
@@ -422,6 +676,69 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param clusters   Multi-Cluster rule: HDP-GZPC-BDAP-UAT|HDP-GZPC-BDAP-SIT ; Single-CLuster rule: HDP-GZPC-BDAP-UAT
+     * @param datasources HDP-GZPC-BDAP-UAT.(NAME=qualitis_dev_63{dev_env})|HDP-GZPC-BDAP-SIT.(NAME=qualitis_sit_db{sit_env})
+     * @param mappings  left_field|right_field
+     * @param compareCols   left_field|right_field
+     * @param metricSqls    select * from table1|select * from table2
+     * @param deleteFailCheckResult
+     * @param uploadRuleMetricValue
+     * @param uploadAbnormalValue
+     * @param alertInfo
+     * @param abortOnFailure
+     * @param execParams
+     * @return
+     * @throws Exception
+     */
+    @Override
+    public AddRequestBuilder basicInfoWithoutDataSource(String clusters, String datasources, String mappings, String compareCols, String metricSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        // Init template argument.
+        templateArgumentSettingInit();
+        String[] metricSqlStrs = metricSqls.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        if (metricSqlStrs.length != 2) {
+            throw new UnExpectedRequestException("Sql params is illegal");
+        }
+
+        String[] clusterArr = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        boolean isMultiCluster = clusterArr.length == 2;
+
+        solveMultiClusterDatasource(isMultiCluster, clusterArr, datasources);
+
+        solveMetricSql(metricSqlStrs[0], metricSqlStrs[1]);
+        // Mapping to join columns
+        solveCustomMapping(mappings, MappingTypeEnum.CONNECT_FIELDS.getCode());
+        solveCustomMapping(compareCols, MappingTypeEnum.MATCHING_FIELDS.getCode());
+
+        addMultiSourceRuleRequest.setLoginUser(userName);
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+        // Alert info.
+        alertSetting(alertInfo);
+
+        // Task running info.
+        taskSetting(deleteFailCheckResult, abortOnFailure, execParams);
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+        initAlarm(alarmVariable, uploadRuleMetricValue, uploadAbnormalValue);
+        return this;
+    }
+
+    private void solveMetricSql(String leftmetricSqlStr, String rightmetricSqlStr) {
+        List<TemplateArgumentRequest> templateArgumentRequests=  addMultiSourceRuleRequest.getTemplateArgumentRequests();
+        TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+        templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.LEFT_COLLECT_SQL.getCode());
+        templateArgumentRequest.setArgumentValue(leftmetricSqlStr);
+        templateArgumentRequests.add(templateArgumentRequest);
+
+        TemplateArgumentRequest templateArgumentRequest2 = new TemplateArgumentRequest();
+        templateArgumentRequest2.setArgumentType(TemplateInputTypeEnum.RIGHT_COLLECT_SQL.getCode());
+        templateArgumentRequest2.setArgumentValue(rightmetricSqlStr);
+        templateArgumentRequests.add(templateArgumentRequest2);
+    }
+
     @Override
     public AddRequestBuilder addRuleMetric(String ruleMetricName) throws UnExpectedRequestException {
         RuleMetric ruleMetricInDb = ruleMetricDao.findByName(ruleMetricName);
@@ -432,7 +749,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         }
 
         String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
-        if (infos.length != FOUR) {
+        if (infos.length != QualitisConstants.LENGTH_FOUR) {
             throw new UnExpectedRequestException("The metric name does not meet specifications");
         }
         String en = infos[2];
@@ -446,6 +763,24 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException {
         addMultiSourceRuleRequest.setExecutionParametersName(executionParameterName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCompleteEvent(String alarmEvents) {
+        addMultiSourceRuleRequest.setExecutionCompleted(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckSuccessEvent(String alarmEvents) {
+        addMultiSourceRuleRequest.setVerificationSuccessful(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckFailedEvent(String alarmEvents) {
+        addMultiSourceRuleRequest.setVerificationFailed(alarmEvents);
         return this;
     }
 
@@ -1597,7 +1932,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AbstractCommonRequest returnRequest() {
-        if (addMultiSourceRuleRequest.getAlarmVariable().size() >= TWO) {
+        if (addMultiSourceRuleRequest.getAlarmVariable().size() >= QualitisConstants.LENGTH_TWO) {
             addMultiSourceRuleRequest.getAlarmVariable().remove(0);
         }
         return this.addMultiSourceRuleRequest;
@@ -1668,7 +2003,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder setAbnormalDb(String clusterAndDbName) throws UnExpectedRequestException {
-        if (StringUtils.isEmpty(clusterAndDbName) || !clusterAndDbName.contains(COMMA)) {
+        if (StringUtils.isEmpty(clusterAndDbName) || !clusterAndDbName.contains(SpecCharEnum.PERIOD_NO_ESCAPE.getValue())) {
             throw new UnExpectedRequestException("Abnormal cluster and database is illegal.");
         }
         String[] infos = clusterAndDbName.split(SpecCharEnum.PERIOD.getValue());
@@ -1686,7 +2021,13 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder unionAll() throws UnExpectedRequestException {
-        addMultiSourceRuleRequest.setUnionAll(true);
+        addMultiSourceRuleRequest.setUnionWay(UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder unionWay(int unionWay) throws UnExpectedRequestException {
+        addMultiSourceRuleRequest.setUnionWay(UnionWayEnum.fromCode(unionWay).getCode());
         return this;
     }
 
@@ -1699,6 +2040,20 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
             RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
             addMultiSourceRuleRequest.setRuleGroupId(savedRuleGroup.getId());
         }
+        addMultiSourceRuleRequest.setRuleGroupName(ruleGroupName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder moveToGroup(String ruleGroupName) throws UnExpectedRequestException {
+        RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, project.getId());
+        if (ruleGroup != null) {
+            addMultiSourceRuleRequest.setNewRuleGroupId(ruleGroup.getId());
+        } else {
+            RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
+            addMultiSourceRuleRequest.setNewRuleGroupId(savedRuleGroup.getId());
+        }
+        addMultiSourceRuleRequest.setRuleGroupName(ruleGroupName);
         return this;
     }
 
@@ -1732,6 +2087,11 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
                 break;
             }
         }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder addUdfs(String udfNames) throws UnExpectedRequestException {
         return this;
     }
 

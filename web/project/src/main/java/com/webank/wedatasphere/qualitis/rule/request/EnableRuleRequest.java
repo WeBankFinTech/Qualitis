@@ -25,4 +25,11 @@ public class EnableRuleRequest {
     public void setRuleEnableList(List<EnableRequest> ruleEnableList) {
         this.ruleEnableList = ruleEnableList;
     }
+
+    @Override
+    public String toString() {
+        return "EnableRuleRequest{" +
+                "ruleEnableList=" + ruleEnableList +
+                '}';
+    }
 }

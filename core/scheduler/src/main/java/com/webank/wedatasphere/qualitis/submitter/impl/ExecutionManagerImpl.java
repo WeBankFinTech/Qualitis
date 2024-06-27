@@ -16,26 +16,20 @@
 
 package com.webank.wedatasphere.qualitis.submitter.impl;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.EngineTypeEnum;
-import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
-import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
-import com.webank.wedatasphere.qualitis.bean.JobKillResult;
-import com.webank.wedatasphere.qualitis.bean.JobSubmitResult;
-import com.webank.wedatasphere.qualitis.bean.RuleTaskDetail;
-import com.webank.wedatasphere.qualitis.bean.TaskRule;
-import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
-import com.webank.wedatasphere.qualitis.bean.TaskRuleDataSource;
-import com.webank.wedatasphere.qualitis.bean.TaskSubmitResult;
+import com.webank.wedatasphere.qualitis.bean.*;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.client.AbstractJobSubmitter;
 import com.webank.wedatasphere.qualitis.config.ImsConfig;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
 import com.webank.wedatasphere.qualitis.config.TaskExecuteLimitConfig;
-import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
-import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.converter.TemplateConverterFactory;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
@@ -44,18 +38,16 @@ import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskDataSourceRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskRuleSimpleRepository;
 import com.webank.wedatasphere.qualitis.divider.TaskDividerFactory;
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
-import com.webank.wedatasphere.qualitis.entity.RuleMetric;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
+import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
+import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
+import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
+import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
+import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.PartitionStatisticsInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.table.TableStatisticsInfo;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
@@ -63,15 +55,23 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateFileTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
 import com.webank.wedatasphere.qualitis.util.FilePassUtil;
+import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.StringUtils;
+import org.assertj.core.util.Sets;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -84,14 +84,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -143,9 +137,14 @@ public class ExecutionManagerImpl implements ExecutionManager {
     private ImsConfig imsConfig;
     @Autowired
     private LocaleParser localeParser;
+    @Autowired
+    private RuleDatasourceEnvDao ruleDatasourceEnvDao;
 
     @Value("${execution.task.parallelNum:50}")
     private Integer parallelNum;
+
+    @Value("${intellect.check.project_name}")
+    private String intellectCheckProjectName;
 
     private HttpServletRequest httpServletRequest;
 
@@ -161,13 +160,17 @@ public class ExecutionManagerImpl implements ExecutionManager {
     @Override
     public List<TaskSubmitResult> submitApplication(List<Rule> rules, String nodeName, String createTime, String user
             , Map<Long, Map<String, Object>> ruleReplaceInfo, StringBuilder partition, Date date, Application application, String cluster
-            , String startupParam, String setFlag, Map<String, String> execParams, StringBuilder runDate, StringBuilder splitBy, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
+            , String startupParam, String setFlag, Map<String, String> execParams, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
             , String tenantUserName, List<String> leftCols, List<String> rightCols, List<String> comelexCols, String createUser) throws Exception {
 
-        String csId = rules.iterator().next().getCsId();
+        String csId = null;
+        List<Rule> rulesWithCsId = rules.stream().filter(rule -> StringUtils.isNotEmpty(rule.getCsId())).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(rulesWithCsId)) {
+            csId = rulesWithCsId.iterator().next().getCsId();
+        }
         // Check if cluster supported
         LOGGER.info("Start to collect rule to clusters");
-        Map<String, List<Rule>> clusterNameMap = getRuleCluster(rules);
+        Map<String, List<Rule>> clusterNameMap = getRuleCluster(rules, application);
         LOGGER.info("Succeed to classify rules by cluster, cluster map: {}", clusterNameMap);
         if (StringUtils.isNotBlank(cluster)) {
             LOGGER.info("When pick up a cluster, these datasources of rules must be from one cluster. Now start to put into the specify cluster.\n");
@@ -176,10 +179,15 @@ public class ExecutionManagerImpl implements ExecutionManager {
         }
         List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
         for (String clusterName : clusterNameMap.keySet()) {
+            Integer datasourceIndex = null;
             List<Rule> clusterRules = clusterNameMap.get(clusterName);
-
             if (clusterName.contains(SpecCharEnum.EQUAL.getValue())) {
                 clusterName = clusterName.split(SpecCharEnum.EQUAL.getValue())[0];
+            }
+            if (clusterName.contains(SpecCharEnum.PERIOD_NO_ESCAPE.getValue())) {
+                String[] infos = clusterName.split(SpecCharEnum.PERIOD.getValue());
+                datasourceIndex = Integer.valueOf(infos[1]);
+                clusterName = infos[0];
             }
             if (StringUtils.isNotBlank(cluster)) {
                 clusterName = cluster;
@@ -192,7 +200,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             LOGGER.info("Succeed to pass the check of cluster config. All cluster of rules are configured");
 
             // Divide rule into tasks
-            List<DataQualityTask> tasks = TaskDividerFactory.getDivider().divide(clusterRules, application.getId(), createTime, partition.toString()
+            List<DataQualityTask> tasks = TaskDividerFactory.getDivider().divide(clusterInfo.getClusterName(), datasourceIndex, clusterRules, application.getId(), createTime, partition.toString()
                     , date, ruleReplaceInfo, dataSourceMysqlConnect, user, taskExecuteLimitConfig.getTaskExecuteRuleSize(), splitBy.toString(), startupParam);
             LOGGER.info("Succeed to divide application into tasks. result: {}", tasks);
 
@@ -209,11 +217,11 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
             // 合并 + 去重(OuterExecutionServiceImpl类ruleReplaceInfo方法，有对执行参数模板的ExecutionParam(执行参数)与页面录入执行参数做比较(相同key保证表单参数优先))
             StringBuilder lastSetFlag = new StringBuilder();
-            if(StringUtils.isNotBlank(setFlag)){
+            if (StringUtils.isNotBlank(setFlag)) {
                 LOGGER.info("Set flag from http request entity: {}", setFlag);
                 lastSetFlag.append(lastSetFlag != null && lastSetFlag.length() > 0 ? SpecCharEnum.DIVIDER.getValue() + setFlag : setFlag);
             }
-            if(tmpExecParams != null && tmpExecParams.length() > 0){
+            if (tmpExecParams != null && tmpExecParams.length() > 0) {
                 lastSetFlag.append(lastSetFlag != null && lastSetFlag.length() > 0 ? SpecCharEnum.DIVIDER.getValue() + tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString() : tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
             }
 
@@ -221,7 +229,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             List<DataQualityJob> jobList = new ArrayList<>();
             for (DataQualityTask task : tasks) {
                 DataQualityJob job = templateConverterFactory.getConverter(task).convert(task, date, lastSetFlag != null && lastSetFlag.length() > 0 ? lastSetFlag.toString() : setFlag, execParams, runDate.toString()
-                        , clusterInfo.getClusterType(), dataSourceMysqlConnect, user, leftCols, rightCols, comelexCols, createUser);
+                        , runToday.toString(), clusterInfo.getClusterType(), dataSourceMysqlConnect, user, leftCols, rightCols, comelexCols, createUser, application.getProjectId());
                 job.setUser(task.getUser());
                 jobList.add(job);
 
@@ -243,7 +251,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
     @Override
     public GeneralResponse<Integer> killApplication(Application applicationInDb, String user)
-        throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException {
+            throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException {
         List<Task> tasks = taskDao.findByApplication(applicationInDb);
         List<JobKillResult> results = new ArrayList<>();
         if (tasks == null || tasks.isEmpty()) {
@@ -259,7 +267,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             task.setEndTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
             taskDao.save(task);
         }
-        return new GeneralResponse<>("200", "{&SUCCESS_TO_KILL_TASK}", results.size());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_KILL_TASK}", results.size());
     }
 
     private void handleDataQualityJob(String nodeName, String user, Application application, String csId,
@@ -287,7 +295,11 @@ public class ExecutionManagerImpl implements ExecutionManager {
             } else if (EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(job.getEngineType())) {
                 // Submit shell task
                 result = abstractJobSubmitter.submitShellJobNew(code, linkisConfig.getEngineName(), StringUtils.isNotBlank(proxy) ? proxy : user
-                        , clusterInfo.getLinkisAddress(), clusterName, taskId, job.getStartupParam(), tenantUserName);
+                        , clusterInfo.getLinkisAddress(), clusterName, taskId, job.getStartupParam(), job.getEngineReuse() == null ? true : job.getEngineReuse().booleanValue(), tenantUserName);
+            }  else if (EngineTypeEnum.TRINO_ENGINE.getMessage().equals(job.getEngineType())) {
+                // Submit trino task
+                result = abstractJobSubmitter.submitTrinoJobNew(code, linkisConfig.getEngineName(), StringUtils.isNotBlank(proxy) ? proxy : user
+                        , clusterInfo.getLinkisAddress(), clusterName, taskId, job.getStartupParam(), job.getEngineReuse() == null ? true : job.getEngineReuse().booleanValue(), tenantUserName);
             } else {
                 throw new UnExpectedRequestException("Unknown engine type.");
             }
@@ -305,7 +317,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
     private void splitParalellTasks(List<DataQualityJob> jobList) {
         List<DataQualityJob> parallelJobList = new ArrayList<>();
 
-        for (Iterator<DataQualityJob> iterator = jobList.iterator(); iterator.hasNext();) {
+        for (Iterator<DataQualityJob> iterator = jobList.iterator(); iterator.hasNext(); ) {
             DataQualityJob currentJob = iterator.next();
             if (currentJob.getResultNum() != null && currentJob.getResultNum() > parallelNum && currentJob.getJobCode().contains("Qualitis System Code Dividing Line")) {
                 List<String> allSql = new ArrayList<>();
@@ -319,7 +331,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
                 Task task = taskDao.findById(currentJob.getTaskId());
 
-                for (int index = 0; index < batch; index ++) {
+                for (int index = 0; index < batch; index++) {
                     // Copy task
                     Task parallelTask = new Task();
                     BeanUtils.copyProperties(task, parallelTask);
@@ -405,16 +417,29 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
     private void putAllRulesIntoSpecifyCluster(Map<String, List<Rule>> clusterNameMap, String cluster) {
         List<Rule> allRules = new ArrayList<>();
-        for (List<Rule> ruleList : clusterNameMap.values()) {
-            allRules.addAll(ruleList);
+        Map<String, List<Rule>> clusterNameNewMap = new HashMap<>(clusterNameMap.keySet().size());
+        for (String clusterName : clusterNameMap.keySet()) {
+            if (clusterName.contains(SpecCharEnum.PERIOD_NO_ESCAPE.getValue())) {
+                String realClusterName = clusterName.split(SpecCharEnum.PERIOD.getValue())[0];
+                List<Rule> rules = clusterNameMap.get(clusterName);
+                clusterName = clusterName.replaceFirst(realClusterName, cluster);
+
+                clusterNameNewMap.put(clusterName, rules);
+            } else {
+                allRules.addAll(clusterNameMap.get(clusterName));
+            }
+
         }
         clusterNameMap.clear();
-        clusterNameMap.put(cluster, allRules);
+        if (CollectionUtils.isNotEmpty(allRules)) {
+            clusterNameMap.put(cluster, allRules);
+        }
+        clusterNameMap.putAll(clusterNameNewMap);
     }
 
     @Override
     public TaskSubmitResult executeFileRule(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName
-        , StringBuilder runDate, Map<Long, Map<String, Object>> ruleReplaceInfo) throws Exception {
+            , StringBuilder runDate, StringBuilder runToday, Map<Long, Map<String, Object>> ruleReplaceInfo) throws Exception {
         LOGGER.info("Start to execute file rule task and save check result.");
         Task taskInDb = taskDao.save(new Task(application, submitTime, TaskStatusEnum.SUBMITTED.getCode()));
         Set<TaskDataSource> taskDataSources = new HashSet<>(fileRules.size());
@@ -451,14 +476,23 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
                 String fullSize = result.getTableSize();
                 int partitionNum = result.getPartitions() == null ? 0 : result.getPartitions().size();
-                List<TaskResult> taskResultInDbs = saveTaskRusult(fullSize, Integer.parseInt(partitionNum + ""), application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString());
+                List<TaskResult> taskResultInDbs = saveTaskRusult(fullSize, Integer.parseInt(partitionNum + ""), application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString());
                 successRule = modifyTaskStatus(taskRuleSimple.getTaskRuleAlarmConfigList(), taskInDb, taskResultInDbs, successRule);
             } else {
                 PartitionStatisticsInfo result;
                 try {
                     String proxyUser = ruleDataSource.getProxyUser();
+                    String filter = ruleDataSource.getFilter();
+                    if (StringUtils.isNotBlank(runDate.toString())) {
+                        filter = filter.replace("${run_date}", runDate);
+//                        filter = filter.replace("${run_date_std}", runDate);
+                    }
+                    if (StringUtils.isNotBlank(runToday.toString())) {
+                        filter = filter.replace("${run_today}", runDate);
+//                        filter = filter.replace("${run_today_std}", runDate);
+                    }
                     result = metaDataClient.getPartitionStatisticsInfo(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName()
-                            , ruleDataSource.getDbName(), ruleDataSource.getTableName(), filterToPartitionPath(DateExprReplaceUtil.replaceFilter(new Date(), ruleDataSource.getFilter())), StringUtils.isNotBlank(proxyUser) ? proxyUser : user);
+                            , ruleDataSource.getDbName(), ruleDataSource.getTableName(), filterToPartitionPath(DateExprReplaceUtil.replaceFilter(new Date(), filter)), StringUtils.isNotBlank(proxyUser) ? proxyUser : user);
                 } catch (RestClientException e) {
                     LOGGER.error("Failed to get table statistics with linkis api.", e);
                     throw new UnExpectedRequestException("{&FAILED_TO_GET_DATASOURCE_INFO}");
@@ -470,7 +504,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
                 String fullSize = result.getPartitionSize();
                 List<TaskResult> taskResultInDbs = saveTaskRusult(fullSize, 0, application, submitTime
-                        , rule, rule.getAlarmConfigs(), runDate.toString());
+                        , rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString());
                 successRule = modifyTaskStatus(taskRuleSimple.getTaskRuleAlarmConfigList(), taskInDb, taskResultInDbs, successRule);
             }
 
@@ -495,8 +529,268 @@ public class ExecutionManagerImpl implements ExecutionManager {
     }
 
     @Override
+    public TaskSubmitResult executeTableStructureRule(List<Rule> tableStructures, String submitTime, Application application, String user,
+                                                      String clusterName, StringBuilder runDate, StringBuilder runToday, Map<Long, Map<String, Object>> ruleReplaceInfo, String nodeName) throws Exception {
+        LOGGER.info("Start to execute table structure rule task and save check result.");
+        Task taskInDb = taskDao.save(new Task(application, submitTime, TaskStatusEnum.SUBMITTED.getCode()));
+        Set<TaskDataSource> taskDataSources = new HashSet<>(tableStructures.size());
+        Set<TaskRuleSimple> taskRuleSimples = new HashSet<>(tableStructures.size());
+        int totalRules = tableStructures.size();
+        int successRule = 0;
+        for (Rule rule : tableStructures) {
+            if (rule.getAbortOnFailure() != null) {
+                taskInDb.setAbortOnFailure(rule.getAbortOnFailure());
+            } else {
+                taskInDb.setAbortOnFailure(Boolean.FALSE);
+            }
+
+            for (Map.Entry<Long, Map<String, Object>> entry : ruleReplaceInfo.entrySet()) {
+                Long key = entry.getKey();
+                Map<String, Object> value = entry.getValue();
+                if (key.equals(rule.getId()) && value.containsKey(QualitisConstants.QUALITIS_UNION_WAY)) {
+                    rule.setUnionWay(MapUtils.getInteger(value, QualitisConstants.QUALITIS_UNION_WAY));
+                }
+            }
+
+            TaskRuleSimple taskRuleSimple = new TaskRuleSimple(rule, taskInDb, ruleReplaceInfo, false);
+            taskRuleSimples.add(taskRuleSimpleRepository.save(taskRuleSimple));
+            String hiveTemp = null;
+            List<String> leftMultipleDataSource = Lists.newArrayList();
+            List<String> rightMultipleDataSource = Lists.newArrayList();
+            List<TaskResult> taskResultInDbs = Lists.newArrayList();
+
+            for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
+                // check ruleDataSourceEnvs is it unfilled
+                if (CollectionUtils.isEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
+                    List<RuleDataSourceEnv> ruleDataSourceEnvs = ruleDatasourceEnvDao.findByDataSourceId(ruleDataSource.getId());
+                    if (CollectionUtils.isNotEmpty(ruleDataSourceEnvs)) {
+                        ruleDataSource.setRuleDataSourceEnvs(ruleDataSourceEnvs);
+                    }
+                }
+
+                taskDataSources.add(taskDataSourceRepository.save(new TaskDataSource(ruleDataSource, taskInDb)));
+                ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
+                if (clusterInfo == null) {
+                    throw new ClusterInfoNotConfigException(clusterName + " {&DOES_NOT_EXIST}");
+                }
+
+                if (CollectionUtils.isEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
+                    List<ColumnInfoDetail> columnInfo;
+                    //hive
+                    if (StringUtils.isNotBlank(rule.getCsId())) {
+                        columnInfo = checkDatasourceInContext(ruleDataSource, clusterName, user, nodeName, rule.getCsId());
+                        if (CollectionUtils.isEmpty(columnInfo)) {
+                            throw new UnExpectedRequestException("cs table info cannot find context service the same rule data source table!");
+                        }
+                    } else {
+                        columnInfo = metaDataClient.getColumnInfo(clusterInfo.getClusterName(), ruleDataSource.getDbName(),
+                                ruleDataSource.getTableName(), StringUtils.isNotBlank(ruleDataSource.getProxyUser()) ? ruleDataSource.getProxyUser() : user);
+                    }
+
+                    if (columnInfo == null || CollectionUtils.isEmpty(columnInfo)) {
+                        throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+                    }
+                    if (!metaDataClient.fieldExist(ruleDataSource.getColName(), columnInfo, null)) {
+                        throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + ":" + ruleDataSource.getColName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+                    }
+
+                    //先以属性一升序,再进行属性二降序
+                    List<ColumnInfoDetail> resultColumnInfo = columnInfo.stream().sorted(Comparator.comparing(ColumnInfoDetail::getFieldName).
+                            thenComparing(ColumnInfoDetail::getDataType, Comparator.reverseOrder())).collect(Collectors.toList());
+
+                    String montage = resultColumnInfo.stream().map(e -> e.getFieldName())
+                            .collect(Collectors.joining());
+                    if (StringUtils.isBlank(hiveTemp)) {
+                        hiveTemp = montage;
+                    } else {
+                        taskResultInDbs = handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), hiveTemp.equals(montage) ? 0 + "" : 1 + "");
+                    }
+                } else {
+                    //mysql tdql 多环境下，是否需要多次校验表结构是否存在
+                    for (RuleDataSourceEnv ruleDataSourceEnv : ruleDataSource.getRuleDataSourceEnvs()) {
+                        DataInfo<ColumnInfoDetail> cols = metaDataClient.getColumnsByDataSourceName(linkisConfig.getDatasourceCluster(),
+                                linkisConfig.getDatasourceAdmin(), ruleDataSource.getLinkisDataSourceName(), ruleDataSource.getDbName(), ruleDataSource.getTableName(), ruleDataSourceEnv.getEnvId());
+
+                        String montage = getSplicingTables(ruleDataSource, cols);
+                        //left data source
+                        leftDataSource(leftMultipleDataSource, ruleDataSource, montage);
+                        //right data source
+                        rightDataSource(rightMultipleDataSource, ruleDataSource, montage, 1);
+                    }
+
+                }
+            }
+
+            //TODO 跨源 表结构比对  例如：tdsql varchar  hive  String
+            //1.字段名称
+            //2.类型匹配
+
+            // 1.左表： hive  右表：hive  result默认赋值
+            //   左表： hive   右表：mysql  tdsql
+            // 2.左表：mysql,tdsql  右表：hive
+            //   左表： mysql,tdsql   右表：mysql  tdsql
+            if (StringUtils.isNotBlank(hiveTemp) && CollectionUtils.isEmpty(leftMultipleDataSource)
+                    && CollectionUtils.isEmpty(rightMultipleDataSource)) {
+                LOGGER.info("Both the left and right table data source types are hive.");
+            } else if (StringUtils.isNotBlank(hiveTemp) && CollectionUtils.isNotEmpty(rightMultipleDataSource)) {
+                taskResultInDbs = handleAggregationSwitch(submitTime, application, runDate, runToday, rule, hiveTemp, rightMultipleDataSource);
+            } else if (CollectionUtils.isNotEmpty(leftMultipleDataSource) && StringUtils.isNotBlank(hiveTemp)) {
+                taskResultInDbs = handleAggregationSwitch(submitTime, application, runDate, runToday, rule, hiveTemp, leftMultipleDataSource);
+            } else if (CollectionUtils.isNotEmpty(leftMultipleDataSource) && CollectionUtils.isNotEmpty(rightMultipleDataSource)) {
+                List<Integer> anotherTempResult = Lists.newArrayList();
+                List<TaskResult> taskResultList = Lists.newArrayList();
+                if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(rule.getUnionWay())) {
+                    int leftSize = leftMultipleDataSource.stream().collect(Collectors.toSet()).size();
+                    int rightSize = rightMultipleDataSource.stream().collect(Collectors.toSet()).size();
+                    boolean left = leftSize > 1 ? true : false;
+                    boolean right = rightSize > 1 ? true : false;
+                    if (left || right) {
+                        taskResultList.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), 1 + ""));
+                    }
+
+                    if (1 == leftSize && 1 == rightSize) {
+                        Optional<String> leftOptional = leftMultipleDataSource.stream().collect(Collectors.toSet()).stream().findFirst();
+                        Optional<String> rightOptional = rightMultipleDataSource.stream().collect(Collectors.toSet()).stream().findFirst();
+                        String leftGetResult = leftOptional.isPresent() ? leftOptional.get() : "";
+                        String rightGetResult = rightOptional.isPresent() ? rightOptional.get() : "";
+
+                        String lastResult = leftGetResult.equals(rightGetResult) ? 0 + "" : 1 + "";
+                        taskResultList.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), lastResult));
+                    }
+                } else {
+                    for (String left : leftMultipleDataSource) {
+                        comparisonTableIsNotConsistent(submitTime, application, runDate, runToday, rule, rightMultipleDataSource, anotherTempResult, taskResultList, left);
+                    }
+                    if (CollectionUtils.isNotEmpty(anotherTempResult)) {
+                        Integer additive = anotherTempResult.stream().reduce(Integer::sum).orElse(0);
+                        taskResultList.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), additive.toString()));
+                    }
+                }
+                taskResultInDbs.addAll(taskResultList);
+            }
+
+            successRule = modifyTaskStatus(taskRuleSimple.getTaskRuleAlarmConfigList(), taskInDb, taskResultInDbs, successRule);
+
+            if (taskInDb.getStatus().equals(TaskStatusEnum.FAILED.getCode())) {
+                break;
+            }
+        }
+        taskInDb.setTaskDataSources(taskDataSources);
+        taskInDb.setTaskRuleSimples(taskRuleSimples);
+        // Update task status
+        taskInDb.setEndTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+        if (totalRules == successRule) {
+            taskInDb.setStatus(TaskStatusEnum.PASS_CHECKOUT.getCode());
+            taskInDb.setProgress(Double.parseDouble("1"));
+        }
+        taskDao.save(taskInDb);
+        LOGGER.info("Finished to execute table structure rule task and save check result.");
+        TaskSubmitResult taskSubmitResult = new TaskSubmitResult();
+        taskSubmitResult.setApplicationId(application.getId());
+        taskSubmitResult.setClusterName(clusterName);
+        return taskSubmitResult;
+    }
+
+    private void comparisonTableIsNotConsistent(String submitTime, Application application, StringBuilder runDate, StringBuilder runToday, Rule rule, List<String> rightMultipleDataSource, List<Integer> anotherTempResult, List<TaskResult> taskResultList, String left) throws UnExpectedRequestException {
+        Set<String> collectResult = Sets.newHashSet();
+        for (String right : rightMultipleDataSource) {
+            String temp = left.equals(right) ? 0 + "" : 1 + "";
+            if (UnionWayEnum.NO_COLLECT_CALCULATE.getCode().equals(rule.getUnionWay())) {
+                taskResultList.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), temp));
+            } else if (UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(rule.getUnionWay())) {
+                anotherTempResult.add(Integer.parseInt(temp));
+            } else if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(rule.getUnionWay())) {
+                collectResult.add(right);
+            }
+        }
+
+        // 先聚合再计算
+        if (CollectionUtils.isNotEmpty(collectResult)) {
+            String result = collectResult.stream().anyMatch(item -> !item.equals(left)) ? 1 + "" : 0 + "";
+            taskResultList.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), result));
+        }
+
+    }
+
+    private List<TaskResult> handleAggregationSwitch(String submitTime, Application application, StringBuilder runDate, StringBuilder runToday, Rule rule, String hiveTemp, List<String> rightMultipleDataSource) throws UnExpectedRequestException {
+        List<Integer> tempResult = Lists.newArrayList();
+        List<TaskResult> taskResults = Lists.newArrayList();
+        comparisonTableIsNotConsistent(submitTime, application, runDate, runToday, rule, rightMultipleDataSource, tempResult, taskResults, hiveTemp);
+        if (CollectionUtils.isNotEmpty(tempResult)) {
+            Integer additive = tempResult.stream().reduce(Integer::sum).orElse(0);
+            taskResults.addAll(handleTaskResult(application, submitTime, rule, rule.getAlarmConfigs(), runDate.toString(), runToday.toString(), additive.toString()));
+        }
+        return taskResults;
+    }
+
+    private List<ColumnInfoDetail> checkDatasourceInContext(RuleDataSource ruleDataSource, String clusterName, String userName
+            , String nodeName, String csId) throws Exception {
+        List<ColumnInfoDetail> columnInfos = Lists.newArrayList();
+        GetUserTableByCsIdRequest getUserTableByCsIdRequest = new GetUserTableByCsIdRequest();
+        getUserTableByCsIdRequest.setClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
+        getUserTableByCsIdRequest.setLoginUser(userName);
+        getUserTableByCsIdRequest.setCsId(csId);
+        if (StringUtils.isBlank(nodeName)) {
+            getUserTableByCsIdRequest.setNodeName(ruleDataSource.getRule().getNodeName());
+        } else {
+            getUserTableByCsIdRequest.setNodeName(nodeName);
+        }
+        DataInfo<CsTableInfoDetail> csTableInfoDetails;
+        try {
+            csTableInfoDetails = metaDataClient.getTableByCsId(getUserTableByCsIdRequest);
+        } catch (Exception e) {
+            throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+        }
+        if (csTableInfoDetails.getTotalCount() == 0) {
+            LOGGER.info("Cannot find context service table with existed rules!");
+            throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+        }
+        for (CsTableInfoDetail csTableInfoDetail : csTableInfoDetails.getContent()) {
+            if (csTableInfoDetail.getTableName().equals(ruleDataSource.getTableName())) {
+                GetUserColumnByCsRequest getUserColumnByCsRequest = new GetUserColumnByCsRequest();
+                getUserColumnByCsRequest.setClusterName(StringUtils.isNotBlank(clusterName) ? clusterName : ruleDataSource.getClusterName());
+                getUserColumnByCsRequest.setContextKey(csTableInfoDetail.getContextKey());
+                getUserColumnByCsRequest.setLoginUser(userName);
+                getUserColumnByCsRequest.setCsId(csId);
+                List<ColumnInfoDetail> columnInfo = metaDataClient.getColumnByCsId(getUserColumnByCsRequest).getContent();
+                if (ruleDataSource.getRule().getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
+                    continue;
+                }
+                columnInfos.addAll(columnInfo);
+            }
+        }
+        return columnInfos;
+    }
+
+    @NotNull
+    private String getSplicingTables(RuleDataSource ruleDataSource, DataInfo<ColumnInfoDetail> cols) throws UnExpectedRequestException {
+        if (cols == null || CollectionUtils.isEmpty(cols.getContent())) {
+            throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+        }
+        if (!metaDataClient.fieldExist(ruleDataSource.getColName(), cols.getContent(), null)) {
+            throw new UnExpectedRequestException("Table[" + ruleDataSource.getTableName() + "] {&RULE_DATASOURCE_BE_MOVED}");
+        }
+        //先以属性一升序,再进行属性二降序
+        List<ColumnInfoDetail> resultColumnInfo = cols.getContent().stream().sorted(Comparator.comparing(ColumnInfoDetail::getFieldName).
+                thenComparing(ColumnInfoDetail::getDataType, Comparator.reverseOrder())).collect(Collectors.toList());
+
+        return resultColumnInfo.stream().map(e -> e.getFieldName())
+                .collect(Collectors.joining());
+    }
+
+    private void rightDataSource(List<String> multipleDataSource, RuleDataSource ruleDataSource, String montage, int i) {
+        if (null != ruleDataSource.getDatasourceIndex() && ruleDataSource.getDatasourceIndex().equals(i)) {
+            multipleDataSource.add(montage);
+        }
+    }
+
+    private void leftDataSource(List<String> leftMultipleDataSource, RuleDataSource ruleDataSource, String montage) {
+        rightDataSource(leftMultipleDataSource, ruleDataSource, montage, 0);
+    }
+
+    @Override
     public List<TaskSubmitResult> executeFileRuleWithShell(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName
-        , String runDate, Map<Long, Map<String, Object>> ruleReplaceInfo, String startupParam, Boolean engineReuse, String engineType) throws Exception {
+            , String runDate, String runToday, Map<Long, Map<String, Object>> ruleReplaceInfo, String startupParam, Boolean engineReuse, String engineType) throws Exception {
 
         List<TaskSubmitResult> taskSubmitResults = new ArrayList<>(fileRules.size());
 
@@ -512,7 +806,16 @@ public class ExecutionManagerImpl implements ExecutionManager {
             taskDataSources.add(taskDataSourceRepository.save(new TaskDataSource(ruleDataSource, taskInDb)));
 
             if (StringUtils.isEmpty(runDate)) {
-                runDate = "-1";
+                if (StringUtils.isNotBlank(runToday)) {
+                    runDate = runToday;
+                    Date runRealDate = handleTimeFormatting(runDate);
+                    runDate = runRealDate.getTime() + "";
+                } else {
+                    runDate = "-1";
+                }
+            } else {
+                Date runRealDate = handleTimeFormatting(runDate);
+                runDate = runRealDate.getTime() + "";
             }
 
             // In history, rule's abort property is useful.
@@ -533,7 +836,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
             List<String> jobCodes = job.getJobCode();
             LOGGER.info("Start to convert file rule into actual shell code.");
-            jobCodes.add("hive_query=\"describe formatted " + ruleDataSource.getDbName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue()+ ruleDataSource.getTableName() + ";\"");
+            jobCodes.add("hive_query=\"describe formatted " + ruleDataSource.getDbName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + ruleDataSource.getTableName() + ";\"");
             if (StringUtils.isNotEmpty(ruleDataSource.getFilter())) {
                 jobCodes.add("partition_location=\"" + SpecCharEnum.SLASH.getValue() + ruleDataSource.getFilter() + "\"");
             } else {
@@ -559,7 +862,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             job.setEngineReuse(engineReuse);
             job.setEngineType(engineType);
 
-            JobSubmitResult result = abstractJobSubmitter.submitShellJobNew(code, linkisConfig.getEngineName(), application.getExecuteUser(), clusterInfo.getLinkisAddress(), clusterInfo.getClusterName(), savedTask.getId(), job.getStartupParam(), application.getTenantUserName());
+            JobSubmitResult result = abstractJobSubmitter.submitShellJobNew(code, linkisConfig.getEngineName(), application.getExecuteUser(), clusterInfo.getLinkisAddress(), clusterInfo.getClusterName(), savedTask.getId(), job.getStartupParam(), job.getEngineReuse() == null ? true : job.getEngineReuse().booleanValue(), application.getTenantUserName());
 
             if (result != null) {
                 savedTask.setTaskRemoteId(result.getTaskRemoteId());
@@ -580,12 +883,28 @@ public class ExecutionManagerImpl implements ExecutionManager {
         return taskSubmitResults;
     }
 
+    private Date handleTimeFormatting(String runDate) throws UnExpectedRequestException {
+        Date runRealDate = null;
+        try {
+            if (runDate.contains(SpecCharEnum.MINUS.getValue())) {
+                runRealDate = new SimpleDateFormat("yyyy-MM-dd").parse(runDate);
+            } else {
+                runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
+            }
+        } catch (ParseException e) {
+            String errorMsg = "Parse date string with run date failed. Exception message: " + e.getMessage();
+            LOGGER.error(errorMsg);
+            throw new UnExpectedRequestException(errorMsg);
+        }
+        return runRealDate;
+    }
+
     @Override
     public TaskSubmitResult executeCheckAlert(ClusterInfo clusterInfo, String[] dbAndTables, List<String> columns, CheckAlert currentCheckAlert
-        , Application saveApplication, String startupParam, Boolean engineReuse, String engineType) throws Exception {
+            , Application saveApplication, String startupParam, Boolean engineReuse, String engineType) throws Exception {
 
         Task task = new Task(saveApplication, saveApplication.getSubmitTime(), TaskStatusEnum.SUBMITTED.getCode(), Double.parseDouble("0")
-            , clusterInfo.getClusterName(), clusterInfo.getLinkisAddress());
+                , clusterInfo.getClusterName(), clusterInfo.getLinkisAddress());
 
         Task savedTask = taskDao.save(task);
         LOGGER.info("Succeed to save task. Task ID: {}", savedTask.getId());
@@ -625,7 +944,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
                 contentTitle.add(colAndAlias[1]);
             }
         } else {
-            for(String tmpCol : columns.subList(QualitisConstants.COMMON_ARRAY_INDEX_O, columns.size() <= QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH ? columns.size() : QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH)) {
+            for (String tmpCol : columns.subList(QualitisConstants.COMMON_ARRAY_INDEX_O, columns.size() <= QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH ? columns.size() : QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH)) {
                 selectPart.add(tmpCol);
                 contentTitle.add(tmpCol);
             }
@@ -634,70 +953,110 @@ public class ExecutionManagerImpl implements ExecutionManager {
         jobCodes.add("import sys.process._");
         jobCodes.add("import scala.util.parsing.json._");
 
-        String realContent = "\"" + linkisConfig.getCheckAlertTemplate().replace("qualitis_check_alert_topic", currentCheckAlert.getTopic()).replace("qualitis_check_alert_time", saveApplication.getSubmitTime()).replace("qualitis_check_alert_project_info", currentCheckAlert.getProject().getName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getWorkFlowName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getNodeName()) + "\"" ;
+        String realContent = "\"" + linkisConfig.getCheckAlertTemplate().replace("qualitis_check_alert_topic", currentCheckAlert.getTopic()).replace("qualitis_check_alert_time", saveApplication.getSubmitTime()).replace("qualitis_check_alert_project_info", currentCheckAlert.getProject().getName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getWorkFlowName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getNodeName()) + "\"";
 
         jobCodes.add("var alertContent = " + realContent);
         String filter = StringUtils.isNotEmpty(currentCheckAlert.getFilter()) ? currentCheckAlert.getFilter() : "true";
 
         filter = DateExprReplaceUtil.replaceFilter(new Date(), filter);
         jobCodes.add("val alertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
-            + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAlertCol() + " = 1 AND " + filter + "\").collect()");
+                + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAlertCol() + " = 1 AND " + filter + "\").collect()");
         jobCodes.add("var alertTableContent = \"\"");
         jobCodes.add("for(ele <- alertTableArr) {alertTableContent = alertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
         jobCodes.add("if (alertTableContent.length > 0) {");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_info_content\", alertTableContent)");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_info_receiver\", \"" + currentCheckAlert.getInfoReceiver() + "\")");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_info_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", alertTableContent)");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_receiver\", \"" + currentCheckAlert.getDefaultReceiver() + "\")");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
         jobCodes.add("} else {");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_info_content\", \"\")");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[告警人\\\\] qualitis_check_alert_info_receiver\", \"\")");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", \"\")");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[告警人\\\\] qualitis_check_alert_default_receiver\", \"\")");
 
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_info_title\", \"\")");
+        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"\")");
         jobCodes.add("}");
 
-        if (StringUtils.isNotEmpty(currentCheckAlert.getMajorAlertCol())) {
+        if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol())) {
             jobCodes.add("val majorAlertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
-                + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getMajorAlertCol() + " = 1 AND " + filter + "\").collect()");
+                    + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAdvancedAlertCol() + " = 1 AND " + filter + "\").collect()");
             jobCodes.add("var majorAlertTableContent = \"\"");
             jobCodes.add("for(ele <- majorAlertTableArr) {majorAlertTableContent = majorAlertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
             jobCodes.add("if (majorAlertTableContent.length > 0) {");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_content\", majorAlertTableContent)");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_receiver\", \"" + (StringUtils.isNotEmpty(currentCheckAlert.getMajorReceiver()) ? currentCheckAlert.getMajorReceiver() : "") + "\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", majorAlertTableContent)");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_receiver\", \"" + (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver()) ? currentCheckAlert.getAdvancedReceiver() : "") + "\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
             // CURL IMS
-            if (StringUtils.isNotEmpty(currentCheckAlert.getMajorReceiver())) {
-                jobCodes.add("val jsonMajorValue = " + "\"{\\\"userAuthKey\\\":\\\"" + imsConfig.getUserAuthKey() + "\\\",\\\"alertList\\\":[{\\\"alert_way\\\":\\\"" + imsConfig.getAlertWay() + "\\\",\\\"alert_title\\\":\\\"Qualitis Check Alert\\\",\\\"ci_type_id\\\":55,\\\"sub_system_id\\\":" + imsConfig.getSystemId() +",\\\"alert_reciver\\\":\\\"" + currentCheckAlert.getMajorReceiver() + "\\\",\\\"alert_level\\\":2,\\\"alert_obj\\\":\\\"" + dbAndTables[0] + "[" + dbAndTables[1] + "]" + "\\\",\\\"alert_info\\\":\\\"qualitis_check_alert_Major\\\"}]}\"");
-                jobCodes.add("val realJsonMajorValue = jsonMajorValue.replaceAll(\"qualitis_check_alert_Major\", alertContent)");
-                jobCodes.add("val jsonMajorCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonMajorValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
-                jobCodes.add("val majorResponse = jsonMajorCmd.!!");
-                jobCodes.add("val code = JSON.parseFull(majorResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+            if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver())) {
+                Map<String, Object> jsonAdvancedMap = new HashMap<>();
+                jsonAdvancedMap.put("userAuthKey", imsConfig.getUserAuthKey());
+                List<Map<String, Object>> alertList = new ArrayList<>();
+                Map<String, Object> advancedAlertMap = new HashMap<>();
+                advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays());
+                advancedAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
+                advancedAlertMap.put("ci_type_id", 55);
+                advancedAlertMap.put("sub_system_id", imsConfig.getSystemId());
+                advancedAlertMap.put("alert_level", currentCheckAlert.getAdvancedAlertLevel().toString());
+                advancedAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
+                advancedAlertMap.put("alert_info", "qualitis_check_alert_Advanced");
+                Map<String, Object> advancedAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getAdvancedReceiver());
+                advancedAlertMap.put("alert_reciver", advancedAlertReceiverMap.get("alert_reciver"));
+                if (advancedAlertReceiverMap.containsKey("erp_group_id")) {
+                    advancedAlertMap.put("erp_group_id", advancedAlertReceiverMap.get("erp_group_id").toString());
+                    advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
+                }
+                alertList.add(advancedAlertMap);
+                jsonAdvancedMap.put("alertList", alertList);
+                String jsonAdvancedValue = "val jsonAdvancedValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonAdvancedMap).replace("\"", "\\\"") + "\"";
+                jobCodes.add(jsonAdvancedValue);
+                jobCodes.add("val realJsonAdvancedValue = jsonAdvancedValue.replaceAll(\"qualitis_check_alert_Advanced\", alertContent)");
+                jobCodes.add("val jsonAdvancedCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonAdvancedValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
+                jobCodes.add("val advancedResponse = jsonAdvancedCmd.!!");
+                jobCodes.add("val code = JSON.parseFull(advancedResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
                 jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
             }
             jobCodes.add("} else {");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_content\", \"\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_major_receiver\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
 
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_title\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
             jobCodes.add("}");
         } else {
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_content\", \"\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_major_receiver\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
 
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_major_title\", \"\")");
+            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
         }
         // CURL IMS
         jobCodes.add("if (alertTableContent.length > 0) {");
-        jobCodes.add("val jsonInfoValue = " + "\"{\\\"userAuthKey\\\":\\\"" + imsConfig.getUserAuthKey() + "\\\",\\\"alertList\\\":[{\\\"alert_way\\\":\\\"" + imsConfig.getAlertWay() + "\\\",\\\"alert_title\\\":\\\"Qualitis Check Alert\\\",\\\"ci_type_id\\\":55,\\\"sub_system_id\\\":" + imsConfig.getSystemId() + ",\\\"alert_reciver\\\":\\\"" + currentCheckAlert.getInfoReceiver() + "\\\",\\\"alert_level\\\":5,\\\"alert_obj\\\":\\\"" + dbAndTables[0] + "[" + dbAndTables[1] + "]" + "\\\",\\\"alert_info\\\":\\\"qualitis_check_alert_info\\\"}]}\"");
-        jobCodes.add("val realJsonInfoValue = jsonInfoValue.replaceAll(\"qualitis_check_alert_info\", alertContent)");
-        jobCodes.add("val jsonInfoCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonInfoValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
-        jobCodes.add("val infoResponse = jsonInfoCmd.!!");
-        jobCodes.add("val code = JSON.parseFull(infoResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+        Map<String, Object> jsonDefaultMap = new HashMap<>();
+        jsonDefaultMap.put("userAuthKey", imsConfig.getUserAuthKey());
+        List<Map<String, Object>> alertList = new ArrayList<>();
+        Map<String, Object> defaultAlertMap = new HashMap<>();
+        defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays());
+        defaultAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
+        defaultAlertMap.put("ci_type_id", 55);
+        defaultAlertMap.put("sub_system_id", imsConfig.getSystemId());
+        defaultAlertMap.put("alert_level", currentCheckAlert.getDefaultAlertLevel().toString());
+        defaultAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
+        defaultAlertMap.put("alert_info", "qualitis_check_alert_info");
+        Map<String, Object> defaultAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getDefaultReceiver());
+        defaultAlertMap.put("alert_reciver", defaultAlertReceiverMap.get("alert_reciver"));
+        if (defaultAlertReceiverMap.containsKey("erp_group_id")) {
+            defaultAlertMap.put("erp_group_id", defaultAlertReceiverMap.get("erp_group_id").toString());
+            defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
+        }
+        alertList.add(defaultAlertMap);
+        jsonDefaultMap.put("alertList", alertList);
+        String jsonDefaultValue = "val jsonDefaultValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonDefaultMap).replace("\"", "\\\"") + "\"";
+        jobCodes.add(jsonDefaultValue);
+        jobCodes.add("val realJsonDefaultValue = jsonDefaultValue.replaceAll(\"qualitis_check_alert_info\", alertContent)");
+        jobCodes.add("val jsonDefaultCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonDefaultValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
+        jobCodes.add("val defaultResponse = jsonDefaultCmd.!!");
+        jobCodes.add("val code = JSON.parseFull(defaultResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
         jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
         jobCodes.add("}");
 
 
         String code = String.join("\n", job.getJobCode());
-        LOGGER.info("Succeed to convert check alert into actual scala code.");
+        LOGGER.info("Succeed to convert check alert into actual scala code. code: {}", code);
 
         job.setTaskId(savedTask.getId());
         job.setStartupParam(startupParam);
@@ -705,8 +1064,8 @@ public class ExecutionManagerImpl implements ExecutionManager {
         job.setEngineType(engineType);
 
         JobSubmitResult result = abstractJobSubmitter.submitJobNew(code, linkisConfig.getEngineName(), saveApplication.getExecuteUser()
-            , clusterInfo.getLinkisAddress(), clusterInfo.getClusterName(), savedTask.getId(), "", "", job.getStartupParam(), job.getEngineReuse()
-            , saveApplication.getTenantUserName());
+                , clusterInfo.getLinkisAddress(), clusterInfo.getClusterName(), savedTask.getId(), "", "", job.getStartupParam(), job.getEngineReuse()
+                , saveApplication.getTenantUserName());
 
         if (result != null) {
             savedTask.setTaskRemoteId(result.getTaskRemoteId());
@@ -721,10 +1080,75 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
     }
 
+    private Map<String, Object> extractAlertReceivers(String alertReceiver) {
+        Iterable<String> defaultReceiverIterable = Splitter.on(SpecCharEnum.COMMA.getValue()).omitEmptyStrings().trimResults().split(alertReceiver);
+        AtomicReference<String> erpGroupId = new AtomicReference<>();
+        List<String> defaultReceivers = new ArrayList<>();
+        defaultReceiverIterable.forEach(item -> {
+            if (item.startsWith(SpecCharEnum.LEFT_BRACKET.getValue()) && item.endsWith(SpecCharEnum.RIGHT_BRACKET.getValue())) {
+                erpGroupId.set(item.replace(SpecCharEnum.LEFT_BRACKET.getValue(), StringUtils.EMPTY).replace(SpecCharEnum.RIGHT_BRACKET.getValue(), StringUtils.EMPTY));
+            } else {
+                defaultReceivers.add(item);
+            }
+        });
+        Map<String, Object> resultMap = Maps.newHashMapWithExpectedSize(2);
+        if (erpGroupId.get() != null) {
+            resultMap.put("erp_group_id", erpGroupId.get());
+        }
+        if (CollectionUtils.isNotEmpty(defaultReceivers)) {
+            resultMap.put("alert_reciver", Joiner.on(SpecCharEnum.COMMA.getValue()).join(defaultReceivers));
+        }
+        return resultMap;
+    }
+
+    private List<TaskResult> handleTaskResult(Application application, String submitTime, Rule rule, Set<AlarmConfig> alarmConfig, String runDate, String runToday, String result) throws UnExpectedRequestException {
+        List<TaskResult> taskResults = new ArrayList<>();
+        AlarmConfig currentAlarmConfig = alarmConfig.stream().iterator().next();
+
+        RuleMetric ruleMetric = currentAlarmConfig.getRuleMetric();
+        TaskResult taskResult;
+        if (StringUtils.isNotBlank(runToday) && StringUtils.isBlank(runDate)) {
+            runDate = runToday;
+        }
+        if (StringUtils.isNotBlank(runDate)) {
+            TaskResult existTaskResult = taskResultDao.find(runDate, rule.getId(), null != ruleMetric ? ruleMetric.getId() : null);
+            taskResult = getTaskResult(runDate, existTaskResult);
+        } else {
+            taskResult = new TaskResult();
+        }
+        taskResult.setApplicationId(application.getId());
+        taskResult.setCreateTime(submitTime);
+        taskResult.setRuleId(rule.getId());
+        taskResult.setSaveResult(true);
+        taskResult.setRuleMetricId(null != ruleMetric ? ruleMetric.getId() : null);
+        taskResult.setResultType("int");
+        taskResult.setValue(result);
+
+        taskResults.add(taskResultDao.saveTaskResult(taskResult));
+        return taskResults;
+    }
+
+    @NotNull
+    private TaskResult getTaskResult(String runDate, TaskResult existTaskResult) throws UnExpectedRequestException {
+        TaskResult taskResult;
+        if (existTaskResult != null) {
+            taskResult = existTaskResult;
+        } else {
+            taskResult = new TaskResult();
+            Date runRealDate = handleTimeFormatting(runDate);
+            taskResult.setRunDate(runRealDate.getTime());
+        }
+        return taskResult;
+    }
+
     private List<TaskResult> saveTaskRusult(String fullSize, int partitionsNum, Application application, String submitTime, Rule rule,
-                                            Set<AlarmConfig> alarmConfig, String runDate) throws UnExpectedRequestException {
-        double number = Double.parseDouble(fullSize.split(" ")[0]);
-        String unit = fullSize.split(" ")[1];
+                                            Set<AlarmConfig> alarmConfig, String runDate, String runToday) throws UnExpectedRequestException {
+        double number = 0;
+        String unit = "B";
+        if (!QualitisConstants.NULL_TABLE_SIZE.equals(fullSize)) {
+            number = Double.parseDouble(fullSize.split(" ")[0]);
+            unit = fullSize.split(" ")[1];
+        }
         // Save task result.
         List<TaskResult> taskResults = new ArrayList<>();
 
@@ -735,23 +1159,13 @@ public class ExecutionManagerImpl implements ExecutionManager {
             throw new UnExpectedRequestException("File rule metric {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
         TaskResult taskResult;
+        if (StringUtils.isNotBlank(runToday) && StringUtils.isBlank(runDate)) {
+            runDate = runToday;
+        }
         if (StringUtils.isNotBlank(runDate)) {
             TaskResult existTaskResult = taskResultDao.find(runDate, rule.getId(), ruleMetric.getId());
 
-            if (existTaskResult != null) {
-                taskResult = existTaskResult;
-            } else {
-                taskResult = new TaskResult();
-                Date runRealDate = null;
-                try {
-                    runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
-                } catch (ParseException e) {
-                    String errorMsg = "Parse date string with run date failed. Exception message: " + e.getMessage();
-                    LOGGER.error(errorMsg);
-                    throw new UnExpectedRequestException(errorMsg);
-                }
-                taskResult.setRunDate(runRealDate.getTime());
-            }
+            taskResult = getTaskResult(runDate, existTaskResult);
         } else {
             taskResult = new TaskResult();
         }
@@ -782,7 +1196,14 @@ public class ExecutionManagerImpl implements ExecutionManager {
     private int modifyTaskStatus(List<TaskRuleAlarmConfig> alarmConfigs, Task taskInDb, List<TaskResult> taskResults, int successRule) {
         boolean rulePass = true;
         for (TaskRuleAlarmConfig alarmConfig : alarmConfigs) {
-            TaskResult taskResult = taskResults.stream().filter(taskResultInDb -> taskResultInDb.getRuleMetricId().equals(alarmConfig.getRuleMetric().getId())).iterator().next();
+            TaskResult taskResult;
+            if (null != alarmConfig.getRuleMetric()) {
+                taskResult = taskResults.stream()
+                        .filter(taskResultInDb -> taskResultInDb.getRuleMetricId().equals(alarmConfig.getRuleMetric().getId())).iterator().next();
+            } else {
+                taskResult = taskResults.iterator().next();
+            }
+
             if (!FilePassUtil.pass(alarmConfig, taskResult, taskResultDao)) {
                 rulePass = false;
                 alarmConfig.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
@@ -815,14 +1236,18 @@ public class ExecutionManagerImpl implements ExecutionManager {
 
         for (DataQualityTask dataQualityTask : dataQualityTasks) {
             List<TaskRule> ruleList = getRule(rules, rulePlaceInfo, dataQualityTask);
+            List<Long> ruleIdList = ruleList.stream().map(taskRule -> taskRule.getRuleId()).collect(Collectors.toList());
             Task task = new Task(application, createTime, TaskStatusEnum.SUBMITTED.getCode(), Double.parseDouble("0"), clusterInfo.getClusterName(), clusterInfo.getLinkisAddress());
             Boolean abortOnFailure = Boolean.FALSE;
             for (Rule rule : rules) {
+                if (CollectionUtils.isNotEmpty(ruleIdList) && ! ruleIdList.contains(rule.getId())) {
+                    continue;
+                }
                 if (rulePlaceInfo.get(rule.getId()) == null) {
                     continue;
                 }
-                if (rulePlaceInfo.get(rule.getId()).get("union_all_save") != null) {
-                    rule.setUnionAll((Boolean) rulePlaceInfo.get(rule.getId()).get("union_all_save"));
+                if (rulePlaceInfo.get(rule.getId()).get(QualitisConstants.QUALITIS_UNION_WAY) != null) {
+                    rule.setUnionWay((Integer) rulePlaceInfo.get(rule.getId()).get(QualitisConstants.QUALITIS_UNION_WAY));
                 }
                 if (Boolean.FALSE.equals(abortOnFailure) && rulePlaceInfo.get(rule.getId()).get("qualitis_abort_on_failure") != null) {
                     abortOnFailure = (Boolean) rulePlaceInfo.get(rule.getId()).get("qualitis_abort_on_failure");
@@ -878,6 +1303,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             taskRule.setRuleType(rule.getRuleType());
             taskRule.setRuleDetail(rule.getDetail());
             taskRule.setTemplateName(rule.getTemplate().getName());
+            taskRule.setTemplateEnName(rule.getTemplate().getEnName());
             taskRule.setMidTableName(ruleTaskDetail.getMidTableName());
             taskRule.setRuleGroupName(rule.getRuleGroup().getRuleGroupName());
             taskRule.setProjectId(ruleTaskDetail.getRule().getProject().getId());
@@ -892,7 +1318,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
                 taskRule.setAlertLevel(rule.getAlertLevel());
             }
             taskRule.setTaskRuleAlarmConfigBeans(getTaskRuleAlarmConfigBean(rule, ruleReplaceInfo));
-            taskRule.setTaskRuleDataSourceList(getTaskRuleDataSourceBean(rule));
+            taskRule.setTaskRuleDataSourceList(getTaskRuleDataSourceBean(rule, dataQualityTask.getIndex()));
             taskRule.setDeleteFailCheckResult(rule.getDeleteFailCheckResult());
             result.add(taskRule);
         }
@@ -928,16 +1354,20 @@ public class ExecutionManagerImpl implements ExecutionManager {
         return taskRuleAlarmConfigBeans;
     }
 
-    private List<TaskRuleDataSource> getTaskRuleDataSourceBean(Rule rule) {
+    private List<TaskRuleDataSource> getTaskRuleDataSourceBean(Rule rule, Integer index) {
         List<TaskRuleDataSource> taskRuleDataSources = new ArrayList<>();
         for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
             if (StringUtils.isBlank(ruleDataSource.getTableName())) {
+                continue;
+            }
+            if (index != null && !index.equals(ruleDataSource.getDatasourceIndex())) {
                 continue;
             }
             TaskRuleDataSource taskRuleDataSource = new TaskRuleDataSource();
             taskRuleDataSource.setClusterName(ruleDataSource.getClusterName());
             taskRuleDataSource.setDatabaseName(ruleDataSource.getDbName());
             taskRuleDataSource.setTableName(ruleDataSource.getTableName());
+            taskRuleDataSource.setFilter(ruleDataSource.getFilter());
             taskRuleDataSource.setSubSystemId(ruleDataSource.getSubSystemId());
             taskRuleDataSource.setDatasourceType(ruleDataSource.getDatasourceType());
             taskRuleDataSource.setDatasourceIndex(ruleDataSource.getDatasourceIndex());
@@ -949,39 +1379,42 @@ public class ExecutionManagerImpl implements ExecutionManager {
         return taskRuleDataSources;
     }
 
-    private Map<String, List<Rule>> getRuleCluster(List<Rule> rules) {
+    private Map<String, List<Rule>> getRuleCluster(List<Rule> rules, Application application) {
         Map<String, List<Rule>> clusterNameMap = new HashMap<>(8);
         for (Rule rule : rules) {
-            Map<String, Integer> clusterCount = new HashMap<>(2);
-            String maxClusterName = null;
-            Integer maxClusterCount = 0;
-            for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
-                if (StringUtils.isBlank(ruleDataSource.getTableName())) {
-                    continue;
+            Set<String> clusterNameSet = rule.getRuleDataSources().stream()
+                    .filter(ruleDataSource -> StringUtils.isNotEmpty(ruleDataSource.getClusterName()) && !QualitisConstants.ORIGINAL_INDEX.equals(ruleDataSource.getDatasourceIndex()))
+                    .map(ruleDataSource -> {
+                        if (ruleDataSource.getDatasourceIndex() != null && QualitisConstants.isTableRowsConsistency(rule.getTemplate().getEnName())) {
+                            return ruleDataSource.getClusterName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + ruleDataSource.getDatasourceIndex();
+                        } else {
+                            return ruleDataSource.getClusterName();
+                        }
+                    }).collect(Collectors.toSet());
+
+            if (CollectionUtils.isNotEmpty(clusterNameSet) && clusterNameSet.size() >= 2) {
+                application.setClusterName(clusterNameSet.stream().map(clusterName -> {
+                    if (clusterName.contains(SpecCharEnum.PERIOD_NO_ESCAPE.getValue())) {
+                        return clusterName.split(SpecCharEnum.PERIOD.getValue())[0];
+                    } else {
+                        return clusterName;
+                    }
+                }).collect(Collectors.joining(SpecCharEnum.COMMA.getValue())));
+                applicationDao.saveApplication(application);
+            }
+
+            for (String cluster : clusterNameSet) {
+                LOGGER.info("Rule ID: {}, name: {} will be submit to cluster: {}", rule.getId(), rule.getName(), cluster);
+                if (StringUtils.isNotEmpty(rule.getExecutionParametersName()) && !cluster.contains(SpecCharEnum.PERIOD_NO_ESCAPE.getValue())) {
+                    cluster = cluster + SpecCharEnum.EQUAL.getValue() + rule.getExecutionParametersName();
                 }
-                String clusterName = ruleDataSource.getClusterName();
-                if (clusterCount.containsKey(clusterName)) {
-                    clusterCount.put(clusterName, clusterCount.get(clusterName) + 1);
+                if (!clusterNameMap.containsKey(cluster)) {
+                    List<Rule> tmp = new ArrayList<>();
+                    tmp.add(rule);
+                    clusterNameMap.put(cluster, tmp);
                 } else {
-                    clusterCount.put(clusterName, 1);
+                    clusterNameMap.get(cluster).add(rule);
                 }
-
-                if (clusterCount.get(clusterName) > maxClusterCount) {
-                    maxClusterCount = clusterCount.get(clusterName);
-                    maxClusterName = clusterName;
-                }
-            }
-
-            LOGGER.info("Rule: id: {}, name: {} will be submit to cluster: {}", rule.getId(), rule.getName(), maxClusterName);
-            if (StringUtils.isNotEmpty(rule.getExecutionParametersName())) {
-                maxClusterName = maxClusterName + SpecCharEnum.EQUAL.getValue() + rule.getExecutionParametersName();
-            }
-            if (!clusterNameMap.containsKey(maxClusterName)) {
-                List<Rule> tmp = new ArrayList<>();
-                tmp.add(rule);
-                clusterNameMap.put(maxClusterName, tmp);
-            } else {
-                clusterNameMap.get(maxClusterName).add(rule);
             }
         }
         return clusterNameMap;

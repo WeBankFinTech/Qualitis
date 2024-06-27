@@ -55,8 +55,31 @@ public class ModifyMultiSourceRequest extends AbstractCommonRequest {
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
 
+    @JsonProperty("left_linkis_udf_names")
+    private List<String> leftLinkisUdfNames;
+
+    @JsonProperty("right_linkis_udf_names")
+    private List<String> rightLinkisUdfNames;
+
+
     public ModifyMultiSourceRequest() {
         // Default Constructor
+    }
+
+    public List<String> getLeftLinkisUdfNames() {
+        return leftLinkisUdfNames;
+    }
+
+    public void setLeftLinkisUdfNames(List<String> leftLinkisUdfNames) {
+        this.leftLinkisUdfNames = leftLinkisUdfNames;
+    }
+
+    public List<String> getRightLinkisUdfNames() {
+        return rightLinkisUdfNames;
+    }
+
+    public void setRightLinkisUdfNames(List<String> rightLinkisUdfNames) {
+        this.rightLinkisUdfNames = rightLinkisUdfNames;
     }
 
     public String getClusterName() {
@@ -123,12 +146,28 @@ public class ModifyMultiSourceRequest extends AbstractCommonRequest {
         this.templateArgumentRequests = templateArgumentRequests;
     }
 
-    public static void checkRequest(ModifyMultiSourceRequest request, Boolean cs) throws UnExpectedRequestException {
+    public static void checkRequest(ModifyMultiSourceRequest request, Boolean cs, Boolean isCustomConsistence, Boolean tableStructureConsistent) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkObject(request.getRuleId(), "Rule id");
         AddMultiSourceRuleRequest addMultiSourceRuleRequest = new AddMultiSourceRuleRequest();
+
         BeanUtils.copyProperties(request, addMultiSourceRuleRequest);
-        AddMultiSourceRuleRequest.checkRequest(addMultiSourceRuleRequest, true, cs);
+        AddMultiSourceRuleRequest.checkRequest(addMultiSourceRuleRequest, true, cs, isCustomConsistence, tableStructureConsistent);
     }
 
+    @Override
+    public String toString() {
+        return "ModifyMultiSourceRequest{" +
+                "clusterName='" + clusterName + '\'' +
+                ", multiSourceRuleTemplateId=" + multiSourceRuleTemplateId +
+                ", source=" + source +
+                ", target=" + target +
+                ", templateArgumentRequests=" + templateArgumentRequests +
+                ", contrastType=" + contrastType +
+                ", colNames=" + colNames +
+                ", alarmVariable=" + alarmVariable +
+                ", leftLinkisUdfNames=" + leftLinkisUdfNames +
+                ", rightLinkisUdfNames=" + rightLinkisUdfNames +
+                "} " + super.toString();
+    }
 }

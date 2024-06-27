@@ -160,6 +160,7 @@ public class RuleTemplateResponse {
         this.createId = template.getCreateUser() != null ? template.getCreateUser().getId() : null;
         this.modifyName = template.getModifyUser() != null ? template.getModifyUser().getUsername() : "";
         this.modifyId = template.getModifyUser() != null ? template.getModifyUser().getId() : null;
+        this.clusterNum = template.getClusterNum();
 
         this.actionType = template.getActionType();
         this.devDepartmentName = template.getDevDepartmentName();

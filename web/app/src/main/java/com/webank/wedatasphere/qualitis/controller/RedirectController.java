@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -76,15 +77,15 @@ public class RedirectController {
 //                    httpServletResponse.sendRedirect(redirectUrl);
 //                    return null;
 //                } else {
-//                    return new GeneralResponse("400", "{&NOT_A_DSS_REQUEST}", null);
+//                    return new GeneralResponse(ResponseStatusConstants.BAD_REQUEST, "{&NOT_A_DSS_REQUEST}", null);
 //                }
 //            } catch (Exception e) {
 //                LOGGER.error("Failed to redirect to other page, caused by: {}", e.getMessage(), e);
-//                return new GeneralResponse("400", "Failed to redirect to other page.", null);
+//                return new GeneralResponse(ResponseStatusConstants.BAD_REQUEST, "Failed to redirect to other page.", null);
 //            }
-            return new GeneralResponse<>("200", "Succeed to get redirect url", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Succeed to get redirect url", null);
         } else {
-            return new GeneralResponse<>("400", "Workflow is not enabled", null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Workflow is not enabled", null);
         }
     }
 

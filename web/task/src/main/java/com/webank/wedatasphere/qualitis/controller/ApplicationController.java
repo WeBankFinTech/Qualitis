@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.FilterAdvanceRequest;
 import com.webank.wedatasphere.qualitis.request.FilterApplicationIdRequest;
@@ -64,7 +65,7 @@ public class ApplicationController {
         } catch (Exception e) {
             LOGGER.error("Failed to find applications. page: {}, size: {}, status: {}, caused by: {}", request.getPage(), request.getSize(),
                     request.getStatus(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}.", null);
         }
     }
 
@@ -80,7 +81,7 @@ public class ApplicationController {
         } catch (Exception e) {
             LOGGER.error("Failed to find applications. page: {}, size: {}, application_id: {}, caused by: {}", request.getPage(),
                     request.getSize(), request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}.", null);
         }
     }
 
@@ -96,7 +97,7 @@ public class ApplicationController {
         } catch (Exception e) {
             LOGGER.error("Failed to find applications. page: {}, size: {}, cluster: {}, database: {}, table: {}, caused by: {}", request.getPage(),
                     request.getSize(), request.getClusterName(), request.getDatabaseName(), request.getTableName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}.", null);
         }
     }
 
@@ -113,7 +114,7 @@ public class ApplicationController {
         } catch (Exception e) {
             LOGGER.error("Failed to find dataSources. page: {}, size: {}, caused by: {}", pageRequest.getPage(),
                     pageRequest.getSize(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}", null);
         }
     }
 
@@ -126,10 +127,10 @@ public class ApplicationController {
             return applicationService.uploadDataSourceAnalysisResult(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error("Failed to upload dataSources.", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_UPLOAD_ANALYSIS_EXCEL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_UPLOAD_ANALYSIS_EXCEL}", null);
         }
     }
 
@@ -144,7 +145,7 @@ public class ApplicationController {
             return applicationService.filterApplicationId(request.getApplicationId(), request.getFilterStatus(), request.getPage(), request.getSize(), request.getTaskPage(), request.getTaskSize());
         } catch (Exception e) {
             LOGGER.error("Failed to find application by application_id[{}],system exception.", request.getApplicationId(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}", null);
         }
     }
 
@@ -168,7 +169,7 @@ public class ApplicationController {
             return applicationService.filterAdvanceApplication(request);
         } catch (Exception e) {
             LOGGER.error("Failed to find application.", e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_APPLICATIONS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_APPLICATIONS}", null);
         }
     }
 
@@ -181,7 +182,7 @@ public class ApplicationController {
             return applicationService.getAllExecuteUser();
         } catch (Exception e) {
             LOGGER.error("Failed to get execute user . caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_EXECUTE_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_EXECUTE_USER}", null);
         }
     }
 

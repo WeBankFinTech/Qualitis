@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.dao;
 import com.webank.wedatasphere.qualitis.rule.entity.TaskNewValue;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_gaojiedeng@webank.com
@@ -57,6 +58,13 @@ public interface TaskNewVauleDao {
      * @return
      */
     Long findMatchTaskNewValue(Long ruleId);
+
+    /**
+     * findMatchTaskNewValueByRuleIds
+     * @param ruleIds
+     * @return
+     */
+    List<Map<String, Long>> findMatchTaskNewValueByRuleIds(List<Long> ruleIds);
 
     /**
      * find TaskNewValue

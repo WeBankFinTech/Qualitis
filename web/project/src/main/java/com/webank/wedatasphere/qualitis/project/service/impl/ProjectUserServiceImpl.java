@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.qualitis.project.service.impl;
 
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
 import com.webank.wedatasphere.qualitis.entity.User;
@@ -17,6 +19,10 @@ import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequ
 import com.webank.wedatasphere.qualitis.project.response.ProjectUserResponse;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectUserService;
+import com.webank.wedatasphere.qualitis.report.dao.SubscribeOperateReportDao;
+import com.webank.wedatasphere.qualitis.report.dao.SubscribeOperateReportProjectsDao;
+import com.webank.wedatasphere.qualitis.report.entity.SubscribeOperateReport;
+import com.webank.wedatasphere.qualitis.report.entity.SubscribeOperateReportProjects;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.UserService;
@@ -32,6 +38,7 @@ import javax.management.relation.RoleNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,9 +61,15 @@ public class ProjectUserServiceImpl implements ProjectUserService {
     private UserDao userDao;
     @Autowired
     private UserService userService;
+    @Autowired
+    private SubscribeOperateReportProjectsDao subscribeOperateReportProjectsDao;
+    @Autowired
+    private SubscribeOperateReportDao subscribeOperateReportDao;
+
     @Context
     private HttpServletRequest httpRequest;
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectUserServiceImpl.class);
+
     public ProjectUserServiceImpl(@Context HttpServletRequest httpRequest) {
         this.httpRequest = httpRequest;
     }
@@ -64,7 +77,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<ProjectUserResponse> authorizePermission(AuthorizeProjectUserRequest authorizeProjectUserRequest, Long loginUserId, boolean modify)
-        throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException {
+            throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException {
         List<ProjectUser> projectUsers = new ArrayList<>();
         AuthorizeProjectUserRequest.checkRequest(authorizeProjectUserRequest);
         Project projectInDb = projectDao.findById(authorizeProjectUserRequest.getProjectId());
@@ -79,7 +92,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             userService.autoAddUser(projectUser);
         }
         User loginUser = userDao.findById(loginUserId);
-        if (! checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
+        if (!checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
             throw new PermissionDeniedRequestException("{&NO_PERMISSION_MODIFYING_PROJECT}", 403);
         }
         if (loginUser.getUsername().equals(projectUser)) {
@@ -102,31 +115,55 @@ public class ProjectUserServiceImpl implements ProjectUserService {
         ProjectUserResponse projectUserResponse = new ProjectUserResponse(projectInDb.getName(), loginUser.getUsername(), projectUser);
         projectUserResponse.setPermissions(permissions);
 
-        return new GeneralResponse<>("200", "{&SUCCESS_TO_ADD_PROJECT_USER}", projectUserResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_ADD_PROJECT_USER}", projectUserResponse);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse deletePermission(AuthorizeProjectUserRequest request, Long loginUserId)
-        throws UnExpectedRequestException, PermissionDeniedRequestException {
+            throws UnExpectedRequestException, PermissionDeniedRequestException {
         Long projectId = request.getProjectId();
         Project projectInDb = projectDao.findById(projectId);
         if (projectInDb == null) {
             throw new UnExpectedRequestException("{&PROJECT}: [ID=" + projectId + "] {&DOES_NOT_EXIST}");
         }
         User loginUser = userDao.findById(loginUserId);
-        if (! checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
+        if (!checkPermission(projectInDb, loginUser.getUsername(), ProjectUserPermissionEnum.CREATOR.getCode())) {
             throw new PermissionDeniedRequestException("{&NO_PERMISSION_MODIFYING_PROJECT}", 403);
         }
         projectUserDao.deleteByProjectAndUserName(projectInDb, request.getProjectUser());
         projectEventService.record(projectInDb, loginUser.getUsername(), "回收授权 " + request.getProjectUser(), OperateTypeEnum.UNAUTHORIZE_PROJECT);
-        return new GeneralResponse<>("200", "{&DELETE_USER_SUCCESSFULLY}", null);
+
+        //remove subscription report recipients
+        List<SubscribeOperateReportProjects> subscribeOperateReportProjects = subscribeOperateReportProjectsDao.findByProjectId(projectInDb.getId());
+        List<SubscribeOperateReport> subscribeOperateReports = subscribeOperateReportProjects.stream().map(item -> item.getSubscribeOperateReport()).collect(Collectors.toList());
+        for (SubscribeOperateReport subscribeOperateReport : subscribeOperateReports) {
+            String[] receivers = subscribeOperateReport.getReceiver().split(SpecCharEnum.COMMA.getValue());
+            StringBuilder result = new StringBuilder();
+            for (String receiver : receivers) {
+                if (request.getProjectUser().equals(receiver)) {
+                    continue;
+                } else {
+                    result.append(receiver).append(SpecCharEnum.COMMA.getValue());
+                }
+            }
+            if (result.length() > 0) {
+                subscribeOperateReport.setReceiver(result.deleteCharAt(result.length() - 1).toString());
+                subscribeOperateReport.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+                subscribeOperateReport.setModifyUser(loginUser.getUsername());
+                subscribeOperateReportDao.save(subscribeOperateReport);
+            } else {
+                //recipient is empty
+                subscribeOperateReportDao.delete(subscribeOperateReport);
+            }
+        }
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_USER_SUCCESSFULLY}", null);
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, readOnly=true, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    @Transactional(propagation = Propagation.REQUIRED, readOnly = true, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<List<ProjectUserResponse>> getAllProjectUser(Long projectId)
-        throws UnExpectedRequestException, PermissionDeniedRequestException {
+            throws UnExpectedRequestException, PermissionDeniedRequestException {
         List<ProjectUserResponse> projectUserResponses = new ArrayList<>();
         Project projectInDb = projectDao.findById(projectId);
         if (projectInDb == null) {
@@ -135,7 +172,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
         String userName = HttpUtils.getUserName(httpRequest);
         List<ProjectUser> projectUsers = projectUserDao.findByProject(projectInDb);
         List<String> projectUserNames = projectUsers.stream().map(ProjectUser::getUserName).collect(Collectors.toList());
-        if (! projectUserNames.contains(userName)) {
+        if (!projectUserNames.contains(userName)) {
             throw new PermissionDeniedRequestException("{&HAS_NO_PERMISSION_TO_ACCESS}", 403);
         }
         for (ProjectUser currentProjectUser : projectUsers) {
@@ -152,7 +189,7 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             projectUserResponses.add(projectUserResponse);
         }
 
-        return new GeneralResponse<>("200", "{&SUCCESS_TO_GET_PROJECT_USER}", projectUserResponses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_GET_PROJECT_USER}", projectUserResponses);
     }
 
     @Override
@@ -175,9 +212,9 @@ public class ProjectUserServiceImpl implements ProjectUserService {
             throw new UnExpectedRequestException("User {&DOES_NOT_EXIST}, projectCreatorId: " + projectCreatorId);
         }
         List<Map<String, Object>> userList = userDao.findAllUserIdAndName();
-        List<String> usernameList = userList.stream().filter(Objects::nonNull).map(user -> (String)user.get("username")).collect(Collectors.toList());
+        List<String> usernameList = userList.stream().filter(Objects::nonNull).map(user -> (String) user.get("username")).collect(Collectors.toList());
         LOGGER.info("Get all users by: " + projectCreator.getUsername());
-        return new GeneralResponse<>("200", "{&FIND_ALL_USERS_SUCCESSFULLY}", usernameList);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_ALL_USERS_SUCCESSFULLY}", usernameList);
     }
 
 }

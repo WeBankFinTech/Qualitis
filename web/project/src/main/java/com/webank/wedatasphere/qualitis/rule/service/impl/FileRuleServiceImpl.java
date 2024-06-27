@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
@@ -22,6 +24,7 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -37,10 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -72,6 +72,11 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
     @Autowired
     private RuleLockService ruleLockService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+
+    @Autowired
+    private RuleVariableService ruleVariableService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileRuleServiceImpl.class);
 
@@ -98,11 +103,13 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         AddFileRuleRequest.checkRequest(request, false);
+        LOGGER.info("add file rule request detail: {}", request.toString());
+
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         // Generate Template, TemplateOutputMeta and save
         Template template = ruleTemplateService.checkRuleTemplate(request.getRuleTemplateId());
@@ -127,6 +134,18 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         String ruleGroupName = request.getRuleGroupName();
         if (request.getRuleGroupId() != null) {
             ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup == null) {
+                throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
+            }
+            if (StringUtils.isNotEmpty(ruleGroupName)) {
+                ruleGroup.setRuleGroupName(ruleGroupName);
+            }
+            ruleGroup = ruleGroupDao.saveRuleGroup(ruleGroup);
+            if (CollectionUtils.isNotEmpty(ruleGroup.getRuleDataSources())) {
+                groupRules = true;
+            }
+        } else if (request.getNewRuleGroupId() != null) {
+            ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
             if (ruleGroup == null) {
                 throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
             }
@@ -165,7 +184,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to add file rule, rule id: {}", savedRule.getId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_ADD_FILE_RULE}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_FILE_RULE}", response);
     }
 
     private void extractionMethod(String loginUser, boolean cs, Rule savedRule, List<AlarmConfig> savedAlarmConfigs, Boolean alarm, List<FileAlarmConfigRequest> fileAlarmVariable, Boolean uploadRuleMetricValue, Boolean uploadAbnormalValue, Boolean deleteFailCheckResult, DataSourceRequest datasource) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
@@ -191,7 +210,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (groupRules || executionParameters != null) {
                 newRule.setExecutionParametersName(request.getExecutionParametersName());
-                newRule.setUnionAll(executionParameters.getUnionAll());
+                newRule.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -237,7 +256,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         newRule.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
         newRule.setAbortOnFailure(request.getAbortOnFailure());
         newRule.setEnable(request.getRuleEnable());
-        newRule.setUnionAll(request.getUnionAll());
+        newRule.setUnionWay(request.getUnionWay());
         newRule.setAbnormalCluster(StringUtils.isNotBlank(request.getAbnormalCluster()) ? request.getAbnormalCluster() : null);
         newRule.setAbnormalDatabase(StringUtils.isNotBlank(request.getAbnormalDatabase()) ? request.getAbnormalDatabase() : null);
         newRule.setAbnormalProxyUser(StringUtils.isNotBlank(request.getAbnormalProxyUser()) ? request.getAbnormalProxyUser() : null);
@@ -248,6 +267,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
     public GeneralResponse deleteRule(DeleteFileRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteFileRuleRequest.checkRequest(request);
+        LOGGER.info("delete file rule request detail: {}", request.toString());
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null || !ruleInDb.getRuleType().equals(RuleTypeEnum.FILE_TEMPLATE_RULE.getCode())) {
@@ -260,24 +280,25 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
         projectService.checkProjectPermission(projectInDb, loginUser, permissions);
 
-        return deleteRuleReal(ruleInDb);
+        return deleteRuleReal(ruleInDb,null);
     }
 
     @Override
-    public GeneralResponse deleteRuleReal(Rule rule) throws UnExpectedRequestException {
+    public GeneralResponse deleteRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException {
         // Delete bdp-client history
         BdpClientHistory bdpClientHistory = bdpClientHistoryDao.findByRuleId(rule.getId());
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
 
-        super.recordEvent(HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
+        super.recordEvent(StringUtils.isNotBlank(loginUser) ? loginUser : HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
         // Delete template of custom rule
         // ruleTemplateService.deleteFileRuleTemplate(rule.getTemplate().getId());
         LOGGER.info("Succeed to delete file rule. rule id: {}", rule.getId());
-        return new GeneralResponse<>("200", "{&DELETE_FILE_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_FILE_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -312,11 +333,13 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         ModifyFileRuleRequest.checkRequest(request);
+        LOGGER.info("modify file rule request detail: {}", request.toString());
+
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
@@ -338,6 +361,18 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         if (CollectionUtils.isNotEmpty(ruleInDb.getRuleGroup().getRuleDataSources())) {
             groupRules = true;
         }
+        if (request.getRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
+        if (request.getNewRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
         String ruleGroupName = request.getRuleGroupName();
         if (StringUtils.isNotEmpty(ruleGroupName)) {
             ruleInDb.getRuleGroup().setRuleGroupName(ruleGroupName);
@@ -347,7 +382,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (groupRules || executionParameters != null) {
                 ruleInDb.setExecutionParametersName(request.getExecutionParametersName());
-                ruleInDb.setUnionAll(executionParameters.getUnionAll());
+                ruleInDb.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -395,7 +430,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         LOGGER.info("Succeed to modify file rule, rule id: {}", savedRule.getId());
         // Record project event.
 //        projectEventService.record(savedRule.getProject().getId(), loginUser, "modify", "file rule[name= " + savedRule.getName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_FILE_RULE}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_FILE_RULE}", response);
     }
 
     private void setUpdateFileInfo(ModifyFileRuleRequest request, Rule ruleInDb) {
@@ -408,19 +443,19 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         ruleInDb.setDeleteFailCheckResult(request.getDeleteFailCheckResult());
         ruleInDb.setAbortOnFailure(request.getAbortOnFailure());
         ruleInDb.setEnable(request.getRuleEnable());
-        ruleInDb.setUnionAll(request.getUnionAll());
+        ruleInDb.setUnionWay(request.getUnionWay());
         ruleInDb.setAbnormalCluster(StringUtils.isNotBlank(request.getAbnormalCluster()) ? request.getAbnormalCluster() : null);
         ruleInDb.setAbnormalDatabase(StringUtils.isNotBlank(request.getAbnormalDatabase()) ? request.getAbnormalDatabase() : null);
         ruleInDb.setAbnormalProxyUser(StringUtils.isNotBlank(request.getAbnormalProxyUser()) ? request.getAbnormalProxyUser() : null);
     }
 
     private Boolean handleObjectEqual(AddFileRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
     private Boolean handleObjectEqual(ModifyFileRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
@@ -459,6 +494,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
     @Override
     public GeneralResponse<RuleDetailResponse> getRuleDetail(Long ruleId) throws UnExpectedRequestException {
+        LOGGER.info("get file rule request detail: {}", ruleId);
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(ruleId);
         if (ruleInDb == null) {
@@ -474,9 +510,11 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
         LOGGER.info("Succeed to find rule. rule id: {}", ruleInDb.getId());
 
-        RuleDetailResponse response = new RuleDetailResponse(ruleInDb);
+        List<RuleVariable> ruleVariableList = ruleVariableService.queryByRules(Arrays.asList(ruleInDb));
+        Map<Long, List<RuleVariable>> ruleVariableMap = ruleVariableList.stream().collect(Collectors.groupingBy(ruleVariable -> ruleVariable.getRule().getId()));
+        RuleDetailResponse response = new RuleDetailResponse(ruleInDb, ruleVariableMap.getOrDefault(ruleInDb.getId(), Collections.emptyList()));
         LOGGER.info("Succeed to get rule detail. rule id: {}", ruleId);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_FILE_RULE_DETAIL}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_FILE_RULE_DETAIL}", response);
     }
 
     @Override

@@ -36,9 +36,6 @@ public class LinkisConfig {
     @Value("${linkis.datasource_cluster}")
     private String datasourceCluster;
 
-    @Value("${linkis.datasource_support_types}")
-    private String datasourceSupportTypes;
-
     @Value("${linkis.bdap_check_alert_cluster}")
     private String bdapCheckAlertCluster;
 
@@ -138,6 +135,8 @@ public class LinkisConfig {
     private String datasourceEnvCreateBatch;
     @Value("${linkis.api.meta_data.datasource_env_modify_batch}")
     private String datasourceEnvModifyBatch;
+    @Value("${linkis.api.meta_data.datasource_env_delete}")
+    private String envDelete;
     @Value("${linkis.api.meta_data.column_path}")
     private String columnPath;
     @Value("${linkis.api.meta_data.column_info}")
@@ -175,10 +174,16 @@ public class LinkisConfig {
     private String engineName;
     @Value("${linkis.spark.engine.version}")
     private String engineVersion;
+    @Value("${linkis.spark.engine.limit}")
+    private String engineLimit;
     @Value("${linkis.shell.engine.name}")
     private String shellEngineName;
     @Value("${linkis.shell.engine.version}")
     private String shellEngineVersion;
+    @Value("${linkis.trino.engine.name:trino}")
+    private String trinoEngineName;
+    @Value("${linkis.trino.engine.version:371}")
+    private String trinoEngineVersion;
 
     @Value("${linkis.kill_stuck_tasks}")
     private Boolean killStuckTasks;
@@ -234,8 +239,12 @@ public class LinkisConfig {
 
     @Value("${linkis.checkAlert.template}")
     private String checkAlertTemplate;
-    @Value("${linkis.api.meta_data.datasource_env_delete}")
-    private String envDelete;
+
+    @Value("${linkis.git.private-key}")
+    private String gitPrivateKey;
+
+    @Value("${linkis.collect.template}")
+    private String collectTemplate;
 
     public String getEnvDelete() {
         return envDelete;
@@ -419,14 +428,6 @@ public class LinkisConfig {
 
     public void setDatasourceCluster(String datasourceCluster) {
         this.datasourceCluster = datasourceCluster;
-    }
-
-    public String getDatasourceSupportTypes() {
-        return datasourceSupportTypes;
-    }
-
-    public void setDatasourceSupportTypes(String datasourceSupportTypes) {
-        this.datasourceSupportTypes = datasourceSupportTypes;
     }
 
     public String getBdapCheckAlertCluster() {
@@ -805,6 +806,22 @@ public class LinkisConfig {
         this.shellEngineVersion = shellEngineVersion;
     }
 
+    public String getTrinoEngineName() {
+        return trinoEngineName;
+    }
+
+    public void setTrinoEngineName(String trinoEngineName) {
+        this.trinoEngineName = trinoEngineName;
+    }
+
+    public String getTrinoEngineVersion() {
+        return trinoEngineVersion;
+    }
+
+    public void setTrinoEngineVersion(String trinoEngineVersion) {
+        this.trinoEngineVersion = trinoEngineVersion;
+    }
+
     public Boolean getKillStuckTasks() {
         return killStuckTasks;
     }
@@ -979,5 +996,29 @@ public class LinkisConfig {
 
     public void setCheckAlertTemplate(String checkAlertTemplate) {
         this.checkAlertTemplate = checkAlertTemplate;
+    }
+
+    public String getGitPrivateKey() {
+        return gitPrivateKey;
+    }
+
+    public void setGitPrivateKey(String gitPrivateKey) {
+        this.gitPrivateKey = gitPrivateKey;
+    }
+
+    public String getEngineLimit() {
+        return engineLimit;
+    }
+
+    public void setEngineLimit(String engineLimit) {
+        this.engineLimit = engineLimit;
+    }
+
+    public String getCollectTemplate() {
+        return collectTemplate;
+    }
+
+    public void setCollectTemplate(String collectTemplate) {
+        this.collectTemplate = collectTemplate;
     }
 }

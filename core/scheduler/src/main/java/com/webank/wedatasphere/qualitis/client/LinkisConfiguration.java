@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
@@ -51,41 +52,81 @@ public class LinkisConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkisConfiguration.class);
 
-    public Map<String, Map<String, Object>> getFullTree(String clusterName, String user) throws UnExpectedRequestException, IOException {
+    public Map<String, Map<String, Object>> getTree(String clusterName, String user) throws UnExpectedRequestException {
         ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
         if (clusterInfoInDb == null) {
             throw new UnExpectedRequestException("cluster name {&DOES_NOT_EXIST}");
         }
+        Map<String, Map<String, Object>> responseMap = new HashMap<>(2);
+        responseMap.put("full_tree_queue_name", getFullTreeQueuename(clusterInfoInDb, user));
+        responseMap.put("fule_tree", getFullTree(clusterInfoInDb, user));
+        return responseMap;
+    }
 
-        String url = UriBuilder.fromUri(clusterInfoInDb.getLinkisAddress()).path(linkisConfig.getPrefix()).path(linkisConfig.getGetFullTree())
-                .queryParam("creator", linkisConfig.getAppName())
-                .queryParam("engineType", "spark")
-                .queryParam("version", linkisConfig.getEngineVersion()).toString();
+    private Map<String, Object> getFullTreeQueuename(ClusterInfo clusterInfoInDb, String user) {
         String urlQueueName = UriBuilder.fromUri(clusterInfoInDb.getLinkisAddress()).path(linkisConfig.getPrefix()).path(linkisConfig.getGetFullTree())
-                .queryParam("creator", linkisConfig.getAppName()).toString();
+            .queryParam("creator", "GlobalSettings").toString();
+
+        HttpHeaders headerQueueNames = new HttpHeaders();
+        headerQueueNames.setContentType(MediaType.APPLICATION_JSON);
+
+        headerQueueNames.add("Token-User", user);
+        headerQueueNames.add("Token-Code", clusterInfoInDb.getLinkisToken());
+
+        HttpEntity entityQueueName = new HttpEntity<>(headerQueueNames);
+        Map<String, Object> responseQueueName = null;
+        try {
+            LOGGER.info("Start to get configuration queue name from linkis. url: {}, method: {}, body: {}", urlQueueName, javax.ws.rs.HttpMethod.GET, entityQueueName);
+            responseQueueName = linkisRestTemplate.exchange(urlQueueName, HttpMethod.GET, entityQueueName, Map.class).getBody();
+            Integer codeQueueName = (Integer) responseQueueName.get("status");
+            if (codeQueueName != 0) {
+                throw new UnExpectedRequestException("Failed to get configuration queue name from linkis.");
+            }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            LOGGER.info("Failed to get configuration queue name from linkis.");
+            extractMessage(e);
+        }
+        Map<String, Object> mapQueue = Maps.newHashMap();
+        if (responseQueueName != null) {
+            // 队列资源
+            List<Map<String, Object>> collect = (List<Map<String, Object>>) ((Map) responseQueueName.get("data")).get("fullTree");
+            for (Map<String, Object> temp : collect) {
+                List<Map<String, Object>> settings = (List<Map<String, Object>>) temp.get("settings");
+                // 将字符串首个字符改为大写
+                List<Map<String, Object>> result = settings.stream().map((item) -> {
+                    if (item.get("name") != null) {
+                        item.put("name", StringUtils.capitalize((String) item.get("name")));
+                    }
+                    return item;
+                }).collect(Collectors.toList());
+                temp.put("settings", result);
+            }
+            mapQueue.put("fullTree", collect);
+        }
+        return mapQueue;
+    }
+
+    private Map<String, Object> getFullTree(ClusterInfo clusterInfoInDb, String user) {
+        String url = UriBuilder.fromUri(clusterInfoInDb.getLinkisAddress()).path(linkisConfig.getPrefix()).path(linkisConfig.getGetFullTree())
+            .queryParam("creator", linkisConfig.getAppName())
+            .queryParam("engineType", linkisConfig.getEngineName())
+            .queryParam("version", linkisConfig.getEngineVersion()).toString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
         headers.add("Token-User", user);
         headers.add("Token-Code", clusterInfoInDb.getLinkisToken());
 
         HttpEntity entity = new HttpEntity<>(headers);
-        HttpEntity entityQueueName = new HttpEntity<>(headers);
-
         Map<String, Object> response = null;
-        Map<String, Object> responseQueueName = null;
-
-        LOGGER.info("Start to get configuration from linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
         try {
+            LOGGER.info("Start to get configuration from linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.GET, entity);
             response = linkisRestTemplate.exchange(url, HttpMethod.GET, entity, Map.class).getBody();
-            responseQueueName = linkisRestTemplate.exchange(urlQueueName, HttpMethod.GET, entityQueueName, Map.class).getBody();
             LOGGER.info("Finish to get configuration from linkis. response: {}", response);
             Integer code = (Integer) response.get("status");
             if (code != 0) {
-                throw new UnExpectedRequestException("Failed to get configuration from linkis.");
-            }
-            Integer codeQueueName = (Integer) responseQueueName.get("status");
-            if (codeQueueName != 0) {
                 throw new UnExpectedRequestException("Failed to get configuration from linkis.");
             }
         } catch (Exception e) {
@@ -93,10 +134,9 @@ public class LinkisConfiguration {
             LOGGER.info("Failed to get configuration from linkis.");
             extractMessage(e);
         }
-        Map<String, Map<String, Object>> responseMap = new HashMap<>(2);
-        if (response != null && responseQueueName != null) {
+        Map<String, Object> maps = Maps.newHashMap();
+        if (response != null) {
             List<Map<String, Object>> mapList = (List<Map<String, Object>>) ((Map) response.get("data")).get("fullTree");
-
             List<SettingsResponse> settingsResponses = Lists.newArrayList();
             for (Map<String, Object> item : mapList) {
                 if (QualitisConstants.ENGINE_CONFIGURATION.stream().anyMatch(temp -> temp.equals(item.get("name") + ""))) {
@@ -142,31 +182,106 @@ public class LinkisConfiguration {
             configurationResponse.setDescription("");
             configurationResponse.setSettings(settingsResponses);
             configurationResponseList.add(configurationResponse);
-
-            //队列资源
-            List<Map<String, Object>> collect = (List<Map<String, Object>>) ((Map) responseQueueName.get("data")).get("fullTree");
-            for (Map<String, Object> temp : collect) {
-                List<Map<String, Object>> settings = (List<Map<String, Object>>) temp.get("settings");
-                //将字符串首个字符改为大写
-                List<Map<String, Object>> result = settings.stream().map((item) -> {
-                    if ((String) item.get("name") != null) {
-                        item.put("name", StringUtils.capitalize((String) item.get("name")));
-                    }
-                    return item;
-                }).collect(Collectors.toList());
-
-                temp.put("settings", result);
-            }
-
-            Map<String, Object> maps = Maps.newHashMap();
             maps.put("fullTree", configurationResponseList);
-            Map<String, Object> mapQueue = Maps.newHashMap();
-            mapQueue.put("fullTree", collect);
-
-            responseMap.put("fule_tree", maps);
-            responseMap.put("full_tree_queue_name", mapQueue);
         }
-        return responseMap;
+        return maps;
+    }
+
+    public void saveTree(String clusterName, List<Map<String, Object>> fullTree, String userName) throws UnExpectedRequestException {
+        ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
+        if (clusterInfoInDb == null) {
+            throw new UnExpectedRequestException("cluster name {&ALREADY_EXIST}");
+        }
+        String url = UriBuilder.fromUri(clusterInfoInDb.getLinkisAddress()).path(linkisConfig.getPrefix()).path(linkisConfig.getSaveFullTree())
+                .toString();
+        Gson gson = new Gson();
+
+        List<Map<String, Object>> finalQueueNameMapList = new ArrayList<>();
+        List<Map<String, Object>> finalMapList = new ArrayList<>();
+        for (Map<String, Object> map : fullTree) {
+            if ("队列资源".equals(map.get("name"))) {
+                List<Map<String, Object>> settings = (List<Map<String, Object>>) map.get("settings");
+                Map<String, List<Map<String, Object>>> treeName = settings.stream().collect(Collectors.groupingBy(e -> e.get("treeName").toString()));
+
+                for (Map.Entry<String, List<Map<String, Object>>> entry : treeName.entrySet()) {
+                    Map<String, Object> maps = Maps.newLinkedHashMap();
+                    maps.put("description", "");
+                    maps.put("name", entry.getKey());
+                    maps.put("settings", treeName.get(entry.getKey()));
+                    finalQueueNameMapList.add(maps);
+                }
+            } else if ("Spark参数".equals(map.get("name"))) {
+                List<Map<String, Object>> settings = (List<Map<String, Object>>) map.get("settings");
+                Map<String, List<Map<String, Object>>> treeName = settings.stream().collect(Collectors.groupingBy(e -> e.get("treeName").toString()));
+
+                for (Map.Entry<String, List<Map<String, Object>>> entry : treeName.entrySet()) {
+                    Map<String, Object> maps = Maps.newLinkedHashMap();
+                    maps.put("description", "");
+                    maps.put("name", entry.getKey());
+                    maps.put("settings", treeName.get(entry.getKey()));
+                    finalMapList.add(maps);
+                }
+            }
+        }
+        setFullTreeQueuename(finalQueueNameMapList, url, userName, clusterInfoInDb.getLinkisToken(), gson);
+        saveFullTree(finalMapList, url, userName, clusterInfoInDb.getLinkisToken(), gson);
+    }
+
+    private void setFullTreeQueuename(List<Map<String, Object>> finalQueueNameMapList, String url, String userName, String linkisToken, Gson gson)
+        throws UnExpectedRequestException {
+        Map<String, Object> requestMap = new HashMap<>(2);
+        requestMap.put("creator", "GlobalSettings");
+        requestMap.put("fullTree", finalQueueNameMapList);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("Token-User", userName);
+        headers.add("Token-Code", linkisToken);
+
+        HttpEntity entity = new HttpEntity<>(gson.toJson(requestMap), headers);
+        Map<String, Object> response;
+
+        LOGGER.info("Start to save configuration queue name to linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
+        try {
+            response = linkisRestTemplate.exchange(url, HttpMethod.POST, entity, Map.class).getBody();
+            LOGGER.info("Finish to save configuration queue name to linkis. response: {}", response);
+            Integer code = (Integer) response.get("status");
+            if (code != 0) {
+                throw new UnExpectedRequestException("Failed to save configuration queue name from linkis.");
+            }
+        } catch (Exception e) {
+            Map<String, Object> msgMap = extractMessage(e);
+            throw new UnExpectedRequestException("Failed to save configuration queue name from linkis: " + (!msgMap.isEmpty() ? msgMap.get("message").toString() : StringUtils.EMPTY));
+        }
+    }
+
+    private void saveFullTree(List<Map<String, Object>> finalMapList, String url, String userName, String linkisToken, Gson gson)
+        throws UnExpectedRequestException {
+        Map<String, Object> requestMap = new HashMap<>(4);
+        requestMap.put("creator", linkisConfig.getAppName());
+        requestMap.put("engineType", linkisConfig.getEngineName() + SpecCharEnum.MINUS.getValue() + linkisConfig.getEngineVersion());
+        requestMap.put("fullTree", finalMapList);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("Token-User", userName);
+        headers.add("Token-Code", linkisToken);
+
+        HttpEntity entity = new HttpEntity<>(gson.toJson(requestMap), headers);
+        Map<String, Object> response;
+
+        LOGGER.info("Start to save configuration to linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
+        try {
+            response = linkisRestTemplate.exchange(url, HttpMethod.POST, entity, Map.class).getBody();
+            LOGGER.info("Finish to save configuration to linkis. response: {}", response);
+            Integer code = (Integer) response.get("status");
+            if (code != 0) {
+                throw new UnExpectedRequestException("Failed to save configuration from linkis.");
+            }
+        } catch (Exception e) {
+            Map<String, Object> msgMap = extractMessage(e);
+            throw new UnExpectedRequestException("Failed to save configuration from linkis: " + (!msgMap.isEmpty() ? msgMap.get("message").toString() : StringUtils.EMPTY));
+        }
     }
 
     private Map<String, Object> extractMessage(Exception e) {
@@ -183,67 +298,7 @@ public class LinkisConfiguration {
             }
         }
         LOGGER.error(e.getMessage(), e);
-        LOGGER.info("Failed to get configuration from linkis:", !msgMap.isEmpty() ? msgMap.get("message").toString() : StringUtils.EMPTY);
+        LOGGER.info("Failed to get configuration from linkis: ", !msgMap.isEmpty() ? msgMap.get("message").toString() : StringUtils.EMPTY);
         return msgMap;
-    }
-
-    public Map<String, Object> saveFullTree(String clusterName, String creator, List<Map<String, Object>> fullTree, String userName) throws UnExpectedRequestException {
-        ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
-        if (clusterInfoInDb == null) {
-            throw new UnExpectedRequestException("cluster name {&ALREADY_EXIST}");
-        }
-        String url = UriBuilder.fromUri(clusterInfoInDb.getLinkisAddress()).path(linkisConfig.getPrefix()).path(linkisConfig.getSaveFullTree())
-                .toString();
-        Gson gson = new Gson();
-
-        List<Map<String, Object>> finalMapList = new ArrayList<>();
-        for (Map<String, Object> map : fullTree) {
-            if ("Spark参数".equals((String) map.get("name"))) {
-                List<Map<String, Object>> settings = (List<Map<String, Object>>) map.get("settings");
-                Map<String, List<Map<String, Object>>> treeName = settings.stream().collect(Collectors.groupingBy(e -> e.get("treeName").toString()));
-
-                for (Map.Entry<String, List<Map<String, Object>>> entry : treeName.entrySet()) {
-                    Map<String, Object> maps = Maps.newLinkedHashMap();
-                    maps.put("description", "");
-                    maps.put("editName", entry.getKey());
-                    maps.put("name", entry.getKey());
-                    maps.put("operation", (String) map.get("operation"));
-                    maps.put("settings", treeName.get(entry.getKey()));
-                    finalMapList.add(maps);
-                }
-            } else {
-                map.put("description", "");
-                map.put("editName", "Links资源配置");
-                finalMapList.add(map);
-            }
-
-        }
-
-        Map<String, Object> map = new HashMap<>(2);
-        map.put("creator", creator);
-        map.put("fullTree", finalMapList);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("Token-User", userName);
-        headers.add("Token-Code", clusterInfoInDb.getLinkisToken());
-
-        HttpEntity entity = new HttpEntity<>(gson.toJson(map), headers);
-        Map<String, Object> response;
-
-        LOGGER.info("Start to save configuration to linkis. url: {}, method: {}, body: {}", url, javax.ws.rs.HttpMethod.POST, entity);
-        try {
-            response = linkisRestTemplate.exchange(url, HttpMethod.POST, entity, Map.class).getBody();
-            LOGGER.info("Finish to save configuration to linkis. response: {}", response);
-            Integer code = (Integer) response.get("status");
-            if (code != 0) {
-                throw new UnExpectedRequestException("Failed to get configuration from linkis.");
-            }
-        } catch (Exception e) {
-            Map<String, Object> msgMap = extractMessage(e);
-            throw new UnExpectedRequestException("Failed to get configuration from linkis:" + (!msgMap.isEmpty() ? msgMap.get("message").toString() : StringUtils.EMPTY));
-        }
-
-        return (Map<String, Object>) response.get("data");
     }
 }

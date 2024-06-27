@@ -29,6 +29,8 @@ public class ModifyClusterInfoRequest {
     private String clusterName;
     @JsonProperty("cluster_type")
     private String clusterType;
+    @JsonProperty("data_size_limit")
+    private String dataSizeLimit;
     @JsonProperty("linkis_address")
     private String linkisAddress;
     @JsonProperty("linkis_token")
@@ -42,6 +44,14 @@ public class ModifyClusterInfoRequest {
 
     public ModifyClusterInfoRequest() {
         // Default Constructor
+    }
+
+    public String getDataSizeLimit() {
+        return dataSizeLimit;
+    }
+
+    public void setDataSizeLimit(String dataSizeLimit) {
+        this.dataSizeLimit = dataSizeLimit;
     }
 
     public String getHiveUrn() {

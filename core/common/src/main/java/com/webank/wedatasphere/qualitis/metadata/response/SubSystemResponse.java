@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @date 2021/3/2 10:54
  */
 public class SubSystemResponse {
-  private Integer subSystemId;
+  private String subSystemId;
   private String subSystemName;
   private String subSystemFullCnName;
 
@@ -19,11 +19,11 @@ public class SubSystemResponse {
   @JsonProperty("ops_department_name")
   private String opsDepartmentName;
 
-  public Integer getSubSystemId() {
+  public String getSubSystemId() {
     return subSystemId;
   }
 
-  public void setSubSystemId(Integer subSystemId) {
+  public void setSubSystemId(String subSystemId) {
     this.subSystemId = subSystemId;
   }
 

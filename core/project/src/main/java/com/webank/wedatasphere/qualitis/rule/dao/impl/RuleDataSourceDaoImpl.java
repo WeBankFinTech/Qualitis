@@ -28,7 +28,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +47,11 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
 
     @Autowired
     private RuleDataSourceRepository ruleDataSourceRepository;
+
+    @Override
+    public List<RuleDataSource> findByLinkisDataSourceId(Long linkisDataSourceId) {
+        return ruleDataSourceRepository.findByLinkisDataSourceId(linkisDataSourceId);
+    }
 
     @Override
     public List<RuleDataSource> saveAllRuleDataSource(List<RuleDataSource> ruleDataSources) {
@@ -119,7 +123,7 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
 
     @Override
     public List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName,
-                                                               Integer datasourceType, Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, int page, int size) {
+                                                               Integer datasourceType, String subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.ASC, "clusterName", "dbName", "tableName");
         Pageable pageable = PageRequest.of(page, size, sort);
         return ruleDataSourceRepository.filterProjectDsByUserPage(user, clusterName, dbName, tableName, datasourceType, subSystemId, departmentName, devDepartmentName, tagCode, envName, pageable);
@@ -127,7 +131,7 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
 
     @Override
     public long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType
-            , Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName) {
+            , String subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName) {
         return ruleDataSourceRepository.countProjectDsByUser(user, clusterName, dbName, tableName, datasourceType, subSystemId, departmentName, devDepartmentName, tagCode, envName);
     }
 
@@ -202,7 +206,7 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void updateMetadataFields(Long id, Long subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName) {
+    public void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName) {
         ruleDataSourceRepository.updateMetadataFields(id, subSystemId, subSystemName, departmentCode, departmentName, devDepartmentName, tagCode, tagName);
     }
 

@@ -111,6 +111,12 @@ public class MultiDataSourceJoinConfigRequest {
         this.right = right;
     }
 
+    public static void checkRequestList(List<MultiDataSourceJoinConfigRequest> requestList) throws UnExpectedRequestException {
+        for (MultiDataSourceJoinConfigRequest request: requestList) {
+            checkRequest(request);
+        }
+    }
+
     public static void checkRequest(MultiDataSourceJoinConfigRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getLeftStatement(), "Left statement");

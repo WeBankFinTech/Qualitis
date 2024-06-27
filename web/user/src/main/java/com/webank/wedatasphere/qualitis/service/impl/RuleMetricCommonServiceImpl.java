@@ -1,6 +1,5 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
-import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricBussCodeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
@@ -8,17 +7,24 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricTypeConfigDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
-import com.webank.wedatasphere.qualitis.entity.*;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import com.webank.wedatasphere.qualitis.entity.RuleMetricTypeConfig;
+import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
+import com.webank.wedatasphere.qualitis.metadata.response.ProductResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.SubSystemResponse;
 import com.webank.wedatasphere.qualitis.request.AddRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
-import com.webank.wedatasphere.qualitis.service.*;
+import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
+import com.webank.wedatasphere.qualitis.service.RoleService;
+import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
+import com.webank.wedatasphere.qualitis.service.SubDepartmentPermissionService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.curator.shaded.com.google.common.collect.Maps;
@@ -26,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +43,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -63,8 +69,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     private DataVisibilityService dataVisibilityService;
     @Autowired
     private RoleService roleService;
-    @Autowired
-    private DepartmentService departmentService;
+
 
     @Autowired
     private RuleMetricCommonService ruleMetricCommonService;
@@ -95,9 +100,6 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         FREQUENCY_EN.put("Year", 5);
         FREQUENCY_EN.put("Single", 6);
     }
-
-    @Value("${department.data_source_from: custom}")
-    private String departmentSourceType;
 
     private HttpServletRequest httpServletRequest;
 
@@ -130,17 +132,20 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
     @Override
     public Map<String, Object> checkRuleMetricNameAndAddOrModify(String ruleMetricName, String loginUser, Boolean multiEnv, String createUser) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
-
-        //判断指标名是否存在于 指标表   输入格式subSystemName_type_enCode_frequency  系统_指标分类_编号_指标频率 (无需对编号进行校验)
+        // 判断指标名是否存在于 指标表   输入格式subSystemName_type_enCode_frequency  系统(产品ID)_指标分类_编号_指标频率 (无需对编号进行校验)
+        // productId：RETAIL003  productName：微众个人APP账户
         LOGGER.info("Start to create metric with name: {}", ruleMetricName);
         String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
         String subSystemName, type, en, frequency = null;
+
         try {
             subSystemName = infos[0];
             type = infos[1];
             en = infos[2];
             frequency = infos[3];
-        } catch (Exception e) {
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new UnExpectedRequestException("{&METRICS_FORMAT_ARRAY_OUT_OF_BOUNDS_EXCEPTION}", 400);
+        } catch (Exception exception) {
             throw new UnExpectedRequestException("{&METRICS_FORMAT_ERROR}", 400);
         }
 
@@ -165,8 +170,8 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         }
 
         if (CollectionUtils.isEmpty(collectType) && CollectionUtils.isEmpty(ruleMetricTypeConfig)) {
-            throw new UnExpectedRequestException("Cannot recognize the rule metric type. Choose one {" + ruleMetricTypeConfig.stream()
-                    .map(RuleMetricTypeConfig::getEnName).collect(Collectors.joining()) + "}", 400);
+            throw new UnExpectedRequestException("Cannot recognize the rule metric type enName. Choose one {" + ruleMetricTypeConfigDao.findAllRuleMetricTypeConfig().stream()
+                    .map(RuleMetricTypeConfig::getEnName).collect(Collectors.joining(SpecCharEnum.COMMA.getValue())) + "}", 400);
         }
         RuleMetricTypeConfig currentRuleMetricTypeConfig = new RuleMetricTypeConfig();
         String cnType = null;
@@ -178,32 +183,42 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             cnType = IT_METRIC_CN_NAME;
         }
 
-        //系统校验
+        //子系统校验
         List<SubSystemResponse> subSystemResponses = operateCiService.getAllSubSystemInfo();
-        List<CmdbDepartmentResponse> deptResponse;
+        List<CmdbDepartmentResponse> deptResponse = operateCiService.getAllDepartmetInfo();
+        List<ProductResponse> productResponses = operateCiService.getAllProductInfo();
 
-        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(departmentSourceType)) {
-            List<Department> departmentResponses = departmentService.findAllDepartmentCodeAndName();
-            deptResponse = departmentResponses.stream().map(departmentResponse -> {
-                CmdbDepartmentResponse cmdbDepartmentResponse = new CmdbDepartmentResponse();
-                cmdbDepartmentResponse.setCode(departmentResponse.getDepartmentCode());
-                cmdbDepartmentResponse.setName(departmentResponse.getName());
-                return cmdbDepartmentResponse;
-            }).collect(Collectors.toList());
-        } else {
-            deptResponse = operateCiService.getAllDepartmetInfo();
+        SubSystemResponse currentSystem = null;
+        ProductResponse currentProduct = null;
+        if (StringUtils.isNotBlank(subSystemName)) {
+            String finalSubSystemName = subSystemName;
+            // 子系统
+            List<SubSystemResponse> currentSubSystemResponses = subSystemResponses.stream()
+                    .filter(subSystemResponse -> subSystemResponse.getSubSystemName().equals(finalSubSystemName)).collect(Collectors.toList());
+
+            if (CollectionUtils.isNotEmpty(currentSubSystemResponses)) {
+                currentSystem = currentSubSystemResponses.iterator().next();
+                LOGGER.info("Find sub system from CMDB, current sub system is [ID=" + currentSystem.getSubSystemId() + ", name=" + currentSystem.getSubSystemName() + "]");
+            }
+
+            // productId
+            List<ProductResponse> currentProductResponses = productResponses.stream()
+                    .filter(item -> item.getProductId().equals(finalSubSystemName)).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(currentProductResponses)) {
+                currentProduct = currentProductResponses.iterator().next();
+                LOGGER.info("Find product Id from CMDB, current product is [ID=" + currentProduct.getProductId() + ", name=" + currentProduct.getProductName() + "]");
+            }
+
+            if (CollectionUtils.isEmpty(currentProductResponses) && CollectionUtils.isEmpty(currentSubSystemResponses)) {
+                throw new UnExpectedRequestException("Cannot recognize the product Id or sub system name.", 400);
+            }
+
         }
 
-        List<SubSystemResponse> currentSubSystemResponses = subSystemResponses.stream()
-                .filter(subSystemResponse -> subSystemResponse.getSubSystemName().equals(subSystemName)).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(currentSubSystemResponses)) {
-            throw new UnExpectedRequestException("Cannot recognize the sub system name.", 400);
+        String dept = null, devDept = null;
+        if (StringUtils.isBlank(loginUser) && StringUtils.isNotBlank(createUser)) {
+            loginUser = createUser;
         }
-
-        SubSystemResponse currentSystem = currentSubSystemResponses.iterator().next();
-        LOGGER.info("Find sub system from CMDB, current sub system is [ID=" + currentSystem.getSubSystemId() + ", name=" + currentSystem.getSubSystemName() + "]");
-
-        String dept, devDept = null;
         if (StringUtils.isNotBlank(loginUser)) {
             User user = userDao.findByUsername(loginUser);
             if (user == null) {
@@ -216,15 +231,21 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             String[] splitData = user.getDepartmentName().split("/");
             dept = splitData[0];
             devDept = splitData[1];
-        } else {
+        } else if (null != currentSystem) {
             dept = currentSystem.getDepartmentName();
             if (StringUtils.isEmpty(dept)) {
                 throw new UnExpectedRequestException("Current system has no dept data.");
             }
             if (StringUtils.isEmpty(currentSystem.getDevDepartmentName())) {
-                throw new UnExpectedRequestException("Current system has no dept data.");
+                throw new UnExpectedRequestException("Current system has no dev dept data.");
             }
-            devDept = currentSystem.getDevDepartmentName();
+            if (currentSystem.getDevDepartmentName().contains(SpecCharEnum.MINUS.getValue())) {
+                String[] info = currentSystem.getDevDepartmentName().split(SpecCharEnum.MINUS.getValue());
+                dept = info[0];
+                devDept = info[1];
+            } else {
+                devDept = currentSystem.getDevDepartmentName();
+            }
         }
 
         String finalDept = dept;
@@ -233,12 +254,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         String deptCode = currentDept.getCode();
         String opsDept = devDept;
 
-        List<DepartmentSubResponse> departmentSubResponses;
-        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(departmentSourceType)) {
-            departmentSubResponses = departmentService.getSubDepartmentByDeptCode(Integer.parseInt(deptCode));
-        } else {
-            departmentSubResponses = operateCiService.getDevAndOpsInfo(Integer.parseInt(deptCode));
-        }
+        List<DepartmentSubResponse> departmentSubResponses = operateCiService.getDevAndOpsInfo(Integer.parseInt(deptCode));
         String finalDevDept = devDept;
         List<DepartmentSubResponse> conformCollect = departmentSubResponses.stream().filter(item -> finalDevDept.equals(item.getName())).collect(Collectors.toList());
 
@@ -246,7 +262,8 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         Long opsDeptId = devDeptId;
 
         AddRuleMetricRequest ruleMetricRequest = new AddRuleMetricRequest();
-        setBasicInfoForRequest(ruleMetricName, en, frequency, cnFrequency, currentRuleMetricTypeConfig, cnType, currentSystem, dept, deptCode, devDept, opsDept, devDeptId, opsDeptId, ruleMetricRequest);
+        setBasicInfoForRequest(ruleMetricName, en, frequency, cnFrequency, currentRuleMetricTypeConfig, cnType,
+                null != currentSystem ? currentSystem : null, dept, deptCode, devDept, opsDept, devDeptId, opsDeptId, ruleMetricRequest,null != currentProduct ? currentProduct : null);
 
         if (multiEnv) {
             ruleMetricRequest.setMultiEnv(true);
@@ -386,11 +403,11 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
     private void setBasicInfoForRequest(String ruleMetricName, String en, String frequency, String cnFrequency,
                                         RuleMetricTypeConfig currentRuleMetricTypeConfig, String cnType, SubSystemResponse currentSystem, String dept, String deptCode,
-                                        String devDept, String opsDept, Long devDeptId, Long opsDeptId, AddRuleMetricRequest ruleMetricRequest) {
+                                        String devDept, String opsDept, Long devDeptId, Long opsDeptId, AddRuleMetricRequest ruleMetricRequest, ProductResponse currentProduct) {
         ruleMetricRequest.setName(ruleMetricName);
         ruleMetricRequest.setDesc("Auto created.");
-        ruleMetricRequest.setCnName(currentSystem.getSubSystemFullCnName()
-                .concat(SpecCharEnum.BOTTOM_BAR.getValue())
+        String result = (null != currentProduct ? currentProduct.getProductName().concat(SpecCharEnum.BOTTOM_BAR.getValue()) : "");
+        ruleMetricRequest.setCnName(null != currentSystem ? currentSystem.getSubSystemFullCnName().concat(SpecCharEnum.BOTTOM_BAR.getValue()) : result
                 .concat(cnType)
                 .concat(SpecCharEnum.BOTTOM_BAR.getValue())
                 .concat(en)
@@ -406,10 +423,19 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         ruleMetricRequest.setDevDepartmentId(devDeptId);
         ruleMetricRequest.setOpsDepartmentId(opsDeptId);
         ruleMetricRequest.setFrequency(FREQUENCY_EN.get(frequency));
-        ruleMetricRequest.setSubSystemId(currentSystem.getSubSystemId());
-        ruleMetricRequest.setSubSystemName(currentSystem.getSubSystemName());
-        ruleMetricRequest.setFullCnName(currentSystem.getSubSystemFullCnName());
-        ruleMetricRequest.setBussCode(RuleMetricBussCodeEnum.SUBSYSTEM.getCode());
+        ruleMetricRequest.setSubSystemId(null != currentSystem ? currentSystem.getSubSystemId() : null);
+        ruleMetricRequest.setSubSystemName(null != currentSystem ? currentSystem.getSubSystemName() : null);
+        ruleMetricRequest.setFullCnName(null != currentSystem ? currentSystem.getSubSystemFullCnName() : null);
+        if (null != currentSystem) {
+            ruleMetricRequest.setBussCode(RuleMetricBussCodeEnum.SUBSYSTEM.getCode());
+        }
+        if (null != currentProduct) {
+            ruleMetricRequest.setBussCode(RuleMetricBussCodeEnum.PRODUCT.getCode());
+        }
+
         ruleMetricRequest.setType(currentRuleMetricTypeConfig.getId().intValue());
+        ruleMetricRequest.setProductId(null != currentProduct ? currentProduct.getProductId() : null);
+        ruleMetricRequest.setProductName(null != currentProduct ? currentProduct.getProductName() : null);
+
     }
 }

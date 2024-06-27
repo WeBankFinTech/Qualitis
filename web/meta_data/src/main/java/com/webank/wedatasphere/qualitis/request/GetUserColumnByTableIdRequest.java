@@ -109,4 +109,17 @@ public class GetUserColumnByTableIdRequest {
     public void setProxyUser(String proxyUser) {
         this.proxyUser = proxyUser;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserColumnByTableIdRequest{" +
+                "startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                ", clusterName='" + clusterName + '\'' +
+                ", dbName='" + dbName + '\'' +
+                ", tableName='" + tableName + '\'' +
+                ", proxyUser='" + proxyUser + '\'' +
+                ", loginUser='" + loginUser + '\'' +
+                '}';
+    }
 }

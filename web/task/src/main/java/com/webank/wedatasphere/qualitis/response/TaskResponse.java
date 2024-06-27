@@ -20,10 +20,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -64,23 +65,34 @@ public class TaskResponse {
         this.status = task.getStatus();
         this.clusterId = task.getClusterName();
         this.taskRules = new ArrayList<>();
-        for (TaskRuleSimple taskRuleSimple : task.getTaskRuleSimples()) {
-            for (TaskDataSource taskDataSource : task.getTaskDataSources()) {
-                if (taskDataSource != null) {
-                    String databaseName = StringUtils.isNotBlank(taskDataSource.getDatabaseName()) ? taskDataSource.getDatabaseName() : "";
-                    String tableName = StringUtils.isNotBlank(taskDataSource.getTableName()) ? taskDataSource.getTableName() : "";
-                    if (StringUtils.isNotBlank(databaseName)) {
-                        ruleDataSource.append(databaseName).append(".").append(tableName);
-                    } else {
-                        ruleDataSource.append(databaseName).append(tableName);
-                    }
-                    ruleDataSource.append(";");
+        if (CollectionUtils.isNotEmpty(task.getTaskRuleSimples())) {
+            for (TaskRuleSimple taskRuleSimple : task.getTaskRuleSimples()) {
+                Set<TaskDataSource> taskDataSourceSet = task.getTaskDataSources();
+                List<TaskDataSource> taskDataSourceList = new ArrayList<>(taskDataSourceSet);
+
+//            Sorting by datasource_index
+                if (taskDataSourceList.size() > 1) {
+                    Comparator<TaskDataSource> indexComparator = Comparator.comparing(TaskDataSource::getDatasourceIndex, Comparator.nullsFirst(Integer::compareTo));
+                    Collections.sort(taskDataSourceList, indexComparator);
                 }
+
+                for (TaskDataSource taskDataSource : taskDataSourceList) {
+                    if (taskDataSource != null) {
+                        String databaseName = StringUtils.isNotBlank(taskDataSource.getDatabaseName()) ? taskDataSource.getDatabaseName() : "";
+                        String tableName = StringUtils.isNotBlank(taskDataSource.getTableName()) ? taskDataSource.getTableName() : "";
+                        if (StringUtils.isNotBlank(databaseName)) {
+                            ruleDataSource.append(databaseName).append(".").append(tableName);
+                        } else {
+                            ruleDataSource.append(databaseName).append(tableName);
+                        }
+                        ruleDataSource.append(";");
+                    }
+                }
+                if (ruleDataSource.toString().length() > 1) {
+                    ruleDataSource.deleteCharAt(ruleDataSource.length() - 1);
+                }
+                taskRules.add(new TaskRuleResponse(taskRuleSimple, task.getTaskDataSources()));
             }
-            if (ruleDataSource.toString().length() > 1) {
-                ruleDataSource.deleteCharAt(ruleDataSource.length() - 1);
-            }
-            taskRules.add(new TaskRuleResponse(taskRuleSimple, task.getTaskDataSources()));
         }
     }
 

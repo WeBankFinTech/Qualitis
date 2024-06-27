@@ -67,4 +67,11 @@ public interface DepartmentRepository extends JpaRepository<Department, Long>, J
      */
     @Query("select new map(d.departmentCode as code, d.name as name) from Department d where d.parentId is null")
     List<Map<String, String>> findAllDepartmentCodeAndName();
+
+    /**
+     * find Null Tenant User
+     * @return
+     */
+    @Query(value = "SELECT d FROM Department d WHERE d.tenantUser is null")
+    List<Department> findNullTenantUser();
 }

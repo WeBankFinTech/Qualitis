@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.TaskCheckResultResponse;
@@ -52,7 +53,7 @@ public class TaskController {
             throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get task detail. task_id: {}, caused by: {}", taskId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_TASK_DETAIL}"+ e.getMessage() + ".", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_TASK_DETAIL}"+ e.getMessage() + ".", null);
         }
     }
 

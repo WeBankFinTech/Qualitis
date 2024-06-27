@@ -16,12 +16,14 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.AlarmConfigRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
@@ -121,10 +123,15 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
         }
     }
 
-    private void setAlarmConfigInfo(Rule rule, TemplateOutputMeta templateOutputMetaInDb, AlarmConfig newAlarmConfig, Integer checkTemplate, Double threshold, Integer compareType, Boolean uploadAbnormalValue, Boolean uploadRuleMetricValue, Boolean deleteFailCheckResult) {
+    private void setAlarmConfigInfo(Rule rule, TemplateOutputMeta templateOutputMetaInDb, AlarmConfig newAlarmConfig, Integer checkTemplate, Double threshold, Integer compareType, Boolean uploadAbnormalValue, Boolean uploadRuleMetricValue, Boolean deleteFailCheckResult) throws UnExpectedRequestException {
         newAlarmConfig.setRule(rule);
         newAlarmConfig.setTemplateOutputMeta(templateOutputMetaInDb);
         newAlarmConfig.setCheckTemplate(checkTemplate);
+        // check table structure rule
+        if (QualitisConstants.isTableStructureConsistent(rule.getTemplate().getEnName()) && !checkTemplate.equals(CheckTemplateEnum.FIXED_VALUE.getCode())) {
+            throw new UnExpectedRequestException("The verification method should be a fixed value");
+        }
+
         newAlarmConfig.setThreshold(threshold);
         Integer checkTemplateCode = checkTemplate;
         if (checkTemplateCode.equals(CheckTemplateEnum.FIXED_VALUE.getCode())
@@ -144,8 +151,8 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
     }
 
     @Override
-    public void deleteByRule(Rule rule) {
-        alarmConfigRepository.deleteByRuleId(rule.getId());
+    public Integer deleteByRule(Rule rule) {
+        return alarmConfigRepository.deleteByRuleId(rule.getId());
     }
 
     @Override
@@ -172,7 +179,7 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
             setAlarmConfigInfo(rule, templateOutputMetaInDb, newAlarmConfig, request.getCheckTemplate(), request.getThreshold(), request.getCompareType(), request.getUploadAbnormalValue(), request.getUploadRuleMetricValue(), request.getDeleteFailCheckResult());
             alarmConfigs.add(newAlarmConfig);
         }
-        Set<Integer> subSystemIds = ruleMetrics.stream().map(RuleMetric::getSubSystemId).collect(Collectors.toSet());
+        Set<String> subSystemIds = ruleMetrics.stream().map(RuleMetric::getSubSystemId).collect(Collectors.toSet());
         Set<String> deptNames = ruleMetrics.stream().map(RuleMetric::getDevDepartmentName).collect(Collectors.toSet());
         if (subSystemIds.size() > 1 || deptNames.size() > 1) {
             throw new UnExpectedRequestException("{&NOT_SAME_DEPT_SYS_METRIC}");

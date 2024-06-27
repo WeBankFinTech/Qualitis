@@ -22,9 +22,13 @@ import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.metadata.Sheet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.jayway.jsonpath.JsonPath;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.*;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
@@ -32,19 +36,23 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableClusterDao;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableEngineDao;
+import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
+import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableCluster;
+import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableEngine;
 import com.webank.wedatasphere.qualitis.metadata.client.LinkisMetaDataManager;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.metadata.request.LinkisConnectParamsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.ModifyDataSourceParameterRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceParamsResponse;
-import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
-import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
-import com.webank.wedatasphere.qualitis.project.constant.ProjectTransportTypeEnum;
-import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
+import com.webank.wedatasphere.qualitis.project.constant.*;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectLabelDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
@@ -56,9 +64,11 @@ import com.webank.wedatasphere.qualitis.project.excel.*;
 import com.webank.wedatasphere.qualitis.project.request.DiffVariableRequest;
 import com.webank.wedatasphere.qualitis.project.request.DownloadProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.UploadProjectRequest;
+import com.webank.wedatasphere.qualitis.project.response.*;
 import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
+import com.webank.wedatasphere.qualitis.project.util.GitUtils;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.DynamicEngineEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
@@ -66,7 +76,12 @@ import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.DiffVariableRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
+import com.webank.wedatasphere.qualitis.rule.request.GetLinkisDataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.constant.ScheduledTaskTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.dao.*;
+import com.webank.wedatasphere.qualitis.scheduled.entity.*;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.FileService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
@@ -75,14 +90,18 @@ import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,11 +110,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -121,6 +145,8 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     @Autowired
     private RuleGroupDao ruleGroupDao;
     @Autowired
+    private LinkisUdfDao linkisUdfDao;
+    @Autowired
     private ProjectDao projectDao;
     @Autowired
     private RuleDao ruleDao;
@@ -138,6 +164,12 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     private ExecutionVariableDao executionVariableDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+    @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
+    @Autowired
+    private LinkisUdfEnableEngineDao linkisUdfEnableEngineDao;
+    @Autowired
+    private LinkisUdfEnableClusterDao linkisUdfEnableClusterDao;
     @Autowired
     private StaticExecutionParametersDao staticExecutionParametersDao;
     @Autowired
@@ -170,6 +202,18 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     @Autowired
     private LinkisConfig linkisConfig;
     @Autowired
+    private ScheduledProjectDao scheduledProjectDao;
+    @Autowired
+    private ScheduledWorkflowDao scheduledWorkflowDao;
+    @Autowired
+    private ScheduledSignalDao scheduledSignalDao;
+    @Autowired
+    private ScheduledTaskDao scheduledTaskDao;
+    @Autowired
+    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
+    @Autowired
+    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
+    @Autowired
     private RuleTemplateDao ruleTemplateDao;
     @Autowired
     private TemplateMidTableInputMetaService templateMidTableInputMetaService;
@@ -183,10 +227,16 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     private LinkisMetaDataManager linkisMetaDataManager;
     @Autowired
     private LinkisDataSourceService linkisDataSourceService;
+    @Autowired
+    private LinkisDataSourceEnvService linkisDataSourceEnvService;
+    @Autowired
+    private ConfigurableEnvironment environment;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectBatchServiceImpl.class);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private HttpServletRequest httpServletRequest;
 
@@ -195,7 +245,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     }
 
     private GeneralResponse uploadProjectsReal(ExcelProjectListener listener, String userName, boolean aomp, Long updateProjectId
-            , List<DiffVariableRequest> diffVariableRequestList, List<File> udfFiles, StringBuilder operateComment) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException {
+            , List<DiffVariableRequest> diffVariableRequestList, List<File> udfFiles, StringBuilder operateComment, Boolean increment) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException, ParseException {
 
         if (userName == null) {
             return new GeneralResponse<>("401", "{&PLEASE_LOGIN}", null);
@@ -215,13 +265,35 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         updateProjectId = handleProject(user, listener.getExcelProjectContent(), updateProjectId, aomp);
 
         handleExecutionParameters(listener.getExcelExecutionParametersContent(), userName, updateProjectId);
+        Map<Long, List<Long>> oldIdAndNewEnvIdsMapHook = new HashMap<>();
         try {
             handleMetricData(user, listener.getExcelMetricContent());
-            handleDataSource(user, listener.getExcelDatasourceEnvContent());
         } catch (Exception e) {
-            LOGGER.error("uploadProjectsReal, failed message: " + e.getMessage(), e);
+            LOGGER.error("handleMetricData of uploadProjectsReal, failed message: " + e.getMessage(), e);
             operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
         }
+        try {
+            List<DiffVariableRequest> datasourceEnvDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.DATASOURCE_ENV.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            handleDataSource(user, listener.getExcelDatasourceEnvContent(), datasourceEnvDiffVariableRequestList, oldIdAndNewEnvIdsMapHook);
+        } catch (Exception e) {
+            LOGGER.error("handleDataSource of uploadProjectsReal, failed message: " + e.getMessage(), e);
+            operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+        }
+        try {
+            handleRuleUdf(user, listener.getExcelRuleUdfContent(), udfFiles);
+        } catch (Exception e) {
+            LOGGER.error("handleRuleUdf of uploadProjectsReal, failed message: " + e.getMessage(), e);
+            operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+        }
+        try {
+            handleStandardValue(user, listener.getExcelStandardVauleContent());
+        } catch (Exception e) {
+            LOGGER.error("handleStandardValue of uploadProjectsReal, failed message: " + e.getMessage(), e);
+            operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+        }
+
+        replaceEnvsInRuleDataSource(listener, oldIdAndNewEnvIdsMapHook);
 
         // Create rules according to excel sheet
         List<ExcelRuleByProject> excelRuleByProject = listener.getExcelRuleContent();
@@ -241,26 +313,228 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 List<String> newRuleNames = new ArrayList<>();
                 ruleBatchService.getAndSaveRule(excelRuleByProject, projectInDb, newRuleNames, userName, diffVariableRequestList);
 
-                // Disable rules not be modified.
-                List<Rule> rules = ruleDao.findByProject(projectInDb);
-                rules = rules.stream().filter(rule -> !newRuleNames.contains(rule.getName())).map(rule -> {
-                    rule.setEnable(Boolean.FALSE);
-                    return rule;
-                }).collect(Collectors.toList());
-                ruleDao.saveRules(rules);
+                if (Boolean.FALSE.equals(increment)) {
+                    // No increment, disable rules not be modified.
+                    List<Rule> rules = ruleDao.findByProject(projectInDb);
+                    rules = rules.stream().filter(rule -> ! newRuleNames.contains(rule.getName())).map(rule -> {
+                        rule.setEnable(Boolean.FALSE);
+                        return rule;
+                    }).collect(Collectors.toList());
+                    ruleDao.saveRules(rules);
+                }
             } catch (Exception e) {
                 LOGGER.error("uploadProjectsReal, failed to save rules", e);
                 operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
             }
+            try {
+                handlePublishSchedule(user, projectInDb, listener.getExcelPublishScheduledContent(), diffVariableRequestList);
+            } catch (Exception e) {
+                LOGGER.error("uploadProjectsReal, failed to save publish schedules", e);
+                operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+            }
+            try {
+                handleRelationSchedule(user, projectInDb, listener.getExcelRelationScheduledContent(), diffVariableRequestList);
+            } catch (Exception e) {
+                LOGGER.error("uploadProjectsReal, failed to save relation schedules", e);
+                operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+            }
 
             projectEventService.recordBatch(projectList, userName, operateComment.append(SpecCharEnum.LINE.getValue()).toString(), OperateTypeEnum.IMPORT_PROJECT);
+            // update the running status of the project to normal
+            for (Project project : projectList) {
+                project.setRunStatus(ProjectStatusEnum.OPERABLE_STATUS.getCode());
+                projectDao.saveProject(project);
+            }
         }
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_UPLOAD_FILE}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_UPLOAD_FILE}", null);
+    }
+
+    /**
+     * Conflict: The env_name, composed of dcn fields(vip、port), was inconsistent between dev/sit/uat and prod.
+     * Target: To re-generate RuleDataSourceEnv with new LinkisDataSourceEnv, then override the original RuleDataSourceEnv.
+     * Steps:
+     * If the input_type of LinkisDataSource was 1(manual input), skip.
+     * If the env_names were chosen by dcn_num or logic_area way, then to replace them with re-generating env_names, and write back in the ExcelProjectListener.ExcelRuleContent.
+     * If the env_names were chosen directly, set them to empty and write back in the ExcelProjectListener.ExcelRuleContent.
+     * @param listener
+     * @param oldIdAndNewEnvIdsMapHook The argument from handleDataSource(). key: old linkisDataSourceId from export environment, value: new env_ids written into database in handleDataSource()
+     */
+    private void replaceEnvsInRuleDataSource(ExcelProjectListener listener, Map<Long, List<Long>> oldIdAndNewEnvIdsMapHook) throws IOException {
+        LOGGER.info("Ready to replace envs in the RuleDataSource: {}", objectMapper.writeValueAsString(oldIdAndNewEnvIdsMapHook));
+        if (MapUtils.isEmpty(oldIdAndNewEnvIdsMapHook)) {
+            return;
+        }
+        List<ExcelRuleByProject> excelRuleByProjects = listener.getExcelRuleContent();
+        for (ExcelRuleByProject excelRuleByProject: excelRuleByProjects) {
+                Rule rule = objectMapper.readValue(excelRuleByProject.getRuleJsonObject(), Rule.class);
+                Iterator<RuleDataSource> ruleDataSourceIterator = rule.getRuleDataSources().iterator();
+                while (ruleDataSourceIterator.hasNext()) {
+                    RuleDataSource ruleDataSource = ruleDataSourceIterator.next();
+                    if (StringUtils.isBlank(ruleDataSource.getLinkisDataSourceName())) {
+                        continue;
+                    }
+                    LinkisDataSource linkisDataSourceInDb = linkisDataSourceService.getByLinkisDataSourceName(ruleDataSource.getLinkisDataSourceName());
+                    LOGGER.info("To get LinkisDataSource by ruleDataSource.linkisDataSourceName, result: {}", linkisDataSourceInDb != null ? objectMapper.writeValueAsString(linkisDataSourceInDb): "LinkisDataSource isn't existing");
+                    if (Objects.isNull(linkisDataSourceInDb)) {
+                        continue;
+                    }
+                    if (Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_INPUT_TYPE_MANUAL).equals(linkisDataSourceInDb.getInputType())) {
+                        continue;
+                    }
+//                    To re-generate RuleDataSourceEnv and write back in Excel Json
+                    if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(ruleDataSource.getDcnRangeType())
+                            || QualitisConstants.CMDB_KEY_LOGIC_AREA.equals(ruleDataSource.getDcnRangeType())) {
+                        Long oldLinkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
+                        List<Long> newEnvIdsWithinOldDcnRangeValues = oldIdAndNewEnvIdsMapHook.get(oldLinkisDataSourceId);
+                        if (CollectionUtils.isNotEmpty(newEnvIdsWithinOldDcnRangeValues)) {
+                            GetLinkisDataSourceEnvRequest getLinkisDataSourceEnvRequest = new GetLinkisDataSourceEnvRequest();
+                            getLinkisDataSourceEnvRequest.setLinkisDataSourceId(linkisDataSourceInDb.getLinkisDataSourceId());
+                            getLinkisDataSourceEnvRequest.setEnvIdList(newEnvIdsWithinOldDcnRangeValues);
+                            List<LinkisDataSourceEnv> newEnvsList = linkisDataSourceEnvService.queryEnvsInAdvance(getLinkisDataSourceEnvRequest);
+                            List<RuleDataSourceEnv> ruleDataSourceEnvList = newEnvsList.stream().map(newEnv -> {
+                                RuleDataSourceEnv ruleDataSourceEnv = new RuleDataSourceEnv();
+                                ruleDataSourceEnv.setEnvId(newEnv.getEnvId());
+                                String pureEnvName = newEnv.getEnvName().replace(linkisDataSourceInDb.getLinkisDataSourceId() + SpecCharEnum.BOTTOM_BAR.getValue(), "");
+                                ruleDataSourceEnv.setEnvName(pureEnvName);
+                                ruleDataSourceEnv.setRuleDataSource(ruleDataSource);
+                                return ruleDataSourceEnv;
+                            }).collect(Collectors.toList());
+                            ruleDataSource.setRuleDataSourceEnvs(ruleDataSourceEnvList);
+                        }
+                    } else {
+                        ruleDataSource.setRuleDataSourceEnvs(Collections.emptyList());
+                    }
+                }
+
+//                回写Excel字段
+                String ruleJson = objectMapper.writeValueAsString(rule);
+                excelRuleByProject.setRuleJsonObject(ruleJson);
+
+                LOGGER.info("Success to replace envs in the RuleDataSource, new ruleJson: {}", ruleJson);
+        }
+    }
+
+    private void handleRuleUdf(User user, List<ExcelRuleUdf> excelRuleUdfContent, List<File> udfFiles)
+            throws IOException, PermissionDeniedRequestException, UnExpectedRequestException, JSONException, MetaDataAcquireFailedException {
+        List<UserRole> userRoles = userRoleDao.findByUser(user);
+        Integer roleType = roleService.getRoleType(userRoles);
+
+        for (ExcelRuleUdf excelRuleUdf : excelRuleUdfContent) {
+            LinkisUdf linkisUdf = objectMapper.readValue(excelRuleUdf.getUdfJsonObject(), LinkisUdf.class);
+            LinkisUdf linkisUdfInDb = linkisUdfDao.findByName(linkisUdf.getName());
+            boolean modify = false;
+
+            Set<LinkisUdfEnableEngine> linkisUdfEnableEngineSet = linkisUdf.getLinkisUdfEnableEngineSet();
+            Set<LinkisUdfEnableCluster> linkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
+
+            linkisUdf.setLinkisUdfEnableEngineSet(null);
+            linkisUdf.setLinkisUdfEnableClusterSet(null);
+
+            if (linkisUdfInDb == null) {
+                LOGGER.info("Linkis udf {} not exists, create it.", linkisUdf.getName());
+
+                linkisUdf.setId(null);
+                linkisUdf.setModifyUser(null);
+                linkisUdf.setModifyTime(null);
+                linkisUdf.setCreateUser(user.getUsername());
+                linkisUdf.setCreateTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+            } else {
+                subDepartmentPermissionService.checkEditablePermission(roleType, user, null, linkisUdfInDb.getDevDepartmentId(), linkisUdfInDb.getOpsDepartmentId(), false);
+
+                LOGGER.info("Linkis udf {} exists, modify it.", linkisUdf.getName());
+                modify = true;
+                linkisUdf.setId(linkisUdfInDb.getId());
+                linkisUdf.setModifyUser(user.getUsername());
+                linkisUdf.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+                // Clear engine set, cluster set
+                linkisUdfEnableEngineDao.deleteInBatch(linkisUdfInDb.getLinkisUdfEnableEngineSet());
+                linkisUdfEnableClusterDao.deleteInBatch(linkisUdfInDb.getLinkisUdfEnableClusterSet());
+                List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdfInDb.getId(), TableDataTypeEnum.LINKIS_UDF);
+                if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+                    dataVisibilityService.delete(linkisUdfInDb.getId(), TableDataTypeEnum.LINKIS_UDF);
+                }
+            }
+            LinkisUdf savedLinkisUdf = linkisUdfDao.save(linkisUdf);
+            LOGGER.info("Success to save linkis udf basic info.");
+            Path uploadPath = Paths.get(linkisUdf.getUploadPath());
+            for (Iterator<File> iterator = udfFiles.iterator(); iterator.hasNext(); ) {
+                File currentFile = iterator.next();
+                if (currentFile.getName().equals(uploadPath.getFileName().toString())) {
+                    LOGGER.info("Current udf file name: {}", currentFile.getName());
+                    callLinkisUdfApi(linkisUdfEnableEngineSet, linkisUdfEnableClusterSet, savedLinkisUdf, modify, currentFile, user);
+                    LOGGER.info("Start to copy udf file, path: {}", currentFile.getPath());
+                    Path sourceFile = Paths.get(currentFile.getPath());
+                    File targetDir = new File(linkisUdf.getUploadPath());
+                    if (!targetDir.exists()) {
+                        boolean newFile = targetDir.createNewFile();
+                        if (!newFile) {
+                            LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
+                        }
+
+                    }
+                    Files.copy(sourceFile, Paths.get(targetDir.getPath()), StandardCopyOption.REPLACE_EXISTING);
+                    LOGGER.info("Finish to copy udf file, path: {}", linkisUdf.getUploadPath());
+                    iterator.remove();
+                }
+            }
+            LOGGER.info("Linkis udf {} saved successfully with linkis.", savedLinkisUdf.getName());
+            if (StringUtils.isNotEmpty(excelRuleUdf.getDataVisibilityJsonObject())) {
+                List<DataVisibility> dataVisibilitys = objectMapper
+                        .readValue(excelRuleUdf.getDataVisibilityJsonObject(), new TypeReference<List<DataVisibility>>() {
+                        });
+                if (CollectionUtils.isNotEmpty(dataVisibilitys)) {
+                    dataVisibilityDao.saveAll(dataVisibilitys);
+                }
+            }
+        }
+    }
+
+    private void callLinkisUdfApi(Set<LinkisUdfEnableEngine> linkisUdfEnableEngineSet, Set<LinkisUdfEnableCluster> linkisUdfEnableClusterSet, LinkisUdf savedLinkisUdf
+            , boolean modify, File udfFile, User user) throws JSONException, UnExpectedRequestException, MetaDataAcquireFailedException, IOException {
+        List<LinkisUdfEnableEngine> linkisUdfEnableEngines = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(linkisUdfEnableEngineSet)) {
+            for (LinkisUdfEnableEngine linkisUdfEnableEngine : linkisUdfEnableEngineSet) {
+                linkisUdfEnableEngine.setId(null);
+                linkisUdfEnableEngine.setLinkisUdf(savedLinkisUdf);
+                linkisUdfEnableEngines.add(linkisUdfEnableEngine);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(linkisUdfEnableEngines)) {
+            linkisUdfEnableEngineDao.saveAll(linkisUdfEnableEngines);
+        }
+
+        LOGGER.info("Start to enable every cluster udf.");
+        List<LinkisUdfEnableCluster> linkisUdfEnableClusters = new ArrayList<>();
+        Map<String, Long> clusterIdMaps = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(linkisUdfEnableClusterSet)) {
+            for (LinkisUdfEnableCluster linkisUdfEnableCluster : linkisUdfEnableClusterSet) {
+                linkisUdfEnableCluster.setId(null);
+                linkisUdfEnableCluster.setLinkisUdf(savedLinkisUdf);
+                clusterIdMaps.put(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId());
+                List<String> proxyUserNames = user.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+                String targetFilePath = metaDataClient.checkFilePathExistsAndUploadToWorkspace(linkisUdfEnableCluster.getEnableClusterName(), linkisConfig.getUdfAdmin(), udfFile, Boolean.TRUE);
+                if (modify) {
+                    metaDataClient.clientModify(targetFilePath, udfFile, linkisUdfEnableCluster.getEnableClusterName(), clusterIdMaps, savedLinkisUdf.getUploadPath(), savedLinkisUdf.getUdfDesc(), savedLinkisUdf.getName(), savedLinkisUdf.getReturnType(), savedLinkisUdf.getEnter(), savedLinkisUdf.getRegisterName());
+                    metaDataClient.shareAndDeploy(linkisUdfEnableCluster.getLinkisUdfId(), linkisUdfEnableCluster.getEnableClusterName(), proxyUserNames, savedLinkisUdf.getName());
+                } else {
+                    Long udfId = metaDataClient.clientAdd(linkisUdfEnableCluster.getEnableClusterName(), targetFilePath, udfFile, savedLinkisUdf.getUploadPath(), savedLinkisUdf.getUdfDesc(), savedLinkisUdf.getName(), savedLinkisUdf.getReturnType(), savedLinkisUdf.getEnter(), savedLinkisUdf.getRegisterName(), savedLinkisUdf.getStatus(), savedLinkisUdf.getDirectory());
+                    if (udfId != null) {
+                        metaDataClient.shareAndDeploy(udfId, linkisUdfEnableCluster.getEnableClusterName(), proxyUserNames, savedLinkisUdf.getName());
+                        linkisUdfEnableCluster.setLinkisUdfName(savedLinkisUdf.getName());
+                        linkisUdfEnableCluster.setLinkisUdfId(udfId);
+                    }
+                }
+                linkisUdfEnableClusters.add(linkisUdfEnableCluster);
+            }
+            if (CollectionUtils.isNotEmpty(linkisUdfEnableClusters)) {
+                linkisUdfEnableClusterDao.saveAll(linkisUdfEnableClusters);
+            }
+        }
     }
 
     private Long handleProject(User user, List<ExcelProject> excelProjectContent, Long updateProjectId, boolean aomp) throws UnExpectedRequestException
-            , IOException, PermissionDeniedRequestException {
+            , IOException, PermissionDeniedRequestException, ParseException {
 
         for (ExcelProject excelProject : excelProjectContent) {
             Project project = objectMapper.readValue(excelProject.getProjectObject(), Project.class);
@@ -281,17 +555,28 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
                 projectService.checkProjectPermission(projectInDb, user.getUsername(), permissions);
 
+                checkServiceIsNotabnormalAndRestoredProjectStatus(projectInDb);
+
+                //Check the running status of the project and update the running status to import
+                if(ProjectStatusEnum.INOPERABLE_STATUS.getCode().equals(projectInDb.getRunStatus())){
+                    throw new UnExpectedRequestException("{&PROJECT_ID} : [" + updateProjectId + "] import or export operation in progress, cannot repeat operation");
+                }
+                projectInDb.setRunStatus(ProjectStatusEnum.INOPERABLE_STATUS.getCode());
+                setUserModifyInfo(user, projectInDb);
+                projectService.saveAndFlushProject(projectInDb);
+
                 project.setId(updateProjectId);
+                project.setCreateUser(projectInDb.getCreateUser());
+                project.setCreateUserFullName(projectInDb.getCreateUserFullName());
+                project.setCreateTime(projectInDb.getCreateTime());
 
                 Project otherProject = projectDao.findByNameAndCreateUser(project.getName(), project.getCreateUser());
                 if (otherProject != null && !otherProject.getId().equals(updateProjectId)) {
                     throw new UnExpectedRequestException(String.format("Project name: %s already exist", otherProject.getName()));
                 }
-                project.setModifyUser(user.getUsername());
-                project.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
-                project.setModifyUserFullName(user.getUsername() + "(" + (StringUtils.isNotEmpty(user.getChineseName()) ? user.getChineseName() : "") + ")");
+                setUserModifyInfo(user, project);
+                project.setRunStatus(ProjectStatusEnum.INOPERABLE_STATUS.getCode());
                 Project savedProject = projectDao.saveProject(project);
-                projectService.autoAuthAdminAndProxy(user, savedProject);
                 handleProjectUserAndLabel(excelProject, savedProject);
                 updateProjectId = savedProject.getId();
             } else {
@@ -306,6 +591,10 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 project.setCreateUser(user.getUsername());
                 project.setCreateTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
                 project.setCreateUserFullName(user.getUsername() + "(" + (StringUtils.isNotEmpty(user.getChineseName()) ? user.getChineseName() : "") + ")");
+                project.setModifyTime(null);
+                project.setModifyUser(null);
+                project.setModifyUserFullName(null);
+                project.setRunStatus(ProjectStatusEnum.INOPERABLE_STATUS.getCode());
                 Project savedProject = projectDao.saveProject(project);
                 projectService.autoAuthAdminAndProxy(user, savedProject);
                 handleProjectUserAndLabel(excelProject, savedProject);
@@ -314,6 +603,12 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         }
 
         return updateProjectId;
+    }
+
+    private void setUserModifyInfo(User user, Project projectInDb) {
+        projectInDb.setModifyUser(user.getUsername());
+        projectInDb.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+        projectInDb.setModifyUserFullName(user.getUsername() + "(" + (StringUtils.isNotEmpty(user.getChineseName()) ? user.getChineseName() : "") + ")");
     }
 
     @Override
@@ -363,42 +658,48 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     }
 
     private void handleProjectUserAndLabel(ExcelProject excelProject, Project savedProject) throws IOException {
+        List<ProjectUser> projectUserList = projectUserDao.findByProject(savedProject);
         if (StringUtils.isNotEmpty(excelProject.getProjectUserObject())) {
-            if (savedProject.getProjectUsers() != null) {
-                for (ProjectUser projectUser : savedProject.getProjectUsers()) {
-                    projectUserDao.deleteByProjectAndUserName(savedProject, projectUser.getUserName());
+            Set<ProjectUser> projectUsers = objectMapper.readValue(excelProject.getProjectUserObject(), new TypeReference<Set<ProjectUser>>() {});
+
+            if (CollectionUtils.isNotEmpty(projectUsers)) {
+                projectUsers = projectUsers.stream().map(projectUser -> {
+                    projectUser.setId(null);
+                    projectUser.setProject(savedProject);
+                    return projectUser;
+                }).collect(Collectors.toSet());
+
+                if (CollectionUtils.isNotEmpty(projectUserList)) {
+                    Set<ProjectUser> newProjectUsers = new HashSet<>(projectUsers.size());
+                    for (ProjectUser newProjectUser : projectUsers) {
+                        boolean exists = false;
+                        for (ProjectUser projectUser: projectUserList) {
+                            if (newProjectUser.getUserName().equals(projectUser.getUserName()) && newProjectUser.getPermission().equals(projectUser.getPermission())) {
+                                exists = true;
+                            }
+                        }
+                        if (! exists) {
+                            newProjectUsers.add(newProjectUser);
+                        }
+                    }
+                    projectUserDao.saveAll(newProjectUsers);
+                } else {
+                    projectUserDao.saveAll(projectUsers);
                 }
             }
-            Set<ProjectUser> projectUsers = objectMapper
-                    .readValue(excelProject.getProjectUserObject(), new TypeReference<Set<ProjectUser>>() {
-                    });
-            projectUsers = projectUsers.stream().map(projectUser -> {
-                projectUser.setId(null);
-                projectUser.setProject(savedProject);
-                return projectUser;
-            }).collect(Collectors.toSet());
-            projectUserDao.saveAll(projectUsers);
-        } else {
-            if (savedProject.getProjectUsers() != null) {
-                for (ProjectUser projectUser : savedProject.getProjectUsers()) {
-                    projectUserDao.deleteByProjectAndUserName(savedProject, projectUser.getUserName());
-                }
-            }
+
         }
 
+        projectLabelDao.deleteByProject(savedProject);
+        projectLabelDao.flush();
         if (StringUtils.isNotEmpty(excelProject.getProjectLabelObject())) {
-            projectLabelDao.deleteByProject(savedProject);
-            Set<ProjectLabel> projectLabels = objectMapper
-                    .readValue(excelProject.getProjectLabelObject(), new TypeReference<Set<ProjectLabel>>() {
-                    });
+            Set<ProjectLabel> projectLabels = objectMapper.readValue(excelProject.getProjectLabelObject(), new TypeReference<Set<ProjectLabel>>() {});
             projectLabels = projectLabels.stream().map(projectLabel -> {
                 projectLabel.setId(null);
                 projectLabel.setProject(savedProject);
                 return projectLabel;
             }).collect(Collectors.toSet());
             projectLabelDao.saveAll(projectLabels);
-        } else {
-            projectLabelDao.deleteByProject(savedProject);
         }
     }
 
@@ -440,6 +741,8 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             executionParameters.setAlarmArgumentsExecutionParameters(null);
             executionParametersInDb = executionParametersDao.saveExecutionParameters(executionParameters);
         }
+        BeanUtils.copyProperties(executionParameters, executionParametersInDb);
+
         createExecutionParametersRelations(alarmArgumentsExecutionParameters, noiseEliminationManagement, staticExecutionParameters, executionVariableSets, executionParametersInDb);
         executionParametersDao.saveExecutionParameters(executionParametersInDb);
     }
@@ -508,6 +811,81 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         alarmArgumentsExecutionParametersDao.deleteByExecutionParameters(executionParametersInDb);
     }
 
+    public void handleStandardValue(User user, List<ExcelStandardValue> excelStandardVauleContent) throws IOException, PermissionDeniedRequestException, UnExpectedRequestException {
+        List<UserRole> userRoles = userRoleDao.findByUser(user);
+        Integer roleType = roleService.getRoleType(userRoles);
+        for (ExcelStandardValue excelStandardValue : excelStandardVauleContent) {
+            StandardValueVersion response = objectMapper.readValue(excelStandardValue.getStandardValueJsonObject(), StandardValueVersion.class);
+            if (null == response) {
+                LOGGER.warn("Failed to format StandardValueVersionResponse: {}", excelStandardValue);
+                continue;
+            }
+
+            StandardValueVersion standardValueVersion = new StandardValueVersion();
+            BeanUtils.copyProperties(response, standardValueVersion);
+
+            StandardValueVersion standardValueVersionInDb = standardValueVersionDao.findByEnName(standardValueVersion.getEnName());
+
+            List<DataVisibility> dataVisibilitys = new ArrayList<>();
+            if (StringUtils.isNotEmpty(excelStandardValue.getDataVisibilityJsonObject())) {
+                dataVisibilitys = objectMapper.readValue(excelStandardValue.getDataVisibilityJsonObject(), new TypeReference<List<DataVisibility>>() {
+                });
+            }
+
+            if (standardValueVersionInDb == null) {
+                standardValueVersion.setId(null);
+                standardValueVersion.setCreateUser(user.getUsername());
+                standardValueVersion.setCreateTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+                //因1.1.0版本取消版本管理、标签字段 action字段，这里要做赋空处理(兼容旧数据)
+                standardValueVersion.setStandardValue(null);
+                standardValueVersion.setStandardValueActionVersion(null);
+                standardValueVersion.setStandardValueLabelVersion(null);
+                StandardValueVersion savedStandardValueVersion = standardValueVersionDao.saveStandardValueVersion(standardValueVersion);
+
+                if (CollectionUtils.isNotEmpty(dataVisibilitys)) {
+                    dataVisibilitys = dataVisibilitys.stream().map(dataVisibility -> {
+                        dataVisibility.setId(null);
+                        dataVisibility.setTableDataId(savedStandardValueVersion.getId());
+                        dataVisibility.setTableDataType(TableDataTypeEnum.STANDARD_VALUE.getCode());
+                        return dataVisibility;
+                    }).collect(Collectors.toList());
+
+                    dataVisibilityDao.saveAll(dataVisibilitys);
+                }
+            } else {
+                subDepartmentPermissionService.checkEditablePermission(roleType, user, null, standardValueVersion.getDevDepartmentId(), standardValueVersion.getOpsDepartmentId(), false);
+
+                //因1.1.0版本取消版本管理、标签字段 action字段，这里要做赋空处理(兼容旧数据)
+                standardValueVersion.setStandardValue(null);
+                standardValueVersion.setStandardValueActionVersion(null);
+                standardValueVersion.setStandardValueLabelVersion(null);
+
+                standardValueVersion.setId(standardValueVersionInDb.getId());
+                standardValueVersion.setModifyUser(user.getUsername());
+                standardValueVersion.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+
+                StandardValueVersion savedStandardValueVersion = standardValueVersionDao.saveStandardValueVersion(standardValueVersion);
+
+                List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(savedStandardValueVersion.getId(), TableDataTypeEnum.STANDARD_VALUE);
+                if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+                    dataVisibilityService.delete(savedStandardValueVersion.getId(), TableDataTypeEnum.STANDARD_VALUE);
+                }
+                if (CollectionUtils.isNotEmpty(dataVisibilitys)) {
+                    dataVisibilitys = dataVisibilitys.stream().map(dataVisibility -> {
+                        dataVisibility.setId(null);
+                        dataVisibility.setTableDataId(standardValueVersionInDb.getId());
+                        dataVisibility.setTableDataType(TableDataTypeEnum.STANDARD_VALUE.getCode());
+                        return dataVisibility;
+                    }).collect(Collectors.toList());
+
+                    dataVisibilityDao.saveAll(dataVisibilitys);
+                }
+            }
+
+        }
+
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public void handleTableGroup(AnalysisEventListener listener, Long projectId, List<DiffVariableRequest> diffVariableRequestList)
@@ -520,8 +898,18 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             excelGroupByProjects = ((ExcelRuleListener) listener).getExcelGroupByProjects();
         }
 
+        List<DiffVariableRequest> groupJsonDiffVariableRequestList = diffVariableRequestList.stream()
+                .filter(diffVariableRequest -> DiffRequestTypeEnum.JSON_REPLACEMENT.getCode().equals(diffVariableRequest.getType()))
+                .filter(diffVariableRequest -> diffVariableRequest.getName().startsWith(ExcelSheetName.TABLE_GROUP + "$"))
+                .collect(Collectors.toList());
+
         for (ExcelGroupByProject excelGroupByProject : excelGroupByProjects) {
-            RuleGroup ruleGroup = objectMapper.readValue(excelGroupByProject.getRuleGroupJsonObject(), RuleGroup.class);
+            String jsonStr = excelGroupByProject.getRuleGroupJsonObject();
+
+            // Replace json value with diff variable request.
+            String modifiedJsonStr = replaceJsonValue(groupJsonDiffVariableRequestList, jsonStr);
+
+            RuleGroup ruleGroup = objectMapper.readValue(modifiedJsonStr, RuleGroup.class);
             RuleGroup ruleGroupInDb = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroup.getRuleGroupName(), projectId);
 
             Set<RuleDataSource> ruleDataSources = ruleGroup.getRuleDataSources();
@@ -542,14 +930,46 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     }
 
     @Override
+    public String replaceJsonValue(List<DiffVariableRequest> jsonDiffVariableRequestList, String jsonStr) {
+        if (CollectionUtils.isNotEmpty(jsonDiffVariableRequestList)) {
+            for (DiffVariableRequest diffVariableRequest : jsonDiffVariableRequestList) {
+                int index = diffVariableRequest.getName().indexOf("$");
+                if (index != -1) {
+                    diffVariableRequest.setName(diffVariableRequest.getName().substring(index));
+                    LOGGER.info("Real json path is " + diffVariableRequest.getName());
+                    LOGGER.info("Real json value is " + diffVariableRequest.getValue());
+
+                    jsonStr = JsonPath.parse(jsonStr).set(diffVariableRequest.getName(), diffVariableRequest.getValue()).jsonString();
+                }
+            }
+        }
+
+        return jsonStr;
+    }
+
+    @Override
     public void createDatasourceEnv(Set<RuleDataSource> ruleDataSourcesFromJson, Object object, List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
         List<RuleDataSource> ruleDataSources = new ArrayList<>();
         List<RuleDataSourceEnv> ruleDataSourceEnvs = new ArrayList<>();
 
+        Map<String, Long> envs = new HashMap<>();
         if (CollectionUtils.isNotEmpty(ruleDataSourcesFromJson)) {
             for (RuleDataSource ruleDataSource : ruleDataSourcesFromJson) {
-                if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
-                    for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                ruleDataSource.setId(null);
+                if (object instanceof RuleGroup) {
+                    ruleDataSource.setRuleGroup((RuleGroup) object);
+                    ruleDataSource.setProjectId(((RuleGroup) object).getProjectId());
+                } else {
+                    ruleDataSource.setRule((Rule) object);
+                    ruleDataSource.setProjectId(((Rule) object).getProject().getId());
+                    if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(((Rule) object).getRuleType()) && ! QualitisConstants.ORIGINAL_INDEX.equals(ruleDataSource.getDatasourceIndex())) {
+                        continue;
+                    }
+                }
+                List<DiffVariableRequest> systemInnerDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                        diffVariableRequest -> DiffRequestTypeEnum.SYSTEM_INNER.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+                if (CollectionUtils.isNotEmpty(systemInnerDiffVariableRequestList)) {
+                    for (DiffVariableRequest diffVariableRequest : systemInnerDiffVariableRequestList) {
                         if (QualitisConstants.EXECUTE_USER.equals(diffVariableRequest.getName())) {
                             User user = userDao.findByUsername(diffVariableRequest.getValue());
                             if (user == null) {
@@ -573,7 +993,6 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                         }
                     }
                 }
-                Map<String, Long> envs = new HashMap<>();
                 if (StringUtils.isNotEmpty(ruleDataSource.getLinkisDataSourceName())) {
                     LinkisDataSource linkisDataSource = linkisDataSourceService.getByLinkisDataSourceName(ruleDataSource.getLinkisDataSourceName());
                     if (linkisDataSource != null) {
@@ -582,18 +1001,13 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                         envs.putAll(linkisDataSourceService.getEnvNameAndIdMap(linkisDataSource));
                     }
                 }
-                ruleDataSource.setId(null);
-                if (object instanceof RuleGroup) {
-                    ruleDataSource.setRuleGroup((RuleGroup) object);
-                    ruleDataSource.setProjectId(((RuleGroup) object).getProjectId());
-                } else {
-                    ruleDataSource.setRule((Rule) object);
-                    ruleDataSource.setProjectId(((Rule) object).getProject().getId());
-                }
                 if (CollectionUtils.isNotEmpty(ruleDataSource.getRuleDataSourceEnvs())) {
+                    Map<String, Map<String, String>> dataSourceEnvVariableMapping = getDataSourceEnvVariableMapping(diffVariableRequestList);
                     ruleDataSourceEnvs.addAll(ruleDataSource.getRuleDataSourceEnvs().stream().map(currRuleDataSourceEnv -> {
-                        currRuleDataSourceEnv.setEnvId(envs.get(currRuleDataSourceEnv.getEnvName()));
+                        String realEnvName = replaceAndReturnRealEnvName(ruleDataSource, currRuleDataSourceEnv.getEnvName(), dataSourceEnvVariableMapping);
                         currRuleDataSourceEnv.setRuleDataSource(ruleDataSource);
+                        currRuleDataSourceEnv.setEnvId(envs.get(realEnvName));
+                        currRuleDataSourceEnv.setEnvName(realEnvName);
                         currRuleDataSourceEnv.setId(null);
                         return currRuleDataSourceEnv;
                     }).collect(Collectors.toList()));
@@ -614,6 +1028,18 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         if (CollectionUtils.isNotEmpty(ruleDataSourceEnvs)) {
             ruleDatasourceEnvDao.saveAllRuleDataSourceEnv(ruleDataSourceEnvs);
         }
+    }
+
+    private String replaceAndReturnRealEnvName(RuleDataSource ruleDataSource
+            , String variableEnvName
+            , Map<String, Map<String, String>> dataSourceEnvVariableMapping) {
+        if (dataSourceEnvVariableMapping.containsKey(ruleDataSource.getLinkisDataSourceName())) {
+            Map<String, String> variableAndReplaceMapping = dataSourceEnvVariableMapping.get(ruleDataSource.getLinkisDataSourceName());
+            if (MapUtils.isNotEmpty(variableAndReplaceMapping) && variableAndReplaceMapping.containsKey(variableEnvName)) {
+                return variableAndReplaceMapping.get(variableEnvName);
+            }
+        }
+        return variableEnvName;
     }
 
     @Override
@@ -650,8 +1076,24 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 sheet.setClazz(ExcelExecutionParametersByProject.class);
                 sheet.setHeadLineMun(1);
                 excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.STANDARD_VAULE)) {
+                sheet.setClazz(ExcelStandardValue.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
             } else if (sheet.getSheetName().equals(ExcelSheetName.TABLE_GROUP)) {
                 sheet.setClazz(ExcelGroupByProject.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.RULE_UDF)) {
+                sheet.setClazz(ExcelRuleUdf.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.SCHEDULED_PUBLISHED)) {
+                sheet.setClazz(ExcelPublishScheduled.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.SCHEDULED_RELATION)) {
+                sheet.setClazz(ExcelRelationScheduled.class);
                 sheet.setHeadLineMun(1);
                 excelReader.read(sheet);
             } else if (sheet.getSheetName().equals(ExcelSheetName.DATASOURCE_ENV)) {
@@ -668,7 +1110,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse uploadProjectFromAomp(InputStream fileInputStream, FormDataContentDisposition fileDisposition, String userName)
-            throws IOException, UnExpectedRequestException, PermissionDeniedRequestException, JSONException, MetaDataAcquireFailedException {
+            throws IOException, UnExpectedRequestException, PermissionDeniedRequestException, JSONException, MetaDataAcquireFailedException, ParseException {
 
         UploadProjectRequest uploadProjectRequest = new UploadProjectRequest();
         String localZipPath = fileService.uploadFile(fileInputStream, fileDisposition, userName).getData();
@@ -679,14 +1121,15 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         return uploadProjectFromLocalOrGit(uploadProjectRequest, true);
     }
 
-    private List<ExcelGroupByProject> getGroup(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList) throws IOException {
+    private List<ExcelGroupByProject> getGroup(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
         List<ExcelGroupByProject> excelGroupByProjects = new ArrayList<>();
         for (Project project : projects) {
-            List<Rule> rules = ruleDao.findByProject(project);
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+
             if (CollectionUtils.isEmpty(rules)) {
                 continue;
             }
-            excelGroupByProjects = getTableGroup(rules, diffVariableRequestList);
+            excelGroupByProjects = getTableGroup(rules.stream().collect(Collectors.toList()), diffVariableRequestList);
         }
 
         return excelGroupByProjects;
@@ -752,10 +1195,65 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         }
     }
 
-    private List<ExcelRuleByProject> getExcelRuleByProject(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList) throws IOException {
+    private List<ExcelStandardValue> getExcelStandardValue(List<Project> projects, List<Long> ruleId, List<String> ruleName) throws IOException {
+        List<ExcelStandardValue> excelExcelStandardValues = new ArrayList<>();
+        for (Project project : projects) {
+            Set<Rule> rules = Sets.newHashSet();
+            if (CollectionUtils.isNotEmpty(ruleId)) {
+                rules.addAll(ruleDao.findByIdsAndProject(ruleId,project.getId()));
+            }
+            if (CollectionUtils.isNotEmpty(ruleName)) {
+                for (String name : ruleName) {
+                    Rule rule = ruleDao.findByProjectAndRuleName(project, name);
+                    if (null != rule) {
+                        rules.add(rule);
+                    }
+
+                }
+            }
+
+            if (CollectionUtils.isEmpty(rules)) {
+                rules = ruleDao.findExistStandardVaule(project.getId()).stream().collect(Collectors.toSet());
+            } else {
+                rules = rules.stream().filter(item -> item.getProject().getId().toString().equals(project.getId().toString()) && item.getStandardValueVersionId() != null && StringUtils.isNotBlank(item.getStandardValueVersionEnName())).collect(Collectors.toSet());
+            }
+
+            if (CollectionUtils.isEmpty(rules)) {
+                continue;
+            }
+            List<Long> standardValueVersionIds = Lists.newArrayList();
+            for (Rule rule : rules) {
+                ExcelStandardValue excelStandardValue = new ExcelStandardValue();
+                StandardValueVersion standardValueVersion = standardValueVersionDao.findById(rule.getStandardValueVersionId());
+                if (standardValueVersion != null) {
+
+                    excelStandardValue.setStandardValueJsonObject(objectMapper.writeValueAsString(standardValueVersion));
+                    List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(standardValueVersion.getId(), TableDataTypeEnum.STANDARD_VALUE);
+
+                    if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+                        excelStandardValue.setDataVisibilityJsonObject(objectMapper.writeValueAsString(dataVisibilityList));
+                    }
+                }
+                LOGGER.info("Collect excel line of StandardValueVersion: {}", excelStandardValue);
+                if (null != excelStandardValue && null != standardValueVersion) {
+                    Long mateData = standardValueVersionIds.stream().filter(item -> item.toString().equals(standardValueVersion.getId().toString())).findAny().orElse(null);
+                    if (null == mateData) {
+                        standardValueVersionIds.add(standardValueVersion.getId());
+                        excelExcelStandardValues.add(excelStandardValue);
+                    }
+
+                }
+
+            }
+        }
+        return excelExcelStandardValues;
+    }
+
+    private List<ExcelRuleByProject> getExcelRuleByProject(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
         List<ExcelRuleByProject> excelRuleByProjects = new ArrayList<>();
         for (Project project : projects) {
-            List<Rule> rules = ruleDao.findByProject(project);
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+
             List<ExcelRuleByProject> excelRuleByProjectList = ruleBatchService.getRule(rules, diffVariableRequestList);
 
             excelRuleByProjects.addAll(excelRuleByProjectList);
@@ -763,17 +1261,44 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         return excelRuleByProjects;
     }
 
+    private Set<Rule> getRules(List<Long> ruleIdList, List<String> ruleNameList, Project project) {
+        Set<Rule> rules = Sets.newHashSet();
+        if (CollectionUtils.isNotEmpty(ruleIdList)) {
+            rules.addAll(ruleDao.findByIdsAndProject(ruleIdList, project.getId()));
+        }
+        if (CollectionUtils.isNotEmpty(ruleNameList)) {
+            for (String name : ruleNameList) {
+                Rule rule = ruleDao.findByProjectAndRuleName(project, name);
+                if (null != rule) {
+                    rules.add(rule);
+                }
+
+            }
+        }
+
+        if (CollectionUtils.isEmpty(rules)) {
+            rules = ruleDao.findByProject(project).stream().collect(Collectors.toSet());
+        }
+        return rules;
+    }
+
     private List<ExcelProject> getExcelProject(List<Project> projects) throws IOException {
         List<ExcelProject> excelProjects = new ArrayList<>();
         for (Project project : projects) {
+            project.setRunStatus(ProjectStatusEnum.OPERABLE_STATUS.getCode());
             ExcelProject excelProject = new ExcelProject();
             excelProject.setProjectObject(objectMapper.writeValueAsString(project));
 
             Set<ProjectUser> projectUsers = project.getProjectUsers();
             if (CollectionUtils.isNotEmpty(projectUsers)) {
-                projectUsers = projectUsers.stream().filter(projectUser -> projectUser.getUserName().equals(project.getCreateUser())).collect(Collectors.toSet());
                 excelProject.setProjectUserObject(objectMapper.writerWithType(new TypeReference<Set<ProjectUser>>() {
                 }).writeValueAsString(projectUsers));
+            }
+
+            Set<ProjectLabel> projectLabels = project.getProjectLabels();
+            if (CollectionUtils.isNotEmpty(projectLabels)) {
+                excelProject.setProjectLabelObject(objectMapper.writerWithType(new TypeReference<Set<ProjectLabel>>() {
+                }).writeValueAsString(projectLabels));
             }
 
             LOGGER.info("Collect excel line: {}", excelProject);
@@ -801,10 +1326,20 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         return excelList;
     }
 
+    public String getUserName(boolean aomp, String loginUser, String operateUser) {
+        if (aomp) {
+            return loginUser;
+        }
+        return StringUtils.isNotBlank(HttpUtils.getUserName(httpServletRequest)) ? HttpUtils.getUserName(httpServletRequest) : operateUser;
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse uploadProjectFromLocalOrGit(UploadProjectRequest request, boolean aomp) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException {
-        String userName = aomp ? request.getLoginUser() : HttpUtils.getUserName(httpServletRequest);
+    public GeneralResponse uploadProjectFromLocalOrGit(UploadProjectRequest request, boolean aomp) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException, JSONException, MetaDataAcquireFailedException, ParseException {
+        if (null == request.getIncrement()) {
+            request.setIncrement(Boolean.FALSE);
+        }
+        String userName = getUserName(aomp, request.getLoginUser(), request.getOperateUser());
         List<File> udfFiles = new ArrayList<>();
         List<File> projectFiles = new ArrayList<>();
         StringBuilder operateComment = new StringBuilder();
@@ -812,11 +1347,22 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             // Check file and unzip
             projectFiles = checkFileAndUnzip(request.getZipPath());
             operateComment.append(ProjectTransportTypeEnum.LOCAL.name());
+        } else if (ProjectTransportTypeEnum.GIT.getCode().equals(request.getUploadType())) {
+            // Use git to pull
+            try {
+                String projectDir = null != request.getProjectId() ? request.getProjectId().toString() : UuidGenerator.generate();
+                GitUtils.gitPull(projectFiles, request.getGitRepo(), request.getGitBranch(), request.getGitRootDir(), linkisConfig.getGitPrivateKey(), linkisConfig.getUploadTmpPath() + File.separator + userName + File.separator + projectDir);
+            } catch (GitAPIException e) {
+                LOGGER.error(e.getMessage(), e);
+                throw new UnExpectedRequestException("Failed to git pull.");
+            }
+            operateComment.append(ProjectTransportTypeEnum.GIT.name());
         } else {
             throw new UnExpectedRequestException("Not support upload type.");
         }
 
         ExcelProjectListener listener = new ExcelProjectListener();
+        List<DiffVariableRequest> diffVariableRequests = new ArrayList<>(QualitisConstants.LENGTH_FOUR);
         // Read files, generate objects and clear files
         for (File currentFile : projectFiles) {
             if (currentFile.getName().endsWith(QualitisConstants.SUPPORT_SCALA_SUFFIX_NAME) || currentFile.getName().endsWith(QualitisConstants.SUPPORT_PYTHON_SUFFIX_NAME) || currentFile.getName().endsWith(QualitisConstants.SUPPORT_JAR_SUFFIX_NAME)) {
@@ -825,14 +1371,13 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             }
             if (aomp && currentFile.getName().endsWith(QualitisConstants.SUPPORT_CONFIG_SUFFIX_NAME)) {
                 Properties prop = new Properties();
-                try (FileInputStream inputStream = new FileInputStream(currentFile)) {
-                    prop.load(inputStream);
+                try (FileInputStream inputStream = new FileInputStream(currentFile);
+                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+                    prop.load(inputStreamReader);
                     Set<String> propKeys = prop.stringPropertyNames();
-                    List<DiffVariableRequest> diffVariableRequests = new ArrayList<>(propKeys.size());
                     for (String propKey : propKeys) {
-                        diffVariableRequests.add(new DiffVariableRequest(propKey, prop.getProperty(propKey)));
+                        diffVariableRequests.add(new DiffVariableRequest(currentFile.getName(), propKey, prop.getProperty(propKey)));
                     }
-                    request.setDiffVariableRequestList(diffVariableRequests);
                     continue;
                 } catch (Exception e) {
                     LOGGER.error("Failed to upload projects, caused by: {}", e.getMessage(), e);
@@ -856,20 +1401,37 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 }
             }
         }
-
-        return uploadProjectsReal(listener, userName, StringUtils.isNotEmpty(request.getLoginUser()), request.getProjectId(), request.getDiffVariableRequestList(), udfFiles, operateComment);
+        if (CollectionUtils.isNotEmpty(diffVariableRequests)) {
+            request.setDiffVariableRequestList(diffVariableRequests);
+        }
+        return uploadProjectsReal(listener, userName, StringUtils.isNotEmpty(request.getLoginUser()), request.getProjectId(), request.getDiffVariableRequestList(), udfFiles, operateComment, request.getIncrement());
     }
 
     @Override
     public GeneralResponse downloadProjectsToLocalOrGit(DownloadProjectRequest request, HttpServletResponse response) throws UnExpectedRequestException
-            , PermissionDeniedRequestException, IOException {
+            , PermissionDeniedRequestException, IOException, ParseException {
         // Check Arguments
         DownloadProjectRequest.checkRequest(request);
-        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        String loginUser = StringUtils.isNotBlank(HttpUtils.getUserName(httpServletRequest)) ? HttpUtils.getUserName(httpServletRequest) : request.getOperateUser();
+        // check service whether normal-->so save modify time
+        User user = userDao.findByUsername(loginUser);
+        if (user == null) {
+            throw new UnExpectedRequestException("user : [" + loginUser + "] {&DOES_NOT_EXIST} or {&PLEASE_LOGIN}");
+        }
 
+        StringBuilder repoUrl = new StringBuilder();
+        StringBuilder repoBranch = new StringBuilder();
+        StringBuilder repoRootDir = new StringBuilder();
         StringBuilder currProjectId = new StringBuilder();
 
+        if (StringUtils.isNotEmpty(request.getGitRepo())) {
+            repoUrl.append(request.getGitRepo());
+            repoBranch.append(request.getGitBranch());
+            repoRootDir.append(request.getGitRootDir());
+        }
+
         List<Project> projectsInDb = new ArrayList<>();
+        Set<Rule> rules = Sets.newHashSet();
         for (Long projectId : request.getProjectId()) {
             Project projectInDb = projectDao.findById(projectId);
             if (projectInDb == null) {
@@ -879,10 +1441,34 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             List<Integer> permissions = new ArrayList<>();
             permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
             projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+
+            checkServiceIsNotabnormalAndRestoredProjectStatus(projectInDb);
+
+            // check the running status of the project and update the running status to import
+            if(ProjectStatusEnum.INOPERABLE_STATUS.getCode().equals(projectInDb.getRunStatus())){
+                throw new UnExpectedRequestException("{&PROJECT_ID} : [" + projectId + "] import or export operation in progress, cannot repeat operation");
+            }
+            projectInDb.setRunStatus(ProjectStatusEnum.INOPERABLE_STATUS.getCode());
+
+            setUserModifyInfo(user, projectInDb);
+            projectService.saveAndFlushProject(projectInDb);
+
+            if (StringUtils.isEmpty(repoUrl.toString())) {
+                repoUrl.append(projectInDb.getGitRepo());
+                repoBranch.append(projectInDb.getGitBranch());
+                repoRootDir.append(projectInDb.getGitRootDir());
+            }
             if (StringUtils.isEmpty(currProjectId.toString())) {
                 currProjectId.append(projectId.toString());
             }
             projectsInDb.add(projectInDb);
+
+            rules = getRules(request.getRuleIds(), request.getRuleNames(), projectInDb);
+        }
+
+        List<String> executionParamNames = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(rules)) {
+            executionParamNames = rules.stream().filter(rule -> StringUtils.isNotEmpty(rule.getExecutionParametersName())).map(rule -> rule.getExecutionParametersName()).collect(Collectors.toList());
         }
 
         // Generate file in temp path and zip them
@@ -899,21 +1485,25 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
         // Get excel content
         List<ExcelProject> excelProject = getExcelProject(projectsInDb);
-        List<ExcelRuleMetric> excelRuleMetrics = getRuleMetric(projectsInDb);
-        List<ExcelDatasourceEnv> excelDatasourceEnvs = getDataSourceSheet(projectsInDb);
-        List<ExcelGroupByProject> excelGroupByProjects = getGroup(projectsInDb, request.getDiffVariableRequestList());
-        List<ExcelRuleByProject> excelRuleByProject = getExcelRuleByProject(projectsInDb, request.getDiffVariableRequestList());
-        List<ExcelExecutionParametersByProject> excelExecutionParametersByProject = getExecutionParameters(projectsInDb, Collections.emptyList(), false);
+        List<ExcelRuleMetric> excelRuleMetrics = getRuleMetric(projectsInDb, request.getRuleIds(), request.getRuleNames());
+        List<ExcelStandardValue> standardVaules = getExcelStandardValue(projectsInDb, request.getRuleIds(), request.getRuleNames());
+        List<ExcelDatasourceEnv> excelDatasourceEnvs = getDataSourceSheet(projectsInDb, request.getRuleIds(), request.getRuleNames());
+        List<ExcelRuleUdf> excelRuleUdfs = getExcelUdf(projectsInDb, forGenFilesDirFile, request.getRuleIds(), request.getRuleNames());
+        List<ExcelGroupByProject> excelGroupByProjects = getGroup(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelRuleByProject> excelRuleByProject = getExcelRuleByProject(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelPublishScheduled> excelPublishScheduleds = getPublishScheduleSheet(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelRelationScheduled> excelRelationScheduleds = getRelationScheduleSheet(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelExecutionParametersByProject> excelExecutionParametersByProject = getExecutionParameters(projectsInDb, CollectionUtils.isNotEmpty(executionParamNames) ? executionParamNames : Collections.emptyList(), true);
 
-        generateFiles(forGenFilesDirFile, excelProject, excelRuleMetrics, excelGroupByProjects, excelRuleByProject, excelExecutionParametersByProject
-                , request.getDiffVariableRequestList(), excelDatasourceEnvs);
+        generateFiles(forGenFilesDirFile, excelRuleUdfs, excelProject, excelRuleMetrics, excelGroupByProjects, excelRuleByProject, excelExecutionParametersByProject, standardVaules
+                , excelPublishScheduleds, excelRelationScheduleds, request.getDiffVariableRequestList(), excelDatasourceEnvs);
         String operateComment;
         if (ProjectTransportTypeEnum.LOCAL.getCode().equals(request.getDownloadType())) {
             String zipFilePath = tempDirForGenFiles.toString() + QualitisConstants.SUPPORT_ZIP_SUFFIX_NAME;
             // Create a FileOutputStream to write the zip file
             FileOutputStream fos = new FileOutputStream(zipFilePath);
             // Create a ZipOutputStream to write the zip file
-            ZipOutputStream zos = new ZipOutputStream(fos);
+            ZipOutputStream zos = new ZipOutputStream(fos, StandardCharsets.UTF_8);
 
             // Traverse the source folder and add all files to the zip file
             addFolderToZip(tempDirForGenFiles.toString(), "", zos);
@@ -947,18 +1537,33 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             // Clear
             deleteDirectory(forGenFilesDirFile);
             operateComment = ProjectTransportTypeEnum.LOCAL.name();
+        } else if (ProjectTransportTypeEnum.GIT.getCode().equals(request.getDownloadType())) {
+            // Use git to push
+            try {
+                GitUtils.gitPush(repoUrl.toString(), repoBranch.toString(), linkisConfig.getGitPrivateKey(), forGenFilesDirFile, currProjectId.toString(), repoRootDir.toString(), "From Qualitis");
+            } catch (GitAPIException e) {
+                LOGGER.error(e.getMessage(), e);
+                throw new UnExpectedRequestException("Failed to git push.");
+            } catch (URISyntaxException e) {
+                LOGGER.error(e.getMessage(), e);
+                throw new UnExpectedRequestException("Failed to git push.");
+            }
+            operateComment = ProjectTransportTypeEnum.GIT.name();
         } else {
             throw new UnExpectedRequestException("Not support download type.");
         }
 
         projectEventService.recordBatch(projectsInDb, loginUser, operateComment, OperateTypeEnum.EXPORT_PROJECT);
-        return new GeneralResponse<>("200", "SUCCESS", null);
+        // update the running status of the project to normal
+        projectService.batchSaveAndFlushProject(projectsInDb);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "SUCCESS", null);
     }
 
-    private List<ExcelRuleMetric> getRuleMetric(List<Project> projectsInDb) throws IOException {
+    private List<ExcelRuleMetric> getRuleMetric(List<Project> projectsInDb, List<Long> ruleId, List<String> ruleName) throws IOException {
         List<ExcelRuleMetric> excelRuleMetrics = new ArrayList<>();
         for (Project project : projectsInDb) {
-            List<Rule> rules = ruleDao.findByProject(project);
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+
             List<RuleMetric> ruleMetrics = rules.stream().map(rule -> rule.getAlarmConfigs()).flatMap(alarmConfigs -> alarmConfigs.stream()).filter(alarmConfig -> alarmConfig.getRuleMetric() != null).map(alarmConfig -> alarmConfig.getRuleMetric()).distinct().collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(ruleMetrics)) {
                 for (RuleMetric ruleMetric : ruleMetrics) {
@@ -974,6 +1579,42 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             }
         }
         return excelRuleMetrics;
+    }
+
+    private List<ExcelRuleUdf> getExcelUdf(List<Project> projectsInDb, File zipDirFile, List<Long> ruleId, List<String> ruleName) throws IOException {
+        List<ExcelRuleUdf> excelRuleUdfs = new ArrayList<>();
+        // Jar, python, scala file, saved in udf dir
+        for (Project project : projectsInDb) {
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+
+            Set<String> ruleUdfNames = rules.stream().filter(rule -> CollectionUtils.isNotEmpty(rule.getRuleUdfs()))
+                    .map(rule -> rule.getRuleUdfs()).flatMap(ruleUdfs -> ruleUdfs.stream()).map(ruleUdf -> ruleUdf.getUdfName()).collect(Collectors.toSet());
+            if (CollectionUtils.isNotEmpty(ruleUdfNames)) {
+                Set<LinkisUdf> linkisUdfs = ruleUdfNames.stream().map(ruleUdfName -> linkisUdfDao.findByName(ruleUdfName)).collect(Collectors.toSet());
+                if (CollectionUtils.isNotEmpty(linkisUdfs)) {
+                    File projectDir = new File(zipDirFile, "project-cus-udf");
+                    if (!projectDir.exists()) {
+                        projectDir.mkdirs();
+                    }
+                    for (LinkisUdf linkisUdf : linkisUdfs) {
+                        ExcelRuleUdf excelRuleUdf = new ExcelRuleUdf();
+                        excelRuleUdf.setUdfJsonObject(objectMapper.writeValueAsString(linkisUdf));
+                        List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
+
+                        if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+                            excelRuleUdf.setDataVisibilityJsonObject(objectMapper.writeValueAsString(dataVisibilityList));
+                        }
+                        excelRuleUdfs.add(excelRuleUdf);
+                        LOGGER.info("Start to copy udf file, path: {}", linkisUdf.getUploadPath());
+                        Path sourceFile = Paths.get(linkisUdf.getUploadPath());
+                        Path targetDir = Paths.get(projectDir.getPath());
+                        Files.copy(sourceFile, targetDir.resolve(sourceFile.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+                        LOGGER.info("Finish to copy udf file, path: {}", linkisUdf.getUploadPath());
+                    }
+                }
+            }
+        }
+        return excelRuleUdfs;
     }
 
     public void deleteDirectory(File directory) {// TODO: 文件被占用
@@ -1003,7 +1644,20 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     @Override
     public GeneralResponse diffVariables() {
         List<DiffVariable> diffVariables = diffVariableRepository.findAll();
-        return new GeneralResponse("200", "Success to list diff variables", diffVariables);
+        return new GeneralResponse(ResponseStatusConstants.OK, "Success to list diff variables", diffVariables);
+    }
+
+    @Override
+    public List<Project> checkProjects(List<Long> projectIds) throws UnExpectedRequestException {
+        List<Project> projectInDbs = Lists.newArrayList();
+        for (Long projectId : projectIds) {
+            Project projectInDb = projectDao.findById(projectId);
+            if (projectInDb == null) {
+                throw new UnExpectedRequestException("{&PROJECT_ID} : [" + projectId + "] {&DOES_NOT_EXIST}");
+            }
+            projectInDbs.add(projectInDb);
+        }
+        return projectInDbs;
     }
 
     private void addFolderToZip(String folderPath, String parentFolderPath, ZipOutputStream zos) throws IOException {
@@ -1038,43 +1692,75 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     }
 
     private void generateFiles(File zipDirFile,
+        List<ExcelRuleUdf> excelRuleUdfs,
         List<ExcelProject> excelProject,
         List<ExcelRuleMetric> excelRuleMetrics,
         List<ExcelGroupByProject> excelGroupByProjects,
         List<ExcelRuleByProject> excelRulesByProject,
         List<ExcelExecutionParametersByProject> excelExecutionParametersByProject,
+        List<ExcelStandardValue> standardValues,
+        List<ExcelPublishScheduled> excelPublishScheduleds,
+        List<ExcelRelationScheduled> excelRelationScheduleds,
         List<DiffVariableRequest> diffVariableRequestList,
         List<ExcelDatasourceEnv> excelDatasourceEnvs) throws IOException {
         if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
-            File projectDir = new File(zipDirFile, "project-info");
+            List<DiffVariableRequest> systemInnerDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.SYSTEM_INNER.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(systemInnerDiffVariableRequestList)) {
+                savePropertiesFiles(systemInnerDiffVariableRequestList, zipDirFile, "project-info", DiffRequestTypeEnum.SYSTEM_INNER.getPrefixFile());
+            }
+            List<DiffVariableRequest> datasourceEnvDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.DATASOURCE_ENV.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(datasourceEnvDiffVariableRequestList)) {
+                savePropertiesFiles(datasourceEnvDiffVariableRequestList, zipDirFile, "project-cus-datasource", DiffRequestTypeEnum.DATASOURCE_ENV.getPrefixFile());
+            }
+            List<DiffVariableRequest> sqlDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.SQL_REPLACEMENT.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(sqlDiffVariableRequestList)) {
+                savePropertiesFiles(sqlDiffVariableRequestList, zipDirFile, "project-rule", DiffRequestTypeEnum.SQL_REPLACEMENT.getPrefixFile());
+            }
+            List<DiffVariableRequest> jsonDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.JSON_REPLACEMENT.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(jsonDiffVariableRequestList)) {
+                savePropertiesFiles(jsonDiffVariableRequestList, zipDirFile, "project-rule", DiffRequestTypeEnum.JSON_REPLACEMENT.getPrefixFile());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(excelRuleUdfs)) {
+            LOGGER.info("Start to write udf excel");
+            String fileName = "batch_udf_export" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
+
+            File projectDir = new File(zipDirFile, "project-cus-udf");
             if (!projectDir.exists()) {
                 projectDir.mkdirs();
             }
-            Properties prop = new Properties();
-            File diffVariablesConfigFile = new File(projectDir, "diff_variables_config.properties");
-            if (diffVariablesConfigFile.exists()) {
-                Files.delete(diffVariablesConfigFile.toPath());
-                LOGGER.info("Delete old diff variables config file {}", diffVariablesConfigFile.getName());
-            }
-            if (!diffVariablesConfigFile.exists()) {
-                boolean newFile = diffVariablesConfigFile.createNewFile();
+
+            File projectExcel = new File(projectDir, fileName);
+            if (!projectExcel.exists()) {
+                boolean newFile = projectExcel.createNewFile();
                 if (!newFile) {
                     LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
                 }
 
             }
-            try (OutputStream output = new FileOutputStream(diffVariablesConfigFile)) {
-                // 设置属性值
-                for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
-                    prop.setProperty(diffVariableRequest.getName(), "[@" + diffVariableRequest.getName() + "]");
+            // Write data to an Excel file
+            ExcelWriter excelRuleUdfsWriter = null;
+            FileOutputStream excelRuleUdfsFos = null;
+            try {
+                excelRuleUdfsFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelRuleUdfsWriter = EasyExcelFactory.getWriter(excelRuleUdfsFos);
+                Sheet sheet = new Sheet(1, 1, ExcelRuleUdf.class);
+                sheet.setSheetName(ExcelSheetName.RULE_UDF);
+                excelRuleUdfsWriter.write(excelRuleUdfs, sheet);
+                LOGGER.info("Finish to write udf excel");
+            } catch (FileNotFoundException e) {
+                LOGGER.error("Failed to write udf content to excel.");
+            } finally {
+                if (excelRuleUdfsWriter != null) {
+                    excelRuleUdfsWriter.finish();
                 }
-
-                // 将属性写入文件
-                prop.store(output, null);
-
-                LOGGER.info("差异化变量配置文件已创建并写入完成！");
-            } catch (IOException io) {
-                LOGGER.error(io.getMessage(), io);
+                if (excelRuleUdfsFos != null) {
+                    excelRuleUdfsFos.close();
+                }
             }
         }
         if (CollectionUtils.isNotEmpty(excelProject)) {
@@ -1095,18 +1781,23 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
             }
             // Write data to an Excel file
-            ExcelWriter writer = null;
+            ExcelWriter excelProjectWriter = null;
+            FileOutputStream excelProjectFos = null;
             try {
-                writer = EasyExcelFactory.getWriter(new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName)));
+                excelProjectFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelProjectWriter = EasyExcelFactory.getWriter(excelProjectFos);
                 Sheet sheet = new Sheet(1, 1, ExcelProject.class);
                 sheet.setSheetName(ExcelSheetName.PROJECT_NAME);
-                writer.write(excelProject, sheet);
+                excelProjectWriter.write(excelProject, sheet);
                 LOGGER.info("Finish to write project excel");
             } catch (FileNotFoundException e) {
                 LOGGER.error("Failed to write project content to excel.");
             } finally {
-                if (writer != null) {
-                    writer.finish();
+                if (excelProjectWriter != null) {
+                    excelProjectWriter.finish();
+                }
+                if (excelProjectFos != null) {
+                    excelProjectFos.close();
                 }
             }
         }
@@ -1128,18 +1819,23 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
             }
             // Write data to an Excel file
-            ExcelWriter writer = null;
+            ExcelWriter excelRuleMetricsWriter = null;
+            FileOutputStream excelRuleMetricsFos = null;
             try {
-                writer = EasyExcelFactory.getWriter(new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName)));
+                excelRuleMetricsFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelRuleMetricsWriter = EasyExcelFactory.getWriter(excelRuleMetricsFos);
                 Sheet sheet = new Sheet(1, 1, ExcelRuleMetric.class);
                 sheet.setSheetName(ExcelSheetName.RULE_METRIC_NAME);
-                writer.write(excelRuleMetrics, sheet);
+                excelRuleMetricsWriter.write(excelRuleMetrics, sheet);
                 LOGGER.info("Finish to write metric excel");
             } catch (FileNotFoundException e) {
                 LOGGER.error("Failed to write metric content to excel.");
             } finally {
-                if (writer != null) {
-                    writer.finish();
+                if (excelRuleMetricsWriter != null) {
+                    excelRuleMetricsWriter.finish();
+                }
+                if (excelRuleMetricsFos != null) {
+                    excelRuleMetricsFos.close();
                 }
             }
         }
@@ -1160,26 +1856,30 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 }
             }
             // Write data to an Excel file
-            ExcelWriter writer = null;
+            ExcelWriter excelRulesByProjectWriter = null;
+            FileOutputStream excelRulesByProjectFos = null;
             try {
-                writer = EasyExcelFactory.getWriter(new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName)));
+                excelRulesByProjectFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelRulesByProjectWriter = EasyExcelFactory.getWriter(excelRulesByProjectFos);
                 Sheet sheetRule = new Sheet(1, 1, ExcelRuleByProject.class);
                 sheetRule.setSheetName(ExcelSheetName.RULE_NAME);
-                writer.write(excelRulesByProject, sheetRule);
+                excelRulesByProjectWriter.write(excelRulesByProject, sheetRule);
 
                 if (CollectionUtils.isNotEmpty(excelGroupByProjects)) {
                     LOGGER.info("Start to write group excel");
                     Sheet sheetGroup = new Sheet(2, 1, ExcelGroupByProject.class);
                     sheetGroup.setSheetName(ExcelSheetName.TABLE_GROUP);
-                    writer.write(excelGroupByProjects, sheetGroup);
+                    excelRulesByProjectWriter.write(excelGroupByProjects, sheetGroup);
                     LOGGER.info("Finish to write group excel");
                 }
                 LOGGER.info("Finish to write rule excel");
             } catch (FileNotFoundException e) {
                 LOGGER.error("Failed to write rule & group to excel.");
             } finally {
-                if (writer != null) {
-                    writer.finish();
+                if (excelRulesByProjectWriter != null) {
+                    excelRulesByProjectWriter.finish();
+                }if (excelRulesByProjectFos != null) {
+                    excelRulesByProjectFos.close();
                 }
             }
         }
@@ -1200,18 +1900,22 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 }
             }
             // Write data to an Excel file
-            ExcelWriter writer = null;
+            ExcelWriter excelExecutionParametersByProjectWriter = null;
+            FileOutputStream excelExecutionParametersByProjectFos = null;
             try {
-                writer = EasyExcelFactory.getWriter(new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName)));
+                excelExecutionParametersByProjectFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelExecutionParametersByProjectWriter = EasyExcelFactory.getWriter(excelExecutionParametersByProjectFos);
                 Sheet sheet = new Sheet(1, 1, ExcelExecutionParametersByProject.class);
                 sheet.setSheetName(ExcelSheetName.EXECUTION_PARAMETERS_NAME);
-                writer.write(excelExecutionParametersByProject, sheet);
+                excelExecutionParametersByProjectWriter.write(excelExecutionParametersByProject, sheet);
                 LOGGER.info("Finish to write execution parameter excel");
             } catch (FileNotFoundException e) {
                 LOGGER.error("Failed to write execution parameter to excel.");
             } finally {
-                if (writer != null) {
-                    writer.finish();
+                if (excelExecutionParametersByProjectWriter != null) {
+                    excelExecutionParametersByProjectWriter.finish();
+                }if (excelExecutionParametersByProjectFos != null) {
+                    excelExecutionParametersByProjectFos.close();
                 }
             }
         }
@@ -1232,20 +1936,141 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 }
             }
             // Write data to an Excel file
-            ExcelWriter writer = null;
+            ExcelWriter excelDatasourceEnvsWriter = null;
+            FileOutputStream excelDatasourceEnvsFos = null;
             try {
-                writer = EasyExcelFactory.getWriter(new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName)));
+                excelDatasourceEnvsFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelDatasourceEnvsWriter = EasyExcelFactory.getWriter(excelDatasourceEnvsFos);
                 Sheet sheet = new Sheet(1, 1, ExcelDatasourceEnv.class);
                 sheet.setSheetName(ExcelSheetName.DATASOURCE_ENV);
-                writer.write(excelDatasourceEnvs, sheet);
+                excelDatasourceEnvsWriter.write(excelDatasourceEnvs, sheet);
                 LOGGER.info("Finish to write datasource env excel");
             } catch (FileNotFoundException e) {
                 LOGGER.error("Failed to write datasource env to excel.");
             } finally {
-                if (writer != null) {
-                    writer.finish();
+                if (excelDatasourceEnvsWriter != null) {
+                    excelDatasourceEnvsWriter.finish();
+                }
+                if (excelDatasourceEnvsFos != null) {
+                    excelDatasourceEnvsFos.close();
                 }
             }
+        }
+        if (CollectionUtils.isNotEmpty(standardValues)) {
+            LOGGER.info("Start to write standard value excel");
+            String fileName = "batch_standard_value_export" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
+
+            File projectDir = new File(zipDirFile, "project-cus-standard-value");
+            if (!projectDir.exists()) {
+                projectDir.mkdirs();
+            }
+
+            File projectExcel = new File(projectDir, fileName);
+            if (!projectExcel.exists()) {
+                boolean newFile = projectExcel.createNewFile();
+                if (!newFile) {
+                    LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
+                }
+            }
+            // Write data to an Excel file
+            ExcelWriter standardValuesWriter = null;
+            FileOutputStream standardValuesFos = null;
+            try {
+                standardValuesFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                standardValuesWriter = EasyExcelFactory.getWriter(standardValuesFos);
+                Sheet sheet = new Sheet(1, 1, ExcelStandardValue.class);
+                sheet.setSheetName(ExcelSheetName.STANDARD_VAULE);
+                standardValuesWriter.write(standardValues, sheet);
+                LOGGER.info("Finish to write standard value excel");
+            } catch (FileNotFoundException e) {
+                LOGGER.error("Failed to write standard value to excel.");
+            } finally {
+                if (standardValuesWriter != null) {
+                    standardValuesWriter.finish();
+                }
+                if (standardValuesFos != null) {
+                    standardValuesFos.close();
+                }
+            }
+        }
+        if (CollectionUtils.isNotEmpty(excelPublishScheduleds)) {
+            LOGGER.info("Start to write schedule task excel");
+            String fileName = "batch_schedule_task_export" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
+
+            File projectDir = new File(zipDirFile, "project-ref-workflow");
+            if (!projectDir.exists()) {
+                projectDir.mkdirs();
+            }
+
+            File projectExcel = new File(projectDir, fileName);
+            if (!projectExcel.exists()) {
+                boolean newFile = projectExcel.createNewFile();
+                if (!newFile) {
+                    LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
+                }
+            }
+            // Write data to an Excel file
+            ExcelWriter excelPublishScheduledsWriter = null;
+            FileOutputStream excelPublishScheduledsFos = null;
+            try {
+                excelPublishScheduledsFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelPublishScheduledsWriter = EasyExcelFactory.getWriter(excelPublishScheduledsFos);
+                Sheet sheet = new Sheet(1, 1, ExcelPublishScheduled.class);
+                sheet.setSheetName(ExcelSheetName.SCHEDULED_PUBLISHED);
+                excelPublishScheduledsWriter.write(excelPublishScheduleds, sheet);
+
+                if (CollectionUtils.isNotEmpty(excelRelationScheduleds)) {
+                    LOGGER.info("Start to write relation schedule task excel");
+                    Sheet sheetRela = new Sheet(2, 1, ExcelRelationScheduled.class);
+                    sheetRela.setSheetName(ExcelSheetName.SCHEDULED_RELATION);
+                    excelPublishScheduledsWriter.write(excelRelationScheduleds, sheetRela);
+                    LOGGER.info("Finish to write relation schedule task excel");
+                }
+                LOGGER.info("Finish to write schedule task excel");
+            } catch (FileNotFoundException e) {
+                LOGGER.error("Failed to write schedule task to excel.");
+            } finally {
+                if (excelPublishScheduledsWriter != null) {
+                    excelPublishScheduledsWriter.finish();
+                }
+                if (excelPublishScheduledsFos != null) {
+                    excelPublishScheduledsFos.close();
+                }
+            }
+        }
+    }
+
+    private void savePropertiesFiles(List<DiffVariableRequest> diffVariableRequestList, File zipDirFile, String childDirName, String prefix)
+        throws IOException {
+        File projectDir = new File(zipDirFile, childDirName);
+        if (!projectDir.exists()) {
+            projectDir.mkdirs();
+        }
+        Properties prop = new Properties();
+        String fileName = prefix + "diff_variables_config.properties";
+        File diffVariablesConfigFile = new File(projectDir, fileName);
+        if (diffVariablesConfigFile.exists()) {
+            Files.delete(diffVariablesConfigFile.toPath());
+            LOGGER.info("Delete old diff variables config file {}", diffVariablesConfigFile.getName());
+        }
+        if (!diffVariablesConfigFile.exists()) {
+            boolean newFile = diffVariablesConfigFile.createNewFile();
+            if (!newFile) {
+                LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
+            }
+        }
+        try (OutputStream output = new FileOutputStream(diffVariablesConfigFile)) {
+            // 设置属性值
+            for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                prop.setProperty(diffVariableRequest.getName(), "[@" + diffVariableRequest.getName() + "]");
+            }
+
+            // 将属性写入文件
+            prop.store(output, null);
+
+            LOGGER.info(fileName + " 差异化变量配置文件已创建并写入完成！");
+        } catch (IOException io) {
+            LOGGER.error(io.getMessage(), io);
         }
     }
 
@@ -1264,7 +2089,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         try {
             extract(zipFile.getPath(), extractedFileList, zipFile.getParentFile().getPath());
         } catch (Exception e) {
-            LOGGER.error("Failed to extracte zip files.");
+            LOGGER.error("Failed to extracte zip files.", e);
             throw new UnExpectedRequestException("Failed to get zip files.");
         } finally {
             if (zipFile.exists()) {
@@ -1281,7 +2106,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             destDir.mkdir();
         }
 
-        try (ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath), Charset.forName("UTF-8"))) {
+        try (ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath), StandardCharsets.UTF_8)) {
             ZipEntry entry = zipIn.getNextEntry();
             while (entry != null) {
                 String filePath = destDirectory + File.separator + entry.getName();
@@ -1310,14 +2135,150 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
     }
 
+    public List<ExcelPublishScheduled> getPublishScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
+        List<Long> ruleGroupIds = Lists.newArrayList();
+        for (Project project : projects) {
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+            ruleGroupIds.addAll(rules.stream().map(Rule::getRuleGroup).map(RuleGroup::getId).collect(
+                    Collectors.toSet()));
+        }
 
+        List<ScheduledTask> scheduledTaskList = scheduledTaskDao.findByProjects(projects, ScheduledTaskTypeEnum.PUBLISH.getCode());
+        Map<Object, List<ScheduledTask>> scheduleProjectNameTaskMap = scheduledTaskList.stream().collect(Collectors.groupingBy(scheduledTask -> scheduledTask.getProjectName()));
+        List<String> scheduleProjectNameList = scheduleProjectNameTaskMap.keySet().stream().map(Object::toString).collect(Collectors.toList());
+        List<String> workflowNameList = scheduledTaskList.stream().map(ScheduledTask::getWorkFlowName).distinct().collect(Collectors.toList());
+        List<ScheduledProject> scheduledProjectList = scheduledProjectDao.findByProjectAndNameList(projects, scheduleProjectNameList);
 
-    public List<ExcelDatasourceEnv> getDataSourceSheet(List<Project> projects) {
+        List<ExcelPublishScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(scheduledProjectList.size());
+        for (ScheduledProject scheduledProject : scheduledProjectList) {
+            List<ScheduledWorkflow> rowWorkflowList = scheduledWorkflowDao.findByScheduledProjectAndWorkflowNameList(scheduledProject, workflowNameList);
+            List<ScheduledSignal> rowSignalList = scheduledSignalDao.findByWorkflowList(rowWorkflowList);
+
+            List<ScheduledWorkflowTaskRelation> rowScheduledRelationList;
+            if (CollectionUtils.isNotEmpty(ruleGroupIds)) {
+                List<Long> scheduledWorkflowIds = rowWorkflowList.stream().map(ScheduledWorkflow::getId).collect(Collectors.toList());
+                rowScheduledRelationList = scheduledWorkflowTaskRelationDao.findByScheduledWorkFlowIdAndRuleGroupId(scheduledWorkflowIds, ruleGroupIds);
+            } else {
+                rowScheduledRelationList = scheduledWorkflowTaskRelationDao.findByWorkflowList(rowWorkflowList);
+            }
+
+            List<ScheduledTask> rowScheduleTaskList = scheduleProjectNameTaskMap.get(scheduledProject.getName());
+
+            if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
+                List<DiffVariable> diffVariableList = diffVariableRepository.findAll();
+                List<String> diffVariableNameList = diffVariableList.stream().map(diffVariable -> diffVariable.getName()).collect(Collectors.toList());
+
+                for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                    if (!diffVariableNameList.contains(diffVariableRequest.getName())) {
+                        continue;
+                    }
+
+                    if (QualitisConstants.WTSS_DEPLOY_USER.equals(diffVariableRequest.getName())) {
+                        scheduledProject.setReleaseUser("[@" + diffVariableRequest.getName() + "]");
+                        rowScheduleTaskList = rowScheduleTaskList.stream().map(scheduledTask -> {
+                            scheduledTask.setReleaseUser("[@" + diffVariableRequest.getName() + "]");
+                            return scheduledTask;
+                        }).collect(Collectors.toList());
+                    } else if (QualitisConstants.WTSS_DEPLOY_CLUSETER.equals(diffVariableRequest.getName())) {
+                        scheduledProject.setClusterName("[@" + diffVariableRequest.getName() + "]");
+                        rowScheduleTaskList = rowScheduleTaskList.stream().map(scheduledTask -> {
+                            scheduledTask.setClusterName("[@" + diffVariableRequest.getName() + "]");
+                            return scheduledTask;
+                        }).collect(Collectors.toList());
+                    }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(rowScheduledRelationList)) {
+                ExcelPublishScheduled rowPublishScheduled = ExcelPublishScheduled.fromScheduledProject(scheduledProject, rowWorkflowList, rowSignalList, rowScheduleTaskList, rowScheduledRelationList);
+                excelScheduledList.add(rowPublishScheduled);
+            }
+
+        }
+        return excelScheduledList;
+    }
+
+    public List<ExcelRelationScheduled> getRelationScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
+        List<Long> ruleGroupIds = Lists.newArrayList();
+        for (Project project : projects) {
+            Set<Rule> rules = getRules(ruleId, ruleName, project);
+            ruleGroupIds.addAll(rules.stream().map(Rule::getRuleGroup).map(RuleGroup::getId).collect(
+                    Collectors.toSet()));
+        }
+
+        List<ScheduledTask> scheduledTaskList = scheduledTaskDao.findByProjects(projects, ScheduledTaskTypeEnum.RELATION.getCode());
+        List<ScheduledFrontBackRule> scheduledFrontBackRuleList;
+        if (CollectionUtils.isNotEmpty(ruleGroupIds)) {
+            List<Long> scheduledTaskIdLists = scheduledTaskList.stream().map(ScheduledTask::getId).collect(Collectors.toList());
+            scheduledFrontBackRuleList = scheduledFrontBackRuleDao.findScheduledTaskAndRuleGroup(scheduledTaskIdLists, ruleGroupIds);
+        } else {
+            scheduledFrontBackRuleList = scheduledFrontBackRuleDao.findByScheduledTaskList(scheduledTaskList);
+        }
+
+        Map<Object, List<ScheduledFrontBackRule>> scheduleTaskIdFrontBackMap = scheduledFrontBackRuleList.stream()
+                .collect(Collectors.groupingBy(scheduledFrontBackRule -> scheduledFrontBackRule.getScheduledTask().getId()));
+
+        List<ExcelRelationScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(scheduledTaskList.size());
+        try {
+            for (ScheduledTask scheduledTask : scheduledTaskList) {
+                if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
+                    List<DiffVariable> diffVariableList = diffVariableRepository.findAll();
+                    List<String> diffVariableNameList = diffVariableList.stream().map(diffVariable -> diffVariable.getName()).collect(Collectors.toList());
+
+                    for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                        if (!diffVariableNameList.contains(diffVariableRequest.getName())) {
+                            continue;
+                        }
+
+                        if (QualitisConstants.WTSS_DEPLOY_USER.equals(diffVariableRequest.getName())) {
+                            scheduledTask.setReleaseUser("[@" + diffVariableRequest.getName() + "]");
+                        } else if (QualitisConstants.WTSS_DEPLOY_CLUSETER.equals(diffVariableRequest.getName())) {
+                            scheduledTask.setClusterName("[@" + diffVariableRequest.getName() + "]");
+                        }
+                    }
+                }
+                List<ScheduledFrontBackRule> rowScheduledFrontBackRuleList = scheduleTaskIdFrontBackMap.get(scheduledTask.getId());
+
+                if (CollectionUtils.isNotEmpty(rowScheduledFrontBackRuleList)) {
+                    ExcelRelationScheduled excelRelationScheduled = ExcelRelationScheduled.fromScheduledTask(scheduledTask, rowScheduledFrontBackRuleList);
+                    excelScheduledList.add(excelRelationScheduled);
+                }
+
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to generate JSON of relation schedule", e);
+            throw e;
+        }
+        return excelScheduledList;
+    }
+
+    public List<ExcelDatasourceEnv> getDataSourceSheet(List<Project> projects, List<Long> ruleId, List<String> ruleName) {
         List<ExcelDatasourceEnv> excelRuleDataSourceList = Lists.newArrayList();
         try {
             List<RuleDataSource> allRuleDataSourceList = Lists.newArrayList();
             for (Project project : projects) {
-                List<RuleDataSource> ruleDataSourceList = ruleDataSourceDao.findByProjectId(project.getId());
+                Set<Rule> rules = Sets.newHashSet();
+                if (CollectionUtils.isNotEmpty(ruleId)) {
+                    rules.addAll(ruleDao.findByIdsAndProject(ruleId, project.getId()));
+                }
+                if (CollectionUtils.isNotEmpty(ruleName)) {
+                    for (String name : ruleName) {
+                        Rule rule = ruleDao.findByProjectAndRuleName(project, name);
+                        if (null != rule) {
+                            rules.add(rule);
+                        }
+
+                    }
+                }
+
+                List<RuleDataSource> ruleDataSourceList;
+                if (CollectionUtils.isEmpty(rules)) {
+                    ruleDataSourceList = ruleDataSourceDao.findByProjectId(project.getId());
+                } else {
+                    List<Long> ruleIds = rules.stream().map(Rule::getId).collect(Collectors.toList());
+                    ruleDataSourceList = ruleDataSourceDao.findByRuleId(ruleIds);
+                }
+
                 if (CollectionUtils.isEmpty(ruleDataSourceList)) {
                     continue;
                 }
@@ -1331,11 +2292,34 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             List<RuleDataSourceEnv> ruleDataSourceEnvList = ruleDatasourceEnvDao.findByRuleDataSourceList(allRuleDataSourceList);
 //                将规则依赖的环境名称，填充到依赖的数据源中去，而不是直接导出数据源下的所有环境信息
             Map<String, List<RuleDataSourceEnv>> linkisDataSourceNameMap = ruleDataSourceEnvList.stream().collect(Collectors.groupingBy(ruleDataSourceEnv -> ruleDataSourceEnv.getRuleDataSource().getLinkisDataSourceName()));
+            Map<String, List<String>> dsNameAndEnvsMap = new HashMap<>();
+            Map<String, List<String>> dsNameAndDcnRangeMap = new HashMap<>();
             for (LinkisDataSource linkisDataSource : linkisDataSourceInDbList) {
-                if (linkisDataSourceNameMap.containsKey(linkisDataSource.getLinkisDataSourceName())) {
-                    List<RuleDataSourceEnv> ruleDataSourceEnvs = linkisDataSourceNameMap.get(linkisDataSource.getLinkisDataSourceName());
-                    String ruleEnvs = StringUtils.join(ruleDataSourceEnvs.stream().map(RuleDataSourceEnv::getEnvName).distinct().collect(Collectors.toList()), SpecCharEnum.COMMA.getValue());
-                    linkisDataSource.setEnvs(ruleEnvs);
+                if (!linkisDataSourceNameMap.containsKey(linkisDataSource.getLinkisDataSourceName())) {
+                    continue;
+                }
+                List<RuleDataSourceEnv> ruleDataSourceEnvs = linkisDataSourceNameMap.get(linkisDataSource.getLinkisDataSourceName());
+                if (Arrays.asList(QualitisConstants.CMDB_KEY_DCN_NUM, QualitisConstants.CMDB_KEY_LOGIC_AREA).contains(linkisDataSource.getDcnRangeType())) {
+                    List<Long> envIds = ruleDataSourceEnvs.stream().map(RuleDataSourceEnv::getEnvId).collect(Collectors.toList());
+                    GetLinkisDataSourceEnvRequest getLinkisDataSourceEnvRequest = new GetLinkisDataSourceEnvRequest();
+                    getLinkisDataSourceEnvRequest.setLinkisDataSourceId(linkisDataSource.getLinkisDataSourceId());
+                    getLinkisDataSourceEnvRequest.setEnvIdList(envIds);
+                    List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvService.queryEnvsInAdvance(getLinkisDataSourceEnvRequest);
+                    List<String> dcnRangeValues = linkisDataSourceEnvList.stream().map(linkisDataSourceEnv -> {
+                        if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(linkisDataSource.getDcnRangeType())) {
+                            return linkisDataSourceEnv.getDcnNum();
+                        } else {
+                            return linkisDataSourceEnv.getLogicArea();
+                        }
+                    }).distinct().collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(dcnRangeValues)) {
+                        dsNameAndDcnRangeMap.put(linkisDataSource.getLinkisDataSourceName(), dcnRangeValues);
+                    }
+                } else {
+                    List<String> envNames = ruleDataSourceEnvs.stream().map(RuleDataSourceEnv::getEnvName).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(envNames)) {
+                        dsNameAndEnvsMap.put(linkisDataSource.getLinkisDataSourceName(), envNames);
+                    }
                 }
             }
 
@@ -1346,6 +2330,12 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
             for (LinkisDataSource linkisDataSource : linkisDataSourceInDbList) {
                 ExcelDatasourceEnv excelDatasourceEnv = ExcelDatasourceEnv.fromLinkisDataSource(linkisDataSource, dtaVisibilityListMap.get(linkisDataSource.getId()));
+                if (dsNameAndEnvsMap.containsKey(linkisDataSource.getLinkisDataSourceName())) {
+                    excelDatasourceEnv.setDatasourceEnvNameListJsonObject(objectMapper.writeValueAsString(dsNameAndEnvsMap.get(linkisDataSource.getLinkisDataSourceName())));
+                }
+                if (dsNameAndDcnRangeMap.containsKey(linkisDataSource.getLinkisDataSourceName())) {
+                    excelDatasourceEnv.setDcnRangeValueListJsonObject(objectMapper.writeValueAsString(dsNameAndDcnRangeMap.get(linkisDataSource.getLinkisDataSourceName())));
+                }
                 excelRuleDataSourceList.add(excelDatasourceEnv);
             }
 
@@ -1358,94 +2348,240 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         return excelRuleDataSourceList;
     }
 
-    public void handleDataSource(User user, List<ExcelDatasourceEnv> excelRuleDataSourceList) throws UnExpectedRequestException {
+    /**
+     * Check if there are some envs that exist in the diffVariableRequestList that will be replaced.
+     * The variable must be meet the specific pattern:
+     *          The variable name: data_source_name[env_name1, nv_name2];
+     *          The variable value: replace_env_name1,replace_env_name2
+     * @param diffVariableRequestList
+     * @return {key: dataSourceName, value：{key: left env, value: right env}}
+     */
+    private Map<String, Map<String, String>> getDataSourceEnvVariableMapping(List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
+        Map<String, Map<String, String>> dsAndVariableEnvsMap = new HashMap<>();
+        for (DiffVariableRequest diffVariableRequest: diffVariableRequestList) {
+            if (StringUtils.isBlank(diffVariableRequest.getValue())) {
+                continue;
+            }
+            Matcher matcherName = QualitisConstants.DATASOURCE_DIFF_VARIABLE_PATTERN.matcher(diffVariableRequest.getName());
+            if (matcherName.find()) {
+                String datasourceVariableName = matcherName.group(0);
+                Integer leftBracketIndex = datasourceVariableName.indexOf(SpecCharEnum.LEFT_BRACKET.getValue());
+                String dsName = datasourceVariableName.substring(0, leftBracketIndex);
+                String envNames = datasourceVariableName.substring(leftBracketIndex+1,datasourceVariableName.indexOf(SpecCharEnum.RIGHT_BRACKET.getValue()));
+                String[] variableNameEnvs = StringUtils.split(envNames, SpecCharEnum.COMMA.getValue());
+                String[] variableValueEnvs = StringUtils.split(diffVariableRequest.getValue(), SpecCharEnum.COMMA.getValue());
+
+                if (variableNameEnvs.length != variableValueEnvs.length) {
+                    String formatErrorMsg = String.format("The number of envs on both sides are not equal, variable name: %s", diffVariableRequest.getName());
+                    throw new UnExpectedRequestException(formatErrorMsg);
+                }
+                Map<String, String> variableAndReplaceEnvMap = Maps.newHashMapWithExpectedSize(variableNameEnvs.length);
+                for (int i=0;i<variableNameEnvs.length;i++) {
+                    variableAndReplaceEnvMap.put(variableNameEnvs[i], variableValueEnvs[i]);
+                }
+                dsAndVariableEnvsMap.put(dsName, variableAndReplaceEnvMap);
+            }
+        }
+        return dsAndVariableEnvsMap;
+    }
+
+    private void replaceImportedEnvsWithDiffVariable(List<String> importedEnvs, Map<String, String> variableAndReplaceEnvMapping) {
+        Iterator<Map.Entry<String, String>> it = variableAndReplaceEnvMapping.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, String> variableAndReplaceEnvEntry = it.next();
+            if (StringUtils.isNotBlank(variableAndReplaceEnvEntry.getValue())) {
+                importedEnvs.remove(variableAndReplaceEnvEntry.getKey());
+                importedEnvs.add(variableAndReplaceEnvEntry.getValue());
+            }
+        }
+    }
+
+    public void handleDataSource(User user, List<ExcelDatasourceEnv> excelRuleDataSourceList, List<DiffVariableRequest> diffVariableRequestList, Map<Long, List<Long>> oldIdAndNewEnvIdsMapHook) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        Map<String, Map<String, String>> dsAndDiffVariableEnvsMap = getDataSourceEnvVariableMapping(diffVariableRequestList);
+
         String operateTime = DateUtils.now();
         for (ExcelDatasourceEnv excelDatasourceEnv : excelRuleDataSourceList) {
             LinkisDataSource importLinkisDataSource = excelDatasourceEnv.getLinkisDataSource(objectMapper);
             if (null == importLinkisDataSource) {
                 throw new UnExpectedRequestException("Failed to deserialize LinkisDataSource");
             }
+            Long oldLinkisDataSourceId = importLinkisDataSource.getLinkisDataSourceId();
+            List<String> oldDcnRangeValueList = excelDatasourceEnv.getDcnRangeValuesList(objectMapper);
+
             LinkisDataSource linkisDataSourceInDb = linkisDataSourceService.getByLinkisDataSourceName(importLinkisDataSource.getLinkisDataSourceName());
 
-            List<String> newImportEnvs;
-            if (null == linkisDataSourceInDb) {
+//            Create or Update LinkisDataSource ?
+            if (linkisDataSourceInDb == null) {
                 importLinkisDataSource.setCreateUser(user.getUsername());
                 importLinkisDataSource.setCreateTime(operateTime);
-                newImportEnvs = Arrays.asList(StringUtils.split(importLinkisDataSource.getEnvs(), SpecCharEnum.COMMA.getValue()));
             } else {
                 importLinkisDataSource.setId(linkisDataSourceInDb.getId());
                 importLinkisDataSource.setModifyUser(user.getUsername());
                 importLinkisDataSource.setModifyTime(operateTime);
+                importLinkisDataSource.setVersionId(linkisDataSourceInDb.getVersionId());
                 importLinkisDataSource.setCreateUser(linkisDataSourceInDb.getCreateUser());
                 importLinkisDataSource.setCreateTime(linkisDataSourceInDb.getCreateTime());
-                newImportEnvs = extractNewEnvsFromImport(linkisDataSourceInDb, importLinkisDataSource);
-                if (CollectionUtils.isEmpty(newImportEnvs)) {
-                    importLinkisDataSource.setEnvs(linkisDataSourceInDb.getEnvs());
-                }
             }
 
             Long linkisDataSourceId = pushDataSourceToLinkis(importLinkisDataSource);
+            if (linkisDataSourceId == null) {
+                throw new UnExpectedRequestException("Failed to push dataSource to Linkis: linkisDataSourceId is null.");
+            }
             importLinkisDataSource.setLinkisDataSourceId(linkisDataSourceId);
 
-            if (CollectionUtils.isNotEmpty(newImportEnvs)) {
-                List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList = pushNewEnvsToLinkis(importLinkisDataSource, newImportEnvs);
-                Map<Long, String> envIdAndNameMap = linkisDataSourceEnvRequestList.stream()
-                        .collect(Collectors.toMap(LinkisDataSourceEnvRequest::getId, LinkisDataSourceEnvRequest::getEnvName, (oldVal, newVal) -> oldVal));
-                String envs = linkisDataSourceService.formatEnvsField(envIdAndNameMap);
-                if (Objects.nonNull(linkisDataSourceInDb) && StringUtils.isNotEmpty(linkisDataSourceInDb.getEnvs())) {
-                    envs += SpecCharEnum.COMMA.getValue() + linkisDataSourceInDb.getEnvs();
-                }
-                importLinkisDataSource.setEnvs(envs);
-                Long versionId = updateDataSourceParamWithEnvIdsToLinkis(importLinkisDataSource);
-                importLinkisDataSource.setVersionId(versionId);
+            saveNewEnvAndPushToLinkis(linkisDataSourceId, importLinkisDataSource, linkisDataSourceInDb, excelDatasourceEnv, dsAndDiffVariableEnvsMap);
+
+//            Querying all env from db, contain old and new envs
+            List<String> envIdArray = new ArrayList<>();
+            List<LinkisDataSourceEnv> linkisDataSourceEnvListInDb = linkisDataSourceEnvService.queryAllEnvs(linkisDataSourceId);
+            if (CollectionUtils.isNotEmpty(linkisDataSourceEnvListInDb)) {
+                linkisDataSourceEnvListInDb.forEach(linkisDataSourceEnv -> envIdArray.add(String.valueOf(linkisDataSourceEnv.getEnvId())));
             }
 
-            linkisDataSourceService.addOrModify(importLinkisDataSource);
+            Long versionId = updateDataSourceParamWithEnvIdsToLinkis(importLinkisDataSource, envIdArray);
+            importLinkisDataSource.setVersionId(versionId);
+            linkisDataSourceService.save(importLinkisDataSource);
 
-//            在已有的部门可见范围的基础上，添加新的部门可见范围（如果有）
-            List<DataVisibility> importDataVisibilityList = excelDatasourceEnv.getDataVisibilityList(objectMapper);
-            if (CollectionUtils.isNotEmpty(importDataVisibilityList)) {
-                List<DataVisibility> dataVisibilityListInDb = dataVisibilityService.filter(importLinkisDataSource.getId(), TableDataTypeEnum.LINKIS_DATA_SOURCE);
-                List<String> deptNamesInDb = dataVisibilityListInDb.stream().map(DataVisibility::getDepartmentSubName).collect(Collectors.toList());
-                List<DataVisibility> importNewDataVisibilityList = importDataVisibilityList.stream()
-                        .filter(importDataVisibility -> !deptNamesInDb.contains(importDataVisibility.getDepartmentSubName()))
-                        .map(importDataVisibility -> {
-                            importDataVisibility.setTableDataId(importLinkisDataSource.getId());
-                            return importDataVisibility;
+//            To publish datasource with the newest versionId
+            if (Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_VERIFY_TYPE_SHARE).equals(importLinkisDataSource.getVerifyType())
+                && linkisDataSourceInDb != null) {
+                metaDataClient.publishDataSource(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), importLinkisDataSource.getLinkisDataSourceId(), versionId);
+            }
+
+            // The following business logic for replaceEnvsInRuleDataSource()
+            List<Long> newEnvIdsWithinOldDcnRangeValues = linkisDataSourceEnvListInDb.stream().filter(linkisDataSourceEnv -> {
+                if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(importLinkisDataSource.getDcnRangeType())) {
+                    return oldDcnRangeValueList.contains(linkisDataSourceEnv.getDcnNum());
+                }
+                return oldDcnRangeValueList.contains(linkisDataSourceEnv.getLogicArea());
+            }).map(LinkisDataSourceEnv::getEnvId).collect(Collectors.toList());
+            oldIdAndNewEnvIdsMapHook.put(oldLinkisDataSourceId, newEnvIdsWithinOldDcnRangeValues);
+
+            updateDataVisibilityOfDatSource(importLinkisDataSource.getId(), excelDatasourceEnv);
+        }
+    }
+    
+    private void updateDataVisibilityOfDatSource(Long dataId, ExcelDatasourceEnv excelDatasourceEnv) {
+        List<DataVisibility> importDataVisibilityList = excelDatasourceEnv.getDataVisibilityList(objectMapper);
+        if (CollectionUtils.isNotEmpty(importDataVisibilityList)) {
+            List<DataVisibility> dataVisibilityListInDb = dataVisibilityService.filter(dataId, TableDataTypeEnum.LINKIS_DATA_SOURCE);
+            List<String> deptNamesInDb = dataVisibilityListInDb.stream().map(DataVisibility::getDepartmentSubName).collect(Collectors.toList());
+            List<DataVisibility> importNewDataVisibilityList = importDataVisibilityList.stream()
+                    .filter(importDataVisibility -> !deptNamesInDb.contains(importDataVisibility.getDepartmentSubName()))
+                    .map(importDataVisibility -> {
+                        importDataVisibility.setTableDataId(dataId);
+                        return importDataVisibility;
+                    }).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(importNewDataVisibilityList)) {
+                dataVisibilityDao.saveAll(importNewDataVisibilityList);
+            }
+        }
+    }
+
+    private List<String> saveNewEnvAndPushToLinkis(Long linkisDataSourceId, LinkisDataSource importLinkisDataSource, LinkisDataSource linkisDataSourceInDb, ExcelDatasourceEnv excelDatasourceEnv, Map<String, Map<String, String>> dsAndDiffVariableEnvsMap) throws UnExpectedRequestException {
+        List<LinkisDataSourceEnvRequest> newDataSourceEnvRequestList = Collections.emptyList();
+
+//        To save envs of dataSource, Either by a range of dcn(dcn_num or logic_area), or by individual envs
+        if (Arrays.asList(QualitisConstants.CMDB_KEY_DCN_NUM, QualitisConstants.CMDB_KEY_LOGIC_AREA).contains(importLinkisDataSource.getDcnRangeType())
+                && Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_INPUT_TYPE_AUTO).equals(importLinkisDataSource.getInputType())) {
+            List<String> dcnRangeValueList = excelDatasourceEnv.getDcnRangeValuesList(objectMapper);
+            LOGGER.info("Get imported dcnRangeValueList: {}", StringUtils.join(dcnRangeValueList, ","));
+//          Is the LinkisDataSource new or not? if not, check if there were new dcn_num or logic_area.
+            if (linkisDataSourceInDb != null) {
+                List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvService.queryAllEnvs(linkisDataSourceInDb.getLinkisDataSourceId());
+                List<String> dcnRangeValueListInDb = linkisDataSourceEnvList.stream().map(linkisDataSourceEnv -> {
+                    if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(linkisDataSourceInDb.getDcnRangeType())) {
+                        return linkisDataSourceEnv.getDcnNum();
+                    } else {
+                        return linkisDataSourceEnv.getLogicArea();
+                    }
+                }).distinct().collect(Collectors.toList());
+                dcnRangeValueList.removeAll(dcnRangeValueListInDb);
+            }
+            LOGGER.info("After estimated these dcn_range_values stored in db, the rest of the imported dcnRangeValueList is: {}", StringUtils.join(dcnRangeValueList, ","));
+
+//            To fetch DCN instances with dcnRangeValueList and subSystem from cmdb
+            if (CollectionUtils.isNotEmpty(dcnRangeValueList)) {
+                String subSystemId = operateCiService.getSubSystemIdByName(importLinkisDataSource.getSubSystem());
+                LOGGER.info("To get the ID of subSystem [{}]. The subSystemId is: {}", importLinkisDataSource.getSubSystem(), subSystemId);
+                if (Objects.nonNull(subSystemId)) {
+                    GeneralResponse generalResponse = operateCiService.getDcn(subSystemId, importLinkisDataSource.getDcnRangeType(), dcnRangeValueList);
+                    Map<Object, List<Map<String, Object>>> dcnRangeTypeAndDCNMap = (Map<Object, List<Map<String, Object>>>) generalResponse.getData();
+                    if (MapUtils.isNotEmpty(dcnRangeTypeAndDCNMap)) {
+                        List<Map<String, Object>> dcnList = new ArrayList<>();
+                        dcnRangeTypeAndDCNMap.values().forEach(dcnList::addAll);
+                        newDataSourceEnvRequestList = dcnList.stream().map(entry -> {
+                            LinkisDataSourceEnvRequest dataSourceEnv = new LinkisDataSourceEnvRequest();
+                            dataSourceEnv.setDcnNum(MapUtils.getString(entry, QualitisConstants.CMDB_KEY_DCN_NUM));
+                            dataSourceEnv.setLogicArea(MapUtils.getString(entry, QualitisConstants.CMDB_KEY_LOGIC_AREA));
+                            dataSourceEnv.setDatabaseInstance(MapUtils.getString(entry, "dbinstance_name"));
+                            dataSourceEnv.setDataSourceTypeId(importLinkisDataSource.getDataSourceTypeId());
+                            LinkisConnectParamsRequest linkisConnectParamsRequest = new LinkisConnectParamsRequest();
+                            linkisConnectParamsRequest.setHost(MapUtils.getString(entry, "vip"));
+                            linkisConnectParamsRequest.setPort(MapUtils.getString(entry, "gwport"));
+                            dataSourceEnv.setConnectParamsRequest(linkisConnectParamsRequest);
+                            String linkisEnvName = linkisDataSourceService.convertOriginalEnvNameToLinkis(linkisDataSourceId
+                                    , MapUtils.getString(entry, QualitisConstants.CMDB_KEY_DCN_NUM), importLinkisDataSource.getInputType()
+                                    , dataSourceEnv.getConnectParamsRequest().getHost(), dataSourceEnv.getConnectParamsRequest().getPort(), dataSourceEnv.getDatabaseInstance());
+                            dataSourceEnv.setEnvName(linkisEnvName);
+                            return dataSourceEnv;
                         }).collect(Collectors.toList());
-                if (CollectionUtils.isNotEmpty(importNewDataVisibilityList)) {
-                    dataVisibilityDao.saveAll(importNewDataVisibilityList);
+                    } else {
+                        LOGGER.warn("Failed to fetch DCN list from cmdb, subSystemId is: {}, dcnRangeType: {}", subSystemId, importLinkisDataSource.getDcnRangeType());
+                    }
                 }
             }
+        } else {
+            List<String> linkisDataSourceEnvNameList = excelDatasourceEnv.getLinkisDataSourceEnvNameList(objectMapper);
+            if (CollectionUtils.isEmpty(linkisDataSourceEnvNameList)) {
+                throw new UnExpectedRequestException("Failed to deserialize LinkisDataSourceEnvNameList");
+            }
+
+//           Replace name of environments within imported project with diffVariable name
+            boolean checkIfReplaceEnv = dsAndDiffVariableEnvsMap.containsKey(importLinkisDataSource.getLinkisDataSourceName());
+            if (checkIfReplaceEnv) {
+                Map<String, String> variableAndReplaceEnvMap = dsAndDiffVariableEnvsMap.get(importLinkisDataSource.getLinkisDataSourceName());
+                replaceImportedEnvsWithDiffVariable(linkisDataSourceEnvNameList, variableAndReplaceEnvMap);
+            }
+
+            List<String> newImportEnvNames;
+            if (linkisDataSourceInDb != null) {
+                List<LinkisDataSourceEnv> linkisDataSourceEnvListInDb = linkisDataSourceEnvService.queryAllEnvs(linkisDataSourceInDb.getLinkisDataSourceId());
+                List<String> originalEnvNameInDbList = linkisDataSourceEnvListInDb.stream().map(linkisDataSourceEnv ->
+                        linkisDataSourceService.convertLinkisEnvNameToOriginal(linkisDataSourceInDb.getLinkisDataSourceId(), linkisDataSourceEnv.getEnvName(), linkisDataSourceInDb.getInputType())).collect(Collectors.toList());
+                newImportEnvNames = extractNewEnvsFromImport(linkisDataSourceId, originalEnvNameInDbList, linkisDataSourceEnvNameList);
+            } else {
+                newImportEnvNames = linkisDataSourceEnvNameList.stream()
+                        .map(envName -> linkisDataSourceId + SpecCharEnum.BOTTOM_BAR.getValue() + envName.replace(importLinkisDataSource.getLinkisDataSourceId()+SpecCharEnum.BOTTOM_BAR.getValue(), "")).collect(Collectors.toList());
+            }
+
+            newDataSourceEnvRequestList = newImportEnvNames.stream().map(linkisEnvName -> {
+                LinkisDataSourceEnvRequest envRequest = new LinkisDataSourceEnvRequest();
+                envRequest.setDataSourceTypeId(importLinkisDataSource.getDataSourceTypeId());
+                envRequest.setEnvName(linkisEnvName);
+                return envRequest;
+            }).collect(Collectors.toList());
         }
+        
+//            Update envs if new envs exists.
+        if (CollectionUtils.isNotEmpty(newDataSourceEnvRequestList)) {
+            try {
+                newDataSourceEnvRequestList = linkisMetaDataManager.createDataSourceEnvAndSetEnvId(importLinkisDataSource.getInputType(), importLinkisDataSource.getVerifyType(), newDataSourceEnvRequestList, linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin());
+            } catch (UnExpectedRequestException | MetaDataAcquireFailedException e) {
+                LOGGER.error("Failed to create dataSource env", e);
+                throw new UnExpectedRequestException(e.getMessage());
+            } catch (Exception e) {
+                LOGGER.error("Failed to create dataSource env", e);
+                throw new UnExpectedRequestException("Failed to create dataSource env");
+            }
+            linkisDataSourceEnvService.createBatch(linkisDataSourceId, newDataSourceEnvRequestList);
+            return newDataSourceEnvRequestList.stream().map(LinkisDataSourceEnvRequest::getId).filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toList());
+        }
+
+        return Collections.emptyList();
     }
 
-    /**
-     *
-     * @param importLinkisDataSource
-     * @param newEnvs
-     * @return 环境ID和环境名称组合而成的集合
-     * @throws UnExpectedRequestException
-     */
-    public List<LinkisDataSourceEnvRequest> pushNewEnvsToLinkis(LinkisDataSource importLinkisDataSource, List<String> newEnvs) throws UnExpectedRequestException {
-        List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList = newEnvs.stream().map(envName -> {
-            LinkisDataSourceEnvRequest linkisDataSourceEnvRequest = new LinkisDataSourceEnvRequest();
-            linkisDataSourceEnvRequest.setDataSourceTypeId(importLinkisDataSource.getDataSourceTypeId());
-            linkisDataSourceEnvRequest.setEnvName(envName);
-            return linkisDataSourceEnvRequest;
-        }).collect(Collectors.toList());
-        try {
-            return linkisMetaDataManager.createDataSourceEnv(importLinkisDataSource.getInputType(), importLinkisDataSource.getVerifyType(), linkisDataSourceEnvRequestList, linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin());
-        } catch (UnExpectedRequestException | MetaDataAcquireFailedException e) {
-            LOGGER.error("Failed to create dataSource env", e);
-            throw new UnExpectedRequestException(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("Failed to create dataSource env", e);
-            throw new UnExpectedRequestException("Failed to create dataSource env");
-        }
-    }
-
-    private Long updateDataSourceParamWithEnvIdsToLinkis(LinkisDataSource importLinkisDataSource) throws UnExpectedRequestException {
+    private Long updateDataSourceParamWithEnvIdsToLinkis(LinkisDataSource importLinkisDataSource, List<String> envIdArray) throws UnExpectedRequestException {
         try {
 //            modify parameter of DataSource, establish link between env_id and dataSource
             ModifyDataSourceParameterRequest modifyDataSourceParameterRequest = new ModifyDataSourceParameterRequest();
@@ -1453,7 +2589,6 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             modifyDataSourceParameterRequest.setComment("Update");
             LinkisDataSourceInfoDetail linkisDataSourceInfoDetail = metaDataClient.getDataSourceInfoById(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), importLinkisDataSource.getLinkisDataSourceId());
             modifyDataSourceParameterRequest.setConnectParams(linkisDataSourceInfoDetail.getConnectParams());
-            List<String> envIdArray = linkisDataSourceService.getEnvNameAndIdMap(importLinkisDataSource).values().stream().map(String::valueOf).collect(Collectors.toList());
             modifyDataSourceParameterRequest.setEnvIdArray(envIdArray);
             LinkisDataSourceParamsResponse linkisDataSourceParamsResponse = linkisMetaDataManager.modifyDataSourceParams(modifyDataSourceParameterRequest, linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin());
             return linkisDataSourceParamsResponse.getVersionId();
@@ -1467,16 +2602,16 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     }
 
     /**
-     * 将导入的DataSource中修改的项目基础信息
+     * To modify or create the LinkisDataSource on the Linkis-side
      *
      * @param importLinkisDataSource
      * @return
      */
-    private Long pushDataSourceToLinkis(LinkisDataSource importLinkisDataSource) throws UnExpectedRequestException {
+    public Long pushDataSourceToLinkis(LinkisDataSource importLinkisDataSource) throws UnExpectedRequestException {
         try {
-//            覆盖或添加数据基础信息
             LinkisDataSourceRequest linkisDataSourceRequest = buildLinkisDataSourceRequest(importLinkisDataSource);
-            if (null != importLinkisDataSource.getLinkisDataSourceId()) {
+
+            if (linkisDataSourceRequest.getLinkisDataSourceId() != null) {
                 return linkisMetaDataManager.modifyDataSource(linkisDataSourceRequest, linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin());
             } else {
                 try {
@@ -1484,48 +2619,79 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 } catch (MetaDataAcquireFailedException e) {
                     LOGGER.error("Failed to create LinkisDataSource", e);
                     LOGGER.info("Query DataSource by name: {}", importLinkisDataSource.getLinkisDataSourceName());
-                    GeneralResponse<Map<String, Object>> generalResponse = metaDataClient.getDataSourceInfoDetailByName(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), importLinkisDataSource.getLinkisDataSourceName());
-                    Map<String, Object> dataMap = generalResponse.getData();
-                    if (Objects.nonNull(dataMap) && dataMap.containsKey("info")) {
-                        Map<String, Object> dataSourceInfo = ((Map) dataMap.get("info"));
-                        return Long.valueOf((Integer) dataSourceInfo.get("id"));
+                    Map<String, Object> infoMap = getLinkisDataSourceInfoByName(importLinkisDataSource.getLinkisDataSourceName());
+                    if (MapUtils.isNotEmpty(infoMap)) {
+                        return getLinkisDataSourceIdByInfo(infoMap);
                     }
                     LOGGER.info("DataSource is not existed, name: {}", importLinkisDataSource.getLinkisDataSourceName());
                 }
             }
-        } catch (JSONException e) {
-            throw new UnExpectedRequestException("Failed to convert json format");
         } catch (MetaDataAcquireFailedException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            throw new UnExpectedRequestException("Failed to push DataSource to Linkis, exception: " + e.getMessage());
+            LOGGER.error("Failed to push DataSource to Linkis", e);
+            throw new UnExpectedRequestException("Failed to push DataSource to Linkis");
         }
         throw new UnExpectedRequestException("Failed to push DataSource to Linkis, dataSource name: " + importLinkisDataSource.getLinkisDataSourceName());
     }
 
-    private LinkisDataSourceRequest buildLinkisDataSourceRequest(LinkisDataSource importLinkisDataSource) throws Exception {
-        Map<String, Object> connectParams = new HashMap<>();
-        LinkisDataSourceInfoDetail linkisDataSourceInfoDetail = metaDataClient.getDataSourceInfoById(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), importLinkisDataSource.getLinkisDataSourceId());
-        Map<String, Object> remoteConnectParams = linkisDataSourceInfoDetail.getConnectParams();
-//        如果导出环境和导入环境都是共享登录，则保留导入环境的共享认证信息
-        if (Boolean.TRUE.equals(remoteConnectParams.get("share")) && Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_VERIFY_TYPE_SHARE).equals(importLinkisDataSource.getVerifyType())) {
-            String authType = String.valueOf(remoteConnectParams.get("authType"));
-            if (QualitisConstants.AUTH_TYPE_ACCOUNT_PWD.equals(authType)) {
-                connectParams.put("username", remoteConnectParams.get("username"));
-                connectParams.put("password", remoteConnectParams.get("password"));
-            } else if (QualitisConstants.AUTH_TYPE_DPM.equals(authType)) {
-                connectParams.put("appid", remoteConnectParams.get("appid"));
-                connectParams.put("objectid", remoteConnectParams.get("objectid"));
-                connectParams.put("mkPrivate", remoteConnectParams.get("mkPrivate"));
+    public Map<String, Object> getLinkisDataSourceInfoByName(String linkisDataSourceName) {
+        GeneralResponse<Map<String, Object>> generalResponse = null;
+        try {
+            generalResponse = metaDataClient.getDataSourceInfoDetailByName(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), linkisDataSourceName);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage());
+        } catch (MetaDataAcquireFailedException e) {
+            LOGGER.error(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
+        if (null != generalResponse) {
+            Map<String, Object> dataMap = generalResponse.getData();
+            if (Objects.nonNull(dataMap) && dataMap.containsKey("info")) {
+                return ((Map) dataMap.get("info"));
             }
         }
+        return Collections.emptyMap();
+    }
+
+    private Long getLinkisDataSourceIdByInfo(Map<String, Object> infoMap) {
+        if (infoMap == null || !infoMap.containsKey("id")) {
+            return null;
+        }
+        return Long.valueOf((Integer) infoMap.get("id"));
+    }
+
+    private LinkisDataSourceRequest buildLinkisDataSourceRequest(LinkisDataSource importLinkisDataSource) {
+        Map<String, Object> connectParams = new HashMap<>();
+        Map<String, Object> dataSourceInfo = getLinkisDataSourceInfoByName(importLinkisDataSource.getLinkisDataSourceName());
+        if (MapUtils.isNotEmpty(dataSourceInfo) && dataSourceInfo.containsKey("connectParams")) {
+            Map<String, Object> remoteConnectParams = ((Map) dataSourceInfo.get("connectParams"));
+            String authType = String.valueOf(remoteConnectParams.get("authType"));
+            connectParams.put("authType", authType);
+//         Remaining the authentication info
+            if (Boolean.TRUE.equals(remoteConnectParams.get("share")) && Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_VERIFY_TYPE_SHARE).equals(importLinkisDataSource.getVerifyType())) {
+                if (QualitisConstants.AUTH_TYPE_ACCOUNT_PWD.equals(authType)) {
+                    connectParams.put("username", remoteConnectParams.get("username"));
+                    connectParams.put("password", remoteConnectParams.get("password"));
+                } else if (QualitisConstants.AUTH_TYPE_DPM.equals(authType)) {
+                    connectParams.put("appid", remoteConnectParams.get("appid"));
+                    connectParams.put("objectid", remoteConnectParams.get("objectid"));
+//                    To bypass the handling that re-generate the dk with mkPrivate, and remain the dk within connectParams so write into database, on the Linkis-side
+                    String salt = QualitisConstants.AUTH_TYPE_DPM;
+                    connectParams.put("mkPrivate", remoteConnectParams.get("mkPrivate") + salt);
+                    connectParams.put("dk", remoteConnectParams.get("dk"));
+                }
+            }
+        }
+
         connectParams.put("share", Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_VERIFY_TYPE_SHARE).equals(importLinkisDataSource.getVerifyType()));
         connectParams.put("dcn", Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_INPUT_TYPE_AUTO).equals(importLinkisDataSource.getInputType()));
         connectParams.put("multi_env", true);
         connectParams.put("subSystem", importLinkisDataSource.getSubSystem());
 
         LinkisDataSourceRequest linkisDataSourceRequest = new LinkisDataSourceRequest();
-        linkisDataSourceRequest.setLinkisDataSourceId(importLinkisDataSource.getLinkisDataSourceId());
+        linkisDataSourceRequest.setLinkisDataSourceId(getLinkisDataSourceIdByInfo(dataSourceInfo));
         linkisDataSourceRequest.setDataSourceTypeId(importLinkisDataSource.getDataSourceTypeId());
         linkisDataSourceRequest.setLabels(importLinkisDataSource.getLabels());
         linkisDataSourceRequest.setDataSourceName(importLinkisDataSource.getLinkisDataSourceName());
@@ -1534,15 +2700,312 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         return linkisDataSourceRequest;
     }
 
-    private List<String> extractNewEnvsFromImport(LinkisDataSource linkisDataSourceInDb, LinkisDataSource importLinkisDataSource) {
-        List<String> originalEnvNameInDbList = linkisDataSourceService.getOriginalEnvNameList(linkisDataSourceInDb);
-        List<String> importOriginalEnvNameList = linkisDataSourceService.getOriginalEnvNameList(importLinkisDataSource);
+    private List<String> extractNewEnvsFromImport(Long linkisDataSourceId, List<String> originalEnvNameInDbList, List<String> importOriginalEnvNameList) {
         return importOriginalEnvNameList.stream()
                 .filter(originalEnvName -> !originalEnvNameInDbList.contains(originalEnvName) && StringUtils.isNotBlank(originalEnvName))
                 .distinct()
-                .map(originalEnvName -> linkisDataSourceService.convertOriginalEnvNameToLinkis(importLinkisDataSource.getLinkisDataSourceId()
-                        , originalEnvName, importLinkisDataSource.getInputType(), StringUtils.EMPTY))
+                .map(originalEnvName -> linkisDataSourceId + SpecCharEnum.BOTTOM_BAR.getValue() + originalEnvName)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 依赖上游Project/Rule/RuleGroup
+     *
+     * @param user
+     * @param excelPublishScheduledList
+     * @param diffVariableRequestList
+     * @throws IOException
+     * @throws UnExpectedRequestException
+     */
+    public void handlePublishSchedule(User user, Project projectInDb, List<ExcelPublishScheduled> excelPublishScheduledList, List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
+        List<DiffVariableRequest> systemInnerDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.SYSTEM_INNER.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+        String createTime = DateUtils.now();
+        for (ExcelPublishScheduled excelPublishScheduled : excelPublishScheduledList) {
+            ScheduledProject scheduledProject = uploadScheduledProject(projectInDb, excelPublishScheduled, user.getUsername(), createTime, systemInnerDiffVariableRequestList);
+            Map<String, ScheduledWorkflow> workflowNameMap = uploadScheduledWorkflow(excelPublishScheduled, scheduledProject, user.getUsername(), createTime);
+            Map<String, ScheduledTask> taskNameMap = uploadPublishScheduledTask(excelPublishScheduled, scheduledProject.getProject(), user.getUsername(), createTime, systemInnerDiffVariableRequestList);
+            uploadScheduledSignal(excelPublishScheduled, scheduledProject, workflowNameMap);
+            uploadScheduledWorkflowTaskRelation(excelPublishScheduled, scheduledProject, workflowNameMap, taskNameMap);
+        }
+    }
+
+    private ScheduledProject uploadScheduledProject(Project projectInDb, ExcelPublishScheduled excelPublishScheduled, String username,
+        String createTime, List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
+        ScheduledProjectResponse scheduledProjectResponse = excelPublishScheduled.getScheduledProject(objectMapper);
+        if (null == scheduledProjectResponse) {
+            throw new UnExpectedRequestException("Failed to format ScheduledProjectResponse");
+        }
+        ScheduledProject scheduledProject = scheduledProjectDao.findByName(scheduledProjectResponse.getName());
+        if (null == scheduledProject) {
+            scheduledProject = new ScheduledProject();
+            scheduledProject.setCreateUser(username);
+            scheduledProject.setCreateTime(createTime);
+        } else if (!projectInDb.getId().equals(scheduledProject.getProject().getId())) {
+            throw new UnExpectedRequestException("其他项目中已存在该调度项目名称：" + scheduledProjectResponse.getProjectName());
+        } else {
+            scheduledProject.setModifyUser(username);
+            scheduledProject.setModifyTime(createTime);
+        }
+        BeanUtils.copyProperties(scheduledProjectResponse, scheduledProject);
+        scheduledProject.setProject(projectInDb);
+        scheduledProject.setModifyUser(username);
+        scheduledProject.setModifyTime(createTime);
+        if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
+            for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                if (QualitisConstants.WTSS_DEPLOY_USER.equals(diffVariableRequest.getName())) {
+                    String releaseUser = scheduledProject.getReleaseUser();
+                    if (StringUtils.isNotEmpty(releaseUser)) {
+                        releaseUser = releaseUser.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                        scheduledProject.setReleaseUser(releaseUser);
+                    }
+                } else if (QualitisConstants.WTSS_DEPLOY_CLUSETER.equals(diffVariableRequest.getName())) {
+                    String clusterName = scheduledProject.getClusterName();
+                    ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(diffVariableRequest.getValue());
+                    if (clusterInfo == null) {
+                        throw new UnExpectedRequestException(diffVariableRequest.getValue() + "not in the system's cluster list.");
+                    }
+                    if (StringUtils.isNotEmpty(clusterName)) {
+                        clusterName = clusterName.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                        scheduledProject.setClusterName(clusterName);
+                    }
+                }
+            }
+        }
+        return scheduledProjectDao.save(scheduledProject);
+    }
+
+    private Map<String, ScheduledWorkflow> uploadScheduledWorkflow(ExcelPublishScheduled excelPublishScheduled, ScheduledProject scheduledProject, String username, String createTime) throws UnExpectedRequestException {
+        List<ScheduledWorkflowResponse> scheduledWorkflowResponseList = excelPublishScheduled.getScheduledWorkflows(objectMapper);
+        if (CollectionUtils.isEmpty(scheduledWorkflowResponseList)) {
+            throw new UnExpectedRequestException("Failed to format ScheduledWorkflowResponse");
+        }
+        ScheduledProject finalScheduledProject = scheduledProject;
+        List<ScheduledWorkflow> scheduledWorkflowList = scheduledWorkflowResponseList.stream().map(scheduledWorkflowResponse -> {
+            ScheduledWorkflow scheduledWorkflow = scheduledWorkflowDao.findByScheduledProjectAndWorkflowName(finalScheduledProject, scheduledWorkflowResponse.getName());
+            if (null == scheduledWorkflow) {
+                scheduledWorkflow = new ScheduledWorkflow();
+                scheduledWorkflow.setCreateUser(username);
+                scheduledWorkflow.setCreateTime(createTime);
+            } else {
+                scheduledWorkflow.setModifyUser(username);
+                scheduledWorkflow.setModifyTime(createTime);
+            }
+            BeanUtils.copyProperties(scheduledWorkflowResponse, scheduledWorkflow);
+            scheduledWorkflow.setScheduledProject(finalScheduledProject);
+            return scheduledWorkflow;
+        }).collect(Collectors.toList());
+        scheduledWorkflowDao.saveAll(scheduledWorkflowList);
+
+        return scheduledWorkflowList.stream().collect(Collectors.toMap(ScheduledWorkflow::getName, Function.identity(), (oldVal, newVal) -> oldVal));
+    }
+
+    private Map<String, ScheduledTask> uploadPublishScheduledTask(ExcelPublishScheduled excelPublishScheduled, Project project, String username,
+        String createTime, List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
+        List<ScheduledTaskResponse> scheduledTaskResponseList = excelPublishScheduled.getScheduledTasks(objectMapper);
+        if (CollectionUtils.isEmpty(scheduledTaskResponseList)) {
+            throw new UnExpectedRequestException("Failed to format ScheduledTaskResponse");
+        }
+        Map<String, ScheduledTask> taskNameMap = Maps.newHashMapWithExpectedSize(scheduledTaskResponseList.size());
+        List<ScheduledTask> scheduledTaskList = scheduledTaskResponseList.stream().map(scheduledTaskResponse -> {
+//        差异化变量替换
+            if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
+                for (DiffVariableRequest diffVariableRequest : diffVariableRequestList) {
+                    if (QualitisConstants.WTSS_DEPLOY_USER.equals(diffVariableRequest.getName())) {
+                        String releaseUser = scheduledTaskResponse.getReleaseUser();
+                        if (StringUtils.isNotEmpty(releaseUser)) {
+                            String replacedReleaseUser = releaseUser.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                            scheduledTaskResponse.setReleaseUser(replacedReleaseUser);
+                        }
+                    } else if (QualitisConstants.WTSS_DEPLOY_CLUSETER.equals(diffVariableRequest.getName())) {
+                        String clusterName = scheduledTaskResponse.getClusterName();
+                        if (StringUtils.isNotEmpty(clusterName)) {
+                            String replacedClusterName = clusterName.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                            scheduledTaskResponse.setClusterName(replacedClusterName);
+                        }
+                    }
+                }
+            }
+
+            ScheduledTask scheduledTask = scheduledTaskDao.findOnlyObject(scheduledTaskResponse.getClusterName(), scheduledTaskResponse.getDispatchingSystemType()
+                    , scheduledTaskResponse.getWtssProjectName(), scheduledTaskResponse.getWorkFlowName()
+                    , scheduledTaskResponse.getTaskName(), ScheduledTaskTypeEnum.PUBLISH.getCode());
+            if (null == scheduledTask) {
+                scheduledTask = new ScheduledTask();
+                scheduledTask.setCreateUser(username);
+                scheduledTask.setCreateTime(createTime);
+            } else {
+                scheduledTask.setModifyUser(username);
+                scheduledTask.setModifyTime(createTime);
+            }
+            BeanUtils.copyProperties(scheduledTaskResponse, scheduledTask);
+            scheduledTask.setProjectName(scheduledTaskResponse.getWtssProjectName());
+            scheduledTask.setProject(project);
+            scheduledTask.setReleaseStatus(0);
+            taskNameMap.put(scheduledTask.getTaskName(), scheduledTask);
+
+            ScheduledProject scheduledProject = scheduledProjectDao.findByName(scheduledTaskResponse.getWtssProjectName());
+            if (scheduledProject != null && !scheduledProject.getClusterName().equals(scheduledTaskResponse.getClusterName())) {
+                scheduledProjectDao.save(scheduledProject);
+            }
+            return scheduledTask;
+        }).collect(Collectors.toList());
+        scheduledTaskDao.saveAll(scheduledTaskList);
+
+        return taskNameMap;
+    }
+
+    private void uploadScheduledSignal(ExcelPublishScheduled excelPublishScheduled, ScheduledProject scheduledProject, Map<String, ScheduledWorkflow> workflowNameMap) throws UnExpectedRequestException {
+        List<ScheduledSignalResponse> scheduledSignalResponseList = excelPublishScheduled.getScheduledSignals(objectMapper);
+        if (CollectionUtils.isEmpty(scheduledSignalResponseList)) {
+            return;
+        }
+        if (MapUtils.isNotEmpty(workflowNameMap)) {
+            List<ScheduledWorkflow> editableScheduledWorkflows = Lists.newArrayListWithExpectedSize(workflowNameMap.size());
+            editableScheduledWorkflows.addAll(workflowNameMap.values());
+            scheduledSignalDao.deleteByScheduledWorkflowList(editableScheduledWorkflows);
+        }
+        ScheduledProject finalScheduledProject = scheduledProject;
+        List<ScheduledSignal> scheduledSignalList = scheduledSignalResponseList.stream().map(scheduledSignalResponse -> {
+            ScheduledSignal scheduledSignal = new ScheduledSignal();
+            BeanUtils.copyProperties(scheduledSignalResponse, scheduledSignal);
+            scheduledSignal.setScheduledProject(finalScheduledProject);
+            scheduledSignal.setScheduledWorkflow(workflowNameMap.get(scheduledSignalResponse.getScheduledWorkflowName()));
+            return scheduledSignal;
+        }).collect(Collectors.toList());
+        scheduledSignalDao.saveAll(scheduledSignalList);
+    }
+
+    private void uploadScheduledWorkflowTaskRelation(ExcelPublishScheduled excelPublishScheduled, ScheduledProject scheduledProject
+            , Map<String, ScheduledWorkflow> workflowNameMap, Map<String, ScheduledTask> taskNameMap) throws UnExpectedRequestException {
+        List<ScheduledWorkflowTaskRelationResponse> scheduledWorkflowTaskRelationResponseList = excelPublishScheduled.getScheduledWorkflowTaskRelations(objectMapper);
+        if (CollectionUtils.isEmpty(scheduledWorkflowTaskRelationResponseList)) {
+            throw new UnExpectedRequestException("Failed to format ScheduledWorkflowTaskRelationResponse");
+        }
+        if (MapUtils.isNotEmpty(taskNameMap)) {
+            List<ScheduledTask> editableScheduledTasks = Lists.newArrayListWithExpectedSize(taskNameMap.size());
+            editableScheduledTasks.addAll(taskNameMap.values());
+            scheduledWorkflowTaskRelationDao.deleteByScheduledTaskList(editableScheduledTasks);
+        }
+
+        ScheduledProject finalScheduledProject = scheduledProject;
+        List<RuleGroup> ruleGroupList = ruleGroupDao.findByProjectId(scheduledProject.getProject().getId());
+        Map<String, RuleGroup> ruleGroupNameMap = ruleGroupList.stream().collect(Collectors.toMap(RuleGroup::getRuleGroupName, Function.identity(), (oldVal, newVal) -> oldVal));
+        List<ScheduledWorkflowTaskRelation> scheduledWorkflowTaskRelationList = scheduledWorkflowTaskRelationResponseList.stream().map(scheduledWorkflowTaskRelationResponse -> {
+            ScheduledWorkflowTaskRelation scheduledWorkflowTaskRelation = new ScheduledWorkflowTaskRelation();
+            scheduledWorkflowTaskRelation.setScheduledProject(finalScheduledProject);
+            scheduledWorkflowTaskRelation.setScheduledWorkflow(workflowNameMap.get(scheduledWorkflowTaskRelationResponse.getScheduledWorkflowName()));
+            scheduledWorkflowTaskRelation.setScheduledTask(taskNameMap.get(scheduledWorkflowTaskRelationResponse.getScheduledTaskName()));
+            scheduledWorkflowTaskRelation.setRuleGroup(ruleGroupNameMap.get(scheduledWorkflowTaskRelationResponse.getRuleGroupName()));
+            return scheduledWorkflowTaskRelation;
+        }).collect(Collectors.toList());
+        scheduledWorkflowTaskRelationDao.saveAll(scheduledWorkflowTaskRelationList);
+    }
+
+    /**
+     * 依赖上游Project/Rule/RuleGroup
+     *
+     * @param user
+     * @param excelRelationScheduledList
+     * @param diffVariableRequestList
+     * @throws IOException
+     */
+    private void handleRelationSchedule(User user, Project projectInDb, List<ExcelRelationScheduled> excelRelationScheduledList
+            , List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {
+        List<DiffVariableRequest> systemInnerDiffVariableRequestList = diffVariableRequestList.stream().filter(
+                diffVariableRequest -> DiffRequestTypeEnum.SYSTEM_INNER.getCode().equals(diffVariableRequest.getType())).collect(Collectors.toList());
+        String createTime = DateUtils.now();
+        for (ExcelRelationScheduled excelRelationScheduled : excelRelationScheduledList) {
+            ScheduledTaskResponse scheduledTaskResponse = excelRelationScheduled.getScheduledTask(objectMapper);
+            if (null == scheduledTaskResponse) {
+                throw new UnExpectedRequestException("反序列化关联调度任务失败");
+            }
+//            差异化变量替换
+            if (CollectionUtils.isNotEmpty(systemInnerDiffVariableRequestList)) {
+                for (DiffVariableRequest diffVariableRequest : systemInnerDiffVariableRequestList) {
+                    if (QualitisConstants.WTSS_DEPLOY_USER.equals(diffVariableRequest.getName())) {
+                        String releaseUser = scheduledTaskResponse.getReleaseUser();
+                        if (StringUtils.isNotEmpty(releaseUser)) {
+                            String replacedReleaseUser = releaseUser.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                            scheduledTaskResponse.setReleaseUser(replacedReleaseUser);
+                        }
+                    } else if (QualitisConstants.WTSS_DEPLOY_CLUSETER.equals(diffVariableRequest.getName())) {
+                        String clusterName = scheduledTaskResponse.getClusterName();
+                        if (StringUtils.isNotEmpty(clusterName)) {
+                            String replacedClusterName = clusterName.replace("[@" + diffVariableRequest.getName() + "]", diffVariableRequest.getValue());
+                            scheduledTaskResponse.setClusterName(replacedClusterName);
+                        }
+                    }
+                }
+            }
+
+            ScheduledTask scheduledTask = scheduledTaskDao.findOnlyObject(scheduledTaskResponse.getClusterName(), scheduledTaskResponse.getDispatchingSystemType()
+                    , scheduledTaskResponse.getWtssProjectName(), scheduledTaskResponse.getWorkFlowName()
+                    , scheduledTaskResponse.getTaskName(), ScheduledTaskTypeEnum.RELATION.getCode());
+            if (null == scheduledTask) {
+                scheduledTask = new ScheduledTask();
+                scheduledTask.setCreateUser(user.getUsername());
+                scheduledTask.setCreateTime(createTime);
+            } else if (!scheduledTask.getId().equals(projectInDb.getId())) {
+                throw new UnExpectedRequestException("其他项目中已存在该关联调度：" + scheduledTask.getTaskName());
+            } else {
+                scheduledTask.setModifyUser(user.getUsername());
+                scheduledTask.setModifyTime(createTime);
+            }
+            BeanUtils.copyProperties(scheduledTaskResponse, scheduledTask);
+            scheduledTask.setProject(projectInDb);
+            scheduledTask.setReleaseStatus(0);
+            scheduledTask.setProjectName(scheduledTaskResponse.getWtssProjectName());
+            scheduledTask = scheduledTaskDao.saveScheduledTask(scheduledTask);
+
+            List<ScheduledFrontBackRule> scheduledFrontBackRuleListInDb = scheduledFrontBackRuleDao.findByScheduledTask(scheduledTask);
+            scheduledFrontBackRuleDao.deleteAllScheduledFrontBackRule(scheduledFrontBackRuleListInDb);
+
+            List<RuleGroup> ruleGroupList = ruleGroupDao.findByProjectId(projectInDb.getId());
+            Map<String, RuleGroup> ruleGroupNameMap = ruleGroupList.stream().collect(Collectors.toMap(RuleGroup::getRuleGroupName, Function.identity(), (oldVal, newVal) -> oldVal));
+
+            List<ScheduledFrontBackRuleResponse> scheduledFrontBackRuleResponseList = excelRelationScheduled.getScheduledFrontBackRule(objectMapper);
+            if (CollectionUtils.isNotEmpty(scheduledFrontBackRuleResponseList)) {
+                ScheduledTask finalScheduledTask = scheduledTask;
+                List<ScheduledFrontBackRule> scheduledFrontBackRuleList = scheduledFrontBackRuleResponseList.stream()
+                        .filter(scheduledFrontBackRuleResponse -> ruleGroupNameMap.containsKey(scheduledFrontBackRuleResponse.getRuleGroupName()))
+                        .map(scheduledFrontBackRuleResponse -> {
+                            ScheduledFrontBackRule scheduledFrontBackRule = new ScheduledFrontBackRule();
+                            scheduledFrontBackRule.setTriggerType(scheduledFrontBackRuleResponse.getTriggerType());
+                            scheduledFrontBackRule.setScheduledTask(finalScheduledTask);
+                            scheduledFrontBackRule.setRuleGroup(ruleGroupNameMap.get(scheduledFrontBackRuleResponse.getRuleGroupName()));
+                            return scheduledFrontBackRule;
+                        })
+                        .collect(Collectors.toList());
+                scheduledFrontBackRuleDao.saveAll(scheduledFrontBackRuleList);
+            }
+        }
+    }
+
+    /**
+     * 验证服务是否正常且恢复项目状态为可操作
+     *
+     * @param project
+     * @throws ParseException
+     */
+    private void checkServiceIsNotabnormalAndRestoredProjectStatus(Project project) throws ParseException {
+        if (null == project.getModifyTime()) {
+            return;
+        }
+        Date currentTime = simpleDateFormat.parse(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
+        Date projectModifyTime = simpleDateFormat.parse(project.getModifyTime());
+
+        // 从配置文件yml获timeOut(超时时间  单位：秒)
+        String timeOut = environment.getProperty("import_and_export" + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + "time_out");
+        int result = Integer.parseInt(timeOut);
+
+        //求出两个时间段相差的秒数
+        int minute = (int) ((currentTime.getTime() - projectModifyTime.getTime()) / 1000);
+        //如果求出的秒数在正负result之外就报错  两个时间段的差大于10分钟    10分钟等于600秒
+        if (minute >= result || minute <= -result) {
+            project.setRunStatus(ProjectStatusEnum.OPERABLE_STATUS.getCode());
+            projectService.saveAndFlushProject(project);
+        }
     }
 
 }

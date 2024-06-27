@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 /**
  * Replace variable like ${yyyyMMdd} - N
+ *
  * @author howeye
  */
 public class DateExprReplaceUtil {
@@ -45,12 +46,14 @@ public class DateExprReplaceUtil {
     private static final Pattern DIGITAL_PATTERN = Pattern.compile("[0-9]+");
 
     private static final Pattern CUSTOM_PLACEHOLODER_PATTERN = Pattern.compile("\\$\\{[^ ]*}");
-    private static final Map<String, String> RUN_DATE_FORMAT  = new HashMap<String, String>(2);
+    private static final Map<String, String> RUN_DATE_FORMAT = new HashMap<String, String>(2);
 
     static {
-        RUN_DATE_FORMAT.put("run_date","yyyyMMdd");
+        RUN_DATE_FORMAT.put("run_date", "yyyyMMdd");
         RUN_DATE_FORMAT.put("run_date_std", "yyyy-MM-dd");
         RUN_DATE_FORMAT.put("run_today_h_std", "yyyy-MM-dd HH");
+        RUN_DATE_FORMAT.put("run_today", "yyyyMMdd");
+        RUN_DATE_FORMAT.put("run_today_std", "yyyy-MM-dd");
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DateExprReplaceUtil.class);
@@ -58,6 +61,7 @@ public class DateExprReplaceUtil {
     /**
      * Expr statement replace function
      * ds=${yyyyMMdd} - 1 and
+     *
      * @param source
      * @return
      */
@@ -109,8 +113,9 @@ public class DateExprReplaceUtil {
         Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(midTableAction);
         while (matcher.find()) {
             String replaceStr = matcher.group();
-            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std") || replaceStr.contains("run_today_h_std");
-            if (! legalSystemParams) {
+            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std")
+                    || replaceStr.contains("run_today") || replaceStr.contains("run_today_std") || replaceStr.contains("run_today_h_std");
+            if (!legalSystemParams) {
                 throw new UnExpectedRequestException("Custom placeholoder must be system variables.");
             }
             String currentParam = replaceStr.substring(2, replaceStr.length() - 1);
@@ -122,7 +127,7 @@ public class DateExprReplaceUtil {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, 0 - forwayDay - 1);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
-            } else if ("run_today_h_std".equals(currentParam)){
+            } else if ("run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
                 calendar.setTime(date);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {
@@ -141,8 +146,9 @@ public class DateExprReplaceUtil {
         Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(filter);
         while (matcher.find()) {
             String replaceStr = matcher.group();
-            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std") || replaceStr.contains("run_today_h_std");
-            if (! legalSystemParams) {
+            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std")
+                    || replaceStr.contains("run_today") || replaceStr.contains("run_today_std") || replaceStr.contains("run_today_h_std");
+            if (!legalSystemParams) {
                 throw new UnExpectedRequestException("Custom placeholoder must be system variables.");
             }
             String currentParam = replaceStr.substring(2, replaceStr.length() - 1);
@@ -154,7 +160,7 @@ public class DateExprReplaceUtil {
                 calendar.setTime(date);
                 calendar.add(Calendar.DATE, 0 - forwayDay - 1);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
-            } else if ("run_today_h_std".equals(currentParam)){
+            } else if ("run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
                 calendar.setTime(date);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {
@@ -167,5 +173,61 @@ public class DateExprReplaceUtil {
         }
 
         return filter;
+    }
+
+    public static Long getDateTimeFilterSeconds(String filter) {
+        Date date = new Date();
+        long midnightMillis = 0;
+        Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(filter);
+        while (matcher.find()) {
+            String replaceStr = matcher.group();
+            boolean legalSystemParams = replaceStr.contains("run_date") || replaceStr.contains("run_date_std") || replaceStr.contains("run_today_h_std");
+            if (!legalSystemParams) {
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                return calendar.getTimeInMillis() / 1000;
+            }
+            String currentParam = replaceStr.substring(2, replaceStr.length() - 1);
+            Calendar calendar = Calendar.getInstance();
+            if (currentParam.contains(SpecCharEnum.MINUS.getValue())) {
+                String[] keys = currentParam.split(SpecCharEnum.MINUS.getValue());
+                int forwayDay = Integer.parseInt(keys[1]);
+                calendar.set(Calendar.DATE, calendar.get(Calendar.DAY_OF_MONTH) + (0 - forwayDay - 1));
+            } else if ("run_today_h_std".equals(currentParam)) {
+                calendar.set(Calendar.DATE, calendar.get(Calendar.DAY_OF_MONTH));
+            } else {
+                calendar.setTime(date);
+                calendar.set(Calendar.DATE, calendar.get(Calendar.DAY_OF_MONTH) - 1);
+            }
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            midnightMillis = calendar.getTimeInMillis();
+
+        }
+        return midnightMillis / 1000;
+    }
+
+    public static Long getDateTimeSeconds(String dates) {
+        long dataTime = 0;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date date;
+        try {
+            date = dateFormat.parse(dates);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            // 当天零点时间戳
+            dataTime = calendar.getTime().getTime() / 1000;
+        } catch (Exception e) {
+            LOGGER.error("Failed to parse date parameter.");
+        }
+        return dataTime;
     }
 }

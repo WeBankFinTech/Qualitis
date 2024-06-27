@@ -44,23 +44,11 @@ public enum ProjectOperateEnum {
         return code;
     }
 
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public String getZhMessage() {
         return zhMessage;
-    }
-
-    public void setZhMessage(String zhMessage) {
-        this.zhMessage = zhMessage;
     }
 }

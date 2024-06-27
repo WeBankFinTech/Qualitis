@@ -119,7 +119,7 @@ public class ReportUtil {
         metricData.setMetricValue(StringUtils.isBlank(taskResult.getValue()) ? "0" : taskResult.getValue());
         metricData.setHostIp(QualitisConstants.QUALITIS_SERVER_HOST);
         if (ruleMetric.getSubSystemId() != null) {
-            metricData.setSubsystemId(String.valueOf(ruleMetric.getSubSystemId()));
+            metricData.setSubsystemId(ruleMetric.getSubSystemId());
         } else {
             metricData.setSubsystemId(imsConfig.getSystemId());
         }

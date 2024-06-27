@@ -16,9 +16,13 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.webank.wedatasphere.qualitis.constant.TemplateFunctionNameEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
@@ -34,22 +38,18 @@ import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.adapter.AutoArgumentAdapter;
 import com.webank.wedatasphere.qualitis.rule.constant.*;
-import com.webank.wedatasphere.qualitis.rule.dao.BdpClientHistoryDao;
-import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.request.multi.*;
 import com.webank.wedatasphere.qualitis.rule.response.MultiRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
@@ -95,11 +95,17 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
     @Autowired
     private RuleGroupDao ruleGroupDao;
     @Autowired
+    private RuleUdfDao ruleUdfDao;
+    @Autowired
     private ClusterInfoDao clusterInfoDao;
     @Autowired
     private BdpClientHistoryDao bdpClientHistoryDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private LinkisDataSourceEnvDao linkisDataSourceEnvDao;
 
     @Autowired
     private AutoArgumentAdapter autoArgumentAdapter;
@@ -133,23 +139,27 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
     private GeneralResponse<RuleResponse> addMultiSourceRuleReal(AddMultiSourceRuleRequest request, boolean check)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
+        LOGGER.info("add multi rule request detail: {}", request.toString());
 
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         String csId = request.getCsId();
         boolean cs = false;
         if (StringUtils.isNotBlank(csId)) {
             cs = true;
         }
-        AddMultiSourceRuleRequest.checkRequest(request, false, cs);
+        Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
+        Boolean isCustomConsistent = QualitisConstants.isCustomColumnConsistence(templateInDb.getEnName());
+        Boolean tableStructureConsistent = QualitisConstants.isTableStructureConsistent(templateInDb.getEnName());
+        AddMultiSourceRuleRequest.checkRequest(request, false, cs, isCustomConsistent, tableStructureConsistent);
         String loginUser = "";
         if (request.getLoginUser() != null) {
             loginUser = request.getLoginUser();
-            LOGGER.info("Recover user[{}] from is adding rule.", loginUser);
+            LOGGER.info("Recover user[{}] from add request.", loginUser);
         } else {
             loginUser = HttpUtils.getUserName(httpServletRequest);
         }
@@ -169,9 +179,11 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
         }
         // Check existence of cluster
-        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(request.getClusterName());
-        if (clusterInfo == null) {
-            throw new UnExpectedRequestException("Cluster :" + request.getClusterName() + " {&DOES_NOT_EXIST}");
+        if (StringUtils.isNotEmpty(request.getClusterName())) {
+            ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(request.getClusterName());
+            if (clusterInfo == null) {
+                throw new UnExpectedRequestException("Cluster :" + request.getClusterName() + " {&DOES_NOT_EXIST}");
+            }
         }
 
         RuleGroup ruleGroup;
@@ -179,6 +191,15 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
         if (request.getRuleGroupId() != null) {
             ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup == null) {
+                throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
+            }
+            if (StringUtils.isNotEmpty(ruleGroupName)) {
+                ruleGroup.setRuleGroupName(ruleGroupName);
+            }
+            ruleGroup = ruleGroupDao.saveRuleGroup(ruleGroup);
+        } else if (request.getNewRuleGroupId() != null) {
+            ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
             if (ruleGroup == null) {
                 throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
             }
@@ -195,14 +216,40 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String leftUuid = UuidGenerator.generate();
         String rightUuid = UuidGenerator.generate();
         Rule savedRule = generateRule(request, projectInDb, false, null, cs, leftUuid, rightUuid, loginUser);
+
         savedRule.setRuleGroup(ruleGroup);
         savedRule = ruleDao.saveRule(savedRule);
+
+        saveRuleUdfs(request.getLeftLinkisUdfNames(), request.getRightLinkisUdfNames(), savedRule);
 
         super.recordEvent(loginUser, savedRule, OperateTypeEnum.CREATE_RULES);
 
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to add multi source rule, rule id: {}", savedRule.getId());
-        return new GeneralResponse<>("200", "{&ADD_MULTI_RULE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_MULTI_RULE_SUCCESSFULLY}", response);
+    }
+
+    private void saveRuleUdfs(List<String> leftLinkisUdfNames, List<String> rightLinkisUdfNames, Rule ruleInDb) {
+        List<RuleUdf> ruleUdfs = new ArrayList<>();
+        Set<RuleDataSource> ruleDataSourceSet = ruleInDb.getRuleDataSources();
+        for (RuleDataSource ruleDataSource: ruleDataSourceSet) {
+            if (ruleDataSource.getDatasourceIndex() == 0 && CollectionUtils.isNotEmpty(leftLinkisUdfNames)) {
+                leftLinkisUdfNames.forEach(udfName -> {
+                    RuleUdf ruleUdf = new RuleUdf(udfName, ruleInDb);
+                    ruleUdf.setRuleDatasource(ruleDataSource);
+                    ruleUdfs.add(ruleUdf);
+                });
+                continue;
+            }
+            if (ruleDataSource.getDatasourceIndex() == 1 && CollectionUtils.isNotEmpty(rightLinkisUdfNames)){
+                rightLinkisUdfNames.forEach(udfName -> {
+                    RuleUdf ruleUdf = new RuleUdf(udfName, ruleInDb);
+                    ruleUdf.setRuleDatasource(ruleDataSource);
+                    ruleUdfs.add(ruleUdf);
+                });
+            }
+        }
+        ruleInDb.setRuleUdfs(new HashSet<>(ruleUdfDao.saveAll(ruleUdfs)));
     }
 
     @Override
@@ -211,6 +258,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteMultiSourceRequest.checkRequest(request);
+        LOGGER.info("delete multi rule request detail: {}", request.toString());
         // Check existence of rule and check if multi-table rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null) {
@@ -229,24 +277,25 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         // Record project event.
 //        projectEventService.record(projectInDb.getId(), loginUser, "delete", "multi source rule[name= " + ruleInDb.getName() + "].", EventTypeEnum.MODIFY_PROJECT.getCode());
         // Delete rule
-        return deleteMultiRuleReal(ruleInDb);
+        return deleteMultiRuleReal(ruleInDb,null);
     }
 
     @Override
     @Transactional(rollbackFor = {Exception.class, UnExpectedRequestException.class})
-    public GeneralResponse deleteMultiRuleReal(Rule rule) throws UnExpectedRequestException {
+    public GeneralResponse deleteMultiRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException {
         // Delete bdp-client history
         BdpClientHistory bdpClientHistory = bdpClientHistoryDao.findByRuleId(rule.getId());
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
 
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
 
-        super.recordEvent(HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
+        super.recordEvent(StringUtils.isNotBlank(loginUser) ? loginUser : HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
         LOGGER.info("Succeed to delete multi rule. rule id: {}", rule.getId());
-        return new GeneralResponse<>("200", "{&DELETE_MULTI_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_MULTI_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -288,18 +337,22 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         CommonChecker.checkObject(request, "request");
+        LOGGER.info("modify multi rule request detail: {}", request.toString());
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         String csId = request.getCsId();
         boolean cs = false;
         if (StringUtils.isNotBlank(csId)) {
             cs = true;
         }
-        ModifyMultiSourceRequest.checkRequest(request, cs);
+        Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
+        Boolean isCustomConsistence = QualitisConstants.isCustomColumnConsistence(templateInDb.getEnName());
+        Boolean tableStructureConsistent = QualitisConstants.isTableStructureConsistent(templateInDb.getEnName());
+        ModifyMultiSourceRequest.checkRequest(request, cs, isCustomConsistence, tableStructureConsistent);
 
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
@@ -328,6 +381,9 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         // Delete rule config by rule
         alarmConfigService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all alarm_config. rule id: {}", ruleInDb.getId());
+        if (CollectionUtils.isNotEmpty(ruleInDb.getRuleUdfs())) {
+            ruleUdfDao.deleteByRule(ruleInDb);
+        }
         // Delete rule datasource by rule
         ruleDataSourceService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all rule_dataSources. rule id: {}", ruleInDb.getId());
@@ -338,6 +394,18 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         // Delete rule variable by rule
         ruleVariableService.deleteByRule(ruleInDb);
         LOGGER.info("Succeed to delete all rule_variable. rule id: {}", ruleInDb.getId());
+        if (request.getRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
+        if (request.getNewRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
         String ruleGroupName = request.getRuleGroupName();
         if (StringUtils.isNotEmpty(ruleGroupName)) {
             ruleInDb.getRuleGroup().setRuleGroupName(ruleGroupName);
@@ -349,15 +417,18 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String rightUuid = UuidGenerator.generate();
         Rule savedRule = generateRule(addMultiSourceRuleRequest, projectInDb, true, ruleInDb, cs, leftUuid, rightUuid, loginUser);
 
+        saveRuleUdfs(request.getLeftLinkisUdfNames(), request.getRightLinkisUdfNames(), savedRule);
+
         super.recordEvent(loginUser, savedRule, OperateTypeEnum.MODIFY_RULES);
 
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to modify multi source rule, rule id: {}", savedRule.getId());
-        return new GeneralResponse<>("200", "{&MODIFY_MULTI_RULE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_MULTI_RULE_SUCCESSFULLY}", response);
     }
 
     @Override
     public GeneralResponse<MultiRuleDetailResponse> getMultiSourceRule(Long ruleId) throws UnExpectedRequestException {
+        LOGGER.info("get multi rule request detail: {}", ruleId);
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(ruleId);
         if (ruleInDb == null) {
@@ -370,40 +441,91 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String loginUser = HttpUtils.getUserName(httpServletRequest);
         projectService.checkProjectExistence(projectInDbId, loginUser);
         MultiRuleDetailResponse multiRuleDetailResponse = new MultiRuleDetailResponse(ruleInDb);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_DETAIL_OF_MULTI_RULE}", multiRuleDetailResponse);
+        setUdfs(multiRuleDetailResponse, ruleInDb);
+        setDcnRangeValues(multiRuleDetailResponse.getSource());
+        setDcnRangeValues(multiRuleDetailResponse.getTarget());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_DETAIL_OF_MULTI_RULE}", multiRuleDetailResponse);
+    }
+
+    private void setDcnRangeValues(MultiDataSourceConfigRequest multiDataSourceConfigRequest) {
+        if (Arrays.asList(QualitisConstants.CMDB_KEY_DCN_NUM, QualitisConstants.CMDB_KEY_LOGIC_AREA)
+                .contains(multiDataSourceConfigRequest.getDcnRangeType())) {
+            Map<Long, String> envIdAndNameMap = multiDataSourceConfigRequest.getDataSourceEnvRequests().stream()
+                    .collect(Collectors.toMap(DataSourceEnvRequest::getEnvId, DataSourceEnvRequest::getEnvName, (k1, k2) -> k1));
+            List<Long> envIds = envIdAndNameMap.keySet().stream().collect(Collectors.toList());
+            List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvDao.query(multiDataSourceConfigRequest.getLinkisDataSourceId(), envIds, null, null);
+
+            List<String> dcnRangeValues = linkisDataSourceEnvList.stream().map(linkisDataSourceEnv -> {
+                        DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
+                        dataSourceEnvRequest.setEnvId(linkisDataSourceEnv.getEnvId());
+                        dataSourceEnvRequest.setEnvName(envIdAndNameMap.get(linkisDataSourceEnv.getEnvId()));
+                        dataSourceEnvRequest.setDcnNum(linkisDataSourceEnv.getDcnNum());
+                        dataSourceEnvRequest.setLogicArea(linkisDataSourceEnv.getLogicArea());
+                        return dataSourceEnvRequest;
+                    }).filter(dataSourceEnvRequest -> StringUtils.isNotBlank(dataSourceEnvRequest.getLogicArea()))
+                    .map(dataSourceEnvRequest -> {
+                        if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(multiDataSourceConfigRequest.getDcnRangeType())) {
+                            return dataSourceEnvRequest.getDcnNum();
+                        } else {
+                            return dataSourceEnvRequest.getLogicArea();
+                        }
+                    })
+                    .distinct()
+                    .collect(Collectors.toList());
+            multiDataSourceConfigRequest.setDcnRangeValues(dcnRangeValues);
+        }
+    }
+
+    private void setUdfs(MultiRuleDetailResponse multiRuleDetailResponse, Rule ruleInDb){
+        List<RuleUdf> ruleUdfList = ruleUdfDao.findByRule(ruleInDb);
+        List<String> leftLinkisUdfNames = new ArrayList<>();
+        List<String> rightLinkisUdfNames = new ArrayList<>();
+        for (RuleUdf ruleUdf: ruleUdfList) {
+            RuleDataSource ruleDataSource = ruleUdf.getRuleDatasource();
+            if (ruleDataSource == null) {
+                continue;
+            }
+            if (ruleDataSource.getDatasourceIndex() == 0) {
+                leftLinkisUdfNames.add(ruleUdf.getUdfName());
+            } else if (ruleDataSource.getDatasourceIndex() == 1) {
+                rightLinkisUdfNames.add(ruleUdf.getUdfName());
+            }
+        }
+        multiRuleDetailResponse.setLeftLinkisUdfNames(leftLinkisUdfNames);
+        multiRuleDetailResponse.setRightLinkisUdfNames(rightLinkisUdfNames);
     }
 
     private List<MultiDataSourceJoinConfigRequest> adjustMapping(List<MultiDataSourceJoinConfigRequest> mappings) {
         List<MultiDataSourceJoinConfigRequest> result = new ArrayList<>();
         for (MultiDataSourceJoinConfigRequest mapping : mappings) {
             MultiDataSourceJoinConfigRequest tmp = new MultiDataSourceJoinConfigRequest();
-            List<MultiDataSourceJoinColumnRequest> left = new ArrayList<>();
-            List<MultiDataSourceJoinColumnRequest> right = new ArrayList<>();
+            List<MultiDataSourceJoinColumnRequest> leftDataSourceCol = new ArrayList<>();
+            List<MultiDataSourceJoinColumnRequest> rightDataSourceCol = new ArrayList<>();
             for (MultiDataSourceJoinColumnRequest columnRequest : mapping.getLeft()) {
                 if (columnRequest.getColumnName().startsWith("tmp1.")) {
-                    if (!left.contains(columnRequest)) {
-                        left.add(columnRequest);
+                    if (!leftDataSourceCol.contains(columnRequest)) {
+                        leftDataSourceCol.add(columnRequest);
                     }
                 } else {
-                    if (!right.contains(columnRequest)) {
-                        right.add(columnRequest);
+                    if (!rightDataSourceCol.contains(columnRequest)) {
+                        rightDataSourceCol.add(columnRequest);
                     }
                 }
             }
             for (MultiDataSourceJoinColumnRequest columnRequest : mapping.getRight()) {
                 if (columnRequest.getColumnName().startsWith("tmp1.")) {
-                    if (!left.contains(columnRequest)) {
-                        left.add(columnRequest);
+                    if (!leftDataSourceCol.contains(columnRequest)) {
+                        leftDataSourceCol.add(columnRequest);
                     }
                 } else {
-                    if (!right.contains(columnRequest)) {
-                        right.add(columnRequest);
+                    if (!rightDataSourceCol.contains(columnRequest)) {
+                        rightDataSourceCol.add(columnRequest);
                     }
                 }
             }
 
-            tmp.setLeft(left);
-            tmp.setRight(right);
+            tmp.setLeft(leftDataSourceCol);
+            tmp.setRight(rightDataSourceCol);
             tmp.setLeftStatement(mapping.getLeftStatement());
             tmp.setRightStatement(mapping.getRightStatement());
             tmp.setOperation(mapping.getOperation());
@@ -413,45 +535,14 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         return result;
     }
 
-    private List<MultiDataSourceJoinConfigRequest> getReverseMapping(List<MultiDataSourceJoinConfigRequest> sourceMappings) {
-        List<MultiDataSourceJoinConfigRequest> reverseMappings = new ArrayList<>();
-        for (MultiDataSourceJoinConfigRequest sourceMapping : sourceMappings) {
-            MultiDataSourceJoinConfigRequest reverseMapping = new MultiDataSourceJoinConfigRequest();
-            String rightStatement = reverseTmp1AndTmp2(sourceMapping.getRightStatement());
-            String leftStatement = reverseTmp1AndTmp2(sourceMapping.getLeftStatement());
-            List<MultiDataSourceJoinColumnRequest> right = new ArrayList<>();
-            List<MultiDataSourceJoinColumnRequest> left = new ArrayList<>();
-            for (MultiDataSourceJoinColumnRequest r : sourceMapping.getRight()) {
-                MultiDataSourceJoinColumnRequest tmp = new MultiDataSourceJoinColumnRequest();
-                tmp.setColumnName(reverseTmp1AndTmp2(r.getColumnName()));
-                right.add(tmp);
-            }
-            for (MultiDataSourceJoinColumnRequest l : sourceMapping.getLeft()) {
-                MultiDataSourceJoinColumnRequest tmp = new MultiDataSourceJoinColumnRequest();
-                tmp.setColumnName(reverseTmp1AndTmp2(l.getColumnName()));
-                left.add(tmp);
-            }
-
-            reverseMapping.setOperation(sourceMapping.getOperation());
-            reverseMapping.setLeftStatement(leftStatement);
-            reverseMapping.setRightStatement(rightStatement);
-            reverseMapping.setRight(left);
-            reverseMapping.setLeft(right);
-            reverseMappings.add(reverseMapping);
-        }
-        return reverseMappings;
-    }
-
-    private String reverseTmp1AndTmp2(String str) {
-        String tmp1 = str.replace("tmp1", MID_TMP_STR);
-        String tmp2 = tmp1.replace("tmp2", "tmp1");
-        return tmp2.replace(MID_TMP_STR, "tmp2");
-    }
-
     private Rule generateRule(AddMultiSourceRuleRequest request, Project projectInDb, Boolean modify, Rule ruleInDb, Boolean cs
             , String leftUuid, String rightUuid, String loginUser) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
         // Check existence of rule and if multi-table rule
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getMultiSourceRuleTemplateId());
+        if (QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateInDb.getEnName())) {
+            request.getSource().setClusterName(request.getClusterName());
+            request.getTarget().setClusterName(request.getClusterName());
+        }
         if (!templateInDb.getTemplateType().equals(RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode())) {
             throw new UnExpectedRequestException("Template id :" + request.getMultiSourceRuleTemplateId() + " {&IS_NOT_A_MULTI_SOURCE_TEMPLATE}");
         }
@@ -469,8 +560,15 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         if (StringUtils.isNotBlank(request.getExecutionParametersName())) {
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (executionParameters != null) {
+                if (!UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(executionParameters.getUnionWay())
+                        && CollectionUtils.isNotEmpty(request.getSource().getDataSourceEnvRequests())
+                        && CollectionUtils.isNotEmpty(request.getTarget().getDataSourceEnvRequests())
+                        && request.getSource().getDataSourceEnvRequests().size() != request.getTarget().getDataSourceEnvRequests().size()) {
+                    throw new UnExpectedRequestException("Source envs'size can not be different from target envs'size. Please check your union_way.");
+                }                
+
                 savedRule.setExecutionParametersName(request.getExecutionParametersName());
-                savedRule.setUnionAll(executionParameters.getUnionAll());
+                savedRule.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -485,16 +583,16 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
             }
         } else {
-            setMultiSoureInfo(request, savedRule);
+            setMultiSourceInfo(request, savedRule);
         }
         LOGGER.info("Succeed to save rule, rule id: {}", savedRule.getId());
-        MultiDataSourceConfigRequest left = request.getSource();
-        MultiDataSourceConfigRequest right = request.getTarget();
-        if (StringUtils.isNotBlank(left.getFileId())) {
-            left.setTableName(left.getTableName().concat("_").concat(leftUuid));
+        MultiDataSourceConfigRequest leftDataSourceConfig = request.getSource();
+        MultiDataSourceConfigRequest rightDataSourceConfig = request.getTarget();
+        if (StringUtils.isNotBlank(leftDataSourceConfig.getFileId())) {
+            leftDataSourceConfig.setTableName(leftDataSourceConfig.getTableName().concat("_").concat(leftUuid));
         }
-        if (StringUtils.isNotBlank(right.getFileId())) {
-            right.setTableName(right.getTableName().concat("_").concat(rightUuid));
+        if (StringUtils.isNotBlank(rightDataSourceConfig.getFileId())) {
+            rightDataSourceConfig.setTableName(rightDataSourceConfig.getTableName().concat("_").concat(rightUuid));
         }
         // 比对方向
         if (request.getContrastType() != null) {
@@ -502,7 +600,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         }
         // Generate rule_datasource, rule_variable, rule_alarm_config
         LOGGER.info("Start to generate and save rule_variable.");
-        List<RuleVariable> ruleVariables = autoAdaptRequestAndGetRuleVariable(savedRule, templateInDb, request.getClusterName(), left, right, request.getTemplateArgumentRequests(), request.getColNames());
+        List<RuleVariable> ruleVariables = autoAdaptRequestAndGetRuleVariable(savedRule, templateInDb, request.getClusterName(), leftDataSourceConfig, rightDataSourceConfig, request.getTemplateArgumentRequests(), request.getColNames());
         List<RuleVariable> savedRuleVariables = ruleVariableService.saveRuleVariable(ruleVariables);
         LOGGER.info("Succeed to save rule_variables, rule_variables: {}", savedRuleVariables);
         List<AlarmConfig> savedAlarmConfigs = new ArrayList<>();
@@ -516,7 +614,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             savedAlarmConfigs = alarmConfigService.checkAndSaveAlarmVariable(request.getAlarmVariable(), savedRule, loginUser, null, request.getSource(), request.getTarget());
             LOGGER.info("Succeed to save alarm_configs, alarm_configs: {}", savedAlarmConfigs);
         }
-        List<DataSourceRequest> dataSourceRequests = generateDataSourceRequest(request.getClusterName(), left, right, request.getColNames());
+        List<DataSourceRequest> dataSourceRequests = generateDataSourceRequest(request.getClusterName(), leftDataSourceConfig, rightDataSourceConfig, request.getColNames());
         List<RuleDataSource> savedRuleDataSource = ruleDataSourceService.checkAndSaveRuleDataSource(dataSourceRequests, savedRule, null
                 , cs, loginUser);
         LOGGER.info("Succeed to save rule_dataSources, rule_dataSources: {}", savedRuleDataSource);
@@ -525,20 +623,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         // 获取比对字段、连接字段
         List<MultiDataSourceJoinConfigRequest> mappings = Lists.newArrayList();
         List<MultiDataSourceJoinConfigRequest> compareCols = Lists.newArrayList();
-
-        for (TemplateArgumentRequest templateArgumentRequest : request.getTemplateArgumentRequests()) {
-            if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
-                mappings = CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class);
-                for (MultiDataSourceJoinConfigRequest mapping : mappings) {
-                    MultiDataSourceJoinConfigRequest.checkRequest(mapping);
-                }
-            } else if (TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
-                compareCols = CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class);
-                for (MultiDataSourceJoinConfigRequest compareCol : compareCols) {
-                    MultiDataSourceJoinConfigRequest.checkRequest(compareCol);
-                }
-            }
-        }
+        checkAndSetMappingCols(QualitisConstants.isCustomColumnConsistence(templateInDb.getEnName()),
+                request.getTemplateArgumentRequests(), mappings, compareCols, QualitisConstants.isTableStructureConsistent(templateInDb.getEnName()));
 
         Set<RuleDataSourceMapping> ruleDataSourceMappings = Sets.newHashSet();
         List<RuleDataSourceMapping> savedRuleDataSourceMappings = ruleDataSourceMappingService.checkAndSaveRuleDataSourceMapping(mappings, savedRule, MappingTypeEnum.CONNECT_FIELDS.getCode());
@@ -553,9 +639,52 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         return savedRule;
     }
 
-    private void setMultiSoureInfo(AddMultiSourceRuleRequest request, Rule savedRule) {
+    private void checkAndSetMappingCols(Boolean isCustomColumnConsistence, List<TemplateArgumentRequest> templateArgumentRequests,
+                                        List<MultiDataSourceJoinConfigRequest> mappings, List<MultiDataSourceJoinConfigRequest> compareCols, Boolean isTableStructureConsistent) throws UnExpectedRequestException {
+        if (CollectionUtils.isNotEmpty(templateArgumentRequests)) {
+            for (TemplateArgumentRequest templateArgumentRequest : templateArgumentRequests) {
+                if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
+                    mappings.addAll(CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class));
+                } else if (TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
+                    compareCols.addAll(CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class));
+                }
+            }
+        }
+
+        if (isCustomColumnConsistence) {
+            customConsistenceAdapter(mappings);
+            customConsistenceAdapter(compareCols);
+        } else if (isTableStructureConsistent) {
+            return;
+        } else {
+            MultiDataSourceJoinConfigRequest.checkRequestList(mappings);
+            MultiDataSourceJoinConfigRequest.checkRequestList(compareCols);
+        }
+
+    }
+
+    private void customConsistenceAdapter(List<MultiDataSourceJoinConfigRequest> mappings) {
+        for (MultiDataSourceJoinConfigRequest mapping : mappings) {
+            if (Objects.isNull(mapping.getOperation())) {
+//                默认操作符：=
+                mapping.setOperation(1);
+            }
+            mapping.getLeft().forEach(joinColumn -> {
+                if (!joinColumn.getColumnName().startsWith("tmp1.")) {
+                    joinColumn.setColumnName("tmp1." + joinColumn.getColumnName());
+                }
+            });
+            mapping.getRight().forEach(joinColumn -> {
+                if (!joinColumn.getColumnName().startsWith("tmp2.")) {
+                    joinColumn.setColumnName("tmp2." + joinColumn.getColumnName());
+                }
+            });
+        }
+    }
+
+    private void setMultiSourceInfo(AddMultiSourceRuleRequest request, Rule savedRule) {
         savedRule.setEnable(request.getRuleEnable());
-        savedRule.setUnionAll(request.getUnionAll());
+        savedRule.setUnionWay(request.getUnionWay());
         savedRule.setExecutionParametersName(null);
         savedRule.setAlert(request.getAlert());
         if (request.getAlert() != null && request.getAlert()) {
@@ -591,7 +720,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
     }
 
     private Boolean handleObjectEqual(AddMultiSourceRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
@@ -626,7 +755,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         DataSourceRequest sourceDataSourceRequest = new DataSourceRequest();
 
         sourceDataSourceRequest.setDatasourceIndex(0);
-        sourceDataSourceRequest.setClusterName(clusterName);
+        sourceDataSourceRequest.setClusterName(StringUtils.isNotEmpty(sourceConfig.getClusterName()) ? sourceConfig.getClusterName() : clusterName);
         sourceDataSourceRequest.setType(sourceConfig.getType());
         sourceDataSourceRequest.setFilter(sourceConfig.getFilter());
         sourceDataSourceRequest.setFileId(sourceConfig.getFileId());
@@ -643,6 +772,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         sourceDataSourceRequest.setLinkisDataSourceType(sourceConfig.getLinkisDataSourceType());
         sourceDataSourceRequest.setDataSourceEnvRequests(sourceConfig.getDataSourceEnvRequests());
         sourceDataSourceRequest.setLinkisDataSourceVersionId(sourceConfig.getLinkisDataSourceVersionId());
+        sourceDataSourceRequest.setCollectSql(sourceConfig.getCollectSql());
+        sourceDataSourceRequest.setDcnRangeType(sourceConfig.getDcnRangeType());
 
         if (CollectionUtils.isNotEmpty(colNames)) {
             sourceDataSourceRequest.setColNames(colNames);
@@ -654,7 +785,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         DataSourceRequest targetDataSourceRequest = new DataSourceRequest();
 
         targetDataSourceRequest.setDatasourceIndex(1);
-        targetDataSourceRequest.setClusterName(clusterName);
+        targetDataSourceRequest.setClusterName(StringUtils.isNotEmpty(targetConfig.getClusterName()) ? targetConfig.getClusterName() : clusterName);
         targetDataSourceRequest.setColNames(new ArrayList<>());
         targetDataSourceRequest.setType(targetConfig.getType());
         targetDataSourceRequest.setFilter(targetConfig.getFilter());
@@ -672,6 +803,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         targetDataSourceRequest.setLinkisDataSourceType(targetConfig.getLinkisDataSourceType());
         targetDataSourceRequest.setDataSourceEnvRequests(targetConfig.getDataSourceEnvRequests());
         targetDataSourceRequest.setLinkisDataSourceVersionId(targetConfig.getLinkisDataSourceVersionId());
+        targetDataSourceRequest.setCollectSql(targetConfig.getCollectSql());
+        targetDataSourceRequest.setDcnRangeType(targetConfig.getDcnRangeType());
 
         dataSourceRequests.add(sourceDataSourceRequest);
         dataSourceRequests.add(targetDataSourceRequest);
@@ -687,24 +820,28 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String contrastType = null;
         String connFieldOriginValue = null;
         String compFieldOriginValue = null;
+        String leftMetricSql = null;
+        String rightMetricSql = null;
 
-        for (TemplateArgumentRequest templateArgumentRequest : templateArgumentRequests) {
-            if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
-                mappings = CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class);
-                for (MultiDataSourceJoinConfigRequest mapping : mappings) {
-                    MultiDataSourceJoinConfigRequest.checkRequest(mapping);
+        Boolean isCustomConsistence = QualitisConstants.isCustomColumnConsistence(template.getEnName());
+        Boolean isTableStructureConsistent = QualitisConstants.isTableStructureConsistent(template.getEnName());
+        if (CollectionUtils.isNotEmpty(templateArgumentRequests)) {
+            for (TemplateArgumentRequest templateArgumentRequest : templateArgumentRequests) {
+                if (TemplateInputTypeEnum.CONNECT_FIELDS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
+                    checkAndSetMappingCols(isCustomConsistence, Arrays.asList(templateArgumentRequest), mappings, compareCols, isTableStructureConsistent);
+                    connFieldOriginValue = templateArgumentRequest.getArgumentValue();
+                } else if (TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
+                    checkAndSetMappingCols(isCustomConsistence, Arrays.asList(templateArgumentRequest), mappings, compareCols, isTableStructureConsistent);
+                    compFieldOriginValue = templateArgumentRequest.getArgumentValue();
+                } else if (TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode().equals(templateArgumentRequest.getArgumentType())) {
+                    filter = templateArgumentRequest.getArgumentValue();
+                } else if (TemplateInputTypeEnum.CONTRAST_TYPE.getCode().equals(templateArgumentRequest.getArgumentType())) {
+                    contrastType = templateArgumentRequest.getArgumentValue();
+                } else if (TemplateInputTypeEnum.LEFT_COLLECT_SQL.getCode().equals(templateArgumentRequest.getArgumentType())) {
+                    leftMetricSql = templateArgumentRequest.getArgumentValue();
+                } else if (TemplateInputTypeEnum.RIGHT_COLLECT_SQL.getCode().equals(templateArgumentRequest.getArgumentType())) {
+                    rightMetricSql = templateArgumentRequest.getArgumentValue();
                 }
-                connFieldOriginValue = templateArgumentRequest.getArgumentValue();
-            } else if (TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode().equals(templateArgumentRequest.getArgumentType()) && StringUtils.isNotBlank(templateArgumentRequest.getArgumentValue())) {
-                compareCols = CustomObjectMapper.transJsonToObjects(templateArgumentRequest.getArgumentValue(), MultiDataSourceJoinConfigRequest.class);
-                for (MultiDataSourceJoinConfigRequest compareCol : compareCols) {
-                    MultiDataSourceJoinConfigRequest.checkRequest(compareCol);
-                }
-                compFieldOriginValue = templateArgumentRequest.getArgumentValue();
-            } else if (TemplateInputTypeEnum.COMPARISON_RESULTS_FOR_FILTER.getCode().equals(templateArgumentRequest.getArgumentType())) {
-                filter = templateArgumentRequest.getArgumentValue();
-            } else if (TemplateInputTypeEnum.CONTRAST_TYPE.getCode().equals(templateArgumentRequest.getArgumentType())) {
-                contrastType = templateArgumentRequest.getArgumentValue();
             }
         }
 
@@ -720,9 +857,13 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
                 }
             }
             Map<String, String> autoAdaptValue = autoArgumentAdapter.getMultiSourceAdaptValue(rule, templateMidTableInputMeta, clusterName
-                    , firstDataSource, secondDataSource, tmpMappings, colNames, filter, contrastType, connFieldOriginValue, compFieldOriginValue);
+                    , firstDataSource, secondDataSource, tmpMappings, colNames, filter, contrastType, connFieldOriginValue, compFieldOriginValue
+                    , leftMetricSql, rightMetricSql);
             ruleVariables.add(new RuleVariable(rule, InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), templateMidTableInputMeta, null, autoAdaptValue));
         }
+
+        firstDataSource.setCollectSql(leftMetricSql);
+        secondDataSource.setCollectSql(rightMetricSql);
 
         return ruleVariables;
     }

@@ -46,6 +46,9 @@ public class TemplateMidTableInputMetaResponse {
     @JsonProperty("field_multiple_choice")
     private Boolean fieldMultipleChoice;
 
+    @JsonProperty("whether_standard_value")
+    private Boolean whetherStandardValue;
+
     @JsonProperty("whether_new_value")
     private Boolean whetherNewValue;
 
@@ -171,6 +174,14 @@ public class TemplateMidTableInputMetaResponse {
 
     public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
         this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherStandardValue() {
+        return whetherStandardValue;
+    }
+
+    public void setWhetherStandardValue(Boolean whetherStandardValue) {
+        this.whetherStandardValue = whetherStandardValue;
     }
 
     public Boolean getWhetherNewValue() {

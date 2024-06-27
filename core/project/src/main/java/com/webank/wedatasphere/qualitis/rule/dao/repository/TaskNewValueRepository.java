@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_gaojiedeng@webank.com
@@ -41,6 +42,14 @@ public interface TaskNewValueRepository extends JpaRepository<TaskNewValue, Long
      */
     @Query(value = "select coalesce(count(ds.id),0) from TaskNewValue ds where  ds.status=1 and ds.ruleId = ?1 ")
     Long findMatchTaskNewValue(Long ruleId);
+
+    /**
+     * findMatchTaskNewValueByRuleIds
+     * @param ruleIds
+     * @return
+     */
+    @Query(value = "select ruleId as ruleId, coalesce(count(id), 0) as count from TaskNewValue where status=1 and ruleId in (?1) group by ruleId")
+    List<Map<String, Long>> findMatchTaskNewValueByRuleIds(List<Long> ruleIds);
 
     /**
      * selectExactTaskNewValue

@@ -19,14 +19,33 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.metadata.Sheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
+import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.client.RequestLinkis;
 import com.webank.wedatasphere.qualitis.client.request.AskLinkisParameter;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
 import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
+import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
-import com.webank.wedatasphere.qualitis.dao.*;
-import com.webank.wedatasphere.qualitis.entity.*;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
+import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
+import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
+import com.webank.wedatasphere.qualitis.dao.TaskDao;
+import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
+import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
+import com.webank.wedatasphere.qualitis.dao.TaskRuleSimpleDao;
+import com.webank.wedatasphere.qualitis.dao.UserDao;
+import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.entity.ApplicationComment;
+import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import com.webank.wedatasphere.qualitis.entity.Task;
+import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
+import com.webank.wedatasphere.qualitis.entity.TaskResult;
+import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
+import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.excel.ExcelResult;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
@@ -34,10 +53,21 @@ import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailed
 import com.webank.wedatasphere.qualitis.project.constant.ExcelSheetName;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
-import com.webank.wedatasphere.qualitis.request.*;
-import com.webank.wedatasphere.qualitis.response.*;
+import com.webank.wedatasphere.qualitis.request.FilterAdvanceRequest;
+import com.webank.wedatasphere.qualitis.request.FilterDataSourceRequest;
+import com.webank.wedatasphere.qualitis.request.FilterProjectRequest;
+import com.webank.wedatasphere.qualitis.request.FilterStatusRequest;
+import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.UploadResultRequest;
+import com.webank.wedatasphere.qualitis.response.ApplicationClusterResponse;
+import com.webank.wedatasphere.qualitis.response.ApplicationDatabaseResponse;
+import com.webank.wedatasphere.qualitis.response.ApplicationResponse;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
+import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
 import com.webank.wedatasphere.qualitis.service.ApplicationService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
@@ -62,12 +92,21 @@ import org.springframework.web.client.RestTemplate;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriBuilder;
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -105,6 +144,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Autowired
     private RequestLinkis requestLinkis;
+
+    @Autowired
+    private ScheduledTaskDao scheduledTaskDao;
 
     private HttpServletRequest httpServletRequest;
 
@@ -179,6 +221,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             }
             applicationResponses.add(response);
         }
+        setScheduleInfo(applicationResponses);
 
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
@@ -186,7 +229,33 @@ public class ApplicationServiceImpl implements ApplicationService {
         List<String> applicationIdList = getAllResponse.getData().stream().map(ApplicationResponse::getApplicationId).collect(Collectors.toList());
         LOGGER.info("timechecker response :" + (System.currentTimeMillis() - currentTimeResponse));
         LOGGER.info("Succeed to find applications. size: {}, id of applications: {}", total, applicationIdList);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+    }
+
+    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
+        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
+                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
+                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
+                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
+        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
+        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
+        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
+        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
+        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
+            allRuleGroupMapList.addAll(frontBackMapList);
+        }
+        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
+            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
+        }
+        allRuleGroupMapList.forEach(entry -> {
+            Long ruleGroupId = (Long) entry.get("rule_group_id");
+            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
+            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
+            applicationResponseList.forEach(applicationResponse -> {
+                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
+                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
+            });
+        });
     }
 
     @Override
@@ -221,7 +290,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         List<String> applicationIdList = getAllResponse.getData().stream().map(ApplicationResponse::getApplicationId).collect(Collectors.toList());
         LOGGER.info("Succeed to find applications. size: {}, id of applications: {}", total, applicationIdList);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
     @Override
@@ -263,7 +332,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         List<String> applicationIdList = getAllResponse.getData().stream().map(ApplicationResponse::getApplicationId).collect(Collectors.toList());
         LOGGER.info("Succeed to find applications. size: {}, id of applications: {}", total, applicationIdList);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
     /**
@@ -289,7 +358,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         long total = applicationDao.countByCreateUserAndId(user.getUsername(), StringUtils.isNotBlank(applicationId) ? "%" + applicationId + "%" : "");
         if (applicationList == null) {
             LOGGER.info("User: {} , Not find applications with applicationId: {}", user.getUsername(), applicationId);
-            return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS_BUT_FIND_NO_RESULTS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS_BUT_FIND_NO_RESULTS}", null);
         }
         GetAllResponse<ApplicationResponse> getAllResponse = new GetAllResponse<>();
         List<ApplicationResponse> applicationResponses = new ArrayList<>();
@@ -313,7 +382,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         List<String> applicationIdList = getAllResponse.getData().stream().map(ApplicationResponse::getApplicationId).collect(Collectors.toList());
         LOGGER.info("User: {}, find {} applications with like applicationId : {},Id of applications: {}", user.getUsername(), applicationList.size(), applicationId, applicationIdList);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
     @Override
@@ -524,26 +593,28 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationList = applicationDao.findByCreateUserAndId(user.getUsername(), request.getApplicationId(), request.getPage(), request.getSize());
             total = applicationDao.countByCreateUserAndId(user.getUsername(), request.getApplicationId());
         } else if (StringUtils.isNotBlank(request.getClusterName())) {
-            if (request.getStatus() != null) {
-                if (request.getStatus().equals(ApplicationStatusEnum.FINISHED.getCode())) {
-                    request.setStatus(TaskStatusEnum.PASS_CHECKOUT.getCode());
-                } else if (request.getStatus().equals(ApplicationStatusEnum.NOT_PASS.getCode())) {
-                    request.setStatus(TaskStatusEnum.FAIL_CHECKOUT.getCode());
-                } else if (request.getStatus().equals(ApplicationStatusEnum.SUCCESSFUL_CREATE_APPLICATION.getCode())) {
-                    request.setStatus(TaskStatusEnum.INITED.getCode());
-                } else if (request.getStatus().equals(ApplicationStatusEnum.RUNNING.getCode())) {
-                    request.setStatus(TaskStatusEnum.RUNNING.getCode());
-                } else if (request.getStatus() == 0) {
-                    request.setStatus(null);
+            Integer taskStatus = null;
+            Integer applicationStatus = request.getStatus();
+            if (applicationStatus != null) {
+                if (applicationStatus.equals(ApplicationStatusEnum.FINISHED.getCode())) {
+                    taskStatus = TaskStatusEnum.PASS_CHECKOUT.getCode();
+                } else if (applicationStatus.equals(ApplicationStatusEnum.NOT_PASS.getCode())) {
+                    taskStatus = TaskStatusEnum.FAIL_CHECKOUT.getCode();
+                } else if (applicationStatus.equals(ApplicationStatusEnum.SUCCESSFUL_CREATE_APPLICATION.getCode())) {
+                    taskStatus = TaskStatusEnum.INITED.getCode();
+                } else if (applicationStatus.equals(ApplicationStatusEnum.RUNNING.getCode())) {
+                    taskStatus = TaskStatusEnum.RUNNING.getCode();
+                } else if (applicationStatus == 0) {
+                    applicationStatus = null;
                 }
             }
             // If data source is not empty, it will be used as the basic filter.
             applicationList = applicationDao.findApplicationByAdvanceConditionsWithDatasource(user.getUsername(), request.getClusterName()
-                    , request.getDatabaseName(), request.getTableName(), request.getProjectId(), request.getStatus(), request.getCommentType()
+                    , request.getDatabaseName(), request.getTableName(), request.getProjectId(), taskStatus, applicationStatus, request.getCommentType()
                     , request.getStartTime(), request.getEndTime(), request.getRuleGroupId(), request.getExecuteUser(), request.getPage()
                     , request.getSize());
             total = applicationDao.countApplicationByAdvanceConditionsWithDatasource(user.getUsername(), request.getClusterName()
-                    , request.getDatabaseName(), request.getTableName(), request.getProjectId(), request.getStatus()
+                    , request.getDatabaseName(), request.getTableName(), request.getProjectId(), taskStatus, applicationStatus
                     , request.getCommentType(), request.getStartTime(), request.getEndTime()
                     , request.getRuleGroupId(), request.getExecuteUser());
         } else {
@@ -570,9 +641,10 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationResponses.add(response);
         }
 
+        setScheduleInfo(applicationResponses);
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
     @Override
@@ -580,7 +652,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         String userName = HttpUtils.getUserName(httpServletRequest);
         List<String> allExecuteUser = applicationDao.getAllExecuteUser(userName);
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_ALL_EXECUTE_USER}", allExecuteUser);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_ALL_EXECUTE_USER}", allExecuteUser);
     }
 
     @Override
@@ -604,7 +676,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         LOGGER.info("Succeed to find dataSources. size: {}, id of dataSources: {}", total, response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_DATASOURCE}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATION_DATASOURCE}", response);
     }
 
     private void putIntoCluster(List<ApplicationClusterResponse> responses, Map<String, String> taskDataSourceMap, Map<String, ApplicationClusterResponse> map) {

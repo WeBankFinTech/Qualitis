@@ -34,9 +34,13 @@ import java.util.List;
  */
 public class ExcelDatasourceEnv extends BaseRowModel {
 
-    @ExcelProperty(value = "Datasource Env Json Object", index = 0)
-    private String datasourceEnvJsonObject;
-    @ExcelProperty(value = "DataVisibility Json Object", index = 1)
+    @ExcelProperty(value = "Datasource Json Object", index = 0)
+    private String datasourceJsonObject;
+    @ExcelProperty(value = "Datasource Env Json Object", index = 1)
+    private String datasourceEnvNameListJsonObject;
+    @ExcelProperty(value = "Datasource DCN Type Json Object", index = 2)
+    private String dcnRangeValueListJsonObject;
+    @ExcelProperty(value = "DataVisibility Json Object", index = 3)
     private String dataVisibilityListJsonObject;
 
     public ExcelDatasourceEnv() {
@@ -47,7 +51,7 @@ public class ExcelDatasourceEnv extends BaseRowModel {
         ObjectMapper objectMapper = new ObjectMapper();
         ExcelDatasourceEnv excelDatasourceEnv = new ExcelDatasourceEnv();
         linkisDataSource.setId(null);
-        excelDatasourceEnv.setDatasourceEnvJsonObject(objectMapper.writeValueAsString(linkisDataSource));
+        excelDatasourceEnv.setDatasourceJsonObject(objectMapper.writeValueAsString(linkisDataSource));
         if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
             dataVisibilityList.forEach(dataVisibility -> {
                 dataVisibility.setTableDataId(null);
@@ -58,6 +62,22 @@ public class ExcelDatasourceEnv extends BaseRowModel {
         return excelDatasourceEnv;
     }
 
+    public String getDcnRangeValueListJsonObject() {
+        return dcnRangeValueListJsonObject;
+    }
+
+    public void setDcnRangeValueListJsonObject(String dcnRangeValueListJsonObject) {
+        this.dcnRangeValueListJsonObject = dcnRangeValueListJsonObject;
+    }
+
+    public String getDatasourceEnvNameListJsonObject() {
+        return datasourceEnvNameListJsonObject;
+    }
+
+    public void setDatasourceEnvNameListJsonObject(String datasourceEnvNameListJsonObject) {
+        this.datasourceEnvNameListJsonObject = datasourceEnvNameListJsonObject;
+    }
+
     public String getDataVisibilityListJsonObject() {
         return dataVisibilityListJsonObject;
     }
@@ -66,17 +86,17 @@ public class ExcelDatasourceEnv extends BaseRowModel {
         this.dataVisibilityListJsonObject = dataVisibilityListJsonObject;
     }
 
-    public String getDatasourceEnvJsonObject() {
-        return datasourceEnvJsonObject;
+    public String getDatasourceJsonObject() {
+        return datasourceJsonObject;
     }
 
-    public void setDatasourceEnvJsonObject(String datasourceEnvJsonObject) {
-        this.datasourceEnvJsonObject = datasourceEnvJsonObject;
+    public void setDatasourceJsonObject(String datasourceJsonObject) {
+        this.datasourceJsonObject = datasourceJsonObject;
     }
 
     public LinkisDataSource getLinkisDataSource(ObjectMapper objectMapper) {
         try {
-            return objectMapper.readValue(this.datasourceEnvJsonObject, new TypeReference<LinkisDataSource>() {
+            return objectMapper.readValue(this.datasourceJsonObject, new TypeReference<LinkisDataSource>() {
             });
         } catch (IOException e) {
 //            Don't to do anything
@@ -96,4 +116,32 @@ public class ExcelDatasourceEnv extends BaseRowModel {
         }
         return Collections.emptyList();
     }
+
+    public List<String> getLinkisDataSourceEnvNameList(ObjectMapper objectMapper) {
+        if (StringUtils.isBlank(this.datasourceEnvNameListJsonObject)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(this.datasourceEnvNameListJsonObject, new TypeReference<List<String>>() {
+            });
+        } catch (IOException e) {
+//            Don't to do anything
+        }
+        return Collections.emptyList();
+    }
+
+    public List<String> getDcnRangeValuesList(ObjectMapper objectMapper) {
+        if (StringUtils.isBlank(this.dcnRangeValueListJsonObject)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(this.dcnRangeValueListJsonObject, new TypeReference<List<String>>() {
+            });
+        } catch (IOException e) {
+//            Don't to do anything
+        }
+        return Collections.emptyList();
+    }
+
+
 }

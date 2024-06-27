@@ -41,6 +41,7 @@ public class DataQualityTask {
     private String filterShare;
     private String columnShare;
     private List<Map<String, Object>> connectShare;
+    private Integer index;
 
     public DataQualityTask() {
     }
@@ -178,6 +179,14 @@ public class DataQualityTask {
         this.connectShare = connectShare;
     }
 
+    public Integer getIndex() {
+        return index;
+    }
+
+    public void setIndex(Integer index) {
+        this.index = index;
+    }
+
     @Override
     public String toString() {
         return "DataQualityTask{" +
@@ -193,6 +202,7 @@ public class DataQualityTask {
             ", tableShare='" + tableShare + '\'' +
             ", filterShare='" + filterShare + '\'' +
             ", columnShare='" + columnShare + '\'' +
+            ", index='" + index + '\'' +
             '}';
     }
 }

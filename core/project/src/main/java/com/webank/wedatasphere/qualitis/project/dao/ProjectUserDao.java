@@ -64,7 +64,7 @@ public interface ProjectUserDao {
      * @param username
      * @param projectType
      * @param projectName
-     * @param subsystemName
+     * @param subsystemId
      * @param createUser
      * @param db
      * @param table
@@ -74,7 +74,7 @@ public interface ProjectUserDao {
      * @param size
      * @return
      */
-    Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, String subsystemName, String createUser, String db, String table, Long startTime, Long endTime, int page, int size);
+    Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, Integer subsystemId, String createUser, String db, String table, Long startTime, Long endTime, int page, int size);
 
     /**
      * Find project by user and permissions
@@ -87,9 +87,10 @@ public interface ProjectUserDao {
     /**
      * Find project by user
      * @param username
+     * @param projectType
      * @return
      */
-    List<Map<String, Object>> findProjectByUserName(String username);
+    List<Map<String, Object>> findProjectByUserName(String username,Integer projectType);
 
     /**
      * Count project user by userId with project type
@@ -111,9 +112,10 @@ public interface ProjectUserDao {
     /**
      * Count project user by user name
      * @param username
+     * @param projectType
      * @return
      */
-    Long countProjectByUserName(String username);
+    Long countProjectByUserName(String username,Integer projectType);
 
     /**
      * Find by project user by project

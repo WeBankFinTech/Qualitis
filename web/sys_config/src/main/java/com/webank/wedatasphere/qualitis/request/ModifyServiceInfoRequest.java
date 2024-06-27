@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.qualitis.request;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * @author allenzhou@webank.com
  * @date 2022/2/24 15:40
@@ -8,6 +10,9 @@ package com.webank.wedatasphere.qualitis.request;
 public class ModifyServiceInfoRequest {
     private Long id;
     private Integer status;
+
+    @JsonProperty(value = "collect_status")
+    private Integer collectStatus;
 
     public ModifyServiceInfoRequest() {
         // Do nothing.
@@ -27,5 +32,13 @@ public class ModifyServiceInfoRequest {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getCollectStatus() {
+        return collectStatus;
+    }
+
+    public void setCollectStatus(Integer collectStatus) {
+        this.collectStatus = collectStatus;
     }
 }

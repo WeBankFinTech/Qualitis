@@ -1,12 +1,16 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Splitter;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * @author v_gaojiedeng
@@ -53,6 +57,9 @@ public class ModifyExecutionParametersRequest {
     @JsonProperty("union_all")
     private Boolean unionAll;
 
+    @JsonProperty("union_way")
+    private Integer unionWay;
+
     @JsonProperty("source_table_filter")
     private String sourceTableFilter;
     @JsonProperty("target_table_filter")
@@ -92,12 +99,12 @@ public class ModifyExecutionParametersRequest {
         this.executionParametersId = executionParametersInDb.getId();
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Integer getUnionWay() {
+        return unionWay;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Long getExecutionParametersId() {
@@ -348,12 +355,58 @@ public class ModifyExecutionParametersRequest {
         this.topPartition = topPartition;
     }
 
+    @Override
+    public String toString() {
+        return "ModifyExecutionParametersRequest{" +
+                "executionParametersId=" + executionParametersId +
+                ", name='" + name + '\'' +
+                ", abortOnFailure=" + abortOnFailure +
+                ", specifyStaticStartupParam=" + specifyStaticStartupParam +
+                ", staticStartupParam='" + staticStartupParam + '\'' +
+                ", alert=" + alert +
+                ", alertLevel=" + alertLevel +
+                ", alertReceiver='" + alertReceiver + '\'' +
+                ", projectId=" + projectId +
+                ", abnormalDatabase='" + abnormalDatabase + '\'' +
+                ", cluster='" + cluster + '\'' +
+                ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+                ", abnormalDataStorage=" + abnormalDataStorage +
+                ", specifyFilter=" + specifyFilter +
+                ", filter='" + filter + '\'' +
+                ", deleteFailCheckResult=" + deleteFailCheckResult +
+                ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+                ", uploadAbnormalValue=" + uploadAbnormalValue +
+                ", unionAll=" + unionAll +
+                ", unionWay=" + unionWay +
+                ", sourceTableFilter='" + sourceTableFilter + '\'' +
+                ", targetTableFilter='" + targetTableFilter + '\'' +
+                ", staticExecutionParametersRequests=" + staticExecutionParametersRequests +
+                ", alarmArgumentsExecutionParametersRequests=" + alarmArgumentsExecutionParametersRequests +
+                ", whetherNoise=" + whetherNoise +
+                ", noiseEliminationManagementRequests=" + noiseEliminationManagementRequests +
+                ", executionVariable=" + executionVariable +
+                ", executionManagementRequests=" + executionManagementRequests +
+                ", advancedExecution=" + advancedExecution +
+                ", engineReuse=" + engineReuse +
+                ", concurrencyGranularity='" + concurrencyGranularity + '\'' +
+                ", dynamicPartitioning=" + dynamicPartitioning +
+                ", topPartition='" + topPartition + '\'' +
+                '}';
+    }
+
     public static void checkRequest(ModifyExecutionParametersRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
         CommonChecker.checkObject(request.getExecutionParametersId(), "ExecutionParametersId");
         AddExecutionParametersRequest addExecutionParametersRequest = new AddExecutionParametersRequest();
         BeanUtils.copyProperties(request, addExecutionParametersRequest);
         AddExecutionParametersRequest.checkRequest(addExecutionParametersRequest,true);
+
+        if (StringUtils.isNotBlank(request.getAlertReceiver())) {
+            Long alertReceiverCount = StreamSupport.stream(Splitter.on(SpecCharEnum.COMMA.getValue()).omitEmptyStrings().trimResults().split(request.getAlertReceiver()).spliterator(), false).count();
+            if (alertReceiverCount > 13L) {
+                throw new UnExpectedRequestException("alert_receiver {&EXCEED_MAX_LENGTH}: 13");
+            }
+        }
     }
 
 

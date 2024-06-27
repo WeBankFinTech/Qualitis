@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.client.impl;
 
 import com.google.common.collect.Maps;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -12,6 +12,7 @@ import com.webank.wedatasphere.qualitis.metadata.request.LinkisConnectParamsRequ
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.ModifyDataSourceParameterRequest;
+import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceParamsResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.util.CryptoUtils;
@@ -45,6 +46,8 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
 
     @Autowired
     private MetaDataClient metaDataClient;
+    @Autowired
+    private LinkisConfig linkisConfig;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -53,6 +56,7 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
     @Override
     public Long createDataSource(LinkisDataSourceRequest linkisDataSourceRequest, String cluster, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
         String dataSourceJson = createDatasourceJson(linkisDataSourceRequest);
+        LOGGER.info("To create datasource to Linkis, request body: {}", dataSourceJson);
         GeneralResponse<Map<String, Object>> generalResponse;
         try {
             generalResponse = metaDataClient.createDataSource(cluster, authUser, dataSourceJson);
@@ -69,6 +73,7 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
     @Override
     public Long modifyDataSource(LinkisDataSourceRequest linkisDataSourceRequest, String cluster, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
         String dataSourceJson = createDatasourceJson(linkisDataSourceRequest);
+        LOGGER.info("To modify datasource to Linkis, request body: {}", dataSourceJson);
         GeneralResponse<Map<String, Object>> generalResponse;
         try {
             generalResponse = metaDataClient.modifyDataSource(cluster, authUser, linkisDataSourceRequest.getLinkisDataSourceId(), dataSourceJson);
@@ -83,8 +88,8 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
     }
 
     @Override
-    public List<LinkisDataSourceEnvRequest> createDataSourceEnv(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList, String clusterName, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        String envJson = createDatasourceEnvJson(inputType, verifyType, linkisDataSourceEnvRequestList);
+    public List<LinkisDataSourceEnvRequest> createDataSourceEnvAndSetEnvId(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList, String clusterName, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        String envJson = createDatasourceEnvJson(verifyType, linkisDataSourceEnvRequestList);
         GeneralResponse<Map<String, Object>> datasourceEnvResponse;
         try {
             LOGGER.info("createDataSourceEnv, request body: {}", envJson);
@@ -114,7 +119,7 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
 
     @Override
     public List<LinkisDataSourceEnvRequest> modifyDataSourceEnv(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> linkisDataSourceEnvRequestList, String clusterName, String authUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        String envJson = createDatasourceEnvJson(inputType, verifyType, linkisDataSourceEnvRequestList);
+        String envJson = createDatasourceEnvJson(verifyType, linkisDataSourceEnvRequestList);
         GeneralResponse<Map<String, Object>> datasourceEnvResponse;
         try {
             LOGGER.info("modifyDataSourceEnv, request body: {}", envJson);
@@ -177,12 +182,11 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
     }
 
 
-    private String createDatasourceEnvJson(Integer inputType, Integer verifyType, List<LinkisDataSourceEnvRequest> dataSourceEnvList) throws UnExpectedRequestException {
+    private String createDatasourceEnvJson(Integer verifyType, List<LinkisDataSourceEnvRequest> dataSourceEnvList) throws UnExpectedRequestException {
         if (CollectionUtils.isEmpty(dataSourceEnvList)) {
             return StringUtils.EMPTY;
         }
         boolean isShared = isShared(verifyType);
-        boolean isAutoInput = isAutoInput(inputType);
         for (LinkisDataSourceEnvRequest dataSourceEnv : dataSourceEnvList) {
             if (Objects.isNull(dataSourceEnv.getConnectParamsRequest())) {
                 LOGGER.warn("Lack of connect parameter, envName: {}", dataSourceEnv.getEnvName());
@@ -190,19 +194,18 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
             }
             LinkisConnectParamsRequest connectParamsRequest = dataSourceEnv.getConnectParamsRequest();
             Map<String, Object> connectParamMap = new HashMap<>();
-            if (isAutoInput) {
-                connectParamMap.put("database", dataSourceEnv.getDatabase());
-            }
             if (!isShared) {
                 String authType = connectParamsRequest.getAuthType();
                 connectParamMap.put("authType", authType);
                 if (QualitisConstants.AUTH_TYPE_ACCOUNT_PWD.equals(authType)) {
                     connectParamMap.put("username", connectParamsRequest.getUsername());
-                    connectParamMap.put("password", CryptoUtils.encode(connectParamsRequest.getPassword()));
+                    if (StringUtils.isNotEmpty(connectParamsRequest.getPassword())) {
+                        connectParamMap.put("password", CryptoUtils.encode(connectParamsRequest.getPassword()));
+                    }
                 } else if (QualitisConstants.AUTH_TYPE_DPM.equals(authType)) {
                     connectParamMap.put("appid", connectParamsRequest.getAppId());
                     connectParamMap.put("objectid", connectParamsRequest.getObjectId());
-                    connectParamMap.put("mkPrivate", connectParamsRequest.getMkPrivate());
+                    connectParamMap.put("dk", connectParamsRequest.getDk());
                 }
             }
             connectParamMap.put("host", connectParamsRequest.getHost());
@@ -249,6 +252,44 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
         } catch (IOException e) {
             throw new UnExpectedRequestException("Failed to format dataSource json");
         }
+    }
+
+    @Override
+    public Map<String, Long> getDataSourceTypeNameAndIdMap() {
+        Map<String, Long> typeNameAndIdMap = new HashMap<>();
+        try {
+            GeneralResponse<Map<String, Object>> generalResponse = metaDataClient.getAllDataSourceTypes(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin());
+            if (ResponseStatusConstants.OK.equals(generalResponse.getCode())
+                    && generalResponse.getData() != null
+                    && generalResponse.getData().containsKey("typeList")) {
+                List<Map<String, Object>> typeListMap = (List<Map<String, Object>>) generalResponse.getData().get("typeList");
+                typeListMap.forEach(typeMap -> {
+                    typeNameAndIdMap.put(MapUtils.getString(typeMap, "name"), Long.valueOf(MapUtils.getString(typeMap, "id")));
+                });
+            }
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error("Failed to query all dataSource types. ", e);
+        } catch (MetaDataAcquireFailedException e) {
+            LOGGER.error("Failed to query all dataSource types. ", e);
+        }
+        return typeNameAndIdMap;
+    }
+
+    @Override
+    public GeneralResponse connect(Long linkisDataSourceId, Long versionId) throws Exception {
+        LinkisDataSourceInfoDetail linkisDataSourceInfoDetail = metaDataClient.getDataSourceInfoById(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), linkisDataSourceId, versionId);
+        String dataSourceJson = objectMapper.writeValueAsString(linkisDataSourceInfoDetail);
+
+        try {
+            GeneralResponse<Map<String, Object>> resultMap = metaDataClient.connectDataSource(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), dataSourceJson);
+            if (!resultMap.getData().containsKey("ok")) {
+                return resultMap;
+            }
+        } catch (MetaDataAcquireFailedException e) {
+            String errorMsg = "环境连接失败";
+            throw new MetaDataAcquireFailedException(errorMsg, 500);
+        }
+        return new GeneralResponse(ResponseStatusConstants.OK, "Connected!", null);
     }
 
     private void validateConnectParams(Map<String, Object> connectParams) throws UnExpectedRequestException {

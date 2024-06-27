@@ -15,8 +15,6 @@ public class QueryProjectRequest extends PageRequest {
     private String projectName;
     @JsonProperty(value = "subsystem_id")
     private Integer subsystemId;
-    @JsonProperty(value = "subsystem_name")
-    private String subsystemName;
     @JsonProperty("db_name")
     private String db;
     @JsonProperty("table_name")
@@ -58,14 +56,6 @@ public class QueryProjectRequest extends PageRequest {
 
     public void setSubsystemId(Integer subsystemId) {
         this.subsystemId = subsystemId;
-    }
-
-    public String getSubsystemName() {
-        return subsystemName;
-    }
-
-    public void setSubsystemName(String subsystemName) {
-        this.subsystemName = subsystemName;
     }
 
     public String getDb() {

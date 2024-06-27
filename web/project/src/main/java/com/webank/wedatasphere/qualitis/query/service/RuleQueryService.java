@@ -48,14 +48,14 @@ public interface RuleQueryService {
    * @param tableName
    * @param datasourceType
    * @param subSystemId
-   * @param envName
+   * @param tagCode
    * @param departmentName
    * @param devDepartmentName
-   * @param tagCode
+   * @param envName
    * @return
    */
   DataInfo<RuleQueryDataSource> filter(PageRequest pageRequest, String user, String clusterName, String dbName, String tableName,
-                                       Integer datasourceType, Long subSystemId, String tagCode, String departmentName, String devDepartmentName, String envName);
+                                       Integer datasourceType, String subSystemId, String tagCode, String departmentName, String devDepartmentName, String envName);
 
   /**
    * Get all rule datasource by user
@@ -149,7 +149,7 @@ public interface RuleQueryService {
    * @param envName
    * @return
    */
-  int count(String user, String cluster, String db, String table, Integer datasourceType, Long subSystemId, String departmentName,
+  int count(String user, String cluster, String db, String table, Integer datasourceType, String subSystemId, String departmentName,
       String devDepartmentName, String tagCode, String envName);
 
   /**

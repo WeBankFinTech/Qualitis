@@ -14,6 +14,15 @@ public class UploadProjectRequest {
     @JsonProperty("upload_type")
     private Integer uploadType;
 
+    @JsonProperty("git_repo")
+    private String gitRepo;
+    @JsonProperty("git_type")
+    private Integer gitType;
+    @JsonProperty("git_branch")
+    private String gitBranch;
+    @JsonProperty("git_root_dir")
+    private String gitRootDir;
+
     @JsonProperty("zip_path")
     private String zipPath;
 
@@ -22,6 +31,11 @@ public class UploadProjectRequest {
 
     @JsonProperty("login_user")
     private String loginUser;
+    @JsonProperty("operate_user")
+    private String operateUser;
+
+    @JsonProperty("increment")
+    private Boolean increment;
 
     public UploadProjectRequest() {
         // Default Constructor
@@ -41,6 +55,38 @@ public class UploadProjectRequest {
 
     public void setUploadType(Integer uploadType) {
         this.uploadType = uploadType;
+    }
+
+    public String getGitRepo() {
+        return gitRepo;
+    }
+
+    public void setGitRepo(String gitRepo) {
+        this.gitRepo = gitRepo;
+    }
+
+    public Integer getGitType() {
+        return gitType;
+    }
+
+    public void setGitType(Integer gitType) {
+        this.gitType = gitType;
+    }
+
+    public String getGitBranch() {
+        return gitBranch;
+    }
+
+    public void setGitBranch(String gitBranch) {
+        this.gitBranch = gitBranch;
+    }
+
+    public String getGitRootDir() {
+        return gitRootDir;
+    }
+
+    public void setGitRootDir(String gitRootDir) {
+        this.gitRootDir = gitRootDir;
     }
 
     public String getZipPath() {
@@ -65,5 +111,21 @@ public class UploadProjectRequest {
 
     public void setLoginUser(String loginUser) {
         this.loginUser = loginUser;
+    }
+
+    public String getOperateUser() {
+        return operateUser;
+    }
+
+    public void setOperateUser(String operateUser) {
+        this.operateUser = operateUser;
+    }
+
+    public Boolean getIncrement() {
+        return increment;
+    }
+
+    public void setIncrement(Boolean increment) {
+        this.increment = increment;
     }
 }

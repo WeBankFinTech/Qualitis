@@ -6,13 +6,7 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -514,7 +508,7 @@ public class CustomObjectMapper extends ObjectMapper {
             return Collections.emptyList();
         }
 
-        Collection<Object> temps = new ArrayList<Object>();
+        Collection<Object> temps = new ArrayList<>();
         if (Collection.class.isAssignableFrom(values.getClass())) {
             temps.addAll((Collection) values);
         } else if (values.getClass().isArray()) {
@@ -533,7 +527,7 @@ public class CustomObjectMapper extends ObjectMapper {
 
     public static <T> Map<String, T> transMapValues(Map<String, Object> map, Class<T> valueClazz) {
         if (map == null) {
-            return null;
+            return Collections.emptyMap();
         }
 
         Map<String, T> newMap = new LinkedHashMap<String, T>();

@@ -5,14 +5,16 @@ import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContextManager;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
-import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricTypeConfigDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -109,13 +111,16 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private UserDao userDao;
 
     @Autowired
+    private LinkisUdfDao linkisUdfDao;
+
+    @Autowired
     private RuleGroupDao ruleGroupDao;
 
     @Autowired
     private RuleTemplateDao ruleTemplateDao;
 
     @Autowired
-    private SpecialProjectRuleConfig specialProjectRuleConfig;
+    private StandardValueVersionDao standardValueVersionDao;
 
     @Autowired
     private LinkisConfig linkisConfig;
@@ -162,7 +167,8 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private static final String QUALITIS_CMD_PROPS = "qualitis.cmd.props.";
     private static final int PROJECT_NAME_LENGTH = 128;
     private static final int RULE_NAME_LENGTH = 128;
-    private static final Pattern PROJECT_RULE_NAME_PATTERN = Pattern.compile("^\\w+$");
+    private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("^\\w+$");
+    private static final String EXECUTION_PARAMETER = "execution_parameter";
 
     @Autowired
     @Qualifier("ruleExecutionThreadPool")
@@ -390,13 +396,26 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     @Override
     public void checkExecutionParameterAndSave(AbstractCommonRequest abstrackAddRequest, String createUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
-        LOGGER.info("Abstract Common Request parameter.", abstrackAddRequest != null ? abstrackAddRequest.toString() : null);
-        String executionParameterName = abstrackAddRequest.getExecutionParametersName();
+        LOGGER.info("Abstract Common Request parameter: {}", null == abstrackAddRequest ? null : abstrackAddRequest.toString());
+        String executionParameterName = (null != abstrackAddRequest ? abstrackAddRequest.getExecutionParametersName() : "");
+        String executionCompleted = (null != abstrackAddRequest ? abstrackAddRequest.getExecutionCompleted() : "");
+        String verificationSuccessful = (null != abstrackAddRequest ? abstrackAddRequest.getVerificationSuccessful() : "");
+        String verificationFailed = (null != abstrackAddRequest ? abstrackAddRequest.getVerificationFailed() : "");
+        LOGGER.info("executionParameterName: {}, executionCompleted: {}, verificationSuccessful: {}, verificationFailed: {}", executionParameterName, executionCompleted, verificationSuccessful, verificationFailed);
+
+        boolean resultFlag = (StringUtils.isNotBlank(executionCompleted) || StringUtils.isNotBlank(verificationSuccessful) || StringUtils.isNotBlank(verificationFailed));
+        if (resultFlag && StringUtils.isEmpty(executionParameterName) && abstrackAddRequest != null) {
+            executionParameterName = abstrackAddRequest.getRuleName() + SpecCharEnum.BOTTOM_BAR.getValue() + EXECUTION_PARAMETER;
+            abstrackAddRequest.setExecutionParametersName(executionParameterName);
+        }
+
         if (StringUtils.isNotEmpty(executionParameterName)) {
-            ExecutionParameters executionParametersInDb = executionParametersDao.findByNameAndProjectId(executionParameterName, abstrackAddRequest.getProjectId());
+            ExecutionParameters executionParametersInDb = executionParametersDao.findByNameAndProjectId(executionParameterName, null == abstrackAddRequest ? null : abstrackAddRequest.getProjectId());
+            LOGGER.info("ExecutionParametersInDb: {}", executionParametersInDb == null ? null : executionParametersInDb.toString());
             if (executionParametersInDb == null) {
                 AddExecutionParametersRequest addExecutionParametersRequest = new AddExecutionParametersRequest(abstrackAddRequest);
                 addExecutionParametersRequest.setName(executionParameterName);
+                LOGGER.info("AddExecutionParametersRequest: {}", addExecutionParametersRequest.toString());
                 executionParametersService.addExecutionParametersForOuter(addExecutionParametersRequest, createUser);
             } else {
                 ModifyExecutionParametersRequest modifyExecutionParametersRequest = new ModifyExecutionParametersRequest();
@@ -404,7 +423,8 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 AddExecutionParametersRequest addExecutionParametersRequest = new AddExecutionParametersRequest(abstrackAddRequest);
                 BeanUtils.copyProperties(addExecutionParametersRequest, modifyExecutionParametersRequest);
                 modifyExecutionParametersRequest.setName(executionParameterName);
-               executionParametersService.modifyExecutionParametersForOuter(modifyExecutionParametersRequest, createUser);
+                LOGGER.info("ModifyExecutionParametersRequest: {}", modifyExecutionParametersRequest.toString());
+                executionParametersService.modifyExecutionParametersForOuter(modifyExecutionParametersRequest, createUser);
             }
         }
 
@@ -412,7 +432,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     @Override
     public GeneralResponse createOrModifyAndSubmitRule(CreateAndSubmitRequest request) {
-        LOGGER.info("bdp client request parameter.", request != null ? request.toString() : null);
+        LOGGER.info("bdp client request parameter: {}", request != null ? request.toString() : null);
         Boolean exceedTaskSize = taskService.getExecutingTaskNumber(-24) >= thresholdValue;
         if (exceedTaskSize) {
             return new GeneralResponse<>("5001", "Number of task exceeded limit", null);
@@ -424,14 +444,9 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             LOGGER.info("Begin to create new rule and execute in first time.");
             AddDirector addDirector = SpringContextHolder.getBean(AddDirector.class);
             addDirector.setUserName(request.getCreateUser());
+            addDirector.setProxyUser(request.getExecutionUser());
             Map<String, Object> map = Maps.newHashMapWithExpectedSize(1);
             map.put("addDirector", addDirector);
-
-            boolean discard = false;
-            if (specialProjectRuleConfig.getProjectNames().contains(request.getProjectName()) && specialProjectRuleConfig.getRuleNames().contains(request.getRuleName())) {
-                request.setRuleName(UuidGenerator.generate());
-                discard = true;
-            }
 
             String templateFunction = judgeTemplateFunction(request);
             CreateAndSubmitResponse response = new CreateAndSubmitResponse();
@@ -439,7 +454,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             try {
                 if (null == ruleResponse) {
                     AbstractCommonRequest abstractAddRequest = (AbstractCommonRequest) JexlUtil.executeExpression("addDirector." + templateFunction + ".returnRequest()", map);
-                    LOGGER.info("Auto create rule or metric for bdp-client request: " + abstractAddRequest.toString());
+                    LOGGER.info("Auto create rule or metric for bdp-client request: {}" + abstractAddRequest.toString());
                     ruleResponse = addOrModifyRule(abstractAddRequest, request, templateFunction, addDirector);
                     response.setRuleResponse(ruleResponse);
 
@@ -467,7 +482,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             }
 
             if (templateFunction.endsWith(JUST_SAVE)) {
-                return new GeneralResponse<>("200", "Success to create rule", response);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to create rule", response);
             }
 
             if (templateFunction.endsWith(ASYNC)) {
@@ -476,19 +491,15 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
             ApplicationProjectResponse applicationProjectResponse = ruleListExecution(request, ruleResponse, ruleContext, isAsyncRequest);
             response.setApplicationProjectResponse(applicationProjectResponse);
-
-            if (discard) {
-                ruleDao.deleteById(ruleResponse.getRuleId());
-            }
-            return new GeneralResponse<>("200", "Success to create and submit", response);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to create and submit", response);
         } catch (UnExpectedRequestException e) {
             LOGGER.error("Failed to create and submit, caused by: \n");
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("400", "Failed to create and submit, caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Failed to create and submit, caused by: " + e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error("Failed to create and submit, caused by: \n");
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", "Failed to create and submit, caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to create and submit, caused by: " + e.getMessage(), null);
         }
     }
 
@@ -765,7 +776,13 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 Rule rule = ruleDao.findByProjectAndRuleName(project, ruleName);
                 if (rule != null) {
                     addDirector.setRule(rule);
-                    if (StringUtils.isNotEmpty(rule.getBashContent()) && rule.getBashContent().equals(templateFunction) && Boolean.TRUE.equals(rule.getEnable())) {
+                    String savedRuleDetail = rule.getDetail() == null ? "" : rule.getDetail();
+                    String savedRuleCnName = rule.getCnName() == null ? "" : rule.getCnName();
+                    String requestRuleDetail = request.getRuleDetail() == null ? "" : request.getRuleDetail();
+                    String requestRuleCnName = request.getRuleCnName() == null ? "" : request.getRuleCnName();
+
+                    boolean propertiesNotModified = savedRuleDetail.equals(requestRuleDetail) && savedRuleCnName.equals(requestRuleCnName);
+                    if (propertiesNotModified && StringUtils.isNotEmpty(rule.getBashContent()) && rule.getBashContent().equals(templateFunction) && Boolean.TRUE.equals(rule.getEnable())) {
                         return new RuleResponse(rule);
                     }
                 }
@@ -793,14 +810,12 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private String judgeTemplateFunction(CreateAndSubmitRequest request) throws UnExpectedRequestException {
         CreateAndSubmitRequest.checkRequest(request);
         // Check char, number, underscore
-        Matcher matcher = PROJECT_RULE_NAME_PATTERN.matcher(request.getProjectName());
+        Matcher matcher = PROJECT_NAME_PATTERN.matcher(request.getProjectName());
         boolean find = matcher.find();
         if (!find || request.getProjectName().length() > PROJECT_NAME_LENGTH) {
             throw new UnExpectedRequestException("Project name is illegal");
         } else {
-            matcher = PROJECT_RULE_NAME_PATTERN.matcher(request.getRuleName());
-            find = matcher.find();
-            if (!find || request.getRuleName().length() > RULE_NAME_LENGTH) {
+            if (request.getRuleName().length() > RULE_NAME_LENGTH) {
                 throw new UnExpectedRequestException("Rule name is illegal.");
             }
         }
@@ -827,13 +842,15 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 || templateFunction.contains("expectColumnNotNullNotEmpty()")
                 || templateFunction.contains("expectTableConsistent()")
                 || templateFunction.contains("expectSpecifiedColumnConsistent()")
+                || templateFunction.contains("expectCustomColumnConsistent()")
                 || templateFunction.contains("expectJoinTableSqlPass()")
                 || templateFunction.contains("expectFileAmountCount()")
                 || templateFunction.contains("expectFileSizePass()")
                 || templateFunction.contains("expectSqlPass()")
                 || templateFunction.contains("expectLinesNotRepeat()")
                 || templateFunction.contains("addRuleMetric()")
-                || templateFunction.contains("addRuleMetricWithCheck()");
+                || templateFunction.contains("addRuleMetricWithCheck()")
+                || templateFunction.contains("expectTableStructureConsistent()");
 
         if (emptyParams) {
             List<PropsRequest> propsRequestList = request.getPropsRequests();

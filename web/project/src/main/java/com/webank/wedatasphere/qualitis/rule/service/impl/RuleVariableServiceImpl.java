@@ -21,7 +21,11 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
 import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleVariableRepository;
+
+import java.util.Collections;
 import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +48,14 @@ public class RuleVariableServiceImpl implements RuleVariableService {
     @Override
     public void deleteByRule(Rule rule) {
         ruleVariableRepository.deleteByRuleId(rule.getId());
+    }
+
+    @Override
+    public List<RuleVariable> queryByRules(List<Rule> rules) {
+        if(CollectionUtils.isEmpty(rules)) {
+            return Collections.emptyList();
+        }
+        return ruleVariableRepository.findByRuleIn(rules);
     }
 
 }

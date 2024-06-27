@@ -16,8 +16,11 @@ import java.util.Set;
  * @date 2021/11/4 14:45
  */
 public class TemplatePageRequest extends PageRequest {
-    private static final String DEFAULT_DATASOURCE_TYPE = TemplateDataSourceTypeEnum.HIVE.getMessage();
 
+    @JsonProperty("template_id")
+    private Long templateId;
+    @JsonProperty("description")
+    private String description;
     @JsonProperty("user_name")
     private String userName;
     @JsonProperty("cn_name")
@@ -44,8 +47,65 @@ public class TemplatePageRequest extends PageRequest {
     @JsonProperty("action_range")
     private Set<String> actionRange;
 
+    @JsonProperty("create_start_time")
+    private String createStartTime;
+    @JsonProperty("create_end_time")
+    private String createEndTime;
+    @JsonProperty("modify_start_time")
+    private String modifyStartTime;
+    @JsonProperty("modify_end_time")
+    private String modifyEndTime;
+
     public TemplatePageRequest() {
-        dataSourceType = DEFAULT_DATASOURCE_TYPE;
+        // Do nothing
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Long getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(Long templateId) {
+        this.templateId = templateId;
+    }
+
+    public String getCreateStartTime() {
+        return createStartTime;
+    }
+
+    public void setCreateStartTime(String createStartTime) {
+        this.createStartTime = createStartTime;
+    }
+
+    public String getCreateEndTime() {
+        return createEndTime;
+    }
+
+    public void setCreateEndTime(String createEndTime) {
+        this.createEndTime = createEndTime;
+    }
+
+    public String getModifyStartTime() {
+        return modifyStartTime;
+    }
+
+    public void setModifyStartTime(String modifyStartTime) {
+        this.modifyStartTime = modifyStartTime;
+    }
+
+    public String getModifyEndTime() {
+        return modifyEndTime;
+    }
+
+    public void setModifyEndTime(String modifyEndTime) {
+        this.modifyEndTime = modifyEndTime;
     }
 
     public String getCnName() {
@@ -169,7 +229,23 @@ public class TemplatePageRequest extends PageRequest {
                 this.modifyName = String.valueOf(user.getId());
             }
         }
+    }
 
-
+    @Override
+    public String toString() {
+        return "TemplatePageRequest{" +
+                "userName='" + userName + '\'' +
+                ", cnName='" + cnName + '\'' +
+                ", enName='" + enName + '\'' +
+                ", dataSourceType='" + dataSourceType + '\'' +
+                ", verificationLevel=" + verificationLevel +
+                ", verificationType=" + verificationType +
+                ", createName='" + createName + '\'' +
+                ", modifyName='" + modifyName + '\'' +
+                ", devDepartmentId=" + devDepartmentId +
+                ", opsDepartmentId=" + opsDepartmentId +
+                ", templateType=" + templateType +
+                ", actionRange=" + actionRange +
+                "} " + super.toString();
     }
 }

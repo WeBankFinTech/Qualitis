@@ -18,23 +18,22 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.entity.ImsmetricIdentify;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.request.BatchDeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.request.DataSourceExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.GeneralExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.GetTaskLogRequest;
-import com.webank.wedatasphere.qualitis.request.GroupExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
+import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+import org.apache.commons.httpclient.util.DateParseException;
+import org.json.JSONException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +58,16 @@ public interface OuterExecutionService {
      */
     GeneralResponse generalExecution(GeneralExecutionRequest request, String loginUser)
             throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * 新建规则接口
+     *
+     * @param request
+     * @param loginUser
+     * @return
+     * @throws Exception
+     */
+    GeneralResponse<RuleResponse> addRule(AddRuleRequest request, String loginUser) throws Exception;
 
     /**
      * Datasource execution.
@@ -120,19 +129,21 @@ public interface OuterExecutionService {
      * @param execParams
      * @param execParamStr
      * @param runDate
+     * @param runToday
      * @param splitBy
      * @param invokeCode
      * @param pendingApplication
      * @param subSystemId
      * @param partitionFullSize
      * @param engineReuse
+     * @param envNames
      * @return
      * @throws UnExpectedRequestException
      */
     GeneralResponse<ApplicationTaskSimpleResponse> submitRulesAndUpdateRule(String jobId, List<Long> ruleIds, StringBuilder partition, String createUser, String executionUser
             , String nodeName, Long projectId, Long ruleGroupId, String fpsFileId, String fpsHashValue, String startupParam, String clusterName
-            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder splitBy, Integer invokeCode
-            , Application pendingApplication, Long subSystemId, String partitionFullSize, Boolean engineReuse);
+            , String setFlag, Map<String, String> execParams, String execParamStr, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, Integer invokeCode
+            , Application pendingApplication, String subSystemId, String partitionFullSize, Boolean engineReuse, String envNames);
 
     /**
      * Just submit rules
@@ -270,17 +281,19 @@ public interface OuterExecutionService {
      * @param newApplication
      * @param date
      * @param runDate
+     * @param runToday
      * @param splitBy
      * @param partitionFullSize
      * @param engineReuse
      * @param createUser
+     * @param envNames
      * @return
      * @throws Exception
      */
     ApplicationTaskSimpleResponse commonExecution(List<Rule> rules, StringBuilder partition, String executionUser, String nodeName, String fpsFileId
             , String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams, Application newApplication,
                                                   Date date
-            , StringBuilder runDate, StringBuilder splitBy, String partitionFullSize, Boolean engineReuse, String createUser) throws Exception;
+            , StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String partitionFullSize, Boolean engineReuse, String createUser, String envNames) throws Exception;
 
     /**
      * Save gateway job info
@@ -329,4 +342,55 @@ public interface OuterExecutionService {
      * @throws PermissionDeniedRequestException
      */
     void reSubmitCheckAlertGroup(String executeUser, Long ruleGroupId, Long projectId, String executionParam) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * execution Script
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws JSONException
+     */
+    GeneralResponse executionScript(OmnisScriptRequest request) throws UnExpectedRequestException, JSONException;
+
+    /**
+     * query Identify
+     * @param request
+     * @return
+     */
+    GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request);
+
+    /**
+     * query Ims metric Data
+     * @param request
+     * @return
+     * @throws DateParseException
+     */
+    GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException;
+
+
+    /**
+     * batch Enable Or Disable Rule
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+
+    /**
+     * get Application Result
+     * @param applicationIdList
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse getApplicationResult(List< String> applicationIdList)throws UnExpectedRequestException;
+
+    /**
+     * get Fields Analyse Result
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
 }

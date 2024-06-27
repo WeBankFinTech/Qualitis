@@ -16,18 +16,23 @@
 
 package com.webank.wedatasphere.qualitis.dao.impl;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskRepository;
 import com.webank.wedatasphere.qualitis.entity.Application;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.worker.repository.WorkerTaskRepository;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -58,15 +63,41 @@ public class TaskDaoImpl implements TaskDao {
 
     @Override
     public List<Task> findByApplication(Application application) {
-        return repository.findByApplication(application);
+        return repository.findByApplication(application.getId());
     }
 
     @Override
     public List<Task> findByApplicationPageable(Application application, boolean isNonPassStatus, int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "id");
-        Pageable pageable = PageRequest.of(page, size, sort);
+        String ruleIdsStr = application.getRuleIds();
+        if (StringUtils.isNotBlank(ruleIdsStr)) {
+//            Get a list of ruleId from Application
+            List<Long> ruleIds = Arrays.stream(ruleIdsStr
+                    .replace(SpecCharEnum.LEFT_BRACKET.getValue(), "")
+                    .replace(SpecCharEnum.RIGHT_BRACKET.getValue(), "")
+                    .split(SpecCharEnum.COMMA.getValue())).map(String::trim).map(Long::valueOf).collect(Collectors.toList());
+//            Query a list of taskId by ruleIds
+            List<Long> taskIds = repository.findTaskIdsByApplicationAndRule(isNonPassStatus, application.getId(), ruleIds);
+//            Paging taskList in VM
+            List<Task> taskList = repository.findAllById(getPage(taskIds, page, size));
+//            Ordering taskList consistence with taskIds
+            return taskList.stream()
+                    .sorted(Comparator.comparing(task -> {
+                        long taskId = task.getId();
+                        return taskIds.indexOf(taskId);
+                    }))
+                    .collect(Collectors.toList());
+        } else {
+            Sort sort = Sort.by(Sort.Direction.DESC, "id");
+            Pageable pageable = PageRequest.of(page, size, sort);
+            return repository.findByApplicationPageable(application.getId(), isNonPassStatus, pageable);
+        }
+    }
 
-        return repository.findByApplicationPageable(application.getId(), isNonPassStatus, pageable);
+    private List<Long> getPage(List<Long> list, int pageIndex, int pageSize) {
+        int startIndex = pageIndex * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, list.size());
+
+        return list.subList(startIndex, endIndex);
     }
 
     @Override

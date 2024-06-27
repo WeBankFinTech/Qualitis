@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
@@ -49,7 +50,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Date;
@@ -127,7 +127,7 @@ public class RoleServiceImpl implements RoleService {
         RoleResponse roleResponse = new RoleResponse(savedRole);
 
         LOGGER.info("Succeed to add role, role: {}, current_user: {}", roleResponse, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&CREATE_ROLE_SUCCESSFULLY}", roleResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&CREATE_ROLE_SUCCESSFULLY}", roleResponse);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class RoleServiceImpl implements RoleService {
         roleDao.deleteRole(roleInDb);
 
         LOGGER.info("Succeed to delete role, role_id: {}, role_name: {}, current_user: {}", roleInDb.getId(), roleInDb.getName(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&DELETE_ROLE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_ROLE_SUCCESSFULLY}", null);
     }
 
     private void checkTemplate(Role roleInDb) throws UnExpectedRequestException {
@@ -202,7 +202,7 @@ public class RoleServiceImpl implements RoleService {
 
         Role savedRole = roleDao.saveRole(roleInDb);
         LOGGER.info("Succeed to modify role, role_id: {}, role_name: {}, current_user: {}", savedRole.getId(), savedRole.getName(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&MODIFY_ROLE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_ROLE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -224,7 +224,7 @@ public class RoleServiceImpl implements RoleService {
         responses.setTotal(total);
 
         LOGGER.info("Succeed to find all roles, page: {}, size: {}, role: {}, current_user: {}", page, size, responses, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&FIND_ALL_ROLES_SUCCESSFULLY}", responses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_ALL_ROLES_SUCCESSFULLY}", responses);
     }
 
     @Override
@@ -244,10 +244,8 @@ public class RoleServiceImpl implements RoleService {
         response.setRoles(roleNames);
         response.setUsername(username);
 
-        HttpSession session = httpServletRequest.getSession();
-        response.setLoginRandom((Integer) session.getAttribute("loginRandom"));
         LOGGER.info("Succeed to get role of user, {}  role: {}, current_user: {}", username, roleNames.toString(), username);
-        return new GeneralResponse<>("200", "{&GET_ROLE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ROLE_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -262,7 +260,7 @@ public class RoleServiceImpl implements RoleService {
             }
         }
         LOGGER.info("Succeed to get proxy user of user. user: {}, proxy user: {}", userInDb.getUsername(), proxyUserNames);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_PROXY_USER_OF_USER}", proxyUserNames);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_PROXY_USER_OF_USER}", proxyUserNames);
     }
 
     @Override
