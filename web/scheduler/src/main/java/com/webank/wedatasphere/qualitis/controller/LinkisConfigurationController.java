@@ -7,27 +7,30 @@ package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.client.LinkisConfiguration;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
-import com.webank.wedatasphere.qualitis.dao.AuthListDao;
-import com.webank.wedatasphere.qualitis.entity.AuthList;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.SaveFullTreeRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Path("/api/v1/projector/configuration")
 public class LinkisConfigurationController {
@@ -37,21 +40,17 @@ public class LinkisConfigurationController {
     private LinkisConfig linkisConfig;
 
     private static MessageDigest hash;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LinkisConfigurationController.class);
 
     static {
         try {
             hash = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            LOGGER.error("No Such Algorithm .");
         }
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LinkisConfigurationController.class);
-
     private HttpServletRequest httpServletRequest;
-
-    @Autowired
-    private AuthListDao authListDao;
 
     public LinkisConfigurationController(@Context HttpServletRequest httpServletRequest) {
         this.httpServletRequest = httpServletRequest;
@@ -65,17 +64,14 @@ public class LinkisConfigurationController {
             userName =  HttpUtils.getUserName(httpServletRequest);
         }
         try {
-            Map<String, Map<String, Object>> response = linkisConfiguration.getFullTree(clusterName, userName);
+            Map<String, Map<String, Object>> response = linkisConfiguration.getTree(clusterName, userName);
 
             if (hash != null) {
                 Map<String, Object> map = new HashMap<>(2);
 
                 String nonce = "16895";
                 String appId = "linkis_id";
-                AuthList authList = authListDao.findByAppId(appId);
-                if (null == authList) {
-                    throw new UnExpectedRequestException("No Authentication!");
-                }
+                String appToken = "***REMOVED***";
 
                 String timestamp = String.valueOf(System.currentTimeMillis());
 
@@ -91,7 +87,7 @@ public class LinkisConfigurationController {
 
                     hash.reset();
 
-                    hash.update(inner.concat(authList.getAppToken()).getBytes("UTF-8"));
+                    hash.update(inner.concat(appToken).getBytes("UTF-8"));
                     resultOuter.append(new BigInteger(1, hash.digest()).toString(16));
                     String outer = StringUtils.leftPad(resultOuter.toString(), 32, '0');
 
@@ -105,12 +101,12 @@ public class LinkisConfigurationController {
                 response.put("OuterExecutionCheckParam", map);
             }
 
-            return new GeneralResponse<>("200", "{&SUCCESS_TO_GET_STARTUP_PATAM}", response);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_GET_STARTUP_PATAM}", response);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to , caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_STARTUP_PATAM}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_STARTUP_PATAM}", null);
         }
     }
 
@@ -123,14 +119,13 @@ public class LinkisConfigurationController {
             userName = HttpUtils.getUserName(httpServletRequest);
         }
         try {
-            Map<String, Object> response =  linkisConfiguration.saveFullTree(request.getClusterName(), linkisConfig.getAppName()
-                , request.getFullTree(), userName);
-            return new GeneralResponse<>("200", "{&SUCCESS_TO_MODIFY_STARTUP_PATAM}", response);
+            linkisConfiguration.saveTree(request.getClusterName(), request.getFullTree(), userName);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_MODIFY_STARTUP_PATAM}", null);
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
-            LOGGER.error("Failed to , caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_STARTUP_PATAM}", null);
+            LOGGER.error("{&FAILED_TO_MODIFY_STARTUP_PATAM}, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_STARTUP_PATAM}", null);
         }
     }
 }

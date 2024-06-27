@@ -16,7 +16,9 @@ public enum BuiltInNameEnum {
     FPS_ID("fps_id"),
     FPS_HASH("fps_hash"),
     RUN_DATE("run_date"),
-    PARTITION("partition");
+    RUN_TODAY("run_today"),
+    PARTITION("partition"),
+    ENV_NAME("env_names");
 
     private String value;
 

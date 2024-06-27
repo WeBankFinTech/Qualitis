@@ -93,4 +93,16 @@ public class GetUserColumnByCsRequest {
     public void setLoginUser(String loginUser) {
         this.loginUser = loginUser;
     }
+
+    @Override
+    public String toString() {
+        return "GetUserColumnByCsRequest{" +
+                "startIndex=" + startIndex +
+                ", pageSize=" + pageSize +
+                ", csId='" + csId + '\'' +
+                ", contextKey='" + contextKey + '\'' +
+                ", clusterName='" + clusterName + '\'' +
+                ", loginUser='" + loginUser + '\'' +
+                '}';
+    }
 }

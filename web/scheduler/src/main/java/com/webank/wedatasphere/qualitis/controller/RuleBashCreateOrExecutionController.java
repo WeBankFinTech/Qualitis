@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -76,8 +77,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -133,8 +132,6 @@ public class RuleBashCreateOrExecutionController {
             new RuleBashUpdaterThreadFactory(),
             new ThreadPoolExecutor.DiscardPolicy());
 
-    private static final Pattern PROJECT_RULE_NAME_PATTERN = Pattern.compile("^\\w+$");
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBashCreateOrExecutionController.class);
 
     private HttpServletRequest httpServletRequest;
@@ -148,6 +145,7 @@ public class RuleBashCreateOrExecutionController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<RuleBashResponse> add(RuleBashRequest request) throws UnExpectedRequestException {
+        LOGGER.info("add bash command request detail: {}", request.toString());
         try {
             RuleGroup ruleGroupInDb = null;
             if (request.getRuleGroupId() != null) {
@@ -187,13 +185,13 @@ public class RuleBashCreateOrExecutionController {
                 ruleBashResponse.setBashContent(successBashContent + "\n" + errorLines.toString());
                 return new GeneralResponse<>("5375", "{&ADD_RULE_PARTIAL_FAILED}", ruleBashResponse);
             }
-            return new GeneralResponse<>("200", "{&ADD_RULE_SUCCESSFULLY}", ruleBashResponse);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_RULE_SUCCESSFULLY}", ruleBashResponse);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add rule. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_RULE}", null);
         }
     }
 
@@ -312,14 +310,6 @@ public class RuleBashCreateOrExecutionController {
                 Map<String, StringBuffer> opts = new HashMap<>(5);
 
                 getOptValues(opts, line);
-                String ruleName = opts.get(RULE_NAME).toString();
-                Matcher matcher = PROJECT_RULE_NAME_PATTERN.matcher(ruleName);
-
-                boolean find = matcher.find();
-                if (!find) {
-                    iterator.remove();
-                    throw new UnExpectedRequestException("Rule name is illegal.");
-                }
 
                 opts.put("ruleNo", new StringBuffer(String.valueOf(ruleNo++)));
                 lineWithOpt.put(line, opts);
@@ -340,6 +330,7 @@ public class RuleBashCreateOrExecutionController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<RuleBashResponse> submit(RuleBashRequest request) throws UnExpectedRequestException {
+        LOGGER.info("submit bash command request detail: {}", request.toString());
         try {
             RuleGroup ruleGroupInDb = null;
             if (request.getRuleGroupId() != null) {
@@ -363,16 +354,16 @@ public class RuleBashCreateOrExecutionController {
                         , loginUser, request.getNodeName());
                 GeneralResponse<ApplicationTaskSimpleResponse> generalResponse = (GeneralResponse<ApplicationTaskSimpleResponse>) outerExecutionService.groupExecution(groupExecutionRequest, InvokeTypeEnum.FLOW_API_INVOKE.getCode(), loginUser);
                 LOGGER.info(generalResponse != null ? generalResponse.toString() : "General application task simple response is empty.");
-                return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_SUBMIT_TASK}", ruleBashResponse);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_ASYNC_SUBMIT_TASK}", ruleBashResponse);
             }
 
-            return new GeneralResponse<>("500", "{&FAILED_TO_SUBMIT_TASK}", ruleBashResponse);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_SUBMIT_TASK}", ruleBashResponse);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add rule. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_SUBMIT_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_SUBMIT_TASK}", null);
         }
     }
 
@@ -381,6 +372,7 @@ public class RuleBashCreateOrExecutionController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<RuleBashResponse> get(RuleBashRequest request) throws UnExpectedRequestException {
+        LOGGER.info("get bash command request detail: {}", request.toString());
         try {
             String loginUser = HttpUtils.getUserName(httpServletRequest);
 
@@ -406,16 +398,16 @@ public class RuleBashCreateOrExecutionController {
                     }
                 });
                 RuleBashResponse ruleBashResponse = new RuleBashResponse(rules);
-                return new GeneralResponse<>("200", "{&GET_RULE_DETAIL_SUCCESSFULLY}", ruleBashResponse);
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_DETAIL_SUCCESSFULLY}", ruleBashResponse);
             }
 
-            return new GeneralResponse<>("200", "{&NO_RULE_CAN_BE_EXECUTED}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&NO_RULE_CAN_BE_EXECUTED}", null);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add rule. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_SUBMIT_TASK}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_SUBMIT_TASK}", null);
         }
     }
 
@@ -485,11 +477,7 @@ public class RuleBashCreateOrExecutionController {
                 getOptValues(opts, line);
 
                 String ruleName = opts.get(RULE_NAME).toString();
-                Matcher matcher = PROJECT_RULE_NAME_PATTERN.matcher(ruleName);
-                boolean find = matcher.find();
-                if (!find) {
-                    throw new UnExpectedRequestException("Rule name is illegal.");
-                }
+
                 addDirector.setRuleName(ruleName);
                 Rule rule = ruleDao.findByProjectAndRuleName(project, ruleName);
                 if (rule != null) {

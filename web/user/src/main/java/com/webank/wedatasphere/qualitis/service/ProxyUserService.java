@@ -48,7 +48,7 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteProxyUser(DeleteProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify proxy user name
@@ -56,7 +56,7 @@ public interface ProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyProxyUser(ModifyProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all proxy users
@@ -95,4 +95,11 @@ public interface ProxyUserService {
      * @return
      */
     List<ProxyUserDepartment> findBySubDepartmentCode(Long subDepartmentCode);
+
+    /**
+     * add proxy user if not exists
+     * @param proxyUser
+     * @return
+     */
+    void addProxyUserIfNotExists(String proxyUser);
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.AddUserProxyUserResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -57,7 +58,7 @@ public class UserProxyUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to create user_proxy_user, username: {}, proxy_user_name: {}, caused by: {}", request.getUsername(), request.getProxyUserName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CREATE_USER_PROXY_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CREATE_USER_PROXY_USER}", null);
         }
     }
 
@@ -71,7 +72,7 @@ public class UserProxyUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete user_proxy_user, user_proxy_user_id: {}, caused by: {}", request.getUserProxyUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USER_PROXY_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_USER_PROXY_USER}", null);
         }
     }
 
@@ -86,7 +87,7 @@ public class UserProxyUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all user_proxy_user by proxy_user name, proxy_user_name: {}, caused by: {}", proxyUserName, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_USER_PROXY_USER_BY_PROXY_USER_NAME}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_USER_PROXY_USER_BY_PROXY_USER_NAME}", null);
         }
     }
 

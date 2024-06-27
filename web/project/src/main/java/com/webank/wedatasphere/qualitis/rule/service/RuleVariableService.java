@@ -41,4 +41,11 @@ public interface RuleVariableService {
      */
     void deleteByRule(Rule rule);
 
+    /**
+     * queryByRules
+     * @param rules
+     * @return
+     */
+    List<RuleVariable> queryByRules(List<Rule> rules);
+
 }

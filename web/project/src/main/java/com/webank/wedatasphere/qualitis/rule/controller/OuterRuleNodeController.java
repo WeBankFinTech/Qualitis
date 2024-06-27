@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
@@ -66,7 +67,7 @@ public class OuterRuleNodeController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete rule, rule id: {}, caused by: {}", request.getRuleGroupId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE}", null);
         }
     }
 
@@ -81,7 +82,7 @@ public class OuterRuleNodeController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify rule, rule id: {}, caused by: {}", request.getRuleGroupId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_RULE}", null);
         }
     }
 
@@ -97,7 +98,7 @@ public class OuterRuleNodeController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get rule detail. ruleGroupId: {}, caused by: {}", ruleGroupId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_EXPORT_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_EXPORT_RULE}", null);
         }
     }
 
@@ -115,7 +116,7 @@ public class OuterRuleNodeController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to import rule. Caused by: {}", e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_IMPORT_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_IMPORT_RULE}", null);
         }
     }
 
@@ -131,7 +132,7 @@ public class OuterRuleNodeController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to copy rule group. Project ID: {}, group ID: {}, caused by: {}", request.getTargetProjectId(), request.getTargetRuleGroupId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_COPY_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_COPY_RULE_DETAIL}", null);
         }
     }
 
@@ -147,7 +148,7 @@ public class OuterRuleNodeController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find default rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_DEFAULT_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_DEFAULT_RULE_TEMPLATE}", null);
         }
     }
 }

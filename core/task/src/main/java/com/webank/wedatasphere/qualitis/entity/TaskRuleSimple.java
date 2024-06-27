@@ -20,12 +20,28 @@ import com.webank.wedatasphere.qualitis.bean.TaskRule;
 import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
+import com.webank.wedatasphere.qualitis.parser.LocaleParser;
+import com.webank.wedatasphere.qualitis.rule.constant.FileOutputNameEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 
-import javax.persistence.*;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleGroupTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +68,8 @@ public class TaskRuleSimple {
     private String cnName;
     @Column(name = "template_name", length = 200)
     private String templateName;
+    @Column(name = "template_en_name", length = 300)
+    private String templateEnName;
     @Column(name = "rule_detail", length = 340)
     private String ruleDetail;
     @Column(name = "rule_id")
@@ -100,6 +118,7 @@ public class TaskRuleSimple {
         this.ruleId = rule.getRuleId();
         this.ruleGroupName = rule.getRuleGroupName();
         this.templateName = rule.getTemplateName();
+        this.templateEnName = rule.getTemplateEnName();
         this.task = task;
         this.midTableName = rule.getMidTableName();
         this.projectId = rule.getProjectId();
@@ -113,8 +132,12 @@ public class TaskRuleSimple {
         this.ruleType = rule.getRuleType();
         this.alertLevel = rule.getAlertLevel();
         this.alertReceiver = rule.getAlertReceiver();
+        LocaleParser localeParser = SpringContextHolder.getBean(LocaleParser.class);
         for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
-            this.taskRuleAlarmConfigList.add(new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this));
+            TaskRuleAlarmConfig taskRuleAlarmConfig = new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this);
+            String outputCnName = localeParser.replacePlaceHolderByLocale(taskRuleAlarmConfigBean.getOutputName(), "zh_CN");
+            taskRuleAlarmConfig.setOutputName(outputCnName);
+            this.taskRuleAlarmConfigList.add(taskRuleAlarmConfig);
         }
         if (ruleReplaceInfo.get(rule.getRuleId()) != null && ruleReplaceInfo.get(rule.getRuleId()).keySet().contains(QUALITIS_DELETE_FAIL_CHECK_RESULT)) {
             this.deleteFailCheckResult = (Boolean) ruleReplaceInfo.get(rule.getRuleId()).get(QUALITIS_DELETE_FAIL_CHECK_RESULT);
@@ -128,6 +151,7 @@ public class TaskRuleSimple {
         this.cnName = rule.getCnName();
         this.ruleDetail = rule.getDetail();
         this.templateName = rule.getTemplate().getName();
+        this.templateEnName = rule.getTemplate().getEnName();
         if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_ALERT_LEVEL)) {
             this.alertReceiver = (String) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_RECEIVERS);
             this.alertLevel = (Integer) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_LEVEL);
@@ -154,6 +178,7 @@ public class TaskRuleSimple {
         this.cnName = rule.getCnName();
         this.ruleDetail = rule.getDetail();
         this.templateName = rule.getTemplate().getName();
+        this.templateEnName = rule.getTemplate().getEnName();
         if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_ALERT_LEVEL)) {
             this.alertReceiver = (String) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_RECEIVERS);
             this.alertLevel = (Integer) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_LEVEL);
@@ -172,10 +197,11 @@ public class TaskRuleSimple {
         this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
         this.submitTime = task.getApplication().getSubmitTime();
         this.taskRuleAlarmConfigList = new ArrayList<>();
+        LocaleParser localeParser = SpringContextHolder.getBean(LocaleParser.class);
         for (AlarmConfig alarmConfig : rule.getAlarmConfigs()) {
             TaskRuleAlarmConfig taskRuleAlarmConfig = new TaskRuleAlarmConfig();
-            taskRuleAlarmConfig.setOutputName(alarmConfig.getTemplateOutputMeta().getOutputName());
-
+            String outputCnName = localeParser.replacePlaceHolderByLocale(alarmConfig.getTemplateOutputMeta().getOutputName(), "zh_CN");
+            taskRuleAlarmConfig.setOutputName(outputCnName);
             if (alarmConfig.getFileOutputUnit() != null) {
                 taskRuleAlarmConfig.setOutputUnit(FileOutputUnitEnum.fileOutputUnit(alarmConfig.getFileOutputUnit()));
             }
@@ -204,9 +230,11 @@ public class TaskRuleSimple {
 
             this.taskRuleAlarmConfigList.add(taskRuleAlarmConfig);
         }
+
         if (fileRule) {
             this.ruleType = rule.getRuleType();
         }
+        this.ruleType = rule.getRuleType();
     }
 
     public TaskRuleSimple(CheckAlert currentCheckAlert, Task savedTask) {
@@ -264,6 +292,14 @@ public class TaskRuleSimple {
 
     public void setTemplateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    public String getTemplateEnName() {
+        return templateEnName;
+    }
+
+    public void setTemplateEnName(String templateEnName) {
+        this.templateEnName = templateEnName;
     }
 
     public Long getRuleId() {

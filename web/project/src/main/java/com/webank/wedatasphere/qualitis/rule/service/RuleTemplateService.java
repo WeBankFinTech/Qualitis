@@ -27,6 +27,7 @@ import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplatePullDownRequest;
 import com.webank.wedatasphere.qualitis.rule.response.NamingConventionsResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplatePlaceholderResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
@@ -226,10 +227,11 @@ public interface RuleTemplateService {
     /**
      * get Option List
      *
+     * @param request
      * @return
      * @throws UnExpectedRequestException
      */
-    List<Map<String, Object>> getAllTemplateInRule();
+    List<Map<String, Object>> getAllTemplateInRule(TemplatePullDownRequest request) throws UnExpectedRequestException;
 
     /**
      * get Template Check Level List

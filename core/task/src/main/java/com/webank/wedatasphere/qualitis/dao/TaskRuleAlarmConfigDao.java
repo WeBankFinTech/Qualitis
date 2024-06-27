@@ -16,9 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.dao;
 
-import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
+
 import java.util.List;
 
 /**
@@ -32,4 +31,10 @@ public interface TaskRuleAlarmConfigDao {
      * @return
      */
     TaskRuleAlarmConfig findById(Long taskAlarmConfigId);
+
+    /**
+     * Aave all.
+     * @param taskRuleAlarmConfigs
+     */
+    void saveAll(List<TaskRuleAlarmConfig> taskRuleAlarmConfigs);
 }

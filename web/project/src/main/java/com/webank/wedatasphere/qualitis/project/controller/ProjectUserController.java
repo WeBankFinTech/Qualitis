@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.project.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
@@ -66,7 +67,7 @@ public class ProjectUserController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to authorize project user, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_PROJECT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_PROJECT_USER}", null);
         }
     }
 
@@ -87,7 +88,7 @@ public class ProjectUserController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify authorize project, project id: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_PROJECT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_PROJECT_USER}", null);
         }
     }
 
@@ -107,7 +108,7 @@ public class ProjectUserController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get authorized user, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PROJECT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PROJECT_USER}", null);
         }
     }
 
@@ -128,7 +129,7 @@ public class ProjectUserController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete project user, project id: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_USER}", null);
         }
     }
 
@@ -147,7 +148,7 @@ public class ProjectUserController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find users, caused by system error: {}", e.getMessage());
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_USERS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_ALL_USERS}", null);
         }
     }
 }

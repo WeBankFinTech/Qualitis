@@ -33,7 +33,7 @@ public class UserAddRequest {
     @JsonProperty("user_config_json")
     private String userConfigJson;
     @JsonProperty("department_sub_id")
-    private long departmentSubId;
+    private String departmentSubCode;
     @JsonProperty("position_zh")
     private String positionZh;
     @JsonProperty("position_en")
@@ -44,12 +44,12 @@ public class UserAddRequest {
         // Default Constructor
     }
 
-    public long getDepartmentSubId() {
-        return departmentSubId;
+    public String getDepartmentSubCode() {
+        return departmentSubCode;
     }
 
-    public void setDepartmentSubId(long departmentSubId) {
-        this.departmentSubId = departmentSubId;
+    public void setDepartmentSubCode(String departmentSubCode) {
+        this.departmentSubCode = departmentSubCode;
     }
 
     public String getDepartmentName() {

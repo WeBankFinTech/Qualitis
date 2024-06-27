@@ -7,6 +7,7 @@ import com.alibaba.excel.support.ExcelTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricBussCodeEnum;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricLevelEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDepartmentUserDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricTypeConfigDao;
@@ -173,7 +174,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     List<DepartmentSubInfoResponse> departmentInfoResponses = dataVisibilityService.saveBatch(savedRuleMetric.getId(), TableDataTypeEnum.RULE_METRIC, request.getVisibilityDepartmentList());
     response.setVisibilityDepartmentList(departmentInfoResponses);
 
-    return new GeneralResponse<>("200", "{&ADD_RULE_METRIC_SUCCESSFULLY}", response);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_RULE_METRIC_SUCCESSFULLY}", response);
   }
 
   private RuleMetric buildRuleMetric(AddRuleMetricRequest request, String createUser) {
@@ -229,7 +230,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     ruleMetricDao.delete(ruleMetricInDb);
     dataVisibilityService.delete(ruleMetricInDb.getId(), TableDataTypeEnum.RULE_METRIC);
 
-    return new GeneralResponse<>("200", "{&DELETE_RULE_METRIC_SUCCESSFULLY}", null);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_METRIC_SUCCESSFULLY}", null);
   }
 
   @Override
@@ -270,7 +271,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     List<DepartmentSubInfoResponse> departmentInfoResponses = dataVisibilityService.saveBatch(ruleMetricInDb.getId(), TableDataTypeEnum.RULE_METRIC, request.getVisibilityDepartmentList());
     response.setVisibilityDepartmentList(departmentInfoResponses);
 
-    return new GeneralResponse<>("200", "{&MODIFY_RULE_METRIC_SUCCESSFULLY}", response);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_METRIC_SUCCESSFULLY}", response);
   }
 
   private void setRuleMetricInDb(ModifyRuleMetricRequest request, String userName, RuleMetric ruleMetricInDb, Integer bussCode) {
@@ -358,7 +359,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     setVisibilityDepartment(ruleMetricResponse, ruleMetricInDb);
     boolean isEditable = subDepartmentPermissionService.isEditable(roleType, loginUser, ruleMetricInDb.getCreateUser(), ruleMetricInDb.getDevDepartmentId(), ruleMetricInDb.getOpsDepartmentId(), devAndOpsInfoWithDeptList);
     ruleMetricResponse.setEditable(isEditable);
-    return new GeneralResponse<>("200", "{&GET_RULE_METRIC_SUCCESSFULLY}", ruleMetricResponse);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_METRIC_SUCCESSFULLY}", ruleMetricResponse);
   }
 
   @Override
@@ -426,7 +427,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     response.setData(ruleMetricResponses);
     response.setTotal(ruleMetricResponses.size());
 
-    return new GeneralResponse<>("200", "{&GET_RULE_METRIC_SUCCESSFULLY}", response);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_METRIC_SUCCESSFULLY}", response);
   }
 
   @Override
@@ -543,7 +544,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     response.setData(ruleMetricResponses);
     response.setTotal(total);
 
-    return new GeneralResponse<>("200", "{&RULE_METRIC_QUERY_SUCCESS}", response);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&RULE_METRIC_QUERY_SUCCESS}", response);
   }
 
   private void setVisibilityDepartment(RuleMetricResponse ruleMetricResponse, RuleMetric ruleMetricInDb) {
@@ -617,7 +618,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
       }
       GeneralResponse<GetAllResponse<EnvResponse>> allEnvs = getAllEnvs(ruleMetricId);
       if (allEnvs.getData().getData() != null) {
-        List<String> envList = allEnvs.getData().getData().stream().map(o -> o.getEnvName()).collect(Collectors.toList());
+        List<String> envList = allEnvs.getData().getData().stream().map(o -> o.getEnvName()).distinct().collect(Collectors.toList());
         dataInfo.setEnvNames(envList);
       }
       dataInfo.setContent(responses);
@@ -663,7 +664,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
         throw new PermissionDeniedRequestException("HAS_NO_PERMISSION_TO_ACCESS", 403);
       }
       LOGGER.info("Succeed to download all rule metrics in type of excel");
-      return new GeneralResponse<>("200", "SUCCESS", null);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "SUCCESS", null);
     }
 
   private void writeExcelToOutput(List<ExcelRuleMetric> excelRuleMetrics, OutputStream outputStream) throws WriteExcelException, IOException {
@@ -699,7 +700,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     String userName = HttpUtils.getUserName(httpServletRequest);
     User user = userDao.findByUsername(userName);
     if (user == null) {
-      return new GeneralResponse<>("400", "{&PLEASE_LOGIN}", null);
+      return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "{&PLEASE_LOGIN}", null);
     }
 
     LOGGER.info(userName + " start to upload rule metrics.");
@@ -724,12 +725,12 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     } finally {
       inputStream.close();
     }
-    return new GeneralResponse<>("200", "{&SUCCESS_TO_UPLOAD_RULE_METRIC}", null);
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_UPLOAD_RULE_METRIC}", null);
   }
 
   @Override
   public GeneralResponse<List<RuleMetricTypeConfig>> types() {
-    return new GeneralResponse<>("200", "", ruleMetricTypeConfigDao.findAllRuleMetricTypeConfig());
+    return new GeneralResponse<>(ResponseStatusConstants.OK, "", ruleMetricTypeConfigDao.findAllRuleMetricTypeConfig());
   }
 
   @Override
@@ -738,7 +739,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     if (ruleMetricListValuesRequest == null || CollectionUtils.isEmpty(ruleMetricListValuesRequest.getRuleMetricIdList())) {
       throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
     }
-
+    LOGGER.info("get results by rule metric list request detail: {}", ruleMetricListValuesRequest.toString());
     List<RuleMetricListValueResponse> responses = new ArrayList<>(ruleMetricListValuesRequest.getRuleMetricIdList().size());
 
     List<Long> ruleMetricIdList = ruleMetricListValuesRequest.getRuleMetricIdList();
@@ -785,7 +786,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
       }
       List<AlarmConfig> alarmConfigs = alarmConfigDao.getByRuleMetric(ruleMetricInDb);
       if (CollectionUtils.isEmpty(alarmConfigs)) {
-        return new GeneralResponse<>("200", "No envs with this rule metric", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "No envs with this rule metric", response);
       }
       List<Rule> rules = alarmConfigs.stream().map(alarmConfig -> alarmConfig.getRule()).collect(Collectors.toList());
 
@@ -796,7 +797,7 @@ public class RuleMetricServiceImpl implements RuleMetricService {
           .map(ruleDataSource -> ruleDataSource.getRuleDataSourceEnvs()).flatMap(currRuleDataSourceEnvs -> currRuleDataSourceEnvs.stream()).collect(Collectors.toList());
 
       if (CollectionUtils.isEmpty(ruleDataSourceEnvList)) {
-        return new GeneralResponse<>("200", "No envs with this rule metric", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "No envs with this rule metric", response);
       }
 
       List<EnvResponse> responses = new ArrayList<>(ruleDataSourceEnvList.size());
@@ -808,6 +809,6 @@ public class RuleMetricServiceImpl implements RuleMetricService {
       }
       response.setData(responses);
       response.setTotal(responses.size());
-      return new GeneralResponse<>("200", "{&GET_RULE_ENVIRONMENT_SUCCESS}", response);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_ENVIRONMENT_SUCCESS}", response);
     }
 }

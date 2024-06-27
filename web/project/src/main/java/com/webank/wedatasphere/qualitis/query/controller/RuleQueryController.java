@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.query.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
@@ -65,10 +66,10 @@ public class RuleQueryController {
         try {
             Map<String, Object> results = ruleQueryService.conditions(user);
             LOG.info("[My DataSource] Succeed to the query initial conditions.");
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", results);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to the query initial conditions, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -91,10 +92,10 @@ public class RuleQueryController {
             DataInfo<RuleQueryDataSource> results =  ruleQueryService.filter(pageRequest, param.getUser(), param.getCluster(), param.getDb(), param.getTable(), param.getDatasourceType()
             , param.getSubSystemId(), param.getTagCode(), param.getDepartmentName(), param.getDevDepartmentName(), param.getEnvName());
 
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", results);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", results);
         } catch (Exception e) {
             LOG.error("[My DataSource] Query failed, internal error.", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -117,10 +118,10 @@ public class RuleQueryController {
 
             dataInfo.setContent(results);
             LOG.info("[My DataSource] Succeed to query initial results. The number of results:{}", total);
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", dataInfo);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to query initial results, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -148,14 +149,14 @@ public class RuleQueryController {
             result.setTotalCount(CollectionUtils.isEmpty(results) ? 0 : results.size());
             result.setContent(results.subList(param.getPage() * param.getSize(), (param.getPage() + 1) * param.getSize() <= result.getTotalCount() ? (param.getPage() + 1) * param.getSize() : result.getTotalCount()));
             LOG.info("[My DataSource] Succeed to query table columns. The column number of results:{}", result.getTotalCount());
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", result);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", result);
         } catch (MetaDataAcquireFailedException e) {
-            return new GeneralResponse<>("400", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, e.getMessage(), null);
         }  catch (UnExpectedRequestException e) {
-            return new GeneralResponse<>("400", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, e.getMessage(), null);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to query table columns, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -172,13 +173,13 @@ public class RuleQueryController {
             DataInfo<HiveRuleDetail> dataInfo = ruleQueryService.getRulesByCondition(param.getCluster(), param.getDb(), param.getTable()
                 , param.getColumn(), loginUser, param.getRuleTemplateId(), param.getRelationObjectType(), param.getPage(), param.getSize());
 
-            return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", dataInfo);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", dataInfo);
         } catch (UnExpectedRequestException e) {
             LOG.error("[My DataSource] Failed to query table columns, request error", e);
-            return new GeneralResponse<>("400", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, e.getMessage(), null);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to query table columns, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -190,10 +191,10 @@ public class RuleQueryController {
         try {
             request.checkRequest();
             ruleQueryService.deleteRules(request);
-            return new GeneralResponse<>("200", "Delete rule list successfully.", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Delete rule list successfully.", null);
         } catch (Exception e) {
             LOG.error("[My DataSource] Failed to delete table columns' rules, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -204,10 +205,10 @@ public class RuleQueryController {
     public GeneralResponse<DataInfo<Map<String, Object>>> getTagList() {
         try {
             DataInfo<Map<String, Object>> dataInfo = ruleQueryService.getTagList();
-            return new GeneralResponse<>("200", "get tag list successfully.", dataInfo);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "get tag list successfully.", dataInfo);
         } catch (MetaDataAcquireFailedException e) {
             LOG.error("[My DataSource] Failed to get table tag, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
     }
 
@@ -219,13 +220,13 @@ public class RuleQueryController {
         try {
             request.checkRequest();
             LineageParameterResponse response = ruleQueryService.getLineageParameter(request);
-            return new GeneralResponse<>("200", "get parameter of lineage successfully.", response);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "get parameter of lineage successfully.", response);
         } catch (UnExpectedRequestException e) {
             LOG.error("[My DataSource] Failed to get parameter of lineage, request error", e);
-            return new GeneralResponse<>("400", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, e.getMessage(), null);
         } catch (MetaDataAcquireFailedException e) {
             LOG.error("[My DataSource] Failed to get parameter of lineage, internal error", e);
-            return new GeneralResponse<>("500", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
         }
 
     }

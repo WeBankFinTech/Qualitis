@@ -20,7 +20,10 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import javax.persistence.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
@@ -64,7 +67,7 @@ public class ProjectUser {
         this.permission = permission;
         this.project = project;
         this.userName = userName;
-        this.userFullName = userFullName;
+        this.userFullName = StringUtils.isBlank(userFullName) ? userFullName : new String(userFullName.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
         this.automaticSwitch = flag;
     }
 
@@ -125,7 +128,7 @@ public class ProjectUser {
             return false;
         }
         ProjectUser that = (ProjectUser) o;
-        return Objects.equals(id, that.id) && Objects.equals(userName, that.userName);
+        return Objects.equals(id, that.id) && Objects.equals(userName, that.userName) && Objects.equals(permission, that.permission);
     }
 
     @Override

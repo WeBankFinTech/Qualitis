@@ -1,12 +1,24 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Maps;
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.entity.Department;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
+import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
+import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceRequest;
+import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceDao;
+import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceService;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -30,45 +43,116 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
 
     @Autowired
     private LinkisDataSourceDao linkisDataSourceDao;
+    @Autowired
+    private MetaDataClient metaDataClient;
+    @Autowired
+    private LinkisConfig linkisConfig;
+    @Autowired
+    private OperateCiService operateCiService;
+    @Autowired
+    private LinkisDataSourceEnvDao linkisDataSourceEnvDao;
 
     @Override
-    public void addOrModify(LinkisDataSource linkisDataSource) throws UnExpectedRequestException {
-        validateEnvsParameter(linkisDataSource.getEnvs());
+    public LinkisDataSource save(Long linkisDataSourceId, Long dataSourceTypeId, LinkisDataSourceRequest request, User userInDb) throws UnExpectedRequestException, JsonProcessingException {
+        DepartmentSubResponse cmdbDepartmentResponse = getSubDepartment(userInDb);
+        LinkisDataSource linkisDataSource = new LinkisDataSource();
+        linkisDataSource.setLinkisDataSourceId(linkisDataSourceId);
+        linkisDataSource.setLinkisDataSourceName(request.getDataSourceName());
+        linkisDataSource.setDataSourceTypeId(dataSourceTypeId);
+        linkisDataSource.setDevDepartmentId(userInDb.getSubDepartmentCode());
+        linkisDataSource.setOpsDepartmentId(userInDb.getSubDepartmentCode());
+        linkisDataSource.setDevDepartmentName(cmdbDepartmentResponse.getName());
+        linkisDataSource.setOpsDepartmentName(cmdbDepartmentResponse.getName());
+        linkisDataSource.setCreateUser(userInDb.getUsername());
+        linkisDataSource.setCreateTime(DateUtils.now());
+        linkisDataSource.setDatasourceDesc(request.getDataSourceDesc());
+        linkisDataSource.setLabels(request.getLabels());
+        linkisDataSource.setSubSystem(request.getSubSystem());
+        linkisDataSource.setInputType(request.getInputType());
+        linkisDataSource.setVerifyType(request.getVerifyType());
+        linkisDataSource.setDcnRangeType(request.getDcnRangeType());
+        linkisDataSource.setVersionId(1L);
+        linkisDataSourceDao.save(linkisDataSource);
+
+        return linkisDataSource;
+    }
+
+    @Override
+    public void modify(LinkisDataSource linkisDataSource, Long dataSourceTypeId, LinkisDataSourceRequest request, User userInDb) throws UnExpectedRequestException, JsonProcessingException {
+        DepartmentSubResponse cmdbDepartmentResponse = getSubDepartment(userInDb);
+        linkisDataSource.setLinkisDataSourceName(request.getDataSourceName());
+        linkisDataSource.setDataSourceTypeId(dataSourceTypeId);
+        linkisDataSource.setDevDepartmentId(userInDb.getSubDepartmentCode());
+        linkisDataSource.setOpsDepartmentId(userInDb.getSubDepartmentCode());
+        linkisDataSource.setDevDepartmentName(cmdbDepartmentResponse.getName());
+        linkisDataSource.setOpsDepartmentName(cmdbDepartmentResponse.getName());
+        linkisDataSource.setModifyUser(userInDb.getUsername());
+        linkisDataSource.setModifyTime(DateUtils.now());
+
+        linkisDataSource.setDatasourceDesc(request.getDataSourceDesc());
+        linkisDataSource.setLabels(request.getLabels());
+        linkisDataSource.setSubSystem(request.getSubSystem());
+        linkisDataSource.setInputType(request.getInputType());
+        linkisDataSource.setVerifyType(request.getVerifyType());
+        linkisDataSource.setDcnRangeType(request.getDcnRangeType());
         linkisDataSourceDao.save(linkisDataSource);
     }
 
-    private void validateEnvsParameter(String envs) throws UnExpectedRequestException {
-        String[] envArray = StringUtils.split(envs, SpecCharEnum.COMMA.getValue());
-        for (String env: envArray) {
-            if (StringUtils.split(env, SpecCharEnum.COLON.getValue()).length != 2) {
-                throw new UnExpectedRequestException("Illegal env_name!");
-            }
+    @Override
+    public void save(LinkisDataSource linkisDataSource) throws UnExpectedRequestException {
+        linkisDataSourceDao.save(linkisDataSource);
+    }
+
+    private DepartmentSubResponse getSubDepartment(User userInDb) throws UnExpectedRequestException {
+        Department department = userInDb.getDepartment();
+        if (null == department) {
+            throw new UnExpectedRequestException("Invalid department!");
         }
+        Long subDepartmentCode = userInDb.getSubDepartmentCode();
+        if (null == subDepartmentCode) {
+            throw new UnExpectedRequestException("Invalid sub-department");
+        }
+        List<DepartmentSubResponse> departmentSubResponseList = operateCiService.getDevAndOpsInfo(Integer.valueOf(department.getDepartmentCode()));
+        Optional<DepartmentSubResponse> subDeptOptional = departmentSubResponseList.stream()
+                .filter(cmdbDepartmentResponse -> subDepartmentCode.equals(Long.valueOf(cmdbDepartmentResponse.getId())))
+                .findFirst();
+        if (!subDeptOptional.isPresent()) {
+            throw new UnExpectedRequestException("Sub department isn't existing");
+        }
+        return subDeptOptional.get();
     }
 
     /**
-     * 环境ID和环境名称拼接放在LinkisDataSource的envs字段里，并使用冒号进行了分隔
+     * Formatting [envs] and convert it to Map
+     * Note: The original format of the [envs] is [515:219_env_name1,515:220_env_name2]
+     *
      * @param linkisDataSource
-     * @return
+     * @return {uat_dev_env: 515}
      */
     @Override
     public Map<String, Long> getEnvNameAndIdMap(LinkisDataSource linkisDataSource) {
         if (null == linkisDataSource) {
-            return Maps.newHashMapWithExpectedSize(0);
+            return Collections.emptyMap();
         }
+        List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvDao.queryByLinkisDataSourceId(linkisDataSource.getLinkisDataSourceId());
+        if (CollectionUtils.isNotEmpty(linkisDataSourceEnvList)) {
+            linkisDataSourceEnvList.forEach(linkisDataSourceEnv -> linkisDataSourceEnv.setEnvName(linkisDataSourceEnv.getEnvName().replaceFirst(linkisDataSource.getLinkisDataSourceId() + SpecCharEnum.BOTTOM_BAR.getValue(), "")));
+            return linkisDataSourceEnvList.stream().collect(Collectors.toMap(LinkisDataSourceEnv::getEnvName, LinkisDataSourceEnv::getEnvId, (k1, k2) -> k1));
+        }
+//        You can remove the following code snippet if the data stored in qualitis_linkis_datasource.envs is moved into qualitis_linkis_datasource_env successfully after version 1.4.0
         String envs = linkisDataSource.getEnvs();
         if (StringUtils.isBlank(envs)) {
-            return Maps.newHashMapWithExpectedSize(0);
+            return Collections.emptyMap();
         }
         String[] envIdAndNameArray = StringUtils.split(envs, SpecCharEnum.COMMA.getValue());
         Map<String, Long> envNameAndIdMap = Maps.newHashMapWithExpectedSize(envIdAndNameArray.length);
-        for (String envIdAndName: envIdAndNameArray) {
+        for (String envIdAndName : envIdAndNameArray) {
             String[] env = StringUtils.split(envIdAndName, SpecCharEnum.COLON.getValue());
             if (env.length < 2) {
                 LOGGER.warn("Error env format! env: {}", envIdAndName);
                 continue;
             }
-            envNameAndIdMap.put(env[1], Long.valueOf(env[0]));
+            envNameAndIdMap.put(env[1].replaceFirst(linkisDataSource.getLinkisDataSourceId() + SpecCharEnum.BOTTOM_BAR.getValue(), ""), Long.valueOf(env[0]));
         }
         return envNameAndIdMap;
     }
@@ -84,65 +168,11 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
     }
 
     /**
-     * 获取与Linkis侧保持一致的环境名称，该名称经由用户输入的环境名称拼装而成
-     * 为了方便区分，用户输入的环境名称称作originalEnvName，而包装后的环境名称则称作linkisEnvName
-     * @param linkisDataSource
-     * @return
-     */
-    @Override
-    public List<String> getLinkisEnvNameList(LinkisDataSource linkisDataSource) {
-        String envs = linkisDataSource.getEnvs();
-        if (StringUtils.isBlank(envs)) {
-            LOGGER.warn("Request parameters is null: envs");
-            return Collections.emptyList();
-        }
-        String[] envIdAndNameArray = StringUtils.split(envs, SpecCharEnum.COMMA.getValue());
-        List<String> linkisEnvNameList = Lists.newArrayListWithExpectedSize(envIdAndNameArray.length);
-        for (String envIdAndName: envIdAndNameArray) {
-            if (StringUtils.isBlank(envIdAndName)) {
-                continue;
-            }
-            String[] env = StringUtils.split(envIdAndName, SpecCharEnum.COLON.getValue());
-            if (env.length < 2) {
-                linkisEnvNameList.add(env[0]);
-            } else {
-                linkisEnvNameList.add(env[1]);
-            }
-        }
-        return linkisEnvNameList;
-    }
-
-    /**
-     * 获取原始的环境名称，即用户输入的环境名称
-     * @param linkisDataSource
-     * @return
-     */
-    @Override
-    public List<String> getOriginalEnvNameList(LinkisDataSource linkisDataSource) {
-        if (null == linkisDataSource.getLinkisDataSourceId() || null == linkisDataSource.getInputType()) {
-            LOGGER.warn("Request parameters is null: linkisDataSourceId or inputType");
-            return Collections.emptyList();
-        }
-        return getLinkisEnvNameList(linkisDataSource).stream()
-                .map(linkisEnvName -> convertLinkisEnvNameToOriginal(linkisDataSource.getLinkisDataSourceId(), linkisEnvName, linkisDataSource.getInputType()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 将《环境ID：环境Name》的Map入参，格式化成表字段要求的数据格式，例如：160:192_envName
-     * @param envIdAndNameMap
-     * @return
-     */
-    @Override
-    public String formatEnvsField(Map<Long, String> envIdAndNameMap) {
-        return envIdAndNameMap.entrySet().stream().map(entry -> entry.getKey() + SpecCharEnum.COLON.getValue() + entry.getValue()).collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
-    }
-
-    /**
-     * 将前端页面传入的原始环境名称，拼接成linkis侧需要的环境名称。例如原始环境名称是envName，拼接后是：
-     * 若是手动录入：168_envName
-     * 若是自动录入：164_envName-实例IP
-     * 拼接的原因在于：允许用户输入相同的环境名称；区分相同的DCN名称（自动导入）。但Linkis侧却要求环境名称是唯一的
+     * 1. If the env name the user enters is: env_name
+     * 2. then format it to:
+     * manual input: 212_env_name
+     * automatic input: 212_env_name-127.0.0.1:3306(epccmaindb_G-DCN_D21_set_4)
+     *
      * @param linkisDataSourceId
      * @param originalEnvName
      * @param inputType
@@ -150,16 +180,28 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      * @return
      */
     @Override
-    public String convertOriginalEnvNameToLinkis(Long linkisDataSourceId, String originalEnvName, Integer inputType, String host) {
+    public String convertOriginalEnvNameToLinkis(Long linkisDataSourceId, String originalEnvName, Integer inputType, String host, String port, String databaseInstance) {
+        StringBuilder linkisEnvName = new StringBuilder();
+        linkisEnvName.append(linkisDataSourceId);
+        linkisEnvName.append(SpecCharEnum.BOTTOM_BAR.getValue());
+        linkisEnvName.append(originalEnvName);
         if (isAutoInput(inputType)) {
-            return linkisDataSourceId + SpecCharEnum.BOTTOM_BAR.getValue() + originalEnvName + SpecCharEnum.MINUS.getValue() + host;
+            linkisEnvName.append(SpecCharEnum.MINUS.getValue());
+            linkisEnvName.append(host);
+            linkisEnvName.append(SpecCharEnum.MINUS.getValue());
+            linkisEnvName.append(port);
+            linkisEnvName.append(SpecCharEnum.LEFT_SMALL_BRACKET.getValue());
+            linkisEnvName.append(databaseInstance);
+            linkisEnvName.append(SpecCharEnum.RIGHT_SMALL_BRACKET.getValue());
         }
-        return linkisDataSourceId + SpecCharEnum.BOTTOM_BAR.getValue() + originalEnvName;
+        return linkisEnvName.toString();
     }
 
     /**
-     * 与convertOriginalEnvNameToLinkis()方法成对出现，用于反向操作，即将拼接后的环境名称，还原成前端录入的原始环境名称
-     * 例如将环境名称164_envName-127.0.0.1，还原成envName
+     * 1. If the env name store in database is:
+     * linkisEnvName with input manually: 212_env_name
+     * linkisEnvName with input automatically: 212_env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
+     * 2. then recovery it to: env_name
      *
      * @param linkisDataSourceId
      * @param linkisEnvName
@@ -168,27 +210,28 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      */
     @Override
     public String convertLinkisEnvNameToOriginal(Long linkisDataSourceId, String linkisEnvName, Integer inputType) {
-//        移除数据源ID前缀
+//        1. 212_env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
+        String tmpLinkisEnvName = linkisEnvName;
+//        removing the prefix of the env_name: 212_
         int prefixIndex = 0;
         String prefixStr = linkisDataSourceId + SpecCharEnum.BOTTOM_BAR.getValue();
-        if(-1 != linkisEnvName.indexOf(prefixStr)) {
+        if (-1 != tmpLinkisEnvName.indexOf(prefixStr)) {
             prefixIndex = prefixStr.length();
         }
-//        移除host后缀（如果是自动录入）
-        int suffixIndex = linkisEnvName.length();
+//        2. env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
+        tmpLinkisEnvName = StringUtils.substring(tmpLinkisEnvName, prefixIndex);
+
         if (isAutoInput(inputType)) {
-            suffixIndex = linkisEnvName.lastIndexOf(SpecCharEnum.MINUS.getValue());
-            suffixIndex = -1 != suffixIndex ? suffixIndex : linkisEnvName.length();
+            String[] envSegments = StringUtils.split(tmpLinkisEnvName, SpecCharEnum.MINUS.getValue());
+            if (envSegments.length > 0) {
+                tmpLinkisEnvName = envSegments[0];
+            }
         }
-        return StringUtils.substring(linkisEnvName, prefixIndex == -1 ? 0 : prefixIndex, suffixIndex);
+        return tmpLinkisEnvName;
     }
 
     private boolean isAutoInput(Integer inputType) {
-        return Integer.valueOf(2).equals(inputType);
-    }
-
-    private boolean isSharedVerify(Integer verifyType) {
-        return Integer.valueOf(1).equals(verifyType);
+        return Integer.valueOf(QualitisConstants.DATASOURCE_MANAGER_INPUT_TYPE_AUTO).equals(inputType);
     }
 
 }

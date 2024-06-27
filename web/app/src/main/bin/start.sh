@@ -44,9 +44,9 @@ verify_java_home
 if [ ! -d "${bin}/../logs" ]; then
     mkdir ${bin}/../logs
 fi
-export QUALITIS_LOG_DIR=${bin}/../logs
-
-nohup ${bin}/qualitis >> ${QUALITIS_LOG_DIR}/qualitis.out.$(date +%Y%m%d%H%M%S) 2>&1 &
+#export QUALITIS_LOG_DIR=${bin}/../logs
+#nohup ${bin}/qualitis >> ${QUALITIS_LOG_DIR}/qualitis.out.$(date +%Y%m%d%H%M%S) 2>&1 &
+nohup ${bin}/qualitis > /dev/null 2>&1 &
 
 if [ $? != 0 ]; then
     echo "Failed to start Qualitis System" 1>&2

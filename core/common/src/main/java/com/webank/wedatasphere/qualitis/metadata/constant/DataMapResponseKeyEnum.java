@@ -24,7 +24,4 @@ public enum DataMapResponseKeyEnum {
         return key;
     }
 
-    public void setKey(String key) {
-        this.key = key;
-    }
 }

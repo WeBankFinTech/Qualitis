@@ -38,7 +38,7 @@ public class ProxyUser {
     @Column(name = "user_config_json", columnDefinition = "MEDIUMTEXT")
     private String userConfigJson;
     @Transient
-    private Map<String, Object> userConfigMap;
+    private Map<String, Object> userConfigMap = new HashMap<>();
     @ManyToOne(fetch = FetchType.EAGER)
     private Department department;
     @OneToMany(mappedBy = "proxyUser", cascade = CascadeType.ALL,fetch = FetchType.EAGER)
@@ -146,10 +146,8 @@ public class ProxyUser {
     }
 
     public Map<String, Object> getUserConfigMap() {
-        if (this.userConfigMap == null && this.userConfigJson != null) {
+        if (this.userConfigJson != null) {
             this.userConfigMap = new JacksonJsonParser().parseMap(this.userConfigJson);
-        } else {
-            this.userConfigMap = new HashMap<>();
         }
         return this.userConfigMap;
     }

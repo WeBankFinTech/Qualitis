@@ -23,6 +23,7 @@ import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.response.ClusterInfoResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 
@@ -45,7 +46,7 @@ public interface ClusterInfoService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify clusterInfo
@@ -53,7 +54,7 @@ public interface ClusterInfoService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging find all clusterInfos
@@ -69,5 +70,5 @@ public interface ClusterInfoService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<GetAllResponse<ClusterInfo>> findClusterInfoLikeName(FindClusterInfoRequest request) throws UnExpectedRequestException;
+    GeneralResponse<GetAllResponse<ClusterInfoResponse>> findClusterInfoLikeName(FindClusterInfoRequest request) throws UnExpectedRequestException;
 }

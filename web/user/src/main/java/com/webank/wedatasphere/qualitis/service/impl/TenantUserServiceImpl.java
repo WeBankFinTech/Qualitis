@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.ServiceInfoDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TenantUserRepository;
@@ -112,7 +113,7 @@ public class TenantUserServiceImpl implements TenantUserService {
         savedTenantUser.setDepts(departments);
         savedTenantUser.setServiceInfos(serviceInfos);
         AddTenantUserResponse response = new AddTenantUserResponse(savedTenantUser);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_SAVE_TENANT_USER}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_SAVE_TENANT_USER}", response);
     }
 
     @Override
@@ -141,7 +142,7 @@ public class TenantUserServiceImpl implements TenantUserService {
         tenantUserRepository.delete(tenantUserInDb);
         LOGGER.info("Succeed to delete tenant user. Tenant user: {}", tenantUserInDb.getTenantName());
 
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DELETE_TENANT_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_TENANT_USER}", null);
     }
 
     @Override
@@ -185,7 +186,7 @@ public class TenantUserServiceImpl implements TenantUserService {
         tenantUserInDb.setServiceInfos(serviceInfos);
 
         LOGGER.info("Succeed to modify tenant user. old tenant user name: {}, new tenant user name: {}", oldTenantUserName, tenantUserInDb.getTenantName());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_TENANT_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_TENANT_USER}", null);
     }
 
     private void clearDeptAndService(TenantUser tenantUserInDb) {
@@ -229,6 +230,6 @@ public class TenantUserServiceImpl implements TenantUserService {
         response.setData(tenantUserResponses);
 
         LOGGER.info("Succeed to find all tenant users, response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_TENANT_USERS}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_ALL_TENANT_USERS}", response);
     }
 }

@@ -25,6 +25,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -65,8 +66,8 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public List<Map<String, Object>> findSpecialInfoByProject(Project project) {
-        return ruleRepository.findSpecialInfoByProject(project);
+    public List<Map<String, Object>> findSpecialInfoByProject(Project project, String ruleName) {
+        return ruleRepository.findSpecialInfoByProject(project, ruleName);
     }
 
     @Override
@@ -85,7 +86,19 @@ public class RuleDaoImpl implements RuleDao {
         Rule rule = null;
         //1普通项目 2工作流项目
         if (ProjectTypeEnum.NORMAL_PROJECT.getCode().equals(project.getProjectType())) {
-            rule = ruleRepository.findByProjectAndRuleName(project.getId(), ruleName);
+            try {
+                rule = ruleRepository.findByProjectAndRuleName(project.getId(), ruleName);
+            } catch (IncorrectResultSizeDataAccessException e) {
+                List<Rule> rules = ruleRepository.findRules(project.getId(), ruleName);
+                for (Rule currentRule : rules) {
+                    if (rule == null) {
+                        rule = currentRule;
+                        continue;
+                    }
+                    currentRule.setName(currentRule.getName() + rules.indexOf(currentRule));
+                }
+                ruleRepository.saveAll(rules);
+            }
         } else if (ProjectTypeEnum.WORKFLOW_PROJECT.getCode().equals(project.getProjectType())) {
             rule = ruleRepository.findHighestWorkFlowVersion(project.getId(), ruleName);
         }
@@ -141,15 +154,10 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public List<Rule> findByRuleGroupWithPage(int page, int size, RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "ruleNo");
+    public Page<Rule> findByRuleGroupWithPage(int page, int size, RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "rule_no");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleRepository.findByRuleGroupWithPage(ruleGroup, templateId, name, cnName, cols, ruleType, pageable).getContent();
-    }
-
-    @Override
-    public Long countByRuleGroupWithPage(RuleGroup ruleGroup, Long templateId, String name, String cnName, List<String> cols, Integer ruleType) {
-        return ruleRepository.countByRuleGroupWithPage(ruleGroup, templateId, name, cnName, cols, ruleType);
+        return ruleRepository.findByRuleGroupWithPage(ruleGroup.getId(), templateId, name, cnName, cols, ruleType, pageable);
     }
 
     @Override
@@ -170,8 +178,18 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public List<Rule> getDeployExecutionParameters(Long projectId, String name) {
-        return ruleRepository.getDeployExecutionParameters(projectId, name);
+    public List<Rule> getDeployStandardVersionIdList(List<Long> idList) {
+        return ruleRepository.getDeployStandardVersionIdList(idList);
+    }
+
+    @Override
+    public List<Rule> getDeployStandardVersionId(long standardVersionId) {
+        return ruleRepository.getDeployStandardVersionId(standardVersionId);
+    }
+
+    @Override
+    public Long countDeployExecutionParameters(Long projectId, String name) {
+        return ruleRepository.countDeployExecutionParameters(projectId, name);
     }
 
     @Override
@@ -215,8 +233,8 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public List<Rule> findExistStandardVaule(Long templateId, Long projectId) {
-        return ruleRepository.findExistStandardVaule(templateId, projectId);
+    public List<Rule> findExistStandardVaule(Long projectId) {
+        return ruleRepository.findExistStandardVaule(projectId);
     }
 
     @Override
@@ -227,6 +245,11 @@ public class RuleDaoImpl implements RuleDao {
     @Override
     public List<Map<String, Object>> findWorkFlowFiled(Long projectId) {
         return ruleRepository.findWorkFlowFiled(projectId);
+    }
+
+    @Override
+    public List<Rule> findByIdsAndProject(List<Long> ruleIds, Long projectId) {
+        return ruleRepository.findByIdsAndProject(ruleIds, projectId);
     }
 
 }

@@ -20,14 +20,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author howeye
@@ -46,6 +46,8 @@ public class RuleListExecutionRequest {
     private String fpsFileId;
     @JsonProperty("fps_hash")
     private String fpsHashValue;
+    @JsonProperty("env_names")
+    private String envNames;
 
     @JsonProperty("cluster_name")
     private String clusterName;
@@ -99,6 +101,14 @@ public class RuleListExecutionRequest {
         }
         this.createUser = createUser;
         this.executionUser = executionUser;
+    }
+
+    public String getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(String envNames) {
+        this.envNames = envNames;
     }
 
     public RuleContext getRuleContext() {
@@ -260,5 +270,30 @@ public class RuleListExecutionRequest {
         }
         CommonChecker.checkString(request.getExecutionUser(), "Execution_user");
         CommonChecker.checkString(request.getCreateUser(), "Create_user");
+
+        sameParameterVerificationMethod(request.getExecutionParam(), "{&EXECUTION_VARIABLES_HAVE_THE_SAME_VARIABLE_NAME}: ");
+        sameParameterVerificationMethod(request.getStartupParamName(), "{&DYNAMIC_ENGINE_HAVE_THE_SAME_VARIABLE_NAME}: ");
+    }
+
+    public static void sameParameterVerificationMethod(String executionParam, String abnormalInformation) throws UnExpectedRequestException {
+        if (StringUtils.isNotBlank(executionParam)) {
+            Map<String, String> map = new HashMap<>();
+            for (String pair : executionParam.split(SpecCharEnum.DIVIDER.getValue())) {
+                if (pair.contains(SpecCharEnum.COLON.getValue())) {
+                    handleArrayData(abnormalInformation, map, pair, SpecCharEnum.COLON);
+                } else if (pair.contains(SpecCharEnum.EQUAL.getValue())) {
+                    handleArrayData(abnormalInformation, map, pair, SpecCharEnum.EQUAL);
+                }
+            }
+        }
+    }
+
+    private static void handleArrayData(String abnormalInformation, Map<String, String> map, String pair, SpecCharEnum colon) throws UnExpectedRequestException {
+        String[] parts = pair.split(colon.getValue());
+        if (!map.containsKey(parts[0])) {
+            map.put(parts[0], parts[1]);
+        } else {
+            throw new UnExpectedRequestException(abnormalInformation + parts[0]);
+        }
     }
 }

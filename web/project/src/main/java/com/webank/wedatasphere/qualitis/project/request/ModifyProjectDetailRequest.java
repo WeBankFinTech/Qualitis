@@ -35,7 +35,7 @@ public class ModifyProjectDetailRequest {
     private String username;
     private String description;
     @JsonProperty("sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
     @JsonProperty("sub_system_name")
     private String subSystemName;
     @JsonProperty("project_label")
@@ -47,11 +47,11 @@ public class ModifyProjectDetailRequest {
         // Default Constructor
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 

@@ -395,6 +395,17 @@ public interface MetaDataClient {
     GeneralResponse<Map<String, Object>> deleteDataSource(String clusterName, String userName, Long dataSourceId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
 
     /**
+     * delete data source
+     * @param clusterName
+     * @param userName
+     * @param envId
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws MetaDataAcquireFailedException
+     */
+    GeneralResponse<Map<String, Object>> deleteEnv(String clusterName, String userName, Long envId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
+
+    /**
      * Get db by data source.
      * @param clusterName
      * @param userName
@@ -464,6 +475,17 @@ public interface MetaDataClient {
      * @throws Exception
      */
     LinkisDataSourceInfoDetail getDataSourceInfoById(String clusterName, String userName, Long dataSourceId) throws Exception;
+
+    /**
+     * Get data source name by id
+     * @param clusterName
+     * @param userName
+     * @param dataSourceId
+     * @param versionId
+     * @return
+     * @throws Exception
+     */
+    LinkisDataSourceInfoDetail getDataSourceInfoById(String clusterName, String userName, Long dataSourceId, Long versionId) throws Exception;
 
     /**
      * Add udf
@@ -645,16 +667,4 @@ public interface MetaDataClient {
      */
     void deployUdfNewVersion(String currentCluster, String linkisUdfAdminUser, Long udfId, String version)
         throws UnExpectedRequestException, IOException, JSONException, MetaDataAcquireFailedException;
-
-    /**
-     * delete data source
-     * @param clusterName
-     * @param userName
-     * @param envId
-     * @return
-     * @throws UnExpectedRequestException
-     * @throws MetaDataAcquireFailedException
-     */
-    GeneralResponse<Map<String, Object>> deleteEnv(String clusterName, String userName, Long envId) throws UnExpectedRequestException, MetaDataAcquireFailedException;
-
 }

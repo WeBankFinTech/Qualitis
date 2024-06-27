@@ -56,6 +56,9 @@ public class ServiceInfo {
     @Column(name = "modify_time")
     private String modifyTime;
 
+    @Column(name = "collect_status")
+    private Integer collectStatus;
+
     public ServiceInfo() {
         // Default Constructor
     }
@@ -132,4 +135,11 @@ public class ServiceInfo {
         this.tenantUser = tenantUser;
     }
 
+    public Integer getCollectStatus() {
+        return collectStatus;
+    }
+
+    public void setCollectStatus(Integer collectStatus) {
+        this.collectStatus = collectStatus;
+    }
 }

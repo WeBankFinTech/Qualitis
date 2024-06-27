@@ -15,11 +15,13 @@ public enum SparkParameterEnum {
      * Spark Driver CPU Cores 使用上限
      * Spark Executor 并发数
      * Spark Executor 内存数
+     * Spark 引擎复用上限
      */
     SPARK_INTERNAL_STORAGE_UPPER_LIMIT_USE("Spark Driver 内存使用上限", "wds.linkis.rm.client.memory.max", "20G"),
     CPU_CORES_UPPER_LIMIT_USE("Spark Driver CPU Cores 使用上限", "wds.linkis.rm.client.core.max", "10"),
     EXECUTOR_COMPLICATED("Spark Executor 并发数", "spark.executor.instances", "2"),
-    Executor_INTERNAL_STORAGE("Spark Executor 内存数", "spark.executor.memory", "3g");
+    EXECUTOR_INTERNAL_STORAGE("Spark Executor 内存数", "spark.executor.memory", "3g"),
+    SPARK_ENGINE_REUSE_ONLINE("Spark 引擎复用上限","wds.linkis.engineconn.max.task.execute.num","20");
 
     private String label;
     private String value;

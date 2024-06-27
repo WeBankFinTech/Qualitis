@@ -21,9 +21,10 @@ package com.webank.wedatasphere.qualitis.project.constant;
  */
 public enum ProjectTransportTypeEnum {
     /**
-     * LOCAL
+     * LOCAL, GIT
      */
-    LOCAL(1)
+    LOCAL(1),
+    GIT(2)
     ;
 
     private Integer code;

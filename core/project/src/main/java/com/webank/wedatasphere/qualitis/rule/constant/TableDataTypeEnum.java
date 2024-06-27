@@ -14,7 +14,9 @@ public enum TableDataTypeEnum {
      * linkisDataSource Linkis数据源
      */
     RULE_METRIC("ruleMetric", "指标管理"),
+    STANDARD_VALUE("standardValue", "标准值"),
     RULE_TEMPLATE("ruleTemplate", "规则模板"),
+    LINKIS_UDF("linkisUdf", "Linkis UDF"),
     LINKIS_DATA_SOURCE("linkisDataSource", "Linkis数据源");
 
     private String code;

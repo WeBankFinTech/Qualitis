@@ -79,10 +79,11 @@ public interface MultiSourceRuleService {
     /**
      * Delete multi-table rule real.
      * @param rule
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<Object> deleteMultiRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse<Object> deleteMultiRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException;
 
     /**
      * Modify multi-table rule.

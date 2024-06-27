@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import org.slf4j.Logger;
@@ -45,11 +46,25 @@ public class OuterUserController {
     public GeneralResponse generalExecution(@PathParam("username")String username) {
         try {
             userService.autoAddUser(username);
-            return new GeneralResponse<>("200", "{&CREATE_USER_SUCCESSFULLY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&CREATE_USER_SUCCESSFULLY}", null);
         } catch (Exception e) {
             LOGGER.error("Failed to add user, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CREATE_USER}, caused by: " + e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CREATE_USER}, caused by: " + e.getMessage(), null);
         }
     }
+
+    @POST
+    @Path("get/user/permission")
+    @Produces(MediaType.APPLICATION_JSON)
+    public GeneralResponse getUserPermission() {
+        try {
+            return userService.getUserPermission();
+        } catch (Exception e) {
+            LOGGER.error("Failed to get user permission, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_USER_PERMISSION}", null);
+        }
+    }
+
+
 
 }

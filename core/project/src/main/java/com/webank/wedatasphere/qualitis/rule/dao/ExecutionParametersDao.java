@@ -72,6 +72,14 @@ public interface ExecutionParametersDao {
     ExecutionParameters findByNameAndProjectId(String name, Long projectId);
 
     /**
+     * find By Name List And ProjectId
+     * @param projectId
+     * @param names
+     * @return
+     */
+    List<ExecutionParameters> findByProjectIdAndNames(Long projectId, List<String> names);
+
+    /**
      * get All ExecutionParameters
      * @param projectId
      * @return

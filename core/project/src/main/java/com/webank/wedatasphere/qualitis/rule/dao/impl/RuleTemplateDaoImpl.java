@@ -51,6 +51,11 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
+    public List<Template> findByIds(List<Long> templateIds) {
+        return templateRepository.findAllById(templateIds);
+    }
+
+    @Override
     public List<Template> findAllDefaultTemplate(int page, int size, Integer templateType, String cnName, String enName, Integer dataSourceType, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String dataType) {
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -107,10 +112,23 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
-    public Page<Template> findTemplates(Integer type, Integer dataSourceTypeId, String tableDataType, List<Long> dataVisibilityDeptList, Long createUserId, String cnName, String enName, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, int page, int size) {
+    public Page<Template> findTemplates(Integer type, Integer dataSourceTypeId, String tableDataType, List<Long> dataVisibilityDeptList
+            , Long createUserId, String cnName, String enName
+            , Long verificationLevel, Long verificationType, String createId, String modifyId
+            , Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String createStartTime, String createEndTime, String updateStartTime, String updateEndTime
+            , Long templateId, String description
+            , int page, int size) {
         Sort sort = Sort.by(Sort.Direction.ASC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Template> resultPage = templateRepository.findTemplates(type, dataSourceTypeId, tableDataType, dataVisibilityDeptList, createUserId, cnName, enName, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, pageable);
+        Page<Template> resultPage = templateRepository.findTemplates(type, dataSourceTypeId, tableDataType, dataVisibilityDeptList, createUserId, cnName, enName, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, createStartTime, createEndTime, updateStartTime, updateEndTime, templateId, description, pageable);
+        return resultPage;
+    }
+
+    @Override
+    public Page<Template> findTemplatesWithAdmin(Integer type, Integer dataSourceTypeId, String tableDataType, String cnName, String enName, Long verificationLevel, Long verificationType, String createId, String modifyId, Long devDepartmentId, Long opsDepartmentId, Set<String> actionRange, String createStartTime, String createEndTime, String updateStartTime, String updateEndTime, Long templateId, String description, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Template> resultPage = templateRepository.findTemplatesWithAdmin(type, dataSourceTypeId, tableDataType, cnName, enName, verificationLevel, verificationType, createId, modifyId, devDepartmentId, opsDepartmentId, actionRange, createStartTime, createEndTime, updateStartTime, updateEndTime, templateId, description, pageable);
         return resultPage;
     }
 
@@ -135,6 +153,16 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
+    public List<Map<String, Object>> findAllTemplatesByProjectId(Long projectId) {
+        return templateRepository.findAllTemplatesByProjectId(projectId);
+    }
+
+    @Override
+    public List<Map<String, Object>> findHiveDataSourceTypeAllTemplates(List<Integer> dataSourceTypes, Integer code) {
+        return templateRepository.findHiveDataSourceTypeAllTemplates(dataSourceTypes,code);
+    }
+
+    @Override
     public Optional<Template> getDefaultByName(String templateName) {
         Specification<Template> specification = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -150,13 +178,18 @@ public class RuleTemplateDaoImpl implements RuleTemplateDao {
     }
 
     @Override
-    public List<Map<String ,Object>> getTemplateDefaultInputMeta(List<Integer> ids) {
-        return templateRepository.getTemplateDefaultInputMeta(ids);
+    public List<Map<String ,Object>> getTemplateDefaultInputMeta(List<String> enNames) {
+        return templateRepository.getTemplateDefaultInputMeta(enNames);
     }
 
     @Override
-    public List<Template> findTemplateByEnName(String templateEnName) {
+    public Template findTemplateByEnName(String templateEnName) {
         return templateRepository.findTemplateByEnName(templateEnName);
+    }
+
+    @Override
+    public List<Template> findMetricCollectTemplates(List<Long> calcuUnitIds) {
+        return templateRepository.findByCalcuUnitIdIn(calcuUnitIds);
     }
 
 }

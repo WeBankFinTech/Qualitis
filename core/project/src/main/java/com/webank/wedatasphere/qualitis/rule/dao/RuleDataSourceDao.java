@@ -30,6 +30,13 @@ import java.util.Map;
 public interface RuleDataSourceDao {
 
     /**
+     * Find RuleDataSource by linkisDataSourceId
+     * @param linkisDataSourceId
+     * @return
+     */
+    List<RuleDataSource> findByLinkisDataSourceId(Long linkisDataSourceId);
+
+    /**
      * Save all rule datasource.
      * @param ruleDataSources
      * @return
@@ -127,7 +134,7 @@ public interface RuleDataSourceDao {
      * @param envName
      * @return
      */
-    long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType, Long subSystemId, String departmentCode, String devDepartmentName, String tagCode, String envName);
+    long countProjectDsByUser(String user, String clusterName, String dbName, String tableName, Integer datasourceType, String subSystemId, String departmentCode, String devDepartmentName, String tagCode, String envName);
 
     /**
      * Filter rule datasource pageable.
@@ -146,7 +153,7 @@ public interface RuleDataSourceDao {
      * @return
      */
     List<Map<String, Object>> filterProjectDsByUserPage(String user, String clusterName, String dbName, String tableName,
-        Integer datasourceType, Long subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, int page, int size);
+        Integer datasourceType, String subSystemId, String departmentName, String devDepartmentName, String tagCode, String envName, int page, int size);
 
     /**
      * Save rule datasource
@@ -248,5 +255,5 @@ public interface RuleDataSourceDao {
      * @param tagCode
      * @param tagName
      */
-    void updateMetadataFields(Long id, Long subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
+    void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
 }

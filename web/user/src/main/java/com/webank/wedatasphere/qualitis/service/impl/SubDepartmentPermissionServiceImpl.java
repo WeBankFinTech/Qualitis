@@ -3,7 +3,6 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
@@ -15,13 +14,11 @@ import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
-import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.RoleSystemTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
-import com.webank.wedatasphere.qualitis.service.DepartmentService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.SubDepartmentPermissionService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
@@ -64,10 +61,6 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
     private DepartmentDao departmentDao;
     @Autowired
     private DataVisibilityService dataVisibilityService;
-    @Autowired
-    private DepartmentService departmentService;
-    @Value("${department.data_source_from: hr}")
-    private String departmentSourceType;
 
     @Value("${devOps.enable}")
     private Boolean isDevOpsModel;
@@ -192,14 +185,8 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
                 LOGGER.info("Getting devAndOpsIds from local cache, key: {}", departmentCode);
                 allDevAndOpsInfoWithinDeptList.addAll(devAndOpsInfoWithinDeptList);
             } else {
-                List<DepartmentSubResponse> devAndOpsInfoList;
-                String tmpSourceType = departmentSourceType;
-                if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(tmpSourceType)) {
-                    devAndOpsInfoList = departmentService.getSubDepartmentByDeptCode(Integer.valueOf(departmentCode));
-                } else {
-                    LOGGER.info("Query department list from CMDB by code, code:{}", departmentCode);
-                    devAndOpsInfoList = operateCiService.getDevAndOpsInfo(Integer.valueOf(departmentCode));
-                }
+                LOGGER.info("Query department list from CMDB by code, code:{}", departmentCode);
+                List<DepartmentSubResponse> devAndOpsInfoList = operateCiService.getDevAndOpsInfo(Integer.valueOf(departmentCode));
                 if (CollectionUtils.isNotEmpty(devAndOpsInfoList)) {
                     devAndOpsInfoWithinDeptList = devAndOpsInfoList.stream().map(DepartmentSubResponse::getId).map(Long::valueOf).collect(Collectors.toList());
                     allDevAndOpsInfoWithinDeptList.addAll(devAndOpsInfoWithinDeptList);
@@ -212,8 +199,7 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
     }
 
     @Override
-    public void checkAccessiblePermission(Long tableDataId, TableDataTypeEnum tableDataTypeEnum, DataVisibilityPermissionDto dataVisibilityPermissionDto) throws UnExpectedRequestException {
-        User loginUser = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+    public void checkAccessiblePermission(User loginUser, Long tableDataId, TableDataTypeEnum tableDataTypeEnum, DataVisibilityPermissionDto dataVisibilityPermissionDto) throws UnExpectedRequestException {
         boolean createdBySelf = loginUser.getUsername().equals(dataVisibilityPermissionDto.getCreateUser());
         if (createdBySelf) {
             return;
@@ -251,7 +237,7 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
         }
 
         boolean isProjector = RoleSystemTypeEnum.PROJECTOR.getCode().equals(roleType);
-        if (isProjector) {
+        if (isProjector){
             Long departmentSubId = loginUser.getSubDepartmentCode();
             boolean accessible = Objects.nonNull(departmentSubId) && (visibilitySubDepartmentIds.contains(departmentSubId)
                     || departmentSubId.equals(dataVisibilityPermissionDto.getDevDepartmentId())
@@ -261,6 +247,12 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
             }
         }
         throw new UnExpectedRequestException("Illegal Access!");
+    }
+
+    @Override
+    public void checkAccessiblePermission(Long tableDataId, TableDataTypeEnum tableDataTypeEnum, DataVisibilityPermissionDto dataVisibilityPermissionDto) throws UnExpectedRequestException {
+        User loginUser = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+        checkAccessiblePermission(loginUser, tableDataId, tableDataTypeEnum, dataVisibilityPermissionDto);
     }
 
 }

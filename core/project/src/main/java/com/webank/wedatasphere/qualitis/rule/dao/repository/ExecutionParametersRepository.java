@@ -59,6 +59,15 @@ public interface ExecutionParametersRepository extends JpaRepository<ExecutionPa
     ExecutionParameters findByNameAndProjectId(String name, Long projectId);
 
     /**
+     * find By Names And ProjectId
+     * @param projectId
+     * @param names
+     * @return
+     */
+    @Query(value = "select ds from ExecutionParameters ds where ds.projectId = ?1 and ds.name in (?2)")
+    List<ExecutionParameters> findByProjectIdAndNames(Long projectId, List<String> names);
+
+    /**
      * get All ExecutionParameters
      * @param projectId
      * @return

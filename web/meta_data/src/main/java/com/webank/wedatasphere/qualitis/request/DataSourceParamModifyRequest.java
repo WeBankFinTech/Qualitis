@@ -53,9 +53,7 @@ public class DataSourceParamModifyRequest {
     }
 
     public DataSourceParamModifyRequest() {
-    }
-
-    public DataSourceParamModifyRequest(String json) {
+        // Do nothing.
     }
 
     public DataSourceParamModifyRequest(String comment, ConnectParams connectParams) {
@@ -77,5 +75,17 @@ public class DataSourceParamModifyRequest {
 
     public void setConnectParams(ConnectParams connectParams) {
         this.connectParams = connectParams;
+    }
+
+    @Override
+    public String toString() {
+        return "DataSourceParamModifyRequest{" +
+                "comment='" + comment + '\'' +
+                ", inputType=" + inputType +
+                ", verifyType=" + verifyType +
+                ", envIdArray=" + envIdArray +
+                ", dataSourceEnvs=" + dataSourceEnvs +
+                ", connectParams=" + connectParams +
+                '}';
     }
 }

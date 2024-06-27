@@ -26,6 +26,7 @@ import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
 import com.webank.wedatasphere.qualitis.constant.ApplicationCommentEnum;
 import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
 import com.webank.wedatasphere.qualitis.constant.ImsLevelEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.AbnormalDataRecordInfoDao;
@@ -38,6 +39,7 @@ import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
 import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
 import com.webank.wedatasphere.qualitis.dao.TaskResultStatusDao;
+import com.webank.wedatasphere.qualitis.dao.TaskRuleAlarmConfigDao;
 import com.webank.wedatasphere.qualitis.dao.TaskRuleSimpleDao;
 import com.webank.wedatasphere.qualitis.dao.UploadRecordDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -83,6 +85,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,16 +95,8 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -119,6 +114,8 @@ public class TaskChecker implements IChecker {
     private ApplicationDao applicationDao;
     @Autowired
     private TaskDataSourceDao taskDataSourceDao;
+    @Autowired
+    private TaskRuleAlarmConfigDao taskRuleAlarmConfigDao;
     @Autowired
     private RuleMetricDao ruleMetricDao;
     @Autowired
@@ -152,14 +149,22 @@ public class TaskChecker implements IChecker {
     @Autowired
     private ApplicationCommentDao applicationCommentDao;
 
+    @Value("${intellect.check.project_name}")
+    private String intellectCheckProjectName;
+
+    @Value("${alarm.ims.receiver.collect:leoli,dqdong}")
+    private String collectReceiver;
+
     private static final int BATCH_ABNORMAL_DATA_RECORD = 500;
     private static final String PRINT_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskChecker.class);
     private static final DateTimeFormatter PRINT_TIME_FORMAT = DateTimeFormat.forPattern(PRINT_TIME_PATTERN);
+    private static final java.time.format.DateTimeFormatter FORMATTER = java.time.format.DateTimeFormatter.ofPattern(PRINT_TIME_PATTERN);
 
     private static final Map<String, Integer> ERR_CODE_TYPE = new HashMap<String, Integer>();
 
     private static final List<ApplicationComment> APPLICATION_COMMENT_LIST = Lists.newArrayList();
+    private static final String IMS_LOG = "{\"TYPE\": \"QUALITIS\",\"RES_CODE\": %d,\"COST_TIME\": %d,\"RES_MSG\": \"%s\"}";
 
     @PostConstruct
     public void init() {
@@ -298,10 +303,12 @@ public class TaskChecker implements IChecker {
             boolean isPass;
             boolean finish;
             if (passCheckOut(jobChecker.getApplicationId(), taskInDb)) {
+                LOGGER.info("Check passed! Task:[{}]", taskInDb.getId());
                 modifyJobStatus(taskInDb, TaskStatusEnum.PASS_CHECKOUT.getState());
                 isPass = true;
                 finish = true;
             } else {
+                LOGGER.info("Check not passed! Task:[{}]", taskInDb.getId());
                 if (Boolean.FALSE.equals(checkWhetherBlocked(taskInDb)) && Boolean.TRUE.equals(taskInDb.getAbortOnFailure())) {
                     modifyJobStatus(taskInDb, TaskStatusEnum.FAILED.getState());
                     List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.DIFF_DATA_ISSUES.getCode().toString())).collect(Collectors.toList());
@@ -385,9 +392,14 @@ public class TaskChecker implements IChecker {
 
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     private Boolean checkTaskRuleSimplePass(String applicationId, TaskRuleSimple taskRuleSimple) {
-        Boolean passFlag = true;
+        Boolean passFlag = Boolean.TRUE;
+        Application application = applicationDao.findById(applicationId);
+        if (StringUtils.isNotEmpty(application.getClusterName()) && application.getClusterName().contains(SpecCharEnum.COMMA.getValue()) && (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName()))) {
+            return Boolean.TRUE;
+        }
         List<TaskResult> taskResults = taskResultDao.findByApplicationAndRule(applicationId, taskRuleSimple.getRuleId());
         if (CollectionUtils.isEmpty(taskResults)) {
+            LOGGER.warn("Has no task result. Application:[{}], Rule[{}]", applicationId, taskRuleSimple.getRuleId());
             return false;
         }
         List<TaskResultStatus> taskResultStatusList = Lists.newArrayList();
@@ -399,44 +411,44 @@ public class TaskChecker implements IChecker {
                         taskRuleAlarmConfig.getRuleMetric().getId().equals(ruleMetricId)
                 ).collect(Collectors.toList());
             }
-//            遍历校验预期
+            // 遍历校验预期
             for (TaskRuleAlarmConfig taskRuleAlarmConfig : taskRuleAlarmConfigList) {
                 TaskResultStatus taskResultStatus = new TaskResultStatus();
                 taskResultStatus.setApplicationId(applicationId);
                 taskResultStatus.setRuleId(taskRuleSimple.getRuleId());
-                taskResultStatus.setTaskResult(taskResult);
                 taskResultStatus.setTaskRuleAlarmConfigId(taskRuleAlarmConfig.getId());
+                taskResultStatus.setTaskResult(taskResult);
                 taskResultStatusList.add(taskResultStatus);
-                if (AlarmConfigStatusEnum.NOT_PASS.getCode().equals(taskRuleAlarmConfig.getStatus())) {
-                    taskResultStatus.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
-                } else if (AlarmConfigStatusEnum.PASS.getCode().equals(taskRuleAlarmConfig.getStatus())) {
-                    taskResultStatus.setStatus(AlarmConfigStatusEnum.PASS.getCode());
-                } else {
-                    Boolean passReal = PassUtil.notSafe(applicationId, taskRuleSimple.getRuleId(), taskRuleAlarmConfig, taskResult, taskResultDao);
 
-                    if (passReal) {
+                Boolean passReal = PassUtil.notSafe(applicationId, taskRuleSimple.getRuleId(), taskRuleAlarmConfig, taskResult, taskResultDao);
+
+                if (passReal) {
+                    if (! AlarmConfigStatusEnum.NOT_PASS.getCode().equals(taskRuleAlarmConfig.getStatus())) {
                         taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.PASS.getCode());
-                        taskResultStatus.setStatus(AlarmConfigStatusEnum.PASS.getCode());
-                    } else {
-                        taskResultStatus.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
-                        passFlag = false;
-                        taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
+                    }
+                    taskResultStatus.setStatus(AlarmConfigStatusEnum.PASS.getCode());
+                    LOGGER.info("Current task rule alarm config passed. TaskRuleAlarmConfig:[{}]", taskRuleAlarmConfig.toString());
+                } else {
+                    passFlag = false;
+                    taskResultStatus.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
+                    taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
+                    LOGGER.info("Current task rule alarm config not passed. TaskRuleAlarmConfig:[{}]", taskRuleAlarmConfig.toString());
 
-                        if (taskRuleSimple.getRuleType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())
-                                || taskRuleSimple.getRuleType().equals(RuleTemplateTypeEnum.FILE_COUSTOM.getCode())) {
-                            if (taskRuleAlarmConfig.getDeleteFailCheckResult() != null && true == taskRuleAlarmConfig.getDeleteFailCheckResult().booleanValue()) {
-                                taskResult.setSaveResult(false);
-                                taskResultDao.saveTaskResult(taskResult);
-                            }
-                        } else {
-                            if (taskRuleSimple.getDeleteFailCheckResult() != null && true == taskRuleSimple.getDeleteFailCheckResult().booleanValue()) {
-                                taskResult.setSaveResult(false);
-                                taskResultDao.saveTaskResult(taskResult);
-                            }
+                    if (taskRuleSimple.getRuleType().equals(RuleTemplateTypeEnum.CUSTOM.getCode())
+                        || taskRuleSimple.getRuleType().equals(RuleTemplateTypeEnum.FILE_COUSTOM.getCode())) {
+                        if (taskRuleAlarmConfig.getDeleteFailCheckResult() != null && true == taskRuleAlarmConfig.getDeleteFailCheckResult().booleanValue()) {
+                            taskResult.setSaveResult(false);
+                            taskResultDao.saveTaskResult(taskResult);
+                        }
+                    } else {
+                        if (taskRuleSimple.getDeleteFailCheckResult() != null && true == taskRuleSimple.getDeleteFailCheckResult().booleanValue()) {
+                            taskResult.setSaveResult(false);
+                            taskResultDao.saveTaskResult(taskResult);
                         }
                     }
                 }
             }
+            taskRuleAlarmConfigDao.saveAll(taskRuleAlarmConfigList);
         }
         taskResultStatusDao.saveBatch(taskResultStatusList);
         return passFlag;
@@ -446,19 +458,116 @@ public class TaskChecker implements IChecker {
         if (isLastJob(applicationInDb)) {
             LOGGER.info("Succeed to execute all task of application. Application: {}", applicationInDb);
             applicationInDb.setFinishTime(new DateTime(new Date()).toString(PRINT_TIME_FORMAT));
+            if (StringUtils.isNotEmpty(applicationInDb.getClusterName()) && applicationInDb.getClusterName().contains(SpecCharEnum.COMMA.getValue())) {
+                List<TaskResult> taskResults = taskResultDao.findByApplicationId(applicationInDb.getId());
+                Map<Long, List<TaskResult>> ruleTaskResults = new HashMap<>(taskResults.size());
+                for (TaskResult taskResult : taskResults) {
+                    Long ruleId = taskResult.getRuleId();
+                    if (ruleTaskResults.keySet().contains(ruleId)) {
+                        ruleTaskResults.get(ruleId).add(taskResult);
+                    } else {
+                        List<TaskResult> tmpTaskResults = new ArrayList<>();
+                        tmpTaskResults.add(taskResult);
+                        ruleTaskResults.put(ruleId, tmpTaskResults);
+                    }
+                }
+
+                for (Long ruleId : ruleTaskResults.keySet()) {
+                    List<TaskRuleSimple> taskRuleSimples = taskRuleSimpleDao.findByApplicationAndRule(applicationInDb.getId(), ruleId);
+                    boolean allMatch = taskRuleSimples.stream().allMatch(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName()));
+                    if (! allMatch) {
+                        continue;
+                    }
+                    boolean allSucc = taskRuleSimples.stream().allMatch(taskRuleSimple -> TaskStatusEnum.PASS_CHECKOUT.getCode().equals(taskRuleSimple.getTask().getStatus()));
+                    if (! allSucc) {
+                        continue;
+                    }
+                    boolean pass = true;
+//                    boolean allZero = true;
+
+                    List<TaskResult> taskResultList = ruleTaskResults.get(ruleId);
+                    TaskResult first = taskResultList.get(0);
+                    String value = first.getValue();
+
+//                    if (0 != Integer.valueOf(value)) {
+//                        allZero = false;
+//                    }
+                    List<TaskResultStatus> taskResultStatusList = Lists.newArrayList();
+                    for (TaskResult taskResult : taskResultList) {
+                        TaskResultStatus taskResultStatus = new TaskResultStatus();
+                        taskResultStatus.setRuleId(ruleId);
+                        taskResultStatus.setTaskResult(taskResult);
+                        taskResultStatus.setApplicationId(applicationInDb.getId());
+                        taskResultStatus.setStatus(AlarmConfigStatusEnum.PASS.getCode());
+                        Long taskRuleAlarmConfigId = taskRuleSimples.stream().filter(taskRuleSimple -> taskRuleSimple.getTask().getId().equals(taskResult.getTaskId())).iterator().next().getTaskRuleAlarmConfigList().stream().iterator().next().getId();
+                        taskResultStatus.setTaskRuleAlarmConfigId(taskRuleAlarmConfigId);
+                        taskResultStatusList.add(taskResultStatus);
+                        if (! value.equals(taskResult.getValue())) {
+                            pass = false;
+                            break;
+                        }
+//                        if (allZero && 0 != Integer.valueOf(taskResult.getValue())) {
+//                            allZero = false;
+//                        }
+                    }
+//                    if (allZero) {
+//                        pass = false;
+//                    }
+
+                    if (! pass) {
+                        applicationInDb.reduceSuccessJobNum();
+                        applicationInDb.reduceSuccessJobNum();
+                        taskDao.saveAll(taskRuleSimples.stream().map(taskRuleSimple -> {
+                            Task task = taskRuleSimple.getTask();
+                            if (Boolean.TRUE.equals(task.getAbortOnFailure())) {
+                                applicationInDb.addFailJobNum();
+                                task.setStatus(TaskStatusEnum.FAILED.getCode());
+                            } else {
+                                applicationInDb.addNotPassTaskNum();
+                                task.setStatus(TaskStatusEnum.FAIL_CHECKOUT.getCode());
+                            }
+                            return task;
+                        }).collect(Collectors.toList()));
+                        taskRuleAlarmConfigDao.saveAll(taskRuleSimples.stream()
+                            .map(taskRuleSimple -> taskRuleSimple.getTaskRuleAlarmConfigList())
+                            .flatMap(taskRuleAlarmConfigs -> taskRuleAlarmConfigs.stream())
+                            .map(taskRuleAlarmConfig -> {
+                            taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
+                            return taskRuleAlarmConfig;
+                        }).collect(Collectors.toList()));
+                        taskResultStatusDao.saveBatch(taskResultStatusList.stream().map(taskResultStatus -> {
+                            taskResultStatus.setStatus(AlarmConfigStatusEnum.NOT_PASS.getCode());
+                            return taskResultStatus;
+                        }).collect(Collectors.toList()));
+                    } else {
+                        taskRuleAlarmConfigDao.saveAll(taskRuleSimples.stream().map(taskRuleSimple -> taskRuleSimple.getTaskRuleAlarmConfigList()).flatMap(taskRuleAlarmConfigs -> taskRuleAlarmConfigs.stream()).map(taskRuleAlarmConfig -> {
+                            taskRuleAlarmConfig.setStatus(AlarmConfigStatusEnum.PASS.getCode());
+                            return taskRuleAlarmConfig;
+                        }).collect(Collectors.toList()));
+                        taskResultStatusDao.saveBatch(taskResultStatusList.stream().map(taskResultStatus -> {
+                            taskResultStatus.setStatus(AlarmConfigStatusEnum.PASS.getCode());
+                            return taskResultStatus;
+                        }).collect(Collectors.toList()));
+                    }
+                }
+            }
             if (applicationInDb.getFinishTaskNum().equals(applicationInDb.getTotalTaskNum())) {
                 applicationInDb.setStatus(ApplicationStatusEnum.FINISHED.getCode());
-                List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.SAME_ISSUES.getCode().toString())).collect(Collectors.toList());
+                List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream()
+                    .filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.SAME_ISSUES.getCode().toString()))
+                    .collect(Collectors.toList());
                 Integer applicationCommentCode = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
-
                 applicationInDb.setApplicationComment(applicationCommentCode);
+                printImsLog(applicationInDb,ApplicationStatusEnum.FINISHED);
             } else if (!applicationInDb.getFailTaskNum().equals(0) || !applicationInDb.getAbnormalTaskNum().equals(0)) {
                 applicationInDb.setStatus(ApplicationStatusEnum.FAILED.getCode());
+                printImsLog(applicationInDb,ApplicationStatusEnum.FAILED);
             } else {
                 applicationInDb.setStatus(ApplicationStatusEnum.NOT_PASS.getCode());
                 List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.DIFF_DATA_ISSUES.getCode().toString())).collect(Collectors.toList());
                 Integer applicationCommentCode = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
                 applicationInDb.setApplicationComment(applicationCommentCode);
+                printImsLog(applicationInDb,ApplicationStatusEnum.NOT_PASS);
             }
             checkIfSendAlarm(applicationInDb);
             checkIfReport(applicationInDb, imsConfig);
@@ -479,32 +588,82 @@ public class TaskChecker implements IChecker {
     }
 
     private void checkIfSendAlarm(Application application) {
+        if (StringUtils.isNotBlank(application.getCollectIds())) {
+            LOGGER.info("Start to alarm collect task.");
+            List<Task> tasks = taskDao.findByApplication(application);
+            List<Task> failedTask = tasks.stream().filter(job -> TaskStatusEnum.FAILED.getCode().equals(job.getStatus()) || TaskStatusEnum.CANCELLED.getCode().equals(job.getStatus())).collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(failedTask)) {
+                LOGGER.info("No failed collect task.");
+                return;
+            }
+            Set<String> dbTableFilters = failedTask.stream().map(task -> task.getTaskDataSources())
+                    .flatMap(taskDataSources -> taskDataSources.stream()).map(taskDataSource -> taskDataSource.getDatabaseName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + taskDataSource.getTableName() + SpecCharEnum.COLON.getValue() + taskDataSource.getFilter()).collect(Collectors.toSet());
+            Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
+            String alertInfo = linkisConfig.getCollectTemplate();
+            alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
+            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
+            LOGGER.info("Finish to alarm collect task.");
+            return;
+        }
+
         LOGGER.info("Start to collect alarm info.");
         List<Task> tasks = taskDao.findByApplication(application);
 
+//      Previously, tasks that didn't pass and were aborted had been modified as failed tasks, but when sending alarm to receivers,
+//      their status still appeared as 'not pass' and 'aborted'
+        List<Task> notPassAndAbortTask = new ArrayList<>();
+        for (Task task : tasks) {
+            if (TaskStatusEnum.FAILED.getCode().equals(task.getStatus())) {
+                boolean hasNo = ifTaskHasNotCheckRuleAlarmConfig(task.getTaskRuleSimples());
+                if (hasNo) {
+                    notPassAndAbortTask.add(task);
+                }
+            }
+        }
+
         List<Task> notPassTask = tasks.stream().filter(job -> job.getStatus().equals(TaskStatusEnum.FAIL_CHECKOUT.getCode())).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(notPassAndAbortTask)) {
+            notPassTask.addAll(notPassAndAbortTask);
+        }
+
         LOGGER.info("Succeed to collect failed pass tasks. Task ID: {}", notPassTask.stream().map(Task::getId).collect(Collectors.toList()));
         List<TaskRuleSimple> notPassTaskRuleSimples = AlarmUtil.notSafeTaskRuleSimple(notPassTask);
-
+        List<TaskRuleSimple> checkAlarmAcrossClusters = notPassTaskRuleSimples.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        List<Long> alarmedRuleIds = null;
+        if (CollectionUtils.isNotEmpty(checkAlarmAcrossClusters)) {
+            alarmedRuleIds = new ArrayList<>(checkAlarmAcrossClusters.size());
+        }
         List<Task> failedTask = tasks.stream().filter(job -> job.getStatus().equals(TaskStatusEnum.FAILED.getCode()) || job.getStatus().equals(TaskStatusEnum.CANCELLED.getCode())).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(notPassAndAbortTask)) {
+            failedTask = failedTask.stream().filter(task -> ! notPassAndAbortTask.contains(task)).collect(Collectors.toList());
+        }
+
         LOGGER.info("Succeed to collect failed tasks. Task ID: {}", failedTask.stream().map(Task::getId).collect(Collectors.toList()));
         List<TaskRuleSimple> failedTaskRuleSimples = AlarmUtil.getFailedTaskRule(failedTask);
         for (Iterator<TaskRuleSimple> taskRuleSimpleIterator = failedTaskRuleSimples.iterator(); taskRuleSimpleIterator.hasNext(); ) {
             TaskRuleSimple taskRuleSimple = taskRuleSimpleIterator.next();
             List<TaskRuleAlarmConfig> taskRuleAlarmConfigList = taskRuleSimple.getTaskRuleAlarmConfigList();
-            int count = (int) taskRuleAlarmConfigList.stream().filter(o -> !AlarmConfigStatusEnum.PASS.getCode().equals(o.getStatus())).count();
+            int count = (int) taskRuleAlarmConfigList.stream().filter(o -> ! AlarmConfigStatusEnum.PASS.getCode().equals(o.getStatus())).count();
             if (0 == count) {
                 taskRuleSimpleIterator.remove();
             }
         }
 
-        // 是否告警都跟配置的告警事件来判断  AlarmEventEnum a. only pass b. task failed, not pass + abort, not pass + not abort) c. pass, not pass + abort, not pass + not abort
+        // 是否告警都跟配置的告警事件来判断  AlarmEventEnum a. only pass b. task failed, not pass + abort, not pass + not abort c. pass, not pass + abort, not pass + not abort
         // CHECK_SUCCESS 校验成功、CHECK_FAILURE 校验失败、EXECUTION_COMPLETED 执行完成
         List<String> alreadyAlertApp = new ArrayList<>();
         for (Task task : tasks) {
             Set<TaskRuleSimple> taskRuleSimpleCollect = task.getTaskRuleSimples();
             for (TaskRuleSimple taskRuleSimple : taskRuleSimpleCollect) {
+                if (CollectionUtils.isNotEmpty(alarmedRuleIds) && alarmedRuleIds.contains(taskRuleSimple.getRuleId())) {
+                    continue;
+                }
+                boolean isAcrossCluster = false;
                 Rule rule = ruleDao.findById(taskRuleSimple.getRuleId());
+                if (checkAlarmAcrossClusters.contains(taskRuleSimple)) {
+                    alarmedRuleIds.add(taskRuleSimple.getRuleId());
+                    isAcrossCluster = true;
+                }
                 if (rule != null && StringUtils.isNotBlank(rule.getExecutionParametersName())) {
                     ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
                     if (executionParameters != null) {
@@ -518,7 +677,7 @@ public class TaskChecker implements IChecker {
                             if (executionParameters.getAlertLevel() != null && StringUtils.isNotBlank(executionParameters.getAlertReceiver())) {
                                 if (!alreadyAlertApp.contains(application.getId())) {
                                     List<TaskRuleSimple> taskRuleSimples = notPassTaskRuleSimples.stream().filter(taskRuleSimpleTemp -> taskRuleSimpleTemp.getAlertLevel() != null).collect(Collectors.toList());
-                                    handleCheckFailure(alreadyAlertApp, application, taskRuleSimples, null, null, null);
+                                    handleCheckFailure(alreadyAlertApp, application, task, taskRuleSimples, null, null, null);
                                 }
                                 if (!alreadyAlertApp.contains(application.getId())) {
                                     List<TaskRuleSimple> taskRuleSimples = failedTaskRuleSimples.stream().filter(taskRuleSimpleTemp -> taskRuleSimpleTemp.getAlertLevel() != null).collect(Collectors.toList());
@@ -533,17 +692,16 @@ public class TaskChecker implements IChecker {
                                         // a. only pass
                                         handleCheckSuccess(application, task, taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
                                     } else if (QualitisConstants.CHECK_FAILURE.toString().equals(parameters.getAlarmEvent().toString())) {
-                                        // b. task failed, not pass + abort
-                                        handleTaskFailure(alreadyAlertApp, application, failedTaskRuleSimples, taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
-                                        // b. not pass + not abort
-                                        handleCheckFailure(alreadyAlertApp, application, notPassTaskRuleSimples, taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
+                                        // b. task failed
+                                        handleTaskFailure(alreadyAlertApp, application, failedTaskRuleSimples, isAcrossCluster ? null : taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
+                                        // b. not pass + not abort, not pass + abort
+                                        handleCheckFailure(alreadyAlertApp, application, task, notPassTaskRuleSimples, isAcrossCluster ? null : taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
                                     } else if (QualitisConstants.EXECUTION_COMPLETED.toString().equals(parameters.getAlarmEvent().toString())) {
                                         // c. pass
                                         handleCheckSuccess(application, task, taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
                                         // c. not pass + abort
-                                        handleTaskFailureDueToAbort(application, failedTaskRuleSimples, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
                                         // c. not pass + not abort
-                                        handleCheckFailure(alreadyAlertApp, application, notPassTaskRuleSimples, taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
+                                        handleCheckFailure(alreadyAlertApp, application, task, notPassTaskRuleSimples, isAcrossCluster ? null : taskRuleSimple, parameters.getAlarmLevel(), parameters.getAlarmReceiver());
                                     }
                                 }
                             }
@@ -554,7 +712,7 @@ public class TaskChecker implements IChecker {
                     if ((null != rule && Boolean.TRUE.equals(rule.getAlert())) || (null != taskRuleSimple.getAlertLevel() && StringUtils.isNotEmpty(taskRuleSimple.getAlertReceiver()))) {
                         if (!alreadyAlertApp.contains(application.getId())) {
                             List<TaskRuleSimple> taskRuleSimples = notPassTaskRuleSimples.stream().filter(taskRuleSimpleTemp -> taskRuleSimpleTemp.getAlertLevel() != null).collect(Collectors.toList());
-                            handleCheckFailure(alreadyAlertApp, application, taskRuleSimples, null, null, null);
+                            handleCheckFailure(alreadyAlertApp, application, task, taskRuleSimples, null, null, null);
                         }
                         if (!alreadyAlertApp.contains(application.getId())) {
                             List<TaskRuleSimple> taskRuleSimples = failedTaskRuleSimples.stream().filter(taskRuleSimpleTemp -> taskRuleSimpleTemp.getAlertLevel() != null).collect(Collectors.toList());
@@ -565,32 +723,6 @@ public class TaskChecker implements IChecker {
             }
         }
         handleAbnormalDataRecord(tasks);
-    }
-
-    /**
-     * not pass + abort(校验不通过+阻断)
-     *
-     * @param application
-     * @param failedTaskRuleSimples
-     * @param alertRank
-     * @param alertReceiver
-     */
-    private void handleTaskFailureDueToAbort(Application application, List<TaskRuleSimple> failedTaskRuleSimples, Integer alertRank, String alertReceiver) {
-        if (!application.getFailTaskNum().equals(0)) {
-            LOGGER.info("Start to filter not pass + abort task to alarm.");
-            if (CollectionUtils.isNotEmpty(failedTaskRuleSimples)) {
-                int notCheckNum = failedTaskRuleSimples.stream()
-                        .map(taskRuleSimple -> taskRuleSimple.getTaskRuleAlarmConfigList())
-                        .flatMap(taskRuleAlarmConfigList -> taskRuleAlarmConfigList.stream())
-                        .filter(taskRuleAlarmConfig -> AlarmConfigStatusEnum.NOT_CHECK.getCode().equals(taskRuleAlarmConfig.getStatus()))
-                        .collect(Collectors.toList()).size();
-                LOGGER.info("Task has not check num is : " + notCheckNum);
-                if (notCheckNum != 0) {
-                    return;
-                }
-                AlarmUtil.sendFailedMessage(application, failedTaskRuleSimples, imsConfig, alarmClient, alarmInfoDao, userDao, alertRank, alertReceiver);
-            }
-        }
     }
 
     /**
@@ -636,37 +768,56 @@ public class TaskChecker implements IChecker {
             List<TaskRuleSimple> safes = new ArrayList<>();
             safes.add(taskRuleSimple);
             LOGGER.info("Succeed to collect check success simple rule. Simple rules: {}", safes);
-            AlarmUtil.sendAlarmMessage(application, safes, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alert, alertReceiver, true);
+            AlarmUtil.sendAlarmMessage(application, safes, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alert, alertReceiver, true, false);
         }
     }
 
 
     /**
      * not pass + not abort(校验不通过+不阻断)
-     *
-     * @param alreadyAlertApp
+     * not pass + abort(校验失败+阻断)
+     *  @param alreadyAlertApp
      * @param application
+     * @param task
      * @param notSafes
      * @param currentTaskRuleSimple
      */
-    private void handleCheckFailure(List<String> alreadyAlertApp, Application application, List<TaskRuleSimple> notSafes, TaskRuleSimple currentTaskRuleSimple, Integer alertRank, String alertReceiver) {
-        if (!application.getNotPassTaskNum().equals(0)) {
+    private void handleCheckFailure(List<String> alreadyAlertApp, Application application, Task task, List<TaskRuleSimple> notSafes, TaskRuleSimple currentTaskRuleSimple, Integer alertRank, String alertReceiver) {
+        boolean isAbort = false;
+        if (Boolean.TRUE.equals(task.getAbortOnFailure())) {
+            isAbort = true;
+        }
+        if ((isAbort && TaskStatusEnum.FAILED.getCode().equals(task.getStatus())) || !application.getNotPassTaskNum().equals(0)) {
             if (null != currentTaskRuleSimple) {
                 if (notSafes.contains(currentTaskRuleSimple)) {
                     List<TaskRuleSimple> taskRuleSimples = new ArrayList<>();
                     taskRuleSimples.add(currentTaskRuleSimple);
-                    AlarmUtil.sendAlarmMessage(application, taskRuleSimples, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alertRank, alertReceiver, false);
+
+                    AlarmUtil.sendAlarmMessage(application, taskRuleSimples, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alertRank, alertReceiver, false, isAbort);
                 }
             } else {
                 alreadyAlertApp.add(application.getId());
-                AlarmUtil.sendAlarmMessage(application, notSafes, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alertRank, alertReceiver, false);
+                AlarmUtil.sendAlarmMessage(application, notSafes, imsConfig, alarmClient, alarmInfoDao, userDao, taskResultStatusDao, alertRank, alertReceiver, false, isAbort);
             }
 
         }
     }
 
+    private boolean ifTaskHasNotCheckRuleAlarmConfig(Collection<TaskRuleSimple> taskRuleSimples) {
+        int notCheckNum = taskRuleSimples.stream()
+                .map(taskRuleSimple -> taskRuleSimple.getTaskRuleAlarmConfigList())
+                .flatMap(taskRuleAlarmConfigList -> taskRuleAlarmConfigList.stream())
+                .filter(taskRuleAlarmConfig -> AlarmConfigStatusEnum.NOT_CHECK.getCode().equals(taskRuleAlarmConfig.getStatus()))
+                .collect(Collectors.toList()).size();
+        LOGGER.info("Task has not check num is : " + notCheckNum);
+        if (notCheckNum == 0) {
+            return true;
+        }
+        return false;
+    }
+
     /**
-     * task failed, not pass + abort(任务失败、校验失败+阻断)
+     * task failed(任务失败)
      *
      * @param alreadyAlertApp
      * @param application
@@ -693,7 +844,7 @@ public class TaskChecker implements IChecker {
     private void constructAbnormalDataRecordInfo(Task task, TaskRuleSimple taskRuleSimple, List<RuleMetric> ruleMetricList, List<AbnormalDataRecordInfo> abnormalDataRecordInfoList) {
         RuleMetric currentRuleMetric = ruleMetricList.iterator().next();
         String departmentName = currentRuleMetric.getDevDepartmentName();
-        Integer subSystemId = currentRuleMetric.getSubSystemId();
+        String subSystemId = currentRuleMetric.getSubSystemId();
         if (null == subSystemId) {
             subSystemId = QualitisConstants.SUB_SYSTEM_ID;
         }
@@ -927,6 +1078,9 @@ public class TaskChecker implements IChecker {
         Set<TaskRuleSimple> taskRuleSimpleCollect = task.getTaskRuleSimples();
         for (TaskRuleSimple taskRuleSimple : taskRuleSimpleCollect) {
             Rule rule = ruleDao.findById(taskRuleSimple.getRuleId());
+            if (null == rule) {
+                return false;
+            }
             if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
                 ExecutionParameters executionParameters = executionParametersDao
                         .findByNameAndProjectId(rule.getExecutionParametersName(), rule.getProject().getId());
@@ -940,6 +1094,21 @@ public class TaskChecker implements IChecker {
             }
         }
         return false;
+    }
+
+    private void printImsLog(Application applicationInDb, ApplicationStatusEnum applicationStatusEnum){
+        try {
+            if(!intellectCheckProjectName.equals(applicationInDb.getProjectName())){
+                return;
+            }
+            java.time.LocalDateTime submitTime = java.time.LocalDateTime.parse(applicationInDb.getSubmitTime(), FORMATTER);
+            java.time.LocalDateTime finishTime = java.time.LocalDateTime.parse(applicationInDb.getFinishTime(), FORMATTER);
+            long costTime = ChronoUnit.SECONDS.between(submitTime, finishTime);
+            LOGGER.info(String.format(IMS_LOG, applicationStatusEnum.getCode(), costTime, applicationStatusEnum.getMessage()));
+        } catch (Exception e) {
+            LOGGER.error("ims_omnis_prophet collect log printing failure");
+            LOGGER.error(e.getMessage(), e);
+        }
     }
 
 }

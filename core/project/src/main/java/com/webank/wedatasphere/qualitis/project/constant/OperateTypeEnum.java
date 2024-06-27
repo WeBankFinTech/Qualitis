@@ -23,17 +23,21 @@ public enum OperateTypeEnum {
     /**
      * Type of project
      */
-    UNAUTHORIZE_PROJECT(12, "Unauthorized Project", "取消授权项目"),
-    AUTHORIZE_PROJECT(11, "Authorized Project", "授权项目"),
-    SUBMIT_PROJECT(10, "Submit Project", "提交项目"),
     CREATE_PROJECT(1, "Create Project", "创建项目"),
     IMPORT_PROJECT(2, "Import Project", "导入项目"),
-    EXPORT_PROJECT(3, "Export Project","导出项目"),
+    EXPORT_PROJECT(3, "Export Project", "导出项目"),
     DELETE_PROJECT(4, "Create Project", "删除项目"),
     MODIFY_PROJECT(5, "Modify Project", "修改项目"),
-    CREATE_RULES(6,"Create Project","创建规则"),
-    MODIFY_RULES(7,"Modify Project","修改规则"),
-    DELETE_RULES(8,"Delete Project","删除规则"),
+    CREATE_RULES(6, "Create Project", "创建规则"),
+    MODIFY_RULES(7, "Modify Project", "修改规则"),
+    DELETE_RULES(8, "Delete Project", "删除规则"),
+    SUBMIT_PROJECT(10, "Submit Project", "提交项目"),
+    AUTHORIZE_PROJECT(11, "Authorized Project", "授权项目"),
+    UNAUTHORIZE_PROJECT(12, "Unauthorized Project", "取消授权项目"),
+    SUBSCRIBE_PROJECT(13, "Subscribe Project", "订阅项目"),
+    MODIFY_SUBSCRIBE_PROJECT(14, "Modify Subscribe Project", "编辑订阅项目"),
+    DELETE_SUBSCRIBE_PROJECT(15, "Delete Subscribe Project", "删除订阅项目"),
+    ENABLE_OR_DISABLE_RULES(16, "Enable Or Disable Rules", "启用或禁用规则")
     ;
 
     private Integer code;
@@ -59,23 +63,12 @@ public enum OperateTypeEnum {
         return code;
     }
 
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }

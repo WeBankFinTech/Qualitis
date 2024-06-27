@@ -32,7 +32,7 @@ public class AddProjectRequest {
     private String cnName;
     private String username;
     @JsonProperty("sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
     @JsonProperty("sub_system_name")
     private String subSystemName;
     private String description;
@@ -85,11 +85,11 @@ public class AddProjectRequest {
         this.projectLabels = projectLabels;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 

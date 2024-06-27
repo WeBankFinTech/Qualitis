@@ -1,6 +1,9 @@
 package com.webank.wedatasphere.qualitis.rule.builder;
 
+import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -11,7 +14,10 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceDao;
+import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
@@ -22,6 +28,7 @@ import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.rule.util.DatasourceEnvUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import org.apache.commons.lang.StringUtils;
@@ -29,12 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -57,8 +59,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     private String proxyUser;
 
-    private String datasourceCluster;
-
+    private LinkisConfig linkisConfig;
 
     private static Integer TWO = 2;
     private static Integer THREE = 3;
@@ -83,6 +84,10 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     private RuleMetricDao ruleMetricDao;
 
+    private LinkisDataSourceEnvService linkisDataSourceEnvService;
+
+    private LinkisDataSourceDao linkisDataSourceDao;
+
     private MetaDataClient metaDataClient;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AddRuleRequestBuilder.class);
@@ -97,19 +102,23 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         this.ruleMetricDao = ruleMetricDao;
     }
 
-    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, MetaDataClient metaDataClient, String datasourceCluster) {
+    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, LinkisDataSourceEnvService linkisDataSourceEnvService, MetaDataClient metaDataClient, LinkisConfig linkisConfig) {
         addRuleRequest = new AddRuleRequest();
         this.metaDataClient = metaDataClient;
         this.ruleMetricDao = ruleMetricDao;
-        this.datasourceCluster = datasourceCluster;
+        this.ruleGroupDao = ruleGroupDao;
+        this.linkisConfig = linkisConfig;
+        this.linkisDataSourceEnvService = linkisDataSourceEnvService;
     }
 
-    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, String datasourceCluster) {
+    public AddRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, LinkisDataSourceEnvService linkisDataSourceEnvService, LinkisDataSourceDao linkisDataSourceDao, MetaDataClient metaDataClient, LinkisConfig linkisConfig) {
         addRuleRequest = new AddRuleRequest();
         this.metaDataClient = metaDataClient;
-        this.ruleGroupDao = ruleGroupDao;
+        this.linkisDataSourceEnvService = linkisDataSourceEnvService;
+        this.linkisDataSourceDao = linkisDataSourceDao;
         this.ruleMetricDao = ruleMetricDao;
-        this.datasourceCluster = datasourceCluster;
+        this.ruleGroupDao = ruleGroupDao;
+        this.linkisConfig = linkisConfig;
     }
 
     @Override
@@ -125,9 +134,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-                                                     boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
-            throws Exception {
+    public AddRequestBuilder basicInfoWithDataSource(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue
+        , String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
         // Datasource
         solveDatasource(datasource);
 
@@ -144,6 +152,49 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
 
         initAlarm(alarmVariable, uploadRuleMetricValue, uploadAbnormalValue);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception {
+        // Get datasource env array
+        Long linkisDataSourceId = this.addRuleRequest.getDatasource().stream().filter(dataSourceRequest -> dataSourceRequest.getLinkisDataSourceId() != null).map(dataSourceRequest -> dataSourceRequest.getLinkisDataSourceId()).iterator().next();
+        List<LinkisDataSourceEnv> linkisDataSourceEnvs = linkisDataSourceEnvService.queryAllEnvs(linkisDataSourceId);
+        // Filter with conditions
+        linkisDataSourceEnvs = linkisDataSourceEnvs.stream().filter(linkisDataSourceEnv -> dcnNums.contains(linkisDataSourceEnv.getDcnNum())).collect(Collectors.toList());
+        // Reset env request
+        resetDatasourceEnv(linkisDataSourceEnvs, QualitisConstants.CMDB_KEY_DCN_NUM);
+        return this;
+    }
+
+    private void resetDatasourceEnv(List<LinkisDataSourceEnv> linkisDataSourceEnvs, String rangeType) {
+        List<DataSourceRequest> dataSourceRequests = this.addRuleRequest.getDatasource();
+        List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>(linkisDataSourceEnvs.size());
+
+        for (LinkisDataSourceEnv linkisDataSourceEnv : linkisDataSourceEnvs) {
+            DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest(linkisDataSourceEnv);
+            dataSourceEnvRequests.add(dataSourceEnvRequest);
+        }
+
+        dataSourceRequests = dataSourceRequests.stream().map(dataSourceRequest -> {
+            dataSourceRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
+            dataSourceRequest.setDcnRangeType(rangeType);
+            return dataSourceRequest;
+        }).collect(Collectors.toList());
+
+        this.addRuleRequest.setDatasource(dataSourceRequests);
+    }
+
+    @Override
+    public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        List<String> logicAreaList = Arrays.asList(StringUtils.split(logicAreas, SpecCharEnum.COMMA.getValue()));
+        // Get datasource env array
+        Long linkisDataSourceId = this.addRuleRequest.getDatasource().stream().filter(dataSourceRequest -> dataSourceRequest.getLinkisDataSourceId() != null).map(dataSourceRequest -> dataSourceRequest.getLinkisDataSourceId()).iterator().next();
+        List<LinkisDataSourceEnv> linkisDataSourceEnvs = linkisDataSourceEnvService.queryAllEnvs(linkisDataSourceId);
+        // Filter with conditions
+        linkisDataSourceEnvs = linkisDataSourceEnvs.stream().filter(linkisDataSourceEnv -> logicAreaList.contains(linkisDataSourceEnv.getLogicArea())).collect(Collectors.toList());
+        // Reset env request
+        resetDatasourceEnv(linkisDataSourceEnvs, QualitisConstants.CMDB_KEY_LOGIC_AREA);
         return this;
     }
 
@@ -230,7 +281,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
         List<ColumnInfoDetail> cols = new ArrayList<>();
         try {
-            if (StringUtils.isEmpty(envsStringBuffer.toString())) {
+            if (StringUtils.isEmpty(envsStringBuffer.toString()) && StringUtils.isEmpty(dataSourceName.toString()) && StringUtils.isEmpty(dataSourceId.toString())) {
                 cols = metaDataClient.getColumnInfo(clusterName, database, table, StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
             }
         } catch (Exception e) {
@@ -246,14 +297,22 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
             , String clusterName, String database, String table, String col, String filter, StringBuilder dataSourceId, StringBuilder dataSourceName, List<ColumnInfoDetail> cols, StringBuilder envsStringBuffer) throws Exception {
 
         String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
-        String realClusterName = this.datasourceCluster;
+        String realClusterName = this.linkisConfig.getDatasourceCluster();
 
         StringBuilder dataSourceType = new StringBuilder();
         List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>();
-        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, realUserName, realClusterName, metaDataClient, database, table, cols);
+        DatasourceEnvUtil.constructDatasourceAndEnv(dataSourceId, dataSourceName, dataSourceType, dataSourceEnvRequests, envsStringBuffer, linkisConfig.getDatasourceAdmin(), realClusterName, metaDataClient, database, table, cols);
 
         if (StringUtils.isNotEmpty(dataSourceId.toString())) {
             dataSourceRequest.setLinkisDataSourceId(Long.parseLong(dataSourceId.toString()));
+            if (StringUtils.isEmpty(envsStringBuffer.toString())) {
+                LOGGER.info("Start to get all envs.");
+                List<LinkisDataSourceEnv> linkisDataSourceEnvs = linkisDataSourceEnvService.queryAllEnvs(Long.parseLong(dataSourceId.toString()));
+                for (LinkisDataSourceEnv linkisDataSourceEnv : linkisDataSourceEnvs) {
+                    DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest(linkisDataSourceEnv);
+                    dataSourceEnvRequests.add(dataSourceEnvRequest);
+                }
+            }
         }
         dataSourceRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
         dataSourceRequest.setLinkisDataSourceType(dataSourceType.toString());
@@ -300,9 +359,9 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         dataSourceRequest.setTableName(table);
         dataSourceRequest.setClusterName(clusterName);
         dataSourceRequest.setColNames(dataSourceColumnRequests);
+        dataSourceRequest.setDcnRangeType(QualitisConstants.DCN_RANGE_TYPE_ALL);
         dataSourceRequest.setProxyUser(realUserName);
         dataSourceRequest.setFilter(filter);
-
         dataSourceRequests.add(dataSourceRequest);
     }
 
@@ -331,7 +390,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder basicInfoWithDataSource(String datasource, List<TemplateArgumentRequest> templateArgumentRequests
+    public AddRequestBuilder basicInfoWithDataSource(String datasource, Long standardValueVersionId, List<TemplateArgumentRequest> templateArgumentRequests
             , boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
         // Datasource
@@ -339,6 +398,9 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
         // Use automatic generate rule name and project.
         automaticProjectRuleSetting();
+        if (standardValueVersionId != null) {
+            addRuleRequest.setStandardValueVersionId(standardValueVersionId);
+        }
         addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
         // Alert info.
         alertSetting(alertInfo);
@@ -385,10 +447,20 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
+    public AddRequestBuilder basicInfoWithDataSourceAndCluster(String cluster, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        return this;
+    }
+
+    @Override
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult,
                                                      boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
         return null;
+    }
+
+    @Override
+    public AddRequestBuilder basicInfoWithoutDataSource(String cluster, String datasource, String param1, String param2, String param3, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        return this;
     }
 
     private void templateArgumentSetting(List<TemplateArgumentRequest> templateArgumentRequests, String condition1, String condition2) {
@@ -435,6 +507,24 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     @Override
     public AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException {
         addRuleRequest.setExecutionParametersName(executionParameterName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCompleteEvent(String alarmEvents) {
+        addRuleRequest.setExecutionCompleted(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckSuccessEvent(String alarmEvents) {
+        addRuleRequest.setVerificationSuccessful(alarmEvents);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder alarmWithCheckFailedEvent(String alarmEvents) {
+        addRuleRequest.setVerificationFailed(alarmEvents);
         return this;
     }
 
@@ -1678,7 +1768,13 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder unionAll() throws UnExpectedRequestException {
-        addRuleRequest.setUnionAll(true);
+        addRuleRequest.setUnionWay(UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder unionWay(int unionWay) throws UnExpectedRequestException {
+        addRuleRequest.setUnionWay(unionWay);
         return this;
     }
 
@@ -1691,6 +1787,21 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
             RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
             addRuleRequest.setRuleGroupId(savedRuleGroup.getId());
         }
+        addRuleRequest.setRuleGroupName(ruleGroupName);
+        return this;
+    }
+
+
+    @Override
+    public AddRequestBuilder moveToGroup(String ruleGroupName) throws UnExpectedRequestException {
+        RuleGroup ruleGroup = ruleGroupDao.findByRuleGroupNameAndProjectId(ruleGroupName, project.getId());
+        if (ruleGroup != null) {
+            addRuleRequest.setNewRuleGroupId(ruleGroup.getId());
+        } else {
+            RuleGroup savedRuleGroup = ruleGroupDao.saveRuleGroup(new RuleGroup(ruleGroupName, project.getId()));
+            addRuleRequest.setNewRuleGroupId(savedRuleGroup.getId());
+        }
+        addRuleRequest.setRuleGroupName(ruleGroupName);
         return this;
     }
 
@@ -1711,6 +1822,11 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder joinType(String joinType) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder addUdfs(String udfNames) throws UnExpectedRequestException {
         return this;
     }
 

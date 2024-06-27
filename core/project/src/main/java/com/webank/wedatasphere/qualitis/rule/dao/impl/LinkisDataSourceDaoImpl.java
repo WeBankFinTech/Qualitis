@@ -48,6 +48,11 @@ public class LinkisDataSourceDaoImpl implements LinkisDataSourceDao {
     }
 
     @Override
+    public List<LinkisDataSource> getByLinkisDataSourceNameList(List<String> dataSourceNameList) {
+        return linkisDataSourceRepository.findByLinkisDataSourceNameIn(dataSourceNameList);
+    }
+
+    @Override
     public List<LinkisDataSource> getByLinkisDataSourceIds(List<Long> dataSourceIds) {
         return linkisDataSourceRepository.findByLinkisDataSourceIdIn(dataSourceIds);
     }
@@ -57,7 +62,7 @@ public class LinkisDataSourceDaoImpl implements LinkisDataSourceDao {
             String dataSourceName, Long dataSourceTypeId, List<Long> dataVisibilityDeptList
             , String createUser, String searchCreateUser, String searchModifyUser
             , String subSystemName, Long devDepartmentId, Long opsDepartmentId
-            , Boolean ignoreDataAuthorityCondition, List<Long> searchDataVisibilityDeptList, int page, int size) {
+            , boolean ignoreDataAuthorityCondition, List<Long> searchDataVisibilityDeptList, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return linkisDataSourceRepository.findAll((root, query, builder) -> {
@@ -127,6 +132,19 @@ public class LinkisDataSourceDaoImpl implements LinkisDataSourceDao {
     @Override
     public List<String> getAllDataSourceNameList() {
         return linkisDataSourceRepository.findAllLinkisDataSourceNameList();
+    }
+
+    @Override
+    public List<LinkisDataSource> getAllDataSourceEnvsIsNotNull() {
+        return linkisDataSourceRepository.findAll(((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("envs").isNotNull());
+            predicates.add(criteriaBuilder.notEqual(root.get("envs"), ""));
+            Predicate[] p = new Predicate[predicates.size()];
+            query.where(criteriaBuilder.and(predicates.toArray(p)));
+
+            return query.getRestriction();
+        }));
     }
 
 }

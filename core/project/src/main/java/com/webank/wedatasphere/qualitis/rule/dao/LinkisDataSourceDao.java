@@ -26,11 +26,18 @@ public interface LinkisDataSourceDao {
     LinkisDataSource getByLinkisDataSourceId(Long dataSourceId);
 
     /**
-     * get By Linkis Data Source Id
+     * get By Linkis Data Source Name
      * @param dataSourceName
      * @return
      */
     LinkisDataSource getByLinkisDataSourceName(String dataSourceName);
+
+    /**
+     * get By Linkis Data Source Name List
+     * @param dataSourceNameList
+     * @return
+     */
+    List<LinkisDataSource> getByLinkisDataSourceNameList(List<String> dataSourceNameList);
 
     /**
      * get By Linkis Data Source Ids
@@ -58,12 +65,18 @@ public interface LinkisDataSourceDao {
      */
     Page<LinkisDataSource> filterWithPage(String dataSourceName, Long dataSourceTypeId, List<Long> dataVisibilityDeptList, String createUser
             , String searchCreateUser, String searchModifyUser, String subSystemName, Long devDepartmentId, Long opsDepartmentId
-            , Boolean ignoreDataAuthorityCondition, List<Long> searchDataVisibilityDeptList, int page, int size);
+            , boolean ignoreDataAuthorityCondition, List<Long> searchDataVisibilityDeptList, int page, int size);
 
     /**
      * get all datasource name
      * @return
      */
     List<String> getAllDataSourceNameList();
+
+    /**
+     * getAllDataSourceEnvsIsNotNull
+     * @return
+     */
+    List<LinkisDataSource> getAllDataSourceEnvsIsNotNull();
 
 }

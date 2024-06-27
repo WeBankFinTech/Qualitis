@@ -20,20 +20,38 @@ public class DataSourceEnv {
      */
     private String envDesc;
     /**
-     * 数据库名称
+     * 数据库实例（来自DCN）
      */
-    private String database;
+    private String databaseInstance;
+    private String dcnNum;
+    private String logicArea;
     /**
      * 非共享登录认证信息
      */
     private ConnectParams connectParams;
 
-    public String getDatabase() {
-        return database;
+    public String getDatabaseInstance() {
+        return databaseInstance;
     }
 
-    public void setDatabase(String database) {
-        this.database = database;
+    public void setDatabaseInstance(String databaseInstance) {
+        this.databaseInstance = databaseInstance;
+    }
+
+    public String getDcnNum() {
+        return dcnNum;
+    }
+
+    public void setDcnNum(String dcnNum) {
+        this.dcnNum = dcnNum;
+    }
+
+    public String getLogicArea() {
+        return logicArea;
+    }
+
+    public void setLogicArea(String logicArea) {
+        this.logicArea = logicArea;
     }
 
     public Long getId() {

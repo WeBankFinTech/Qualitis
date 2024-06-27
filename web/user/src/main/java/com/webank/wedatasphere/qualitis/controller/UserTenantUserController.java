@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddUserTenantUserRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteUserTenantUserRequest;
@@ -57,7 +58,7 @@ public class UserTenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to create user tenant user, user name: {}, tenant user name: {}, caused by: {}", request.getUsername(), request.getTenantUserName(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CREATE_USER_TENANT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CREATE_USER_TENANT_USER}", null);
         }
     }
 
@@ -71,7 +72,7 @@ public class UserTenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete user tenant user, user tenant user_id: {}, caused by: {}", request.getUserTenantUserId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USER_TENANT_USER}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_USER_TENANT_USER}", null);
         }
     }
 
@@ -86,7 +87,7 @@ public class UserTenantUserController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all user tenant user by tenant_user name, tenant user name: {}, caused by: {}", tenantUserName, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ALL_USER_TENANT_USERS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ALL_USER_TENANT_USERS}", null);
         }
     }
 

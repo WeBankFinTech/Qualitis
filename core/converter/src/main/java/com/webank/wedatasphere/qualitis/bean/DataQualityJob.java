@@ -30,6 +30,7 @@ public class DataQualityJob {
     private Boolean engineReuse;
     private String engineType;
     private Integer resultNum;
+    private Integer index;
 
     public DataQualityJob() {
         // Initial
@@ -91,6 +92,14 @@ public class DataQualityJob {
 
     public void setResultNum(Integer resultNum) {
         this.resultNum = resultNum;
+    }
+
+    public Integer getIndex() {
+        return index;
+    }
+
+    public void setIndex(Integer index) {
+        this.index = index;
     }
 
     @Override

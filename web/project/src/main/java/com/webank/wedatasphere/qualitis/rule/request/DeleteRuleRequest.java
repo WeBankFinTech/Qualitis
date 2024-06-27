@@ -35,4 +35,9 @@ public class DeleteRuleRequest extends AbstractDeleteRequest{
     public static void checkRequest(DeleteRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "request");
     }
+
+    @Override
+    public String toString() {
+        return "DeleteRuleRequest{} " + super.toString();
+    }
 }

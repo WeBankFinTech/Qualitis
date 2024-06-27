@@ -30,6 +30,9 @@ public class ServiceInfoResponse {
     @JsonProperty("modify_time")
     private String modifyTime;
 
+    @JsonProperty("collect_status")
+    private Integer collectStatus;
+
     public ServiceInfoResponse() {
     }
 
@@ -46,6 +49,7 @@ public class ServiceInfoResponse {
         this.createTime = serviceInfo.getCreateTime();
         this.modifyUser = serviceInfo.getModifyUser();
         this.modifyTime = serviceInfo.getModifyTime();
+        this.collectStatus = serviceInfo.getCollectStatus();
     }
 
     public String getCreateUser() {
@@ -118,5 +122,13 @@ public class ServiceInfoResponse {
 
     public void setTenantUserName(String tenantUserName) {
         this.tenantUserName = tenantUserName;
+    }
+
+    public Integer getCollectStatus() {
+        return collectStatus;
+    }
+
+    public void setCollectStatus(Integer collectStatus) {
+        this.collectStatus = collectStatus;
     }
 }

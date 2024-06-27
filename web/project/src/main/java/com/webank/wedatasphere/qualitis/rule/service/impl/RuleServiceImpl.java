@@ -16,7 +16,10 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.TemplateFunctionNameEnum;
+import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -33,17 +36,54 @@ import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleLockRangeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.StatisticsValueTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.*;
-import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
+import com.webank.wedatasphere.qualitis.rule.dao.BdpClientHistoryDao;
+import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
+import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
+import com.webank.wedatasphere.qualitis.rule.entity.BdpClientHistory;
+import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
+import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
+import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVersion;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.TemplateStatisticsInputMeta;
 import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
-import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
+import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
+import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.EnableRequest;
+import com.webank.wedatasphere.qualitis.rule.request.EnableRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleEnableResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.rule.service.*;
+import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleLockService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
@@ -127,7 +167,15 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     @Autowired
     private ProjectService projectService;
     @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
+    @Autowired
+    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
+    @Autowired
+    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
+    @Autowired
     private RuleLockService ruleLockService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleServiceImpl.class);
 
@@ -154,13 +202,14 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         AddRuleRequest.checkRequest(request, false);
+        LOGGER.info("add single rule request detail: {}", request.toString());
+
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
-        LOGGER.info("Add rule request: " + request.toString());
         // Check existence of rule template
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getRuleTemplateId());
 
@@ -195,6 +244,18 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             if (CollectionUtils.isNotEmpty(ruleGroup.getRuleDataSources())) {
                 groupRules = true;
             }
+        } else if (request.getNewRuleGroupId() != null) {
+            ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
+            if (ruleGroup == null) {
+                throw new UnExpectedRequestException(String.format("Rule Group: %s {&DOES_NOT_EXIST}", request.getRuleGroupId()));
+            }
+            if (StringUtils.isNotEmpty(ruleGroupName)) {
+                ruleGroup.setRuleGroupName(ruleGroupName);
+            }
+            ruleGroup = ruleGroupDao.saveRuleGroup(ruleGroup);
+            if (CollectionUtils.isNotEmpty(ruleGroup.getRuleDataSources())) {
+                groupRules = true;
+            }
         } else {
             if (StringUtils.isEmpty(ruleGroupName)) {
                 ruleGroupName = "Group_" + UuidGenerator.generate();
@@ -213,6 +274,8 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         }
 
         setExecutionParametersInfo(request, groupRules, projectInDb, newRule);
+
+        handleStandardValue(request, newRule);
 
         Rule savedRule = ruleDao.saveRule(newRule);
         LOGGER.info("Succeed to save rule, rule ID: {}", savedRule.getId());
@@ -242,7 +305,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         setRuleInfo(savedRule, savedRuleVariables, savedAlarmConfigs, savedRuleDataSource);
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to add rule, rule id: {}", response.getRuleId());
-        return new GeneralResponse<>("200", "{&ADD_RULE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_RULE_SUCCESSFULLY}", response);
     }
 
     private List<RuleVariable> extractionRuleVariables(Template templateInDb, Rule savedRule, List<DataSourceRequest> datasource, List<TemplateArgumentRequest> templateArgumentRequests, String variables) throws UnExpectedRequestException {
@@ -253,6 +316,19 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         List<RuleVariable> savedRuleVariables = ruleVariableService.saveRuleVariable(ruleVariables);
         LOGGER.info(variables, savedRuleVariables);
         return savedRuleVariables;
+    }
+
+    private StandardValueVersion handleStandardValue(AddRuleRequest request, Rule newRule) {
+        //标准值版本id和英文名称
+        StandardValueVersion standardValueVersion = null;
+        if (request.getStandardValueVersionId() != null) {
+            standardValueVersion = standardValueVersionDao.findById(request.getStandardValueVersionId());
+            if (standardValueVersion != null) {
+                newRule.setStandardValueVersionId(request.getStandardValueVersionId());
+                newRule.setStandardValueVersionEnName(standardValueVersion.getEnName());
+            }
+        }
+        return standardValueVersion;
     }
 
     private void setRuleInfo(Rule savedRule, List<RuleVariable> savedRuleVariables, List<AlarmConfig> savedAlarmConfigs, List<RuleDataSource> savedRuleDataSource) {
@@ -266,7 +342,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (groupRules || executionParameters != null) {
                 newRule.setExecutionParametersName(request.getExecutionParametersName());
-                newRule.setUnionAll(executionParameters.getUnionAll());
+                newRule.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -283,10 +359,10 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     private void setAddRuleInfo(AddRuleRequest request, Rule newRule) {
-        extractionAddOrUpdate(newRule, request.getUnionAll(), request.getRuleEnable(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getDeleteFailCheckResult(), request.getAbortOnFailure(), request.getStaticStartupParam(), request.getSpecifyStaticStartupParam(), request.getAbnormalCluster(), request.getAbnormalDatabase(), request.getAbnormalProxyUser());
+        extractionAddOrUpdate(newRule, request.getUnionWay(), request.getRuleEnable(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getDeleteFailCheckResult(), request.getAbortOnFailure(), request.getStaticStartupParam(), request.getSpecifyStaticStartupParam(), request.getAbnormalCluster(), request.getAbnormalDatabase(), request.getAbnormalProxyUser());
     }
 
-    private void extractionAddOrUpdate(Rule newRule, Boolean unionAll, Boolean ruleEnable, Boolean alert, Integer alertLevel, String alertReceiver, Boolean deleteFailCheckResult, Boolean abortOnFailure, String staticStartupParam, Boolean specifyStaticStartupParam, String abnormalCluster, String abnormalDatabase, String abnormalProxyUser) {
+    private void extractionAddOrUpdate(Rule newRule, Integer unionWay, Boolean ruleEnable, Boolean alert, Integer alertLevel, String alertReceiver, Boolean deleteFailCheckResult, Boolean abortOnFailure, String staticStartupParam, Boolean specifyStaticStartupParam, String abnormalCluster, String abnormalDatabase, String abnormalProxyUser) {
         newRule.setExecutionParametersName(null);
         newRule.setAlert(alert);
         if (alert != null && alert) {
@@ -301,7 +377,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         newRule.setAbnormalDatabase(StringUtils.isNotBlank(abnormalDatabase) ? abnormalDatabase : null);
         newRule.setAbnormalProxyUser(StringUtils.isNotBlank(abnormalProxyUser) ? abnormalProxyUser : null);
         newRule.setEnable(ruleEnable);
-        newRule.setUnionAll(unionAll);
+        newRule.setUnionWay(unionWay);
     }
 
     @Override
@@ -319,6 +395,8 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     public GeneralResponse<Object> deleteRule(DeleteRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         DeleteRuleRequest.checkRequest(request);
+        LOGGER.info("delete single rule request detail: {}", request.toString());
+
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
         if (ruleInDb == null || !ruleInDb.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {
@@ -332,23 +410,24 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
         projectService.checkProjectPermission(projectInDb, loginUser, permissions);
 
-        return deleteRuleReal(ruleInDb);
+        return deleteRuleReal(ruleInDb,null);
     }
 
     @Override
-    public GeneralResponse<Object> deleteRuleReal(Rule rule) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deleteRuleReal(Rule rule,String loginUser) throws UnExpectedRequestException {
         // Delete bdp-client history
         BdpClientHistory bdpClientHistory = bdpClientHistoryDao.findByRuleId(rule.getId());
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
         // Delete rule
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         ruleDao.deleteRule(rule);
         LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
 
-        super.recordEvent(HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
+        super.recordEvent(StringUtils.isNotBlank(loginUser) ? loginUser : HttpUtils.getUserName(httpServletRequest), rule, OperateTypeEnum.DELETE_RULES);
 
-        return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -380,19 +459,20 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     @Override
-    public List<Rule> getDeployExecutionParameters(Long projectId, String name) {
-        return ruleDao.getDeployExecutionParameters(projectId, name);
+    public List<Rule> getDeployStandardVersionId(Long standardVersionId) {
+        return ruleDao.getDeployStandardVersionId(standardVersionId);
     }
 
     private GeneralResponse<RuleResponse> modifyRuleDetailReal(ModifyRuleRequest request, String loginUser, boolean groupRules)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         ModifyRuleRequest.checkRequest(request);
+        LOGGER.info("modify single rule request detail: {}", request.toString());
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
-        if (request.getUnionAll() == null) {
-            request.setUnionAll(false);
+        if (request.getUnionWay() == null) {
+            request.setUnionWay(UnionWayEnum.NO_COLLECT_CALCULATE.getCode());
         }
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(request.getRuleId());
@@ -418,6 +498,21 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         if (CollectionUtils.isNotEmpty(ruleInDb.getRuleGroup().getRuleDataSources())) {
             groupRules = true;
         }
+
+        if (request.getRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
+
+        if (request.getNewRuleGroupId() != null) {
+            RuleGroup ruleGroup = ruleGroupDao.findById(request.getNewRuleGroupId());
+            if (ruleGroup != null) {
+                ruleInDb.setRuleGroup(ruleGroup);
+            }
+        }
+
         String ruleGroupName = request.getRuleGroupName();
         if (StringUtils.isNotEmpty(ruleGroupName)) {
             ruleInDb.getRuleGroup().setRuleGroupName(ruleGroupName);
@@ -472,11 +567,25 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         setRuleInfo(savedRule, savedRuleVariables, savedAlarmConfigs, savedRuleDataSource);
         RuleResponse response = new RuleResponse(savedRule);
         LOGGER.info("Succeed to modify rule. response: {}", response);
-        return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_SUCCESSFULLY}", response);
     }
 
-    private void paddingModifyInfo(ModifyRuleRequest request, boolean groupRules, Rule ruleInDb, Project projectInDb) {
+    private StandardValueVersion paddingModifyInfo(ModifyRuleRequest request, boolean groupRules, Rule ruleInDb, Project projectInDb) {
         setExecutionParametersInfo(request, groupRules, ruleInDb, projectInDb);
+
+        //标准值版本id和英文名称
+        StandardValueVersion standardValueVersion = null;
+        if (request.getStandardValueVersionId() != null) {
+            standardValueVersion = standardValueVersionDao.findById(request.getStandardValueVersionId());
+            if (standardValueVersion != null) {
+                ruleInDb.setStandardValueVersionId(request.getStandardValueVersionId());
+                ruleInDb.setStandardValueVersionEnName(standardValueVersion.getEnName());
+            }
+        } else {
+            ruleInDb.setStandardValueVersionId(null);
+            ruleInDb.setStandardValueVersionEnName("");
+        }
+        return standardValueVersion;
     }
 
     private void setExecutionParametersInfo(ModifyRuleRequest request, boolean groupRules, Rule ruleInDb, Project projectInDb) {
@@ -484,7 +593,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(request.getExecutionParametersName(), projectInDb.getId());
             if (groupRules || executionParameters != null) {
                 ruleInDb.setExecutionParametersName(request.getExecutionParametersName());
-                ruleInDb.setUnionAll(executionParameters.getUnionAll());
+                ruleInDb.setUnionWay(executionParameters.getUnionWay());
                 request.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 request.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 request.setDeleteFailCheckResult(executionParameters.getDeleteFailCheckResult());
@@ -501,16 +610,16 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     private void setUpdateRuleInfo(ModifyRuleRequest request, Rule ruleInDb) {
-        extractionAddOrUpdate(ruleInDb, request.getUnionAll(), request.getRuleEnable(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getDeleteFailCheckResult(), request.getAbortOnFailure(), request.getStaticStartupParam(), request.getSpecifyStaticStartupParam(), request.getAbnormalCluster(), request.getAbnormalDatabase(), request.getAbnormalProxyUser());
+        extractionAddOrUpdate(ruleInDb, request.getUnionWay(), request.getRuleEnable(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getDeleteFailCheckResult(), request.getAbortOnFailure(), request.getStaticStartupParam(), request.getSpecifyStaticStartupParam(), request.getAbnormalCluster(), request.getAbnormalDatabase(), request.getAbnormalProxyUser());
     }
 
     private Boolean handleObjectEqual(AddRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
     private Boolean handleObjectEqual(ModifyRuleRequest request, ExecutionParameters executionParameters) {
-        return CommonChecker.compareIdentical(request.getUnionAll(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
+        return CommonChecker.compareIdentical(request.getUnionWay(), request.getAbortOnFailure(), request.getSpecifyStaticStartupParam(), request.getStaticStartupParam()
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
@@ -534,7 +643,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         newRule.setNodeName(request.getNodeName());
         newRule.setRuleNo(request.getRuleNo());
         newRule.setEnable(request.getRuleEnable());
-        newRule.setUnionAll(request.getUnionAll());
+        newRule.setUnionWay(request.getUnionWay());
     }
 
     private void setBasicInfo(Rule ruleInDb, Template templateInDb, ModifyRuleRequest request, String loginUser) {
@@ -562,6 +671,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
 
     @Override
     public GeneralResponse<RuleDetailResponse> getRuleDetail(Long ruleId) throws UnExpectedRequestException {
+        LOGGER.info("get single rule request detail: {}", ruleId);
         // Check existence of rule
         Rule ruleInDb = ruleDao.findById(ruleId);
         if (ruleInDb == null) {
@@ -577,9 +687,11 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
 
         LOGGER.info("Succeed to find rule, rule id: {}", ruleInDb.getId());
 
-        RuleDetailResponse response = new RuleDetailResponse(ruleInDb);
+        List<RuleVariable> ruleVariableList = ruleVariableService.queryByRules(Arrays.asList(ruleInDb));
+        Map<Long, List<RuleVariable>> ruleVariableMap = ruleVariableList.stream().collect(Collectors.groupingBy(ruleVariable -> ruleVariable.getRule().getId()));
+        RuleDetailResponse response = new RuleDetailResponse(ruleInDb, ruleVariableMap.getOrDefault(ruleInDb.getId(), Collections.emptyList()));
         LOGGER.info("Succeed to get rule detail, rule id: {}", ruleId);
-        return new GeneralResponse<>("200", "{&GET_RULE_DETAIL_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_DETAIL_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -610,16 +722,18 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     private void examineRuleName(String ruleName, Project project, Long ruleId) throws UnExpectedRequestException {
-        List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(project);
-        for (Map<String, Object> rule : rules) {
-            Long currentRuleId = (Long) rule.get("rule_id");
-            String currentRuleName = (String) rule.get("rule_name");
-            if (currentRuleName.equals(ruleName)) {
-                if (ruleId != null && !currentRuleId.equals(ruleId)) {
-                    throw new UnExpectedRequestException("Rule name {&ALREADY_EXIST}");
-                }
-                if (ruleId == null) {
-                    throw new UnExpectedRequestException("Rule name {&ALREADY_EXIST}");
+        List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(project, ruleName);
+        if (CollectionUtils.isNotEmpty(rules)) {
+            for (Map<String, Object> rule : rules) {
+                Long currentRuleId = (Long) rule.get("rule_id");
+                String currentRuleName = (String) rule.get("rule_name");
+                if (currentRuleName.equals(ruleName)) {
+                    if (ruleId != null && !currentRuleId.equals(ruleId)) {
+                        throw new UnExpectedRequestException("Rule name {&ALREADY_EXIST}");
+                    }
+                    if (ruleId == null) {
+                        throw new UnExpectedRequestException("Rule name {&ALREADY_EXIST}");
+                    }
                 }
             }
         }
@@ -632,6 +746,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             Rule rule = ruleDao.findMinWorkFlowVersionRule(ruleName, project.getId());
             if (rule != null) {
                 // Delete rule
+                scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
                 ruleDao.deleteRule(rule);
                 LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
             }
@@ -720,41 +835,6 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         return ruleVariables;
     }
 
-    private void checkDataSourceNumber(Template template, List<DataSourceRequest> requests) throws UnExpectedRequestException {
-        // Check cluster, database, table, field num of template
-        Integer clusterNum = template.getClusterNum();
-        Integer dbNum = template.getDbNum();
-        Integer tableNum = template.getTableNum();
-        Integer fieldNum = template.getFieldNum();
-
-        Integer requestClusterNum = 0;
-        Integer requestDbNum = 0;
-        Integer requestTableNum = 0;
-        Integer requestFieldNum = 0;
-        for (DataSourceRequest request : requests) {
-            requestClusterNum++;
-            requestDbNum++;
-            requestTableNum++;
-            if (CollectionUtils.isNotEmpty(request.getColNames())) {
-                requestFieldNum += request.getColNames().size();
-            }
-
-        }
-
-        if (clusterNum != -1 && !clusterNum.equals(requestClusterNum)) {
-            throw new UnExpectedRequestException(String.format("{&TEMPLATE_NAME}:%s,{&ONLY_CONFIG}%d {&CLUSTER_NUMS_BUT_NOW_HAS_CONFIG_NUM_IS}:%d", template.getName(), clusterNum, requestClusterNum));
-        }
-        if (dbNum != -1 && !dbNum.equals(requestDbNum)) {
-            throw new UnExpectedRequestException(String.format("{&TEMPLATE_NAME}:%s,{&ONLY_CONFIG}%d {&DATABASE_NUMS_BUT_NOW_HAS_CONFIG_NUM_IS}:%d", template.getName(), dbNum, requestDbNum));
-        }
-        if (tableNum != -1 && !tableNum.equals(requestTableNum)) {
-            throw new UnExpectedRequestException(String.format("{&TEMPLATE_NAME}:%s,{&ONLY_CONFIG}%d {&TABLE_NUMS_BUT_NOW_HAS_CONFIG_NUM_IS}:%d", template.getName(), tableNum, requestTableNum));
-        }
-        if (fieldNum != -1 && !fieldNum.equals(requestFieldNum)) {
-            throw new UnExpectedRequestException(String.format("{&TEMPLATE_NAME}:%s,{&ONLY_CONFIG}%d {&COLUMN_NUMS_BUT_NOW_HAS_CONFIG_NUM_IS}:%d", template.getName(), fieldNum, requestFieldNum));
-        }
-    }
-
     /**
      * Check cluster name supported
      *
@@ -807,6 +887,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     public GeneralResponse<RuleEnableResponse> enableRule(EnableRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
         //Check Argument
         EnableRuleRequest.checkRequest(request);
+        LOGGER.info("rule enable or disable request detail: {}", request.toString());
         //Check existence of rules
         List<Long> ruleIds = request.getRuleEnableList().stream().map(EnableRequest::getRuleId).collect(Collectors.toList());
         List<Rule> rules = ruleDao.findByIds(ruleIds);
@@ -836,10 +917,11 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         RuleEnableResponse ruleEnableResponse = new RuleEnableResponse();
         ruleEnableResponse.setRuleList(ruleIdList);
 
-        return new GeneralResponse<>("200", "{&SUCCESS_TO_ENABLE_RULE}", ruleEnableResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_ENABLE_RULE}", ruleEnableResponse);
     }
 
-    private void setExecutionParametersInfo(Rule rule, Boolean ruleEnable, Long id) {
+    @Override
+    public void setExecutionParametersInfo(Rule rule, Boolean ruleEnable, Long id) {
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             ExecutionParameters executionParameters = executionParametersDao.findByNameAndProjectId(rule.getExecutionParametersName(), id);
             if (executionParameters != null) {
@@ -853,7 +935,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     private void setBasicInfo(Rule rule, ExecutionParameters executionParameters) {
-        rule.setExecutionParametersName(null);
+        rule.setExecutionParametersName(executionParameters.getName());
         rule.setAlert(executionParameters.getAlert());
         if (executionParameters.getAlert()) {
             rule.setAlertLevel(executionParameters.getAlertLevel());
@@ -866,6 +948,6 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         rule.setAbnormalCluster(StringUtils.isNotBlank(executionParameters.getCluster()) ? executionParameters.getCluster() : null);
         rule.setAbnormalDatabase(StringUtils.isNotBlank(executionParameters.getAbnormalDatabase()) ? executionParameters.getAbnormalDatabase() : null);
         rule.setAbnormalProxyUser(StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) ? executionParameters.getAbnormalProxyUser() : null);
-        rule.setUnionAll(executionParameters.getUnionAll());
+        rule.setUnionWay(executionParameters.getUnionWay());
     }
 }

@@ -16,16 +16,15 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.DeleteClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.FindClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyClusterInfoRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.request.*;
+import com.webank.wedatasphere.qualitis.response.ClusterInfoResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
 import com.webank.wedatasphere.qualitis.service.ClusterInfoService;
 import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
@@ -68,6 +67,7 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         String clusterName = request.getClusterName();
         String clusterType = request.getClusterType();
         String linkisAddress = request.getLinkisAddress();
+        String linkisToken = request.getLinkisToken();
         String hiveUrn = request.getHiveUrn();
         ClusterInfo clusterInfoInDb = clusterInfoDao.findByClusterName(clusterName);
         if (clusterInfoInDb != null) {
@@ -79,22 +79,23 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         newClusterInfo.setClusterName(clusterName);
         newClusterInfo.setClusterType(clusterType);
         newClusterInfo.setLinkisAddress(linkisAddress);
-        newClusterInfo.setLinkisToken(request.getLinkisToken());
+        newClusterInfo.setLinkisToken(linkisToken);
         newClusterInfo.setHiveUrn(hiveUrn);
         newClusterInfo.setWtssJson(request.getWtssJson());
         newClusterInfo.setJobserverJson(request.getJobserverJson());
         newClusterInfo.setCreateUser(HttpUtils.getUserName(httpServletRequest));
         newClusterInfo.setCreateTime(DateUtils.now());
+        newClusterInfo.setSkipDataSize(StringUtils.isNotBlank(request.getDataSizeLimit()) ? request.getDataSizeLimit() + " " + FileOutputUnitEnum.GB.getMessage(): null);
 
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(newClusterInfo);
 
         LOGGER.info("Succeed to add cluster_info, response: {}", savedClusterInfo);
-        return new GeneralResponse<>("200", "{&ADD_CLUSTER_INFO_SUCCESSFULLY}", savedClusterInfo);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_CLUSTER_INFO_SUCCESSFULLY}", savedClusterInfo);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deleteClusterInfo(DeleteClusterInfoRequest request) throws UnExpectedRequestException {
         // 检查参数
         checkRequest(request);
 
@@ -108,12 +109,12 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         // 删除clusterInfo
         clusterInfoDao.deleteClusterInfo(clusterInfoInDb);
         LOGGER.info("Succeed to delete cluster_info. id: {}", request.getClusterInfoId());
-        return new GeneralResponse<>("200", "{&DELETE_CLUSTER_INFO_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_CLUSTER_INFO_SUCCESSFULLY}", null);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyClusterInfo(ModifyClusterInfoRequest request) throws UnExpectedRequestException {
         // 检查参数
         checkRequest(request);
 
@@ -137,12 +138,13 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
         clusterInfoInDb.setJobserverJson(request.getJobserverJson());
         clusterInfoInDb.setModifyUser(HttpUtils.getUserName(httpServletRequest));
         clusterInfoInDb.setModifyTime(DateUtils.now());
+        clusterInfoInDb.setSkipDataSize(StringUtils.isNotBlank(request.getDataSizeLimit()) ? request.getDataSizeLimit() + " " + FileOutputUnitEnum.GB.getMessage(): null);
 
         // 保存clusterInfo
         ClusterInfo savedClusterInfo = clusterInfoDao.saveClusterInfo(clusterInfoInDb);
 
         LOGGER.info("Succeed to modify cluster_info. cluster_info: {}", savedClusterInfo);
-        return new GeneralResponse<>("200", "{&MODIFY_CLUSTER_INFO_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_CLUSTER_INFO_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -161,13 +163,13 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
 
         List<Long> clusterInfoIdList = response.getData().stream().map(ClusterInfo::getId).collect(Collectors.toList());
         LOGGER.info("Succeed to find cluster_infos. total: {}, id of cluster_infos: {}", total, clusterInfoIdList);
-        return new GeneralResponse<>("200", "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
     }
 
     @Override
-    public GeneralResponse<GetAllResponse<ClusterInfo>> findClusterInfoLikeName(FindClusterInfoRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<GetAllResponse<ClusterInfoResponse>> findClusterInfoLikeName(FindClusterInfoRequest request) {
         List<ClusterInfo> clusterInfos;
-        GetAllResponse<ClusterInfo> response = new GetAllResponse<>();
+        GetAllResponse<ClusterInfoResponse> response = new GetAllResponse<>();
         if (StringUtils.isNotBlank(request.getClusterName())) {
             request.setClusterName("%" + request.getClusterName());
             clusterInfos = clusterInfoDao.findClusterInfoLikeName(request.getClusterName(), request.getPage(), request.getSize());
@@ -177,9 +179,10 @@ public class ClusterInfoServiceImpl implements ClusterInfoService {
             clusterInfos = clusterInfoDao.findAllClusterInfo(request.getPage(), request.getSize());
             response.setTotal(clusterInfoDao.countAll());
         }
-        response.setData(clusterInfos);
+        List<ClusterInfoResponse> clusterInfoResponses = clusterInfos.stream().map(ClusterInfoResponse::new).collect(Collectors.toList());
+        response.setData(clusterInfoResponses);
         LOGGER.info("Succeed to find cluster infos");
-        return new GeneralResponse<>("200", "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_CLUSTER_INFOS_SUCCESSFULLY}", response);
     }
 
     private void checkRequest(ModifyClusterInfoRequest request) throws UnExpectedRequestException {

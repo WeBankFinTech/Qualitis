@@ -93,4 +93,12 @@ public interface ProjectDao {
      * @return
      */
     List<Project> findAllById(List<Long> projectIds);
+
+    /**
+     * Save and flush
+     * @param project
+     * @return
+     */
+    Project saveAndFlush(Project project);
+
 }

@@ -96,6 +96,9 @@ public class TemplateMidTableInputMeta {
     @Column(name = "field_multiple_choice")
     private Boolean fieldMultipleChoice;
 
+    @Column(name = "whether_standard_value")
+    private Boolean whetherStandardValue;
+
     @Column(name = "whether_new_value")
     private Boolean whetherNewValue;
 
@@ -230,6 +233,14 @@ public class TemplateMidTableInputMeta {
 
     public void setFieldMultipleChoice(Boolean fieldMultipleChoice) {
         this.fieldMultipleChoice = fieldMultipleChoice;
+    }
+
+    public Boolean getWhetherStandardValue() {
+        return whetherStandardValue;
+    }
+
+    public void setWhetherStandardValue(Boolean whetherStandardValue) {
+        this.whetherStandardValue = whetherStandardValue;
     }
 
     public Boolean getWhetherNewValue() {

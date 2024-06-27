@@ -55,7 +55,7 @@ public interface AlarmConfigService {
      *
      * @param rule
      */
-    void deleteByRule(Rule rule);
+    Integer deleteByRule(Rule rule);
 
     /**
      * Check and save custom alarm config

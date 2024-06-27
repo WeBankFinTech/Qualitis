@@ -61,4 +61,10 @@ public interface DepartmentService {
      * @return
      */
     List<Department> findAllDepartmentCodeAndName();
+
+    /**
+     * find From Tenant User
+     * @return
+     */
+    GeneralResponse<GetAllResponse<DepartmentResponse>> findFromTenantUser();
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -66,10 +67,10 @@ public class IndexController {
     String user = HttpUtils.getUserName(httpServletRequest);
     try {
       IndexApplicationTodayResponse response = indexService.getTodaySubmitApplications(user, pageRequest);
-      return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", response);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", response);
     } catch (Exception e) {
       LOG.error("[Home overview]Failed to query API: application/today, internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
@@ -91,15 +92,16 @@ public class IndexController {
     request.setUser(user);
     try {
       List<IndexApplicationChartResponse> response = indexService.getApplicationChart(request);
-      return new GeneralResponse<>("200", "{&QUERY_SUCCESSFULLY}", response);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", response);
     } catch (Exception e) {
       LOG.error("[Home overview]Failed to query API: application/chart, internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
   /**
    * 当日发送给当前登录用户的告警信息
+   * API:***REMOVED***
    *
    * @return IndexAlarmTodayResponse
    */
@@ -112,15 +114,16 @@ public class IndexController {
     String user = HttpUtils.getUserName(httpServletRequest);
     try {
       IndexAlarmTodayResponse response = indexService.getTodayAlarms(user, pageRequest);
-      return new GeneralResponse<>("200", "query successfully", response);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "query successfully", response);
     } catch (Exception e) {
       LOG.error("[Home overview]Failed to query API: alarm/today, internal error.", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 
   /**
    * 指定时间段发送给当前登录用户的不同级别告警数
+   * API:***REMOVED***
    *
    * @param request 查询参数
    * @return json结果
@@ -137,10 +140,10 @@ public class IndexController {
     request.setUser(user);
     try {
       List<IndexAlarmChartResponse> response = indexService.getAlarmChart(request);
-      return new GeneralResponse<>("200", "query successfully", response);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "query successfully", response);
     } catch (Exception e) {
       LOG.error("[Home overview]Failed to query API: alarm/chart. Internal error", e);
-      return new GeneralResponse<>("500", e.getMessage(), null);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }
 

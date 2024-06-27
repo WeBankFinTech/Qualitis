@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.ProxyUser;
@@ -84,7 +85,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
         LOGGER.info("Succeed to save user proxy user. user_proxy_user_id: {}", savedUserProxyUser.getId());
 
         AddUserProxyUserResponse response = new AddUserProxyUserResponse(savedUserProxyUser);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_SAVE_USER_PROXY_USER}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_SAVE_USER_PROXY_USER}", response);
     }
 
     @Override
@@ -101,7 +102,7 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
 
         userProxyUserRepository.delete(userProxyUserInDb);
         LOGGER.info("Succeed to delete user proxy user. user_proxy_user_id: {}", request.getUserProxyUserId());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_DELETE_USER_PROXY_USER}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_USER_PROXY_USER}", null);
     }
 
     @Override
@@ -133,6 +134,6 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
         response.setData(userProxyUserResponses);
 
         LOGGER.info("Succeed to find all user proxy users by proxy user name, response: {}", response);
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_ALL_PROXY_USERS_BY_PROXY_USER_NAME}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_ALL_PROXY_USERS_BY_PROXY_USER_NAME}", response);
     }
 }
