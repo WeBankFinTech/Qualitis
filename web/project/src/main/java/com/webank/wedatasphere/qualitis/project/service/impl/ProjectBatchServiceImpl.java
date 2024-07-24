@@ -78,7 +78,10 @@ import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
 import com.webank.wedatasphere.qualitis.rule.request.GetLinkisDataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.constant.ScheduledTaskTypeEnum;
+import com.webank.wedatasphere.qualitis.scheduled.dao.*;
+//import com.webank.wedatasphere.qualitis.scheduled.entity.*;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.FileService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
@@ -198,18 +201,18 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     private RoleService roleService;
     @Autowired
     private LinkisConfig linkisConfig;
-//    @Autowired
-//    private ScheduledProjectDao scheduledProjectDao;
-//    @Autowired
-//    private ScheduledWorkflowDao scheduledWorkflowDao;
-//    @Autowired
-//    private ScheduledSignalDao scheduledSignalDao;
-//    @Autowired
-//    private ScheduledTaskDao scheduledTaskDao;
-//    @Autowired
-//    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
-//    @Autowired
-//    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
+    @Autowired
+    private ScheduledProjectDao scheduledProjectDao;
+    @Autowired
+    private ScheduledWorkflowDao scheduledWorkflowDao;
+    @Autowired
+    private ScheduledSignalDao scheduledSignalDao;
+    @Autowired
+    private ScheduledTaskDao scheduledTaskDao;
+    @Autowired
+    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
+    @Autowired
+    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
     @Autowired
     private RuleTemplateDao ruleTemplateDao;
     @Autowired
@@ -1085,6 +1088,14 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 sheet.setClazz(ExcelRuleUdf.class);
                 sheet.setHeadLineMun(1);
                 excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.SCHEDULED_PUBLISHED)) {
+                sheet.setClazz(ExcelPublishScheduled.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
+            } else if (sheet.getSheetName().equals(ExcelSheetName.SCHEDULED_RELATION)) {
+                sheet.setClazz(ExcelRelationScheduled.class);
+                sheet.setHeadLineMun(1);
+                excelReader.read(sheet);
             } else if (sheet.getSheetName().equals(ExcelSheetName.DATASOURCE_ENV)) {
                 sheet.setClazz(ExcelDatasourceEnv.class);
                 sheet.setHeadLineMun(1);
@@ -1480,10 +1491,12 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         List<ExcelRuleUdf> excelRuleUdfs = getExcelUdf(projectsInDb, forGenFilesDirFile, request.getRuleIds(), request.getRuleNames());
         List<ExcelGroupByProject> excelGroupByProjects = getGroup(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
         List<ExcelRuleByProject> excelRuleByProject = getExcelRuleByProject(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelPublishScheduled> excelPublishScheduleds = getPublishScheduleSheet(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
+        List<ExcelRelationScheduled> excelRelationScheduleds = getRelationScheduleSheet(projectsInDb, request.getDiffVariableRequestList(), request.getRuleIds(), request.getRuleNames());
         List<ExcelExecutionParametersByProject> excelExecutionParametersByProject = getExecutionParameters(projectsInDb, CollectionUtils.isNotEmpty(executionParamNames) ? executionParamNames : Collections.emptyList(), true);
 
         generateFiles(forGenFilesDirFile, excelRuleUdfs, excelProject, excelRuleMetrics, excelGroupByProjects, excelRuleByProject, excelExecutionParametersByProject, standardVaules
-                , request.getDiffVariableRequestList(), excelDatasourceEnvs);
+                , excelPublishScheduleds, excelRelationScheduleds, request.getDiffVariableRequestList(), excelDatasourceEnvs);
         String operateComment;
         if (ProjectTransportTypeEnum.LOCAL.getCode().equals(request.getDownloadType())) {
             String zipFilePath = tempDirForGenFiles.toString() + QualitisConstants.SUPPORT_ZIP_SUFFIX_NAME;
@@ -1686,6 +1699,8 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         List<ExcelRuleByProject> excelRulesByProject,
         List<ExcelExecutionParametersByProject> excelExecutionParametersByProject,
         List<ExcelStandardValue> standardValues,
+        List<ExcelPublishScheduled> excelPublishScheduleds,
+        List<ExcelRelationScheduled> excelRelationScheduleds,
         List<DiffVariableRequest> diffVariableRequestList,
         List<ExcelDatasourceEnv> excelDatasourceEnvs) throws IOException {
         if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
@@ -1978,6 +1993,51 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 }
             }
         }
+        if (CollectionUtils.isNotEmpty(excelPublishScheduleds)) {
+            LOGGER.info("Start to write schedule task excel");
+            String fileName = "batch_schedule_task_export" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
+
+            File projectDir = new File(zipDirFile, "project-ref-workflow");
+            if (!projectDir.exists()) {
+                projectDir.mkdirs();
+            }
+
+            File projectExcel = new File(projectDir, fileName);
+            if (!projectExcel.exists()) {
+                boolean newFile = projectExcel.createNewFile();
+                if (!newFile) {
+                    LOGGER.error("{&FAILED_TO_CREATE_NEW_FILE}");
+                }
+            }
+            // Write data to an Excel file
+            ExcelWriter excelPublishScheduledsWriter = null;
+            FileOutputStream excelPublishScheduledsFos = null;
+            try {
+                excelPublishScheduledsFos = new FileOutputStream(projectDir.getPath().concat(File.separator).concat(fileName));
+                excelPublishScheduledsWriter = EasyExcelFactory.getWriter(excelPublishScheduledsFos);
+                Sheet sheet = new Sheet(1, 1, ExcelPublishScheduled.class);
+                sheet.setSheetName(ExcelSheetName.SCHEDULED_PUBLISHED);
+                excelPublishScheduledsWriter.write(excelPublishScheduleds, sheet);
+
+                if (CollectionUtils.isNotEmpty(excelRelationScheduleds)) {
+                    LOGGER.info("Start to write relation schedule task excel");
+                    Sheet sheetRela = new Sheet(2, 1, ExcelRelationScheduled.class);
+                    sheetRela.setSheetName(ExcelSheetName.SCHEDULED_RELATION);
+                    excelPublishScheduledsWriter.write(excelRelationScheduleds, sheetRela);
+                    LOGGER.info("Finish to write relation schedule task excel");
+                }
+                LOGGER.info("Finish to write schedule task excel");
+            } catch (FileNotFoundException e) {
+                LOGGER.error("Failed to write schedule task to excel.");
+            } finally {
+                if (excelPublishScheduledsWriter != null) {
+                    excelPublishScheduledsWriter.finish();
+                }
+                if (excelPublishScheduledsFos != null) {
+                    excelPublishScheduledsFos.close();
+                }
+            }
+        }
     }
 
     private void savePropertiesFiles(List<DiffVariableRequest> diffVariableRequestList, File zipDirFile, String childDirName, String prefix)
@@ -2075,7 +2135,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
     }
 
-//    public List<ExcelPublishScheduled> getPublishScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
+    public List<ExcelPublishScheduled> getPublishScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
 //        List<Long> ruleGroupIds = Lists.newArrayList();
 //        for (Project project : projects) {
 //            Set<Rule> rules = getRules(ruleId, ruleName, project);
@@ -2089,7 +2149,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 //        List<String> workflowNameList = scheduledTaskList.stream().map(ScheduledTask::getWorkFlowName).distinct().collect(Collectors.toList());
 //        List<ScheduledProject> scheduledProjectList = scheduledProjectDao.findByProjectAndNameList(projects, scheduleProjectNameList);
 //
-//        List<ExcelPublishScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(10);
+        List<ExcelPublishScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(10);
 //        for (ScheduledProject scheduledProject : scheduledProjectList) {
 //            List<ScheduledWorkflow> rowWorkflowList = scheduledWorkflowDao.findByScheduledProjectAndWorkflowNameList(scheduledProject, workflowNameList);
 //            List<ScheduledSignal> rowSignalList = scheduledSignalDao.findByWorkflowList(rowWorkflowList);
@@ -2135,10 +2195,10 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 //            }
 //
 //        }
-//        return excelScheduledList;
-//    }
+        return excelScheduledList;
+    }
 
-//    public List<ExcelRelationScheduled> getRelationScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
+    public List<ExcelRelationScheduled> getRelationScheduleSheet(List<Project> projects, List<DiffVariableRequest> diffVariableRequestList, List<Long> ruleId, List<String> ruleName) throws IOException {
 //        List<Long> ruleGroupIds = Lists.newArrayList();
 //        for (Project project : projects) {
 //            Set<Rule> rules = getRules(ruleId, ruleName, project);
@@ -2158,7 +2218,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 //        Map<Object, List<ScheduledFrontBackRule>> scheduleTaskIdFrontBackMap = scheduledFrontBackRuleList.stream()
 //                .collect(Collectors.groupingBy(scheduledFrontBackRule -> scheduledFrontBackRule.getScheduledTask().getId()));
 //
-//        List<ExcelRelationScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(10);
+        List<ExcelRelationScheduled> excelScheduledList = Lists.newArrayListWithExpectedSize(10);
 //        try {
 //            for (ScheduledTask scheduledTask : scheduledTaskList) {
 //                if (CollectionUtils.isNotEmpty(diffVariableRequestList)) {
@@ -2189,8 +2249,8 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 //            LOGGER.error("Failed to generate JSON of relation schedule", e);
 //            throw e;
 //        }
-//        return excelScheduledList;
-//    }
+        return excelScheduledList;
+    }
 
     public List<ExcelDatasourceEnv> getDataSourceSheet(List<Project> projects, List<Long> ruleId, List<String> ruleName) {
         List<ExcelDatasourceEnv> excelRuleDataSourceList = Lists.newArrayList();

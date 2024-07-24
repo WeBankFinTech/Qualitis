@@ -2,7 +2,7 @@ package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 //import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
-//import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
+import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
 //import org.apache.commons.lang3.StringUtils;
 //import static com.webank.wedatasphere.qualitis.scheduled.util.CronUtil.cronToText;
 

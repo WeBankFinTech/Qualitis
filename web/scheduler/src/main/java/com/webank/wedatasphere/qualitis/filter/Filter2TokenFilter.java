@@ -19,14 +19,14 @@ package com.webank.wedatasphere.qualitis.filter;
 //import cn.hutool.crypto.digest.DigestUtil;
 //import cn.webank.bdp.wedatasphere.components.servicis.ServicisApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.webank.wedatasphere.qualitis.config.ItsmConfig;
+import com.webank.wedatasphere.qualitis.config.ItsmConfig;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.RetResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -44,10 +44,10 @@ public class Filter2TokenFilter implements Filter {
 
 //    @Autowired
 //    private ServicisApi servicisApi;
-//    @Value("${itsm.path}")
-//    private String itsmPath;
-//    @Autowired
-//    private ItsmConfig itsmConfig;
+    @Value("${itsm.path}")
+    private String itsmPath;
+    @Autowired
+    private ItsmConfig itsmConfig;
     /**
      * 5min
      */
