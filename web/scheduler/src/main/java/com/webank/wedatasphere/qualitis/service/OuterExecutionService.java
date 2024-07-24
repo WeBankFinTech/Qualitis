@@ -18,7 +18,7 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.ImsmetricIdentify;
+//import com.webank.wedatasphere.qualitis.entity.ImsmetricIdentify;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
@@ -357,7 +357,7 @@ public interface OuterExecutionService {
      * @param request
      * @return
      */
-    GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request);
+//    GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request);
 
     /**
      * query Ims metric Data
@@ -365,7 +365,7 @@ public interface OuterExecutionService {
      * @return
      * @throws DateParseException
      */
-    GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException;
+//    GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException;
 
 
     /**

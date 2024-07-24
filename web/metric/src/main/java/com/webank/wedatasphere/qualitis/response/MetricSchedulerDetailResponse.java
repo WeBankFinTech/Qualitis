@@ -1,12 +1,12 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.entity.ImsMetricScheduler;
-import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.scheduled.util.CronUtil;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Locale;
+//import com.webank.wedatasphere.qualitis.entity.ImsMetricScheduler;
+//import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+//import com.webank.wedatasphere.qualitis.scheduled.util.CronUtil;
+//import org.apache.commons.lang3.StringUtils;
+//
+//import java.util.Locale;
 
 /**
  * @author v_minminghe@webank.com
@@ -33,22 +33,22 @@ public class MetricSchedulerDetailResponse {
 //        doing nothing
     }
 
-    public MetricSchedulerDetailResponse(ImsMetricScheduler imsMetricScheduler) {
-        this.id = imsMetricScheduler.getId();
-        this.execFreq = imsMetricScheduler.getExecFreq();
-        this.database = imsMetricScheduler.getDbName();
-        this.table = imsMetricScheduler.getTableName();
-        if (StringUtils.isNotBlank(imsMetricScheduler.getExecFreq()) && !imsMetricScheduler.getExecFreq().endsWith("2099")) {
-            try {
-                String[] cronTextArray = CronUtil.cronToText(imsMetricScheduler.getExecFreq());
-                this.executeInterval = cronTextArray[0];
-                this.executeDateInInterval = StringUtils.isNotBlank(cronTextArray[1]) ? Integer.parseInt(cronTextArray[1]) : null;
-                this.executeTimeInDate = cronTextArray[2];
-            } catch (UnExpectedRequestException e) {
-//            doing nothing
-            }
-        }
-    }
+//    public MetricSchedulerDetailResponse(ImsMetricScheduler imsMetricScheduler) {
+//        this.id = imsMetricScheduler.getId();
+//        this.execFreq = imsMetricScheduler.getExecFreq();
+//        this.database = imsMetricScheduler.getDbName();
+//        this.table = imsMetricScheduler.getTableName();
+//        if (StringUtils.isNotBlank(imsMetricScheduler.getExecFreq()) && !imsMetricScheduler.getExecFreq().endsWith("2099")) {
+//            try {
+//                String[] cronTextArray = CronUtil.cronToText(imsMetricScheduler.getExecFreq());
+//                this.executeInterval = cronTextArray[0];
+//                this.executeDateInInterval = StringUtils.isNotBlank(cronTextArray[1]) ? Integer.parseInt(cronTextArray[1]) : null;
+//                this.executeTimeInDate = cronTextArray[2];
+//            } catch (UnExpectedRequestException e) {
+////            doing nothing
+//            }
+//        }
+//    }
 
     public String getExecuteInterval() {
         return executeInterval;

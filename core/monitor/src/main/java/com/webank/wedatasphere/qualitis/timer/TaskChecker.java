@@ -601,7 +601,7 @@ public class TaskChecker implements IChecker {
             Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
             String alertInfo = linkisConfig.getCollectTemplate();
             alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
-            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
+//            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
             LOGGER.info("Finish to alarm collect task.");
             return;
         }
@@ -865,7 +865,7 @@ public class TaskChecker implements IChecker {
             String standardRuleDetail = taskRuleSimple.getProjectName() + "-" + taskRuleSimple.getRuleName() + "-" + taskRuleSimple.getTemplateName();
             if (abnormalDataRecordInfoExists == null) {
                 AbnormalDataRecordInfo abnormalDataRecordInfo = new AbnormalDataRecordInfo(taskRuleSimple.getRuleId(), standardRuleName, datasourceType
-                        , dbName, tableName, departmentName, subSystemId, execNum, alarmNum);
+                        , dbName, tableName, departmentName, Integer.valueOf(subSystemId), execNum, alarmNum);
                 abnormalDataRecordInfo.setRuleDetail(StringUtils.isEmpty(taskRuleSimple.getRuleDetail()) ? standardRuleDetail : taskRuleSimple.getRuleDetail());
                 abnormalDataRecordInfo.setRecordDate(nowDate);
                 abnormalDataRecordInfo.setRecordTime(QualitisConstants.PRINT_TIME_FORMAT.format(currentTime));
@@ -878,7 +878,7 @@ public class TaskChecker implements IChecker {
                 abnormalDataRecordInfoExists.setEventNum(abnormalDataRecordInfoExists.getEventNum() + alarmNum);
                 abnormalDataRecordInfoExists.setDepartmentName(departmentName);
                 abnormalDataRecordInfoExists.setDatasource(datasourceType);
-                abnormalDataRecordInfoExists.setSubSystemId(subSystemId);
+                abnormalDataRecordInfoExists.setSubSystemId(Integer.valueOf(subSystemId));
                 abnormalDataRecordInfoList.add(abnormalDataRecordInfoDao.save(abnormalDataRecordInfoExists));
             }
         }

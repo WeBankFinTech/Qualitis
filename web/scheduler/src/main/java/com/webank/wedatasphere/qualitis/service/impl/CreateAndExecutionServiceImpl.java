@@ -14,7 +14,6 @@ import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -109,9 +108,6 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     @Autowired
     private UserDao userDao;
-
-    @Autowired
-    private LinkisUdfDao linkisUdfDao;
 
     @Autowired
     private RuleGroupDao ruleGroupDao;

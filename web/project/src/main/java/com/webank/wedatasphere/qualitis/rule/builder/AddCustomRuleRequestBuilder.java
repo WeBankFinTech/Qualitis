@@ -8,8 +8,8 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dto.DataVisibilityPermissionDto;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
@@ -57,7 +57,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     private String proxyUser;
 
     private RuleGroupDao ruleGroupDao;
-    private LinkisUdfDao linkisUdfDao;
+//    private LinkisUdfDao linkisUdfDao;
     private RuleMetricDao ruleMetricDao;
     private MetaDataClient metaDataClient;
     private SubDepartmentPermissionService subDepartmentPermissionService;
@@ -92,14 +92,14 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         this.ruleMetricDao = ruleMetricDao;
     }
 
-    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, LinkisUdfDao linkisUdfDao,
+    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient,
                                        SubDepartmentPermissionService subDepartmentPermissionService, LinkisConfig linkisConfig, LinkisDataSourceEnvService linkisDataSourceEnvService) {
         this.subDepartmentPermissionService = subDepartmentPermissionService;
         addCustomRuleRequest = new AddCustomRuleRequest();
         this.metaDataClient = metaDataClient;
         this.ruleMetricDao = ruleMetricDao;
         this.ruleGroupDao = ruleGroupDao;
-        this.linkisUdfDao = linkisUdfDao;
+//        this.linkisUdfDao = linkisUdfDao;
         this.linkisConfig = linkisConfig;
         this.linkisDataSourceEnvService = linkisDataSourceEnvService;
     }
@@ -1626,20 +1626,20 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
             return this;
         }
 
-        String[] udfNameStrs = udfNames.split(SpecCharEnum.COMMA.getValue());
-        for (String udfName : udfNameStrs) {
-            LinkisUdf linkisUdf =  linkisUdfDao.findByName(udfName);
-            if (linkisUdf == null) {
-                throw new UnExpectedRequestException("Udf {&DOES_NOT_EXIST}");
-            }
-            DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
-                .createUser(linkisUdf.getCreateUser())
-                .devDepartmentId(linkisUdf.getDevDepartmentId())
-                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
-                .build();
-            subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
-        }
-        addCustomRuleRequest.setLinkisUdfNames(Arrays.asList(udfNameStrs));
+//        String[] udfNameStrs = udfNames.split(SpecCharEnum.COMMA.getValue());
+//        for (String udfName : udfNameStrs) {
+//            LinkisUdf linkisUdf =  linkisUdfDao.findByName(udfName);
+//            if (linkisUdf == null) {
+//                throw new UnExpectedRequestException("Udf {&DOES_NOT_EXIST}");
+//            }
+//            DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
+//                .createUser(linkisUdf.getCreateUser())
+//                .devDepartmentId(linkisUdf.getDevDepartmentId())
+//                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
+//                .build();
+//            subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
+//        }
+//        addCustomRuleRequest.setLinkisUdfNames(Arrays.asList(udfNameStrs));
         return this;
     }
 

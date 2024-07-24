@@ -1,9 +1,9 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.entity.CalcuUnit;
-import com.webank.wedatasphere.qualitis.request.DepartmentSubInfoRequest;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
+//import com.webank.wedatasphere.qualitis.entity.CalcuUnit;
+//import com.webank.wedatasphere.qualitis.request.DepartmentSubInfoRequest;
+//import com.webank.wedatasphere.qualitis.rule.entity.Template;
 
 import java.util.List;
 
@@ -34,18 +34,18 @@ public class MetricTemplateDetailResponse {
     @JsonProperty(value = "visibility_department_list")
     private List<DepartmentSubInfoResponse> visibilityDepartmentList;
 
-    public MetricTemplateDetailResponse(Template template, CalcuUnit calcuUnit) {
-        this.enName = template.getEnName();
-        this.cnName = template.getName();
-        this.description = template.getDescription();
-        this.udfId = calcuUnit.getUdfId();
-        this.sqlAction = calcuUnit.getSqlAction();
-        this.devDepartmentName = template.getDevDepartmentName();
-        this.devDepartmentId = template.getDevDepartmentId();
-        this.opsDepartmentName = template.getOpsDepartmentName();
-        this.opsDepartmentId = template.getOpsDepartmentId();
-
-    }
+//    public MetricTemplateDetailResponse(Template template, CalcuUnit calcuUnit) {
+//        this.enName = template.getEnName();
+//        this.cnName = template.getName();
+//        this.description = template.getDescription();
+//        this.udfId = calcuUnit.getUdfId();
+//        this.sqlAction = calcuUnit.getSqlAction();
+//        this.devDepartmentName = template.getDevDepartmentName();
+//        this.devDepartmentId = template.getDevDepartmentId();
+//        this.opsDepartmentName = template.getOpsDepartmentName();
+//        this.opsDepartmentId = template.getOpsDepartmentId();
+//
+//    }
 
     public String getEnName() {
         return enName;

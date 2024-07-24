@@ -323,31 +323,31 @@ public class OuterExecutionController {
         }
     }
 
-    @POST
-    @Path("query/identify")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse queryIdentifyConfig(OmnisScriptRequest request) {
-        try {
-            return outerExecutionService.queryIdentify(request);
-        } catch (Exception e) {
-            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
-        }
-    }
+//    @POST
+//    @Path("query/identify")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse queryIdentifyConfig(OmnisScriptRequest request) {
+//        try {
+//            return outerExecutionService.queryIdentify(request);
+//        } catch (Exception e) {
+//            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+//        }
+//    }
 
-    @POST
-    @Path("query/ImsmetricData")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) {
-        try {
-            return outerExecutionService.queryImsmetricData(request);
-        } catch (Exception e) {
-            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
-        }
-    }
+//    @POST
+//    @Path("query/ImsmetricData")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) {
+//        try {
+//            return outerExecutionService.queryImsmetricData(request);
+//        } catch (Exception e) {
+//            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+//        }
+//    }
 
     @POST
     @Path("batch/enable/rule")

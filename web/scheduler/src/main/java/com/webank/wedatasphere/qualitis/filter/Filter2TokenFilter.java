@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
-import cn.hutool.crypto.digest.DigestUtil;
-import cn.webank.bdp.wedatasphere.components.servicis.ServicisApi;
+//import cn.hutool.crypto.digest.DigestUtil;
+//import cn.webank.bdp.wedatasphere.components.servicis.ServicisApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.qualitis.config.ItsmConfig;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -42,8 +42,8 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Filter2TokenFilter implements Filter {
 
-    @Autowired
-    private ServicisApi servicisApi;
+//    @Autowired
+//    private ServicisApi servicisApi;
     @Value("${itsm.path}")
     private String itsmPath;
     @Autowired
@@ -69,18 +69,18 @@ public class Filter2TokenFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        if (request.getRequestURI().startsWith(itsmPath)) {
-            LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
-            RetResponse retResponse = verifyRequestFromITSM(request);
-            if (retResponse.getRetCode() != 0) {
-                ServletOutputStream out = response.getOutputStream();
-                out.write(objectMapper.writeValueAsBytes(retResponse));
-                out.flush();
-                return;
-            }
-            filterChain.doFilter(request, response);
-            return;
-        }
+//        if (request.getRequestURI().startsWith(itsmPath)) {
+//            LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+//            RetResponse retResponse = verifyRequestFromITSM(request);
+//            if (retResponse.getRetCode() != 0) {
+//                ServletOutputStream out = response.getOutputStream();
+//                out.write(objectMapper.writeValueAsBytes(retResponse));
+//                out.flush();
+//                return;
+//            }
+//            filterChain.doFilter(request, response);
+//            return;
+//        }
 
         String appId = request.getParameter("app_id");
         String nonce = request.getParameter("nonce");
@@ -99,23 +99,23 @@ public class Filter2TokenFilter implements Filter {
             return;
         }
 
-        if (appId != null) {
-            boolean passed;
-            try {
-                passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
-            } catch (Exception e) {
-                LOGGER.error("Validate signature via Servicis failed with error: ", e);
-                throw new ServletException(e);
-            }
-
-            if (passed) {
-                LOGGER.info(
-                        "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
-                        appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
-                filterChain.doFilter(request, response);
-                return;
-            }
-        }
+//        if (appId != null) {
+//            boolean passed;
+//            try {
+//                passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
+//            } catch (Exception e) {
+//                LOGGER.error("Validate signature via Servicis failed with error: ", e);
+//                throw new ServletException(e);
+//            }
+//
+//            if (passed) {
+//                LOGGER.info(
+//                        "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
+//                        appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+//                filterChain.doFilter(request, response);
+//                return;
+//            }
+//        }
 
         LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
                 appId, nonce, timestamp, signature);
@@ -136,10 +136,10 @@ public class Filter2TokenFilter implements Filter {
             if ((timeStamp - Long.valueOf(requestTimestamp)) > SIGN_VALIDITY_PERIOD) {
                 throw new IllegalAccessException("The request has expired.");
             }
-            String sign = DigestUtil.sha256Hex(itsmConfig.getSecretKey() + requestTimestamp);
-            if (!sign.equals(requestSign)) {
-                throw new IllegalAccessException("Forbidden!please check your sign.");
-            }
+//            String sign = DigestUtil.sha256Hex(itsmConfig.getSecretKey() + requestTimestamp);
+//            if (!sign.equals(requestSign)) {
+//                throw new IllegalAccessException("Forbidden!please check your sign.");
+//            }
         } catch (IllegalAccessException e) {
             return new RetResponse(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage(), null);
         } catch (Exception e) {

@@ -39,18 +39,18 @@ public class ExcelPublishScheduled extends BaseRowModel {
         ObjectMapper objectMapper = new ObjectMapper();
         ExcelPublishScheduled rowPublishScheduled = new ExcelPublishScheduled();
 
-        rowPublishScheduled.setScheduledProjectJsonObject(objectMapper.writeValueAsString(new ScheduledProjectResponse(scheduledProject)));
-        List<ScheduledWorkflowResponse> cellScheduledWorkflows = scheduledWorkflowList.stream().map(ScheduledWorkflowResponse::new).collect(Collectors.toList());
-        rowPublishScheduled.setScheduledWorkflowJsonObject(objectMapper.writeValueAsString(cellScheduledWorkflows));
-
-        List<ScheduledSignalResponse> cellScheduledSignals = scheduledSignalList.stream().map(ScheduledSignalResponse::new).collect(Collectors.toList());
-        rowPublishScheduled.setScheduledSignalJsonObject(objectMapper.writeValueAsString(cellScheduledSignals));
-
-        List<ScheduledTaskResponse> cellScheduledTasks = scheduledTaskList.stream().map(ScheduledTaskResponse::new).collect(Collectors.toList());
-        rowPublishScheduled.setScheduledTaskJsonObject(objectMapper.writeValueAsString(cellScheduledTasks));
-
-        List<ScheduledWorkflowTaskRelationResponse> cellScheduledWorkflowTaskRelations = scheduledWorkflowTaskRelationList.stream().map(ScheduledWorkflowTaskRelationResponse::new).collect(Collectors.toList());
-        rowPublishScheduled.setScheduledWorkflowAndTaskRelationJsonObject(objectMapper.writeValueAsString(cellScheduledWorkflowTaskRelations));
+//        rowPublishScheduled.setScheduledProjectJsonObject(objectMapper.writeValueAsString(new ScheduledProjectResponse(scheduledProject)));
+//        List<ScheduledWorkflowResponse> cellScheduledWorkflows = scheduledWorkflowList.stream().map(ScheduledWorkflowResponse::new).collect(Collectors.toList());
+//        rowPublishScheduled.setScheduledWorkflowJsonObject(objectMapper.writeValueAsString(cellScheduledWorkflows));
+//
+//        List<ScheduledSignalResponse> cellScheduledSignals = scheduledSignalList.stream().map(ScheduledSignalResponse::new).collect(Collectors.toList());
+//        rowPublishScheduled.setScheduledSignalJsonObject(objectMapper.writeValueAsString(cellScheduledSignals));
+//
+//        List<ScheduledTaskResponse> cellScheduledTasks = scheduledTaskList.stream().map(ScheduledTaskResponse::new).collect(Collectors.toList());
+//        rowPublishScheduled.setScheduledTaskJsonObject(objectMapper.writeValueAsString(cellScheduledTasks));
+//
+//        List<ScheduledWorkflowTaskRelationResponse> cellScheduledWorkflowTaskRelations = scheduledWorkflowTaskRelationList.stream().map(ScheduledWorkflowTaskRelationResponse::new).collect(Collectors.toList());
+//        rowPublishScheduled.setScheduledWorkflowAndTaskRelationJsonObject(objectMapper.writeValueAsString(cellScheduledWorkflowTaskRelations));
 
         return rowPublishScheduled;
     }
@@ -95,52 +95,52 @@ public class ExcelPublishScheduled extends BaseRowModel {
         this.scheduledWorkflowAndTaskRelationJsonObject = scheduledWorkflowAndTaskRelationJsonObject;
     }
 
-    public ScheduledProjectResponse getScheduledProject(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(scheduledProjectJsonObject, ScheduledProjectResponse.class);
-        } catch (IOException e) {
-//            Don't to do anything
-        }
-        return null;
-    }
-
-    public List<ScheduledWorkflowResponse> getScheduledWorkflows(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(scheduledWorkflowJsonObject, new TypeReference<List<ScheduledWorkflowResponse>>() {
-            });
-        } catch (IOException e) {
-//            Don't to do anything
-        }
-        return Collections.emptyList();
-    }
-
-    public List<ScheduledSignalResponse> getScheduledSignals(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(scheduledSignalJsonObject, new TypeReference<List<ScheduledSignalResponse>>() {
-            });
-        } catch (IOException e) {
-            //            Don't to do anything
-        }
-        return Collections.emptyList();
-    }
-
-    public List<ScheduledTaskResponse> getScheduledTasks(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(scheduledTaskJsonObject, new TypeReference<List<ScheduledTaskResponse>>() {
-            });
-        } catch (IOException e) {
-            //            Don't to do anything
-        }
-        return Collections.emptyList();
-    }
-
-    public List<ScheduledWorkflowTaskRelationResponse> getScheduledWorkflowTaskRelations(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(scheduledWorkflowAndTaskRelationJsonObject, new TypeReference<List<ScheduledWorkflowTaskRelationResponse>>() {
-            });
-        } catch (IOException e) {
-            //            Don't to do anything
-        }
-        return Collections.emptyList();
-    }
+//    public ScheduledProjectResponse getScheduledProject(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(scheduledProjectJsonObject, ScheduledProjectResponse.class);
+//        } catch (IOException e) {
+////            Don't to do anything
+//        }
+//        return null;
+//    }
+//
+//    public List<ScheduledWorkflowResponse> getScheduledWorkflows(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(scheduledWorkflowJsonObject, new TypeReference<List<ScheduledWorkflowResponse>>() {
+//            });
+//        } catch (IOException e) {
+////            Don't to do anything
+//        }
+//        return Collections.emptyList();
+//    }
+//
+//    public List<ScheduledSignalResponse> getScheduledSignals(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(scheduledSignalJsonObject, new TypeReference<List<ScheduledSignalResponse>>() {
+//            });
+//        } catch (IOException e) {
+//            //            Don't to do anything
+//        }
+//        return Collections.emptyList();
+//    }
+//
+//    public List<ScheduledTaskResponse> getScheduledTasks(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(scheduledTaskJsonObject, new TypeReference<List<ScheduledTaskResponse>>() {
+//            });
+//        } catch (IOException e) {
+//            //            Don't to do anything
+//        }
+//        return Collections.emptyList();
+//    }
+//
+//    public List<ScheduledWorkflowTaskRelationResponse> getScheduledWorkflowTaskRelations(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(scheduledWorkflowAndTaskRelationJsonObject, new TypeReference<List<ScheduledWorkflowTaskRelationResponse>>() {
+//            });
+//        } catch (IOException e) {
+//            //            Don't to do anything
+//        }
+//        return Collections.emptyList();
+//    }
 }

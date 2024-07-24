@@ -2,8 +2,8 @@ package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.metadata.BaseRowModel;
-import com.webank.wedatasphere.qualitis.project.response.ScheduledFrontBackRuleResponse;
-import com.webank.wedatasphere.qualitis.project.response.ScheduledTaskResponse;
+//import com.webank.wedatasphere.qualitis.project.response.ScheduledFrontBackRuleResponse;
+//import com.webank.wedatasphere.qualitis.project.response.ScheduledTaskResponse;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledFrontBackRule;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
 import org.apache.commons.collections4.CollectionUtils;
@@ -31,11 +31,11 @@ public class ExcelRelationScheduled extends BaseRowModel {
     public static ExcelRelationScheduled fromScheduledTask(ScheduledTask scheduledTask, List<ScheduledFrontBackRule> scheduledFrontBackRuleList) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         ExcelRelationScheduled excelRelationScheduled = new ExcelRelationScheduled();
-        excelRelationScheduled.setScheduledTaskJsonObject(objectMapper.writeValueAsString(new ScheduledTaskResponse(scheduledTask)));
-        if (CollectionUtils.isNotEmpty(scheduledFrontBackRuleList)) {
-            List<ScheduledFrontBackRuleResponse> backRuleList = scheduledFrontBackRuleList.stream().map(ScheduledFrontBackRuleResponse::new).collect(Collectors.toList());
-            excelRelationScheduled.setScheduledFrontBackRuleJsonObject(objectMapper.writeValueAsString(backRuleList));
-        }
+//        excelRelationScheduled.setScheduledTaskJsonObject(objectMapper.writeValueAsString(new ScheduledTaskResponse(scheduledTask)));
+//        if (CollectionUtils.isNotEmpty(scheduledFrontBackRuleList)) {
+//            List<ScheduledFrontBackRuleResponse> backRuleList = scheduledFrontBackRuleList.stream().map(ScheduledFrontBackRuleResponse::new).collect(Collectors.toList());
+//            excelRelationScheduled.setScheduledFrontBackRuleJsonObject(objectMapper.writeValueAsString(backRuleList));
+//        }
         return excelRelationScheduled;
     }
 
@@ -55,22 +55,22 @@ public class ExcelRelationScheduled extends BaseRowModel {
         this.scheduledFrontBackRuleJsonObject = scheduledFrontBackRuleJsonObject;
     }
 
-    public ScheduledTaskResponse getScheduledTask(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(this.scheduledTaskJsonObject, ScheduledTaskResponse.class);
-        } catch (IOException e) {
-//            Don't to do anything
-        }
-        return null;
-    }
+//    public ScheduledTaskResponse getScheduledTask(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(this.scheduledTaskJsonObject, ScheduledTaskResponse.class);
+//        } catch (IOException e) {
+////            Don't to do anything
+//        }
+//        return null;
+//    }
 
-    public List<ScheduledFrontBackRuleResponse> getScheduledFrontBackRule(ObjectMapper objectMapper) {
-        try {
-            return objectMapper.readValue(this.scheduledFrontBackRuleJsonObject, new TypeReference<List<ScheduledFrontBackRuleResponse>>() {
-            });
-        } catch (IOException e) {
-//            Don't to do anything
-        }
-        return Collections.emptyList();
-    }
+//    public List<ScheduledFrontBackRuleResponse> getScheduledFrontBackRule(ObjectMapper objectMapper) {
+//        try {
+//            return objectMapper.readValue(this.scheduledFrontBackRuleJsonObject, new TypeReference<List<ScheduledFrontBackRuleResponse>>() {
+//            });
+//        } catch (IOException e) {
+////            Don't to do anything
+//        }
+//        return Collections.emptyList();
+//    }
 }

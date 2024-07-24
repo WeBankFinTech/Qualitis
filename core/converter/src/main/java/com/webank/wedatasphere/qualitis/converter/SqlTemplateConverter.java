@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.converter;
 
-import com.webank.bsp.dpc.entity.AccountInfoSys;
-import com.webank.bsp.dpc.util.AccountInfoObtainer;
+//import com.webank.bsp.dpc.entity.AccountInfoSys;
+//import com.webank.bsp.dpc.util.AccountInfoObtainer;
 import com.webank.wedatasphere.qualitis.EngineTypeEnum;
 import com.webank.wedatasphere.qualitis.LocalConfig;
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
@@ -1580,26 +1580,26 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     private Map<String, Object> getUserNameAndPassword(Map<String, Object> connectParams) throws UnExpectedRequestException {
-        String appId = (String) connectParams.get("appid");
-        String objectId = (String) connectParams.get("objectid");
-        String timestamp = (String) connectParams.get("timestamp");
-
-        String dk = (String) connectParams.get("dk");
-        String datasourceInf = LocalNetwork.getNetCardName();
-        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf, false);
-        obtainer.init();
-        try {
-            AccountInfoSys accountInfoSys = obtainer.getAccountInfo_system(dk, timestamp, dpmConfig.getDatasourceSystemAppId()
-                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId, "fakeIp", 0);
-            String userName = accountInfoSys.getName();
-            String passwordTest = accountInfoSys.getPassword();
-
-            connectParams.put("username", userName);
-            connectParams.put("password", passwordTest);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new UnExpectedRequestException("{&FAILED_TO_GET_USERNAME_PASSWORD}", 500);
-        }
+//        String appId = (String) connectParams.get("appid");
+//        String objectId = (String) connectParams.get("objectid");
+//        String timestamp = (String) connectParams.get("timestamp");
+//
+//        String dk = (String) connectParams.get("dk");
+//        String datasourceInf = LocalNetwork.getNetCardName();
+//        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf);
+//        obtainer.init();
+//        try {
+//            AccountInfoSys accountInfoSys = obtainer.getAccountInfo_system(dk, timestamp, dpmConfig.getDatasourceSystemAppId()
+//                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId);
+//            String userName = accountInfoSys.getName();
+//            String passwordTest = accountInfoSys.getPassword();
+//
+//            connectParams.put("username", userName);
+//            connectParams.put("password", passwordTest);
+//        } catch (AccountInfoObtainException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            throw new UnExpectedRequestException("{&FAILED_TO_GET_USERNAME_PASSWORD}", 500);
+//        }
         return connectParams;
     }
 

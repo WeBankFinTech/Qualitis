@@ -950,109 +950,109 @@ public class ExecutionManagerImpl implements ExecutionManager {
             }
         }
 
-        jobCodes.add("import sys.process._");
-        jobCodes.add("import scala.util.parsing.json._");
+//        jobCodes.add("import sys.process._");
+//        jobCodes.add("import scala.util.parsing.json._");
+//
+//        String realContent = "\"" + linkisConfig.getCheckAlertTemplate().replace("qualitis_check_alert_topic", currentCheckAlert.getTopic()).replace("qualitis_check_alert_time", saveApplication.getSubmitTime()).replace("qualitis_check_alert_project_info", currentCheckAlert.getProject().getName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getWorkFlowName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getNodeName()) + "\"";
+//
+//        jobCodes.add("var alertContent = " + realContent);
+//        String filter = StringUtils.isNotEmpty(currentCheckAlert.getFilter()) ? currentCheckAlert.getFilter() : "true";
+//
+//        filter = DateExprReplaceUtil.replaceFilter(new Date(), filter);
+//        jobCodes.add("val alertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
+//                + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAlertCol() + " = 1 AND " + filter + "\").collect()");
+//        jobCodes.add("var alertTableContent = \"\"");
+//        jobCodes.add("for(ele <- alertTableArr) {alertTableContent = alertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
+//        jobCodes.add("if (alertTableContent.length > 0) {");
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", alertTableContent)");
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_receiver\", \"" + currentCheckAlert.getDefaultReceiver() + "\")");
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
+//        jobCodes.add("} else {");
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", \"\")");
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[告警人\\\\] qualitis_check_alert_default_receiver\", \"\")");
+//
+//        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"\")");
+//        jobCodes.add("}");
 
-        String realContent = "\"" + linkisConfig.getCheckAlertTemplate().replace("qualitis_check_alert_topic", currentCheckAlert.getTopic()).replace("qualitis_check_alert_time", saveApplication.getSubmitTime()).replace("qualitis_check_alert_project_info", currentCheckAlert.getProject().getName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getWorkFlowName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getNodeName()) + "\"";
-
-        jobCodes.add("var alertContent = " + realContent);
-        String filter = StringUtils.isNotEmpty(currentCheckAlert.getFilter()) ? currentCheckAlert.getFilter() : "true";
-
-        filter = DateExprReplaceUtil.replaceFilter(new Date(), filter);
-        jobCodes.add("val alertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
-                + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAlertCol() + " = 1 AND " + filter + "\").collect()");
-        jobCodes.add("var alertTableContent = \"\"");
-        jobCodes.add("for(ele <- alertTableArr) {alertTableContent = alertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
-        jobCodes.add("if (alertTableContent.length > 0) {");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", alertTableContent)");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_receiver\", \"" + currentCheckAlert.getDefaultReceiver() + "\")");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
-        jobCodes.add("} else {");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_content\", \"\")");
-        jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[告警人\\\\] qualitis_check_alert_default_receiver\", \"\")");
-
-        jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_default_title\", \"\")");
-        jobCodes.add("}");
-
-        if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol())) {
-            jobCodes.add("val majorAlertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
-                    + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAdvancedAlertCol() + " = 1 AND " + filter + "\").collect()");
-            jobCodes.add("var majorAlertTableContent = \"\"");
-            jobCodes.add("for(ele <- majorAlertTableArr) {majorAlertTableContent = majorAlertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
-            jobCodes.add("if (majorAlertTableContent.length > 0) {");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", majorAlertTableContent)");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_receiver\", \"" + (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver()) ? currentCheckAlert.getAdvancedReceiver() : "") + "\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
-            // CURL IMS
-            if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver())) {
-                Map<String, Object> jsonAdvancedMap = new HashMap<>();
-                jsonAdvancedMap.put("userAuthKey", imsConfig.getUserAuthKey());
-                List<Map<String, Object>> alertList = new ArrayList<>();
-                Map<String, Object> advancedAlertMap = new HashMap<>();
-                advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays());
-                advancedAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
-                advancedAlertMap.put("ci_type_id", 55);
-                advancedAlertMap.put("sub_system_id", imsConfig.getSystemId());
-                advancedAlertMap.put("alert_level", currentCheckAlert.getAdvancedAlertLevel().toString());
-                advancedAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
-                advancedAlertMap.put("alert_info", "qualitis_check_alert_Advanced");
-                Map<String, Object> advancedAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getAdvancedReceiver());
-                advancedAlertMap.put("alert_reciver", advancedAlertReceiverMap.get("alert_reciver"));
-                if (advancedAlertReceiverMap.containsKey("erp_group_id")) {
-                    advancedAlertMap.put("erp_group_id", advancedAlertReceiverMap.get("erp_group_id").toString());
-                    advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
-                }
-                alertList.add(advancedAlertMap);
-                jsonAdvancedMap.put("alertList", alertList);
-                String jsonAdvancedValue = "val jsonAdvancedValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonAdvancedMap).replace("\"", "\\\"") + "\"";
-                jobCodes.add(jsonAdvancedValue);
-                jobCodes.add("val realJsonAdvancedValue = jsonAdvancedValue.replaceAll(\"qualitis_check_alert_Advanced\", alertContent)");
-                jobCodes.add("val jsonAdvancedCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonAdvancedValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
-                jobCodes.add("val advancedResponse = jsonAdvancedCmd.!!");
-                jobCodes.add("val code = JSON.parseFull(advancedResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
-                jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
-            }
-            jobCodes.add("} else {");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
-
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
-            jobCodes.add("}");
-        } else {
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
-            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
-
-            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
-        }
-        // CURL IMS
-        jobCodes.add("if (alertTableContent.length > 0) {");
-        Map<String, Object> jsonDefaultMap = new HashMap<>();
-        jsonDefaultMap.put("userAuthKey", imsConfig.getUserAuthKey());
-        List<Map<String, Object>> alertList = new ArrayList<>();
-        Map<String, Object> defaultAlertMap = new HashMap<>();
-        defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays());
-        defaultAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
-        defaultAlertMap.put("ci_type_id", 55);
-        defaultAlertMap.put("sub_system_id", imsConfig.getSystemId());
-        defaultAlertMap.put("alert_level", currentCheckAlert.getDefaultAlertLevel().toString());
-        defaultAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
-        defaultAlertMap.put("alert_info", "qualitis_check_alert_info");
-        Map<String, Object> defaultAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getDefaultReceiver());
-        defaultAlertMap.put("alert_reciver", defaultAlertReceiverMap.get("alert_reciver"));
-        if (defaultAlertReceiverMap.containsKey("erp_group_id")) {
-            defaultAlertMap.put("erp_group_id", defaultAlertReceiverMap.get("erp_group_id").toString());
-            defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
-        }
-        alertList.add(defaultAlertMap);
-        jsonDefaultMap.put("alertList", alertList);
-        String jsonDefaultValue = "val jsonDefaultValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonDefaultMap).replace("\"", "\\\"") + "\"";
-        jobCodes.add(jsonDefaultValue);
-        jobCodes.add("val realJsonDefaultValue = jsonDefaultValue.replaceAll(\"qualitis_check_alert_info\", alertContent)");
-        jobCodes.add("val jsonDefaultCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonDefaultValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
-        jobCodes.add("val defaultResponse = jsonDefaultCmd.!!");
-        jobCodes.add("val code = JSON.parseFull(defaultResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
-        jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
-        jobCodes.add("}");
+//        if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol())) {
+//            jobCodes.add("val majorAlertTableArr = spark.sql(\"SELECT " + StringUtils.join(selectPart, SpecCharEnum.COMMA.getValue())
+//                    + " FROM " + currentCheckAlert.getAlertTable() + " WHERE " + currentCheckAlert.getAdvancedAlertCol() + " = 1 AND " + filter + "\").collect()");
+//            jobCodes.add("var majorAlertTableContent = \"\"");
+//            jobCodes.add("for(ele <- majorAlertTableArr) {majorAlertTableContent = majorAlertTableContent.concat(ele.mkString(\" | \")).concat(\"\\n\")}");
+//            jobCodes.add("if (majorAlertTableContent.length > 0) {");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", majorAlertTableContent)");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_receiver\", \"" + (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver()) ? currentCheckAlert.getAdvancedReceiver() : "") + "\")");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"" + StringUtils.join(contentTitle, "|") + "\")");
+//            // CURL IMS
+//            if (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedReceiver())) {
+//                Map<String, Object> jsonAdvancedMap = new HashMap<>();
+//                jsonAdvancedMap.put("userAuthKey", imsConfig.getUserAuthKey());
+//                List<Map<String, Object>> alertList = new ArrayList<>();
+//                Map<String, Object> advancedAlertMap = new HashMap<>();
+//                advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays());
+//                advancedAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
+//                advancedAlertMap.put("ci_type_id", 55);
+//                advancedAlertMap.put("sub_system_id", imsConfig.getSystemId());
+//                advancedAlertMap.put("alert_level", currentCheckAlert.getAdvancedAlertLevel().toString());
+//                advancedAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
+//                advancedAlertMap.put("alert_info", "qualitis_check_alert_Advanced");
+//                Map<String, Object> advancedAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getAdvancedReceiver());
+//                advancedAlertMap.put("alert_reciver", advancedAlertReceiverMap.get("alert_reciver"));
+//                if (advancedAlertReceiverMap.containsKey("erp_group_id")) {
+//                    advancedAlertMap.put("erp_group_id", advancedAlertReceiverMap.get("erp_group_id").toString());
+//                    advancedAlertMap.put("alert_way", currentCheckAlert.getAdvancedAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
+//                }
+//                alertList.add(advancedAlertMap);
+//                jsonAdvancedMap.put("alertList", alertList);
+//                String jsonAdvancedValue = "val jsonAdvancedValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonAdvancedMap).replace("\"", "\\\"") + "\"";
+//                jobCodes.add(jsonAdvancedValue);
+//                jobCodes.add("val realJsonAdvancedValue = jsonAdvancedValue.replaceAll(\"qualitis_check_alert_Advanced\", alertContent)");
+//                jobCodes.add("val jsonAdvancedCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonAdvancedValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
+//                jobCodes.add("val advancedResponse = jsonAdvancedCmd.!!");
+//                jobCodes.add("val code = JSON.parseFull(advancedResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+//                jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
+//            }
+//            jobCodes.add("} else {");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
+//
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
+//            jobCodes.add("}");
+//        } else {
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"\\\\[高等级告警人\\\\] qualitis_check_alert_advanced_receiver\", \"\")");
+//
+//            jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_title\", \"\")");
+//        }
+//        // CURL IMS
+//        jobCodes.add("if (alertTableContent.length > 0) {");
+//        Map<String, Object> jsonDefaultMap = new HashMap<>();
+//        jsonDefaultMap.put("userAuthKey", imsConfig.getUserAuthKey());
+//        List<Map<String, Object>> alertList = new ArrayList<>();
+//        Map<String, Object> defaultAlertMap = new HashMap<>();
+//        defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays());
+//        defaultAlertMap.put("alert_title", "【业务运维关注】Qualitis Check Alert");
+//        defaultAlertMap.put("ci_type_id", 55);
+//        defaultAlertMap.put("sub_system_id", imsConfig.getSystemId());
+//        defaultAlertMap.put("alert_level", currentCheckAlert.getDefaultAlertLevel().toString());
+//        defaultAlertMap.put("alert_obj", dbAndTables[0] + "[" + dbAndTables[1] + "]");
+//        defaultAlertMap.put("alert_info", "qualitis_check_alert_info");
+//        Map<String, Object> defaultAlertReceiverMap = extractAlertReceivers(currentCheckAlert.getDefaultReceiver());
+//        defaultAlertMap.put("alert_reciver", defaultAlertReceiverMap.get("alert_reciver"));
+//        if (defaultAlertReceiverMap.containsKey("erp_group_id")) {
+//            defaultAlertMap.put("erp_group_id", defaultAlertReceiverMap.get("erp_group_id").toString());
+//            defaultAlertMap.put("alert_way", currentCheckAlert.getDefaultAlertWays() + SpecCharEnum.COMMA.getValue() + AlertWayEnum.ERP.getCode());
+//        }
+//        alertList.add(defaultAlertMap);
+//        jsonDefaultMap.put("alertList", alertList);
+//        String jsonDefaultValue = "val jsonDefaultValue = " + "\"" +CustomObjectMapper.transObjectToJson(jsonDefaultMap).replace("\"", "\\\"") + "\"";
+//        jobCodes.add(jsonDefaultValue);
+//        jobCodes.add("val realJsonDefaultValue = jsonDefaultValue.replaceAll(\"qualitis_check_alert_info\", alertContent)");
+//        jobCodes.add("val jsonDefaultCmd = Seq(\"curl\", \"-H\", \"'Content-Type: application/json'\",\"-d\", s\"$realJsonDefaultValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
+//        jobCodes.add("val defaultResponse = jsonDefaultCmd.!!");
+//        jobCodes.add("val code = JSON.parseFull(defaultResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+//        jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
+//        jobCodes.add("}");
 
 
         String code = String.join("\n", job.getJobCode());
