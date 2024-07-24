@@ -1,7 +1,6 @@
 package com.webank.wedatasphere.qualitis.config;
 
 //import bsp.encrypt.EncryptUtil;
-//import com.webank.wedatasphere.qualitis.util.MyDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +61,7 @@ public class DataSourceConfig {
     }
 
     @Bean(name = "workerDataSource")
+    @ConditionalOnProperty(name = "spring.datasource.worker.type", havingValue = "com.webank.wedatasphere.qualitis.util.MyDataSource", matchIfMissing = true)
     @ConfigurationProperties(prefix = "spring.datasource.hikari")
     public HikariDataSource workerDataSource(@Qualifier("workerDataSourceProperties") DataSourceProperties properties) throws Exception {
         HikariDataSource dataSource = properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();

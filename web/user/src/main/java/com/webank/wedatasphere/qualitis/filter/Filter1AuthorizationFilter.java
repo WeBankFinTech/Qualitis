@@ -122,7 +122,6 @@ public class Filter1AuthorizationFilter implements Filter {
                     if (userInDb != null) {
                         // 放入session
                         loginService.addToSession(username, request);
-                        loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
                         ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
                     } else {
                         // 自动创建用户
@@ -130,7 +129,6 @@ public class Filter1AuthorizationFilter implements Filter {
                         try {
                             userService.autoAddUser(username);
                             loginService.addToSession(username, request);
-                            loginService.addDmsUserCheckCookie(username, request, httpServletResponse);
                             ((HttpServletResponse)response).sendRedirect(frontEndConfig.getHomePage().replace("{IP}", QualitisConstants.QUALITIS_SERVER_HOST));
                         } catch (RoleNotFoundException e) {
                             LOGGER.error("Failed to auto add user, cause by: Failed to get role [PROJECTOR]", e);

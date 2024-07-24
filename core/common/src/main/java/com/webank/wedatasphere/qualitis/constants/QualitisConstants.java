@@ -1,9 +1,11 @@
 package com.webank.wedatasphere.qualitis.constants;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,6 +26,9 @@ import java.util.regex.Pattern;
 public class QualitisConstants {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QualitisConstants.class);
+
+    public static final String LOCAL_IP = "127.0.0.1";
+    public static final String UNKNOWN = "unknown";
 
     /**
      * 导入导出内置变量
@@ -58,6 +63,8 @@ public class QualitisConstants {
      * Ordinary num
      */
     public static final int LENGTH_TWO = 2;
+    public static final int LENGTH_THREE = 3;
+    public static final int LENGTH_FOUR = 4;
 
     /**
      * Group execution num
@@ -92,7 +99,7 @@ public class QualitisConstants {
     /**
      * Subsystem ID
      */
-    public static final Integer SUB_SYSTEM_ID = 5375;
+    public static final String SUB_SYSTEM_ID = "5375";
 
     /**
      * Key of compared value
@@ -115,7 +122,22 @@ public class QualitisConstants {
      */
     public static final String UNION_ALL = "All";
     public static final Pattern DATA_SOURCE_ID = Pattern.compile("\\.\\(ID=[0-9]+\\{[0-9,]+\\}\\)");
-    public static final Pattern DATA_SOURCE_NAME = Pattern.compile("\\.\\(NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\{[\\u4E00-\\u9FA5A-Za-z0-9_,]+\\}\\)");
+    public static final Pattern DATA_SOURCE_NAME = Pattern.compile("\\.\\(NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\{*[\\u4E00-\\u9FA5A-Za-z0-9_,.()-]*\\}*\\)");
+    /**
+     * example: NAME=linkis_datasource{db_env_name} or ID=201{db_env_name}
+     */
+    public static final Pattern DATASOURCE_NAME_ENV_REGEX = Pattern.compile("NAME=[\\u4E00-\\u9FA5A-Za-z0-9_]+\\{*[\\u4E00-\\u9FA5A-Za-z0-9_,.()-]*\\}*");
+    public static final Pattern DATASOURCE_ID_ENV_REGEX = Pattern.compile("ID=[0-9]+\\{[0-9,]+\\}");
+
+    /**
+     * The regex of variable name, when the users enter: ds_name[env1,env2]
+     */
+    public static final Pattern DATASOURCE_DIFF_VARIABLE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5A-Za-z0-9_]+\\[[\\u4E00-\\u9FA5A-Za-z0-9_,.()-]+\\]");
+
+    /**
+     * To match value of number type
+     */
+    public static final String NUMBER_REGEX = "^\\d+$";
 
     /**
      * Date format
@@ -137,22 +159,32 @@ public class QualitisConstants {
     public static final Integer EXECUTION_COMPLETED = 3;
 
     /**
-     * qualitis_template_default_input_meta, 0.23.0版本单表ID
+     * 指标采集项目名称
      */
-    public static final List<Integer> SINGLE_TABLE = Arrays.asList(17, 18, 19, 20, 21, 22, 23, 33);
+    public static final String IMSMETRIC_PROJECT = "ims_omnis_prophet";
+
     /**
-     * qualitis_template_default_input_meta, 0.23.0版本跨表ID
+     * qualitis_template_default_input_meta, 0.23.0版本单表en_name
      */
-    public static final List<Integer> CROSS_TABLE = Arrays.asList(17, 18, 20, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+    public static final List<String> SINGLE_TABLE = Arrays.asList("database","table","fields","filter","enumerated_list range","numerical_range","express","standard_value_expression");
     /**
-     * qualitis_template_default_input_meta, 0.23.0版本文件ID
+     * qualitis_template_default_input_meta, 0.23.0版本跨表en_name
      */
-    public static final List<Integer> FILE_TABLE = Arrays.asList(17, 18, 20);
+
+    public static final List<String> CROSS_TABLE = Arrays.asList("database","table","filter","left_database","left_table","right_database","right_table","left_filter","right_filter","join_express","compare_express","result_filter","left_collect_sql","right_collect_sql");
+    /**
+     * qualitis_template_default_input_meta, 0.23.0版本文件en_name
+     */
+
+    public static final List<String> FILE_TABLE = Arrays.asList("database","table","filter");
     /**
      * 剔除旧数据的占位符与0.23.0版本input_type不匹配的情况
      */
     public static final List<Integer> ELIMINATE_PLACEHOLDER = Arrays.asList(1, 7, 10, 20, 21, 22, 23, 25, 36, 37, 38);
 
+    /**
+     * 和input_type比较
+     */
     public static final List<String> OVER_TABLE_TYPE = Arrays.asList("11", "12", "13", "14", "30", "31");
     public static final String ROW_DATA_CONSISTENCY_VERIFICATION="行数据一致性校验";
 
@@ -204,7 +236,7 @@ public class QualitisConstants {
     public static final String FPS_DEFAULT_USER = "hadoop";
 
     /**
-     * @Description：获取客户端内网ip
+     * Host
      */
     public static String QUALITIS_SERVER_HOST;
 
@@ -271,8 +303,8 @@ public class QualitisConstants {
      */
     public static final String RULE_GROUP_FILTER_PLACEHOLDER = "${table_value_filter}";
 
-    public static final Long EXPECT_LINES_NOT_REPEAT_ID = 2149L;
-    public static final Long EXPECT_DATA_NOT_REPEAT_ID = 4000L;
+    public static final String EXPECT_LINES_NOT_REPEAT_EN_NAME = "Primary Line Verification";
+    public static final String EXPECT_DATA_NOT_REPEAT_EN_NAME = "Repeat data check";
 
     /**
      * Execution param variables
@@ -288,7 +320,7 @@ public class QualitisConstants {
     public static final String QUALITIS_STARTUP_PARAM = "qualitis_startup_param";
     public static final String QUALITIS_ENGINE_TYPE = "qualitis.linkis.engineType";
     public static final String QUALITIS_MID_TABLE_REUSE = "mid_table_reuse";
-    public static final String QUALITIS_UNION_ALL_SAVE = "union_all_save";
+    public static final String QUALITIS_UNION_WAY = "union_way";
 
 
     /**
@@ -319,4 +351,83 @@ public class QualitisConstants {
     public static final String AUTH_TYPE_ACCOUNT_PWD = "accountPwd";
     public static final String AUTH_TYPE_DPM = "dpm";
 
+    public static final String DEFAULT_AUTH_APP_ID = "linkis_id";
+
+    public static final String BDP_CLIENT_TOKEN = "bdp_client_token";
+
+    /**
+     * Spark 引擎复用上限
+     */
+    public static final String SPARK_ENGINE_REUSE_LIMIT = "wds.linkis.engineconn.max.task.execute.num";
+
+    /**
+     * Multitemplate en name
+     */
+    public static final String MULTI_SOURCE_ACCURACY_TEMPLATE_NAME = "Field consistency check";
+    public static final String MULTI_SOURCE_FULL_TEMPLATE_NAME = "Row data consistency check";
+    public static final String MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME = "Multi cluster custom field consistency check";
+    public static final String SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME = "Single cluster custom field consistency check";
+    public static final String MULTI_SOURCE_ACROSS_TEMPLATE_NAME = "Multi table rows consistensy";
+    public static final String SINGLE_SOURCE_ACROSS_TEMPLATE_NAME = "Single table rows consistensy";
+    public static final String CROSS_CLUSTER_TABLE_TEMPLATE_NAME = "Cross cluster table structure consistency";
+    public static final String SINGLE_CLUSTER_TABLE_TEMPLATE_NAME = "Single cluster table structure consistency";
+
+
+    public static final int ACTUAL_ENV_NAME_LENGTH = 100;
+
+    public static boolean isAcrossCluster(String templateEnName) {
+        return MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) || MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName);
+    }
+
+    public static boolean isCustomColumnConsistence(String templateEnName) {
+        return MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) || SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName);
+    }
+    public static boolean isTableRowsConsistency(String templateEnName) {
+        return MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName) || SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName);
+    }
+
+    public static boolean isTableStructureConsistent(String templateEnName) {
+        return CROSS_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName) || SINGLE_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName);
+    }
+
+    public static boolean isRepeatDataCheck(String templateEnName) {
+        return EXPECT_LINES_NOT_REPEAT_EN_NAME.equals(templateEnName) || EXPECT_DATA_NOT_REPEAT_EN_NAME.equals(templateEnName);
+    }
+
+    /**
+     * Null table size
+     */
+    public static final String NULL_TABLE_SIZE = "0B";
+
+    public static final String CMDB_KEY_DCN_NUM = "dcn_num";
+    public static final String CMDB_KEY_LOGIC_AREA = "logic_area";
+
+    public static final String DCN_RANGE_TYPE_ALL = "all";
+
+    /**
+     * 获取ip地址
+     */
+    public static String getIp(HttpServletRequest request) {
+        String ip = request.getHeader("x-forwarded-for");
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        if (ip.contains(SpecCharEnum.COMMA.getValue())) {
+            ip = ip.split(SpecCharEnum.COMMA.getValue())[0];
+        }
+        if (LOCAL_IP.equals(ip)) {
+            try {
+                ip = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOGGER.error("Failed to get host info.");
+            }
+        }
+        return ip;
+    }
 }

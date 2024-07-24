@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import com.webank.wedatasphere.qualitis.client.config.DataMapConfig;
 import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
@@ -30,12 +31,9 @@ import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.LoginFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.model.DmTicketValue;
 import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
-import com.webank.wedatasphere.qualitis.util.CookieTokenManager;
-import com.webank.wedatasphere.qualitis.util.HttpDmUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -43,7 +41,6 @@ import org.apache.commons.lang.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import javax.management.relation.RoleNotFoundException;
@@ -57,12 +54,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -102,7 +97,8 @@ public class LoginServiceImpl implements LoginService {
     private static final String DM_DGSA_LOGIN_STATUS = "DM_DGSA_LOGIN_STATUS";
     private static final String LOGIN_USER_ID = "LOGIN_USER_ID";
     private static final String TGC_SF = "tgc_sf";
-    private static final Integer TWO_HUNDRED  = 200;
+    private static final Integer TWO_HUNDRED = 200;
+    private static final String USER_ID = "userId";
 
     public LoginServiceImpl(@Context HttpServletRequest httpRequest, @Context HttpServletResponse httpResponse) {
         this.httpRequest = httpRequest;
@@ -110,7 +106,7 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public GeneralResponse<?> localLogin(LocalLoginRequest request) throws LoginFailedException, UnExpectedRequestException, RoleNotFoundException {
+    public GeneralResponse localLogin(LocalLoginRequest request) throws LoginFailedException, UnExpectedRequestException, RoleNotFoundException {
         // Check Arguments
         checkRequest(request);
 
@@ -118,7 +114,7 @@ public class LoginServiceImpl implements LoginService {
         if (localLogin(username, request.getPassword())) {
             addToSession(username, httpRequest);
             LOGGER.info("Succeed to login. user: {}, current_user: {}", username, username);
-            return new GeneralResponse<>("200", "{&LOGIN_SUCCESS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&LOGIN_SUCCESS}", null);
         }
 
         throw new LoginFailedException("{&LOGIN_FAILED}");
@@ -170,58 +166,6 @@ public class LoginServiceImpl implements LoginService {
         addUserToSession(userInDb, httpServletRequest);
         addPermissionsToSession(userInDb, httpServletRequest);
         addRandomToSession(httpServletRequest);
-    }
-
-    @Override
-    public void addDmsUserCheckCookie(String username, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) {
-        try {
-            List<String> cookieNames = Arrays.asList(httpServletRequest.getCookies()).stream().map(cookie -> cookie.getName()).collect(Collectors.toList());
-            if (! cookieNames.contains(ENV_FLAG)) {
-                Cookie cookie = new Cookie(ENV_FLAG, URLEncoder.encode(ENV_FLAG_VALUE, "UTF-8"));
-                cookie.setPath("/");
-                httpServletResponse.addCookie(cookie);
-            }
-            if (! cookieNames.contains(DM_DGSA_LOGIN_STATUS)) {
-                Cookie cookie = new Cookie(DM_DGSA_LOGIN_STATUS, URLEncoder.encode("1", "UTF-8"));
-                cookie.setPath("/");
-                httpServletResponse.addCookie(cookie);
-            }
-            if (! cookieNames.contains(LOGIN_USER_ID) || cookieNames.contains(TGC_SF) ) {
-                CookieTokenManager cookieTokenManager = new CookieTokenManager("/", TGC_SF, dataMapConfig.getRandomHashSalt());
-                DmTicketValue fullNameTicket = cookieTokenManager.buildDmTicketValue(username, "");
-                long expires = System.currentTimeMillis() + CookieTokenManager.SESSION_MAX_IDLE_MILLIS;
-                String userIdSignature = cookieTokenManager.calcCookieValue(fullNameTicket, expires);
-                String fetchUserId = fetchUserId(username, userIdSignature);
-                if (null == fetchUserId) {
-                    return;
-                }
-                Cookie cookie = new Cookie(LOGIN_USER_ID, URLEncoder.encode(fetchUserId, "UTF-8"));
-                cookie.setPath("/");
-                httpServletResponse.addCookie(cookie);
-                Cookie cookieTgc = new Cookie(TGC_SF, URLEncoder.encode(userIdSignature, "UTF-8"));
-                cookieTgc.setPath("/");
-                httpServletResponse.addCookie(cookieTgc);
-            }
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.error("URL encoder error", e);
-        }
-    }
-
-    private String fetchUserId(String username, String signature) {
-        String url = dataMapConfig.getAddress() + dataMapConfig.getUserId() + username;
-        LOGGER.info("Fetching userId from DMS, url: {}", url);
-        String result = null;
-        try {
-            result = HttpDmUtils.httpFetch(HttpMethod.GET, url, null, ENV_FLAG_VALUE, signature, null);
-        } catch (Exception e) {
-            LOGGER.error("Failed to fetch userId from DMS", e);
-        }
-        JsonObject resultJson = processInfoResult4Datamap(result);
-        if (resultJson == null || StringUtils.isEmpty(resultJson.get("userId").getAsString())) {
-            LOGGER.warn("There is no userId in DMS for username: {}", username);
-            return null;
-        }
-        return resultJson.get("userId").getAsString();
     }
 
     protected JsonObject processInfoResult4Datamap(String result) {

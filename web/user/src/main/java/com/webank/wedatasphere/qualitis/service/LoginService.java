@@ -33,6 +33,7 @@ public interface LoginService {
 
     /**
      * Login according to username and password
+     *
      * @param request
      * @return
      * @throws LoginFailedException
@@ -43,12 +44,13 @@ public interface LoginService {
 
     /**
      * Logout
+     *
      * @param request
      * @param httpServletResponse
      * @return
      * @throws IOException
      */
-    GeneralResponse<?> logout(HttpServletRequest request, HttpServletResponse httpServletResponse) throws IOException;
+    GeneralResponse logout(HttpServletRequest request, HttpServletResponse httpServletResponse) throws IOException;
 
     /**
      * Add user and permission information into session
@@ -57,11 +59,4 @@ public interface LoginService {
      */
     void addToSession(String username, HttpServletRequest httpServletRequest);
 
-    /**
-     * Add dms user check cookie
-     * @param username
-     * @param httpServletRequest
-     * @param httpServletResponse
-     */
-    void addDmsUserCheckCookie(String username, HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse);
 }
