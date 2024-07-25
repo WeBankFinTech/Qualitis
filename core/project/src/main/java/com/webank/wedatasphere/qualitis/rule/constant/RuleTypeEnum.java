@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.webank.wedatasphere.qualitis.scheduled.constant;
+package com.webank.wedatasphere.qualitis.rule.constant;
 
 /**
  * @author howeye

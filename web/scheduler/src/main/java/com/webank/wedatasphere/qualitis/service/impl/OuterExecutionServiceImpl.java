@@ -87,8 +87,8 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.service.TaskService;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
@@ -209,8 +209,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private LocaleParser localeParser;
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
-    @Autowired
-    private ScheduledTaskService scheduledTaskService;
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
     @Autowired
     private RuleTemplateService ruleTemplateService;
     @Autowired
@@ -2436,7 +2436,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (bdpClientHistory != null) {
                 SpringContextHolder.getBean(BdpClientHistoryDao.class).delete(bdpClientHistory);
             }
-            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+//            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule. rule id: {}", ruleInDb.getId());

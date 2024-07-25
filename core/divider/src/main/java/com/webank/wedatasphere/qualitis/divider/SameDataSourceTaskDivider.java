@@ -25,7 +25,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import java.util.ArrayList;
 import java.util.Date;

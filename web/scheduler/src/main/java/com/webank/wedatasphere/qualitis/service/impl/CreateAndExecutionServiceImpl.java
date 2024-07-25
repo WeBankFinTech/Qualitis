@@ -35,7 +35,7 @@ import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleReq
 import com.webank.wedatasphere.qualitis.rule.request.multi.ModifyMultiSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.*;
 import com.webank.wedatasphere.qualitis.util.JexlUtil;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;

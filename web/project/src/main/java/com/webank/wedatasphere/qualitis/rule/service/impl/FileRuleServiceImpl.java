@@ -23,8 +23,8 @@ import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -72,8 +72,8 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
     @Autowired
     private RuleLockService ruleLockService;
-    @Autowired
-    private ScheduledTaskService scheduledTaskService;
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
 
     @Autowired
     private RuleVariableService ruleVariableService;
@@ -290,7 +290,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
-        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
 
