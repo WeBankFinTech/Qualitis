@@ -149,8 +149,8 @@ public class TaskChecker implements IChecker {
     @Autowired
     private ApplicationCommentDao applicationCommentDao;
 
-    @Value("${intellect.check.project_name}")
-    private String intellectCheckProjectName;
+//    @Value("${intellect.check.project_name}")
+//    private String intellectCheckProjectName;
 
     @Value("${alarm.ims.receiver.collect:leoli,dqdong}")
     private String collectReceiver;
@@ -596,11 +596,11 @@ public class TaskChecker implements IChecker {
                 LOGGER.info("No failed collect task.");
                 return;
             }
-            Set<String> dbTableFilters = failedTask.stream().map(task -> task.getTaskDataSources())
-                    .flatMap(taskDataSources -> taskDataSources.stream()).map(taskDataSource -> taskDataSource.getDatabaseName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + taskDataSource.getTableName() + SpecCharEnum.COLON.getValue() + taskDataSource.getFilter()).collect(Collectors.toSet());
-            Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
-            String alertInfo = linkisConfig.getCollectTemplate();
-            alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
+//            Set<String> dbTableFilters = failedTask.stream().map(task -> task.getTaskDataSources())
+//                    .flatMap(taskDataSources -> taskDataSources.stream()).map(taskDataSource -> taskDataSource.getDatabaseName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + taskDataSource.getTableName() + SpecCharEnum.COLON.getValue() + taskDataSource.getFilter()).collect(Collectors.toSet());
+//            Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
+//            String alertInfo = linkisConfig.getCollectTemplate();
+//            alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
 //            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
             LOGGER.info("Finish to alarm collect task.");
             return;
@@ -1097,18 +1097,18 @@ public class TaskChecker implements IChecker {
     }
 
     private void printImsLog(Application applicationInDb, ApplicationStatusEnum applicationStatusEnum){
-        try {
-            if(!intellectCheckProjectName.equals(applicationInDb.getProjectName())){
-                return;
-            }
-            java.time.LocalDateTime submitTime = java.time.LocalDateTime.parse(applicationInDb.getSubmitTime(), FORMATTER);
-            java.time.LocalDateTime finishTime = java.time.LocalDateTime.parse(applicationInDb.getFinishTime(), FORMATTER);
-            long costTime = ChronoUnit.SECONDS.between(submitTime, finishTime);
-            LOGGER.info(String.format(IMS_LOG, applicationStatusEnum.getCode(), costTime, applicationStatusEnum.getMessage()));
-        } catch (Exception e) {
-            LOGGER.error("ims_omnis_prophet collect log printing failure");
-            LOGGER.error(e.getMessage(), e);
-        }
+//        try {
+//            if(!intellectCheckProjectName.equals(applicationInDb.getProjectName())){
+//                return;
+//            }
+//            java.time.LocalDateTime submitTime = java.time.LocalDateTime.parse(applicationInDb.getSubmitTime(), FORMATTER);
+//            java.time.LocalDateTime finishTime = java.time.LocalDateTime.parse(applicationInDb.getFinishTime(), FORMATTER);
+//            long costTime = ChronoUnit.SECONDS.between(submitTime, finishTime);
+//            LOGGER.info(String.format(IMS_LOG, applicationStatusEnum.getCode(), costTime, applicationStatusEnum.getMessage()));
+//        } catch (Exception e) {
+//            LOGGER.error("ims_omnis_prophet collect log printing failure");
+//            LOGGER.error(e.getMessage(), e);
+//        }
     }
 
 }

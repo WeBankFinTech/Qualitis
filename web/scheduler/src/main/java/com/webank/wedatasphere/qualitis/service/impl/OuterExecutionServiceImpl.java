@@ -95,7 +95,7 @@ import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.httpclient.util.DateParseException;
+//import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -220,8 +220,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private TaskService taskService;
     @Autowired
     private ProjectEventService projectEventService;
-    @Autowired
-    private FieldsAnalyseDao fieldsAnalyseDao;
+//    @Autowired
+//    private FieldsAnalyseDao fieldsAnalyseDao;
 
     @Value("${task.create_and_submit.limit_size:1000}")
     private Long thresholdValue;
@@ -3525,11 +3525,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 new ApplicationListResultResponse(result));
     }
 
-    @Override
-    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
-        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
-                new FieldsAnalyseResultResponse(taskResultList));
-    }
+//    @Override
+//    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+//        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
+//        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
+//                new FieldsAnalyseResultResponse(taskResultList));
+//    }
 
 }

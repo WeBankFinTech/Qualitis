@@ -384,20 +384,20 @@ public class OuterExecutionController {
         }
     }
 
-    @POST
-    @Path("fieldsAnalyse/result")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request) {
-        try {
-            return outerExecutionService.getFieldsAnalyseResult(request);
-        } catch (UnExpectedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", e.getMessage(), e);
-        } catch (Exception e) {
-            LOGGER.error("Failed to get result of application: {}", e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
-        }
-    }
+//    @POST
+//    @Path("fieldsAnalyse/result")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+//        try {
+//            return outerExecutionService.getFieldsAnalyseResult(request);
+//        } catch (UnExpectedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            return new GeneralResponse<>("500", e.getMessage(), e);
+//        } catch (Exception e) {
+//            LOGGER.error("Failed to get result of application: {}", e);
+//            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
+//        }
+//    }
 
 }

@@ -142,8 +142,8 @@ public class ExecutionManagerImpl implements ExecutionManager {
     @Value("${execution.task.parallelNum:50}")
     private Integer parallelNum;
 
-    @Value("${intellect.check.project_name}")
-    private String intellectCheckProjectName;
+//    @Value("${intellect.check.project_name}")
+//    private String intellectCheckProjectName;
 
     private HttpServletRequest httpServletRequest;
 

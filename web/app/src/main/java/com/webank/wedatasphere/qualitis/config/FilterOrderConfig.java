@@ -37,8 +37,8 @@ import javax.servlet.Filter;
 @Configuration
 public class FilterOrderConfig {
 
-    @Value("${facade.gov-core.ips}")
-    private String facadeGovCoreIPs;
+//    @Value("${facade.gov-core.ips}")
+//    private String facadeGovCoreIPs;
 
     @Value("${dss.origin-urls}")
     private String dssOriginUrls;
