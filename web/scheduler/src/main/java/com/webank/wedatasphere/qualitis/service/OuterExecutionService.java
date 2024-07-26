@@ -392,5 +392,5 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
+//    GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
 }
