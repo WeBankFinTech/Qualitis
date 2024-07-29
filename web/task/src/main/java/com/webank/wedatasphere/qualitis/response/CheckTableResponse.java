@@ -21,7 +21,7 @@ import com.webank.wedatasphere.qualitis.entity.TaskResult;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;

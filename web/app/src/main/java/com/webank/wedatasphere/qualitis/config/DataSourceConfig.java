@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.qualitis.config;
 
-import bsp.encrypt.EncryptUtil;
+//import bsp.encrypt.EncryptUtil;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +54,9 @@ public class DataSourceConfig {
     @ConfigurationProperties(prefix = "spring.datasource.hikari")
     public HikariDataSource dataSource(@Qualifier("masterDataSourceProperties") DataSourceProperties properties) throws Exception {
         HikariDataSource dataSource = properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
-        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+//        if (properties.getType().getSimpleName().equals(MyDataSource.class.getSimpleName())) {
+//            dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+//        }
         return dataSource;
     }
 
@@ -63,7 +65,9 @@ public class DataSourceConfig {
     @ConfigurationProperties(prefix = "spring.datasource.hikari")
     public HikariDataSource workerDataSource(@Qualifier("workerDataSourceProperties") DataSourceProperties properties) throws Exception {
         HikariDataSource dataSource = properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
-        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+//        if (properties.getType().getSimpleName().equals(MyDataSource.class.getSimpleName())) {
+//            dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+//        }
         return dataSource;
     }
 

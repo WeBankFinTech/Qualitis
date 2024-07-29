@@ -80,8 +80,8 @@ import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -173,8 +173,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ExecutionParametersDao executionParametersDao;
-    @Autowired
-    private ScheduledTaskService scheduledTaskService;
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
@@ -522,7 +522,7 @@ public class ProjectServiceImpl implements ProjectService {
         checkProjectPermission(projectInDb, user.getUsername(), permissions);
 
         // before delete executionParameters
-        scheduledTaskService.deleteAllUnreleasedSchedules(projectInDb);
+//        scheduledTaskService.deleteAllUnreleasedSchedules(projectInDb);
 
         //Delete executionParameters
         List<ExecutionParameters> executionParametersList = executionParametersDao.getAllExecutionParameters(projectInDb.getId());
@@ -742,12 +742,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     private void checkAndDeleteEmptyRuleGroups(List<RuleGroup> ruleGroups) {
         for (RuleGroup ruleGroup : ruleGroups) {
-            try {
-                scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleGroup);
-                ruleGroupDao.delete(ruleGroup);
-            } catch (UnExpectedRequestException e) {
-                LOGGER.error("Failed to delete RuleGroup: relate to schedule task");
-            }
+            //                scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleGroup);
+            ruleGroupDao.delete(ruleGroup);
         }
     }
 

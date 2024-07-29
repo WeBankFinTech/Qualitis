@@ -26,7 +26,7 @@ public class RuleMetric {
   private String metricDesc;
 
   @Column(name = "sub_system_id")
-  private Integer subSystemId;
+  private String subSystemId;
   @Column(name = "sub_system_name")
   private String subSystemName;
   @Column(name = "full_cn_name")
@@ -80,7 +80,7 @@ public class RuleMetric {
   @Column(name = "multi_env")
   private Boolean multiEnv;
 
-  public RuleMetric(String name, String cnName, String desc, Integer subSystemId, String subSystemName, String fullCnName, String productId
+  public RuleMetric(String name, String cnName, String desc, String subSystemId, String subSystemName, String fullCnName, String productId
       , String productName, String departmentCode, String departmentName, String devDepartmentName, String opsDepartmentName, Integer type
       , String enCode, Integer frequency, Boolean available, Integer bussCode, String bussCustom, Boolean multiEnv) {
     this.name = name;
@@ -162,11 +162,11 @@ public class RuleMetric {
     this.metricDesc = metricDesc;
   }
 
-  public Integer getSubSystemId() {
+  public String getSubSystemId() {
     return subSystemId;
   }
 
-  public void setSubSystemId(Integer subSystemId) {
+  public void setSubSystemId(String subSystemId) {
     this.subSystemId = subSystemId;
   }
 

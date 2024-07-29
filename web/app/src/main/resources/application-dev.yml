@@ -8,14 +8,14 @@ spring:
       private_key: X
       url: jdbc:mysql://[DB_HOST_MASTER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
       driver-class-name: com.mysql.jdbc.Driver
-      type: com.zaxxer.hikari.HikariDataSource
+      type: com.webank.wedatasphere.qualitis.util.MyDataSource
     worker:
       username: [DB_USERNAME]
       password: [DB_PASSWORD]
       private_key: X
       url: jdbc:mysql://[DB_HOST_WORKER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
       driver-class-name: com.mysql.jdbc.Driver
-      type: com.zaxxer.hikari.HikariDataSource
+      type: com.webank.wedatasphere.qualitis.util.MyDataSource
     # 连接池配置
     hikari:
       minimum-idle: 20
@@ -58,6 +58,7 @@ task:
     hive_sort_udf_class_path: X
     hive_sort_udf_lib_path: X
     # spark sql 回写结果入库的数据表
+    dbName: [DB_NAME]
     tableName: qualitis_application_task_result
     encrypt: false
   execute:
@@ -237,6 +238,7 @@ linkis:
     engine:
       name: spark
       version: 3.2.1
+      limit: 20
   shell:
     engine:
       name: shell
@@ -255,7 +257,7 @@ linkis:
   checkAlert:
     template: "\\n[告警主题] qualitis_check_alert_topic\\n[告警时间] qualitis_check_alert_time\\n[告警内容]\\n[高等级告警]\\nqualitis_check_alert_major_title\\nqualitis_check_alert_major_content\\n[一般告警]\\nqualitis_check_alert_info_title\\nqualitis_check_alert_info_content\\n[告警节点] qualitis_check_alert_project_info\\n[告警人] qualitis_check_alert_info_receiver\\n[高等级告警人] qualitis_check_alert_major_receiver\\n"
   git:
-    private-key:X
+    private-key: X
 
 # 元数据中间件相关配置，暂未开源
 datamap:
@@ -334,6 +336,31 @@ specialcreateexecute:
 
 dss:
   origin-urls: http://127.0.0.1:8088
+
+intellect:
+  check:
+    project_name: ims_omnis_prophet
+    table_collect_template_name: collect_table_data
+    enum_collect_template_name: collect_enum_data
+    origin_collect_template_name: collect_origin_data
+    total_collect_template_name: collect_total_data
+    fields_count_project_name: check_fields_count
+
+import_and_export:
+  time_out: 600
+
+report:
+  cron_enable: true
+  daily:
+    core_pool_size: 16
+    max_pool_size: 64
+    queue_capacity: 1024
+    cron: 0 0 1 * * ?
+  weekly:
+    core_pool_size: 5
+    max_pool_size: 10
+    queue_capacity: 25
+    cron: 0 0 2 * * 1
 
 # startup=true，本地开发调试，接口免登录
 local:

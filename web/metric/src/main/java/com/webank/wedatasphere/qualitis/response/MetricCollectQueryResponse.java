@@ -1,11 +1,10 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
-import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
-import org.apache.commons.lang3.StringUtils;
-
-import static com.webank.wedatasphere.qualitis.scheduled.util.CronUtil.cronToText;
+//import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
+//import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
+//import org.apache.commons.lang3.StringUtils;
+//import static com.webank.wedatasphere.qualitis.scheduled.util.CronUtil.cronToText;
 
 /**
  * @author v_minminghe@webank.com
@@ -48,53 +47,53 @@ public class MetricCollectQueryResponse {
 //        do nothing
     }
 
-    public MetricCollectQueryResponse(ImsMetricCollectDto imsMetricCollectDto) {
-        this.id = imsMetricCollectDto.getId();
-        this.createName = imsMetricCollectDto.getCreateUser();
-        this.updateName = imsMetricCollectDto.getModifyUser();
-        this.createTime = imsMetricCollectDto.getCreateTime();
-        this.updateTime = imsMetricCollectDto.getModifyTime();
-        this.clusterName = imsMetricCollectDto.getClusterName();
-        this.database = imsMetricCollectDto.getDbName();
-        this.table = imsMetricCollectDto.getTableName();
-        this.partition = imsMetricCollectDto.getPartition();
-        this.column = imsMetricCollectDto.getColumnName();
-        if (StringUtils.isNotBlank(imsMetricCollectDto.getExecFreq()) && !imsMetricCollectDto.getExecFreq().endsWith("2099")) {
-            this.execFreq = replaceTextOfExecFreq(imsMetricCollectDto.getExecFreq());
-        }
-        this.executionParametersName = imsMetricCollectDto.getExecutionParametersName();
-        this.templateId = imsMetricCollectDto.getTemplateId();
-        this.templateCnName = imsMetricCollectDto.getTemplateCnName();
-        this.templateEnName = imsMetricCollectDto.getTemplateEnName();
-        this.proxyUser = imsMetricCollectDto.getProxyUser();
-    }
+//    public MetricCollectQueryResponse(ImsMetricCollectDto imsMetricCollectDto) {
+//        this.id = imsMetricCollectDto.getId();
+//        this.createName = imsMetricCollectDto.getCreateUser();
+//        this.updateName = imsMetricCollectDto.getModifyUser();
+//        this.createTime = imsMetricCollectDto.getCreateTime();
+//        this.updateTime = imsMetricCollectDto.getModifyTime();
+//        this.clusterName = imsMetricCollectDto.getClusterName();
+//        this.database = imsMetricCollectDto.getDbName();
+//        this.table = imsMetricCollectDto.getTableName();
+//        this.partition = imsMetricCollectDto.getPartition();
+//        this.column = imsMetricCollectDto.getColumnName();
+//        if (StringUtils.isNotBlank(imsMetricCollectDto.getExecFreq()) && !imsMetricCollectDto.getExecFreq().endsWith("2099")) {
+//            this.execFreq = replaceTextOfExecFreq(imsMetricCollectDto.getExecFreq());
+//        }
+//        this.executionParametersName = imsMetricCollectDto.getExecutionParametersName();
+//        this.templateId = imsMetricCollectDto.getTemplateId();
+//        this.templateCnName = imsMetricCollectDto.getTemplateCnName();
+//        this.templateEnName = imsMetricCollectDto.getTemplateEnName();
+//        this.proxyUser = imsMetricCollectDto.getProxyUser();
+//    }
 
-    private String replaceTextOfExecFreq (String execFreq) {
-        String text = "";
-        try {
-            String[] cronArray = cronToText(execFreq);
-            String intervalCode = cronArray[0];
-            String dateInInterval = cronArray[1];
-            ExecuteIntervalEnum intervalEnum = ExecuteIntervalEnum.fromCode(intervalCode);
-            switch (intervalEnum) {
-                case WEEK:
-                    text = intervalEnum.getName() + dateInInterval + " " + cronArray[2];
-                    break;
-                case MONTH:
-                    text = intervalEnum.getName() + dateInInterval + "日 " + cronArray[2];
-                    break;
-                case DAY:
-                    text = intervalEnum.getName() + " " + cronArray[2];
-                    break;
-                default:
-                    text = cronArray[2];
-                    break;
-            }
-        } catch (Exception e) {
-//      doing nothing
-        }
-        return text;
-    }
+//    private String replaceTextOfExecFreq (String execFreq) {
+//        String text = "";
+//        try {
+//            String[] cronArray = cronToText(execFreq);
+//            String intervalCode = cronArray[0];
+//            String dateInInterval = cronArray[1];
+//            ExecuteIntervalEnum intervalEnum = ExecuteIntervalEnum.fromCode(intervalCode);
+//            switch (intervalEnum) {
+//                case WEEK:
+//                    text = intervalEnum.getName() + dateInInterval + " " + cronArray[2];
+//                    break;
+//                case MONTH:
+//                    text = intervalEnum.getName() + dateInInterval + "日 " + cronArray[2];
+//                    break;
+//                case DAY:
+//                    text = intervalEnum.getName() + " " + cronArray[2];
+//                    break;
+//                default:
+//                    text = cronArray[2];
+//                    break;
+//            }
+//        } catch (Exception e) {
+////      doing nothing
+//        }
+//        return text;
+//    }
 
     public String getProxyUser() {
         return proxyUser;

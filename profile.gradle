@@ -229,6 +229,9 @@ project(':core/converter') {
   dependencies{
     compile project(':util')
     compile project(':core/divider')
+      compile('com.github.pagehelper:pagehelper:5.3.1'){
+        force = true
+      }
 
 //    compile libs.encryptPassword
 //    compile (libs.encryptPasswordClient) {
@@ -251,7 +254,7 @@ project(':core/common') {
     compile libs.springBootStarterJersey
     compile libs.commonsLang
     compile libs.jgit
-
+    compile project(":util")
     compile (libs.hadoopClient) {
       exclude group: 'javax.servlet'
       exclude group: 'com.sun.jersey'

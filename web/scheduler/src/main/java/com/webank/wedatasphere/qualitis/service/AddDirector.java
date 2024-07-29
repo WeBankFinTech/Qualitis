@@ -8,7 +8,7 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -67,7 +67,7 @@ public class AddDirector {
 
     private ProjectDao projectDao;
 
-    private LinkisUdfDao linkisUdfDao;
+//    private LinkisUdfDao linkisUdfDao;
 
     private RuleGroupDao ruleGroupDao;
 
@@ -84,7 +84,7 @@ public class AddDirector {
     private LinkisConfig linkisConfig;
 
     public AddDirector(SubDepartmentPermissionService subDepartmentPermissionService, ProjectService projectService, MetaDataClient metaDataClient
-        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, LinkisUdfDao linkisUdfDao, RuleGroupDao ruleGroupDao
+        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, RuleGroupDao ruleGroupDao
         , RuleTemplateDao ruleTemplateDao, StandardValueVersionDao standardValueVersionDao, LinkisDataSourceEnvService linkisDataSourceEnvService, LinkisDataSourceDao linkisDataSourceDao, BdpClientHistoryDao bdpClientHistoryDao, LinkisConfig linkisConfig) {
         this.subDepartmentPermissionService = subDepartmentPermissionService;
         this.projectService = projectService;
@@ -93,7 +93,7 @@ public class AddDirector {
         this.ruleDao = ruleDao;
         this.userDao = userDao;
         this.projectDao = projectDao;
-        this.linkisUdfDao = linkisUdfDao;
+//        this.linkisUdfDao = linkisUdfDao;
         this.ruleGroupDao = ruleGroupDao;
         this.ruleTemplateDao = ruleTemplateDao;
         this.standardValueVersionDao = standardValueVersionDao;
@@ -815,7 +815,7 @@ public class AddDirector {
 
     public AddRequestBuilder expectSqlPass(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisUdfDao, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
+        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
         // Project and rule related with builder.
         setProject(project, projectName);
         setRule(rule, ruleName);

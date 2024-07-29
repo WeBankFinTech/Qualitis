@@ -23,9 +23,9 @@ import java.util.Date;
 /**
  * @author v_wenxuanzhang
  */
-@Entity
-@Table(name = "qualitis_imsmetric_fields_analyse")
-@IdClass(FieldsAnalysePrimaryKey.class)
+//@Entity
+//@Table(name = "qualitis_imsmetric_fields_analyse")
+//@IdClass(FieldsAnalysePrimaryKey.class)
 public class FieldsAnalyse {
 
     @Id

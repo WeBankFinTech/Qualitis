@@ -50,7 +50,7 @@ import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;

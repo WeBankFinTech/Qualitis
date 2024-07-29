@@ -31,12 +31,12 @@ import com.webank.wedatasphere.qualitis.dto.DataVisibilityPermissionDto;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableClusterDao;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableEngineDao;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableCluster;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableEngine;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableClusterDao;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfEnableEngineDao;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableCluster;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableEngine;
 import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.client.LinkisMetaDataManager;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
@@ -137,16 +137,16 @@ public class MetaDataServiceImpl implements MetaDataService {
     private RuleDao ruleDao;
     @Autowired
     private ProjectDao projectDao;
-    @Autowired
-    private LinkisUdfDao linkisUdfDao;
+//    @Autowired
+//    private LinkisUdfDao linkisUdfDao;
     @Autowired
     private ClusterInfoDao clusterInfoDao;
     @Autowired
     private RuleDataSourceDao ruleDataSourceDao;
-    @Autowired
-    private LinkisUdfEnableEngineDao linkisUdfEnableEngineDao;
-    @Autowired
-    private LinkisUdfEnableClusterDao linkisUdfEnableClusterDao;
+//    @Autowired
+//    private LinkisUdfEnableEngineDao linkisUdfEnableEngineDao;
+//    @Autowired
+//    private LinkisUdfEnableClusterDao linkisUdfEnableClusterDao;
     @Autowired
     private LinkisDataSourceDao linkisDataSourceDao;
     @Autowired
@@ -1284,315 +1284,318 @@ public class MetaDataServiceImpl implements MetaDataService {
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<UdfResponse> addUdf(UdfRequest request) throws PermissionDeniedRequestException, UnExpectedRequestException, JSONException, MetaDataAcquireFailedException, IOException {
-        UdfRequest.checkRequestForAdd(request);
-        LOGGER.info("Start to add udf, request: {}", request.toString());
-        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
-        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
-        Integer roleType = roleService.getRoleType(userRoles);
-
-        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, null, request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
-
-        LinkisUdf linkisUdfTemp = linkisUdfDao.findByName(request.getName());
-        if (linkisUdfTemp != null) {
-            throw new UnExpectedRequestException("Linkis UDF " + "{&ALREADY_EXIST}");
-        }
-
-        LinkisUdf linkisUdf = new LinkisUdf(request.getName(), request.getCnName(), request.getDesc(), request.getEnter(), request.getReturnType(), request.getRegisterName(), request.getDir(), request.getImplType(), request.getDevDepartmentId(), request.getDevDepartmentName(), request.getOpsDepartmentId(), request.getOpsDepartmentName(), request.getFile(), request.getStatus());
-        linkisUdf.setCreateTime(DateUtils.now());
-        linkisUdf.setCreateUser(userInDb.getUsername());
-        LinkisUdf linkisUdfInDb = linkisUdfDao.save(linkisUdf);
-        Map<String, Long> udfClusterIdMaps = new HashMap<>(request.getEnableCluster().size());
-        List<LinkisUdfEnableCluster> linkisUdfEnableClusters = new ArrayList<>(request.getEnableCluster().size());
-        // Each cluster needs to upload the function file and create the function.
-        File uploadFile = new File(request.getFile());
-        for (String currentCluster : request.getEnableCluster()) {
-            String targetFilePath = metaDataClient.checkFilePathExistsAndUploadToWorkspace(currentCluster, linkisConfig.getUdfAdmin(), uploadFile, Boolean.TRUE);
-            Long udfId = metaDataClient.clientAdd(currentCluster, targetFilePath, uploadFile, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName(), request.getStatus(), request.getDir());
-
-            // Share with login user's proxy users and deploy.
-            if (udfId != null) {
-                udfClusterIdMaps.put(currentCluster, udfId);
-                List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
-                metaDataClient.shareAndDeploy(udfId, currentCluster, proxyUserNames, linkisUdf.getName());
-                LinkisUdfEnableCluster linkisUdfEnableCluster = new LinkisUdfEnableCluster(linkisUdfInDb, currentCluster, udfId, request.getName());
-                linkisUdfEnableClusters.add(linkisUdfEnableCluster);
-            }
-        }
-
-        // If not all successful, delete the added ones.
-        if (udfClusterIdMaps.size() != request.getEnableCluster().size()) {
-            LOGGER.info("Start to delete already exist udf.");
-            for (Map.Entry<String, Long> currentCluster : udfClusterIdMaps.entrySet()) {
-                metaDataClient.deleteUdf(currentCluster.getKey(), currentCluster.getValue(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
-            }
-        }
-
-        List<LinkisUdfEnableEngine> linkisUdfEnableEngines = new ArrayList<>(request.getEnableEngine().size());
-        for (Integer engineCode : request.getEnableEngine()) {
-            LinkisUdfEnableEngine linkisUdfEnableEngine = new LinkisUdfEnableEngine(linkisUdfInDb, engineCode);
-            linkisUdfEnableEngines.add(linkisUdfEnableEngine);
-        }
-        linkisUdfEnableEngineDao.saveAll(linkisUdfEnableEngines);
-
-        linkisUdfEnableClusterDao.saveAll(linkisUdfEnableClusters);
-
-        LOGGER.info("Success to save linkis udf and related tables(linkis udf engine, cluster).");
-        dataVisibilityService.saveBatch(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, request.getVisibilityDepartmentList());
+//        UdfRequest.checkRequestForAdd(request);
+//        LOGGER.info("Start to add udf, request: {}", request.toString());
+//        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+//        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+//        Integer roleType = roleService.getRoleType(userRoles);
+//
+//        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, null, request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
+//
+//        LinkisUdf linkisUdfTemp = linkisUdfDao.findByName(request.getName());
+//        if (linkisUdfTemp != null) {
+//            throw new UnExpectedRequestException("Linkis UDF " + "{&ALREADY_EXIST}");
+//        }
+//
+//        LinkisUdf linkisUdf = new LinkisUdf(request.getName(), request.getCnName(), request.getDesc(), request.getEnter(), request.getReturnType(), request.getRegisterName(), request.getDir(), request.getImplType(), request.getDevDepartmentId(), request.getDevDepartmentName(), request.getOpsDepartmentId(), request.getOpsDepartmentName(), request.getFile(), request.getStatus());
+//        linkisUdf.setCreateTime(DateUtils.now());
+//        linkisUdf.setCreateUser(userInDb.getUsername());
+//        LinkisUdf linkisUdfInDb = linkisUdfDao.save(linkisUdf);
+//        Map<String, Long> udfClusterIdMaps = new HashMap<>(request.getEnableCluster().size());
+//        List<LinkisUdfEnableCluster> linkisUdfEnableClusters = new ArrayList<>(request.getEnableCluster().size());
+//        // Each cluster needs to upload the function file and create the function.
+//        File uploadFile = new File(request.getFile());
+//        for (String currentCluster : request.getEnableCluster()) {
+//            String targetFilePath = metaDataClient.checkFilePathExistsAndUploadToWorkspace(currentCluster, linkisConfig.getUdfAdmin(), uploadFile, Boolean.TRUE);
+//            Long udfId = metaDataClient.clientAdd(currentCluster, targetFilePath, uploadFile, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName(), request.getStatus(), request.getDir());
+//
+//            // Share with login user's proxy users and deploy.
+//            if (udfId != null) {
+//                udfClusterIdMaps.put(currentCluster, udfId);
+//                List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+//                metaDataClient.shareAndDeploy(udfId, currentCluster, proxyUserNames, linkisUdf.getName());
+//                LinkisUdfEnableCluster linkisUdfEnableCluster = new LinkisUdfEnableCluster(linkisUdfInDb, currentCluster, udfId, request.getName());
+//                linkisUdfEnableClusters.add(linkisUdfEnableCluster);
+//            }
+//        }
+//
+//        // If not all successful, delete the added ones.
+//        if (udfClusterIdMaps.size() != request.getEnableCluster().size()) {
+//            LOGGER.info("Start to delete already exist udf.");
+//            for (Map.Entry<String, Long> currentCluster : udfClusterIdMaps.entrySet()) {
+//                metaDataClient.deleteUdf(currentCluster.getKey(), currentCluster.getValue(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
+//            }
+//        }
+//
+//        List<LinkisUdfEnableEngine> linkisUdfEnableEngines = new ArrayList<>(request.getEnableEngine().size());
+//        for (Integer engineCode : request.getEnableEngine()) {
+//            LinkisUdfEnableEngine linkisUdfEnableEngine = new LinkisUdfEnableEngine(linkisUdfInDb, engineCode);
+//            linkisUdfEnableEngines.add(linkisUdfEnableEngine);
+//        }
+//        linkisUdfEnableEngineDao.saveAll(linkisUdfEnableEngines);
+//
+//        linkisUdfEnableClusterDao.saveAll(linkisUdfEnableClusters);
+//
+//        LOGGER.info("Success to save linkis udf and related tables(linkis udf engine, cluster).");
+//        dataVisibilityService.saveBatch(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, request.getVisibilityDepartmentList());
 
 //        if (uploadFile.exists()) {
 //            Files.delete(uploadFile.toPath());
 //        }
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_UDF}", new UdfResponse(linkisUdf.getId()));
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_UDF}", new UdfResponse(linkisUdf.getId()));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_ADD_UDF}", null);
     }
 
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<UdfResponse> modifyUdf(UdfRequest request) throws PermissionDeniedRequestException, MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException {
-        UdfRequest.checkRequestForModify(request);
-        LinkisUdf linkisUdf = linkisUdfDao.findById(request.getId());
-        if (linkisUdf == null) {
-            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
-        }
-
-        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
-        LOGGER.info("Start to modify udf, request: {}", request.toString());
-        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
-        Integer roleType = roleService.getRoleType(userRoles);
-        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
-
-        //If enable cluster changed, delete in old cluster
-        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
-        Map<String, Long> clusterIdMaps = new HashMap<>(alreadyExistsLinkisUdfEnableClusterSet.size());
-        Set<LinkisUdfEnableCluster> abandonlinkisUdfEnableClusterSet = new HashSet<>();
-        List<LinkisUdfEnableCluster> newLinkisUdfEnableClusterSet = new ArrayList<>();
-
-        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
-            if (!request.getEnableCluster().contains(linkisUdfEnableCluster.getEnableClusterName())) {
-                abandonlinkisUdfEnableClusterSet.add(linkisUdfEnableCluster);
-            } else {
-                clusterIdMaps.put(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId());
-            }
-        }
-
-        if (CollectionUtils.isNotEmpty(abandonlinkisUdfEnableClusterSet)) {
-            // Delete by ID.
-            for (LinkisUdfEnableCluster linkisUdfEnableCluster : abandonlinkisUdfEnableClusterSet) {
-                metaDataClient.deleteUdf(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
-            }
-            linkisUdfEnableClusterDao.deleteInBatch(abandonlinkisUdfEnableClusterSet);
-        }
-        File uploadFile = new File(request.getFile());
-        for (String currentCluster : request.getEnableCluster()) {
-            // Check jar changed or not, to upload new jar.
-            boolean needUpload = !linkisUdf.getUploadPath().equals(request.getFile());
-            String targetFilePath = metaDataClient.checkFilePathExistsAndUploadToWorkspace(currentCluster, linkisConfig.getUdfAdmin(), uploadFile, needUpload);
-
-            // New cluster, add.
-            if (!clusterIdMaps.keySet().contains(currentCluster)) {
-                Long udfId = metaDataClient.clientAdd(currentCluster, targetFilePath, uploadFile, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName(), request.getStatus(), request.getDir());
-                List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
-                metaDataClient.shareAndDeploy(udfId, currentCluster, proxyUserNames, linkisUdf.getName());
-
-                LinkisUdfEnableCluster linkisUdfEnableCluster = new LinkisUdfEnableCluster(linkisUdf, currentCluster, udfId, request.getName());
-                newLinkisUdfEnableClusterSet.add(linkisUdfEnableCluster);
-                continue;
-            }
-            metaDataClient.clientModify(targetFilePath, uploadFile, currentCluster, clusterIdMaps, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName());
-            // Share, deploy
-            List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
-            metaDataClient.shareAndDeploy(clusterIdMaps.get(currentCluster), currentCluster, proxyUserNames, linkisUdf.getName());
-        }
-
-        linkisUdf.setEnter(request.getEnter());
-        linkisUdf.setUdfDesc(request.getDesc());
-        linkisUdf.setStatus(request.getStatus());
-        linkisUdf.setCnName(request.getCnName());
-        linkisUdf.setUploadPath(request.getFile());
-        linkisUdf.setReturnType(request.getReturnType());
-        linkisUdf.setRegisterName(request.getRegisterName());
-        linkisUdf.setDevDepartmentId(request.getDevDepartmentId());
-        linkisUdf.setOpsDepartmentId(request.getOpsDepartmentId());
-        linkisUdf.setDevDepartmentName(request.getDevDepartmentName());
-        linkisUdf.setOpsDepartmentName(request.getOpsDepartmentName());
-        linkisUdf.setModifyTime(DateUtils.now());
-        linkisUdf.setModifyUser(userInDb.getUsername());
-
-        // Delete all enable engines
-        linkisUdfEnableEngineDao.deleteInBatch(linkisUdf.getLinkisUdfEnableEngineSet());
-        List<LinkisUdfEnableEngine> linkisUdfEnableEngines = new ArrayList<>(request.getEnableEngine().size());
-        for (Integer engineCode : request.getEnableEngine()) {
-            LinkisUdfEnableEngine linkisUdfEnableEngine = new LinkisUdfEnableEngine(linkisUdf, engineCode);
-            linkisUdfEnableEngines.add(linkisUdfEnableEngine);
-        }
-        linkisUdfEnableEngineDao.saveAll(linkisUdfEnableEngines);
-
-        linkisUdfEnableClusterDao.saveAll(newLinkisUdfEnableClusterSet);
-
-        LOGGER.info("Success to modify linkis udf and related tables(linkis udf engine, cluster).");
-        dataVisibilityService.delete(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
-        dataVisibilityService.saveBatch(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, request.getVisibilityDepartmentList());
+//        UdfRequest.checkRequestForModify(request);
+//        LinkisUdf linkisUdf = linkisUdfDao.findById(request.getId());
+//        if (linkisUdf == null) {
+//            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
+//        }
+//
+//        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+//        LOGGER.info("Start to modify udf, request: {}", request.toString());
+//        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+//        Integer roleType = roleService.getRoleType(userRoles);
+//        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
+//
+//        //If enable cluster changed, delete in old cluster
+//        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
+//        Map<String, Long> clusterIdMaps = new HashMap<>(alreadyExistsLinkisUdfEnableClusterSet.size());
+//        Set<LinkisUdfEnableCluster> abandonlinkisUdfEnableClusterSet = new HashSet<>();
+//        List<LinkisUdfEnableCluster> newLinkisUdfEnableClusterSet = new ArrayList<>();
+//
+//        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
+//            if (!request.getEnableCluster().contains(linkisUdfEnableCluster.getEnableClusterName())) {
+//                abandonlinkisUdfEnableClusterSet.add(linkisUdfEnableCluster);
+//            } else {
+//                clusterIdMaps.put(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId());
+//            }
+//        }
+//
+//        if (CollectionUtils.isNotEmpty(abandonlinkisUdfEnableClusterSet)) {
+//            // Delete by ID.
+//            for (LinkisUdfEnableCluster linkisUdfEnableCluster : abandonlinkisUdfEnableClusterSet) {
+//                metaDataClient.deleteUdf(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
+//            }
+//            linkisUdfEnableClusterDao.deleteInBatch(abandonlinkisUdfEnableClusterSet);
+//        }
+//        File uploadFile = new File(request.getFile());
+//        for (String currentCluster : request.getEnableCluster()) {
+//            // Check jar changed or not, to upload new jar.
+//            boolean needUpload = !linkisUdf.getUploadPath().equals(request.getFile());
+//            String targetFilePath = metaDataClient.checkFilePathExistsAndUploadToWorkspace(currentCluster, linkisConfig.getUdfAdmin(), uploadFile, needUpload);
+//
+//            // New cluster, add.
+//            if (!clusterIdMaps.keySet().contains(currentCluster)) {
+//                Long udfId = metaDataClient.clientAdd(currentCluster, targetFilePath, uploadFile, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName(), request.getStatus(), request.getDir());
+//                List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+//                metaDataClient.shareAndDeploy(udfId, currentCluster, proxyUserNames, linkisUdf.getName());
+//
+//                LinkisUdfEnableCluster linkisUdfEnableCluster = new LinkisUdfEnableCluster(linkisUdf, currentCluster, udfId, request.getName());
+//                newLinkisUdfEnableClusterSet.add(linkisUdfEnableCluster);
+//                continue;
+//            }
+//            metaDataClient.clientModify(targetFilePath, uploadFile, currentCluster, clusterIdMaps, request.getFile(), request.getDesc(), request.getName(), request.getReturnType(), request.getEnter(), request.getRegisterName());
+//            // Share, deploy
+//            List<String> proxyUserNames = userInDb.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+//            metaDataClient.shareAndDeploy(clusterIdMaps.get(currentCluster), currentCluster, proxyUserNames, linkisUdf.getName());
+//        }
+//
+//        linkisUdf.setEnter(request.getEnter());
+//        linkisUdf.setUdfDesc(request.getDesc());
+//        linkisUdf.setStatus(request.getStatus());
+//        linkisUdf.setCnName(request.getCnName());
+//        linkisUdf.setUploadPath(request.getFile());
+//        linkisUdf.setReturnType(request.getReturnType());
+//        linkisUdf.setRegisterName(request.getRegisterName());
+//        linkisUdf.setDevDepartmentId(request.getDevDepartmentId());
+//        linkisUdf.setOpsDepartmentId(request.getOpsDepartmentId());
+//        linkisUdf.setDevDepartmentName(request.getDevDepartmentName());
+//        linkisUdf.setOpsDepartmentName(request.getOpsDepartmentName());
+//        linkisUdf.setModifyTime(DateUtils.now());
+//        linkisUdf.setModifyUser(userInDb.getUsername());
+//
+//        // Delete all enable engines
+//        linkisUdfEnableEngineDao.deleteInBatch(linkisUdf.getLinkisUdfEnableEngineSet());
+//        List<LinkisUdfEnableEngine> linkisUdfEnableEngines = new ArrayList<>(request.getEnableEngine().size());
+//        for (Integer engineCode : request.getEnableEngine()) {
+//            LinkisUdfEnableEngine linkisUdfEnableEngine = new LinkisUdfEnableEngine(linkisUdf, engineCode);
+//            linkisUdfEnableEngines.add(linkisUdfEnableEngine);
+//        }
+//        linkisUdfEnableEngineDao.saveAll(linkisUdfEnableEngines);
+//
+//        linkisUdfEnableClusterDao.saveAll(newLinkisUdfEnableClusterSet);
+//
+//        LOGGER.info("Success to modify linkis udf and related tables(linkis udf engine, cluster).");
+//        dataVisibilityService.delete(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
+//        dataVisibilityService.saveBatch(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, request.getVisibilityDepartmentList());
 
 //        if (uploadFile.exists()) {
 //            Files.delete(uploadFile.toPath());
 //        }
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_UDF}", new UdfResponse(linkisUdf.getId()));
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_UDF}", new UdfResponse(linkisUdf.getId()));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_UDF}", null);
     }
 
     @Override
     public GeneralResponse<UdfResponse> getUdfDetail(Long udfId) throws MetaDataAcquireFailedException, UnExpectedRequestException {
-        UdfRequest.checkRequestForGetDetail(udfId);
-        LOGGER.info("Start to get udf detail, request: {}", udfId.toString());
-
-        // Check detail permission.
-        LinkisUdf linkisUdf = linkisUdfDao.findById(udfId);
-        if (linkisUdf == null || CollectionUtils.isEmpty(linkisUdf.getLinkisUdfEnableClusterSet()) || CollectionUtils.isEmpty(linkisUdf.getLinkisUdfEnableEngineSet())) {
-            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
-        }
-        DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
-                .createUser(linkisUdf.getCreateUser())
-                .devDepartmentId(linkisUdf.getDevDepartmentId())
-                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
-                .build();
-        subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
-
-        UdfResponse udfResponse = new UdfResponse(linkisUdf);
-        List<DepartmentSubInfoResponse> departmentInfoResponses = new ArrayList<>();
-        List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
-        if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
-            departmentInfoResponses = dataVisibilityList.stream().map(dataVisibility -> {
-                DepartmentSubInfoResponse departmentInfoResponse = new DepartmentSubInfoResponse();
-                departmentInfoResponse.setId(dataVisibility.getDepartmentSubId());
-                departmentInfoResponse.setName(dataVisibility.getDepartmentSubName());
-                return departmentInfoResponse;
-            }).collect(Collectors.toList());
-        }
-        udfResponse.setVisibilityDepartmentList(departmentInfoResponses);
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_UDF}", udfResponse);
+//        UdfRequest.checkRequestForGetDetail(udfId);
+//        LOGGER.info("Start to get udf detail, request: {}", udfId.toString());
+//
+//        // Check detail permission.
+//        LinkisUdf linkisUdf = linkisUdfDao.findById(udfId);
+//        if (linkisUdf == null || CollectionUtils.isEmpty(linkisUdf.getLinkisUdfEnableClusterSet()) || CollectionUtils.isEmpty(linkisUdf.getLinkisUdfEnableEngineSet())) {
+//            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
+//        }
+//        DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
+//                .createUser(linkisUdf.getCreateUser())
+//                .devDepartmentId(linkisUdf.getDevDepartmentId())
+//                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
+//                .build();
+//        subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
+//
+//        UdfResponse udfResponse = new UdfResponse(linkisUdf);
+//        List<DepartmentSubInfoResponse> departmentInfoResponses = new ArrayList<>();
+//        List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
+//        if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+//            departmentInfoResponses = dataVisibilityList.stream().map(dataVisibility -> {
+//                DepartmentSubInfoResponse departmentInfoResponse = new DepartmentSubInfoResponse();
+//                departmentInfoResponse.setId(dataVisibility.getDepartmentSubId());
+//                departmentInfoResponse.setName(dataVisibility.getDepartmentSubName());
+//                return departmentInfoResponse;
+//            }).collect(Collectors.toList());
+//        }
+//        udfResponse.setVisibilityDepartmentList(departmentInfoResponses);
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_UDF}", udfResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_UDF}", null);
     }
 
     @Override
     public GeneralResponse<DataInfo<UdfResponse>> getUdfAllWithPage(UdfRequest request) throws UnExpectedRequestException {
-        UdfRequest.checkRequestForGetAllWithPage(request);
-        LOGGER.info("Start to get udf all with page, request: {}", request.toString());
-        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
-        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
-        Integer roleType = roleService.getRoleType(userRoles);
-
-        int totalCount = 0;
-        List<LinkisUdf> linkisUdfList = new ArrayList<>();
-        List<UdfResponse> udfResponseList = new ArrayList<>(request.getSize());
-
-        List<Long> dataVisibilityIds = new ArrayList<>();
-        if (CollectionUtils.isNotEmpty(request.getVisibilityDepartmentList())) {
-            dataVisibilityIds = request.getVisibilityDepartmentList().stream().map(departmentSubInfoRequest -> departmentSubInfoRequest.getId()).collect(Collectors.toList());
-        }
-
-        if (RoleSystemTypeEnum.ADMIN.getCode().equals(roleType)) {
-            LOGGER.info("SYS_ADMIN will get all data.");
-            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filterAll(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), dataVisibilityIds, request.getPage(), request.getSize());
-            linkisUdfList = linkisUdfPage.getContent();
-            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
-        } else if (RoleSystemTypeEnum.DEPARTMENT_ADMIN.getCode().equals(roleType)) {
-            List<Long> departmentIds = userRoles.stream().map(UserRole::getRole)
-                    .filter(Objects::nonNull).map(Role::getDepartment)
-                    .filter(Objects::nonNull).map(Department::getId)
-                    .collect(Collectors.toList());
-            if (Objects.nonNull(userInDb.getDepartment())) {
-                departmentIds.add(userInDb.getDepartment().getId());
-            }
-            List<Long> devAndOpsInfoWithDeptList = subDepartmentPermissionService.getSubDepartmentIdList(departmentIds);
-            devAndOpsInfoWithDeptList.addAll(dataVisibilityIds);
-            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filter(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), TableDataTypeEnum.LINKIS_UDF.getCode(), devAndOpsInfoWithDeptList.isEmpty() ? null : devAndOpsInfoWithDeptList, userInDb.getUsername(), request.getPage(), request.getSize());
-            linkisUdfList = linkisUdfPage.getContent();
-            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
-        } else if (RoleSystemTypeEnum.PROJECTOR.getCode().equals(roleType)) {
-            dataVisibilityIds.add(userInDb.getSubDepartmentCode());
-            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filter(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), TableDataTypeEnum.LINKIS_UDF.getCode(), dataVisibilityIds, userInDb.getUsername(), request.getPage(), request.getSize());
-            linkisUdfList = linkisUdfPage.getContent();
-            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
-        }
+//        UdfRequest.checkRequestForGetAllWithPage(request);
+//        LOGGER.info("Start to get udf all with page, request: {}", request.toString());
+//        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+//        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+//        Integer roleType = roleService.getRoleType(userRoles);
+//
+//        int totalCount = 0;
+//        List<LinkisUdf> linkisUdfList = new ArrayList<>();
+//        List<UdfResponse> udfResponseList = new ArrayList<>(request.getSize());
+//
+//        List<Long> dataVisibilityIds = new ArrayList<>();
+//        if (CollectionUtils.isNotEmpty(request.getVisibilityDepartmentList())) {
+//            dataVisibilityIds = request.getVisibilityDepartmentList().stream().map(departmentSubInfoRequest -> departmentSubInfoRequest.getId()).collect(Collectors.toList());
+//        }
+//
+//        if (RoleSystemTypeEnum.ADMIN.getCode().equals(roleType)) {
+//            LOGGER.info("SYS_ADMIN will get all data.");
+//            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filterAll(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), dataVisibilityIds, request.getPage(), request.getSize());
+//            linkisUdfList = linkisUdfPage.getContent();
+//            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
+//        } else if (RoleSystemTypeEnum.DEPARTMENT_ADMIN.getCode().equals(roleType)) {
+//            List<Long> departmentIds = userRoles.stream().map(UserRole::getRole)
+//                    .filter(Objects::nonNull).map(Role::getDepartment)
+//                    .filter(Objects::nonNull).map(Department::getId)
+//                    .collect(Collectors.toList());
+//            if (Objects.nonNull(userInDb.getDepartment())) {
+//                departmentIds.add(userInDb.getDepartment().getId());
+//            }
+//            List<Long> devAndOpsInfoWithDeptList = subDepartmentPermissionService.getSubDepartmentIdList(departmentIds);
+//            devAndOpsInfoWithDeptList.addAll(dataVisibilityIds);
+//            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filter(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), TableDataTypeEnum.LINKIS_UDF.getCode(), devAndOpsInfoWithDeptList.isEmpty() ? null : devAndOpsInfoWithDeptList, userInDb.getUsername(), request.getPage(), request.getSize());
+//            linkisUdfList = linkisUdfPage.getContent();
+//            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
+//        } else if (RoleSystemTypeEnum.PROJECTOR.getCode().equals(roleType)) {
+//            dataVisibilityIds.add(userInDb.getSubDepartmentCode());
+//            Page<LinkisUdf> linkisUdfPage = linkisUdfDao.filter(StringUtils.isEmpty(request.getName()) ? "" : ("%" + request.getName() + "%"), StringUtils.isEmpty(request.getCnName()) ? "" : ("%" + request.getCnName() + "%"), StringUtils.isEmpty(request.getDir()) ? "" : request.getDir(), request.getImplType(), CollectionUtils.isEmpty(request.getEnableEngine()) ? null : request.getEnableEngine(), CollectionUtils.isEmpty(request.getEnableCluster()) ? null : request.getEnableCluster(), StringUtils.isEmpty(request.getCreateUser()) ? "" : request.getCreateUser(), StringUtils.isEmpty(request.getModifyUser()) ? "" : request.getModifyUser(), TableDataTypeEnum.LINKIS_UDF.getCode(), dataVisibilityIds, userInDb.getUsername(), request.getPage(), request.getSize());
+//            linkisUdfList = linkisUdfPage.getContent();
+//            totalCount = new Long(linkisUdfPage.getTotalElements()).intValue();
+//        }
         DataInfo<UdfResponse> responseDataInfo = new DataInfo<>();
 
         // Call linkis names api. List<String> linkisUdfNames = linkisUdfList.stream().map(LinkisUdf::getName).collect(Collectors.toList());
 
-        for (LinkisUdf linkisUdf : linkisUdfList) {
-            UdfResponse udfResponse = new UdfResponse(linkisUdf);
-            List<DepartmentSubInfoResponse> departmentInfoResponses = new ArrayList<>();
-            List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
-            if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
-                departmentInfoResponses = dataVisibilityList.stream().map(dataVisibility -> {
-                    DepartmentSubInfoResponse departmentInfoResponse = new DepartmentSubInfoResponse();
-                    departmentInfoResponse.setId(dataVisibility.getDepartmentSubId());
-                    departmentInfoResponse.setName(dataVisibility.getDepartmentSubName());
-                    return departmentInfoResponse;
-                }).collect(Collectors.toList());
-            }
-            udfResponse.setVisibilityDepartmentList(departmentInfoResponses);
-            udfResponseList.add(udfResponse);
-        }
-        responseDataInfo.setContent(udfResponseList);
-        responseDataInfo.setTotalCount(totalCount);
+//        for (LinkisUdf linkisUdf : linkisUdfList) {
+//            UdfResponse udfResponse = new UdfResponse(linkisUdf);
+//            List<DepartmentSubInfoResponse> departmentInfoResponses = new ArrayList<>();
+//            List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF);
+//            if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
+//                departmentInfoResponses = dataVisibilityList.stream().map(dataVisibility -> {
+//                    DepartmentSubInfoResponse departmentInfoResponse = new DepartmentSubInfoResponse();
+//                    departmentInfoResponse.setId(dataVisibility.getDepartmentSubId());
+//                    departmentInfoResponse.setName(dataVisibility.getDepartmentSubName());
+//                    return departmentInfoResponse;
+//                }).collect(Collectors.toList());
+//            }
+//            udfResponse.setVisibilityDepartmentList(departmentInfoResponses);
+//            udfResponseList.add(udfResponse);
+//        }
+//        responseDataInfo.setContent(udfResponseList);
+//        responseDataInfo.setTotalCount(totalCount);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_UDF}", responseDataInfo);
     }
 
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<UdfResponse> deleteUdf(UdfRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException, MetaDataAcquireFailedException, JSONException, IOException {
-        UdfRequest.checkRequestForDelete(request);
-        LinkisUdf linkisUdf = linkisUdfDao.findById(request.getId());
-        if (linkisUdf == null) {
-            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
-        }
-
-        LOGGER.info("Start to delete udf with file, request: {}", request.toString());
-        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
-        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
-        Integer roleType = roleService.getRoleType(userRoles);
-
-        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
-
-        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
-
-        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
-            // Step 1. delete udf
-            // Step 2. delete udf file, high risk !!!
-            metaDataClient.deleteUdf(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
-        }
-        if (Files.exists(Paths.get(linkisUdf.getUploadPath()))) {
-            Files.delete(Paths.get(linkisUdf.getUploadPath()));
-        }
-        linkisUdfDao.delete(linkisUdf);
+//        UdfRequest.checkRequestForDelete(request);
+//        LinkisUdf linkisUdf = linkisUdfDao.findById(request.getId());
+//        if (linkisUdf == null) {
+//            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
+//        }
+//
+//        LOGGER.info("Start to delete udf with file, request: {}", request.toString());
+//        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+//        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+//        Integer roleType = roleService.getRoleType(userRoles);
+//
+//        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
+//
+//        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
+//
+//        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
+//            // Step 1. delete udf
+//            // Step 2. delete udf file, high risk !!!
+//            metaDataClient.deleteUdf(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), new File(linkisUdf.getUploadPath()).getName());
+//        }
+//        if (Files.exists(Paths.get(linkisUdf.getUploadPath()))) {
+//            Files.delete(Paths.get(linkisUdf.getUploadPath()));
+//        }
+//        linkisUdfDao.delete(linkisUdf);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DELETE_UDF}", null);
     }
 
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<UdfResponse> switchUdfStatus(Long id, Boolean isLoad) throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException {
-        LOGGER.info("Start to switch udf status, new status load: {}", isLoad);
-        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
-        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
-        Integer roleType = roleService.getRoleType(userRoles);
-        LinkisUdf linkisUdf = linkisUdfDao.findById(id);
-        if (linkisUdf == null) {
-            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
-        }
-        // Check switch permission, like modify.
-        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), linkisUdf.getDevDepartmentId(), linkisUdf.getOpsDepartmentId(), false);
-        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
-
-        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
-            // Every proxy user need switch.
-            Set<UserProxyUser> userProxyUsers = userInDb.getUserProxyUsers();
-            for (UserProxyUser userProxyUser : userProxyUsers) {
-                if (userProxyUser.getProxyUser().getProxyUserName().equals(linkisConfig.getUdfAdmin())) {
-                    continue;
-                }
-                metaDataClient.switchUdfStatus(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), userProxyUser.getProxyUser().getProxyUserName(), isLoad);
-            }
-            metaDataClient.switchUdfStatus(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), isLoad);
-        }
-        linkisUdf.setStatus(isLoad);
-        linkisUdfDao.save(linkisUdf);
+//        LOGGER.info("Start to switch udf status, new status load: {}", isLoad);
+//        User userInDb = userDao.findById(HttpUtils.getUserId(httpServletRequest));
+//        List<UserRole> userRoles = userRoleDao.findByUser(userInDb);
+//        Integer roleType = roleService.getRoleType(userRoles);
+//        LinkisUdf linkisUdf = linkisUdfDao.findById(id);
+//        if (linkisUdf == null) {
+//            throw new UnExpectedRequestException("Linkis UDF " + "{&DOES_NOT_EXIST}");
+//        }
+//        // Check switch permission, like modify.
+//        subDepartmentPermissionService.checkEditablePermission(roleType, userInDb, linkisUdf.getCreateUser(), linkisUdf.getDevDepartmentId(), linkisUdf.getOpsDepartmentId(), false);
+//        Set<LinkisUdfEnableCluster> alreadyExistsLinkisUdfEnableClusterSet = linkisUdf.getLinkisUdfEnableClusterSet();
+//
+//        for (LinkisUdfEnableCluster linkisUdfEnableCluster : alreadyExistsLinkisUdfEnableClusterSet) {
+//            // Every proxy user need switch.
+//            Set<UserProxyUser> userProxyUsers = userInDb.getUserProxyUsers();
+//            for (UserProxyUser userProxyUser : userProxyUsers) {
+//                if (userProxyUser.getProxyUser().getProxyUserName().equals(linkisConfig.getUdfAdmin())) {
+//                    continue;
+//                }
+//                metaDataClient.switchUdfStatus(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), userProxyUser.getProxyUser().getProxyUserName(), isLoad);
+//            }
+//            metaDataClient.switchUdfStatus(linkisUdfEnableCluster.getEnableClusterName(), linkisUdfEnableCluster.getLinkisUdfId(), linkisConfig.getUdfAdmin(), isLoad);
+//        }
+//        linkisUdf.setStatus(isLoad);
+//        linkisUdfDao.save(linkisUdf);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_UDF}", null);
     }
 

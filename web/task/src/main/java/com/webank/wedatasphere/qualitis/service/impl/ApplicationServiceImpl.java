@@ -66,8 +66,8 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
-import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
+//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
+//import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
 import com.webank.wedatasphere.qualitis.service.ApplicationService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
@@ -145,8 +145,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Autowired
     private RequestLinkis requestLinkis;
 
-    @Autowired
-    private ScheduledTaskDao scheduledTaskDao;
+//    @Autowired
+//    private ScheduledTaskDao scheduledTaskDao;
 
     private HttpServletRequest httpServletRequest;
 
@@ -221,7 +221,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             }
             applicationResponses.add(response);
         }
-        setScheduleInfo(applicationResponses);
+//        setScheduleInfo(applicationResponses);
 
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
@@ -232,31 +232,31 @@ public class ApplicationServiceImpl implements ApplicationService {
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
-    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
-        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
-                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
-                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
-                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
-        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
-        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
-        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
-        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
-        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
-            allRuleGroupMapList.addAll(frontBackMapList);
-        }
-        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
-            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
-        }
-        allRuleGroupMapList.forEach(entry -> {
-            Long ruleGroupId = (Long) entry.get("rule_group_id");
-            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
-            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
-            applicationResponseList.forEach(applicationResponse -> {
-                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
-                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
-            });
-        });
-    }
+//    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
+//        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
+//                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
+//                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
+//                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
+//        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
+//        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
+//        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
+//        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
+//        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
+//            allRuleGroupMapList.addAll(frontBackMapList);
+//        }
+//        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
+//            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
+//        }
+//        allRuleGroupMapList.forEach(entry -> {
+//            Long ruleGroupId = (Long) entry.get("rule_group_id");
+//            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
+//            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
+//            applicationResponseList.forEach(applicationResponse -> {
+//                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
+//                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
+//            });
+//        });
+//    }
 
     @Override
     public GeneralResponse<GetAllResponse<ApplicationResponse>> filterProjectApplication(FilterProjectRequest request) throws UnExpectedRequestException {
@@ -641,7 +641,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationResponses.add(response);
         }
 
-        setScheduleInfo(applicationResponses);
+//        setScheduleInfo(applicationResponses);
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);

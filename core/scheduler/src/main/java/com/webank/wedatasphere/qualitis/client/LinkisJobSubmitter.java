@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.client;
 
-import bsp.encrypt.EncryptUtil;
+//import bsp.encrypt.EncryptUtil;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.webank.wedatasphere.qualitis.bean.JobKillResult;
@@ -536,14 +536,14 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             }
             log = log.replace(envValue, "******");
         }
-        String realPassword = "";
-        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
-        String password = taskDataSourceConfig.getPassword();
-        try {
-            realPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
-        } catch (Exception e) {
-            LOGGER.error("Decrypt mysqlsec password exception.", e);
-        }
+        String realPassword = taskDataSourceConfig.getPassword();
+//        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
+//        String password = taskDataSourceConfig.getPassword();
+//        try {
+//            realPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
+//        } catch (Exception e) {
+//            LOGGER.error("Decrypt mysqlsec password exception.", e);
+//        }
         if (realPassword.length() > 0 && realPassword.length() < PASS_LEN) {
             log = log.replace(realPassword, "******");
         }

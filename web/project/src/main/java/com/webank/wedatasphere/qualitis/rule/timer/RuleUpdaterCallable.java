@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.timer;
 
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddGroupRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;

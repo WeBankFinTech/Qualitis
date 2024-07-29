@@ -51,7 +51,7 @@ import com.webank.wedatasphere.qualitis.dao.repository.TaskDataSourceRepository;
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.*;
-import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
@@ -87,15 +87,15 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.service.TaskService;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.httpclient.util.DateParseException;
+//import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
@@ -167,8 +167,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private GatewayJobInfoDao gatewayJobInfoDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
-    @Autowired
-    private LinkisUdfDao linkisUdfDao;
+//    @Autowired
+//    private LinkisUdfDao linkisUdfDao;
     @Autowired
     private AbnormalDataRecordInfoDao abnormalDataRecordInfoDao;
     @Autowired
@@ -182,10 +182,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Autowired
     private RuleService ruleService;
 
-    @Autowired
-    private ImsmetricIdentifyDao imsmetricIdentifyDao;
-    @Autowired
-    private ImsmetricDataDao imsmetricDataDao;
+//    @Autowired
+//    private ImsmetricIdentifyDao imsmetricIdentifyDao;
+//    @Autowired
+//    private ImsmetricDataDao imsmetricDataDao;
 
     @Autowired
     private MonitorManager monitorManager;
@@ -209,8 +209,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private LocaleParser localeParser;
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
-    @Autowired
-    private ScheduledTaskService scheduledTaskService;
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
     @Autowired
     private RuleTemplateService ruleTemplateService;
     @Autowired
@@ -220,8 +220,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private TaskService taskService;
     @Autowired
     private ProjectEventService projectEventService;
-    @Autowired
-    private FieldsAnalyseDao fieldsAnalyseDao;
+//    @Autowired
+//    private FieldsAnalyseDao fieldsAnalyseDao;
 
     @Value("${task.create_and_submit.limit_size:1000}")
     private Long thresholdValue;
@@ -1003,84 +1003,85 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             throw new UnExpectedRequestException("Check alert in group[" + ruleGroupInDb.getRuleGroupName() + "] {&DOES_NOT_EXIST}");
         }
 
-        String cluster = linkisConfig.getBdapCheckAlertCluster();
-        CheckAlert currentCheckAlert = checkAlertsInDb.iterator().next();
-        LOGGER.info("{} start to submit check alert rule[{}]", executionUser, currentCheckAlert.toString());
-
-        // Use a white list to check the user and table
-        CheckAlertWhiteList checkAlertWhiteList = checkAlertWhiteListRepository.checkWhiteList(cluster + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + currentCheckAlert.getAlertTable(), WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode(), executionUser);
-
-        if (checkAlertWhiteList == null) {
-            throw new PermissionDeniedRequestException("Check alert execution denied because incompatible white list");
-        }
-
-        Map<String, String> execParamMap = new HashMap<>(checkAlertsInDb.size());
-        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
-
-        String startupParam = "";
-        Boolean engineReuse = Boolean.TRUE;
-        if (CollectionUtils.isNotEmpty(execParamMap.keySet())) {
-            if (execParamMap.containsKey(QualitisConstants.QUALITIS_CLUSTER_NAME)) {
-                cluster = execParamMap.get(QualitisConstants.QUALITIS_CLUSTER_NAME);
-            }
-            if (execParamMap.containsKey(QualitisConstants.QUALITIS_STARTUP_PARAM)) {
-                startupParam = execParamMap.get(QualitisConstants.QUALITIS_STARTUP_PARAM).replace(SpecCharEnum.COMMA.getValue(), SpecCharEnum.DIVIDER.getValue());
-            }
-            if (execParamMap.containsKey(QualitisConstants.QUALITIS_ENGINE_REUSE)) {
-                engineReuse = Boolean.parseBoolean(execParamMap.get(QualitisConstants.QUALITIS_ENGINE_REUSE).toLowerCase());
-            }
-        }
-
-        Application newApplication = generateApplicationInfo(currentCheckAlert.getCreateUser(), executionUser, new Date(), InvokeTypeEnum.FLOW_API_INVOKE.getCode(), "");
-        newApplication.setRuleSize(checkAlertsInDb.size());
-        newApplication.setClusterName(cluster);
-        newApplication.setEngineReuse(engineReuse);
-        newApplication.setProjectId(projectInDb.getId());
-        newApplication.setExecutionParam(executionParam);
-        newApplication.setProjectName(projectInDb.getName());
-        newApplication.setRuleGroupId(ruleGroupInDb.getId());
-        newApplication.setNodeName(currentCheckAlert.getNodeName());
-
-        Application saveApplication = applicationDao.saveApplication(newApplication);
-        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(saveApplication.getClusterName());
-        if (clusterInfo == null) {
-            throw new UnExpectedRequestException("Cluster : [" + saveApplication.getClusterName() + "] {&DOES_NOT_EXIST}");
-        }
-
-        boolean accept = checkLinkisAccept(newApplication, clusterInfo.getClusterName(), executionUser);
-        if (!accept) {
-            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
-                    new ApplicationTaskSimpleResponse(newApplication.getId()));
-        }
-        String[] dbAndTables = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
-        List<String> columns;
-        try {
-            List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(clusterInfo.getClusterName(), dbAndTables[0], dbAndTables[1], executionUser);
-            columns = columnInfoDetails.stream().map(columnInfoDetail -> columnInfoDetail.getFieldName()).collect(Collectors.toList());
-        } catch (Exception e) {
-            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
-        }
-        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol()) && !columns.contains(currentCheckAlert.getAdvancedAlertCol()))) {
-            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
-        }
-
-        List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
-        try {
-            taskSubmitResults.add(executionManager.executeCheckAlert(clusterInfo, dbAndTables, columns, currentCheckAlert, saveApplication, startupParam, engineReuse, EngineTypeEnum.SPARK_ENGINE.getMessage()));
-        } catch (Exception e) {
-            List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
-            Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
-
-            // Print and save abnormal application.
-            catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), currentCheckAlert, newApplication);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
-        }
-
-        saveApplication.setTotalTaskNum(taskSubmitResults.size());
-        LOGGER.info("Succeed to submit application. Result: {}", taskSubmitResults);
-        Application applicationInDb = applicationDao.saveApplication(saveApplication);
-        LOGGER.info("Succeed to save application. Application: {}", applicationInDb);
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
+//        String cluster = linkisConfig.getBdapCheckAlertCluster();
+//        CheckAlert currentCheckAlert = checkAlertsInDb.iterator().next();
+//        LOGGER.info("{} start to submit check alert rule[{}]", executionUser, currentCheckAlert.toString());
+//
+//        // Use a white list to check the user and table
+//        CheckAlertWhiteList checkAlertWhiteList = checkAlertWhiteListRepository.checkWhiteList(cluster + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + currentCheckAlert.getAlertTable(), WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode(), executionUser);
+//
+//        if (checkAlertWhiteList == null) {
+//            throw new PermissionDeniedRequestException("Check alert execution denied because incompatible white list");
+//        }
+//
+//        Map<String, String> execParamMap = new HashMap<>(checkAlertsInDb.size());
+//        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
+//
+//        String startupParam = "";
+//        Boolean engineReuse = Boolean.TRUE;
+//        if (CollectionUtils.isNotEmpty(execParamMap.keySet())) {
+//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_CLUSTER_NAME)) {
+//                cluster = execParamMap.get(QualitisConstants.QUALITIS_CLUSTER_NAME);
+//            }
+//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_STARTUP_PARAM)) {
+//                startupParam = execParamMap.get(QualitisConstants.QUALITIS_STARTUP_PARAM).replace(SpecCharEnum.COMMA.getValue(), SpecCharEnum.DIVIDER.getValue());
+//            }
+//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_ENGINE_REUSE)) {
+//                engineReuse = Boolean.parseBoolean(execParamMap.get(QualitisConstants.QUALITIS_ENGINE_REUSE).toLowerCase());
+//            }
+//        }
+//
+//        Application newApplication = generateApplicationInfo(currentCheckAlert.getCreateUser(), executionUser, new Date(), InvokeTypeEnum.FLOW_API_INVOKE.getCode(), "");
+//        newApplication.setRuleSize(checkAlertsInDb.size());
+//        newApplication.setClusterName(cluster);
+//        newApplication.setEngineReuse(engineReuse);
+//        newApplication.setProjectId(projectInDb.getId());
+//        newApplication.setExecutionParam(executionParam);
+//        newApplication.setProjectName(projectInDb.getName());
+//        newApplication.setRuleGroupId(ruleGroupInDb.getId());
+//        newApplication.setNodeName(currentCheckAlert.getNodeName());
+//
+//        Application saveApplication = applicationDao.saveApplication(newApplication);
+//        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(saveApplication.getClusterName());
+//        if (clusterInfo == null) {
+//            throw new UnExpectedRequestException("Cluster : [" + saveApplication.getClusterName() + "] {&DOES_NOT_EXIST}");
+//        }
+//
+//        boolean accept = checkLinkisAccept(newApplication, clusterInfo.getClusterName(), executionUser);
+//        if (!accept) {
+//            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
+//                    new ApplicationTaskSimpleResponse(newApplication.getId()));
+//        }
+//        String[] dbAndTables = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
+//        List<String> columns;
+//        try {
+//            List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(clusterInfo.getClusterName(), dbAndTables[0], dbAndTables[1], executionUser);
+//            columns = columnInfoDetails.stream().map(columnInfoDetail -> columnInfoDetail.getFieldName()).collect(Collectors.toList());
+//        } catch (Exception e) {
+//            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
+//        }
+//        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol()) && !columns.contains(currentCheckAlert.getAdvancedAlertCol()))) {
+//            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
+//        }
+//
+//        List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
+//        try {
+//            taskSubmitResults.add(executionManager.executeCheckAlert(clusterInfo, dbAndTables, columns, currentCheckAlert, saveApplication, startupParam, engineReuse, EngineTypeEnum.SPARK_ENGINE.getMessage()));
+//        } catch (Exception e) {
+//            List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
+//            Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
+//
+//            // Print and save abnormal application.
+//            catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), currentCheckAlert, newApplication);
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
+//        }
+//
+//        saveApplication.setTotalTaskNum(taskSubmitResults.size());
+//        LOGGER.info("Succeed to submit application. Result: {}", taskSubmitResults);
+//        Application applicationInDb = applicationDao.saveApplication(saveApplication);
+//        LOGGER.info("Succeed to save application. Application: {}", applicationInDb);
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
     }
 
     private void parseExecParams(StringBuilder partition, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String execParams, Map<String, String> execParamMap) {
@@ -2100,7 +2101,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                     String standardRuleDetail = rule.getProject().getName() + "-" + rule.getName() + "-" + rule.getTemplate().getName();
                     if (abnormalDataRecordInfoExists == null) {
                         AbnormalDataRecordInfo abnormalDataRecordInfo = new AbnormalDataRecordInfo(rule.getId(), standardRuleName, datasourceType
-                                , ruleDataSource.getDbName(), ruleDataSource.getTableName(), departmentName, subSystemId, execNum, alarmNum);
+                                , ruleDataSource.getDbName(), ruleDataSource.getTableName(), departmentName, Integer.valueOf(subSystemId), execNum, alarmNum);
                         abnormalDataRecordInfo.setRuleDetail(StringUtils.isEmpty(rule.getDetail()) ? standardRuleDetail : rule.getDetail());
 
                         abnormalDataRecordInfo.setRecordDate(nowDate);
@@ -2115,7 +2116,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                         abnormalDataRecordInfoExists.setEventNum(abnormalDataRecordInfoExists.getEventNum() + alarmNum);
                         abnormalDataRecordInfoExists.setDepartmentName(departmentName);
                         abnormalDataRecordInfoExists.setDatasource(datasourceType);
-                        abnormalDataRecordInfoExists.setSubSystemId(subSystemId);
+                        abnormalDataRecordInfoExists.setSubSystemId(Integer.valueOf(subSystemId));
                         abnormalDataRecordInfoDao.save(abnormalDataRecordInfoExists);
                     }
                 }
@@ -2435,7 +2436,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (bdpClientHistory != null) {
                 SpringContextHolder.getBean(BdpClientHistoryDao.class).delete(bdpClientHistory);
             }
-            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+//            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule. rule id: {}", ruleInDb.getId());
@@ -2490,24 +2491,24 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         return new GeneralResponse<>(ResponseStatusConstants.OK, "executionScript succeed", null);
     }
 
-    @Override
-    public GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request) {
-        String metricIds = request.getMetricIds();
-        List<ImsmetricIdentify> imsmetricIdentifyList;
-        if (StringUtils.isBlank(metricIds)){
-            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate());
-        }else {
-            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate(),metricIds);
-        }
+//    @Override
+//    public GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request) {
+//        String metricIds = request.getMetricIds();
+//        List<ImsmetricIdentify> imsmetricIdentifyList;
+//        if (StringUtils.isBlank(metricIds)){
+//            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate());
+//        }else {
+//            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate(),metricIds);
+//        }
+//
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryIdentify succeed", imsmetricIdentifyList);
+//    }
 
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryIdentify succeed", imsmetricIdentifyList);
-    }
-
-    @Override
-    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException {
-        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
-    }
+//    @Override
+//    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException {
+//        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
+//        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
+//    }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
@@ -3524,11 +3525,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 new ApplicationListResultResponse(result));
     }
 
-    @Override
-    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
-        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
-                new FieldsAnalyseResultResponse(taskResultList));
-    }
+//    @Override
+//    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+//        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
+//        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
+//                new FieldsAnalyseResultResponse(taskResultList));
+//    }
 
 }

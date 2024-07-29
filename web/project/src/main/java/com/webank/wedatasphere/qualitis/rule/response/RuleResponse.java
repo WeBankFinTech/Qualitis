@@ -23,7 +23,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.TaskNewVauleDao;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;

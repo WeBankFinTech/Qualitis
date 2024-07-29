@@ -18,5 +18,5 @@ public interface OuterMetricCollectService {
      * @param addMetricCollectRequest
      * @throws UnExpectedRequestException
      */
-    void addMetricCollectEnumConfigs(AddMetricCollectRequest addMetricCollectRequest) throws Exception;
+//    void addMetricCollectEnumConfigs(AddMetricCollectRequest addMetricCollectRequest) throws Exception;
 }
