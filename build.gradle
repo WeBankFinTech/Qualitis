@@ -141,7 +141,7 @@ configurations.all {
   resolutionStrategy {
     force 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.1'
   }
-  resolutionStrategy.cacheChangingModulesFor 10,'minutes'
+  resolutionStrategy.cacheChangingModulesFor 1,'minutes'
   exclude group: 'log4j', module: 'log4j'
   exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
 }
