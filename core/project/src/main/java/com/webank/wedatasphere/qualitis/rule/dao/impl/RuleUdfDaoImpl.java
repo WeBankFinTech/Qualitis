@@ -4,7 +4,6 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleUdfDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleUdfRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleUdf;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;

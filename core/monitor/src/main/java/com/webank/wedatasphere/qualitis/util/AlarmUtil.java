@@ -177,7 +177,7 @@ public class AlarmUtil {
 
             if (bdap) {
                 client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
+                        , alertInfo.toString(), String.valueOf(alertLevel));
             }
 
             alertInfo.delete(0, alertInfo.length());
@@ -544,7 +544,7 @@ public class AlarmUtil {
 
             if (bdap) {
                 client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
+                        , alertInfo.toString(), String.valueOf(alertLevel));
             }
             alertInfo.delete(0, alertInfo.length());
         }
@@ -722,7 +722,7 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "", null);
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "");
         }
     }
 
@@ -761,7 +761,7 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode(), null);
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode());
         }
     }
 

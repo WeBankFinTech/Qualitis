@@ -37,8 +37,6 @@ public class ExcelProjectListener extends AnalysisEventListener {
     private List<ExcelTemplate> excelTemplateContent = new ArrayList<>();
     private List<ExcelDatasourceEnv> excelDatasourceEnvContent = new ArrayList<>();
     private List<ExcelStandardValue> excelStandardValueContent = new ArrayList<>();
-    private List<ExcelPublishScheduled> excelPublishScheduledContent = new ArrayList<>();
-    private List<ExcelRelationScheduled> excelRelationScheduledContent = new ArrayList<>();
 
     private List<ExcelExecutionParametersByProject> excelExecutionParametersContent = new ArrayList<>();
 
@@ -62,10 +60,6 @@ public class ExcelProjectListener extends AnalysisEventListener {
             excelStandardValueContent.add((ExcelStandardValue) object);
         } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.RULE_TEMPLATE_NAME)) {
             excelTemplateContent.add((ExcelTemplate) object);
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.SCHEDULED_PUBLISHED)) {
-            excelPublishScheduledContent.add((ExcelPublishScheduled) object);
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.SCHEDULED_RELATION)) {
-            excelRelationScheduledContent.add((ExcelRelationScheduled) object);
         }
     }
 
@@ -108,14 +102,6 @@ public class ExcelProjectListener extends AnalysisEventListener {
 
     public List<ExcelDatasourceEnv> getExcelDatasourceEnvContent() {
         return excelDatasourceEnvContent;
-    }
-
-    public List<ExcelPublishScheduled> getExcelPublishScheduledContent() {
-        return excelPublishScheduledContent;
-    }
-
-    public List<ExcelRelationScheduled> getExcelRelationScheduledContent() {
-        return excelRelationScheduledContent;
     }
 
 }

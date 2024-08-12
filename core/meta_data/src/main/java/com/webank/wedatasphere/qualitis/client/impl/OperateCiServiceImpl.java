@@ -20,6 +20,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -48,10 +49,21 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Value("${department.data_source_from: custom}")
+    private String departmentSourceType;
+
+    @Value("${deploy.environment: open_source}")
+    private String deployEnvType;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(OperateCiServiceImpl.class);
 
     @Override
     public List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException {
+//       仅限开源环境
+        if ("open_source".equals(deployEnvType)) {
+            return Collections.emptyList();
+        }
+
         Map<String, Object> response = requestCmdb(OperateEnum.SUB_SYSTEM, "A problem occurred when converting the request body to json.", "{&FAILED_TO_GET_SUB_SYSTEM_INFO}", "Start to get sub_system info from cmdb. url: {}, method: {}, body: {}", "Succeed to get sub_system info from cmdb. response.");
 
         List<Object> content = checkResponse(response);

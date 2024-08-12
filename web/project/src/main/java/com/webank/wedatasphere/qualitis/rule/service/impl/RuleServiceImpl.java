@@ -80,10 +80,10 @@ import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
-import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
-import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
-import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
+//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
@@ -168,14 +168,14 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     private ProjectService projectService;
     @Autowired
     private StandardValueVersionDao standardValueVersionDao;
-    @Autowired
-    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
-    @Autowired
-    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
+//    @Autowired
+//    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
+//    @Autowired
+//    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
     @Autowired
     private RuleLockService ruleLockService;
-    @Autowired
-    private ScheduledTaskService scheduledTaskService;
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleServiceImpl.class);
 
@@ -421,7 +421,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
         // Delete rule
-        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         ruleDao.deleteRule(rule);
         LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
 
@@ -746,7 +746,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             Rule rule = ruleDao.findMinWorkFlowVersionRule(ruleName, project.getId());
             if (rule != null) {
                 // Delete rule
-                scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+//                scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
                 ruleDao.deleteRule(rule);
                 LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
             }

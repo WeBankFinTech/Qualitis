@@ -94,7 +94,7 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
 import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;

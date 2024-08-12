@@ -4,17 +4,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.bean.EmailEntity;
 import com.webank.wedatasphere.qualitis.bean.SendMailMakeRequest;
-import com.webank.wedatasphere.qualitis.client.MailClient;
-import com.webank.wedatasphere.qualitis.config.EsbSdkConfig;
 import com.webank.wedatasphere.qualitis.config.ThreadPoolTaskConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.MailLockRecordDao;
 import com.webank.wedatasphere.qualitis.dao.TaskDao;
 import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.MailLockRecord;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -70,12 +66,12 @@ public class PushReportScheduled {
     private ApplicationDao applicationDao;
     @Autowired
     private TaskDao taskDao;
-    @Autowired
-    private MailClient mailClient;
-    @Autowired
-    private EsbSdkConfig esbSdkConfig;
-    @Autowired
-    private MailLockRecordDao mailLockRecordDao;
+//    @Autowired
+//    private MailClient mailClient;
+//    @Autowired
+//    private EsbSdkConfig esbSdkConfig;
+//    @Autowired
+//    private MailLockRecordDao mailLockRecordDao;
     @Autowired
     private ThreadPoolTaskConfig threadPoolTaskConfig;
 
@@ -161,13 +157,13 @@ public class PushReportScheduled {
         }
 
         Date nowDate = new Date();
-        MailLockRecord mailLockRecord = mailLockRecordDao.findByUnique(simpleDateFormat.parse(simpleDateFormat.format(new Date())), true, code);
-        if (mailLockRecord != null) {
-            LOGGER.info("mail lock in the possession of.");
-            return;
-        } else {
-            LOGGER.info("mail lock is not exist.");
-        }
+//        MailLockRecord mailLockRecord = mailLockRecordDao.findByUnique(simpleDateFormat.parse(simpleDateFormat.format(new Date())), true, code);
+//        if (mailLockRecord != null) {
+//            LOGGER.info("mail lock in the possession of.");
+//            return;
+//        } else {
+//            LOGGER.info("mail lock is not exist.");
+//        }
 
         List<SubscribeOperateReport> subscribeOperateReports = subscribeOperateReportDao.selectAllMateFrequency(code);
         if (CollectionUtils.isEmpty(subscribeOperateReports)) {
@@ -267,44 +263,45 @@ public class PushReportScheduled {
 
         if (CollectionUtils.isNotEmpty(sendMailMakeRequests)) {
             //send_date与execution_frequency 组合唯一索引，避免多实例定时调度重复执行导致重复数据出现
-            MailLockRecord currentMailLockRecord = mailLockRecordDao.save(new MailLockRecord(sendMailMakeRequests.size(), true, new Date(nowDate.getTime())
-                    , QualitisConstants.PRINT_TIME_FORMAT.format(nowDate), "", code));
-            //只有数据对象入库成功，才能发起邮件
-            if (currentMailLockRecord == null) {
-                return;
-            }
+//            MailLockRecord currentMailLockRecord = mailLockRecordDao.save(new MailLockRecord(sendMailMakeRequests.size(), true, new Date(nowDate.getTime())
+//                    , QualitisConstants.PRINT_TIME_FORMAT.format(nowDate), "", code));
+//            //只有数据对象入库成功，才能发起邮件
+//            if (currentMailLockRecord == null) {
+//                return;
+//            }
+            return;
 
-            LOGGER.info(">>>>>>>>>> SEND EMAIL PACKAGING RESULT SET : <<<<<<<<<<" + sendMailMakeRequests.toString());
-            try {
-                // 获取执行的轮次
-                int round = (sendMailMakeRequests.size() - 1) / BATCH_SIZE;
-                LOGGER.info(">>>>>>>>>> Sending emails in batches round : <<<<<<<<<< " + round);
-                for (int i = 0; i <= round; i++) {
-                    // 求每个批次起始位置
-                    int fromIndex = i * BATCH_SIZE;
-                    int toIndex = (i + 1) * BATCH_SIZE;
-                    // 如果是最后一个批次，则不能越界
-                    if (i == round) {
-                        toIndex = sendMailMakeRequests.size();
-                    }
-                    // TODO: 对subList执行进一步要做的操作
-                    List<SendMailMakeRequest> subList = sendMailMakeRequests.subList(fromIndex, toIndex);
-
-                    for (SendMailMakeRequest sendMailMakeRequest : subList) {
-                        //发送邮件，请求esb接口
-                        sendMailMessage(sendMailMakeRequest.getReceiver(), sendMailMakeRequest.getMapLists(), sendMailMakeRequest.getCreateUser());
-                        //运营报表记录入库
-                        for (SubscriptionRecord subscriptionRecord : sendMailMakeRequest.getSubscriptionRecords()) {
-                            subscriptionRecordDao.save(subscriptionRecord);
-                            LOGGER.info(">>>>>>>>>> Subscription Record Object : <<<<<<<<<< " + subscriptionRecord.toString());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.error("Failed to send emails record . Exception: {}", e.getMessage(), e);
-                currentMailLockRecord.setStatus(false);
-                currentMailLockRecord.setErrMsg(e.getMessage());
-            }
+//            LOGGER.info(">>>>>>>>>> SEND EMAIL PACKAGING RESULT SET : <<<<<<<<<<" + sendMailMakeRequests.toString());
+//            try {
+//                // 获取执行的轮次
+//                int round = (sendMailMakeRequests.size() - 1) / BATCH_SIZE;
+//                LOGGER.info(">>>>>>>>>> Sending emails in batches round : <<<<<<<<<< " + round);
+//                for (int i = 0; i <= round; i++) {
+//                    // 求每个批次起始位置
+//                    int fromIndex = i * BATCH_SIZE;
+//                    int toIndex = (i + 1) * BATCH_SIZE;
+//                    // 如果是最后一个批次，则不能越界
+//                    if (i == round) {
+//                        toIndex = sendMailMakeRequests.size();
+//                    }
+//                    // TODO: 对subList执行进一步要做的操作
+//                    List<SendMailMakeRequest> subList = sendMailMakeRequests.subList(fromIndex, toIndex);
+//
+//                    for (SendMailMakeRequest sendMailMakeRequest : subList) {
+//                        //发送邮件，请求esb接口
+//                        sendMailMessage(sendMailMakeRequest.getReceiver(), sendMailMakeRequest.getMapLists(), sendMailMakeRequest.getCreateUser());
+//                        //运营报表记录入库
+//                        for (SubscriptionRecord subscriptionRecord : sendMailMakeRequest.getSubscriptionRecords()) {
+//                            subscriptionRecordDao.save(subscriptionRecord);
+//                            LOGGER.info(">>>>>>>>>> Subscription Record Object : <<<<<<<<<< " + subscriptionRecord.toString());
+//                        }
+//                    }
+//                }
+//            } catch (Exception e) {
+//                LOGGER.error("Failed to send emails record . Exception: {}", e.getMessage(), e);
+//                currentMailLockRecord.setStatus(false);
+//                currentMailLockRecord.setErrMsg(e.getMessage());
+//            }
 
         }
         LOGGER.info(">>>>>>>>>> End of operation report scheduling <<<<<<<<<<");
@@ -338,7 +335,7 @@ public class PushReportScheduled {
         //收件人邮箱，多人用分号隔开。（to，cc，bcc不能全部同时为空）
         emailEntity.setToList(resultReceiver);
         //邮件标题
-        emailEntity.setTitle(esbSdkConfig.getTitle() + "(" + simpleDateFormat.format(new Date()) + ")");
+//        emailEntity.setTitle(esbSdkConfig.getTitle() + "(" + simpleDateFormat.format(new Date()) + ")");
 
         List<List<String>> data = new ArrayList<>();
         for (Map<String, Object> mapList : mapLists) {
@@ -361,7 +358,7 @@ public class PushReportScheduled {
         emailEntity.setBodyFormat(1);
 
         convertEmail(emailEntity);
-        mailClient.sendEsbMail(CustomObjectMapper.transObjectToJson(emailEntity), createUser);
+//        mailClient.sendEsbMail(CustomObjectMapper.transObjectToJson(emailEntity), createUser);
     }
 
 

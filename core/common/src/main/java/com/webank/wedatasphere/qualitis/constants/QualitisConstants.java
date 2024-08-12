@@ -6,10 +6,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -238,6 +245,53 @@ public class QualitisConstants {
             QUALITIS_SERVER_HOST = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @Description：获取客户端外网ip 此方法要接入互联网才行，内网不行
+     **/
+    public static String getPublicIp() {
+        try {
+            // 要获得html页面内容的地址
+            String path = "http://www.net.cn/static/customercare/yourip.asp";
+            // 创建url对象
+            URL url = new URL(path);
+            // 打开连接
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            // 设置url中文参数编码
+            conn.setRequestProperty("contentType", "GBK");
+            // 请求的时间
+            conn.setConnectTimeout(5 * 1000);
+            // 请求方式
+            conn.setRequestMethod("GET");
+            InputStream inStream = conn.getInputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    inStream, "GBK"));
+            StringBuffer buffer = new StringBuffer();
+            String line = "";
+            // 读取获取到内容的最后一行,写入
+            while ((line = in.readLine()) != null) {
+                buffer.append(line);
+            }
+            List<String> ips = new ArrayList<String>();
+
+            //用正则表达式提取String字符串中的IP地址
+            String regEx = "((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)";
+            String str = buffer.toString();
+            Pattern p = Pattern.compile(regEx);
+            Matcher m = p.matcher(str);
+            while (m.find()) {
+                String result = m.group();
+                ips.add(result);
+            }
+            String PublicIp = ips.get(0);
+
+            // 返回公网IP值
+            return PublicIp;
+        } catch (Exception e) {
+            LOGGER.error("获取公网IP连接超时");
+            return "";
         }
     }
 

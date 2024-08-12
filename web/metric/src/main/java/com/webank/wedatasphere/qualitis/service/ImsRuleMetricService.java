@@ -21,7 +21,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricDataFromOuter(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricDataFromOuter(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Get ims rule metric.
@@ -31,7 +31,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricData(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricData(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get Alarm Data
@@ -41,7 +41,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<GetDataResponse<ImsAlarmDataQueryResponse>> getAlarmData(ImsAlarmDataQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GeneralResponse<GetDataResponse<ImsAlarmDataQueryResponse>> getAlarmData(ImsAlarmDataQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get metric collect data
@@ -50,7 +50,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GetAllResponse<ImsmetricCollectViewResponse> getMetricCollectList(MetricCollectQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GetAllResponse<ImsmetricCollectViewResponse> getMetricCollectList(MetricCollectQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get metric collect data for outer
@@ -59,7 +59,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    List<ImsmetricCollectViewOuterResponse> getMetricCollectListForOuter(MetricCollectOuterQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    List<ImsmetricCollectViewOuterResponse> getMetricCollectListForOuter(MetricCollectOuterQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get metric templates
@@ -67,13 +67,13 @@ public interface ImsRuleMetricService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GetAllResponse<MetricTemplateQueryResponse> getTemplateList(TemplatePageRequest request) throws UnExpectedRequestException;
+//    GetAllResponse<MetricTemplateQueryResponse> getTemplateList(TemplatePageRequest request) throws UnExpectedRequestException;
 
     /**
      * get all proxy users
      * @return
      */
-    List<String> findAllDataUsers();
+//    List<String> findAllDataUsers();
 
     /**
      *  get datasource
@@ -81,25 +81,25 @@ public interface ImsRuleMetricService {
      * @param db
      * @return
      */
-    DataSourcesConditionResponse getAllDataSources(String cluster, String db) throws UnExpectedRequestException;
+//    DataSourcesConditionResponse getAllDataSources(String cluster, String db) throws UnExpectedRequestException;
 
     /**
      *
      * @param request
      */
-    void createMetricTemplate(AddCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    void createMetricTemplate(AddCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      *
      * @param request
      */
-    void modifyMetricTemplate(ModifyCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    void modifyMetricTemplate(ModifyCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get detail of metric template
      * @param templateId
      * @return
      */
-    MetricTemplateDetailResponse getMetricTemplateDetail(Long templateId) throws UnExpectedRequestException;
+//    MetricTemplateDetailResponse getMetricTemplateDetail(Long templateId) throws UnExpectedRequestException;
 
 }

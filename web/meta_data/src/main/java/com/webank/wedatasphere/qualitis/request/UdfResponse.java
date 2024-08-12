@@ -1,9 +1,9 @@
 package com.webank.wedatasphere.qualitis.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableEngine;
-import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableCluster;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableEngine;
+//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdfEnableCluster;
 import com.webank.wedatasphere.qualitis.response.DepartmentSubInfoResponse;
 
 import java.util.ArrayList;
@@ -73,33 +73,33 @@ public class UdfResponse {
         visibilityDepartmentList = new ArrayList<>();
     }
 
-    public UdfResponse(LinkisUdf linkisUdf) {
-        visibilityDepartmentList = new ArrayList<>();
-        enableEngine = new ArrayList<>();
-        enableCluster = new ArrayList<>();
-
-        this.id = linkisUdf.getId();
-        this.name = linkisUdf.getName();
-        this.enter = linkisUdf.getEnter();
-        this.desc = linkisUdf.getUdfDesc();
-        this.cnName = linkisUdf.getCnName();
-        this.dir = linkisUdf.getDirectory();
-        this.file = linkisUdf.getUploadPath();
-        this.returnType = linkisUdf.getReturnType();
-        this.implType = linkisUdf.getImplTypeCode();
-        this.registerName = linkisUdf.getRegisterName();
-        enableEngine.addAll(linkisUdf.getLinkisUdfEnableEngineSet().stream().map(LinkisUdfEnableEngine::getEnableEngineCode).collect(Collectors.toList()));
-        enableCluster.addAll(linkisUdf.getLinkisUdfEnableClusterSet().stream().map(LinkisUdfEnableCluster::getEnableClusterName).collect(Collectors.toList()));
-        this.devDepartmentName = linkisUdf.getDevDepartmentName();
-        this.opsDepartmentName = linkisUdf.getOpsDepartmentName();
-        this.devDepartmentId = linkisUdf.getDevDepartmentId();
-        this.opsDepartmentId = linkisUdf.getOpsDepartmentId();
-        this.createUser = linkisUdf.getCreateUser();
-        this.modifyUser = linkisUdf.getModifyUser();
-        this.createTime = linkisUdf.getCreateTime();
-        this.modifyTime = linkisUdf.getModifyTime();
-        this.status = linkisUdf.getStatus();
-    }
+//    public UdfResponse(LinkisUdf linkisUdf) {
+//        visibilityDepartmentList = new ArrayList<>();
+//        enableEngine = new ArrayList<>();
+//        enableCluster = new ArrayList<>();
+//
+//        this.id = linkisUdf.getId();
+//        this.name = linkisUdf.getName();
+//        this.enter = linkisUdf.getEnter();
+//        this.desc = linkisUdf.getUdfDesc();
+//        this.cnName = linkisUdf.getCnName();
+//        this.dir = linkisUdf.getDirectory();
+//        this.file = linkisUdf.getUploadPath();
+//        this.returnType = linkisUdf.getReturnType();
+//        this.implType = linkisUdf.getImplTypeCode();
+//        this.registerName = linkisUdf.getRegisterName();
+//        enableEngine.addAll(linkisUdf.getLinkisUdfEnableEngineSet().stream().map(LinkisUdfEnableEngine::getEnableEngineCode).collect(Collectors.toList()));
+//        enableCluster.addAll(linkisUdf.getLinkisUdfEnableClusterSet().stream().map(LinkisUdfEnableCluster::getEnableClusterName).collect(Collectors.toList()));
+//        this.devDepartmentName = linkisUdf.getDevDepartmentName();
+//        this.opsDepartmentName = linkisUdf.getOpsDepartmentName();
+//        this.devDepartmentId = linkisUdf.getDevDepartmentId();
+//        this.opsDepartmentId = linkisUdf.getOpsDepartmentId();
+//        this.createUser = linkisUdf.getCreateUser();
+//        this.modifyUser = linkisUdf.getModifyUser();
+//        this.createTime = linkisUdf.getCreateTime();
+//        this.modifyTime = linkisUdf.getModifyTime();
+//        this.status = linkisUdf.getStatus();
+//    }
 
     public Long getId() {
         return id;
