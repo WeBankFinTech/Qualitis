@@ -54,8 +54,8 @@ public class QualitisRefExportOperation extends QualitisDevelopmentOperation<Thi
     private final static Logger LOGGER = LoggerFactory.getLogger(QualitisRefExportOperation.class);
     private static final String EXPORT_RULE_URL = "qualitis/outer/api/v1/projector/rule/export";
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
 
     /**
      * Default user for BML download and upload.

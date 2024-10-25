@@ -31,8 +31,8 @@ public class QualitisProjectDeletionOperation extends AbstractStructureOperation
     private static Logger LOGGER = LoggerFactory.getLogger(QualitisProjectDeletionOperation.class);
     private static final String DELETE_PROJECT_PATH = "qualitis/outer/api/v1/project/workflow/delete";
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
     @Override
     protected String getAppConnName() {
         return QualitisAppConn.QUALITIS_APPCONN_NAME;

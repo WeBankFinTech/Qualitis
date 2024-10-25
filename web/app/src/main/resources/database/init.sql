@@ -2227,7 +2227,7 @@ insert into `qualitis_rule_metric_type_config` (`cn_name`, `en_name`) values("�
 
 insert into qualitis_config_system(id, key_name, `value`) values(1, "save_database_pattern", "${USERNAME}_ind");
 
-insert into qualitis_auth_list(app_id, app_token) values("linkis_id", "a33693de51");
+insert into qualitis_auth_list(app_id, app_token) values("app_id", "token_a123123");
 
 
 -- 插入默认占位符

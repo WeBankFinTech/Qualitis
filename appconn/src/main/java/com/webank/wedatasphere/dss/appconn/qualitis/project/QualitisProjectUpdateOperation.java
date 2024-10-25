@@ -53,8 +53,8 @@ public class QualitisProjectUpdateOperation extends AbstractStructureOperation<P
 
     private static final String UPDATE_PROJECT_PATH = "qualitis/outer/api/v1/project/workflow";
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
 
     @Override
     public ResponseRef updateProject(ProjectUpdateRequestRef.ProjectUpdateRequestRefImpl projectRef) throws ExternalOperationFailedException {
