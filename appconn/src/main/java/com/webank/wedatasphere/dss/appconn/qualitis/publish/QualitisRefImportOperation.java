@@ -55,8 +55,8 @@ public class QualitisRefImportOperation extends QualitisDevelopmentOperation<Thi
     private final static Logger LOGGER = LoggerFactory.getLogger(QualitisRefImportOperation.class);
 
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
 
     private static final String IMPORT_RULE_URL = "qualitis/outer/api/v1/projector/rule/import";
 

@@ -53,8 +53,8 @@ public class QualitisProjectCreationOperation extends AbstractStructureOperation
 
     private static final String CREATE_PROJECT_PATH = "qualitis/outer/api/v1/project/workflow";
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
 
     @Override
     public ProjectResponseRef createProject(DSSProjectContentRequestRef.DSSProjectContentRequestRefImpl projectRef) throws ExternalOperationFailedException {
