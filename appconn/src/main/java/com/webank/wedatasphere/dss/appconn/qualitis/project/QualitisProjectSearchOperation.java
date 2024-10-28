@@ -32,8 +32,8 @@ public class QualitisProjectSearchOperation extends AbstractStructureOperation<R
 
     private static final String GET_PROJECT_PATH = "qualitis/outer/api/v1/project/workflow/get";
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
     @Override
     protected String getAppConnName() {
         return QualitisAppConn.QUALITIS_APPCONN_NAME;

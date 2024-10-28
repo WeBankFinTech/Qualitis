@@ -101,7 +101,6 @@ public class IndexController {
 
   /**
    * 当日发送给当前登录用户的告警信息
-   * API:http://rpddoc.weoa.com/web/#/695?page_id=12489
    *
    * @return IndexAlarmTodayResponse
    */
@@ -123,7 +122,6 @@ public class IndexController {
 
   /**
    * 指定时间段发送给当前登录用户的不同级别告警数
-   * API:http://rpddoc.weoa.com/web/#/695?page_id=12494
    *
    * @param request 查询参数
    * @return json结果

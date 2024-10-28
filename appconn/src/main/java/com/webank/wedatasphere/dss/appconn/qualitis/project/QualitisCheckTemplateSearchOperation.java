@@ -39,8 +39,8 @@ public class QualitisCheckTemplateSearchOperation extends AbstractOptionalOperat
 
     private CommonVars<String> SEARCH_USER_TEMPLATE_URL = CommonVars.apply("wds.dss.qualitis.template.url","qualitis/outer/api/v1/projector/rule/default/all");
 
-    private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appId = "";
+    private String appToken = "";
 
     @Override
     protected String getAppConnName() {
