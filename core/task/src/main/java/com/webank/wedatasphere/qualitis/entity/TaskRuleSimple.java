@@ -20,10 +20,19 @@ import com.webank.wedatasphere.qualitis.bean.TaskRule;
 import com.webank.wedatasphere.qualitis.bean.TaskRuleAlarmConfigBean;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
+<<<<<<< HEAD
+=======
+import com.webank.wedatasphere.qualitis.parser.LocaleParser;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
+>>>>>>> e984ebd (remove wtss scheduler)
 
 import javax.persistence.*;
 import java.util.ArrayList;

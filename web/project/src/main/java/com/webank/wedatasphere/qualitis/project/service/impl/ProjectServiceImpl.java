@@ -64,7 +64,12 @@ import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -141,6 +146,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
@@ -439,6 +449,12 @@ public class ProjectServiceImpl implements ProjectService {
         permissions.add(ProjectUserPermissionEnum.CREATOR.getCode());
         checkProjectPermission(projectInDb, user.getUsername(), permissions);
 
+<<<<<<< HEAD
+=======
+        // before delete executionParameters
+//        scheduledTaskService.deleteAllUnreleasedSchedules(projectInDb);
+
+>>>>>>> e984ebd (remove wtss scheduler)
         //Delete executionParameters
         List<ExecutionParameters> executionParametersList = executionParametersDao.getAllExecutionParameters(projectInDb.getId());
         if (CollectionUtils.isNotEmpty(executionParametersList)) {
@@ -642,7 +658,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private void checkAndDeleteEmptyRuleGroups(List<RuleGroup> ruleGroups) {
+<<<<<<< HEAD
         for (RuleGroup ruleGroup: ruleGroups) {
+=======
+        for (RuleGroup ruleGroup : ruleGroups) {
+            //                scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleGroup);
+>>>>>>> e984ebd (remove wtss scheduler)
             ruleGroupDao.delete(ruleGroup);
         }
     }

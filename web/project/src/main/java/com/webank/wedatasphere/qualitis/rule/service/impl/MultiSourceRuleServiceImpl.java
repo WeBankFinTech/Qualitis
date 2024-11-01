@@ -48,7 +48,12 @@ import com.webank.wedatasphere.qualitis.rule.request.multi.*;
 import com.webank.wedatasphere.qualitis.rule.response.MultiRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
@@ -100,6 +105,13 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
     private BdpClientHistoryDao bdpClientHistoryDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private LinkisDataSourceEnvDao linkisDataSourceEnvDao;
+>>>>>>> e984ebd (remove wtss scheduler)
 
     @Autowired
     private AutoArgumentAdapter autoArgumentAdapter;
@@ -241,6 +253,10 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
 
+<<<<<<< HEAD
+=======
+//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+>>>>>>> e984ebd (remove wtss scheduler)
         // Delete rule
         ruleDao.deleteRule(rule);
 

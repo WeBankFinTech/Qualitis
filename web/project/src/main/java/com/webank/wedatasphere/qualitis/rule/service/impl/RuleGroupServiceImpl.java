@@ -27,7 +27,7 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleGroupResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleUpdaterCallable;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleUpdaterThreadFactory;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;

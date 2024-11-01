@@ -36,6 +36,10 @@ public class ExcelProjectListener extends AnalysisEventListener {
     private List<ExcelRuleMetric> excelMetricContent = new ArrayList<>();
     private List<ExcelTemplate> excelTemplateContent = new ArrayList<>();
     private List<ExcelDatasourceEnv> excelDatasourceEnvContent = new ArrayList<>();
+<<<<<<< HEAD
+=======
+    private List<ExcelStandardValue> excelStandardValueContent = new ArrayList<>();
+>>>>>>> e984ebd (remove wtss scheduler)
 
     private List<ExcelExecutionParametersByProject> excelExecutionParametersContent = new ArrayList<>();
 

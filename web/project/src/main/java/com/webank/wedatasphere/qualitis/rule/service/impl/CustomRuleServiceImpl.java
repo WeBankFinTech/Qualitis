@@ -37,7 +37,12 @@ import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -95,6 +100,12 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
     @Autowired
     private RuleLockService ruleLockService;
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
+
+>>>>>>> e984ebd (remove wtss scheduler)
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomRuleServiceImpl.class);
 
@@ -347,6 +358,10 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
+<<<<<<< HEAD
+=======
+//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+>>>>>>> e984ebd (remove wtss scheduler)
         // Delete rule
         ruleDao.deleteRule(rule);
         // Delete template of custom rule

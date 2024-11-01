@@ -18,7 +18,12 @@ package com.webank.wedatasphere.qualitis.project.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;

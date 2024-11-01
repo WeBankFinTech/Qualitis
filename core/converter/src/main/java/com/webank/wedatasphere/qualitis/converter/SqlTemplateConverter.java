@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.converter;
 
 //import com.webank.bsp.dpc.entity.AccountInfoSys;
 //import com.webank.bsp.dpc.util.AccountInfoObtainer;
+
 import com.webank.wedatasphere.qualitis.EngineTypeEnum;
 import com.webank.wedatasphere.qualitis.LocalConfig;
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
@@ -34,17 +35,11 @@ import com.webank.wedatasphere.qualitis.exception.*;
 import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
-import com.webank.wedatasphere.qualitis.net.LocalNetwork;
 import com.webank.wedatasphere.qualitis.rule.constant.*;
 import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.translator.AbstractTranslator;
-import com.webank.wedatasphere.qualitis.util.CryptoUtils;
-import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
-import com.webank.wedatasphere.qualitis.util.DateUtils;
-import com.webank.wedatasphere.qualitis.util.MyStringEscaper;
-import com.webank.wedatasphere.qualitis.util.QualitisCollectionUtils;
+import com.webank.wedatasphere.qualitis.util.*;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;

@@ -38,6 +38,11 @@ import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
+<<<<<<< HEAD
+=======
+//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
+//import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.service.ApplicationService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
@@ -106,6 +111,12 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Autowired
     private RequestLinkis requestLinkis;
 
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskDao scheduledTaskDao;
+
+>>>>>>> e984ebd (remove wtss scheduler)
     private HttpServletRequest httpServletRequest;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationServiceImpl.class);
@@ -179,6 +190,10 @@ public class ApplicationServiceImpl implements ApplicationService {
             }
             applicationResponses.add(response);
         }
+<<<<<<< HEAD
+=======
+//        setScheduleInfo(applicationResponses);
+>>>>>>> e984ebd (remove wtss scheduler)
 
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
@@ -186,8 +201,39 @@ public class ApplicationServiceImpl implements ApplicationService {
         List<String> applicationIdList = getAllResponse.getData().stream().map(ApplicationResponse::getApplicationId).collect(Collectors.toList());
         LOGGER.info("timechecker response :" + (System.currentTimeMillis() - currentTimeResponse));
         LOGGER.info("Succeed to find applications. size: {}, id of applications: {}", total, applicationIdList);
+<<<<<<< HEAD
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
+=======
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
+    }
+
+//    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
+//        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
+//                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
+//                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
+//                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
+//        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
+//        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
+//        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
+//        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
+//        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
+//            allRuleGroupMapList.addAll(frontBackMapList);
+//        }
+//        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
+//            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
+//        }
+//        allRuleGroupMapList.forEach(entry -> {
+//            Long ruleGroupId = (Long) entry.get("rule_group_id");
+//            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
+//            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
+//            applicationResponseList.forEach(applicationResponse -> {
+//                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
+//                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
+//            });
+//        });
+//    }
+>>>>>>> e984ebd (remove wtss scheduler)
 
     @Override
     public GeneralResponse<GetAllResponse<ApplicationResponse>> filterProjectApplication(FilterProjectRequest request) throws UnExpectedRequestException {
@@ -570,6 +616,10 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationResponses.add(response);
         }
 
+<<<<<<< HEAD
+=======
+//        setScheduleInfo(applicationResponses);
+>>>>>>> e984ebd (remove wtss scheduler)
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
         return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);

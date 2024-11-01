@@ -39,7 +39,7 @@ import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeCallable;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeThreadFactory;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
-import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.UserService;

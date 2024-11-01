@@ -54,7 +54,12 @@ import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -107,6 +112,11 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     private ClusterInfoDao clusterInfoDao;
     @Autowired
     private DataStandardClient dataStandardClient;
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 
     private HttpServletRequest httpServletRequest;
 
@@ -389,6 +399,10 @@ public class RuleQueryServiceImpl implements RuleQueryService {
             List<Integer> permissions = new ArrayList<>();
             permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
             projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+<<<<<<< HEAD
+=======
+//            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+>>>>>>> e984ebd (remove wtss scheduler)
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule, rule id: {}", ruleInDb.getId());

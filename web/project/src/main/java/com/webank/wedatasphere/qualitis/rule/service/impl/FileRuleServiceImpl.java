@@ -21,7 +21,12 @@ import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
+<<<<<<< HEAD
 import com.webank.wedatasphere.qualitis.scheduled.constant.RuleTypeEnum;
+=======
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
+//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+>>>>>>> e984ebd (remove wtss scheduler)
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -72,6 +77,14 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
     @Autowired
     private RuleLockService ruleLockService;
+<<<<<<< HEAD
+=======
+//    @Autowired
+//    private ScheduledTaskService scheduledTaskService;
+
+    @Autowired
+    private RuleVariableService ruleVariableService;
+>>>>>>> e984ebd (remove wtss scheduler)
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileRuleServiceImpl.class);
 
@@ -270,6 +283,10 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
+<<<<<<< HEAD
+=======
+//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+>>>>>>> e984ebd (remove wtss scheduler)
         // Delete rule
         ruleDao.deleteRule(rule);
 
