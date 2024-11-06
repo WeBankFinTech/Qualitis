@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.Sets;
 import com.webank.wedatasphere.qualitis.config.SystemKeyConfig;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.SystemConfigDao;
 import com.webank.wedatasphere.qualitis.entity.SystemConfig;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -61,7 +62,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         SystemConfig savedSystemConfig = systemConfigDao.saveSystemConfig(systemConfigInDb);
 
         LOGGER.info("{&SUCCEED_TO_MODIFY_SYSTEM_CONFIG}. key: {}, value: {}", savedSystemConfig.getKeyName(), savedSystemConfig.getValue());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_MODIFY_SYSTEM_CONFIG}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_MODIFY_SYSTEM_CONFIG}", null);
     }
 
     @Override
@@ -73,7 +74,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         }
 
         LOGGER.info("{&SUCCEED_TO_FIND_SYSTEM_CONFIG}. key:{}, value: {}", systemConfigInDb.getKeyName(), systemConfigInDb.getValue());
-        return new GeneralResponse<>("200", "{&SUCCEED_TO_FIND_SYSTEM_CONFIG}", systemConfigInDb);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_SYSTEM_CONFIG}", systemConfigInDb);
     }
 
     private void checkKeyName(String keyName) throws UnExpectedRequestException {

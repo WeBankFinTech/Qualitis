@@ -39,6 +39,9 @@ public class ExcelRuleByProject extends BaseRowModel {
     @ExcelProperty(value = "Rule Template Visibility Object", index = 4)
     private String ruleTemplateVisibilityObject;
 
+    @ExcelProperty(value = "Rule Template Preview", index = 5)
+    private String ruleTemplatePreview;
+
     public ExcelRuleByProject() {
         // Default Constructor
     }
@@ -81,5 +84,13 @@ public class ExcelRuleByProject extends BaseRowModel {
 
     public void setRuleTemplateVisibilityObject(String ruleTemplateVisibilityObject) {
         this.ruleTemplateVisibilityObject = ruleTemplateVisibilityObject;
+    }
+
+    public String getRuleTemplatePreview() {
+        return ruleTemplatePreview;
+    }
+
+    public void setRuleTemplatePreview(String ruleTemplatePreview) {
+        this.ruleTemplatePreview = ruleTemplatePreview;
     }
 }

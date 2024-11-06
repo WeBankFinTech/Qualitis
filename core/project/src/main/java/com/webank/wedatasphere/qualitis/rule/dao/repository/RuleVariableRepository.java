@@ -48,4 +48,11 @@ public interface RuleVariableRepository extends JpaRepository<RuleVariable, Long
     @Modifying
     @Query(value = "delete from qualitis_rule_variable where rule_id = ?1", nativeQuery = true)
     void deleteByRuleId(Long ruleId);
+
+    /**
+     * Find by rule list
+     * @param rules
+     * @return
+     */
+    List<RuleVariable> findByRuleIn(List<Rule> rules);
 }

@@ -92,10 +92,11 @@ public interface RuleService {
     /**
      * Delete rule real
      * @param rule
+     * @param loginUser
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deleteRuleReal(Rule rule) throws UnExpectedRequestException;
+    GeneralResponse deleteRuleReal(Rule rule, String loginUser) throws UnExpectedRequestException;
 
     /**
      * Modify rule detail
@@ -182,12 +183,11 @@ public interface RuleService {
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException;
 
     /**
-     * get rule by projectId,name
-     * @param projectId
-     * @param name
+     * get rule by standardVersionId
+     * @param standardVersionId
      * @return
      */
-    List<Rule> getDeployExecutionParameters(Long projectId,String name);
+    List<Rule> getDeployStandardVersionId(Long standardVersionId);
 
     /**
      * enable Rule
@@ -198,4 +198,12 @@ public interface RuleService {
      * @throws PermissionDeniedRequestException
      */
     GeneralResponse<RuleEnableResponse> enableRule(EnableRuleRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * set ExecutionParameters Info
+     * @param rule
+     * @param ruleEnable
+     * @param id
+     */
+    void setExecutionParametersInfo(Rule rule, Boolean ruleEnable, Long id);
 }

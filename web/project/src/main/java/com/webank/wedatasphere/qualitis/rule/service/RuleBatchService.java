@@ -23,6 +23,7 @@ import com.webank.wedatasphere.qualitis.project.excel.ExcelRuleByProject;
 import com.webank.wedatasphere.qualitis.project.request.DiffVariableRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -71,14 +72,14 @@ public interface RuleBatchService {
      * @param ruleTemplateJsonObject
      * @param ruleTemplateVisibilityObject
      * @param projectInDb
-     * @param ruleGroupName
+     * @param realRuleGroup
      * @param newRuleNames
      * @param diffVariableRequestList
      * @throws IOException
      * @throws UnExpectedRequestException
      */
     void handleRule(Rule rule, Rule ruleInDb, String ruleJsonObject, String ruleTemplateJsonObject, String ruleTemplateVisibilityObject,
-        Project projectInDb, String ruleGroupName, List<String> newRuleNames
+        Project projectInDb, RuleGroup realRuleGroup, List<String> newRuleNames
         , List<DiffVariableRequest> diffVariableRequestList) throws IOException, UnExpectedRequestException;
 
     /**

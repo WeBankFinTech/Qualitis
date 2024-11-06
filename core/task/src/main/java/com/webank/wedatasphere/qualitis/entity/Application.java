@@ -90,6 +90,8 @@ public class Application {
     private String fpsFileId;
     @Column(name = "fps_hash")
     private String fpsHashValue;
+    @Column(name = "env_names")
+    private String envNames;
     @Column(name = "application_comment")
     private Integer applicationComment;
     @Column(name = "node_name")
@@ -110,10 +112,16 @@ public class Application {
     private String ip;
 
     @Column(name = "sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
 
     @Column(name = "engine_reuse")
     private Boolean engineReuse;
+
+    @Column(name = "run_today")
+    private String runToday;
+
+    @Column(name = "collect_ids", columnDefinition = "TEXT")
+    private String collectIds;
 
     public Application() {
         this.finishTaskNum = 0;
@@ -143,6 +151,10 @@ public class Application {
         this.finishTaskNum ++;
     }
 
+    public void reduceSuccessJobNum() {
+        this.finishTaskNum --;
+    }
+
     public void addFailJobNum() {
         this.failTaskNum ++;
     }
@@ -153,6 +165,14 @@ public class Application {
 
     public void addAbnormalTaskNum() {
         this.abnormalTaskNum ++;
+    }
+
+    public String getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(String envNames) {
+        this.envNames = envNames;
     }
 
     public void resetTask() {
@@ -442,11 +462,11 @@ public class Application {
         this.tenantUserName = tenantUserName;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -456,6 +476,22 @@ public class Application {
 
     public void setEngineReuse(Boolean engineReuse) {
         this.engineReuse = engineReuse;
+    }
+
+    public String getRunToday() {
+        return runToday;
+    }
+
+    public void setRunToday(String runToday) {
+        this.runToday = runToday;
+    }
+
+    public String getCollectIds() {
+        return collectIds;
+    }
+
+    public void setCollectIds(String collectIds) {
+        this.collectIds = collectIds;
     }
 
     @Override

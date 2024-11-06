@@ -44,7 +44,7 @@ public interface PermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Modify permission object
@@ -52,7 +52,7 @@ public interface PermissionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException;
+    GeneralResponse<Object> modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException;
 
     /**
      * Paging get all permissions

@@ -18,15 +18,14 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
-import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvMappingRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
-import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.request.*;
+import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
@@ -36,7 +35,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -108,6 +111,10 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_dcn_range_values")
+    private List<String> dcnRangeValues;
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
     @JsonProperty("linkis_datasource_envs")
     private List<DataSourceEnvRequest> dataSourceEnvRequests;
     @JsonProperty("linkis_datasource_envs_mappings")
@@ -196,6 +203,7 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
             this.clusterName = originalRuleDataSource.getClusterName();
             this.proxyUser = originalRuleDataSource.getProxyUser();
 
+            this.dcnRangeType =originalRuleDataSource.getDcnRangeType();
             this.linkisDataSourceId = originalRuleDataSource.getLinkisDataSourceId();
             this.linkisDataSourceName = originalRuleDataSource.getLinkisDataSourceName();
             this.linkisDataSourceVersionId = originalRuleDataSource.getLinkisDataSourceVersionId();
@@ -228,6 +236,31 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
                     }
                     this.dataSourceEnvRequests = dataSourceEnvRequestList;
                     this.dataSourceEnvMappingRequests = dataSourceEnvMappingRequestList;
+
+                    LinkisDataSourceEnvService linkisDataSourceEnvService = SpringContextHolder.getBean(LinkisDataSourceEnvService.class);
+                    Map<Long, String> envIdAndNameMap = dataSourceEnvs.stream().collect(Collectors.toMap(RuleDataSourceEnv::getEnvId, RuleDataSourceEnv::getEnvName, (k1, k2) -> k1));
+                    List<Long> envIds = envIdAndNameMap.keySet().stream().collect(Collectors.toList());
+                    GetLinkisDataSourceEnvRequest getLinkisDataSourceEnvRequest = new GetLinkisDataSourceEnvRequest();
+                    getLinkisDataSourceEnvRequest.setLinkisDataSourceId(originalRuleDataSource.getLinkisDataSourceId());
+                    getLinkisDataSourceEnvRequest.setEnvIdList(envIds);
+                    List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvService.queryEnvsInAdvance(getLinkisDataSourceEnvRequest);
+                    this.dcnRangeValues = linkisDataSourceEnvList.stream().map(linkisDataSourceEnv -> {
+                                DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
+                                dataSourceEnvRequest.setEnvId(linkisDataSourceEnv.getEnvId());
+                                dataSourceEnvRequest.setEnvName(envIdAndNameMap.get(linkisDataSourceEnv.getEnvId()));
+                                dataSourceEnvRequest.setDcnNum(linkisDataSourceEnv.getDcnNum());
+                                dataSourceEnvRequest.setLogicArea(linkisDataSourceEnv.getLogicArea());
+                                return dataSourceEnvRequest;
+                            }).filter(dataSourceEnvRequest -> StringUtils.isNotBlank(dataSourceEnvRequest.getLogicArea()))
+                            .map(dataSourceEnvRequest -> {
+                                if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(originalRuleDataSource.getDcnRangeType())) {
+                                    return dataSourceEnvRequest.getDcnNum();
+                                } else {
+                                    return dataSourceEnvRequest.getLogicArea();
+                                }
+                            })
+                            .distinct()
+                            .collect(Collectors.toList());
                 }
             }
             this.type = TemplateDataSourceTypeEnum.getMessage(originalRuleDataSource.getDatasourceType());
@@ -273,23 +306,26 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
                 super.setUploadAbnormalValue(executionParameters.getUploadAbnormalValue());
                 super.setUploadRuleMetricValue(executionParameters.getUploadRuleMetricValue());
                 super.setRuleEnable(customRule.getEnable());
-                super.setUnionAll(executionParameters.getUnionAll());
+                super.setUnionWay(executionParameters.getUnionWay());
                 if (StringUtils.isNotBlank(executionParameters.getCluster()) || StringUtils.isNotBlank(executionParameters.getAbnormalProxyUser()) || StringUtils.isNotBlank(executionParameters.getAbnormalDatabase())) {
                     this.abnormalDataStorage = true;
                 } else {
                     this.abnormalDataStorage = false;
                 }
             } else {
-                setBaseInfo(customRule.getUnionAll(), customRule.getEnable(), customRule.getSpecifyStaticStartupParam(), customRule.getStaticStartupParam(), customRule.getAbortOnFailure(), customRule.getAlert(), customRule.getAlertLevel(), customRule.getAlertReceiver(), customRule.getAbnormalDatabase(), customRule.getAbnormalCluster(), customRule.getAbnormalProxyUser(), customRule.getDeleteFailCheckResult(), this.alarmVariable);
+                setBaseInfo(customRule.getUnionWay(), customRule.getEnable(), customRule.getSpecifyStaticStartupParam(), customRule.getStaticStartupParam(), customRule.getAbortOnFailure(), customRule.getAlert(), customRule.getAlertLevel(), customRule.getAlertReceiver(), customRule.getAbnormalDatabase(), customRule.getAbnormalCluster(), customRule.getAbnormalProxyUser(), customRule.getDeleteFailCheckResult(), this.alarmVariable);
             }
         } else {
-            setBaseInfo(customRule.getUnionAll(), customRule.getEnable(), customRule.getSpecifyStaticStartupParam(), customRule.getStaticStartupParam(), customRule.getAbortOnFailure(), customRule.getAlert(), customRule.getAlertLevel(), customRule.getAlertReceiver(), customRule.getAbnormalDatabase(), customRule.getAbnormalCluster(), customRule.getAbnormalProxyUser(), customRule.getDeleteFailCheckResult(), this.alarmVariable);
+            setBaseInfo(customRule.getUnionWay(), customRule.getEnable(), customRule.getSpecifyStaticStartupParam(), customRule.getStaticStartupParam(), customRule.getAbortOnFailure(), customRule.getAlert(), customRule.getAlertLevel(), customRule.getAlertReceiver(), customRule.getAbnormalDatabase(), customRule.getAbnormalCluster(), customRule.getAbnormalProxyUser(), customRule.getDeleteFailCheckResult(), this.alarmVariable);
         }
 
+        if (CollectionUtils.isNotEmpty(customRule.getRuleUdfs())) {
+            this.linkisUdfNames = customRule.getRuleUdfs().stream().map(RuleUdf::getUdfName).collect(Collectors.toList());
+        }
     }
 
 
-    private void setBaseInfo(Boolean unionAll, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable) {
+    private void setBaseInfo(Integer unionWay, Boolean enable, Boolean specifyStaticStartupParam, String staticStartupParam, Boolean abortOnFailure, Boolean alert, Integer alertLevel, String alertReceiver, String abnormalDatabase, String cluster, String abnormalProxyUser, Boolean deleteFailCheckResult, List<AlarmConfigResponse> alarmVariable) {
         super.setSpecifyStaticStartupParam(specifyStaticStartupParam);
         if (specifyStaticStartupParam != null && specifyStaticStartupParam) {
             super.setStaticStartupParam(staticStartupParam);
@@ -305,7 +341,7 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
         super.setAbnormalProxyUser(abnormalProxyUser);
         super.setDeleteFailCheckResult(deleteFailCheckResult);
         super.setRuleEnable(enable);
-        super.setUnionAll(unionAll);
+        super.setUnionWay(unionWay);
         if (StringUtils.isNotBlank(cluster) || StringUtils.isNotBlank(abnormalProxyUser) || StringUtils.isNotBlank(abnormalDatabase)) {
             this.abnormalDataStorage = true;
         } else {
@@ -317,6 +353,14 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
             super.setUploadAbnormalValue(alarmConfigResponse.getUploadAbnormalValue() != null ? alarmConfigResponse.getUploadAbnormalValue() : false);
             super.setUploadRuleMetricValue(alarmConfigResponse.getUploadRuleMetricValue() != null ? alarmConfigResponse.getUploadRuleMetricValue() : false);
         }
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
     }
 
     public String getFileHashValues() {
@@ -613,6 +657,14 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
         for (AlarmConfig alarmConfig : customRule.getAlarmConfigs()) {
             this.alarmVariable.add(new AlarmConfigResponse(alarmConfig, RuleTypeEnum.CUSTOM_RULE.getCode()));
         }
+    }
+
+    public List<String> getDcnRangeValues() {
+        return dcnRangeValues;
+    }
+
+    public void setDcnRangeValues(List<String> dcnRangeValues) {
+        this.dcnRangeValues = dcnRangeValues;
     }
 
     public List<String> getLinkisUdfNames() {

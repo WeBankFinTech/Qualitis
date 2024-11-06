@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_gaojiedeng@webank.com
@@ -51,6 +52,11 @@ public class TaskNewValueDaoImpl implements TaskNewVauleDao {
     @Override
     public Long findMatchTaskNewValue(Long ruleId) {
         return taskNewValueRepository.findMatchTaskNewValue(ruleId);
+    }
+
+    @Override
+    public List<Map<String, Long>> findMatchTaskNewValueByRuleIds(List<Long> ruleIds) {
+        return taskNewValueRepository.findMatchTaskNewValueByRuleIds(ruleIds);
     }
 
     @Override

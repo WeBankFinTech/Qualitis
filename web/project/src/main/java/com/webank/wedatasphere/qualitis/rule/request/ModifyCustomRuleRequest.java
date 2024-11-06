@@ -78,6 +78,8 @@ public class ModifyCustomRuleRequest extends AbstractCommonRequest {
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
     @JsonProperty("linkis_datasource_envs")
     private List<DataSourceEnvRequest> dataSourceEnvRequests;
     @JsonProperty("linkis_datasource_envs_mappings")
@@ -93,6 +95,14 @@ public class ModifyCustomRuleRequest extends AbstractCommonRequest {
 
     public ModifyCustomRuleRequest() {
         // Default Constructor
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
     }
 
     public Boolean isFromOuter() {
@@ -337,4 +347,38 @@ public class ModifyCustomRuleRequest extends AbstractCommonRequest {
         AddCustomRuleRequest.checkCustomRuleRequest(addCustomRuleRequest);
     }
 
+    @Override
+    public String toString() {
+        return "ModifyCustomRuleRequest{" +
+                "outputName='" + outputName + '\'' +
+                ", saveMidTable=" + saveMidTable +
+                ", functionType=" + functionType +
+                ", functionContent='" + functionContent + '\'' +
+                ", fromContent='" + fromContent + '\'' +
+                ", whereContent='" + whereContent + '\'' +
+                ", clusterName='" + clusterName + '\'' +
+                ", ruleMetricId=" + ruleMetricId +
+                ", ruleMetricName='" + ruleMetricName + '\'' +
+                ", sqlCheckArea='" + sqlCheckArea + '\'' +
+                ", fifter='" + fifter + '\'' +
+                ", fileId='" + fileId + '\'' +
+                ", fileDb='" + fileDb + '\'' +
+                ", fileTable='" + fileTable + '\'' +
+                ", fileTableDesc='" + fileTableDesc + '\'' +
+                ", fileDelimiter='" + fileDelimiter + '\'' +
+                ", fileType='" + fileType + '\'' +
+                ", fileHeader=" + fileHeader +
+                ", proxyUser='" + proxyUser + '\'' +
+                ", fileHashValues='" + fileHashValues + '\'' +
+                ", linkisDataSourceId=" + linkisDataSourceId +
+                ", linkisDataSourceVersionId=" + linkisDataSourceVersionId +
+                ", linkisDataSourceName='" + linkisDataSourceName + '\'' +
+                ", linkisDataSourceType='" + linkisDataSourceType + '\'' +
+                ", dataSourceEnvRequests=" + dataSourceEnvRequests +
+                ", dataSourceEnvMappingRequests=" + dataSourceEnvMappingRequests +
+                ", alarmVariable=" + alarmVariable +
+                ", linkisUdfNames=" + linkisUdfNames +
+                ", fromOuter=" + fromOuter +
+                "} " + super.toString();
+    }
 }

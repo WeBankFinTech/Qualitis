@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.request.role.RoleAddRequest;
@@ -62,7 +63,7 @@ public class RoleController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to add role, role: {}, caused by: {}, current_user: {}", request.getRoleName(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_ROLE}", null);
         }
     }
 
@@ -79,7 +80,7 @@ public class RoleController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete role, role_id : {}, cause by: {}, current_user: {}", request.getRoleId(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_ROLE}", null);
         }
     }
 
@@ -95,7 +96,7 @@ public class RoleController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify role, role_id: {}, caused by: {}, current_user: {}", request.getRoleId(), e.getMessage(), username,  e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_ROLE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_ROLE}", null);
         }
     }
 
@@ -113,7 +114,7 @@ public class RoleController {
           throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to find all roles, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_ROLES}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_ALL_ROLES}", null);
         }
     }
 
@@ -123,10 +124,10 @@ public class RoleController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getRoleTypeEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_ROLE_TYPE_ENUMN_SUCCESSFULLY}", roleService.getAllRoleTypeEnum());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ROLE_TYPE_ENUMN_SUCCESSFULLY}", roleService.getAllRoleTypeEnum());
         } catch (Exception e) {
             LOGGER.error("Failed to get Scheduled System enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_ROLE_TYPE_ENUMN}", e.getMessage());
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ROLE_TYPE_ENUMN}", e.getMessage());
         }
     }
 

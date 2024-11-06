@@ -152,4 +152,11 @@ public interface TaskResultDao {
      * @return
      */
     List<TaskResult> findByApplicationId(String applicationId);
+
+    /**
+     * Find all by application ID list
+     * @param applicationIdList
+     * @return
+     */
+    List< TaskResult> findByApplicationIdIn(List< String> applicationIdList);
 }

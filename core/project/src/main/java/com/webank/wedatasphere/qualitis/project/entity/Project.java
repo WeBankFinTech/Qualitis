@@ -18,11 +18,19 @@ package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-
-import javax.persistence.*;
-import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnore;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import java.util.Set;
 
 /**
  * @author howeye
@@ -62,7 +70,7 @@ public class Project {
     private String department;
 
     @Column(name = "sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
 
     @Column(name = "sub_system_name")
     private String subSystemName;
@@ -83,6 +91,21 @@ public class Project {
 
     @Column(name = "project_type")
     private Integer projectType;
+
+    @Column(name = "git_repo")
+    private String gitRepo;
+
+    @Column(name = "git_type")
+    private Integer gitType;
+
+    @Column(name = "git_branch")
+    private String gitBranch;
+
+    @Column(name = "git_root_dir")
+    private String gitRootDir;
+
+    @Column(name = "run_status")
+    private Integer runStatus;
 
     public Project() {
     }
@@ -209,11 +232,11 @@ public class Project {
         this.modifyTime = modifyTime;
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -223,6 +246,46 @@ public class Project {
 
     public void setSubSystemName(String subSystemName) {
         this.subSystemName = subSystemName;
+    }
+
+    public String getGitRepo() {
+        return gitRepo;
+    }
+
+    public void setGitRepo(String gitRepo) {
+        this.gitRepo = gitRepo;
+    }
+
+    public Integer getGitType() {
+        return gitType;
+    }
+
+    public void setGitType(Integer gitType) {
+        this.gitType = gitType;
+    }
+
+    public String getGitBranch() {
+        return gitBranch;
+    }
+
+    public void setGitBranch(String gitBranch) {
+        this.gitBranch = gitBranch;
+    }
+
+    public String getGitRootDir() {
+        return gitRootDir;
+    }
+
+    public void setGitRootDir(String gitRootDir) {
+        this.gitRootDir = gitRootDir;
+    }
+
+    public Integer getRunStatus() {
+        return runStatus;
+    }
+
+    public void setRunStatus(Integer runStatus) {
+        this.runStatus = runStatus;
     }
 
     @Override
@@ -241,6 +304,10 @@ public class Project {
             ", modifyUser='" + modifyUser + '\'' +
             ", modifyTime='" + modifyTime + '\'' +
             ", projectType=" + projectType +
+            ", gitRepo='" + gitRepo + '\'' +
+            ", gitType=" + gitType +
+            ", gitBranch='" + gitBranch + '\'' +
+            ", gitRootDir='" + gitRootDir + '\'' +
             '}';
     }
 }

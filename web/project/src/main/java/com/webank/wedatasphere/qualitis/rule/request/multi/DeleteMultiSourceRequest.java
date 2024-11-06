@@ -37,4 +37,9 @@ public class DeleteMultiSourceRequest extends AbstractDeleteRequest {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkObject(request.getRuleId(), "Multi Rule id");
     }
+
+    @Override
+    public String toString() {
+        return "DeleteMultiSourceRequest{} " + super.toString();
+    }
 }

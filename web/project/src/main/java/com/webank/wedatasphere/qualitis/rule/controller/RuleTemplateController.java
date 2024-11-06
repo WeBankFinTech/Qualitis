@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -25,10 +26,12 @@ import com.webank.wedatasphere.qualitis.rule.request.AddRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleTemplateRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
+import com.webank.wedatasphere.qualitis.rule.request.TemplatePullDownRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateInputDemandResponse;
 import com.webank.wedatasphere.qualitis.rule.response.TemplateMetaResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
+import com.webank.wedatasphere.qualitis.util.RequestParametersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,13 +64,14 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getMultiRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException {
         try {
+            RequestParametersUtils.transcoding(request);
             return ruleTemplateService.getMultiRuleTemplate(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find multi rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_MULTI_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_MULTI_RULE_TEMPLATE}", null);
         }
     }
 
@@ -84,7 +88,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find custom rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_CUSTOM_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_CUSTOM_RULE_TEMPLATE}", null);
         }
     }
 
@@ -95,13 +99,14 @@ public class RuleTemplateController {
     public GeneralResponse<GetAllResponse<RuleTemplateResponse>> getDefaultRuleTemplate(TemplatePageRequest request) throws UnExpectedRequestException {
         request.checkRequest();
         try {
+            RequestParametersUtils.transcoding(request);
             return ruleTemplateService.getDefaultRuleTemplate(request);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find default rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_DEFAULT_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_DEFAULT_RULE_TEMPLATE}", null);
         }
     }
 
@@ -116,7 +121,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
 
@@ -131,7 +136,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find the input of rule_template. rule_template_id: {}, caused by: {}", ruleTemplateId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_THE_INPUT_OF_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_THE_INPUT_OF_RULE_TEMPLATE}", null);
         }
     }
 
@@ -141,7 +146,8 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<RuleTemplateResponse> addDefaultRuleTemplate(AddRuleTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return new GeneralResponse<>("200", "{&ADD_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.addRuleTemplate(request));
+            RequestParametersUtils.transcoding(request);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.addRuleTemplate(request));
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -150,7 +156,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find multi rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_RULE_TEMPLATE}", null);
         }
     }
 
@@ -161,7 +167,8 @@ public class RuleTemplateController {
     public GeneralResponse<RuleTemplateResponse> modifyDefaultRuleTemplate(ModifyRuleTemplateRequest request)
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
-            return new GeneralResponse<>("200", "{&MODIFY_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.modifyRuleTemplate(request));
+            RequestParametersUtils.transcoding(request);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.modifyRuleTemplate(request));
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -170,7 +177,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_RULE_TEMPLATE}", null);
         }
     }
 
@@ -182,7 +189,7 @@ public class RuleTemplateController {
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             ruleTemplateService.deleteRuleTemplate(templateId);
-            return new GeneralResponse<>("200", "{&DELETE_RULE_TEMPLATE_SUCCESSFULLY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_TEMPLATE_SUCCESSFULLY}", null);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -191,7 +198,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete rule templates, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_TEMPLATE}", null);
         }
     }
 
@@ -206,7 +213,7 @@ public class RuleTemplateController {
             for (Long templateId : request.getRuleTemplateIdList()) {
                 ruleTemplateService.deleteRuleTemplate(templateId);
             }
-            return new GeneralResponse<>("200", "{&DELETE_RULE_TEMPLATE_SUCCESSFULLY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_TEMPLATE_SUCCESSFULLY}", null);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
@@ -215,7 +222,7 @@ public class RuleTemplateController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find multi rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_TEMPLATE}", null);
         }
     }
 
@@ -225,28 +232,28 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<RuleTemplateResponse> getModifyRuleTemplateDetail(@PathParam("template_id") Long templateId) throws UnExpectedRequestException {
         try {
-            return new GeneralResponse<>("200", "{&GET_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.getModifyRuleTemplateDetail(templateId));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_SUCCESSFULLY}", ruleTemplateService.getModifyRuleTemplateDetail(templateId));
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify rule_template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
 
-    @GET
+    @POST
     @Path("option/list")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<List<Map<String, Object>>> getAllOptionList() {
+    public GeneralResponse<List<Map<String, Object>>> getAllOptionListByProject(TemplatePullDownRequest request) {
         try {
-            List<Map<String, Object>> ruleTemplateResponses = ruleTemplateService.getAllTemplateInRule();
-            return new GeneralResponse("200", "{&GET_RULE_TEMPLATE_SUCCESSFULLY}"
+            List<Map<String, Object>> ruleTemplateResponses = ruleTemplateService.getAllTemplateInRule(request);
+            return new GeneralResponse(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_SUCCESSFULLY}"
                     , ruleTemplateResponses);
         } catch (Exception e) {
-            LOGGER.error("Failed to query option list of template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
+            LOGGER.error("Failed to query option list of template by project, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
 
@@ -257,11 +264,11 @@ public class RuleTemplateController {
     public GeneralResponse<List<Map<String, Object>>> getOptionListByUser(@QueryParam("template_type") Integer templateType) {
         try {
             List<Map<String, Object>> ruleTemplateResponses = ruleTemplateService.getTemplateOptionList(templateType);
-            return new GeneralResponse("200", "{&GET_RULE_TEMPLATE_SUCCESSFULLY}"
+            return new GeneralResponse(ResponseStatusConstants.OK, "{&GET_RULE_TEMPLATE_SUCCESSFULLY}"
                     , ruleTemplateResponses);
         } catch (Exception e) {
             LOGGER.error("Failed to query option list of template, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_TEMPLATE}", null);
         }
     }
 
@@ -271,10 +278,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getCheckLevelEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_CHECK_LEVEL_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateCheckLevelList());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CHECK_LEVEL_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateCheckLevelList());
         } catch (Exception e) {
             LOGGER.error("Failed to get check level enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CHECK_LEVEL_ENUMN}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CHECK_LEVEL_ENUMN}", null);
         }
     }
 
@@ -284,10 +291,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getCheckTypeEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_CHECK_TYPE_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateCheckTypeList());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CHECK_TYPE_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateCheckTypeList());
         } catch (Exception e) {
             LOGGER.error("Failed to get check type enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_CHECK_TYPE_ENUMN}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_CHECK_TYPE_ENUMN}", null);
         }
     }
 
@@ -297,10 +304,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getFileTypeEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_FILE_TYPE_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateFileTypeList());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_FILE_TYPE_ENUMN_SUCCESSFULLY}", ruleTemplateService.getTemplateFileTypeList());
         } catch (Exception e) {
             LOGGER.error("Failed to get file type enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FILE_TYPE_ENUMN}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FILE_TYPE_ENUMN}", null);
         }
     }
 
@@ -310,10 +317,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getStatisticalFunctionEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_STATISTICAL_FUNCTION_ENUMN_SUCCESSFULLY}", ruleTemplateService.getStatisticalFunctionList());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_STATISTICAL_FUNCTION_ENUMN_SUCCESSFULLY}", ruleTemplateService.getStatisticalFunctionList());
         } catch (Exception e) {
             LOGGER.error("Failed to get statistical function list enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_STATISTICAL_FUNCTION_ENUMN}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_STATISTICAL_FUNCTION_ENUMN}", null);
         }
     }
 
@@ -323,10 +330,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getPlaceholderList(@PathParam("template_type") Integer templateType) {
         try {
-            return new GeneralResponse<>("200", "{&GET_PLACEHOLDER_LIST_SUCCESSFULLY}", ruleTemplateService.getPlaceholderData(templateType));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_PLACEHOLDER_LIST_SUCCESSFULLY}", ruleTemplateService.getPlaceholderData(templateType));
         } catch (Exception e) {
             LOGGER.error("Failed to get placeholder list , caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PLACEHOLDER_LIST}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PLACEHOLDER_LIST}", null);
         }
     }
 
@@ -336,10 +343,10 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getNamingMethodEnumn() {
         try {
-            return new GeneralResponse<>("200", "{&GET_NAMING_METHOD_ENUMN_SUCCESSFULLY}", ruleTemplateService.getNamingMethodList());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_NAMING_METHOD_ENUMN_SUCCESSFULLY}", ruleTemplateService.getNamingMethodList());
         } catch (Exception e) {
             LOGGER.error("Failed to get naming method enumn, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_NAMING_METHOD_ENUMN}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_NAMING_METHOD_ENUMN}", null);
         }
     }
 
@@ -349,15 +356,12 @@ public class RuleTemplateController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getNamingConventionsConfig() {
         try {
-            return new GeneralResponse<>("200", "{&GET_NAMING_CONVENTIONS_CONFIG_SUCCESSFULLY}", ruleTemplateService.getConventionsNamingQuery());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_NAMING_CONVENTIONS_CONFIG_SUCCESSFULLY}", ruleTemplateService.getConventionsNamingQuery());
         } catch (Exception e) {
             LOGGER.error("Failed to get naming conventions config, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_NAMING_CONVENTIONS_CONFIG}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_NAMING_CONVENTIONS_CONFIG}", null);
         }
     }
-
-
-
 
 
 }

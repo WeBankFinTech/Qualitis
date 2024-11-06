@@ -68,7 +68,7 @@ public interface ProjectUserRepository extends JpaRepository<ProjectUser, Long>,
      * @param username
      * @param projectType
      * @param projectName
-     * @param subSystemName
+     * @param subsystemId
      * @param createUser
      * @param db
      * @param table
@@ -78,14 +78,14 @@ public interface ProjectUserRepository extends JpaRepository<ProjectUser, Long>,
      * @return
      */
     @Query(value = "select pu from Project p inner join ProjectUser pu on pu.project = p left join RuleDataSource ds on ds.projectId = p.id " +
-            "where pu.userName = ?1 and p.projectType = ?2 and p.name like ?3 and (?4 is null or p.subSystemName like ?4) " +
+            "where pu.userName = ?1 and p.projectType = ?2 and p.name like ?3 and (?4 is null or p.subSystemId = ?4) " +
             "and (?5 is null or p.createUser = ?5) and (?6 is null or ds.dbName = ?6) and (?7 is null or ds.tableName = ?7) " +
             "and (?8 is null or UNIX_TIMESTAMP(p.createTime) >= ?8) and (?9 is null or UNIX_TIMESTAMP(p.createTime) < ?9) group by pu.project"
         , countQuery = "select count(DISTINCT pu.project) from ProjectUser pu inner join Project p on pu.project = p left join RuleDataSource ds on ds.projectId = p.id " +
             "where pu.userName = ?1 and p.projectType = ?2 and p.name like ?3 and (?4 is null or p.subSystemId = ?4) " +
             "and (?5 is null or p.createUser = ?5) and (?6 is null or ds.dbName = ?6) and (?7 is null or ds.tableName = ?7) " +
             "and (?8 is null or UNIX_TIMESTAMP(p.createTime) >= ?8) and (?9 is null or UNIX_TIMESTAMP(p.createTime) < ?9)")
-    Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, String subSystemName, String createUser, String db, String table, Long startTime, Long endTime, Pageable pageable);
+    Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, Integer subsystemId, String createUser, String db, String table, Long startTime, Long endTime, Pageable pageable);
 
     /**
      * Count by user name and permission and project type
@@ -127,18 +127,20 @@ public interface ProjectUserRepository extends JpaRepository<ProjectUser, Long>,
     /**
      * Find project user by user name
      * @param userName
+     * @param projectType
      * @return
      */
-    @Query("select DISTINCT new map(p.name as project_name, p.id as project_id) from ProjectUser pu inner join pu.project p where pu.userName = ?1")
-    List<Map<String, Object>> findProjectByUserName(String userName);
+    @Query("select DISTINCT new map(p.name as project_name, p.id as project_id) from ProjectUser pu inner join pu.project p where pu.userName = ?1 and (?2 is null or p.projectType = ?2)")
+    List<Map<String, Object>> findProjectByUserName(String userName, Integer projectType);
 
     /**
      * Count by username
      * @param userName
+     * @param projectType
      * @return
      */
-    @Query("select count(DISTINCT pu.project) from ProjectUser pu inner join pu.project p where pu.userName = ?1")
-    Long countProjectByUserName(String userName);
+    @Query("select count(DISTINCT pu.project) from ProjectUser pu inner join pu.project p where pu.userName = ?1 and (?2 is null or p.projectType = ?2)")
+    Long countProjectByUserName(String userName, Integer projectType);
 
     /**
      * Find project user by userId

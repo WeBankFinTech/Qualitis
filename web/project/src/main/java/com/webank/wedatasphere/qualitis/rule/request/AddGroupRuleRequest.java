@@ -67,23 +67,26 @@ public class AddGroupRuleRequest {
     @JsonProperty("abnormal_proxy_user")
     private String abnormalProxyUser;
 
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
+
     @JsonProperty("filter")
     private String filter;
     @JsonProperty("rule_enable")
     private Boolean ruleEnable;
-    @JsonProperty("union_all")
-    private Boolean unionAll;
+    @JsonProperty("union_way")
+    private Integer unionWay;
 
     public AddGroupRuleRequest() {
         // Default Constructor
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
+    public Integer getUnionWay() {
+        return unionWay;
     }
 
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Boolean getRuleEnable() {
@@ -304,6 +307,14 @@ public class AddGroupRuleRequest {
 
     public void setAbnormalProxyUser(String abnormalProxyUser) {
         this.abnormalProxyUser = abnormalProxyUser;
+    }
+
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
     }
 
     public String getFilter() {

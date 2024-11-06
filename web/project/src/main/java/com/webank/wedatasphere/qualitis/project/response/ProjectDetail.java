@@ -36,21 +36,29 @@ public class ProjectDetail {
     @JsonProperty("create_user")
     private String createUser;
     @JsonProperty("sub_system_id")
-    private Long subSystemId;
+    private String subSystemId;
     @JsonProperty("sub_system_name")
     private String subSystemName;
     @JsonProperty("project_label")
     private Set<String> projectLabels;
+    @JsonProperty("git_repo")
+    private String gitRepo;
+    @JsonProperty("git_type")
+    private Integer gitType;
+    @JsonProperty("git_branch")
+    private String gitBranch;
+    @JsonProperty("git_root_dir")
+    private String gitRootDir;
 
     public ProjectDetail() {
         // Default Constructor
     }
 
-    public Long getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Long subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 
@@ -108,6 +116,38 @@ public class ProjectDetail {
 
     public void setProjectLabels(Set<String> projectLabels) {
         this.projectLabels = projectLabels;
+    }
+
+    public String getGitRepo() {
+        return gitRepo;
+    }
+
+    public void setGitRepo(String gitRepo) {
+        this.gitRepo = gitRepo;
+    }
+
+    public Integer getGitType() {
+        return gitType;
+    }
+
+    public void setGitType(Integer gitType) {
+        this.gitType = gitType;
+    }
+
+    public String getGitBranch() {
+        return gitBranch;
+    }
+
+    public void setGitBranch(String gitBranch) {
+        this.gitBranch = gitBranch;
+    }
+
+    public String getGitRootDir() {
+        return gitRootDir;
+    }
+
+    public void setGitRootDir(String gitRootDir) {
+        this.gitRootDir = gitRootDir;
     }
 
     @Override

@@ -36,4 +36,9 @@ public class DeleteCustomRuleRequest extends AbstractDeleteRequest{
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkObject(request.getRuleId(), "Rule id");
     }
+
+    @Override
+    public String toString() {
+        return "DeleteCustomRuleRequest{} " + super.toString();
+    }
 }

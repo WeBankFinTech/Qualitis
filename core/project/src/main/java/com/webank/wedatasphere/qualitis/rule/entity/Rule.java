@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.util.LazyGetUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.annotations.NotFoundAction;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.annotations.NotFound;
@@ -154,6 +155,12 @@ public class Rule {
     @Column(name = "abnormal_proxy_user", length = 50)
     private String abnormalProxyUser;
 
+    @Column(name = "standard_value_version_id")
+    private Long standardValueVersionId;
+
+    @Column(name = "standard_value_version_en_name")
+    private String standardValueVersionEnName;
+
     @Column(name = "work_flow_name")
     private String workFlowName;
 
@@ -166,9 +173,8 @@ public class Rule {
     @Column(name = "rule_no")
     private Integer ruleNo;
 
-    @JsonProperty("union_all")
-    @Column(name = "union_all")
-    private Boolean unionAll;
+    @Column(name = "union_way")
+    private Integer unionWay;
 
     @Column(name = "contrast_type")
     private Integer contrastType;
@@ -179,8 +185,21 @@ public class Rule {
     @Column(name = "node_name")
     private String nodeName;
 
+
+    @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Set<RuleUdf> ruleUdfs;
+
     public Rule() {
         // Default Constructor
+    }
+
+    public Integer getUnionWay() {
+        return unionWay;
+    }
+
+    public void setUnionWay(Integer unionWay) {
+        this.unionWay = unionWay;
     }
 
     public Long getId() {
@@ -298,7 +317,11 @@ public class Rule {
     public Set<RuleVariable> getRuleVariables() {
         if (ruleVariableSize == 0) {
             this.ruleVariables = LazyGetUtil.getRuleVariables(this);
-            this.ruleVariableSize = this.ruleVariables.size();
+            if (CollectionUtils.isNotEmpty(this.ruleVariables)) {
+                this.ruleVariableSize = this.ruleVariables.size();
+            } else {
+                this.ruleVariableSize = 0;
+            }
         }
         return this.ruleVariables;
     }
@@ -476,6 +499,22 @@ public class Rule {
         this.abnormalProxyUser = abnormalProxyUser;
     }
 
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
+    }
+
+    public String getStandardValueVersionEnName() {
+        return standardValueVersionEnName;
+    }
+
+    public void setStandardValueVersionEnName(String standardValueVersionEnName) {
+        this.standardValueVersionEnName = standardValueVersionEnName;
+    }
+
     public String getWorkFlowName() {
         return workFlowName;
     }
@@ -508,20 +547,20 @@ public class Rule {
         this.enable = enable;
     }
 
-    public Boolean getUnionAll() {
-        return unionAll;
-    }
-
-    public void setUnionAll(Boolean unionAll) {
-        this.unionAll = unionAll;
-    }
-
     public Integer getContrastType() {
         return contrastType;
     }
 
     public void setContrastType(Integer contrastType) {
         this.contrastType = contrastType;
+    }
+
+    public Set<RuleUdf> getRuleUdfs() {
+        return ruleUdfs;
+    }
+
+    public void setRuleUdfs(Set<RuleUdf> ruleUdfs) {
+        this.ruleUdfs = ruleUdfs;
     }
 
     public int getRuleVariableSize() {
@@ -600,11 +639,13 @@ public class Rule {
             ", abnormalDatabase='" + abnormalDatabase + '\'' +
             ", abnormalCluster='" + abnormalCluster + '\'' +
             ", abnormalProxyUser='" + abnormalProxyUser + '\'' +
+            ", standardValueVersionId=" + standardValueVersionId +
+            ", standardValueVersionEnName='" + standardValueVersionEnName + '\'' +
             ", workFlowName='" + workFlowName + '\'' +
             ", workFlowVersion='" + workFlowVersion + '\'' +
             ", ruleNo=" + ruleNo +
             ", enable=" + enable +
-            ", unionAll=" + unionAll +
+            ", unionWay=" + unionWay +
             ", contrastType=" + contrastType +
             '}';
     }

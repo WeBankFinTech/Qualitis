@@ -20,7 +20,14 @@ import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.request.*;
+import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
+import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
+import com.webank.wedatasphere.qualitis.project.request.ModifyProjectGitRelationRequest;
+import com.webank.wedatasphere.qualitis.project.request.ProjectTypeRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
+import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectEventResponse;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
@@ -105,6 +112,15 @@ public interface ProjectService {
     GeneralResponse<ProjectDetailResponse> modifyProjectDetail(ModifyProjectDetailRequest request, boolean workflow) throws UnExpectedRequestException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
+     * Modify project git relation
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
      * Create project user.
      * @param project
      * @param user
@@ -144,9 +160,10 @@ public interface ProjectService {
 
     /**
      * No pagine, no project type
+     * @param request
      * @return
      */
-    GetAllResponse<ProjectResponse> getAllProjectByUserReal();
+    GetAllResponse<ProjectResponse> getAllProjectByUserReal(ProjectTypeRequest request);
 
     /**
      * Check permissions of project
@@ -225,4 +242,26 @@ public interface ProjectService {
      */
     List<Project> checkProjectsExistence(List<Long> projectIds, String loginUser) throws UnExpectedRequestException;
 
+    /**
+     * Delete relation of project git
+     * @param request
+     * @return
+     * @throws UnExpectedRequestException
+     * @throws PermissionDeniedRequestException
+     */
+    GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request)
+        throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * save And Flush
+     * @param project
+     * @return
+     */
+    Project saveAndFlushProject(Project project);
+
+    /**
+     * batch Save and flush
+     * @param projects
+     */
+    void batchSaveAndFlushProject(List<Project> projects);
 }

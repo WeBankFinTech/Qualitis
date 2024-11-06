@@ -17,7 +17,7 @@
 package com.webank.wedatasphere.qualitis.constant;
 
 /**
- * @author howeye
+ * @author allenzhou
  */
 public enum ServiceInfoStatusEnum {
     /**

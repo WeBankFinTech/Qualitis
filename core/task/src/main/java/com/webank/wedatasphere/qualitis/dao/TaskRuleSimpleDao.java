@@ -58,7 +58,7 @@ public interface TaskRuleSimpleDao {
      * @param ruleId
      * @return
      */
-    TaskRuleSimple findByApplicationAndRule(String applicationId, Long ruleId);
+    List<TaskRuleSimple> findByApplicationAndRule(String applicationId, Long ruleId);
 
     /**
      * Find task rule simple by task

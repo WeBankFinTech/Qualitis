@@ -25,6 +25,7 @@ import com.webank.wedatasphere.qualitis.exception.*;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ public interface ExecutionManager {
      * @param setFlag
      * @param execParams
      * @param runDate
+     * @param runToday
      * @param splitBy
      * @param dataSourceMysqlConnect
      * @param tenantUserName
@@ -61,7 +63,7 @@ public interface ExecutionManager {
      */
     List<TaskSubmitResult> submitApplication(List<Rule> rules, String nodeName, String createTime, String user, Map<Long, Map<String, Object>> ruleReplaceInfo
             , StringBuilder partition, Date date, Application application, String cluster, String startupParam, String setFlag, Map<String, String> execParams, StringBuilder runDate
-            , StringBuilder splitBy, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String tenantUserName, List<String> leftCols, List<String> rightCols, List<String> comelexCols, String createUser) throws Exception;
+            , StringBuilder runToday, StringBuilder splitBy, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String tenantUserName, List<String> leftCols, List<String> rightCols, List<String> comelexCols, String createUser) throws Exception;
 
     /**
      * Kill application.
@@ -82,12 +84,31 @@ public interface ExecutionManager {
      * @param user
      * @param clusterName
      * @param runDate
+     * @param runToday
      * @param ruleReplaceInfo
      * @return
      * @throws Exception
      */
-    TaskSubmitResult executeFileRule(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName, StringBuilder runDate
-        , Map<Long, Map<String, Object>> ruleReplaceInfo) throws Exception;
+    TaskSubmitResult executeFileRule(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName, StringBuilder runDate,
+                                     StringBuilder runToday, Map<Long, Map<String, Object>> ruleReplaceInfo) throws Exception;
+
+    /**
+     * table structure job.
+     *
+     * @param tableStructures
+     * @param submitTime
+     * @param application
+     * @param user
+     * @param clusterName
+     * @param runDate
+     * @param runToday
+     * @param ruleReplaceInfo
+     * @param nodeName
+     * @return
+     * @throws Exception
+     */
+    TaskSubmitResult executeTableStructureRule(List<Rule> tableStructures, String submitTime, Application application, String user, String clusterName, StringBuilder runDate
+            , StringBuilder runToday, Map<Long, Map<String, Object>> ruleReplaceInfo, String nodeName) throws Exception;
 
     /**
      * File rule shell job.
@@ -97,6 +118,7 @@ public interface ExecutionManager {
      * @param user
      * @param clusterName
      * @param runDate
+     * @param runToday
      * @param ruleReplaceInfo
      * @param startupParam
      * @param engineReuse
@@ -105,7 +127,7 @@ public interface ExecutionManager {
      * @throws Exception
      */
     List<TaskSubmitResult> executeFileRuleWithShell(List<Rule> fileRules, String submitTime, Application application, String user, String clusterName
-        , String runDate, Map<Long, Map<String, Object>> ruleReplaceInfo, String startupParam, Boolean engineReuse, String engineType) throws Exception;
+            , String runDate, String runToday, Map<Long, Map<String, Object>> ruleReplaceInfo, String startupParam, Boolean engineReuse, String engineType) throws Exception;
 
     /**
      * Execute check alert.
@@ -123,4 +145,5 @@ public interface ExecutionManager {
     TaskSubmitResult executeCheckAlert(ClusterInfo clusterInfo, String[] dbAndTables, List<String> columns, CheckAlert currentCheckAlert,
         Application saveApplication,
         String startupParam, Boolean engineReuse, String engineType) throws Exception;
+
 }

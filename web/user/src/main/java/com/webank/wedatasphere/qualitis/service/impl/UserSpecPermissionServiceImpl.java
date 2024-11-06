@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.Permission;
@@ -100,7 +101,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         UserSpecPermissionResponse response = new UserSpecPermissionResponse(savedUserSpecPermission);
 
         LOGGER.info("Succeed to add user_permission, response: {}, current_user: {}", response, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&ADD_USER_SPEC_PERMISSION_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_USER_SPEC_PERMISSION_SUCCESSFULLY}", response);
     }
 
     @Override
@@ -119,7 +120,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         // Delete user permission
         userSpecPermissionDao.deleteUserSpecPermission(userSpecPermissionInDb);
         LOGGER.info("Succeed to delete user_permission, uuid: {}, current_user: {}", uuid, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&DELETE_USER_SPEC_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_USER_SPEC_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -163,7 +164,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
 
         LOGGER.info("Succeed to find user_permission. uuid: {}, user_id: {}, permission_id: {}, current_user: {}", uuid,
                 savedUserSpecPermission.getUser().getId(), savedUserSpecPermission.getPermission().getId(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&MODIFY_USER_SPEC_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_USER_SPEC_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -185,7 +186,7 @@ public class UserSpecPermissionServiceImpl implements UserSpecPermissionService 
         responses.setData(userSpecPermissionResponses);
 
         LOGGER.info("Succeed to find user_permission. page: {}, size: {}, response: {}, current_user: {}", page, size, responses, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&FIND_USER_SPEC_PERMISSION_SUCCESSFULLY}", responses);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_USER_SPEC_PERMISSION_SUCCESSFULLY}", responses);
     }
 
     private void checkRequest(AddUserSpecPermissionRequest request) throws UnExpectedRequestException {

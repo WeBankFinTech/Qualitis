@@ -51,6 +51,9 @@ public class GroupListExecutionRequest {
     @JsonProperty("engine_reuse")
     private Boolean engineReuse;
 
+    @JsonProperty("imsmetric_collect_id_list")
+    private String imsMetricCollectIdList;
+
     public GroupListExecutionRequest() {
     }
 
@@ -63,7 +66,7 @@ public class GroupListExecutionRequest {
     }
 
     public void setGroupExecutionRequests(
-        List<GroupExecutionRequest> groupExecutionRequests) {
+            List<GroupExecutionRequest> groupExecutionRequests) {
         this.groupExecutionRequests = groupExecutionRequests;
     }
 
@@ -153,5 +156,13 @@ public class GroupListExecutionRequest {
 
     public void setEngineReuse(Boolean engineReuse) {
         this.engineReuse = engineReuse;
+    }
+
+    public String getImsMetricCollectIdList() {
+        return imsMetricCollectIdList;
+    }
+
+    public void setImsMetricCollectIdList(String imsMetricCollectIdList) {
+        this.imsMetricCollectIdList = imsMetricCollectIdList;
     }
 }

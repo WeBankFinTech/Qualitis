@@ -31,6 +31,8 @@ public class AddClusterInfoRequest {
     private String linkisAddress;
     @JsonProperty("linkis_token")
     private String linkisToken;
+    @JsonProperty("data_size_limit")
+    private String dataSizeLimit;
     @JsonProperty("hive_urn")
     private String hiveUrn;
     @JsonProperty("wtss_json")
@@ -40,6 +42,14 @@ public class AddClusterInfoRequest {
 
     public AddClusterInfoRequest() {
         // Default Constructor
+    }
+
+    public String getDataSizeLimit() {
+        return dataSizeLimit;
+    }
+
+    public void setDataSizeLimit(String dataSizeLimit) {
+        this.dataSizeLimit = dataSizeLimit;
     }
 
     public String getHiveUrn() {
@@ -104,9 +114,7 @@ public class AddClusterInfoRequest {
                 "clusterName='" + clusterName + '\'' +
                 ", clusterType='" + clusterType + '\'' +
                 ", linkisAddress='" + linkisAddress + '\'' +
-                ", hiveUrn='" + hiveUrn + '\'' +
-                ", wtssJson='" + wtssJson + '\'' +
-                ", jobserverJson='" + jobserverJson + '\'' +
+                ", linkisToken='" + linkisToken + '\'' +
                 '}';
     }
 }

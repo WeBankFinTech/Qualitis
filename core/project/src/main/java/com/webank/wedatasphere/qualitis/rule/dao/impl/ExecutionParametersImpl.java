@@ -3,12 +3,14 @@ package com.webank.wedatasphere.qualitis.rule.dao.impl;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.ExecutionParametersRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -62,6 +64,14 @@ public class ExecutionParametersImpl implements ExecutionParametersDao {
     @Override
     public ExecutionParameters findByNameAndProjectId(String name, Long projectId) {
         return executionParametersRepository.findByNameAndProjectId(name, projectId);
+    }
+
+    @Override
+    public List<ExecutionParameters> findByProjectIdAndNames(Long projectId, List<String> names) {
+        if (projectId == null || CollectionUtils.isEmpty(names)) {
+            return Collections.emptyList();
+        }
+        return executionParametersRepository.findByProjectIdAndNames(projectId, names);
     }
 
     @Override

@@ -20,6 +20,12 @@ public interface RuleDatasourceEnvDao {
     RuleDataSourceEnv findByEnvId(Long envId);
 
     /**
+     * delete env by id
+     * @param envId
+     */
+    void deleteByEnvId(Long envId);
+
+    /**
      * Save all
      * @param datasourceEnvList
      */
@@ -49,4 +55,11 @@ public interface RuleDatasourceEnvDao {
      * @return
      */
     List<RuleDataSourceEnv> findByRuleDataSourceList(List<RuleDataSource> ruleDataSourceList);
+
+    /**
+     * find By DataSourceId
+     * @param datasourceId
+     * @return
+     */
+    List<RuleDataSourceEnv> findByDataSourceId(Long datasourceId);
 }

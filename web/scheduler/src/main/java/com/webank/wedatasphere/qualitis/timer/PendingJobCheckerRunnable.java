@@ -26,10 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -87,8 +84,9 @@ public class PendingJobCheckerRunnable implements Runnable {
                     , application.getFpsFileId(), application.getFpsHashValue(), application.getStartupParam(), application.getClusterName(), application.getSetFlag()
                     , GSON.fromJson(application.getExecutionParamJson(), Map.class), application.getExecutionParam()
                     , StringUtils.isNotBlank(application.getRunDate()) ? new StringBuilder(application.getRunDate()) : new StringBuilder("")
+                    , StringUtils.isNotBlank(application.getRunToday()) ? new StringBuilder(application.getRunToday()) : new StringBuilder("")
                     , StringUtils.isNotBlank(application.getSplitBy()) ? new StringBuilder(application.getSplitBy()) : new StringBuilder("")
-                    , application.getInvokeType(), application, application.getSubSystemId(), null,application.getEngineReuse());
+                    , application.getInvokeType(), application, application.getSubSystemId(), null,application.getEngineReuse(), application.getEnvNames());
 
                 LOGGER.info("Finish to submit application: {{}}.", application.getId());
 

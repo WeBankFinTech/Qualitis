@@ -55,8 +55,8 @@ public class TaskRuleSimpleDaoImpl implements TaskRuleSimpleDao {
     }
 
     @Override
-    public TaskRuleSimple findByApplicationAndRule(String applicationId, Long ruleId) {
-        return taskRuleSimpleRepository.findByApplicationAndRule(applicationId, ruleId);
+    public List<TaskRuleSimple> findByApplicationAndRule(String applicationId, Long ruleId) {
+        return taskRuleSimpleRepository.findByRuleAndApplication(ruleId, applicationId);
     }
 
     @Override

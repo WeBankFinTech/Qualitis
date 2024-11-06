@@ -56,6 +56,22 @@ public interface AddRequestBuilder {
             throws Exception;
 
     /**
+     * Update datasource with dcn nums
+     * @param dcnNums
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception;
+
+    /**
+     * Update datasource with logic areas
+     * @param logicAreas
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception;
+
+    /**
      * Set basic info for param 8.
      * @param datasource
      * @param regxOrRangeOrMapping
@@ -74,6 +90,7 @@ public interface AddRequestBuilder {
     /**
      * For handle special template argument.
      * @param datasource
+     * @param standardValueVersionId
      * @param templateArgumentRequests
      * @param deleteFailCheckResult
      * @param uploadRuleMetricValue
@@ -84,7 +101,7 @@ public interface AddRequestBuilder {
      * @return
      * @throws Exception
      */
-    AddRequestBuilder basicInfoWithDataSource(String datasource,
+    AddRequestBuilder basicInfoWithDataSource(String datasource, Long standardValueVersionId,
         List<TemplateArgumentRequest> templateArgumentRequests, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception;
@@ -107,6 +124,24 @@ public interface AddRequestBuilder {
             throws Exception;
 
     /**
+     * Set basic info for param 9.
+     *
+     * @param cluster
+     * @param datasource
+     * @param dbAndTable
+     * @param deleteFailCheckResult
+     * @param uploadRuleMetricValue
+     * @param uploadAbnormalValue
+     * @param alertInfo
+     * @param abortOnFailure
+     * @param execParams
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder basicInfoWithDataSourceAndCluster(String cluster, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception;
+
+    /**
      * Set basic info for param 10.
      * @param cluster
      * @param datasource
@@ -125,6 +160,27 @@ public interface AddRequestBuilder {
             throws Exception;
 
     /**
+     * basic Info With Data Source
+     * @param clusters
+     * @param datasource
+     * @param param1
+     * @param param2
+     * @param param3
+     * @param deleteFailCheckResult
+     * @param uploadRuleMetricValue
+     * @param uploadAbnormalValue
+     * @param alertInfo
+     * @param abortOnFailure
+     * @param execParams
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder basicInfoWithoutDataSource(String clusters, String datasource, String param1, String param2, String param3, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
+            throws Exception;
+
+
+
+    /**
      * Add rule metric.
      * @param ruleMetricName
      * @return
@@ -139,6 +195,30 @@ public interface AddRequestBuilder {
      * @throws UnExpectedRequestException
      */
     AddRequestBuilder addExecutionParameter(String executionParameterName) throws UnExpectedRequestException;
+
+    /**
+     * alarm With Complete Event
+     *
+     * @param alarmEvents
+     * @return
+     */
+    AddRequestBuilder alarmWithCompleteEvent(String alarmEvents);
+
+    /**
+     * alarm With Check Success Event
+     *
+     * @param alarmEvents
+     * @return
+     */
+    AddRequestBuilder alarmWithCheckSuccessEvent(String alarmEvents);
+
+    /**
+     * alarm With Check Failed Event
+     *
+     * @param alarmEvents
+     * @return
+     */
+    AddRequestBuilder alarmWithCheckFailedEvent(String alarmEvents);
 
     /**
      * Add rule metric with sql check.
@@ -948,12 +1028,28 @@ public interface AddRequestBuilder {
     AddRequestBuilder unionAll() throws UnExpectedRequestException;
 
     /**
+     * Union way
+     * @param unionWay
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder unionWay(int unionWay) throws UnExpectedRequestException;
+
+    /**
      * With group
      * @param ruleGroupName
      * @return
      * @throws UnExpectedRequestException
      */
     AddRequestBuilder withGroup(String ruleGroupName) throws UnExpectedRequestException;
+
+    /**
+     * Move to group
+     * @param ruleGroupName
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder moveToGroup(String ruleGroupName) throws UnExpectedRequestException;
 
     /**
      * Save just
@@ -980,6 +1076,14 @@ public interface AddRequestBuilder {
      * @return
      */
     AddRequestBuilder joinType(String joinType);
+
+    /**
+     * Add udf
+     * @param udfNames
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder addUdfs(String udfNames) throws UnExpectedRequestException;
 
     /**
      * Env mapping

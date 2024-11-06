@@ -202,4 +202,25 @@ public class CreateAndSubmitRequest {
         }
 
     }
+
+    @Override
+    public String toString() {
+        return "CreateAndSubmitRequest{" +
+                "createUser='" + createUser + '\'' +
+                ", executionUser='" + executionUser + '\'' +
+                ", templateFunction='" + templateFunction + '\'' +
+                ", propsRequests=" + propsRequests +
+                ", projectName='" + projectName + '\'' +
+                ", ruleName='" + ruleName + '\'' +
+                ", ruleCnName='" + ruleCnName + '\'' +
+                ", ruleDetail='" + ruleDetail + '\'' +
+                ", executionParam='" + executionParam + '\'' +
+                ", dynamicPartition=" + dynamicPartition +
+                ", dynamicPartitionPrefix='" + dynamicPartitionPrefix + '\'' +
+                ", setFlag='" + setFlag + '\'' +
+                ", runDate='" + runDate + '\'' +
+                ", jobId='" + jobId + '\'' +
+                ", async=" + async +
+                '}';
+    }
 }

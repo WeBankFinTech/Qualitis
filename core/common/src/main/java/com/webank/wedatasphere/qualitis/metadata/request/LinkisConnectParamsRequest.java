@@ -17,10 +17,15 @@ public class LinkisConnectParamsRequest {
     /**
      * 连接参数
      */
+    @JsonProperty("connect_param")
     private String connectParam;
+    @JsonProperty("app_id")
     private String appId;
+    @JsonProperty("auth_type")
     private String authType;
+    @JsonProperty("object_id")
     private String objectId;
+    @JsonProperty("mk_private")
     private String mkPrivate;
     private String dk;
     @JsonProperty(value = "timestamp")

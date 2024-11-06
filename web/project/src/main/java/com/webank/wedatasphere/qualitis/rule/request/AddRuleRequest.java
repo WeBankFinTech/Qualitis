@@ -28,6 +28,8 @@ import java.util.List;
 public class AddRuleRequest extends AbstractCommonRequest {
     @JsonProperty("template_arguments")
     private List<TemplateArgumentRequest> templateArgumentRequests;
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
 
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
@@ -42,6 +44,14 @@ public class AddRuleRequest extends AbstractCommonRequest {
 
     public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
         this.templateArgumentRequests = templateArgumentRequests;
+    }
+
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
     }
 
     public List<AlarmConfigRequest> getAlarmVariable() {
@@ -91,6 +101,7 @@ public class AddRuleRequest extends AbstractCommonRequest {
         return "Super{" + superString + '}' +
             " AddRuleRequest{" +
             ", templateArgumentRequests=" + templateArgumentRequests +
+            ", standardValueVersionId=" + standardValueVersionId +
             ", alarmVariable=" + alarmVariable +
             '}';
     }

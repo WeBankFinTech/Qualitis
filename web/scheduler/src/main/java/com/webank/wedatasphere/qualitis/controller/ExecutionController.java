@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.GroupListExecutionRequest;
@@ -133,7 +134,7 @@ public class ExecutionController {
             throw new UnExpectedRequestException(e.getResponse().getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to kill application: {}", applicationId, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_KILL_TASK}: " + applicationId, e);
         }
     }
 
@@ -142,7 +143,7 @@ public class ExecutionController {
     @Produces(MediaType.APPLICATION_JSON)
     public GeneralResponse killBatchApplication(KillApplicationsRequest request) {
         executionService.killApplications(request);
-        return new GeneralResponse<>("200", "{&SUCCESS_ASYNC_KILL_TASK}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_ASYNC_KILL_TASK}", null);
     }
 
     @GET
@@ -151,6 +152,6 @@ public class ExecutionController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse getMaxExecutionNum() {
 
-        return new GeneralResponse<>("200", "success", executionService.getMaxExecutionNum());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "success", executionService.getMaxExecutionNum());
     }
 }

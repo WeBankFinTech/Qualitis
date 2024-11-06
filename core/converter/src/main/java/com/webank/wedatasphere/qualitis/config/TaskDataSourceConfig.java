@@ -14,8 +14,6 @@ public class TaskDataSourceConfig {
     private String username;
     @Value("${task.persistent.password}")
     private String password;
-    @Value("${task.persistent.address}")
-    private String mysqlAddress;
     @Value("${task.persistent.mysqlsec_open}")
     private Boolean mysqlsecOpen;
     @Value("${task.persistent.mysqlsec}")

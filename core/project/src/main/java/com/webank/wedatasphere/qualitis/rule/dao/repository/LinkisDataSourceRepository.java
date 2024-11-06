@@ -24,12 +24,18 @@ public interface LinkisDataSourceRepository extends JpaRepository<LinkisDataSour
     LinkisDataSource findByLinkisDataSourceId(Long linkisDataSourceId);
 
     /**
-     * Find by linkisDataSourceId
+     * Find by linkisDataSourceName
      * @param linkisDataSourceName
      * @return
      */
     LinkisDataSource findByLinkisDataSourceName(String linkisDataSourceName);
 
+    /**
+     * find By Linkis Data Source Name In
+     * @param linkisDataSourceNameList
+     * @return
+     */
+    List<LinkisDataSource> findByLinkisDataSourceNameIn(List<String> linkisDataSourceNameList);
     /**
      * Find by linkisDataSourceIds
      * @param dataSourceIds
@@ -43,4 +49,15 @@ public interface LinkisDataSourceRepository extends JpaRepository<LinkisDataSour
      */
     @Query(value = "select linkis_data_source_name from qualitis_linkis_datasource", nativeQuery = true)
     List<String> findAllLinkisDataSourceNameList();
+
+    /**
+     * find Linkis Data Source Ids By Dcn Range
+     * @param dcnRangeType
+     * @param dcnNums
+     * @param logicAreas
+     * @return
+     */
+    @Query(value = "select DISTINCT ds.linkis_data_source_id from qualitis_linkis_datasource ds inner join qualitis_linkis_datasource_env dse on dse.linkis_data_source_id = ds.linkis_data_source_id \n" +
+            "where ds.dcn_range_type = ?1 and (dse.dcn_num in (?2) or dse.logic_area in (?3))", nativeQuery = true)
+    List<Long> findLinkisDataSourceIdsByDcnRange(String dcnRangeType, List<String> dcnNums, List<String> logicAreas);
 }

@@ -132,6 +132,7 @@ public class FpsServiceImpl implements FpsService {
                 requestCount++;
             } while (requestCount < maxRequestCount);
             if (!fpsTaskStatus.equals(TaskStatusEnum.SUCCEED.getState())) {
+                LOGGER.warn("Filed to upload fps file, taskStatus: {}, taskId: {}", fpsTaskStatus, fpsTaskId);
                 throw new UnExpectedRequestException("Retry has ended, failed to upload fps file! Current task status is: " + fpsTaskStatus);
             }
         } else {

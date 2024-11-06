@@ -25,7 +25,6 @@ import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 
 import java.util.List;
-import org.apache.commons.collections.CollectionUtils;
 
 /**
  * @author howeye
@@ -46,13 +45,34 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
     @JsonProperty("filter_col_names")
     private List<DataSourceColumnRequest> colNames;
 
-
     private String loginUser;
     @JsonProperty("alarm_variable")
     private List<AlarmConfigRequest> alarmVariable;
 
+    @JsonProperty("left_linkis_udf_names")
+    private List<String> leftLinkisUdfNames;
+
+    @JsonProperty("right_linkis_udf_names")
+    private List<String> rightLinkisUdfNames;
+
     public AddMultiSourceRuleRequest() {
         // Default Constructor
+    }
+
+    public List<String> getLeftLinkisUdfNames() {
+        return leftLinkisUdfNames;
+    }
+
+    public void setLeftLinkisUdfNames(List<String> leftLinkisUdfNames) {
+        this.leftLinkisUdfNames = leftLinkisUdfNames;
+    }
+
+    public List<String> getRightLinkisUdfNames() {
+        return rightLinkisUdfNames;
+    }
+
+    public void setRightLinkisUdfNames(List<String> rightLinkisUdfNames) {
+        this.rightLinkisUdfNames = rightLinkisUdfNames;
     }
 
     public String getLoginUser() {
@@ -127,17 +147,13 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
         this.contrastType = contrastType;
     }
 
-    public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot, Boolean cs) throws UnExpectedRequestException {
+    public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot, Boolean cs, Boolean customConsistent,Boolean tableStructureConsistent) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getRuleName(), "Rule name");
-        CommonChecker.checkString(request.getClusterName(), "Cluster name");
-        CommonChecker.checkObject(request.getMultiSourceRuleTemplateId(), "Multi source template id");
-        MultiDataSourceConfigRequest.checkRequest(request.getSource(), cs);
-        MultiDataSourceConfigRequest.checkRequest(request.getTarget(), cs);
-
-        if (CollectionUtils.isNotEmpty(request.getSource().getDataSourceEnvRequests()) && CollectionUtils.isNotEmpty(request.getTarget().getDataSourceEnvRequests())
-                && request.getSource().getDataSourceEnvRequests().size() != request.getTarget().getDataSourceEnvRequests().size()) {
-            throw new UnExpectedRequestException("Source envs size can not be different from target envs.");
+        CommonChecker.checkObject(request.getMultiSourceRuleTemplateId(), "Template ID");
+        if (!customConsistent) {
+            MultiDataSourceConfigRequest.checkRequest(request.getSource(), cs, tableStructureConsistent);
+            MultiDataSourceConfigRequest.checkRequest(request.getTarget(), cs, tableStructureConsistent);
         }
 
         CommonChecker.checkObject(request.getAlarm(), "alarm");
@@ -149,7 +165,24 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
         }
 
         if (! modifyOrNot) {
-            CommonChecker.checkObject(request.getProjectId(), "Project id");
+            CommonChecker.checkObject(request.getProjectId(), "Project ID");
         }
+    }
+
+    @Override
+    public String toString() {
+        return "AddMultiSourceRuleRequest{" +
+                "clusterName='" + clusterName + '\'' +
+                ", multiSourceRuleTemplateId=" + multiSourceRuleTemplateId +
+                ", source=" + source +
+                ", target=" + target +
+                ", templateArgumentRequests=" + templateArgumentRequests +
+                ", contrastType=" + contrastType +
+                ", colNames=" + colNames +
+                ", loginUser='" + loginUser + '\'' +
+                ", alarmVariable=" + alarmVariable +
+                ", leftLinkisUdfNames=" + leftLinkisUdfNames +
+                ", rightLinkisUdfNames=" + rightLinkisUdfNames +
+                "} " + super.toString();
     }
 }

@@ -77,13 +77,10 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
     }
 
     @Override
-    public Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, String subsystemName, String createUser, String db, String table, Long startTime, Long endTime, int page, int size) {
+    public Page<ProjectUser> findByAdvanceConditions(String username, Integer projectType, String projectName, Integer subsystemId, String createUser, String db, String table, Long startTime, Long endTime, int page, int size) {
         Sort sort = Sort.by(Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        if (StringUtils.isNotEmpty(subsystemName)) {
-            subsystemName = "%" + subsystemName + "%";
-        }
-        return projectUserRepository.findByAdvanceConditions(username, projectType, projectName, subsystemName, createUser, db, table, startTime, endTime, pageable);
+        return projectUserRepository.findByAdvanceConditions(username, projectType, projectName, subsystemId, createUser, db, table, startTime, endTime, pageable);
     }
 
     @Override
@@ -92,8 +89,8 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
     }
 
     @Override
-    public List<Map<String, Object>> findProjectByUserName(String username) {
-        return projectUserRepository.findProjectByUserName(username);
+    public List<Map<String, Object>> findProjectByUserName(String username, Integer projectType) {
+        return projectUserRepository.findProjectByUserName(username, projectType);
     }
 
     @Override
@@ -107,8 +104,8 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
     }
 
     @Override
-    public Long countProjectByUserName(String username) {
-        return projectUserRepository.countProjectByUserName(username);
+    public Long countProjectByUserName(String username, Integer projectType) {
+        return projectUserRepository.countProjectByUserName(username, projectType);
     }
 
     @Override

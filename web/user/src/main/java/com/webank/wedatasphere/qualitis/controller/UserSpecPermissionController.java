@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.request.userpermission.AddUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.DeleteUserSpecPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.userpermission.ModifyUserSpecPermissionRequest;
@@ -66,7 +67,7 @@ public class UserSpecPermissionController {
         } catch (Exception e) {
             LOGGER.error("Failed to add user_permission. user_id: {}, permission_id: {}, caused by: {}, current_user: {}", request.getUserId(),
                     request.getPermissionId(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_USER_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_USER_PERMISSION}", null);
         }
     }
 
@@ -83,7 +84,7 @@ public class UserSpecPermissionController {
             throw  new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete user_permission, uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_USER_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_USER_PERMISSION}", null);
         }
     }
 
@@ -99,7 +100,7 @@ public class UserSpecPermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify user permission. uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_USER_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_USER_PERMISSION}", null);
         }
     }
 
@@ -117,7 +118,7 @@ public class UserSpecPermissionController {
         } catch (Exception e) {
             LOGGER.error("Failed to find user_permission. page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(),
                     e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_USER_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_USER_PERMISSION}", null);
         }
     }
 

@@ -18,11 +18,10 @@ package com.webank.wedatasphere.qualitis.project.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTransportTypeEnum;
-import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+
+import java.util.List;
 
 /**
  * @author howeye
@@ -35,8 +34,26 @@ public class DownloadProjectRequest {
     @JsonProperty("download_type")
     private Integer downloadType;
 
+    @JsonProperty("git_repo")
+    private String gitRepo;
+    @JsonProperty("git_type")
+    private Integer gitType;
+    @JsonProperty("git_branch")
+    private String gitBranch;
+    @JsonProperty("git_root_dir")
+    private String gitRootDir;
+
     @JsonProperty("diff_variables")
     private List<DiffVariableRequest> diffVariableRequestList;
+
+    @JsonProperty("rule_ids")
+    private List<Long> ruleIds;
+
+    @JsonProperty("rule_names")
+    private List<String> ruleNames;
+
+    @JsonProperty("operate_user")
+    private String operateUser;
 
     public DownloadProjectRequest() {
         // Default Constructor
@@ -58,6 +75,38 @@ public class DownloadProjectRequest {
         this.downloadType = downloadType;
     }
 
+    public String getGitRepo() {
+        return gitRepo;
+    }
+
+    public void setGitRepo(String gitRepo) {
+        this.gitRepo = gitRepo;
+    }
+
+    public Integer getGitType() {
+        return gitType;
+    }
+
+    public void setGitType(Integer gitType) {
+        this.gitType = gitType;
+    }
+
+    public String getGitBranch() {
+        return gitBranch;
+    }
+
+    public void setGitBranch(String gitBranch) {
+        this.gitBranch = gitBranch;
+    }
+
+    public String getGitRootDir() {
+        return gitRootDir;
+    }
+
+    public void setGitRootDir(String gitRootDir) {
+        this.gitRootDir = gitRootDir;
+    }
+
     public List<DiffVariableRequest> getDiffVariableRequestList() {
         return diffVariableRequestList;
     }
@@ -76,5 +125,35 @@ public class DownloadProjectRequest {
         if (request.getDownloadType() == null) {
             throw new UnExpectedRequestException("Download type {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
+        if (request.getDownloadType().equals(ProjectTransportTypeEnum.GIT.getCode())) {
+            CommonChecker.checkString(request.getGitRepo(), "Git Repo");
+            CommonChecker.checkString(request.getGitBranch(), "Git Branch");
+            CommonChecker.checkString(request.getGitRootDir(), "Git Root Dir");
+        }
     }
+
+    public List<Long> getRuleIds() {
+        return ruleIds;
+    }
+
+    public void setRuleIds(List<Long> ruleIds) {
+        this.ruleIds = ruleIds;
+    }
+
+    public List<String> getRuleNames() {
+        return ruleNames;
+    }
+
+    public void setRuleNames(List<String> ruleNames) {
+        this.ruleNames = ruleNames;
+    }
+
+    public String getOperateUser() {
+        return operateUser;
+    }
+
+    public void setOperateUser(String operateUser) {
+        this.operateUser = operateUser;
+    }
+
 }

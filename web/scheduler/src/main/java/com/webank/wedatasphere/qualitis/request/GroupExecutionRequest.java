@@ -39,6 +39,8 @@ public class GroupExecutionRequest {
     private String fpsFileId;
     @JsonProperty("fps_hash")
     private String fpsHashValue;
+    @JsonProperty("env_names")
+    private String envNames;
 
     @JsonProperty("cluster_name")
     private String clusterName;
@@ -75,6 +77,14 @@ public class GroupExecutionRequest {
         this.executionUser = executionUser;
         this.createUser = createUser;
         this.nodeName = nodeName;
+    }
+
+    public String getEnvNames() {
+        return envNames;
+    }
+
+    public void setEnvNames(String envNames) {
+        this.envNames = envNames;
     }
 
     public Long getGroupId() {
@@ -226,6 +236,9 @@ public class GroupExecutionRequest {
         CommonChecker.checkObject(request.getGroupId(), "Group Id");
         CommonChecker.checkString(request.getCreateUser(), "Create User");
         CommonChecker.checkString(request.getExecutionUser(), "Execution User");
+
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getExecutionParam(), "{&EXECUTION_VARIABLES_HAVE_THE_SAME_VARIABLE_NAME}: ");
+        RuleListExecutionRequest.sameParameterVerificationMethod(request.getStartupParamName(), "{&DYNAMIC_ENGINE_HAVE_THE_SAME_VARIABLE_NAME}: ");
     }
 
     @Override

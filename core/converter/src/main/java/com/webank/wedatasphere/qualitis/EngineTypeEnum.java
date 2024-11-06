@@ -10,7 +10,8 @@ public enum EngineTypeEnum {
      * 2 SPARK ENGINE
      */
     DEFAULT_ENGINE(1, "shell"),
-    SPARK_ENGINE(2, "spark");
+    SPARK_ENGINE(2, "spark"),
+    TRINO_ENGINE(3, "trino");
 
     private Integer code;
     private String message;

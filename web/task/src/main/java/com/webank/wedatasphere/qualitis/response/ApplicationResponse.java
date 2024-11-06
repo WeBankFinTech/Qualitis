@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
@@ -31,6 +32,7 @@ import org.apache.logging.log4j.util.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author howeye
@@ -124,7 +126,8 @@ public class ApplicationResponse {
                 }
                 taskResponses.add(new TaskResponse(task, ruleDataSource));
             }
-        } else {
+        }
+        if (StringUtils.isBlank(this.projectName) || StringUtils.isBlank(this.taskName)) {
             this.projectName = application.getProjectName();
             this.taskName = application.getRuleGroupName();
         }

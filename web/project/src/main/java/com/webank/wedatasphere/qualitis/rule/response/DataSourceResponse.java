@@ -18,20 +18,22 @@ package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
+import com.webank.wedatasphere.qualitis.rule.request.GetLinkisDataSourceEnvRequest;
+import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,6 +69,8 @@ public class DataSourceResponse {
     @JsonProperty("file_hash_values")
     private String fileHashValues;
 
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
     @JsonProperty("linkis_datasource_id")
     private Long linkisDataSourceId;
     @JsonProperty("linkis_datasource_version_id")
@@ -77,6 +81,8 @@ public class DataSourceResponse {
     private String linkisDataSourceType;
     @JsonProperty("linkis_datasource_envs")
     private List<DataSourceEnvRequest> dataSourceEnvRequests;
+    @JsonProperty("linkis_datasource_dcn_range_values")
+    private List<String> dcnRangeValues;
 
     @JsonProperty("black_list")
     private Boolean blackList;
@@ -111,18 +117,53 @@ public class DataSourceResponse {
             this.fpsFile = true;
             this.fileHashValues = ruleDataSource.getFileHashValue();
         }
+        this.dcnRangeType = ruleDataSource.getDcnRangeType();
         this.linkisDataSourceId = ruleDataSource.getLinkisDataSourceId();
         this.linkisDataSourceName = ruleDataSource.getLinkisDataSourceName();
         if (null != linkisDataSourceId) {
             this.linkisDataSourceType = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
-            RuleDatasourceEnvDao ruleDatasourceEnvDao = SpringContextHolder.getBean(RuleDatasourceEnvDao.class);
-            List<RuleDataSourceEnv> dataSourceEnvs = ruleDatasourceEnvDao.findByRuleDataSourceList(Arrays.asList(ruleDataSource));
-            if (CollectionUtils.isNotEmpty(dataSourceEnvs)) {
-                this.dataSourceEnvRequests = dataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
-            }
+            setDataSourceEnvs(ruleDataSource);
         }
         this.linkisDataSourceVersionId = ruleDataSource.getLinkisDataSourceVersionId();
         this.type = TemplateDataSourceTypeEnum.getMessage(ruleDataSource.getDatasourceType());
+    }
+
+    private void setDataSourceEnvs(RuleDataSource ruleDataSource) {
+        RuleDatasourceEnvDao ruleDatasourceEnvDao = SpringContextHolder.getBean(RuleDatasourceEnvDao.class);
+        List<RuleDataSourceEnv> dataSourceEnvs = ruleDatasourceEnvDao.findByRuleDataSourceList(Arrays.asList(ruleDataSource));
+        if (CollectionUtils.isEmpty(dataSourceEnvs)) {
+            return;
+        }
+        this.dataSourceEnvRequests = dataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+
+        if (Arrays.asList(QualitisConstants.CMDB_KEY_DCN_NUM, QualitisConstants.CMDB_KEY_LOGIC_AREA)
+                .contains(ruleDataSource.getDcnRangeType())) {
+            LinkisDataSourceEnvService linkisDataSourceEnvService = SpringContextHolder.getBean(LinkisDataSourceEnvService.class);
+            Map<Long, String> envIdAndNameMap = dataSourceEnvs.stream().collect(Collectors.toMap(RuleDataSourceEnv::getEnvId, RuleDataSourceEnv::getEnvName, (k1, k2) -> k1));
+            List<Long> envIds = envIdAndNameMap.keySet().stream().collect(Collectors.toList());
+            GetLinkisDataSourceEnvRequest getLinkisDataSourceEnvRequest = new GetLinkisDataSourceEnvRequest();
+            getLinkisDataSourceEnvRequest.setLinkisDataSourceId(ruleDataSource.getLinkisDataSourceId());
+            getLinkisDataSourceEnvRequest.setEnvIdList(envIds);
+            List<LinkisDataSourceEnv> linkisDataSourceEnvList = linkisDataSourceEnvService.queryEnvsInAdvance(getLinkisDataSourceEnvRequest);
+
+            this.dcnRangeValues = linkisDataSourceEnvList.stream().map(linkisDataSourceEnv -> {
+                        DataSourceEnvRequest dataSourceEnvRequest = new DataSourceEnvRequest();
+                        dataSourceEnvRequest.setEnvId(linkisDataSourceEnv.getEnvId());
+                        dataSourceEnvRequest.setEnvName(envIdAndNameMap.get(linkisDataSourceEnv.getEnvId()));
+                        dataSourceEnvRequest.setDcnNum(linkisDataSourceEnv.getDcnNum());
+                        dataSourceEnvRequest.setLogicArea(linkisDataSourceEnv.getLogicArea());
+                        return dataSourceEnvRequest;
+                    }).filter(dataSourceEnvRequest -> StringUtils.isNotBlank(dataSourceEnvRequest.getLogicArea()))
+                    .map(dataSourceEnvRequest -> {
+                        if (QualitisConstants.CMDB_KEY_DCN_NUM.equals(ruleDataSource.getDcnRangeType())) {
+                            return dataSourceEnvRequest.getDcnNum();
+                        } else {
+                            return dataSourceEnvRequest.getLogicArea();
+                        }
+                    })
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
     }
 
     private List<DataSourceColumnResponse> convertColNames(List<String> colTypes) {
@@ -132,6 +173,22 @@ public class DataSourceResponse {
             colNames.add(columnResponse);
         }
         return colNames;
+    }
+
+    public List<String> getDcnRangeValues() {
+        return dcnRangeValues;
+    }
+
+    public void setDcnRangeValues(List<String> dcnRangeValues) {
+        this.dcnRangeValues = dcnRangeValues;
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
     }
 
     public String getClusterName() {
@@ -270,7 +327,7 @@ public class DataSourceResponse {
         this.linkisDataSourceType = linkisDataSourceType;
     }
 
-    public List<DataSourceEnvRequest> getDataSourceEnvRequests() {
+    public Object getDataSourceEnvRequests() {
         return dataSourceEnvRequests;
     }
 

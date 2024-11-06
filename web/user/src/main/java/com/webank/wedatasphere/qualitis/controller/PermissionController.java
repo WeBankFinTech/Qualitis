@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.request.permission.AddPermissionRequest;
 import com.webank.wedatasphere.qualitis.request.permission.DeletePermissionRequest;
 import com.webank.wedatasphere.qualitis.request.permission.ModifyPermissionRequest;
@@ -66,7 +67,7 @@ public class PermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to add permission, method: {}, url: {}, caused by: {}, current_user: {}", request.getMethod(), request.getUrl(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_PERMISSION}", null);
         }
     }
 
@@ -74,7 +75,7 @@ public class PermissionController {
     @Path("delete")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse deletePermission(DeletePermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deletePermission(DeletePermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -83,14 +84,14 @@ public class PermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete permission, permissionId: {}, caused by: {}, current_user: {}", request.getPermissionId(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_PERMISSION}", null);
         }
     }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse modifyPermission(ModifyPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyPermission(ModifyPermissionRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
@@ -99,7 +100,7 @@ public class PermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify permission, permissionId: {}, caused by: {}, current_user: {}", request.getPermissionId(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_PERMISSION}", null);
         }
     }
 
@@ -116,7 +117,7 @@ public class PermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to get all permission, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_PERMISSION}", null);
         }
     }
 

@@ -47,6 +47,8 @@ public class TaskDataSource {
   private String tableName;
   @Column(name = "col_name", columnDefinition = "MEDIUMTEXT")
   private String colName;
+  @Column(name = "filter", columnDefinition = "MEDIUMTEXT")
+  private String filter;
   @Column(name = "execute_user", length = 150)
   private String executeUser;
   @Column(name = "create_user", length = 150)
@@ -64,7 +66,7 @@ public class TaskDataSource {
   private Integer datasourceType;
 
   @Column(name = "sub_system_id")
-  private Long subSystemId;
+  private String subSystemId;
 
   public TaskDataSource() {
   }
@@ -83,6 +85,7 @@ public class TaskDataSource {
 
     this.task = task;
     this.tableName = table;
+    this.filter = ruleDataSource.getFilter();
     this.colName = ruleDataSource.getColName();
     this.ruleId = ruleDataSource.getRule().getId();
     this.subSystemId = ruleDataSource.getSubSystemId();
@@ -99,6 +102,7 @@ public class TaskDataSource {
     this.clusterName = ruleDataSource.getClusterName();
     this.projectId = ruleDataSource.getProjectId();
     this.tableName = ruleDataSource.getTableName();
+    this.filter = ruleDataSource.getFilter();
     this.colName = ruleDataSource.getColName();
     this.ruleId = ruleDataSource.getRuleId();
     this.task = task;
@@ -170,6 +174,14 @@ public class TaskDataSource {
     this.tableName = tableName;
   }
 
+  public String getFilter() {
+    return filter;
+  }
+
+  public void setFilter(String filter) {
+    this.filter = filter;
+  }
+
   public String getColName() {
     return colName;
   }
@@ -218,11 +230,11 @@ public class TaskDataSource {
     this.datasourceType = datasourceType;
   }
 
-  public Long getSubSystemId() {
+  public String getSubSystemId() {
     return subSystemId;
   }
 
-  public void setSubSystemId(Long subSystemId) {
+  public void setSubSystemId(String subSystemId) {
     this.subSystemId = subSystemId;
   }
 

@@ -39,6 +39,7 @@ public class RequestLinkis {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLinkis.class);
 
     private static final String STATUS = "status";
+    private static final String MESSAGE = "message";
 
     @Autowired
     private LinkisConfig linkisConfig;
@@ -111,8 +112,8 @@ public class RequestLinkis {
             if (StringUtils.isNotEmpty(messageJson)) {
                 try {
                     Map<String, String> msgMap = objectMapper.readValue(messageJson, Map.class);
-                    if (msgMap.containsKey("message")) {
-                        return msgMap.get("message");
+                    if (msgMap.containsKey(MESSAGE)) {
+                        return msgMap.get(MESSAGE);
                     }
                 } catch (IOException e) {
                     LOGGER.error(e.getMessage(), e);
@@ -259,8 +260,8 @@ public class RequestLinkis {
         LOGGER.info("traceId: {}  Finished to {}, url: {}, authUser: {}, response: {}", traceId, askLinkisParameter.getLogmessage(), askLinkisParameter.getUrl(), askLinkisParameter.getAuthUser(), response);
         if (!checkResponse(response)) {
             String content = null;
-            if (response.containsKey("message")) {
-                content = response.get("message").toString();
+            if (response.containsKey(MESSAGE)) {
+                content = response.get(MESSAGE).toString();
             }
             String errorMsg = String.format("Error! Can not get meta data from linkis, traceId: %s, authUser: %s, exception: %s", traceId, askLinkisParameter.getAuthUser(), content);
             LOGGER.error(errorMsg);

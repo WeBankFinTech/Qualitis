@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.service.ProjectEventService;
@@ -70,7 +71,7 @@ public class FileRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add file rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_FILE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_FILE_RULE}", null);
         }
     }
 
@@ -90,7 +91,7 @@ public class FileRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete file rule, rule id: {}, caused by system error: {}", request.getRuleId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_FILE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_FILE_RULE}", null);
         }
     }
 
@@ -111,7 +112,7 @@ public class FileRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify file rule detail, rule id: {}, caused by system error: {}", request.getRuleId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_FILE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_FILE_RULE}", null);
         }
     }
 
@@ -127,7 +128,7 @@ public class FileRuleController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get file rule detail, rule id: {}, caused by system error: {}", ruleId, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_FILE_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_FILE_RULE_DETAIL}", null);
         }
     }
 

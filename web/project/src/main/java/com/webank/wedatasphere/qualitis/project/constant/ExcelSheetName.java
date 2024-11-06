@@ -27,11 +27,14 @@ public class ExcelSheetName {
     public static final String RULE_NAME = "RULE";
     public static final String TABLE_GROUP = "TABLE GROUP";
 
+    public static final String RULE_UDF = "RULE UDF";
     public static final String RULE_METRIC_NAME = "RULE METRIC";
+    public static final String STANDARD_VAULE = "STANDARD VAULE";
     public static final String RULE_TEMPLATE_NAME = "RULE TEMPLATE";
     public static final String DATASOURCE_ENV = "LINKIS DATASOURCE ENV";
     public static final String EXECUTION_PARAMETERS_NAME = "EXECUTION PARAMETERS";
 
-    public static final String CUSTOM_RULE = "CUSTOM RULE";
+    public static final String SCHEDULED_PUBLISHED = "SCHEDULED PUBLISHED";
+    public static final String SCHEDULED_RELATION = "SCHEDULED RELATION";
 
 }

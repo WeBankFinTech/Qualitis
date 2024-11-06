@@ -16,25 +16,22 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddServiceInfoRequest;
 import com.webank.wedatasphere.qualitis.request.DeleteServiceInfoRequest;
 import com.webank.wedatasphere.qualitis.request.FindServiceInfoRequest;
 import com.webank.wedatasphere.qualitis.request.ModifyServiceInfoRequest;
-import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.ServiceInfoResponse;
 import com.webank.wedatasphere.qualitis.service.ServiceInfoService;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 
 /**
  * @author allenzhou
@@ -59,7 +56,7 @@ public class ServiceInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add service info. request: {}, caused by: {}", request, e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_SERVICE_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_SERVICE_INFO}", null);
         }
     }
 
@@ -75,7 +72,7 @@ public class ServiceInfoController {
             throw  e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete service info. service info ID: {}, caused by: {}", request.getId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_SERVICE_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_SERVICE_INFO}", null);
         }
     }
 
@@ -91,7 +88,7 @@ public class ServiceInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify service info, service info ID: {}, caused by: {}", request.getId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_SERVICE_INFO}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_SERVICE_INFO}", null);
         }
     }
 
@@ -107,7 +104,22 @@ public class ServiceInfoController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to find service infos. page: {}, size: {}, caused by: {}", request.getPage(), request.getSize(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_SERVICE_INFOS}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_SERVICE_INFOS}", null);
+        }
+    }
+
+    @GET
+    @Path("tenant_user/list")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<GetAllResponse<ServiceInfoResponse>> findFromTenantUser() throws UnExpectedRequestException {
+        try {
+            return serviceInfoService.findFromTenantUser();
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_SERVICE_INFOS}", null);
         }
     }
 

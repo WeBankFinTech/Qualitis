@@ -21,6 +21,8 @@ public class ModifyGroupRuleRequest extends AbstractCommonRequest {
     private List<TemplateArgumentRequest> templateArgumentRequests;
     @JsonProperty("filter")
     private String filter;
+    @JsonProperty("standard_value_version_id")
+    private Long standardValueVersionId;
 
     public ModifyGroupRuleRequest() {
 //        do something
@@ -49,6 +51,14 @@ public class ModifyGroupRuleRequest extends AbstractCommonRequest {
 
     public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
         this.templateArgumentRequests = templateArgumentRequests;
+    }
+
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
     }
 
     public String getFilter() {

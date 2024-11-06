@@ -423,4 +423,47 @@ public class ModifyRuleTemplateRequest {
     public void setCustomZhCode(String customZhCode) {
         this.customZhCode = customZhCode;
     }
+
+    @Override
+    public String toString() {
+        return "ModifyRuleTemplateRequest{" +
+                "templateId=" + templateId +
+                ", templateName='" + templateName + '\'' +
+                ", clusterNum=" + clusterNum +
+                ", dbNum=" + dbNum +
+                ", tableNum=" + tableNum +
+                ", fieldNum=" + fieldNum +
+                ", datasourceType=" + datasourceType +
+                ", actionType=" + actionType +
+                ", saveMidTable=" + saveMidTable +
+                ", midTableAction='" + midTableAction + '\'' +
+                ", templateType=" + templateType +
+                ", templateOutputMetaRequests=" + templateOutputMetaRequests +
+                ", templateMidTableInputMetaRequests=" + templateMidTableInputMetaRequests +
+                ", templateStatisticsInputMetaRequests=" + templateStatisticsInputMetaRequests +
+                ", devDepartmentName='" + devDepartmentName + '\'' +
+                ", opsDepartmentName='" + opsDepartmentName + '\'' +
+                ", devDepartmentId=" + devDepartmentId +
+                ", opsDepartmentId=" + opsDepartmentId +
+                ", visibilityDepartmentNameList=" + visibilityDepartmentNameList +
+                ", enName='" + enName + '\'' +
+                ", description='" + description + '\'' +
+                ", verificationLevel=" + verificationLevel +
+                ", verificationType=" + verificationType +
+                ", filterFields=" + filterFields +
+                ", whetherUsingFunctions=" + whetherUsingFunctions +
+                ", udfFunctionName=" + udfFunctionName +
+                ", countFunctionName='" + countFunctionName + '\'' +
+                ", countFunctioAlias='" + countFunctioAlias + '\'' +
+                ", verificationCnName='" + verificationCnName + '\'' +
+                ", verificationEnName='" + verificationEnName + '\'' +
+                ", samplingContent='" + samplingContent + '\'' +
+                ", namingMethod=" + namingMethod +
+                ", whetherSolidification=" + whetherSolidification +
+                ", checkTemplate=" + checkTemplate +
+                ", majorType='" + majorType + '\'' +
+                ", templateNumber='" + templateNumber + '\'' +
+                ", customZhCode='" + customZhCode + '\'' +
+                '}';
+    }
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.request.rolepermission.AddRolePermissionRequest;
 import com.webank.wedatasphere.qualitis.request.rolepermission.DeleteRolePermissionRequest;
 import com.webank.wedatasphere.qualitis.request.rolepermission.ModifyRolePermissionRequest;
@@ -67,7 +68,7 @@ public class RolePermissionController {
         } catch (Exception e) {
             LOGGER.error("Failed to add role_permission, role_id: {}, permission_id: {}, caused by: {}, current_user: {}", request.getRoleId(),
                     request.getPermissionId(),e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_ROLE_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_ROLE_PERMISSION}", null);
         }
     }
 
@@ -84,7 +85,7 @@ public class RolePermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to delete role_permission, uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_ROLE_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_ROLE_PERMISSION}", null);
         }
     }
 
@@ -100,7 +101,7 @@ public class RolePermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to modify role_permission, uuid: {}, caused by: {}, current_user: {}", request.getUuid(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_ROLE_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_ROLE_PERMISSION}", null);
         }
     }
 
@@ -117,7 +118,7 @@ public class RolePermissionController {
             throw new UnExpectedRequestException(e.getMessage());
         }catch (Exception e) {
             LOGGER.error("Failed to find all role_permission, page: {}, size: {}, caused by: {}, current_user: {}", request.getPage(), request.getSize(), e.getMessage(), username, e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_FIND_ALL_ROLE_PERMISSION}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_FIND_ALL_ROLE_PERMISSION}", null);
         }
     }
 

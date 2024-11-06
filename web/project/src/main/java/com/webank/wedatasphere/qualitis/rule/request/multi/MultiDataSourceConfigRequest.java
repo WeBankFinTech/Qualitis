@@ -18,15 +18,22 @@ package com.webank.wedatasphere.qualitis.rule.request.multi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceEnvDao;
+import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
+import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
+import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +41,8 @@ import java.util.stream.Collectors;
  * @author howeye
  */
 public class MultiDataSourceConfigRequest {
+    @JsonProperty("cluster_name")
+    private String clusterName;
     @JsonProperty("db_name")
     private String dbName;
     @JsonProperty("table_name")
@@ -66,13 +75,22 @@ public class MultiDataSourceConfigRequest {
     private String linkisDataSourceName;
     @JsonProperty("linkis_datasource_type")
     private String linkisDataSourceType;
+    @JsonProperty("linkis_datasource_dcn_range_values")
+    private List<String> dcnRangeValues;
     @JsonProperty("linkis_datasource_envs")
     private List<DataSourceEnvRequest> dataSourceEnvRequests;
     @JsonProperty("linkis_datasource_version_id")
     private Long linkisDataSourceVersionId;
 
+    @JsonProperty("dcn_range_type")
+    private String dcnRangeType;
+
     @JsonProperty("type")
     private String type;
+    @JsonProperty("collect_sql")
+    private String collectSql;
+    @JsonProperty("udf_name")
+    private String udfName;
 
     public MultiDataSourceConfigRequest() {
     }
@@ -84,11 +102,44 @@ public class MultiDataSourceConfigRequest {
         this.proxyUser = proxyUser;
     }
 
+    public MultiDataSourceConfigRequest(String clusterName, String dbName, String tableName, String filter, String proxyUser) {
+        this.clusterName = clusterName;
+        this.dbName = dbName;
+        this.tableName = tableName;
+        this.filter = filter;
+        this.proxyUser = proxyUser;
+    }
+
+    public List<String> getDcnRangeValues() {
+        return dcnRangeValues;
+    }
+
+    public void setDcnRangeValues(List<String> dcnRangeValues) {
+        this.dcnRangeValues = dcnRangeValues;
+    }
+
+    public String getDcnRangeType() {
+        return dcnRangeType;
+    }
+
+    public void setDcnRangeType(String dcnRangeType) {
+        this.dcnRangeType = dcnRangeType;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
     public MultiDataSourceConfigRequest(Set<RuleDataSource> ruleDataSources, Integer index) {
         for (RuleDataSource ruleDataSource : ruleDataSources) {
             if (!ruleDataSource.getDatasourceIndex().equals(index)) {
                 continue;
             }
+            this.clusterName = ruleDataSource.getClusterName();
             this.dbName = ruleDataSource.getDbName();
             String table = ruleDataSource.getTableName();
             // UUID remove.
@@ -123,6 +174,7 @@ public class MultiDataSourceConfigRequest {
                 return dataSourceEnvRequest;
             }).collect(Collectors.toList());
 
+            this.dcnRangeType = ruleDataSource.getDcnRangeType();
         }
 
         if (this.getDbName() == null || "".equals(this.getDbName())) {
@@ -139,6 +191,22 @@ public class MultiDataSourceConfigRequest {
         this.linkisDataSourceId = linkisDataSourceId;
         this.linkisDataSourceType = linkisDataSourceType;
         this.linkisDataSourceName = linkisDataSourceName;
+    }
+
+    public String getCollectSql() {
+        return collectSql;
+    }
+
+    public void setCollectSql(String collectSql) {
+        this.collectSql = collectSql;
+    }
+
+    public String getUdfName() {
+        return udfName;
+    }
+
+    public void setUdfName(String udfName) {
+        this.udfName = udfName;
     }
 
     public String getFileHashValues() {
@@ -285,12 +353,18 @@ public class MultiDataSourceConfigRequest {
         this.type = type;
     }
 
-    public static void checkRequest(MultiDataSourceConfigRequest request, Boolean cs) throws UnExpectedRequestException {
+    public static void checkRequest(MultiDataSourceConfigRequest request, Boolean cs, Boolean tableStructureConsistent) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         if (!cs) {
             CommonChecker.checkString(request.getDbName(), "Db name");
         }
         CommonChecker.checkString(request.getTableName(), "Table name");
-        CommonChecker.checkString(request.getFilter(), "Filter");
+        if (!tableStructureConsistent) {
+            CommonChecker.checkString(request.getFilter(), "Filter");
+        }
+    }
+
+    public static void checkCustomConsistentRequest(MultiDataSourceConfigRequest request) throws UnExpectedRequestException {
+        CommonChecker.checkObject(request, "Request");
     }
 }

@@ -34,7 +34,20 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * @param application
      * @return
      */
-    List<Task> findByApplication(Application application);
+    @Query(value = "SELECT /*slave*/ * FROM qualitis_application_task t WHERE t.application_id = ?1", nativeQuery = true)
+    List<Task> findByApplication(String application);
+
+    /**
+     * find the ids of task by application
+     * @param isNonPassStatus
+     * @param application
+     * @param ruleIds
+     * @return
+     */
+    @Query(value = "select DISTINCT trs.task_id from qualitis_application_task_rule_simple trs " +
+            "inner join qualitis_application_task t on trs.task_id = t.id and IF(?1 = true, t.status != 5, 1=1) " +
+            "where trs.application_id=?2 and rule_id in (?3) order by rule_id", nativeQuery = true)
+    List<Long> findTaskIdsByApplicationAndRule(boolean isNonPassStatus, String application, List<Long> ruleIds);
 
     /**
      * Find task by application pageable

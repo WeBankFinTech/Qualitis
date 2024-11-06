@@ -27,7 +27,7 @@ public class RuleDataSourceController {
     @GET
     @Path("metadata/sync")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<DataMapResultInfo> syncMetadata(@Context HttpServletRequest httpServletRequest) {
+    public GeneralResponse<DataMapResultInfo<String>> syncMetadata(@Context HttpServletRequest httpServletRequest) {
         String userName = HttpUtils.getUserName(httpServletRequest);
         return ruleDataSourceService.syncMetadata(userName);
     }

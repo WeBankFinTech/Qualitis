@@ -79,4 +79,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      * @return
      */
     List<User> findBySubDepartmentCode(Long subDepartmentCode);
+
+    /**
+     * find All User
+     * @return
+     */
+    @Query(value = "select /*slave*/ * from qualitis_auth_user", nativeQuery = true)
+    List<User> findAllUser();
+
 }

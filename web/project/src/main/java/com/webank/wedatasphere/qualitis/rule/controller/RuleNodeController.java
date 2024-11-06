@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.request.BatchExecutionParametersRequest;
@@ -54,7 +55,7 @@ public class RuleNodeController {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("Failed to copy rule. project id: {}, caused by: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_COPY_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_COPY_RULE}", null);
         }
     }
 
@@ -70,7 +71,7 @@ public class RuleNodeController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to batch update rule. caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_BATCH_MODIFY_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_BATCH_MODIFY_RULE}", null);
         }
     }
 

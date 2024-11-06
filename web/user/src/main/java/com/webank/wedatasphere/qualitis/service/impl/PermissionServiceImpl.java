@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.PermissionDao;
 import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
 import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
@@ -89,12 +90,12 @@ public class PermissionServiceImpl implements PermissionService {
         Permission savedPermission = permissionDao.savePermission(newPermission);
 
         LOGGER.info("Succeed to add permission, id: {}, method: {}, url: {}, current_user: {}", savedPermission.getId(), method, url, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&ADD_PERMISSION_SUCCESSFULLY}", new PermissionResponse(savedPermission));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_PERMISSION_SUCCESSFULLY}", new PermissionResponse(savedPermission));
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> deletePermission(DeletePermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -116,12 +117,12 @@ public class PermissionServiceImpl implements PermissionService {
         permissionDao.deletePermission(permissionInDb);
 
         LOGGER.info("Succeed to delete permission, permissionId: {}, method: {}, url: {}, current_user: {}", permissionId, permissionInDb.getMethod(), permissionInDb.getUrl(), HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&DELETE_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<Object> modifyPermission(ModifyPermissionRequest request) throws UnExpectedRequestException {
         // Check Arguments
         checkRequest(request);
 
@@ -141,7 +142,7 @@ public class PermissionServiceImpl implements PermissionService {
         permissionInDb.setModifyTime(DateUtils.now());
         permissionDao.savePermission(permissionInDb);
         LOGGER.info("Succeed to modify permission, permissionId: {}, method: {}, url: {}, current_user: {}", id, method, url, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&MODIFY_PERMISSION_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PERMISSION_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -158,7 +159,7 @@ public class PermissionServiceImpl implements PermissionService {
         getAllPermissionResponse.setData(permissions.stream().map(p -> new PermissionResponse(p)).collect(Collectors.toList()));
 
         LOGGER.info("Succeed to get all permission, page: {}, size: {}, permissions: {}, current_user: {}", page, size, getAllPermissionResponse, HttpUtils.getUserName(httpServletRequest));
-        return new GeneralResponse<>("200", "{&FIND_ALL_PERMISSIONS_SUCCESSFULLY}", getAllPermissionResponse);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&FIND_ALL_PERMISSIONS_SUCCESSFULLY}", getAllPermissionResponse);
     }
 
     private void checkRequest(DeletePermissionRequest request) throws UnExpectedRequestException {
