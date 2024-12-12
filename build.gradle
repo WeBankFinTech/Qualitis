@@ -1,0 +1,149 @@
+/*
+ * Copyright 2019 WeBank
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+apply from: "$rootDir/gradle/dependencies.gradle"
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+def defaultEncoding = 'UTF-8'
+[compileJava, compileTestJava, javadoc]*.options*.encoding = defaultEncoding
+
+buildscript {
+  repositories {
+    mavenLocal()
+    maven {
+      url "http://maven.aliyun.com/nexus/content/groups/public/"
+    }
+  maven {
+    url "http://maven.javastream.de/"
+  }
+//     mavenCentral()
+  }
+
+  dependencies {
+    classpath 'net.sf.proguard:proguard-gradle:6.2.0'
+    classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.7.17'
+  }
+}
+
+dependencies {
+  compile project(':web/app')
+}
+
+repositories {
+  mavenLocal()
+  maven {
+    url "http://maven.aliyun.com/nexus/content/groups/public/"
+  }
+  maven {
+    url "http://maven.javastream.de/"
+  }
+}
+
+mainClassName = "com.webank.wedatasphere.qualitis.QualitisServer"
+
+applicationDefaultJvmArgs =
+        ['-Xms256M', '-Xmx2G',
+         '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=20', '-XX:InitiatingHeapOccupancyPercent=50',
+         '-Dfile.encoding=UTF-8', "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
+         "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log"]
+
+tasks.startScripts << {
+  def scriptFile = file "${outputDir}/${applicationName}"
+
+  /* Customize classpath */
+  scriptFile.eachLine {
+    line ->
+      if (line.contains('CLASSPATH=\$APP_HOME/lib')) {
+        scriptFile.text = scriptFile.text.replace(line, "CLASSPATH=\${YOUR_CONF_DIR:-\$APP_HOME/conf}:\${APP_HOME}/lib/*")
+        return
+      }
+  }
+
+  // custom username and hostname
+  unixScript.text = unixScript.text.replace("MY_USER", '\$USER')
+  unixScript.text = unixScript.text.replace("MY_HOSTNAME", '\$HOSTNAME')
+
+  // custom 'java.library.path'
+  unixScript.text = unixScript.text.replace("HADOOP_COMMON_LIB_NATIVE_DIR", '\${HADOOP_COMMON_LIB_NATIVE_DIR}')
+}
+
+distributions {
+  main {
+    contents {
+      into { "conf" } {
+        from "web/app/src/main/resources"
+        dirMode = 0755
+        fileMode = 0644
+      }
+      into { "bin" } {
+        from "web/app/src/main/bin"
+        dirMode = 0755
+        fileMode = 0755
+      }
+    }
+  }
+}
+
+subprojects {
+  apply plugin: 'idea'
+  apply plugin: 'eclipse'
+  apply plugin: 'java'
+  apply plugin: 'maven'
+
+  [compileJava, compileTestJava, javadoc]*.options*.encoding = defaultEncoding
+
+  repositories {
+    mavenLocal()
+    maven {
+      url "http://maven.aliyun.com/nexus/content/groups/public/"
+    }
+  maven {
+    url "http://maven.javastream.de/"
+  }
+  }
+
+  processResources {
+    filter ReplaceTokens, tokens: [
+            "version": project.property("version")
+    ]
+  }
+
+  task createPom << {
+    pom {
+
+    }.writeTo("$buildDir/pom.xml")
+  }
+}
+
+configurations.all {
+  resolutionStrategy {
+    force 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.1'
+  }
+  resolutionStrategy.cacheChangingModulesFor 1,'minutes'
+  exclude group: 'log4j', module: 'log4j'
+  exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+}
+
+apply from: "profile.gradle"

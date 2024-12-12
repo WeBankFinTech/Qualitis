@@ -1,0 +1,11 @@
+node_modules
+.DS_Store
+dist
+*.local
+.vscode
+.fes
+.cache
+*.zip
+logs
+.fes-production
+package-lock.json
