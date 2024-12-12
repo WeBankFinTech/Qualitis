@@ -1,0 +1,368 @@
+# spring 配置
+spring:
+  # datasource，支持主备连接配置 master,worker，无主备可配置成一样的内容
+  datasource:
+    master:
+      username: [DB_USERNAME]
+      password: [DB_PASSWORD]
+      private_key: X
+      url: jdbc:mysql://[DB_HOST_MASTER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+      driver-class-name: com.mysql.jdbc.Driver
+      type: com.webank.wedatasphere.qualitis.util.MyDataSource
+    worker:
+      username: [DB_USERNAME]
+      password: [DB_PASSWORD]
+      private_key: X
+      url: jdbc:mysql://[DB_HOST_WORKER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+      driver-class-name: com.mysql.jdbc.Driver
+      type: com.webank.wedatasphere.qualitis.util.MyDataSource
+    # 连接池配置
+    hikari:
+      minimum-idle: 20
+      maximum-pool-size: 500
+      idle-timeout: 60000
+      max-lifetime: 180000
+      leak-detection-threshold: 120000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    show-sql: false
+  # 循环依赖支持
+  main:
+    allow-circular-references: true
+
+restTemplate:
+  thread:
+    maxTotal: 200
+    maxPerRoute: 100
+
+  request:
+    socketTimeout: 100000
+    connectTimeout: 2000
+    connectionRequestTimeout: 2000
+
+# 规则解析 spark sql 任务所需配置
+task:
+  persistent:
+    type: jdbc
+    username: [DB_USERNAME]
+    password: [DB_PASSWORD]
+    private_key: X
+    # 必须是支持写入的主库
+    address: jdbc:mysql://[DB_HOST_MASTER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    mysqlsec_open: false
+    mysqlsec: X
+    hive_sort_udf_open: false
+    hive_sort_udf: X
+    hive_sort_udf_class_path: X
+    hive_sort_udf_lib_path: X
+    # spark sql 回写结果入库的数据表
+    dbName: [DB_NAME]
+    tableName: qualitis_application_task_result
+    encrypt: false
+  execute:
+    limit_thread: 10
+    rule_size: 10
+  new_value:
+    # spark sql 新值监控回写新值入库的数据表
+    tableName: qualitis_task_new_value
+    # 新值保存方式
+    save: distinct().write.mode(org.apache.spark.sql.SaveMode.Append)
+  create_and_submit:
+    limit_size: 1000
+
+timer:
+  thread:
+    size: 5
+    async_execution_core_size: 50
+    async_execution_max_size: 5000
+  check:
+    period: 10000
+    pending_period: 15000
+    update_job_size: 100
+    update_core_size: 50
+    update_max_size: 50000
+  abnormal_data_record_alarm:
+    cron: X
+    cron_enable: false
+  # 高可用多实例配置，依赖 zk node 做互斥服务锁
+  lock:
+    zk:
+      path: /qualitis/tmp/monitor
+
+# 高可用多实例配置，依赖 zk node 做互斥服务锁
+zk:
+  address: 127.0.0.1
+  base_sleep_time: 1000
+  max_retries: 3
+  session_time_out: 10000
+  connection_time_out: 15000
+  lock_wait_time: 3
+
+# 告警配置，可改造接入告警系统
+alarm:
+  ims:
+    url: http://127.0.0.1:10000/ims_data_access/
+    send_alarm_path: send_alarm_by_json.do
+    system_id: 0
+    # 告警方式
+    alert_way: [ALERT_WAY]
+    title_prefix: 测试环境
+    new_title_prefix: 【数据异常】
+    new_title_succeed_prefix: 【数据正常】
+    receiver:
+      fail: [OPT_USER]
+      out_threshold: [OPT_USER]
+      task_time_out: [OPT_USER]
+    task_time_out:
+      alarm_title: 任务运行时间过长告警
+    send_report_path: batch_report_metric_by_json.do
+    full_url_abnormal_data_record: http://127.0.0.1:10000/ims_config/sendKpiRuleDetail.do
+    userAuthKey: [OPT_USER_AUTH_KEY]
+
+auth:
+  unFilterUrls:
+    - /qualitis/api/v1/login/local
+    - /qualitis/api/v1/logout
+    - /qualitis/api/v1/redirect
+  uploadUrls:
+    - /qualitis/api/v1/projector/rule/batch/upload/*
+    - /qualitis/api/v1/projector/project/batch/upload*
+
+# Linkis 服务相关配置
+linkis:
+  check_start_time: YYYYMMDD # 重复数据校验历史分区的起始日期
+  datasource_cluster: [DATASOURCE_CLUSTER_NAME] # 数据源管理依赖集群名称
+  bdap_check_alert_cluster: X
+  datasource_admin: [DATASOURCE_ADMIN]
+  datasource_support_types: hive,mysql
+  udf_admin: X
+  api:
+    prefix: api/rest_j/v1
+    submitJob: entrance/execute
+    submitJobNew: entrance/submit
+    killJob: entrance
+    status: jobhistory/{id}/get
+    unDone: jobhistory/listundone # 获取未完成任务量接口
+    unDone_days: 1 # 获取 Linkis 侧过去 1 天的未完成任务量，避免设置过大，查询范围较大增加 Linkis 接口压力
+    unDone_switch: true # 未完成任务量探测开关，开启之后，未完成任务大于 maxUnDone 时，在 Qualitis 侧 pending，不提交 Linkis，直到 Linkis 资源空余。
+    maxUnDone: 10000 # 未完成任务最大值
+    runningLog: entrance/{id}/log
+    finishLog: filesystem/openLog
+    upload: filesystem/upload
+    upload_tmp_path: /appcom/tmp/allenzhou/
+    upload_prefix: hdfs://
+    upload_workspace_prefix: file:///mnt/bdap
+    upload_root: filesystem/getUserRootPath
+    upload_dir: filesystem/getDirFileTrees
+    upload_create_dir: filesystem/createNewDir
+    delete_dir: filesystem/deleteDirOrFile
+    getFullTree: configuration/getFullTreesByAppName
+    saveFullTree: configuration/saveFullTree
+    meta_data:
+      db_path: datasource/dbs
+      table_path: datasource/tables
+      table_info: datasource/getTableBaseInfo
+      column_path: datasource/columns
+      column_info: datasource/getTableFieldsInfo
+      table_statistics: datasource/getTableStatisticInfo
+      partition_statistics: datasource/getPartitionStatisticInfo
+      datasource_types: data-source-manager/type/all
+      datasource_env: data-source-manager/env
+      datasource_info: data-source-manager/info
+      datasource_info_ids: data-source-manager/info/ids
+      datasource_publish: data-source-manager/publish
+      datasource_info_name: data-source-manager/info/name
+      datasource_connect: data-source-manager/op/connect/json
+      datasource_connect_param: data-source-manager/{DATA_SOURCE_ID}/connect-params
+      datasource_key_define: data-source-manager/key-define/type
+      datasource_expire: data-source-manager/info/{DATA_SOURCE_ID}/expire
+      datasource_modify: data-source-manager/info/{DATA_SOURCE_ID}/json
+      datasource_create: data-source-manager/info/json
+      datasource_env_create_batch: data-source-manager/env/json/batch
+      datasource_env_modify_batch: data-source-manager/env/json/batch
+      datasource_delete: data-source-manager/info/delete/{DATA_SOURCE_ID}
+      datasource_env_detail: data-source-manager/env/{ENV_ID}
+      datasource_env_delete: data-source-manager/env/{ENV_ID}
+      datasource_init_version: data-source-manager/parameter/{DATA_SOURCE_ID}/json
+      datasource_versions: data-source-manager/{DATA_SOURCE_ID}/versions
+      datasource_db: metadatamanager/dbs/{DATA_SOURCE_ID}
+      datasource_table: metadatamanager/tables/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}
+      datasource_column: metadatamanager/columns/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}/table/{DATA_SOURCE_TABLE}
+      datasource_query_db: metadataQuery/getDatabases
+      datasource_query_table: metadataQuery/getTables
+      datasource_query_column: metadataQuery/getColumns
+      udf_add: udf/add
+      udf_delete: udf/delete/{UDF_ID}
+      udf_modify: udf/update
+      udf_page: udf/managerPages
+      udf_detail: udf/versionList
+      udf_share_user: udf/getSharedUsers
+      udf_share: udf/shareUDF
+      udf_handover: udf/handover
+      udf_user_directory: udf/userDirectory
+      udf_switch_status: udf/isload
+      udf_name_list: udf/getUdfByNameList
+      udf_new_version: udf/versionInfo
+      udf_publish: udf/publish
+      dpm_server: X
+      dpm_port: 0
+      dpm_systemAppId: X
+      dpm_systemAppKey: X
+  fps:
+    file_system: filesystem/formate
+    hdfs_prefix: X
+    application:
+      name: IDE
+      engine:
+        name: fps
+        version: 1.0.0
+    request:
+      max_retries: 3  # 重试次数
+      total_wait_duration: 12000  # ms
+  gateway:
+    query_time_out: 50000
+    retry_time: 3
+    retry_interval: 2000
+  kill_stuck_tasks: true
+  kill_stuck_tasks_time: 1800000 # ms
+  kill_total_tasks_time: 7200000 # ms
+  lightweight_query: true # 优化行数据一致性大表关联查询开关
+  skip_table_size: 10
+  skip_table_size_unit: GB
+  spark:
+    application:
+      name: Qualitis
+      reparation: 50
+    engine:
+      name: spark
+      version: 3.2.1
+      limit: 20
+  shell:
+    engine:
+      name: shell
+      version: 1
+  label:
+    jobQueuingTimeoutName: jobQueuingTimeout
+    jobQueuingTimeout: 1800 # 排队等待 30 min
+    jobRunningTimeoutName: jobRunningTimeout
+    jobRunningTimeout: 3600 # 运行等待 60 min
+    jobRetryTimeoutName: jobRetryTimeout
+    jobRetryTimeout: 120000 # 重试间隔 2 min
+    jobRetryName: jobRetryNumber
+    jobRetryNumber: 10
+  log:
+    maskKey: task.persistent.username, task.persistent.password
+  checkAlert:
+    template: "\\n[告警主题] qualitis_check_alert_topic\\n[告警时间] qualitis_check_alert_time\\n[告警内容]\\n[高等级告警]\\nqualitis_check_alert_major_title\\nqualitis_check_alert_major_content\\n[一般告警]\\nqualitis_check_alert_info_title\\nqualitis_check_alert_info_content\\n[告警节点] qualitis_check_alert_project_info\\n[告警人] qualitis_check_alert_info_receiver\\n[高等级告警人] qualitis_check_alert_major_receiver\\n"
+  git:
+    private-key: X
+
+# 元数据中间件相关配置，暂未开源
+datamap:
+  isolateEnvFlag: uat
+  address: http://127.0.0.1:8001
+  dbs_path: api/v1/isolate/metadata-service/databases
+  tables_path: api/v1/isolate/metadata-service/datasets
+  columns_path: api/v1/isolate/metadata-service/columns
+  standard_path: /api/v1/isolate/metadata-service/columns/publicStds
+  query_all_path: /api/v1/isolate/metadata-service/searches/query/all
+  dataset_tag_relations_path: /api/v1/isolate/metadata-service/datasetTagRelations
+  tags_path: /api/v1/isolate/metadata-service/datasetTagRelations/tags
+  data_standard_category: /api/v1/isolate/metadata-service/publicSub
+  data_standard_big_category: /api/v1/isolate/metadata-service/publicBigCategory
+  data_standard_small_category: /api/v1/isolate/metadata-service/publicSmallCategory
+  data_standard_urn_path: /api/v1/isolate/metadata-service/publicStd
+  data_standard_code_path: /api/v1/isolate/metadata-service/publicStdCode
+  data_standard_code_table: /api/v1/isolate/metadata-service/publicCodeTable
+  user_id: /api/v1/metadata-service/userId?userCode=
+  random_hash_salt: X
+  app_id: X
+  app_token: X
+
+front_end:
+  home_page: http://{IP}:8090/#/dashboard
+  domain_name: http://{IP}:8090
+  local: zh_CN
+  support_migrate: false
+  cluster: BDAP
+
+# 科技资产系统接口，暂未开源
+cmdb:
+  host: http://127.0.0.1
+  url: X
+  integrateUrl: X
+  userAuthKey: X
+  newUserAuthKey: X
+  onlySlave: false
+
+# 架构组织接口，暂未开源
+ef:
+  host: http://127.0.0.1
+  url: X
+  app_id: X
+  app_token: X
+
+ldap:
+  ip: 127.0.0.1
+  port: 1000
+
+# 规则批量导入分块设置
+rule:
+  update_size: 1
+  datasource:
+    max-size: 10000
+    per-size: 500
+  lock:
+    max-duration-seconds: 600
+
+department:
+  white_list: 某科室 # 多个科室英文逗号分隔，屏蔽此处的科室参与科室信息选取
+  data_source_from: custom # 取数来源：hr-HR系统；custom-本地部门表
+
+execution:
+  schedule:
+    maxNum: 400
+  controller:
+    async: false
+
+# 白名单项目
+specialcreateexecute:
+  projectNames:
+    - special
+  ruleNames:
+    - special
+
+dss:
+  origin-urls: http://127.0.0.1:8088
+
+intellect:
+  check:
+    project_name: ims_omnis_prophet
+    table_collect_template_name: collect_table_data
+    enum_collect_template_name: collect_enum_data
+    origin_collect_template_name: collect_origin_data
+    total_collect_template_name: collect_total_data
+    fields_count_project_name: check_fields_count
+
+import_and_export:
+  time_out: 600
+
+report:
+  cron_enable: true
+  daily:
+    core_pool_size: 16
+    max_pool_size: 64
+    queue_capacity: 1024
+    cron: 0 0 1 * * ?
+  weekly:
+    core_pool_size: 5
+    max_pool_size: 10
+    queue_capacity: 25
+    cron: 0 0 2 * * 1
+
+# startup=true，本地开发调试，接口免登录
+local:
+  startup: false
+  username: allenzhou
