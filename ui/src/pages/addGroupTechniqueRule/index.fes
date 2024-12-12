@@ -1,0 +1,391 @@
+<template>
+    <pageContainer v-if="!dssNode">
+        <div class="all-wrapper p20">
+            <div class="breadcrumb-container mb10">
+                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('myProject.myProject') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('addGroupTechniqueRule.projectDetails') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('addGroupTechniqueRule.technicalRulesDetails') }}</span>
+            </div>
+            <div class="mb20">
+                <span v-for="(item, index) in list" :key="index" :class="['ruleTag', {ruleTagActived: active === item.rule_name}]" @click="seeDetails(item)">
+                   {{ item.rule_name }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteRule(item)" />
+                </span>
+                <WbButton v-if="list.length && !flow" :class="{'disableEdit':EditDSSUpstream}" :type="EditDSSUpstream ? '' : 'primary'" @click.prevent="editRules">
+                    {{ $t('common.editCurrentRules') }}
+                </WbButton>
+                <Dropdown :data="dropList" class="ml10" @on-choose="addTeac">
+                    <Wb-button type="primary">
+                        <Icon type="plus" size="14" class="add-icon" />{{ $t('common.addRule') }}
+                    </Wb-button>
+                </Dropdown>              
+            </div>
+            <Panel v-show="tableType === 1" :title="$t('common.technicalRegulation')">
+                <singleTable
+                    ref="singleTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"
+                    @get-list="getList"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Panel v-show="tableType === 2" :title="$t('addGroupTechniqueRule.newCustomRule')">
+                <customTable
+                    ref="customTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"
+                    @get-list="getList"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Panel v-show="tableType === 3" :title="$t('addGroupTechniqueRule.newMultiTableRule')">
+                <multiTable
+                    ref="multiTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"                
+                    :abort_on_failure="abort_on_failure"
+                    @get-list="getList"
+                    @change-task="changeTask"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Modal ref="deleteForm" :title="$t('modal.deleteRule')">
+                <p class="hintWrapper">
+                    {{ $t('projects.delete') }}{{ ruleName }}{{ $t('projects.rule') }}
+                </p>
+                <div class="delRuleWrapper">
+                    <WbButton type="primary" @click="confirmDelete">
+                        {{ $t('common.ok') }}
+                    </WbButton>
+                    <WbButton type="ghost" @click="delCancel">
+                        {{ $t('common.cancel') }}
+                    </WbButton>
+                </div>
+            </Modal>
+        </div>
+    </pageContainer>
+
+    <div v-else>
+        <div class="all-wrapper p20">
+            <div class="breadcrumb-container mb10">
+                <icon type="arrow-left" class="mr10 cursor" size="16" @click="FesApp.router.back()" />
+                <span class="breadcrumb">{{ $t('projects.projects') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('myProject.myProject') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb">{{ $t('addGroupTechniqueRule.projectDetails') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('addGroupTechniqueRule.technicalRulesDetails') }}</span>
+            </div>
+            <div class="mb20">
+                <span v-for="(item, index) in list" :key="index" :class="['ruleTag', {ruleTagActived: active === item.rule_name}]" @click="seeDetails(item)">
+                   {{ item.rule_name }}<Icon type="close-circle-o" color="#409eff" size="14" @click.stop="deleteRule(item)" />
+                </span>
+                <Dropdown :data="dropList" @on-choose="addTeac">
+                    <Wb-button type="primary">
+                        <Icon type="plus" size="14" class="add-icon" />{{ $t('common.addRule') }}
+                    </Wb-button>
+                </Dropdown>
+                <WbButton v-if="list.length" :class="{'disableEdit':EditDSSUpstream}" :type="EditDSSUpstream ? '' : 'primary'" class="ml10" @click.prevent="editRules">
+                    {{ $t('common.edit') }}
+                </WbButton>
+            </div>
+            <Panel v-show="tableType === 1" :title="$t('common.technicalRegulation')">
+                <singleTable
+                    ref="singleTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"
+                    @get-list="getList"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Panel v-show="tableType === 2" :title="$t('addGroupTechniqueRule.newCustomRule')">
+                <customTable
+                    ref="customTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"
+                    @get-list="getList"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Panel v-show="tableType === 3" :title="$t('addGroupTechniqueRule.newMultiTableRule')">
+                <multiTable
+                    ref="multiTable"
+                    :project-id="projectId"
+                    :rule-group-id="ruleGroupId"
+                    :dss-params="DSSParams"                
+                    :abort_on_failure="abort_on_failure"
+                    @get-list="getList"
+                    @change-task="changeTask"
+                    @get-upstream="getUpstream" />
+            </Panel>
+            <Modal ref="deleteForm" :title="$t('modal.deleteRule')">
+                <p class="hintWrapper">
+                    {{ $t('projects.delete') }}{{ ruleName }}{{ $t('projects.rule') }}
+                </p>
+                <div class="delRuleWrapper">
+                    <WbButton type="primary" @click="confirmDelete">
+                        {{ $t('common.ok') }}
+                    </WbButton>
+                    <WbButton type="ghost" @click="delCancel">
+                        {{ $t('common.cancel') }}
+                    </WbButton>
+                </div>
+            </Modal>
+        </div>
+    </div>
+</template>
+
+<script>
+    import singleTable from '../addTechniqueRule/';
+    import customTable from '../customTechnicalRule/';
+    import multiTable from '../crossTableCheck/';
+    import { DWSMessage } from 'assets/js/utils';
+    import pageContainer from '../../components/template'
+    const dssNode = location.href.indexOf('nodeId=') > -1;
+    export default {
+        FesHeader: !dssNode,
+        FesLeft: false,      
+        data() {
+            return {
+                tableType: 1,
+                projectId: '',
+                list: [],
+                ruleName: '',
+                ruleGroupId: null,
+                detailTag: false,
+                DWSHidden: top == self,
+                DSSParams: {},
+                abort_on_failure: true,
+                pageType: '',
+                dssNode,
+                upstream: false,
+                active: '',
+                flow: false,
+            }
+        },
+        components: {
+            singleTable,
+            customTable,
+            multiTable,
+            pageContainer
+        },
+        FesReady() {
+            this.DSSParams = this.$route.query;
+            this.flow = this.$route.query.flowProject;
+            this.init();
+        },
+        computed: {
+            dropList() {
+                return [
+                    {
+                        content: this.$t('myProject.newSingleTableRule'),
+                        type: 1,      
+                    },
+                    {
+                        content: this.$t('myProject.newCustomRule'),
+                        type: 2,
+                    },
+                    {
+                        content: this.$t('myProject.newMultiTableRule'),
+                        type: 3,
+                    }
+                ]
+            },
+            showDSSNode() {
+                return top !== self
+            },
+            EditDSSUpstream() {
+                let {ruleId, ruleTemplateId, showDSSNode, upstream} = this;
+                //已存上游规则在DQM无法编辑
+                return ruleId && ruleTemplateId && !showDSSNode && upstream
+            },
+        },
+        methods: {
+            init() {
+                this.tableType = this.$route.query.tableType - 0;
+                this.projectId = this.$route.query.id + '';
+                this.ruleGroupId = this.$route.query.ruleGroupId ? parseInt(this.$route.query.ruleGroupId) : null
+                if (this.ruleGroupId) {
+                    this.detailTag = true
+                    this.getList(this.ruleGroupId)
+                }
+            },
+            getList(id) {
+                if (id) {
+                    this.detailTag = true
+                }
+                this.ruleGroupId = parseInt(id);
+                this.FesApi.fetch(`api/v1/projector/rule/group/${id}`, {}, 'get').then((res)=> {
+                    this.list = res.rule_list;
+                    if (this.detailTag) {
+                        this.tableType = this.list[0].rule_type;
+                        this.seeDetails(this.list[0])
+                    }
+                })
+            },
+            addTeac(data) {
+                this.active = '';
+                if (this.DSSParams && this.DSSParams.nodeName && this.list.length) {
+                    //DSS上游节点只允许一个规则存在
+                    return this.$Toast.warn(this.$t('addTechniqueRule.limitRule'))
+                }
+                this.tableType = data.type;
+                switch (data.type) {
+                    case 1:
+                        this.$refs.singleTable.clearParam();
+                        break;
+                    case 2:
+                        this.$refs.customTable.clearParam();
+                        break;
+                    case 3:
+                        this.$refs.multiTable.clearParam();
+                        break;
+                    default:
+                        break;
+                }
+            },
+            successsAction(id) {
+                let key = this.$route.query.nodeId;
+                this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                this.$refs.deleteForm.hide();
+                if (this.list.length> 1) {
+                    this.getList(id);
+                }else {
+                    this.$refs.singleTable.clearParam();
+                    this.list = []
+                    this.tableType = 1
+                    DWSMessage(key, this.ruleGroupId, 'delete');
+                }
+            },
+            deleteRule(item) {
+                if (this.showDSSNode) {
+                    return this.$Toast.warn(this.$t('addGroupTechniqueRule.deleteNode'))
+                }
+                this.deletelist = item;
+                this.ruleName = item.rule_name;
+                this.$refs.deleteForm.show();
+            },
+            delCancel() {
+                this.$refs.deleteForm.hide();
+            },
+            confirmDelete() {
+                let item = this.deletelist;
+                let url;
+                let param = {};
+                switch (item.rule_type) {
+                    case 1:
+                        url = 'api/v1/projector/rule/delete';
+                        param.rule_id = item.rule_id;
+                        break;
+                    case 2:
+                        url = 'api/v1/projector/rule/custom';
+                        param.rule_id = item.rule_id;
+                        break;
+                    case 3:
+                        url = 'api/v1/projector/mul_source_rule';
+                        param.multi_rule_id = item.rule_id;
+                        break;
+                    default:
+                        break;
+                }
+                let method = item.rule_type === 1 ? 'post' : 'delete';
+                if (item.rule_type === 1) {
+                    this.FesApi.fetch(url, param, method).then(() => {
+                        this.successsAction(item.rule_group_id)
+                    });
+                } else {
+                    this.FesApi.fetch(url, {}, {
+                        data: param,
+                        method,
+                        headers: {
+                            'content-type': 'application/json'
+                        }
+                    }).then(() => {
+                        this.successsAction(item.rule_group_id)
+                    });
+                }
+            },
+            seeDetails(item) {
+                this.tableType = item.rule_type;
+                this.ruleId = item.rule_id;
+                this.ruleTemplateId = item.rule_template_id;
+                this.active = item.rule_name;
+                switch (item.rule_type) {
+                    case 1:
+                        this.$refs.singleTable.init('view',item.rule_id, item.rule_template_id)
+                        break;
+                    case 2:
+                        this.$refs.customTable.init('view',item.rule_id, item.rule_template_id)
+                        break;
+                    case 3:
+                        this.$refs.multiTable.init('view',item.rule_id, item.rule_template_id)
+                        break;
+                    default:
+                        break;
+                }
+            },
+            changeTask(value, type) {
+                this.abort_on_failure = value;
+                this.pageType = type;
+            },
+            editRules() {
+                switch (this.tableType) {
+                    case 1:
+                        this.$refs.singleTable.editRule()
+                        break;
+                    case 2:
+                        this.$refs.customTable.editRule()
+                        break;
+                    case 3:
+                        this.$refs.multiTable.editRule()
+                        break;
+                    default:
+                        break;
+                }
+            },
+            getUpstream(val) {
+                this.upstream = val;
+            }
+        }
+    }
+</script>
+
+<style lang="scss" scoped>
+    .add-icon {
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    .ruleTag {
+        display: inline-block;
+        margin-right: 10px;
+        height: 32px;
+        padding: 0 10px;
+        line-height: 30px;
+        font-size: 12px;
+        color: #666;
+        background: #fff; 
+        border: 1px solid #d9ecff;
+        border-radius: 4px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        padding-left: 15px;
+        i {
+            margin-left: 15px;
+            vertical-align: top;
+        }
+    }
+    .ruleTagActived {
+        color: #409eff;
+        background-color: #ecf5ff;
+    }
+    .upstream {
+        position: absolute;
+        top: -30px;
+        right: 20px;
+    }
+</style>

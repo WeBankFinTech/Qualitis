@@ -1,0 +1,47 @@
+{
+  "name": "Exchangis",
+  "version": "0.5.0",
+  "description": "Exchangis",
+  "main": "app.js",
+  "scripts": {
+    "build": "fes build",
+    "dev": "fes dev",
+    "fix": "eslint --ext .fes src --fix"
+  },
+  "keywords": [
+    "管理端",
+    "fes",
+    "fast",
+    "easy",
+    "strong"
+  ],
+  "files": [
+    ".eslintrc.js",
+    ".gitignore",
+    "fes.config.js",
+    "mock.js",
+    "package.json",
+    "README.md",
+    "/src"
+  ],
+  "repository": {
+    "type": "git"
+  },
+  "author": "harrywan qlin",
+  "license": "MIT",
+  "devDependencies": {
+    "@vue/test-utils": "^1.1.0",
+    "@webank/eslint-config-webank": "^0.1.4",
+    "@webank/fes-cli": "^0.4.6",
+    "chai": "^4.2.0",
+    "csp-html-webpack-plugin": "^4.0.0"
+  },
+  "dependencies": {
+    "@webank/fes-core": "^0.4.8",
+    "@webank/fes-ui": "^0.4.8",
+    "chart.js": "^2.9.4",
+    "vue-chartjs": "^3.5.1"
+  },
+
+  "gitHead": "357575247bde6d1d24a8d2e11d2bfe7adbe6abd6"
+}

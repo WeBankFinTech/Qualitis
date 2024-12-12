@@ -1,0 +1,324 @@
+<template>
+    <div>
+        <Row>
+            <Cell span="14">
+                <WbForm ref="formValidate" :label-width="150" label-position="left" :rule="ruleValidate" class="">
+                    <FormItem :label="`${$t('common.projectName')}：`" prop="project_name">
+                        <WbInput v-model="project_name" :maxlength="50" :disabled="isEditing" :placeholder="$t('common.pleaseEnter')" />
+                    </FormItem>
+                    <FormItem :label="`${$t('label.projectId')}：`">
+                        <WbInput v-model="project_id" disabled :placeholder="$t('common.pleaseEnter')" />
+                    </FormItem>
+                    <FormItem :label="`${$t('label.projectIntro')}：`" prop="description">
+                        <WbInput v-model="description" :maxlength="500" :disabled="isEditing" type="textarea" :placeholder="$t('common.pleaseEnter')" />
+                    </FormItem>
+                    <FormItem :label="`${$t('common.itemTag')}：`" prop="project_label">
+                        <div :class="{'mb10' :project_label.length}">
+                            <span v-for="(item, index) in project_label" :key="index" class="labelTag">
+                                {{ item }}<Icon v-if="!isEditing" type="close-circle-o" color="#409eff" size="14" @click.stop="deleteTag(index)" />
+                            </span>
+                        </div>
+                        <div>
+                            <Wb-button v-if="!inputShowControler" :disabled="isEditing" type="ghost" @click="editTag">{{ $t('common.addTag') }}</Wb-button>
+                            <WbInput v-else v-model="newLabel" :placeholder="$t('common.pleaseEnter')" @on-blur="addTag" />
+                        </div>
+                    </FormItem>
+                </WbForm>
+            </Cell>
+        </Row>
+        
+        <Row v-show="detail">
+            <Cell span="14" class="detail-container">
+               <div>
+                    <Dropdown :data="dropList" class="mr10" @on-choose="addTeac">
+                        <Wb-button type="primary"><Icon type="plus-circle" size="14" />{{ $t('common.addRule') }}</Wb-button>
+                    </Dropdown>
+                    <WbButton type="info" class="mr10"><Icon type="upload" size="14" />{{ $t('myProject.importRules') }}
+                        <input ref="technicaFile" class="fileInput" type="file" accept=".xlsx" @change="importFile">
+                    </WbButton>
+                    <WbButton v-show="technical.length" type="warn" class="mr10" @click="exportExcel">
+                        <Icon type="download" size="14" />{{ $t('myProject.DownloadRules') }}
+                    </WbButton>
+                    <WbButton type="primary" @click="taskExecution">
+                        <Icon type="exception" size="14" />{{ $t('myProject.run') }}
+                    </WbButton>
+               </div>
+               <div>
+                    <WbButton v-show="isEditing && !flowTag" class="mr10" type="primary" @click="editProject">
+                        <Icon type="edit" size="14" />{{ $t('myProject.projectEdit') }}
+                    </WbButton>
+                    <WbButton v-show="!isEditing" type="primary" class="mr10" @click="editSubmit">
+                        {{ $t('common.save') }}
+                    </WbButton>
+               </div>
+            </Cell>
+        </Row>
+    </div>
+</template>
+<script type="text/ecmascript-6">
+    export default {
+        props: {
+            detail: {
+                type: Object,
+                default: null
+            },
+            technical: {
+                type: Array,
+                default: null
+            },
+            flowTag: {
+                type: Boolean,
+                default: false
+            }
+        },
+        data() {
+            return {
+                project_id: "",
+                project_name: "",
+                description: "",
+                stakeholders: [],
+                level: "",
+                executor_user: "",
+                type: 1,
+                reportAll: null,
+                staffList: [],
+                shortStaffList: [],
+                users: [],
+                isEditing: false,
+                stakeholderNames: '',
+                project_label: '',//项目标签
+                inputShowControler: '',
+                newLabel: '',
+                label: "",
+            };
+        },
+        computed: {
+            ruleValidate() {
+                return {
+                    project_name: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }],
+                    level: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }],
+                    reportAll: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }],
+                    description: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }],
+                    executor_user: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }],
+                    stakeholders: [{
+                        required: true,
+                        message: this.$t('common.notEmpty')
+                    }]
+                }
+            },
+            dropList() {
+                return [
+                    {
+                        content: this.$t('myProject.newSingleTableRule'),
+                        type: 1
+                        
+                    },
+                    {
+                        content: this.$t('myProject.newCustomRule'),
+                        type: 2
+                    },
+                    {
+                        content: this.$t('myProject.newMultiTableRule'),
+                        type: 3
+                    }
+                ]
+            } 
+        },
+        watch: {
+            detail() {
+                this.editDataDetail();
+            }
+        },
+        methods: {
+            async editDataDetail() {
+                if (this.detail) {
+                    Object.assign(this, this.detail);
+                }
+                this.isEditing = true;
+                let {
+                    project_id,
+                    project_name,
+                    description,
+                    project_label
+                } = this;
+                this.backProjInfo = {
+                    project_id,
+                    project_name,
+                    description,
+                    project_label
+                }
+            },
+            //修改项目的内容
+            editSubmit() {
+                let id = this.$route.query.id;
+                this.$refs["formValidate"].validate(valid => {
+                    if (valid) {
+                        let {
+                            project_id,
+                            project_name,
+                            description,
+                            project_label
+                        } = this;
+                        let params = {
+                            project_id,
+                            project_name,
+                            description,
+                            project_label,
+                        };
+                        this.FesApi.fetch(
+                            "api/v1/projector/project",
+                            params
+                        ).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                            this.$emit('showProjetDet', id)
+                            this.isEditing = !this.isEditing;
+                        })
+                    }
+                })
+            },
+            //跳转到新增技术规则页面
+            toNewRulePage() {
+                this.$router.push({
+                    path: "/addTechniqueRule",
+                    query: {
+                        id: this.project_id
+                    }
+                });
+            },
+            //跳转到自定义技术规则页面
+            TechnicalPage() {
+                this.$router.push({
+                    path: "/customTechnicalRule",
+                    query: {
+                        id: this.project_id
+                    }
+                })
+            },
+            //跳转到跨表校验
+            CrossTablePage() {
+                this.$router.push({
+                    path: "/crossTableCheck",
+                    query: {
+                        id: this.project_id
+                    }
+                })
+            },
+            editProject() {
+                this.isEditing = false;
+            },
+            importFile() {
+                let file = this.$refs.technicaFile.files[0];
+                this.$emit('importFile', file);
+                this.$refs.technicaFile.value = null;
+            },
+            exportExcel() {
+                this.$emit('exportExcel');
+            },
+            taskExecution() {
+                this.$emit('taskExecution')
+            },
+            addTeac(data) {
+                this.$router.push({
+                    path:'/addGroupTechniqueRule',
+                    query: {
+                        tableType: data.type,
+                        id: this.project_id
+                    }
+                })
+            },
+            editTag() {
+                this.newLabel = this.label;
+                this.inputShowControler = true;
+            },
+            addTag() {
+                if (this.newLabel) {
+                    let labelRepeat = this.project_label.some(it=> it === this.newLabel);
+                    if (labelRepeat) {
+                        return this.$Toast.warn(this.$t('projects.lableRepeat'))
+                    }else {
+                        this.project_label.push(this.newLabel)
+                    }
+                }
+                this.initData();
+            },
+            initData() {
+                this.inputShowControler = false
+                this.newLabel = ''
+            },
+            deleteTag(index) {
+                this.project_label.splice(index,1);
+            },
+        }
+    };
+
+</script>
+<style scoped lang="scss">
+    .addProjForm {
+        width: 65%;
+    }
+
+    .submitBtn {
+        float: right;
+        margin-left: 20px;
+    }
+
+    .relation {
+        width: 49%;
+        display: inline-block;
+    }
+    .ruleBtn {
+        margin-right: 4px;
+    }
+    .fileInput {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+    .mr5 {
+        margin-right: 5px;
+    }
+    .labelTag {
+        display: inline-block;
+        margin: 0 10px 5px;
+        height: 32px;
+        padding: 0 10px;
+        line-height: 30px;
+        font-size: 12px;
+        color: #409eff;
+        background-color: #ecf5ff;
+        border: 1px solid #d9ecff;
+        border-radius: 4px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        padding-left: 15px;
+        i {
+            margin-left: 15px;
+            vertical-align: top;
+        }
+    }
+    .labelTag:first-child {
+        margin-left: 0;
+    }
+    .detail-container {
+        display: flex;
+        justify-content: space-between;
+    }
+</style>

@@ -1,0 +1,64 @@
+<template>
+    <Row class="all-wrapper p20 task-table">
+        <Cell span="24">
+            <Wb-table :data="list" border class="mt20 mb20" :no-data-text="$t('common.noData')" @on-tr-click="goToDetail">
+                <Column prop="application_id" :name="$t('alarmsList.applicationId')" />
+                <Column prop="project_names" :name="$t('common.projectName')" />
+                <Column prop="submit_time" :name="$t('alarmsList.executionTime')" />
+                <Column prop="status" :filter="formatStatus" :name="$t('common.status')" />
+                <Column width="25%" prop="finish_task_num" :filter="formatSuccessful" :name="$t('alarmsList.task')" />
+            </Wb-table>
+        </Cell>
+    </Row>
+</template>
+<script type="text/ecmascript-6">
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+        },
+        props: {
+            list: Array,
+        },
+        data() {
+            return {
+                AlarmsList: [],
+            }
+        },
+        computed: {
+            statusList(){
+                return this.$t('alarmsList.statusList')
+            },
+            str() {
+                return this.$t('alarmsList.passVerification')
+            }
+        },
+        methods: {
+            formatStatus(data) {
+                let list = eval('('+ this.statusList + ')');
+                return list[data];
+            },
+            formatSuccessful(data, trData) {
+                return `${this.str}   ${trData.finish_task_num}/${trData.fail_task_num}/${trData.fail_check_task_num}`;
+            },
+            goToDetail( trData ) {
+                this.FesFesx.set("task_info_map", {
+                    [trData.application_id]: trData
+                });
+                this.$router.push({
+                    path: "/taskDetail",
+                    query: {
+                        id: trData.application_id
+                    }
+                });
+            }
+        }
+    }
+</script>
+<style scoped>
+    .task-table{
+        padding-left: 0;
+    }
+</style>
+
+

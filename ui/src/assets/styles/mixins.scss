@@ -1,0 +1,6 @@
+// 当长度超过宽度时，使用省略号来避免显示太长
+@mixin text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,17 @@
+<template>
+    <div class="filterExplainWrapper">
+        <p>{{ $t('filterDescription.tips') }}</p>
+        <p>{{ $t('filterDescription.example') }}：</p>
+        <p>{{ $t('filterDescription.actualDate') }}</p>
+        <p>{{ $t('filterDescription.brforeDay') }}</p>
+        <p>{{ $t('filterDescription.support') }}</p>
+    </div>
+</template>
+
+<style lang="scss" scoped>
+    .filterExplainWrapper {
+        padding: 10px;
+        background: #e4e8ec;
+        margin-top: 15px;
+    }
+</style>
