@@ -1,0 +1,38 @@
+.ui-checkbox-inner {
+    border: 1px solid #999;
+}
+.dashboard .ui-page-select {
+    display: none;
+}
+.help-document .ui-menu-submenu-ul {
+    display: block !important;
+}
+.help-document .ui-icon-down:before {
+    content: " ";
+}
+.technical-rules .rule-output:nth-of-type(1) .ui-form-content .ui-input-swap {
+    margin-left: 10px;
+}
+.technical-rules .select-options .ui-select {
+    width: 85%;
+    margin-left: 10px;
+}
+.technical-rules .select-content .select-options:nth-of-type(2) .ui-form-label {
+    text-align: center;
+}
+.technical-rules .select-content .select-options:nth-of-type(2) .ui-form-content .ui-select {
+    margin-left: 45px;
+}
+.technical-rules .source .ui-form-content .ui-input-prepend {
+    width: 90px;
+    border: none;
+}
+.technical-rules .source .ui-form-content .ui-input-append {
+    border: none;   
+}
+.technical-rules .source .ui-form-content {
+    margin-left: 0px !important;
+}
+.technical-rules .fieldWrapper:nth-of-type(4) .ui-form-label {
+    text-align: left;
+}

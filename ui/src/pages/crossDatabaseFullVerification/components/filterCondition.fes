@@ -1,0 +1,325 @@
+<template>
+    <div class="filter-condition">
+        <template v-if="filterList.length > 0">
+            <Tabs
+                v-model="currentTab"
+                :closable="closable"
+                @on-tab-remove="deleteTab">
+                <Tab
+                    v-for="(item, index) in filterList"
+                    :key="item.id"
+                    :name="item.id"
+                    :label="$t('ruleTemplatelist.condition')">
+                    <Row>
+                        <Cell span="6">
+                            <FormItem prop="source_table" :label="$t('ruleTemplatelist.sourceTable')">
+                                <WbSelect
+                                    v-model="item.source_table"
+                                    closable
+                                    filterable
+                                    :placeholder="$t('common.pleaseSelect')"
+                                    @on-change="changeTable(index, 'source', $event)">
+                                    <WbOption
+                                        v-for="(table, tableIndex) in sourceTableList"
+                                        :key="tableIndex"
+                                        :label="table.table_name"
+                                        :value="table.table_name" />
+                                </WbSelect>
+                            </FormItem>
+                        </Cell>
+                        <Cell span="6" offset="1">
+                            <FormItem prop="source_filter" :label="$t('crossDatabaseFullVerification.rowFilter')">
+                                <WbInput v-model.trim="item.source_filter" closable :placeholder="$t('common.pleaseEnter')" />
+                            </FormItem>
+                        </Cell>
+                        <Cell span="6" offset="1">
+                            <FormItem prop="columnFilter" :label="$t('crossDatabaseFullVerification.columnFilter')">
+                                <WbSelect
+                                    v-if="columnDataList[index]"
+                                    v-model="item.source_filter_column_list"
+                                    closable
+                                    filterable
+                                    multiple
+                                    :placeholder="$t('common.pleaseSelect')">
+                                    <WbOption
+                                        v-for="(column, columnIndex) in columnDataList[index].source"
+                                        :key="columnIndex"
+                                        :label="getColumnNameWithDataType(column)"
+                                        :value="column.column_name" />
+                                </WbSelect>
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                    <Row>
+                        <Cell span="6">
+                            <FormItem prop="target_table" :label="$t('ruleTemplatelist.targetTable')">
+                                <WbSelect
+                                    v-model="item.target_table"
+                                    closable
+                                    filterable
+                                    :placeholder="$t('common.pleaseSelect')"
+                                    @on-change="changeTable(index, 'target', $event)">
+                                    <WbOption
+                                        v-for="(table, tableIndex) in targetTableList"
+                                        :key="tableIndex"
+                                        :label="table.table_name"
+                                        :value="table.table_name" />
+                                </WbSelect>
+                            </FormItem>
+                        </Cell>
+                        <Cell span="6" offset="1">
+                            <FormItem prop="target_filter" :label="$t('crossDatabaseFullVerification.rowFilter')">
+                                <WbInput v-model.trim="item.target_filter" closable :placeholder="$t('common.pleaseEnter')" />
+                            </FormItem>
+                        </Cell>
+                        <Cell span="6" offset="1">
+                            <FormItem prop="columnFilter" :label="$t('crossDatabaseFullVerification.columnFilter')">
+                                <WbSelect
+                                    v-if="columnDataList[index]"
+                                    v-model="item.target_filter_column_list"
+                                    closable
+                                    filterable
+                                    multiple
+                                    :placeholder="$t('common.pleaseSelect')">
+                                    <WbOption
+                                        v-for="(column, columnIndex) in columnDataList[index].target"
+                                        :key="columnIndex"
+                                        :label="getColumnNameWithDataType(column)"
+                                        :value="column.column_name" />
+                                </WbSelect>
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                </Tab>
+                <Icon
+                    slot="action"
+                    type="ios-add-circle-outline"
+                    color="rgba(51, 153, 255, 0.9)"
+                    size="20"
+                    class="cursor"
+                    @click="addTab" />
+            </Tabs>
+        </template>
+        <template v-else>
+            <div style="text-align: center;">
+                <Icon
+                    slot="action"
+                    type="ios-add-circle-outline"
+                    color="rgba(51, 153, 255, 0.9)"
+                    size="20"
+                    class="cursor"
+                    @click="addTab" />
+            </div>
+        </template>
+    </div>
+</template>
+<script>
+import { RuleMixin } from '../../../mixins/rule';
+export default {
+    mixins: [
+        RuleMixin
+    ],
+    props: {
+        clusterName: {
+            type: String,
+            requried: true
+        },
+        proxyUser: {
+            type: String,
+            requried: true
+        },
+        sourceDb: {
+            type: String,
+            requried: true
+        },
+        targetDb: {
+            type: String,
+            requried: true
+        },
+        filterList: {
+            type: Array,
+            required: true
+        },
+        getTableList: {
+            type: Function,
+            required: true
+        },
+        getColumnList: {
+            type: Function,
+            required: true
+        }
+    },
+    computed: {
+        closable() {
+            // return Array.isArray(this.filterList) && this.filterList.length > 1;
+            return true;
+        },
+        baseParams() {
+            return {
+                clusterName: this.clusterName,
+                proxyUser: this.proxyUser
+            };
+        },
+        sourceTableParams() {
+            return Object.assign({}, this.baseParams, {
+                sourceDb: this.sourceDb
+            });
+        },
+        targetTableParams() {
+            return Object.assign({}, this.baseParams, {
+                targetDb: this.targetDb
+            });
+        }
+    },
+    watch: {
+        // filterList: {
+        //     immediate: true,
+        //     deep: true,
+        //     handler(data) {
+        //         if (Array.isArray(data)) {
+        //             if (data.length === 0) {
+        //                 this.columnDataList = [];
+        //                 this.addTab();
+        //                 this.currentTab = this.filterList[0].id;
+        //             }
+        //         }
+        //     }
+        // },
+        sourceTableParams: {
+            immediate: true,
+            deep: true,
+            handler(data) {
+                if (!data.clusterName || !data.sourceDb) {
+                    this.sourceTableList = [];
+                    this.updateColumnDataBatch('source', []);
+                    return;
+                }
+                this.getTableList('source', data.sourceDb).then((list) => {
+                    this.sourceTableList = list;
+                });
+                this.clearFilterItemValueBatch('source');
+            }
+        },
+        targetTableParams: {
+            immediate: true,
+            deep: true,
+            handler(data) {
+                if (!data.clusterName || !data.targetDb) {
+                    this.targetTableList = [];
+                    this.updateColumnDataBatch('target', []);
+                    return;
+                }
+                this.getTableList('target', data.targetDb).then((list) => {
+                    this.targetTableList = list;
+                });
+                this.clearFilterItemValueBatch('target');
+            }
+        }
+    },
+    FesData() {
+        return {
+            maxSize: 2147483647,
+            currentTab: '',
+            sourceTableList: [],
+            targetTableList: [],
+            columnDataList: []
+        };
+    },
+    FesReady() {
+        this.initColumnDataList();
+    },
+    methods: {
+        initColumnDataList() {
+            this.columnDataList = this.filterList.map(() => {
+                return {
+                    source: [],
+                    target: []
+                };
+            });
+        },
+        isValidType(type) {
+            return ['source', 'target'].includes(type);
+        },
+        changeTable(index, type, value) {
+            const filterItem = this.filterList[index];
+            const columnData = this.columnDataList[index];
+            if (!filterItem || !columnData) return;
+            if (!this.isValidType(type)) return;
+            const mapping = {
+                source: {
+                    db: this.sourceDb,
+                    columnListFieldName: 'source'
+                },
+                target: {
+                    db: this.targetDb,
+                    columnListFieldName: 'target'
+                }
+            };
+            const data = mapping[type];
+            this.getColumnList(type, data.db, value).then((list) => {
+                columnData[data.columnListFieldName] = list;
+            });
+        },
+        updateColumnDataBatch(type, list) {
+            if (!type || !Array.isArray(list) || !this.isValidType(type)) return;
+            for (let i = 0; i < this.columnDataList.length; i++) {
+                const item = this.columnDataList[i];
+                if (!item[type]) continue;
+                item[type] = list;
+            }
+        },
+        clearFilterItemValueBatch(type) {
+            if (!this.isValidType(type)) return;
+            const mapping = {
+                source: [
+                    'source_table',
+                    'source_filter',
+                    'source_filter_column_list'
+                ],
+                target: [
+                    'target_table',
+                    'target_filter',
+                    'target_filter_column_list'
+                ]
+            };
+            this.filterList.forEach((item) => {
+                const data = mapping[type];
+                Object.keys(item).forEach((key) => {
+                    if (item.hasOwnProperty(key)) {
+                        if (data.includes(key)) {
+                            item[key] = Array.isArray(item[key]) ? [] : '';
+                        }
+                    }
+                });
+            });
+        },
+        addTab() {
+            // TODO: 检验当前录入条件全部录入合法
+            const temp = {
+                source: [],
+                target: []
+            };
+            this.columnDataList.push(temp);
+            this.$emit('on-add');
+            this.currentTab = this.filterList[this.filterList.length - 1].id;
+        },
+        deleteTab(...args) {
+            this.$emit('on-delete', ...args);
+            this.currentTab = this.filterList.length > 0 ? this.filterList[0].id : '';
+        },
+        updateActiveTabWithError() {
+            const fieldNames = ['source_table', 'target_table'];
+            let fieldValues = [];
+            for (let i = 0; i < this.filterList.length; i++) {
+                const filter = this.filterList[i];
+                fieldValues = fieldNames.map(item => filter[item]);
+                if (fieldValues.includes('')) {
+                    this.currentTab = filter.id;
+                    return;
+                }
+            }
+        }
+    }
+};
+</script>
+<style lang="scss" scoped></style>

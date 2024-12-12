@@ -1,0 +1,174 @@
+<template>
+    <pageContainer>
+        <div class="verificaton-details p20">
+            <div class="breadcrumb-container mb10">
+                <icon
+                    type="ios-arrow-round-back"
+                    class="mr10 cursor"
+                    size="16"
+                    @click="FesApp.router.back()" />
+                <span class="breadcrumb cursor" @click="navigate('/taskQuery')">{{ $t('taskQuery.taskQuery') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('verifyFailData.checkDetails') }}</span>
+            </div>
+            <div class="common-mt">{{ $t('common.number') }}：{{ applicationId }}</div>
+            <div class="verification-details-main">
+                <Panel
+                    v-for="task in tasks"
+                    :key="task.task_id"
+                    :title="`${$t('taskDetail.taskRule')}：${getRuleNames(task.task_rules)}`">
+                    <div class="summary-list">
+                        <div class="summary-item">
+                            <span>{{ $t('taskDetail.startTime') }}：</span>
+                            <span>{{ task.start_time }}</span>
+                        </div>
+                        <div v-if="task.end_time" class="summary-item">
+                            <span>{{ $t('taskDetail.endTime') }}：</span>
+                            <span>{{ task.end_time }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>{{ $t('common.status') }}：</span>
+                            <span style="color:#657180;" :class="{ 'status': task.task_id}">{{ formatStatus(task.status) }}</span>
+                        </div>
+                    </div>
+                    <VerificationDetail
+                        v-if="task.task_id"
+                        :application-id="applicationId"
+                        :task-id="task.task_id"
+                        @on-rule-name-click="navigateToRuleDetails" />
+                </Panel>
+            </div>
+        </div>
+    </pageContainer>
+</template>
+<script>
+import PageContainer from '../../components/template';
+import VerificationDetail from './components/verificationDetail';
+export default {
+    FesHeader: true,
+    FesLeft: false,
+    components: {
+        PageContainer,
+        VerificationDetail
+    },
+    computed: {
+        statuses() {
+            return this.$t('taskDetail.statusList');
+        }
+    },
+    FesData() {
+        return {
+            applicationId: '',
+            application: null,
+            tasks: []
+        };
+    },
+    FesReady() {
+        const applicationMapping = this.FesFesx.get('task_info_map');
+        if (!applicationMapping) return;
+        this.applicationId = this.$route.query.id;
+        this.application = applicationMapping[this.applicationId];
+        this.initTasks();
+    },
+    methods: {
+        initTasks() {
+            let tasks = [];
+            if (this.application.exception_message) {
+                tasks.push(this.application);
+            } else {
+                tasks = this.application.task;
+            }
+            if (Array.isArray(tasks)) {
+                tasks.forEach((task) => {
+                    task.logtxt = '';
+                });
+                this.tasks = tasks;
+            }
+            this.initLogOfTasks();
+        },
+        initLogOfTasks() {
+            const getLogPromise = [];
+            this.tasks.forEach((task) => {
+                if (task.cluster_id && task.task_id) {
+                    const params = {
+                        cluster_id: task.cluster_id,
+                        task_id: task.task_id
+                    };
+                    getLogPromise.push(this.getLog(params));
+                } else {
+                    task.logtxt = task.exception_message;
+                    if (task.submit_time) {
+                        task.start_time = task.submit_time;
+                    }
+                }
+            });
+            Promise.all(getLogPromise).then((logs) => {
+                logs.forEach(logs => {
+                    this.tasks.forEach(task => {
+                        if(task.task_id == logs.task_id) task.logtxt = logs.log;
+                    })
+                });
+                this.tasks = [].concat(this.tasks);
+            });
+        },
+        getLog(params)  {
+            if (!params) return Promise.reject('参数错误');
+            const cluster_id = params.cluster_id;
+            const task_id = params.task_id;
+            return new Promise((resolve) => {
+                this.FesApi.fetch(`/api/v1/projector/job/log/${cluster_id}/${task_id}`, 'get').then((res) => {
+                    const data = {
+                        task_id,
+                        log: res
+                    };
+                    resolve(data);
+                });
+            });
+        },
+        getRuleNames(rules) {
+            if (!Array.isArray(rules)) return '';
+            return rules.map(item => item.rule_name).join(',');
+        },
+        formatStatus(data) {
+            const list = eval('('+ this.statuses + ')');
+            return list[data];
+        },
+        navigate(path) {
+            this.FesApp.router.push(path);
+        },
+        navigateToRuleDetails(data) {
+            this.FesStorage.set('RULE_DATA', data);
+            this.FesApp.router.push({
+                path: '/taskQuery/ruleDetails',
+                query: {
+                    applicationId: this.applicationId
+                }
+            });
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.verificaton-details {
+    .verification-details-main {
+        margin-top: 20px;
+    }
+    .summary-list {
+        display: flex;
+        align-items: center;
+        .summary-item {
+            margin-right: 20px;
+            &:last-of-type {
+                margin-right: 0;
+            }
+        }
+    }
+}
+.status {
+    color: #3399ff !important;
+    text-decoration: underline;
+}
+.common-mt {
+    margin-top: 15px;
+}
+</style>

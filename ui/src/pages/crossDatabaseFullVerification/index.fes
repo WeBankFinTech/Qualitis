@@ -1,0 +1,866 @@
+<template>
+    <div>
+        <WbForm ref="ruleform" :rule="ruleValidate" :label-width="140">
+            <myRuleTemplate :is-padding="false" :formation="{ mode: { isShow: false}, filter: { title: $t('common.condition'), isShow: true } }">
+                <!-- 创建人，创建时间，修改人，修改时间 -->
+                <template slot="operateInformation">
+                    <slot name="operateInformation" />
+                </template>
+                <!-- 规则基础信息 -->
+                <template slot="base">
+                    <Row>
+                        <Cell span="8">
+                            <FormItem :label="`${$t('common.ruleEnName')}：`" :rule="ruleValidate.rule_name" prop="rule_name">
+                                <WbInput v-model="rule_name" :maxlength="50" :disabled="showLoading" />
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                    <Row>
+                        <Cell span="8">
+                            <FormItem :label="`${$t('common.ruleCnName')}：`" :rule="ruleValidate.cn_name" prop="cn_name">
+                                <WbInput v-model="cn_name" :maxlength="50" :disabled="showLoading" />
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                    <Row>
+                        <Cell span="16">
+                            <FormItem :label="`${$t('addGroupTechniqueRule.technicalRulesDetails')}：`" prop="ruleDetails">
+                                <WbInput
+                                    v-model="ruleDetails"
+                                    autosize
+                                    type="textarea"
+                                    :disabled="showLoading"
+                                    :maxlength="340" />
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                </template>
+                <!-- 规则数据源 -->
+                <template slot="source">
+                    <Row class="whiteAndBlackList">
+                        <Cell span="11">
+                            <FormItem :rule="ruleValidate.clutser_name" prop="clutser_name" :label="`${$t('common.cluster')}：`">
+                                <WbSelect v-model="cluster_name" :disabled="showLoading" filterable @on-change="clusterChange">
+                                    <WbOption v-for="(w,i) in clusterList" :key="i" :disabled="w.disabled" :value="w.cluster_name">
+                                        {{ w.cluster_name }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <FormItem :label="`${$t('common.dataSource')}：`">
+                                <WbSelect v-model="source_linkis_datasoure_id" filterable :disabled="showLoading" @click.native="loadDataSources" @on-change="selectDataSource('source')">
+                                    <WbOption v-for="(dataSource) in dataSources" :key="dataSource.id" :value="dataSource.id">
+                                        {{ dataSource.dataSourceName }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <FormItem :rule="ruleValidate.db_name" prop="source_db" :label="`${$t('common.sourceDatabase')}：`" class="form-item">
+                                <WbSelect v-model="source_db" :disabled="showLoading" filterable @on-change="loadTable('source', source_db)" @on-click="clickDb">
+                                    <WbOption v-for="(w,i) in sourceDbList" :key="i" :value="w.db_name">
+                                        {{ w.db_name }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <!-- 白名单 -->
+                            <FormItem :label="`${$t('common.whiteList')}：`">
+                                <Row>
+                                    <Cell span="9">
+                                        <WbSelect v-model="whiteListSourceNane" :clearable="false" filterable :placeholder="$t('common.sourceName')" @on-click="clickWhiteKist(1)">
+                                            <WbOption v-for="item in tableSourceList" :key="item.table_name" :value="item.table_name">
+                                                {{ item.table_name }}
+                                            </WbOption>
+                                        </WbSelect>
+                                    </Cell>
+                                    <Cell span="1" style="text-align: center">
+                                        :
+                                    </Cell>
+                                    <Cell span="10">
+                                        <WbSelect v-model="whiteListTargetName" :clearable="false" filterable :placeholder="$t('common.targetName')" @on-click="clickWhiteKist(2)">
+                                            <WbOption v-for="item in tableTargeList" :key="item.table_name" :value="item.table_name">
+                                                {{ item.table_name }}
+                                            </WbOption>
+                                        </WbSelect>
+                                    </Cell>
+                                    <Cell span="3" offset="1" style="text-align: right;">
+                                        <Wb-button icon="ios-add" type="primary" @click="add('white')" />
+                                    </Cell>
+                                </Row>
+                            </FormItem>
+                            <FormItem v-if="white_list.length">
+                                <WbInput v-show="false" :disabled="true" clearable placeholder="Name" />
+                                <div class="file_table_desc_content">
+                                    <div v-for="(item, index) in white_list" :key="`${item.key}:${item.value}`" class="file_table_desc_item">
+                                        <div class="text">
+                                            {{ `${item.key}:${item.value}` }}
+                                        </div>
+                                        <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleList(index, 'white')" />
+                                    </div>
+                                </div>
+                            </FormItem>
+                        </Cell>
+                        <Cell span="11" offset="1">
+                            <!-- 代理用户 -->
+                            <FormItem :label="$t('common.proxyUser')" prop="proxyUser">
+                                <WbSelect v-model="proxy_user" @on-change="clusterChange">
+                                    <WbOption v-for="(usr) in proxyUserList" :key="usr" :value="usr">
+                                        {{ usr }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <FormItem :label="`${$t('common.dataSource')}：`">
+                                <WbSelect v-model="target_linkis_datasoure_id" filterable :disabled="showLoading" @click.native="loadDataSources" @on-change="selectDataSource('target')">
+                                    <WbOption v-for="(dataSource) in dataSources" :key="dataSource.id" :value="dataSource.id">
+                                        {{ dataSource.dataSourceName }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <FormItem :rule="ruleValidate.db_name" prop="target_db" :label="`${$t('common.targetDatabase')}：`" class="form-item">
+                                <WbSelect v-model="target_db" :disabled="showLoading" filterable @on-change="loadTable('target', target_db)" @on-click="clickDb">
+                                    <WbOption v-for="(w,i) in targetDbList" :key="i" :value="w.db_name">
+                                        {{ w.db_name }}
+                                    </WbOption>
+                                </WbSelect>
+                            </FormItem>
+                            <!-- 黑名单 -->
+                            <FormItem :label="`${$t('common.blacklist')}：`">
+                                <Row>
+                                    <Cell span="9">
+                                        <WbSelect v-model="blackLeft" :clearable="false" :placeholder="$t('common.filterMethod')" @on-change="blackChange">
+                                            <WbOption v-for="item in contrastMode" :key="item.key" :value="item.key">
+                                                {{ item.value }}
+                                            </WbOption>
+                                        </WbSelect>
+                                    </Cell>
+                                    <Cell span="1" style="text-align: center">
+                                        :
+                                    </Cell>
+                                    <Cell span="10">
+                                        <WbInput v-model="blackRight" :disabled="isSameTable" clearable :placeholder="$t('common.filterFields')" />
+                                    </Cell>
+                                    <Cell span="3" offset="1" style="text-align: right;">
+                                        <Wb-button icon="ios-add" type="primary" @click="add('black')" />
+                                    </Cell>
+                                </Row>
+                            </FormItem>
+                            <FormItem v-if="black_list.length">
+                                <WbInput v-show="false" :disabled="true" clearable placeholder="Name" />
+                                <div class="file_table_desc_content">
+                                    <div v-for="(item, index) in black_list" :key="`${item.key}:${item.value}`" class="file_table_desc_item">
+                                        <div class="text">
+                                            {{ `${item.name}` + `:${item.value}` }}
+                                        </div>
+                                        <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleList(index, 'black')" />
+                                    </div>
+                                </div>
+                            </FormItem>
+                        </Cell>
+                    </Row>
+                </template>
+                <template slot="filter">
+                    <FilterCondition
+                        ref="filterConditionRef"
+                        :filter-list="filter_list"
+                        :cluster-name="cluster_name"
+                        :proxy-user="proxy_user"
+                        :source-db="source_db"
+                        :target-db="target_db"
+                        :get-table-list="getTableList"
+                        :get-column-list="getColumnList"
+                        @on-add="addFilter"
+                        @on-delete="deleteFilter" />
+                </template>
+                <!-- 规则执行参数 -->
+                <template slot="param">
+                    <editRuleParams
+                        ref="ruleParamsPanel"
+                        class="pl32"
+                        :is-view="false"
+                        :params="ruleParams" />
+                </template>
+            </myRuleTemplate>
+            <Cell span="24" class="cellWrap align-center">
+                <WbButton :disabled="showLoading" type="primary" @click.prevent="submit">
+                    {{ $t('common.save') }}
+                </WbButton>
+            </Cell>
+        </WbForm>
+        <Loading v-show="showLoading" class="loading-layout" />
+    </div>
+</template>
+<script type="text/ecmascript-6">
+import { RuleMixin } from '../../mixins/rule';
+import editRuleParams from '../../components/editRuleParams';
+import FilterCondition from './components/filterCondition';
+import { COMMON_REG } from '../../assets/js/const';
+// 此模块功能包括新增规则及编辑规则
+export default {
+    FesHeader: true,
+    FesLeft: false,
+    mixins: [RuleMixin],
+    components: {
+        editRuleParams,
+        FilterCondition
+    },
+    props: {
+        projectId: {
+            type: String,
+            default: ''
+        },
+        ruleGroupId: {
+            type: Number,
+            default: 0
+        },
+        dssParams: {
+            type: Object,
+            default: {}
+        }
+    },
+    computed: {
+        ruleValidate() {
+            const validateDbName = (rule, value, callback) => {
+                if (this.source_db === this.target_db) {
+                    callback(new Error(this.$t('common.sourceAndtargetDB')));
+                } else {
+                    callback();
+                }
+            };
+            return {
+                rule_name: [
+                    {required: true,message: this.$t('common.notEmpty')},
+                    { pattern: COMMON_REG.EN_NAME, message: this.$t('myProject.projectEnNameRegTips') }
+                ],
+                cn_name: [
+                    {required: false,message: this.$t('common.notEmpty')},
+                    { pattern: COMMON_REG.CN_NAME, message: this.$t('myProject.projectCnNameRegTips') }
+                ],
+                ruleDetails: [
+                    {required: false,message: this.$t('common.notEmpty')}
+                ],
+                clutser_name: [{required: true,message: this.$t('common.notEmpty')}],
+                db_name: [
+                    { required: true,message: this.$t('common.notEmpty') },
+                    { validator: validateDbName, trigger: 'change' }
+                ],
+                source_table: [
+                    { required: true, message: this.$t('common.notEmpty') }
+                ],
+                source_filter: [
+                    { required: false, message: this.$t('common.notEmpty') }
+                ],
+                target_table: [
+                    { required: true, message: this.$t('common.notEmpty') },
+                ],
+                target_filter: [
+                    { required: false, message: this.$t('common.notEmpty') }
+                ]
+            }
+        },
+        filterText(){
+            return this.$t('addTechniqueRule.replace')
+        },
+        showDSSNode() {
+            return top !== self
+        }
+    },
+    data() {
+        return {
+            isSameTable: false,
+            proxy_user: "", // 代理人
+            proxyUserList: [], // 代理人列表
+            rule_name: "", // 规则名
+            cn_name: '',
+            ruleDetails: '', // 规则详情
+            source_linkis_datasoure_id: '',
+            target_linkis_datasoure_id: '',
+            source_db: "", // 源库名
+            target_db: "", // 目标库名
+            alarm: false,
+            whiteListSourceNane: "", // 白名单左边表名
+            whiteListTargetName: "", // 白名单右边表名
+            blackLeft: "", // 黑名单左边对比方式
+            blackRight: "", // 黑名单右边包含字段
+            black_list: [],
+            white_list: [],
+            filter_list: [], // 过滤条件
+            contrastMode: [
+                { key: 1, value: this.$t('common.contain') },
+                { key: 2, value: this.$t('common.startWithCharacter') },
+                { key: 3, value: this.$t('common.endWithCharacter') },
+                { key: 4, value: this.$t('common.sameNameTable') },
+                { key: 5, value: this.$t('common.regularExpression') },
+            ], // 黑名单对比方式
+            tableSourceList: [], // 源表列表
+            tableTargeList: [], // 目标表列表
+            isLoadingFileld: false,
+            cluster_name: "", // 集群名称
+            initedDataSources: false,
+            cacheDB: {},
+            clusterList: [],
+            dataSources: [],
+            sourceDbList: [],
+            targetDbList: [],
+            tableList: [],
+            quaCheckList: [],
+            ruleConfig: {checkFieldList :[]}, //质量校验配置
+            currentTab: 1,
+            sqlResult: "",
+            textShow: false,
+            dbText: '',
+            tableText: '',
+            fieldText: '',
+            regText: [],
+            thresholdLimit: false,
+            maxSize: 2147483647,
+            closable: true,
+            showLoading: false,
+            ruleParams: {}
+        };
+    },
+    methods: {
+        // 初始化数据
+        async init() {
+            this.showLoading = true;
+            this.getUsrGroup();
+            // 获取集群列表
+            await this.loadCluster();
+            this.showLoading = false;
+        },
+        //获取集群列表
+        async loadCluster() {
+            let params ={
+                start_index: 0,
+                page_size: 100
+            }
+            let result =  await this.FesApi.fetch('api/v1/projector/meta_data/cluster', params, 'post' );
+            if(Array.isArray(result.data) && result.optional_clusters) {
+                result.data.forEach(item=> {
+                    item.disabled = result.optional_clusters.indexOf(item.cluster_name) < 0;
+                })
+                this.clusterList = result.data;
+            }
+            return result;
+        },
+        loadDataSources(e) {
+            if (this.initedDataSources) return;
+            const target = e.target || e.srcElement;
+            const nodeName = target.nodeName || '';
+            if (nodeName.toUpperCase() === 'LI') return;
+            this.getDataSources(this.cluster_name, this.proxy_user).then((dataSources) => {
+                this.dataSources = dataSources;
+                this.initedDataSources = true;
+            }).finally(() => {
+                this.showLoading = false;
+            });
+            this.showLoading = true;
+        },
+        getCommonInfoByTargetName(targetName) {
+            const fieldNameMap = {
+                source: {
+                    dataSourceId: 'source_linkis_datasoure_id'
+                },
+                target: {
+                    dataSourceId: 'target_linkis_datasoure_id'
+                }
+            };
+            const handleResponse = (res) => {
+                if (!Array.isArray(res.data)) return [];
+                return res.data;
+            };
+            const dataSourceId = this[fieldNameMap[targetName].dataSourceId];
+            return {
+                fieldNameMap,
+                dataSourceId,
+                handleResponse
+            }
+        },
+        getDbList(targetName) {
+            const clusterName = this.cluster_name;
+            if (!clusterName) return Promise.resolve([]);
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = this.proxy_user;
+            const handleResponse = commonInfo.handleResponse;
+            return new Promise((resolve) => {
+                let url;
+                let method = 'post';
+                let params;
+                let cacheDBKey = `1(${clusterName})`;
+                if (proxyUser) {
+                    cacheDBKey += `_2(${proxyUser})`;
+                }
+                if (dataSourceId) {
+                    cacheDBKey += `_3(${dataSourceId})`;
+                }
+                const cacheDB = this.cacheDB[cacheDBKey];
+                if (cacheDB) {
+                    resolve(cacheDB);
+                    return;
+                }
+                if (dataSourceId) {
+                    url = '/api/v1/projector/meta_data/data_source/dbs';
+                    method = 'get';
+                    params = {
+                        clusterName,
+                        proxyUser,
+                        dataSourceId
+                    };
+                } else {
+                    const cluster = this.clusterList.find(item => item.cluster_name === clusterName) || {};
+                    const sourceType = cluster.source_type || '';
+                    url = '/api/v1/projector/meta_data/db';
+                    params = {
+                        cluster_name: clusterName,
+                        source_type: sourceType,
+                        proxy_user: proxyUser,
+                        start_index: 0,
+                        page_size: this.maxSize
+                    };
+                }
+                this.FesApi.fetch(url, params, method).then((res) => {
+                    const data = handleResponse(res);
+                    this.cacheDB[cacheDBKey] = data;
+                    resolve(data);
+                });
+            });
+        },
+        getTableList(targetName, dbName) {
+            if (!dbName) return Promise.resolve([]);
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const clusterName = this.cluster_name;
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = this.proxy_user;
+            const handleResponse = commonInfo.handleResponse;
+            let url = '';
+            let method = 'post';
+            let params = {};
+            if (dataSourceId) {
+                url = '/api/v1/projector/meta_data/data_source/tables';
+                method=  'get';
+                params = {
+                    clusterName,
+                    proxyUser,
+                    dataSourceId,
+                    dbName
+                };
+            } else {
+                url = '/api/v1/projector/meta_data/table';
+                params = {
+                    cluster_name: clusterName,
+                    proxy_user: proxyUser,
+                    db_name: dbName,
+                    start_index: 0,
+                    page_size: 50000
+                };
+            }
+            return new Promise((resolve) => {
+                this.FesApi.fetch(url, params, method).then((res) => resolve(handleResponse(res)));
+            });
+        },
+        getColumnList(targetName, dbName, tableName) {
+            if (!dbName || !tableName) return Promise.resolve([]);
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const clusterName = this.cluster_name;
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = this.proxy_user;
+            const handleResponse = commonInfo.handleResponse;
+            let url = '';
+            let method = 'post';
+            let params = {};
+            if (dataSourceId) {
+                url = '/api/v1/projector/meta_data/data_source/columns';
+                method=  'get';
+                params = {
+                    clusterName,
+                    proxyUser,
+                    dataSourceId,
+                    dbName,
+                    tableName
+                };
+            } else {
+                url = '/api/v1/projector/meta_data/column';
+                params = {
+                    cluster_name: clusterName,
+                    proxy_user: proxyUser,
+                    db_name: dbName,
+                    table_name: tableName,
+                    start_index: 0,
+                    page_size: 50000
+                };
+            }
+            return new Promise((resolve) => {
+                this.FesApi.fetch(url, params, method).then((res) => resolve(handleResponse(res)));
+            });
+        },
+        // 集群选择发生改变
+        clusterChange() {
+            // 初始化对应的数据
+            this.dataSources = [];
+            this.sourceDbList = [];
+            this.targetDbList = [];
+            this.tableSourceList = [];
+            this.tableTargeList = [];
+            this.source_linkis_datasoure_id = '';
+            this.target_linkis_datasoure_id = '';
+            this.source_db = '';
+            this.target_db = '';
+            this.white_list = [];
+            this.black_list = [];
+            this.initedDataSources = false;
+            // 重新拉取数据库数据
+            this.loadDb()
+        },
+        async selectDataSource(targetName) {
+            if (targetName === 'source') {
+                this.source_db = '';
+                this.sourceDbList = [];
+                this.tableSourceList = [];
+                this.white_list = [];
+                this.sourceDbList = await this.getDbList('source');
+            } else {
+                this.target_db = '';
+                this.targetDbList = [];
+                this.tableTargeList = [];
+                this.black_list = [];
+                this.targetDbList = await this.getDbList('target');
+            }
+        },
+        //加载库名列表数据
+        async loadDb() {
+            // 判断集群名是否获取
+            if(!this.cluster_name){ return }
+            // 获取数据库列表
+            this.sourceDbList = await this.getDbList('source');
+            this.targetDbList = await this.getDbList('target');
+        },
+        submit() {
+            this.$refs["ruleform"].validate((valid, errors) => {
+                if(valid) {
+                    this.$emit('get-load', true);
+                    let black_list = this.black_list.map(item => `${item.key}:${item.value}`);
+                    let white_list = this.white_list.map(item => `${item.key}:${item.value}`);
+                    const filter_list = this.filter_list.map((item) => {
+                        const source_filter_column_list = item.source_filter_column_list || [];
+                        const target_filter_column_list = item.target_filter_column_list || [];
+                        let filter_column_list = source_filter_column_list.concat(target_filter_column_list);
+                        filter_column_list = Array.from(new Set(filter_column_list));
+                        return {
+                            filter_column_list,
+                            source_table: item.source_table,
+                            source_filter: item.source_filter,
+                            target_table: item.target_table,
+                            target_filter: item.target_filter
+                        };
+                    });
+                    const {
+                        abort_on_failure,
+                        specify_static_startup_param,
+                        static_startup_param
+                    } = this.$refs.ruleParamsPanel;
+                    const sourceDataSource = this.dataSources.find((item) => String(item.id) === String(this.source_linkis_datasoure_id)) || {};
+                    const targetDataSource = this.dataSources.find((item) => String(item.id) === String(this.target_linkis_datasoure_id)) || {};
+                    const sourceDataSourceType = sourceDataSource.dataSourceType || {};
+                    const targetDataSourceType = targetDataSource.dataSourceType || {};
+                    let allValue = {
+                        black_list,
+                        white_list,
+                        abort_on_failure,
+                        specify_static_startup_param,
+                        static_startup_param,
+                        filter_list,
+                        project_id: this.projectId,
+                        rule_name: this.rule_name,
+                        cn_name: this.cn_name,
+                        rule_detail: this.ruleDetails,
+                        cluster_name: this.cluster_name,
+                        alarm: this.alarm,
+                        source_linkis_datasoure_id: this.source_linkis_datasoure_id,
+                        source_linkis_datasource_name: sourceDataSource.dataSourceName,
+                        source_linkis_datasource_type: sourceDataSourceType.name,
+                        target_linkis_datasoure_id: this.target_linkis_datasoure_id,
+                        target_linkis_datasource_name: targetDataSource.dataSourceName,
+                        target_linkis_datasource_type: targetDataSourceType.name,
+                        source_db: this.source_db,
+                        target_db: this.target_db,
+                        proxy_user: this.proxy_user ? this.proxy_user : undefined,
+                    }
+                    this.FesApi.fetch('api/v1/projector/meta_data/mul_db', allValue, "post").then(() => {
+                        }).catch(() => {
+                        this.$emit('get-load', false);
+                    })
+                    this.$Toast.warn(this.$t('common.crossDatabaseFullVerification'), {
+                        onClose: ()=>{
+                            this.$router.push({ path: '/myProject/projects/list', query: { id: this.$route.query.id } })
+                            this.$emit('get-load', false);
+                        }
+                    });
+                } else {
+                    for (let i = 0; i < errors.length; i++) {
+                        const item = errors[i];
+                        for (let j = 0; j < item.length; j++) {
+                            const error = item[j];
+                            if (['source_table', 'target_table'].includes(error.field)) {
+                                this.$refs.filterConditionRef.updateActiveTabWithError();
+                                return;
+                            }
+                        }
+                    }
+                }
+            })
+        },
+        // 获取代理用户列表
+        getUsrGroup() {
+            this.FesApi.fetch("api/v1/projector/proxy_user", {}, "get").then((res) => {
+                let list = res || [];
+                if(list.length) {
+                    this.proxyUserList = list;
+                } else {
+                    this.proxyUserList = [this.FesApp.get("FesUserName")];
+                }
+            });
+        },
+        clearParam() {
+            Object.assign(this,{
+                rule_name: '',
+                cn_name: '',
+                ruleDetails: '',
+                alarm: false,
+                proxyUser: "",
+                quaCheckList:[{
+                    id: new Date().valueOf(),
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: ""
+                }],
+                checkTemplateId: '',
+                ruleId: '',
+                ruleTemplateId: '',
+                closable: true,
+                filter_list: []
+            });
+            if (this.showDSSNode && this.dssParams && this.dssParams.nodeName) {
+                this.rule_name = this.dssParams.nodeName;
+                this.cn_name = this.dssParams.cn_name;
+            }
+            this.init()
+        },
+            //加载表名列表数据
+        async loadTable(flag, db_name) {
+            if(!db_name) return;
+            if(flag === 'source') {
+                this.tableSourceList = await this.getTableList('source', db_name);
+            }
+            if(flag === 'target') {
+                this.tableTargeList = await this.getTableList('target', db_name);
+            }
+            this.white_list = [];
+            this.black_list = [];
+        },
+        // 黑名单选择
+        blackChange(e) {
+            // 如果选择同名表则
+            if(e === 4) {
+                this.isSameTable = true;
+                this.blackRight = '';
+
+            } else {
+                this.isSameTable = false;
+            }
+        },
+        // 判断是否选择了集群
+        clickDb() {
+            if(!this.cluster_name) this.$Toast.warn(this.$t('common.selectCluster'));
+        },
+        // 判断是否选择了DB
+        clickWhiteKist(e) {
+            if(e === 1 && !this.source_db) this.$Toast.warn(this.$t('common.selectDatabase'));
+            if(e === 2 && !this.target_db) this.$Toast.warn(this.$t('common.selectDatabase'));
+        },
+        // 黑名单，白名单的新增
+        add(flag) {
+            // 判断是黑名单还是白名单,根据flag为相应的列表加数据
+            let key = '';
+            let value = '';
+            let list = [];
+            if(flag === 'black') {
+                key = this.blackLeft;
+                value = this.blackRight;
+                list = this.black_list;
+                // 判断是否为空
+                if((!key || !value) && !this.isSameTable) return this.$Toast.warn(this.$t('common.listNotEmpty'));
+            } else if(flag === 'white') {
+                key = this.whiteListSourceNane;
+                value = this.whiteListTargetName;
+                list = this.white_list;
+                // 判断是否为空
+                if(!key || !value) return this.$Toast.warn(this.$t('common.listNotEmpty'));
+            } else {
+                throw new Error('parameter error')
+            }
+            if (!(flag === 'black' && key === 5)) {
+                // 判断是包含特殊字符和中文等
+                if(!/^\w*$/.test(key) || !/^\w*$/.test(value)) return this.$Toast.warn(this.$t('common.tableFormation'));
+            }
+            // 判断是否重复
+            let isDuplicate = list.some(item => (item.key === key) && (item.value === value));
+            if(isDuplicate) {
+                this.$Toast.warn(this.$t('common.duplicateContent'))
+            } else {
+                if(flag === 'black') {
+                    let name = this.contrastMode.find(item => item.key === key).value;
+                    this.black_list.push({ key, value, name });
+                    this.blackLeft = '';
+                    this.blackRight = '';
+                }
+                if(flag === 'white') {
+                    this.white_list.push({ key, value });
+                    this.whiteListSourceNane = '';
+                    this.whiteListTargetName = '';
+                }
+            }
+        },
+        // 删除黑白名单
+        deteleList(index, flag) {
+            if(flag === 'black') {
+                this.black_list.splice(index, 1);
+            }
+            if(flag === 'white') {
+                this.white_list.splice(index, 1);
+            }
+        },
+        addFilter() {
+            const temp = {
+                id: new Date().valueOf(),
+                source_table: '',
+                source_filter: '',
+                target_table: '',
+                target_filter: '',
+                source_filter_column_list: [],
+                target_filter_column_list: [],
+            };
+            this.filter_list.push(temp);
+        },
+        deleteFilter(name, index) {
+            // if (!index) return;
+            this.filter_list.splice(index, 1);
+        }
+    }
+};
+</script>
+<style scoped lang="scss">
+.sqlWrapper {
+    height: 20px;
+    line-height: 20px;
+    text-align: left;
+    margin-bottom: 10px;
+}
+.fieldWrapper {
+    width: 33%;
+    padding: 10px;
+    display: inline-block;
+    .ui-select,.ui-input {
+        width: 220px;
+    }
+}
+.align-center {
+    text-align: center;
+}
+.cellWrap {
+    padding-left: 10px;
+
+    .ui-button {
+        margin: 20px auto;
+    }
+}
+.inlineField {
+    width: 220px;
+}
+.loadingField {
+    position: absolute;
+    z-index: 3;
+    margin-top: 10px;
+    right: 60px;
+    width: 15px!important;
+    height: 15px!important;
+}
+.projectTextbox {
+    padding: 5px;
+    height: 100px;
+    width:100%;
+    background-color: #f3f3f3;
+}
+.form-item,
+.icon-title {
+    position: relative;
+}
+.icon-title {
+    margin-left: 10px;
+}
+.icon-title:hover:after {
+    content: attr(data-title);
+    position: absolute;
+    top: 30px;
+    left: -102px;
+    width: 180px;
+    padding: 2px 2px;
+    border: 1px solid #9e9e9e;
+    border-radius: 5px;
+    background-color: #555e67;
+    color: #fff;
+    opacity: 0.9;
+    z-index: 2;
+}
+.taskSwitch {
+    margin-right: 50px;
+    position: absolute;
+    top: -30px;
+    right: 150px;
+}
+.disableEdit {
+    color: #666
+}
+.alert_label {
+    /deep/.ui-form-label {
+        text-align: left;
+        padding-left: 20px;
+    }
+}
+.file_table_desc_content {
+    border: 1px solid rgba(0,0,0,0.2);
+    padding: 5px 2.5px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    .file_table_desc_item {
+        flex: none;
+        max-width: calc(100% - 5px);
+        border: 1px solid rgba(0,0,0,0.2);
+        padding: 5px 3px;
+        border-radius: 5px;
+        margin: 2px 2.5px;
+        line-height: 1.2;
+        position: relative;
+        .text {
+            overflow: hidden;
+            width: 100%;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+    .deteleIcon {
+        position: absolute;
+        right: 0;
+        top: 0;
+        transform: translate(50%, -50%);
+        cursor: pointer;
+    }
+}
+.whiteAndBlackList {
+    display: flex;
+    align-items: center;
+}
+.pl32 {
+    padding-left: 32px;
+}
+</style>

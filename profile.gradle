@@ -1,0 +1,400 @@
+/*
+ * Copyright 2019 WeBank
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+project(':web/app') {
+  archivesBaseName = 'web_app'
+
+  configurations {
+    compile.exclude module: "spring-boot-starter-tomcat"
+    compile.exclude module: "spring-boot-starter-logging"
+    compile.exclude group: 'commons-logging'
+    compile.exclude module: 'slf4j-log4j12'
+    compile.exclude group: 'org.sonatype.sisu.inject'
+  }
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterWeb
+    compile libs.springBootStarterParent
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterJetty
+    compile libs.springBootStarterLog4j2
+    compile libs.springBootStarterTest
+    compile libs.springBootStarterAop
+//    compile libs.dssAppJointAuth
+    compile libs.dssSso
+    compile libs.dssSpringSso
+    compile libs.springAop
+    compile libs.springAspects
+    compile libs.springBeans
+    compile libs.springContext
+    compile libs.springCore
+    compile libs.springJcl
+    compile libs.springJdbc
+    compile libs.springOrm
+    compile libs.springTest
+    compile libs.springTx
+    compile libs.springWeb
+    compile libs.springWebMvc
+    compile libs.jacksonCore
+    compile libs.jacksonDatabind
+    compile libs.jacksonAnnotations
+    compile libs.fastJson
+    compile libs.dom4j
+    compile libs.apiUtil
+    compile libs.nettyAll
+    compile libs.nettyTransport
+    compile libs.derby
+    compile (libs.zookeeper) {
+      exclude group: 'org.slf4j'
+      exclude group: 'log4j'
+    }
+    compile libs.log4jCore
+    compile project(':web/user')
+    compile project(':web/sys_config')
+    compile project(':web/meta_data')
+    compile project(':web/project')
+    compile project(':web/scheduler')
+    compile project(':web/metric')
+  }
+}
+
+project(':web/meta_data') {
+  archivesBaseName = 'web_meta_data'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.commonsLang
+
+    compile project(':web/common')
+    compile project(':web/project')
+    compile project(":core/meta_data")
+  }
+}
+
+project(':web/project') {
+  archivesBaseName = 'web_project'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.commonsLang
+    compile libs.jerseyMediaMultipart
+    compile libs.easyExcel
+
+    compile project(':web/common')
+    compile project(':web/user')
+    compile project(':core/project')
+    compile project(':web/sys_config')
+  }
+}
+
+project(':web/metric') {
+  archivesBaseName = 'web_metric'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.commonsLang
+    compile libs.jerseyMediaMultipart
+    compile libs.easyExcel
+
+    compile project(":web/user")
+    compile project(":web/meta_data")
+    compile project(":core/metric")
+  }
+}
+
+project(':web/scheduler') {
+  archivesBaseName = 'web_scheduler'
+
+  dependencies{
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.commonsLang
+    compile project(':web/task')
+    compile project(':web/common')
+    compile project(':web/metric')
+    compile project(':web/project')
+    compile project(':core/monitor')
+    compile project(':web/meta_data')
+    compile project(':core/scheduler')
+    compile project(':util')
+  }
+}
+
+project(':web/sys_config') {
+  archivesBaseName = 'web_sys_config'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.commonsLang
+
+    compile project(':web/common')
+    compile project(':core/meta_data')
+    compile project(':core/sys_config')
+  }
+}
+
+project(':web/task') {
+  archivesBaseName = 'web_task'
+
+  dependencies{
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarter
+//    compile libs.dssAppJointAuth
+    compile libs.httpClient
+    compile libs.httpMime
+    compile project(':core/task')
+    compile project(":web/project")
+    compile project(':core/monitor')
+  }
+}
+
+project(':web/user') {
+  archivesBaseName = 'web_user'
+
+  dependencies{
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.commonsLang
+    compile libs.opendjCore
+    compile libs.opendjGrizzly
+    compile libs.forgerockUtil
+    compile libs.i18nCore
+    compile libs.i18nSlf4j
+    compile libs.zip4j
+    compile project(':util')
+    compile project(':web/common')
+    compile project(':core/user')
+    compile project(':core/project')
+  }
+}
+
+project(':web/common') {
+  archivesBaseName = 'web_common'
+
+  dependencies{
+    compile libs.springBootStarterJersey
+    compile project(':core/common')
+  }
+}
+
+project(':core/analysis') {
+  archivesBaseName = 'core_analysis'
+
+  dependencies{
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+  }
+}
+
+project(':core/converter') {
+  archivesBaseName = 'core_converter'
+
+  dependencies{
+    compile project(':core/divider')
+    compile project(':util')
+  }
+}
+
+project(':core/common') {
+  archivesBaseName = 'core_common'
+
+  dependencies{
+    compile libs.springBootStarterJersey
+    compile libs.commonsLang
+
+    compile (libs.hadoopClient) {
+      exclude group: 'javax.servlet'
+      exclude group: 'javax.servlet.jsp'
+      exclude group: 'com.sun.jersey'
+      exclude group: 'com.sun.jersey.contribs'
+      exclude group: 'javax.xml.bind'
+      exclude group: 'log4j'
+
+      configurations {
+        compile.exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
+        compile.exclude group: 'com.google.protobuf', module: 'protobuf-java'
+        compile.exclude group: 'io.netty', module: 'netty'
+      }
+    }
+
+    compile (libs.hiveExec) {
+      exclude group: 'org.apache.commons'
+      exclude group: 'commons-lang'
+      exclude group: 'javax.servlet.jsp'
+      exclude group: 'javax.servlet'
+      exclude group: 'com.sun.jersey'
+      exclude group: 'com.sun.jersey.contribs'
+      exclude group: 'javax.xml.bind'
+      exclude group: 'log4j'
+      exclude group: 'org.apache.calcite'
+
+      configurations {
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty-util'
+        compile.exclude group: 'org.mortbay.jetty', module: 'jetty'
+      }
+    }
+  }
+}
+
+project(':core/divider') {
+  archivesBaseName = 'core_divider'
+
+  dependencies{
+    compile libs.springBootStarterJersey
+    compile libs.commonsLang3
+    compile project(':core/common')
+    compile project(':core/project')
+  }
+}
+
+project(':core/meta_data') {
+  archivesBaseName = 'core_meta_data'
+
+  dependencies {
+    compile libs.commonsLang
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+    compile libs.quartz
+    compile libs.quartzJobs
+    compile libs.springBootStarter
+
+    compile project(":core/common")
+    compile project(":core/sys_config")
+    compile project(":core/scheduler")
+    compile project(":util")
+  }
+}
+
+project(':core/monitor') {
+  archivesBaseName = 'core_monitor'
+
+  dependencies{
+    compile libs.springBootStarter
+
+    compile project(':core/task')
+    compile project(':core/scheduler')
+    compile project(':core/analysis')
+    compile project(':core/project')
+    compile project(':core/user')
+    compile project(':util')
+  }
+}
+
+project(':core/project') {
+  archivesBaseName = 'core_project'
+
+  dependencies{
+    compile libs.commonsLang
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+
+    compile project(":core/common")
+    compile project(":core/metric")
+  }
+}
+
+project(':core/metric') {
+  archivesBaseName = 'core_metric'
+
+  dependencies{
+    compile libs.commonsLang
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+
+    compile project(":core/user")
+  }
+}
+
+project(':core/scheduler') {
+  archivesBaseName = 'core_scheduler'
+
+  dependencies{
+    compile libs.curatorRecipes
+    compile libs.curatorFramework
+    compile libs.curatorClient
+    compile libs.gson
+
+    compile project(':core/converter')
+    compile project(':core/analysis')
+    compile project(':core/task')
+    compile project(':core/sys_config')
+    compile libs.springRetry
+    compile libs.aspectJ
+    compile libs.druid
+  }
+}
+
+project(':core/task') {
+  archivesBaseName = 'core_task'
+
+  dependencies{
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+
+    compile project(':core/common')
+    compile project(':core/project')
+    compile project(":util")
+  }
+}
+
+
+// common dependencies
+project(':util') {
+  archivesBaseName = 'util'
+
+  dependencies{
+    compile libs.commonsLang
+    compile libs.guava
+    compile (libs.slf4j) {
+      exclude group: 'log4j'
+    }
+    compile libs.jexl3
+  }
+}
+
+project(':core/user') {
+  archivesBaseName = 'core_user'
+
+  dependencies{
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+  }
+}
+
+project(':core/sys_config') {
+  archivesBaseName = 'core_sys_config'
+
+  dependencies {
+    compile libs.springBootStarter
+    compile libs.springBootStarterJersey
+    compile libs.springBootStarterDataJpa
+    compile libs.mysqlConnectorJava
+  }
+}

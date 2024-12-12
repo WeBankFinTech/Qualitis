@@ -1,0 +1,251 @@
+<template>
+    <pageContainer>
+        <div class="p20">
+            <div class="breadcrumb-container mb10">
+                <icon
+                    type="ios-arrow-round-back"
+                    class="mr10 cursor"
+                    size="16"
+                    @click="FesApp.router.back()" />
+                <span class="breadcrumb cursor" @click="navigate('/taskQuery')">{{ $t('taskQuery.taskQuery') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb cursor" @click="navigate('/taskQuery/verificationDetails', {id: $route.query.applicationId})">{{ $t('verifyFailData.checkDetails') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ ruleTypeName + $t('verifyFailData.ruleDetails') }}</span>
+            </div>
+        </div>
+        <!-- 单表 -->
+        <myPanel v-if="tableType === SINGLE_TABLE_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('myProject.newSingleTableRule') }}</div>
+            </div>
+            <singleTable
+                ref="singleTable"
+                :dss-params="DSSParams"
+                @get-info="getInfo"
+                @get-load="getLoad">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </singleTable>
+        </myPanel>
+        <!-- 自定义 -->
+        <myPanel v-if="tableType === CUSTOMIZATION_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('addGroupTechniqueRule.newCustomRule') }}</div>
+            </div>
+            <customTable
+                ref="customTable"
+                :dss-params="DSSParams"
+                @get-load="getLoad"
+                @get-info="getInfo">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </customTable>
+        </myPanel>
+        <!-- 跨表 -->
+        <myPanel v-if="tableType === CROSS_TABLE_VERIFICATION_FULLY_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('addGroupTechniqueRule.newMultiTableRule') }}</div>
+            </div>
+            <multiTable
+                ref="multiTable"
+                :dss-params="DSSParams"
+                @get-info="getInfo"
+                @get-load="getLoad">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </multiTable>
+        </myPanel>
+        <!-- 文件校验 -->
+        <myPanel v-if="tableType === FILE_VERIFICATION_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('addGroupTechniqueRule.documentVerification') }}</div>
+            </div>
+            <fileRuleTable
+                ref="fileRuleTable"
+                :dss-params="DSSParams"
+                @get-info="getInfo"
+                @get-load="getLoad">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </fileRuleTable>
+        </myPanel>
+        <!-- 跨库全量校验 -->
+        <myPanel v-if="tableType === CROSS_DB_VERIFICATION_FULLY_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('addGroupTechniqueRule.crossDatabaseFullVerification') }}</div>
+            </div>
+            <crossDatabaseFullVerification
+                ref="crossDatabaseFullVerification"
+                :dss-params="DSSParams"
+                @get-info="getInfo"
+                @get-load="getLoad">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </crossDatabaseFullVerification>
+        </myPanel>
+        <!-- sql校验 -->
+        <myPanel v-if="tableType === SQL_VERIFICATION_RULE_FLAG">
+            <div slot="title" class="myPanelTitle">
+                <div>{{ $t('myProject.sqlVerification') }}</div>
+            </div>
+            <SqlVerificationRule
+                ref="sqlVerificationRuleTable"
+                :dss-params="DSSParams"
+                @get-info="getInfo"
+                @get-load="getLoad">
+                <template slot="operateInformation">
+                    <div class="titleInfo">
+                        {{ `${$t('common.founder')}：${create_user}, ${$t('common.createTime')}：${create_time}, ${$t('common.modifier')}：${modify_user}, ${$t('common.changeTheTime')}：${modify_time}` }}
+                    </div>
+                </template>
+            </SqlVerificationRule>
+        </myPanel>
+        <div v-show="isLoading" class="mask">
+            <Loading class="loading-layout" />
+        </div>
+    </pageContainer>
+</template>
+<script>
+import pageContainer from '../../components/template';
+import singleTable from '../addTechniqueRule';
+import customTable from '../customTechnicalRule';
+import multiTable from '../crossTableCheck';
+import fileRuleTable from '../fileRuleCheck';
+import crossDatabaseFullVerification from '../crossDatabaseFullVerification';
+import {
+    SINGLE_TABLE_RULE_FLAG,
+    CROSS_TABLE_VERIFICATION_FULLY_RULE_FLAG,
+    CUSTOMIZATION_RULE_FLAG,
+    CROSS_DB_VERIFICATION_FULLY_RULE_FLAG,
+    FILE_VERIFICATION_RULE_FLAG,
+    SQL_VERIFICATION_RULE_FLAG
+} from '../../assets/js/utils';
+export default {
+    FesLeft: false,
+    components: {
+        pageContainer,
+        singleTable,
+        customTable,
+        multiTable,
+        fileRuleTable,
+        crossDatabaseFullVerification
+    },
+    computed: {
+        ruleTypeName: function() {
+            const mapping = {
+                [SINGLE_TABLE_RULE_FLAG]: 'myProject.newSingleTableRule',
+                [CUSTOMIZATION_RULE_FLAG]: 'addGroupTechniqueRule.newCustomRule',
+                [CROSS_TABLE_VERIFICATION_FULLY_RULE_FLAG]: 'addGroupTechniqueRule.newMultiTableRule',
+                [FILE_VERIFICATION_RULE_FLAG]: 'addGroupTechniqueRule.documentVerification',
+                [CROSS_DB_VERIFICATION_FULLY_RULE_FLAG]: 'addGroupTechniqueRule.crossDatabaseFullVerification',
+                [SQL_VERIFICATION_RULE_FLAG]: 'myProject.sqlVerification'
+            };
+            let temp = mapping[this.tableType];
+            temp = temp ? this.$t(temp) : '';
+            return temp;
+        }
+    },
+    FesData: function() {
+        return {
+            isLoading: false,
+            tableType: '',
+            DSSParams: {},
+            create_user: '',
+            create_time: '',
+            modify_user: '',
+            modify_time: '',
+            SINGLE_TABLE_RULE_FLAG,
+            CROSS_TABLE_VERIFICATION_FULLY_RULE_FLAG,
+            CUSTOMIZATION_RULE_FLAG,
+            CROSS_DB_VERIFICATION_FULLY_RULE_FLAG,
+            FILE_VERIFICATION_RULE_FLAG,
+            SQL_VERIFICATION_RULE_FLAG
+        };
+    },
+    FesReady: function() {
+        this.DSSParams = this.$route.query;
+        this.init();
+    },
+    methods: {
+        init: function() {
+            // TODO: 改为对应规则的实际数据
+            const rule = {
+                table_type: null,
+                rule_type: 3,
+                rule_id: 57885,
+                rule_template_id: 20
+            };
+            this.initRuleDetailComponent(rule);
+        },
+        getInfo: function(data) {
+            this.create_user = data.create_user; // 创建人
+            this.create_time = data.create_time; // 创建时间
+            this.modify_time = data.modify_time; // 修改时间
+            this.modify_user = data.modify_user; // 修改人
+        },
+        getLoad: function(flag) {
+            this.isLoading = flag;
+        },
+        initRuleDetailComponent: function(data) {
+            const refMapping = {
+                [SINGLE_TABLE_RULE_FLAG]: 'singleTable',
+                [CUSTOMIZATION_RULE_FLAG]: 'customTable',
+                [CROSS_TABLE_VERIFICATION_FULLY_RULE_FLAG]: 'multiTable',
+                [FILE_VERIFICATION_RULE_FLAG]: 'fileRuleTable',
+                [SQL_VERIFICATION_RULE_FLAG]: 'sqlVerificationRuleTable'
+            };
+            const tableType = data.table_type || '1';
+            let refName = '';
+            let ref;
+            this.tableType = this.FesUtil.buildRuleTableFlag(data.rule_type, tableType);
+            refName = refMapping[this.tableType];
+            this.$nextTick(() => {
+                ref = this.$refs[refName];
+                if (ref && ref.init instanceof Function) {
+                    ref.init('view', data.rule_id, data.rule_template_id);
+                }
+            });
+        },
+        navigate: function(path, query = {}) {
+            this.FesApp.router.push({path, query});
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.myPanelTitle {
+    display: flex;
+    align-items: center;
+}
+/deep/
+.titleInfo {
+    color: rgba(0,0,0,0.5);
+    margin-left: 30px;
+}
+.mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.1);
+    cursor: not-allowed;
+}
+</style>
