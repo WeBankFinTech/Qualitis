@@ -1,0 +1,195 @@
+<template>
+    <div class="global-header">
+        <!-- 文件id -->
+        <FormItem prop="file_id" :rule="notEmpty" :label="`${$t('common.fileID')}：`">
+            <WbInput v-model="fpsData.file_id" :disabled="isView" clearable placeholder="id" />
+        </FormItem>
+        <!-- 文件id -->
+        <FormItem prop="file_hash_values" :rule="notEmpty" :label="`${$t('common.fileHash')}：`">
+            <WbInput v-model="fpsData.file_hash_values" :disabled="isView" clearable placeholder="hash" />
+        </FormItem>
+        <!-- 表结构 -->
+        <FormItem :rule="tableFormation" prop="tableFormation" :label="`${$t('common.tableStructure')}：`">
+            <Row>
+                <Cell span="9">
+                    <WbInput v-model="file_table_desc_name" :disabled="isView" clearable placeholder="Name" />
+                </Cell>
+                <Cell span="1" style="text-align: center">
+                    :
+                </Cell>
+                <Cell span="10">
+                    <WbSelect v-model="file_table_desc_type" :clearable="false" :disabled="isView" placeholder="Type">
+                        <WbOption v-for="item in dataTypeList" :key="item" :value="item">
+                            {{ item }}
+                        </WbOption>
+                    </WbSelect>
+                </Cell>
+                <Cell span="3" offset="1" style="text-align: right;">
+                    <Wb-button icon="ios-add" type="primary" @click="add" />
+                </Cell>
+            </Row>
+        </FormItem>
+        <!-- 时间格式 -->
+        <FormItem v-if="file_table_desc_type === 'date'" :rule="notEmpty" prop="timeFormat" :label="`${$t('common.timeFormat')}：`">
+            <WbSelect v-model="timeFormat" :disabled="isView">
+                <WbOption v-for="item in timeFormatList" :key="item" :value="item">
+                    {{ item }}
+                </WbOption>
+            </WbSelect>
+        </FormItem>
+        <FormItem v-if="fpsData.file_table_desc.length">
+            <WbInput v-show="false" :disabled="true" clearable placeholder="Name" />
+            <div class="file_table_desc_content">
+                <div v-for="(item, index) in fpsData.file_table_desc" :key="item.column_name" class="file_table_desc_item">
+                  {{ `${item.column_name}:${item.data_type}` }}
+                  <icon class="deteleIcon" type="ios-close-circle" size="12" @click="deteleFileTableDesc(index)" />
+                </div>
+            </div>
+        </FormItem>
+        <!-- 分隔符 -->
+        <FormItem :rule="notEmpty" prop="file_delimiter" :label="`${$t('common.separator')}：`">
+            <WbSelect v-model="fpsData.file_delimiter" :disabled="isView">
+                <WbOption v-for="item in separator_list" :key="item.id" :value="item.value">
+                    {{ item.lable }}
+                </WbOption>
+            </WbSelect>
+        </FormItem>
+        <!-- 文件类型 -->
+        <FormItem :rule="notEmpty" prop="file_type" :label="`${$t('common.fileType')}：`">
+            <WbSelect v-model="fpsData.file_type" :disabled="isView">
+                <WbOption v-for="item in fileTypeList" :key="item" :value="item">
+                    {{ item }}
+                </WbOption>
+            </WbSelect>
+        </FormItem>
+        <!-- 选择是否保存hive表和是否首行为表头 -->
+        <FormItem>
+            <Checkbox v-model="fpsData.file_header" :label="$t('common.firstLineHeader')" :disabled="isView" />
+            <!-- <Checkbox v-model="fpsData.file_save_hive_table" :label="$t('common.saveHive')" :disabled="isView" /> -->
+        </FormItem>
+        <!-- 插槽 -->
+        <slot />
+    </div>
+</template>
+
+<script>
+    export default {
+        data() {
+            const ruleTable = (rule, value, callback) => {
+                if (!/^\w*$/.test(value)) {
+                    callback(new Error(this.$t('common.tableFormation')));
+                } else {
+                    callback();
+                }
+            };
+            return {
+                file_table_desc_name: '',
+                file_table_desc_type: '',
+                timeFormat: 'yyyyMMdd',
+                notEmpty: [{required: true,message: this.$t('common.notEmpty')}],
+                tableFormation: [{validator: ruleTable, trigger: 'blur'}],
+            };
+        },
+        props: {
+            fpsData: { // fps模式下的参数
+                type: Object,
+                default: () => {
+                    return {
+                        file_id: "", // 文件id
+                        file_delimiter: ',', // 分割符号
+                        file_header: false, // 首行为表头
+                        // file_save_hive_table: false, // 保存为hive表
+                        file_type: '.csv',
+                        file_table_desc: [], // 表结构
+                    }
+                }
+            },
+            separator_list: { // 分割符号
+                type: Array,
+                default: () => []
+            },
+            fileTypeList: { // 文件类型
+                type: Array,
+                default: () => [ ".csv", ".txt", ".xls", ".xlsx", ".gz" ]
+            },
+            timeFormatList: { // 时间格式
+                type: Array,
+                default: () => [ "yyyyMMdd", "yyyy-MM-dd", "yyyy.MM.dd", "yyyy/MM/dd" ]
+            },
+            dataTypeList: { // 表结构类型
+                type: Array,
+                default: () => [ "string", "int", "bigint", "smallint", "tinyint", "double", "float", "boolean", "decimal",  "timestamp", "date", "char", "varchar" ]
+            },
+            isView: { // 是否为只读模式
+                type: Boolean,
+                default: false
+            },
+        },
+        computed: {
+
+        },
+        FesReady: function(){
+        },
+        methods: {
+            // 添加表结构
+            add() {
+                // 先判断是否满足条件，是否为空或者重复
+                let column_name = this.file_table_desc_name;
+                let data_type = this.file_table_desc_type;
+                // 判断是否为空
+                if(!column_name || !data_type) return this.$Toast.warn(this.$t('common.tableDesc'));
+                // 判断是包含特殊字符和中文等
+                if(!/^\w*$/.test(column_name) || !/^\w*$/.test(data_type)) return this.$Toast.warn(this.$t('common.tableFormation'));
+                // 判断是否重复
+                let flag = this.fpsData.file_table_desc.some(item => (item.column_name === column_name) && (item.data_type === data_type));
+                if(flag) {
+                    this.$Toast.warn(this.$t('common.tableDescRepeat'))
+                } else {
+                    // 根据data_type判断时间类型是否选择，并加入时间格式
+                    if(data_type === 'date') {
+                        let timeIndex = this.timeFormatList.indexOf(this.timeFormat);
+                        timeIndex = timeIndex !== -1 ? timeIndex + 1 : undefined;
+                        data_type = timeIndex ? `${data_type}_${timeIndex}` : data_type;
+                    }
+                    this.fpsData.file_table_desc.push({ column_name, data_type });
+                    this.file_table_desc_name = '';
+                    this.file_table_desc_type = '';
+                    this.$emit('on-add', this.fpsData.file_table_desc)
+                }
+            },
+            // 删除表结构
+            deteleFileTableDesc(index) {
+                if(this.isView) return;
+                this.fpsData.file_table_desc.splice(index, 1);
+            }
+        }
+    }
+</script>
+<style lang="scss" scoped>
+    .file_table_desc_content {
+        border: 1px solid rgba(0,0,0,0.2);
+        padding: 5px 2.5px;
+        border-radius: 5px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        .file_table_desc_item {
+            flex: none;
+            border: 1px solid rgba(0,0,0,0.2);
+            padding: 5px 3px;
+            border-radius: 5px;
+            margin: 2px 2.5px;
+            line-height: 1.2;
+            position: relative;
+        }
+        .deteleIcon {
+            position: absolute;
+            right: 0;
+            top: 0;
+            transform: translate(50%, -50%);
+            cursor: pointer;
+        }
+    }
+</style>
+

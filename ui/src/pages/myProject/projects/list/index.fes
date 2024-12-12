@@ -1,0 +1,1158 @@
+<template>
+    <pageContainer>
+        <div class="p20">
+            <div class="breadcrumb-container mb10">
+                <icon type="ios-arrow-round-back" class="mr10 cursor" size="16" @click="getRouter('/myProject/projects')" />
+                <span class="breadcrumb cursor" @click="getRouter('/myProject/projects')">{{ $t('myProject.myProject') }}</span>
+                <span class="breadcrumb-item-separator">/</span>
+                <span class="breadcrumb-item-link">{{ $t('addGroupTechniqueRule.projectDetails') }}</span>
+            </div>
+            <ProjForm
+                :editing="isEditing"
+                :flow-tag="flowProjectTag"
+                :detail="projectDetail"
+                :technical="ruleDetails"
+                :is-run="isRun"
+                :is-edit="isEdit"
+                :is-admin="isAdmin"
+                :can-view="canView"
+                @importFile="importFile"
+                @exportExcel="exportExcel"
+                @taskExecution="taskExecution"
+                @showProjetDet="showProjetDet"
+                @view-history="viewHistory"
+                @on-permission="openPermissionPanelDraw" />
+            <div v-for="(val, key,i) in ruleList" :key="i" class="ruleTable">
+                <div class="mb10 groupName">
+                    <WbButton style="margin-right: 20px" type="success" @click="ruleDetail(val)">{{ $t('common.detail') }}</WbButton>
+                    <WbButton v-if="!(showRename === val[0].rule_group_id) && !flowProjectTag && (isAdmin || isEdit)" style="margin-right: 20px" type="primary" @click="getRename(val)">{{ $t('myProject.rename') }}</WbButton>
+                    <span>{{ $t('projects.groupName') }}：</span>
+                    <Wb-input v-if="showRename && showRename === val[0].rule_group_id" v-model="rule_group_name" :maxlength="50" :placeholder="$t('common.pleaseEnter')" width="200px" @focus="select()" />
+                    <span v-else>{{ val[0].rule_group_name }}</span>
+                    <template v-if="showRename === val[0].rule_group_id">
+                        <WbButton ref="submitRename" style="margin-left: 20px" type="primary" @click="submitRename(val, key)">{{ $t('common.ok') }}</WbButton>
+                        <WbButton style="margin-left: 20px" @click="getCancelRename()">{{ $t('common.cancel') }}</WbButton>
+                    </template>
+                </div>
+                <WbTable ref="tableRule" :data="val" border class="tableContent">
+                    <Column v-if="!flowProjectTag" type="selection" width="40px" />
+                    <Column prop="rule_name" :name="$t('common.ruleName')" width="200px" />
+                    <Column prop="rule_id" :name="$t('tableThead.ruleId')" width="70px" />
+                    <Column prop="template_name" :name="$t('tableThead.templateName')" width="200px" />
+                    <Column prop="rule_type" :name="$t('common.ruleType')" :filter="ruleType" width="100px" />
+                    <Column prop="datasource" :name="$t('common.cluster')" :filter="tdCluster" width="200px" />
+                    <Column prop="datasource" :name="$t('tableThead.databaseAndTable')" :component="component" width="480px" />
+                    <Column prop="filter" :name="$t('common.condition')" :filter="tdMaster" width="200px" />
+                    <Column v-if="(isAdmin || isEdit) && !flowProjectTag" :name="$t('common.operate')" width="120px" :component="operationComp" />
+                </WbTable>
+            </div>
+            <div class="table-pagination">
+                <span class="table-pagination-total">{{ $t('common.pageinfo', {total, pageTotal: pagination.total}) }}</span>
+                <Pagination
+                    :current="pagination.page"
+                    :size="pagination.size"
+                    :size-list="sizeList"
+                    :total="pagination.total"
+                    :show-quick-jumper="true"
+                    @on-change="changePage" />
+            </div>
+        </div>
+        <Modal ref="deleteForm" :title="$t('modal.deleteRule')">
+            <p class="hintWrapper">
+                {{ $t('projects.delete') }}{{ ruleName }}{{ $t('projects.rule') }}
+            </p>
+            <div class="delRuleWrapper textCenter">
+                <WbButton type="primary" class="mr10" @click="deleteRule">
+                    {{ $t('common.ok') }}
+                </WbButton>
+                <WbButton type="ghost" @click="delCancel">
+                    {{ $t('common.cancel') }}
+                </WbButton>
+            </div>
+        </Modal>
+        <Modal
+            ref="executionUser"
+            class="execution-modal"
+            :title="executationConfigTitle"
+            :width="1000"
+            @on-close="clearConfigData">
+            <MyExecutationConfig
+                ref="executationConfigRef"
+                :user-data="userConfig"
+                :engine-data="engineConfig"
+                :condition-data="conditionConfig"
+                :spark-data="sparkConfig"
+                @on-update-title="executationConfigTitle = $event" />
+            <div class="button-container fr">
+                <WbButton class="mr10" @click="cancle('executionUser')">
+                    {{ $t('common.cancel') }}
+                </WbButton>
+                <WbButton ref="doSve" :disabled="isDoSve" type="primary" @click="submit">
+                    <Loading v-if="isDoSve" color="#FFF" size="18px" border-width="1px" />
+                    {{ $t('common.ok') }}
+                </WbButton>
+            </div>
+        </Modal>
+        <!-- 编辑参数 -->
+        <modal
+            ref="editParamsModal"
+            :title="$t('common.ruleExecutionParameters')">
+            <Wb-form ref="editRuleFormRef" :label-width="100">
+                <editRuleParams
+                    ref="editRuleParamsForm"
+                    :params="ruleParams"
+                    :is-view="isView" />
+                <div class="modify-rules">
+                    <Wb-button ref="saveRuleParamsBtn" type="primary" @click="saveRuleParams">{{ $t('common.save') }}</Wb-button>
+                </div>
+            </Wb-form>
+        </modal>
+        <!-- 添加或编辑项目用户 -->
+        <modal ref="projectUserModal"
+            :title="projectUserModalTitle"
+            :sub-title="$t('common.projectUser')">
+            <Wb-form ref="formValidate" :rule="ruleValidate">
+                <Form-item :label="$t('common.username')" prop="authorized_user">
+                    <Wb-select v-model="authorized_user" :disabled="showProjectUserModalModel" filterable>
+                        <wb-option v-for="item in projectUserList" :key="item" :value="item" :disabled="isProjectUser(item)">{{ userName === item ? `${item}(you)` : item }}</wb-option>
+                    </Wb-select>
+                </Form-item>
+                <Form-item :label="$t('common.permissions')" prop="permission">
+                    <Checkbox-group v-model="permission" @on-change="permissionChange">
+                        <Checkbox :value="1">
+                            <Icon type="ios-person" />Admin
+                        </Checkbox>
+                        <Checkbox :value="2">
+                            <Icon type="windows" />{{ $t('common.edit') }}
+                        </Checkbox>
+                        <Checkbox :value="3">
+                            <Icon type="ios-desktop" />{{ $t('common.run') }}
+                        </Checkbox>
+                        <Checkbox :value="4">
+                            <Icon type="ios-eye" />{{ $t('common.view') }}
+                        </Checkbox>
+                    </Checkbox-group>
+                </Form-item>
+                <Form-item>
+                    <Wb-button type="primary" @click="addAndEditProjectUserModal">{{ $t('common.submit') }}</Wb-button>
+                </Form-item>
+            </Wb-form>
+        </modal>
+        <MyDraw
+            width="800px"
+            :display.sync="historyVisible"
+            @on-close="handleHistoryDrawClose">
+            <h3 class="history-title">{{ historyTitle }}</h3>
+            <WbTable
+                border
+                :no-data-text="$t('common.noData')"
+                :data="history">
+                <Column
+                    prop="time"
+                    align="center"
+                    width="150px"
+                    :name="$t('myProject.operationTime')" />
+                <Column
+                    prop="content"
+                    align="left"
+                    :name="$t('myProject.operationInfo')" />
+            </WbTable>
+            <div class="history-pagination-container">
+                <span class="table-pagination-total">{{ $t('common.pageinfo', {total: historyTotal, pageTotal: historyPagination.total}) }}</span>
+                <Pagination
+                    class="p20 pagination"
+                    :current="historyPagination.current"
+                    :size="historyPagination.size"
+                    :total="historyPagination.total"
+                    :size-list="historyPagination.sizeList"
+                    @on-change="historyPagination.changePage" />
+            </div>
+        </MyDraw>
+        <!-- 项目用户的增删查改及显示 -->
+        <MyDraw
+            width="1000px"
+            :display.sync="permissionPanelVisible"
+            @on-close="handlePermissionPanelDrawClose">
+            <Panel :title="$t('common.projectAuthorityManagement')" class="mt30">
+                <div slot="action" class="panelAction">
+                    <Wb-button v-if="isAdmin" title="Add" type="success" class="small-btn" icon="ios-add" @click="showProjectUserModal">{{ $t('common.addTo') }}</Wb-button>
+                    <div class="panelActionOpen">
+                        <icon v-if="isShowPermission" type="ios-arrow-down" size="20" @click="isShowPermission = !isShowPermission" />
+                        <icon v-else type="ios-arrow-up" size="20" @click="isShowPermission = !isShowPermission" />
+                    </div>
+                </div>
+                <Wb-table v-if="isShowPermission" ref="table" :data="permissionData">
+                    <Column prop="name" align="left" />
+                    <Column prop="admin" width="100px" name="Admin" :component="showComponent" />
+                    <Column prop="edit" width="100px" :name="$t('common.edit')" :component="showComponent" />
+                    <Column prop="run" width="100px" :name="$t('common.run')" :component="showComponent" />
+                    <Column prop="view" width="100px" :name="$t('common.view')" :component="showComponent" />
+                    <Column v-if="!flowProjectTag && isAdmin" width="150px" :name="$t('common.operate')" :action="permissionAction" />
+                </Wb-table>
+            </Panel>
+        </MyDraw>
+        <div v-show="showLoading" class="mask">
+            <Loading class="loading-layout" />
+        </div>
+    </pageContainer>
+</template>
+<script type="text/ecmascript-6">
+    import Vue from 'vue';
+    import ProjForm from '../projForm.fes';
+    import {
+        isIE,
+        forceDownload,
+        DWSMessage
+    } from 'assets/js/utils';
+    import pageContainer from '../../../../components/template';
+    import editRuleParams from '../../../../components/editRuleParams';
+    import MyExecutationConfig from '../../../../components/myExecutationConfig';
+    import { sizeList } from 'assets/js/sizeList';
+    import MyDraw from '@/components/myDraw';
+    import { RULE_TYPE_MAP } from '@/assets/js/const';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesSyncData: {},
+        FesReady: function () {
+            this.init();
+        },
+        data() {
+            return {
+                historyVisible: false, // 历史记录弹窗状态
+                currentHistoryType: 0, // 历史记录类型
+                permissionPanelVisible: false,
+                executationConfigTitle: '',
+                history: [], // 历史记录
+                historyTotal: 0,
+                historyPagination: { // 历史记录分页
+                    current: 1,
+                    size: 5,
+                    total: 0,
+                    sizeList: [...sizeList],
+                    changePage: this.historyChangePage
+                },
+                total: 0,
+                pagination: { // 页码参数
+                    size: 5,
+                    page: 1,
+                    total: 0
+                },
+                roleList: [], // 用户在项目中的权限
+                isShowPermission: false,
+                isDoSve: false, // 是否执行
+                permissionDataAll: [], // 获取在项目详情获取项目用户列表原始数据
+                showLoading: false,
+                showProjectUserModalModel: false, // modal当前的显示模式true: add, false: edit
+                sizeList,
+                projectUserList: [], // qualitis注册用户列表
+                rule_group_name: "", // 规则组名修改
+                showRename: "", // 是否展示规则组名修改
+                authorized_user: "", // 授权的项目用户
+                permission: [], // 授权的项目用户权限列表
+                permissionData: [],
+                projectUserModalTitle: this.$t('common.add'),
+                project_id: "",
+                project_name: "",
+                isEditing: false,
+                projectDetail: {},
+                ruleDetails: [],
+                ruleName: "",
+                ruleId: "",
+                rule_type: null,
+                selectTask: [],
+                ruleList: {},
+                flowProjectTag: false,
+                ruleGroupId: '',
+                ruleValidate: { // 项目用户权限from表单验证规则
+                    authorized_user: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    permission: [
+                        { required: true, message: this.$t('common.notEmpty'), type: 'array', min: 1 }
+                    ],
+                },
+                // 执行用户配置
+                userConfig: {
+                    // 执行用户
+                    execution_user: ''
+                },
+                // 引擎配置
+                engineConfig: {
+                    // 切换集群
+                    cluster_name: '',
+                    // 引擎复用
+                    engine_reuse: false,
+                    // 执行参数
+                    startup_param_name: ''
+                },
+                // 过滤条件配置
+                conditionConfig: {
+                    // 是否动态分区
+                    dynamic_partition_bool: false,
+                    // 顶层分区
+                    dynamic_partition_prefix: '',
+                    // 变量替换
+                    execution_param: ''
+                },
+                // 快捷编辑参数
+                isView: false,
+                // SPARK配置
+                sparkConfig: {
+                    set_flag: ''
+                },
+                // 项目用户的表格操作
+                permissionAction: [{
+                    text: this.$t('common.edit'),
+                    func: function (data) {
+                        if(!this.isAdmin) return this.$Toast.error(this.$t('common.notRole')); // 判断是否为项目管理员
+                        if(`${this.FesApp.get("FesUserName")}(you)` === data.name) return this.$Toast.error(this.$t('common.yourself'));
+                        this.projectUserModalTitle = this.$t('common.edit'); // 更换标题
+                        this.showProjectUserModalModel = true; // 用于是否禁用用户名选择
+                        // 初始化参数
+                        this.permission = data.permission.includes(1) || data.permission.includes('1') ? [1, 2, 3, 4] : data.permission;
+                        this.authorized_user = data.name;
+                        this.$refs.projectUserModal.show()
+                    }
+                }, {
+                    text: this.$t('common.delete'),
+                    func: function (data) {
+                        if(!this.isAdmin) return this.$Toast.error(this.$t('common.notRole')); // 判断是否为项目管理员
+                        if(`${this.FesApp.get("FesUserName")}(you)` === data.name) return this.$Toast.error(this.$t('common.yourself'));
+                        if (data.name === this.projectDetail.create_user) return this.$Toast.error(this.$t('common.deleteCreateUserTips')); // 不能删除项目创建者
+                        this.$Message.confirm(this.$t('common.prompt'), this.$t('common.deleteUser', { name: data.name })).then((index) => {
+                          if(index === 0) {
+                            this.showLoading = true;
+                            this.FesApi.fetch("api/v1/projector/project_user/delete", {
+                                "project_id": this.project_id,
+                                "project_user": data.name
+                            },  "post").then(async () => {
+                                this.$Toast.success(this.$t('common.successfulOperate'))
+                                await this.getProjectUserData(this.project_id);
+                                this.showLoading = false;
+                            }).catch(() => {
+                                this.showLoading = false;
+                            })
+                        }
+                      })
+                    }
+                }],
+                ruleParams: {
+                    alert: false,
+                    alert_level: '',
+                    abort_on_failure: false,
+                    alert_receiver: '',
+                    specify_static_startup_param: false,
+                    static_startup_param: ''
+                },
+                isModifying: false,
+                currentRule: null,
+                currentRuleDetail: null,
+                component: function(trData) {
+                    let that = this;
+                    return new Vue({
+                        data() {
+                            return {
+                                datasource: trData.datasource,
+                            }
+                        },
+                        render: function (createElement) {
+                            return createElement("div", this.datasource.map(function(item){
+                                return createElement('p', {
+                                    style: {
+                                      'text-align': 'left'
+                                    }
+                                }, `${that.$t('common.databaseList')}: ${item.db}  ${that.$t('common.tableList')}: ${item.table}`)
+                            }))
+                        }
+                    })
+                },
+                showComponent: function(trData, tdData) { // 项目用户表格展示情况
+                    return new Vue({
+                        data() {
+                            return {
+                            }
+                        },
+                        render: function (createElement) {
+                            return createElement("icon", {
+                                props: {
+                                    type: tdData ? 'check-square-o' : 'close-circle-o',
+                                    color: tdData ? '#00cc66' : 'red',
+                                }
+                            })
+                        }
+                    })
+                },
+                operationComp(trData) {
+                    const that = this;
+                    return new Vue({
+                        methods: {
+                            buildBtnItem(h, config) {
+                                const options = {
+                                    class: ['btn-item'],
+                                    on: {
+                                        click: () => {
+                                            config.btnHandler();
+                                        }
+                                    }
+                                };
+                                return h('a', options, config.btnText);
+                            },
+                            async editRuleInComp() {
+                                if (that.isModifying) return;
+                                try {
+                                    that.isModifying = true;
+                                    that.currentRuleDetail = that.handleRuleDetail(await that.getRuleDetail(trData));
+                                    const {
+                                        alert,
+                                        alert_level = 5,
+                                        abort_on_failure,
+                                        alert_receiver,
+                                        specify_static_startup_param,
+                                        static_startup_param
+                                    } = that.currentRuleDetail;
+                                    that.ruleParams.abort_on_failure = abort_on_failure;
+                                    that.ruleParams.alert = alert;
+                                    that.ruleParams.alert_level = alert_level;
+                                    that.ruleParams.alert_receiver = alert_receiver;
+                                    that.ruleParams.specify_static_startup_param = specify_static_startup_param;
+                                    that.ruleParams.static_startup_param = static_startup_param;
+                                    that.isModifying = false;
+                                    that.$refs.editParamsModal.show();
+                                } catch (err) {
+                                    console.warn(err);
+                                    that.isModifying = false;
+                                }
+                            },
+                            deleteRuleInComp() {
+                                if(that.flowProjectTag) return;
+                                that.ruleName = trData.rule_name;
+                                that.ruleId = trData.rule_id;
+                                that.rule_type = trData.rule_type;
+                                that.ruleGroupId = trData.rule_group_id;
+                                that.$Message.confirm(that.$t('common.prompt'), `${that.$t('projects.deleteRule', {name: trData.rule_name})}`).then(index => {
+                                    if (index === 0) {
+                                        let url, param = {};
+                                        if (that.rule_type === 1) {
+                                            url = 'api/v1/projector/rule/delete';
+                                            param.rule_id = that.ruleId;
+                                        }else if(that.rule_type === 2) {
+                                            url = 'api/v1/projector/rule/custom/delete';
+                                            param.rule_id = that.ruleId;
+                                        }else if(that.rule_type === 3) {
+                                            url = 'api/v1/projector/mul_source_rule/delete';
+                                            param.rule_id = that.ruleId;
+                                        }else if(that.rule_type === 4){
+                                            url = 'api/v1/projector/rule/file/delete';
+                                            param.rule_id = that.ruleId;
+                                        } else {
+                                            that.$Toast.error(that.$t('common.illegalOperation'));
+                                        }
+                                        that.FesApi.fetch(url, param, 'post').then(() => {
+                                            that.successsAction();
+                                        });
+                                    }
+                                });
+                            }
+                        },
+                        render(h) {
+                            let actionList;
+                            if (trData.rule_type === 4) {
+                                actionList = [
+                                    {
+                                        btnText: that.$t('common.delete'),
+                                        btnHandler: this.deleteRuleInComp
+                                    }
+                                ];
+                            } else {
+                                actionList = [
+                                    {
+                                        btnText: that.$t('common.edit'),
+                                        btnHandler: this.editRuleInComp
+                                    },
+                                    {
+                                        btnText: that.$t('common.delete'),
+                                        btnHandler: this.deleteRuleInComp
+                                    }
+                                ];
+                            }
+                            const options = {
+                                class: ['btn-list']
+                            };
+                            return h('div', options, actionList.map(item => this.buildBtnItem(h, item)));
+                        }
+                    });
+                }
+            };
+        },
+        components: {
+            ProjForm,
+            pageContainer,
+            MyExecutationConfig,
+            MyDraw,
+            editRuleParams
+        },
+        computed: {
+            action() {
+                return [
+                    {
+                        text: this.$t('common.delete'),
+                        func: function (trData) {
+                            isIE()
+                            this.ruleName = trData.rule_name;
+                            this.ruleId = trData.rule_id;
+                            this.rule_type = trData.rule_type;
+                            this.ruleGroupId = trData.rule_group_id;
+                            this.$refs.deleteForm.show();
+                        }
+                    }
+                ];
+            },
+            // 判断是否为项目的管理员
+            isAdmin() {
+                return this.roleList.includes(1) || this.roleList.includes("1")
+            },
+            // 判断是否为项目的执行
+            isRun() {
+                return this.roleList.includes(3) || this.roleList.includes("3")
+            },
+            // 判断是否为项目的编辑
+            isEdit() {
+                return this.roleList.includes(2) || this.roleList.includes("2")
+            },
+            // 判断是否持有当前项目的查看权限
+            canView() {
+                return this.roleList.includes(4) || this.roleList.includes('4');
+            },
+            // 获取登陆用户名
+            userName() {
+                return this.FesApp.get("FesUserName");
+            },
+            templateType(){
+                return ['', this.$t('ruleTemplatelist.singleTableType'), this.$t('ruleTemplatelist.singleOrMultipleIndexType'), this.$t('common.crossTableType'), this.$t('common.fileType')]
+            },
+            historyTitle() {
+                const map = {
+                    1: this.$t('myProject.editRecords'),
+                    2: this.$t('myProject.execRecords')
+                };
+                return map[this.currentHistoryType] || this.$t('myProject.history');
+            }
+        },
+        async mounted() {
+        },
+        beforeRouteLeave (to, from, next) {
+            // 离开组件时将页码存储下来
+            if(to.path === '/addGroupTechniqueRule') {
+                this.FesStorage.set("paginationProjectsList", this.pagination)
+            } else {
+                this.FesStorage.remove('paginationProjectsList');
+            }
+            next()
+        },
+        methods: {
+            init() {
+                // 拿本地缓存页码
+                this.pagination = Object.assign(this.pagination, this.FesStorage.get("paginationProjectsList") || {});
+                this.project_id = this.$route.query.id;
+                this.flowProjectTag = !!this.$route.query.flow;
+                this.showProjetDet(this.project_id);
+                this.getProjectUserList(); // 在项目详情新增授权用户时，调用该接口返回所有qualitis注册用户，供项目授权使用。
+                this.getProjectUserData(this.project_id); // 在项目详情获取项目用户列表。
+            },
+            // 面包屑跳转
+            getRouter(e, id) {
+                this.$router.push({ path: e, query: { id } });
+            },
+            // 在项目详情能够授权的用户列表
+            getProjectUserList() {
+                this.FesApi.fetch("api/v1/projector/project_user/user", {}, "get").then(res => {
+                    this.projectUserList = res || [];
+                });
+            },
+            // 在项目详情获取项目已经授权的用户信息列表
+            async getProjectUserData(projectId) {
+                let res = await this.FesApi.fetch(`api/v1/projector/project_user/all/${projectId}`, {}, "post");
+                // 剔除自己的信息
+                this.permissionDataAll = res || [];
+                let factorData = this.factoryProjectUserData(this.permissionDataAll);
+                this.permissionData = factorData.list
+                    .filter(item => item.name !== 'allenzhou' && item.name !== 'allenzhou(you)');
+                this.roleList = factorData.role;
+            },
+            // 新增项目用户模态框展示
+            showProjectUserModal () {
+                this.projectUserModalTitle = this.$t('common.add'); // 更换标题
+                this.showProjectUserModalModel = false; // 用于是否禁用用户名选择
+                this.isShowPermission = true;
+                // 初始化参数
+                this.permission = [];
+                this.authorized_user = "";
+                this.$refs.projectUserModal.show()
+            },
+            // 新增和编辑项目用户
+            async addAndEditProjectUserModal() {
+                this.$refs.formValidate.validate(async (valid) => {
+                    if(valid) {
+                        try {
+                            this.showLoading = true;
+                            let url = this.showProjectUserModalModel ? 'api/v1/projector/project_user/modify' : "api/v1/projector/project_user";
+                            let method = this.showProjectUserModalModel ? 'post' : "put";
+                            let data = {
+                                project_id: this.project_id,
+                                project_user: this.authorized_user,
+                                project_permissions: this.permission.includes(1) || this.permission.includes('1') ? [1] : this.permission,
+                            }
+                            await this.FesApi.fetch(url, data, method);
+                            this.$Toast.success(this.$t('common.successfulOperate'));
+                            await this.getProjectUserData(this.project_id);
+                            this.showLoading = false;
+                            this.$refs.projectUserModal.close();
+                        } catch (error) {
+                            this.showLoading = false;
+                        }
+                    }
+                })
+            },
+            // 修改规则参数
+            saveRuleParams() {
+                if (this.isModifying) return;
+                this.$refs.editRuleFormRef.validate((isValid) => {
+                    if (!isValid) return;
+                    const url = this.getAPIPrefix(this.currentRule);
+                    const newFormModel = this.$refs.editRuleParamsForm.getFormModel();
+                    const params = Object.assign({}, this.currentRuleDetail, newFormModel, {
+                        project_id: this.project_id,
+                        template_arguments: []
+                    });
+                    this.FesApi.fetch(`${url}/modify`, params, { method: 'post', button: this.$refs.saveRuleParamsBtn }).then(() => {
+                        this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                        this.$refs.editParamsModal.hide();
+                    }).finally(() => {
+                        this.isModifying = false;
+                    });
+                    this.isModifying = true;
+                });
+            },
+            // 用于判断是否包含已添加的账号
+            isProjectUser(name) {
+                // 取出已经授权的用户名
+                let list = this.permissionDataAll.map(item => item.authorized_user);
+                return list.includes(name)
+            },
+            // 项目用户权限变动
+            permissionChange(value) {
+                // 如果选择1则其他都都默认选择
+                if(value.includes(1) || value.includes('1')) {
+                    this.permission = [1, 2, 3, 4];
+                    return;
+                }
+                // 如果不为选择一个且为4时，其他选择都要加上4
+                if(!(value.length && (value.includes(4) || value.includes('4')))) {
+                    this.permission = [...value, 4];
+                    return;
+                }
+            },
+            // 处理项目用户的权限数据, 便于表格显示
+            factoryProjectUserData(data) {
+                // 判断是否为数组
+                if(Array.isArray(data)) {
+                  // 存储权限
+                    let role = [];
+                  // 1为管理员，2为编辑，3为运行，4为查看
+                    // 如果data.permission []  包含1则所有权限都有
+                    let list = data.map(item => {
+                        let obj = {};
+                        obj.name = this.userName === item.authorized_user ? `${item.authorized_user}(you)` : item.authorized_user;
+                        if(this.userName === item.authorized_user) role = item.permission || [];
+                        // 如果permission后台未给参数则默认[]
+                        obj.permission = item.permission || [];
+                        // 根据是否包含分别赋值
+                        if(obj.permission.includes(1) || obj.permission.includes('1')) {
+                            obj.admin = obj.edit = obj.run = obj.view = true;
+                        } else {
+                            obj.admin = false;
+                            obj.edit = obj.permission.includes(2) || obj.permission.includes('2');
+                            obj.run = obj.permission.includes(3) || obj.permission.includes('3');
+                            obj.view = obj.permission.includes(4) || obj.permission.includes('4');
+                        }
+                        return obj;
+                    });
+                    return { role, list };
+                } else {
+                    return new Error('data is not Array')
+                }
+            },
+            showProjetDet() {
+                this.showLoading = true;
+                this.FesApi.fetch(
+                    "api/v1/projector/project/detail/" + this.project_id,
+                    { page: this.pagination.page - 1, size: this.pagination.size },
+                    'post'
+                ).then(result => {
+                    this.showLoading = false;
+                    this.projectDetail = {
+                        project_id: this.project_id,
+                        project_name: result.project_detail.project_name,
+                        cn_name: result.project_detail.cn_name,
+                        description: result.project_detail.description,
+                        stakeholders: result.project_detail.stakeholders,
+                        create_user: result.project_detail.create_user,
+                        executor_user: result.project_detail.executor_user,
+                        level: result.project_detail.level,
+                        type: result.project_detail.type,
+                        reportAll: result.project_detail.report_all ? "1" : "2",
+                        project_label: result.project_detail.project_label
+                    }
+                    this.ruleDetails = result.rule_details;
+                    this.total = result.total;
+                    this.pagination.total = Math.ceil(result.total / this.pagination.size);
+                    let obj = {}
+                    this.ruleDetails.map((item)=> {
+                        if (Object.keys(obj).includes(item.rule_group_name)) {
+                            obj[item.rule_group_name].push(item)
+                        } else {
+                            obj[item.rule_group_name] = [item]
+                        }
+                    })
+                    this.ruleList = obj;
+                }).catch(() => {
+                    this.showLoading = false;
+                });
+            },
+            tdCluster: function (data) {
+                for (var i = 0; i < data.length; i++) {
+                    return data[i].cluster;
+                }
+            },
+            tdDb: function (data) {
+                for (var i = 0; i < data.length; i++) {
+                    return data[i].db;
+                }
+            },
+            tdTable: function (data) {
+                for (var i = 0; i < data.length; i++) {
+                    return data[i].table;
+                }
+            },
+            tdMaster: function (data) {
+                if (data) {
+                    let str = data.join(" ");
+                    return str;
+                }
+            },
+            ruleType (data) {
+                return this.templateType[data];
+            },
+            deleteRule() {
+                let url;
+                let param = {};
+                if (this.rule_type === 1) {
+                    url = 'api/v1/projector/rule/delete';
+                    param.rule_id = this.ruleId;
+                }else if(this.rule_type === 2) {
+                    url = 'api/v1/projector/rule/custom/delete';
+                    param.rule_id = this.ruleId;
+                }else if(this.rule_type === 3) {
+                    url = 'api/v1/projector/mul_source_rule/delete';
+                    param.rule_id = this.ruleId;
+                }else if(this.rule_type === 4){
+                    url = 'api/v1/projector/rule/file/delete';
+                    param.rule_id = this.ruleId;
+                } else {
+                    this.$Toast.error(this.$t('common.illegalOperation'));
+                }
+                this.FesApi.fetch(url, param, 'post').then(() => {
+                    this.successsAction()
+                });
+            },
+            successsAction() {
+                let key = this.$route.query.nodeId;
+                this.$refs.deleteForm.hide();
+                this.init();
+                this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                DWSMessage(key, this.ruleGroupId, 'delete');
+            },
+            //取消删除
+            delCancel() {
+                this.$refs.deleteForm.hide();
+            },
+            importFile(file) {
+                isIE();
+                const SIZE = 5;
+                if (file.size > SIZE * 1024 * 1024) return this.$Toast.warn(this.$t('toastWarn.importFile'));
+                let formData = new FormData();
+                formData.append('file', file);
+                this.FesApi.fetch("api/v1/projector/rule/batch/upload/" + this.project_id, formData).then(()=> {
+                        this.$Toast.success(this.$t('toastSuccess.technicalSuccess'));
+                        this.init();
+                })
+            },
+            exportExcel() {
+                isIE();
+                let arr = this.$refs.tableRule.map((item)=> {
+                    return item.getSelected();
+                })
+                let selectRule = arr.reduce((i, j)=> {
+                    return i.concat(j)
+                })
+                if (selectRule.length === 0) {
+                    this.$Toast.error(this.$t('toastError.selectRule'));
+                    return;
+                }
+                let ruleId = [];
+                let fileName = '';
+                for (let i = 0; i < selectRule.length; i++) {
+                    ruleId.push(selectRule[i].rule_id);
+                }
+                let params = {};
+                params.rule_ids = ruleId;
+                let exporturl = this.FesEnv.api + '/api/v1/projector/rule/batch/download';
+                const _this = this;
+                fetch(exporturl, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        'Content-Language': this.FesFesx.get('Language')
+                    },
+                    mode: 'cors',
+                    credentials: 'include',
+                    body: JSON.stringify(params),
+                    responseType: 'blob',
+                }).then( res => {
+                    if(res.headers.get('Content-Disposition')) {
+                        let fileNameUnicode = res.headers.get('Content-Disposition').split("filename*=")[1];
+                        fileName = fileNameUnicode ? decodeURIComponent(fileNameUnicode.split("''")[1]) : '技术规则.xlsx';
+                        return res.blob();
+                    } else {
+                        // 将blob文件流转换成json
+                        res.blob().then(blob => {
+                            const reader = new FileReader();
+                            reader.onload = function () {
+                                _this.$Toast.error(`${_this.$t('toastError.importFail')}:${JSON.parse(reader.result).message}`);
+                            };
+                            reader.readAsText(blob);
+                        });
+                    }
+                }).then( blob => {
+                    if(blob) {
+                        let blobUrl = window.URL.createObjectURL(blob);
+                        forceDownload(blobUrl, fileName);
+                    }
+                }).catch(err => {
+                    this.$Toast.error(`${this.$t('toastError.importFail')}:${err}`)
+                })
+            },
+            taskExecution() {
+                if (!this.$refs.tableRule) return this.$Toast.error('No rule can be executed');
+                const arr = this.$refs.tableRule.map((item)=> {
+                    return item.getSelected();
+                });
+                this.selectTask = arr.reduce((i, j)=> {
+                    return i.concat(j);
+                });
+                if (this.selectTask.length === 0) return this.$Toast.error(this.$t('toastError.runRule'));
+                this.$refs.executionUser.show();
+            },
+            async viewHistory(type) {
+                try {
+                    const {
+                        data,
+                        total
+                    } = await this.getHistory(this.project_id, type);
+                    this.history = data;
+                    this.historyTotal = total;
+                    this.historyPagination.total = Math.ceil(total / this.historyPagination.size);
+                    if (Array.isArray(this.history) && this.history.length > 0) {
+                        this.historyVisible = true;
+                        this.currentHistoryType = type;
+                    } else {
+                        this.$Toast.warn(this.$t('myProject.history_empty'));
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            },
+            openPermissionPanelDraw() {
+                this.permissionPanelVisible = true;
+            },
+            cancle() {
+                this.$refs.executionUser.hide();
+            },
+            clearConfigData() {
+                this.$set(this.userConfig, 'execution_user', '');
+                this.$set(this.engineConfig, 'cluster_name', '');
+                this.$set(this.engineConfig, 'engine_reuse', false);
+                this.$set(this.engineConfig, 'startup_param_name', '');
+                this.$set(this.conditionConfig, 'dynamic_partition_bool', false);
+                this.$set(this.conditionConfig, 'dynamic_partition_prefix', '');
+                this.$set(this.conditionConfig, 'execution_param', '');
+                this.$set(this.sparkConfig, 'set_flag', '');
+            },
+            submit() {
+                this.$refs.executationConfigRef.validate(isValid => {
+                    if (!isValid) return;
+                    this.isDoSve = true;
+                    const rule_list = this.selectTask.map((item)=> {
+                        return item.rule_id
+                    });
+                    const create_user = this.FesApp.get("FesUserName");
+                    const engineReuse = this.engineConfig.engine_reuse;
+                    let startupParamName = this.engineConfig.startup_param_name;
+                    startupParamName = startupParamName === ''
+                        ? `engine_reuse=${engineReuse}`
+                        : `${startupParamName};engine_reuse=${engineReuse}`;
+                    const params = {
+                        rule_list,
+                        create_user,
+                        cluster_name: this.engineConfig.cluster_name,
+                        startup_param_name: startupParamName,
+                        set_flag: this.sparkConfig.set_flag,
+                        dynamic_partition_bool: this.conditionConfig.dynamic_partition_bool,
+                        dynamic_partition_prefix: this.conditionConfig.dynamic_partition_prefix,
+                        execution_param: this.conditionConfig.execution_param,
+                        execution_user: this.userConfig.execution_user,
+                    };
+                    this.FesApi.fetch('api/v1/projector/execution/rule', params,{
+                        button:this.$refs.doSave,//防止重复请求
+                        }).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.executeSuccess'));
+                            this.$refs.executionUser.hide();
+                            this.isDoSve = false;
+                    }).catch(() => {
+                        this.isDoSve = false;
+                    });
+                });
+            },
+            ruleDetail(data) {
+                this.$router.push({
+                    name: 'addGroupTechniqueRule_index',
+                    query: {
+                        ruleGroupId: data[0].rule_group_id,
+                        id: this.project_id,
+                        flowProject: this.flowProjectTag
+                    },
+                    params: {
+                        isEdit: this.isAdmin || this.isEdit,
+                        isParams: true,
+                    }
+                })
+            },
+            // 重命名
+            getRename(e) {
+              this.rule_group_name = "";
+              this.showRename = e[0].rule_group_id;
+            },
+            // 取消命名
+            getCancelRename() {
+              this.showRename = "";
+              this.rule_group_name = "";
+            },
+            // 提交规则组名修改
+            submitRename(e, key) {
+              if(this.rule_group_name) {
+                let params = {
+                  rule_group_id: e[0].rule_group_id,
+                  rule_group_name: this.rule_group_name
+                };
+                this.FesApi.fetch('api/v1/projector/rule/group/modify', params,{
+                  button:this.$refs.submitRename,//防止重复请求
+                  }).then(() => {
+                    this.$Toast.success(this.$t('toastSuccess.editSuccess'));
+                    this.ruleList[key][0].rule_group_name = this.rule_group_name;
+                    this.showRename = "";
+                });
+              } else {
+                this.$Toast.error(this.$t('common.notEmpty'))
+              }
+            },
+
+            // 根据规则分类获取接口地址前缀
+            getAPIPrefix(data) {
+                const ruleType = String(data.rule_type);
+                let url;
+                switch (ruleType) {
+                    case RULE_TYPE_MAP.SINGLE_TABLE_RULE:
+                        url = '/api/v1/projector/rule';
+                        break;
+                    case RULE_TYPE_MAP.CROSS_TABLE_VERIFICATION_FULLY_RULE:
+                        url = '/api/v1/projector/mul_source_rule';
+                        break;
+                    case RULE_TYPE_MAP.CUSTOMIZATION_RULE:
+                        url = '/api/v1/projector/rule/custom';
+                        break;
+                    case RULE_TYPE_MAP.FILE_VERIFICATION_RULE:
+                        url = '/api/v1/projector/rule/file';
+                        break;
+                    default:
+                        url = '';
+                }
+                return url;
+            },
+            // 获取规则详情数据
+            getRuleDetail(data) {
+                const ruleId = data.rule_id;
+                const url = this.getAPIPrefix(data);
+                this.currentRule = data;
+
+                if (url && ruleId) {
+                    return this.FesApi.fetch(`${url}/${ruleId}`, {}, 'get');
+                } else {
+                    return Promise.reject('参数错误');
+                }
+            },
+            handleRuleDetail(data) {
+                const datasource = data.datasource;
+                if (!datasource || !Array.isArray(datasource)) return data;
+                const newDatasource = datasource.map(item => {
+                    const colNames = item.col_names;
+                    if (!Array.isArray(colNames)) return item;
+                    const newColNames = colNames
+                        .filter(subItem => subItem.column_name && subItem.data_type);
+                    return Object.assign(item, {col_names: newColNames});
+                });
+                return Object.assign({}, data, {datasource: newDatasource});
+            },
+            // 页码改变
+            changePage({current, size}) {
+                this.pagination.page = current;
+                this.pagination.size = size;
+                this.showProjetDet(this.project_id);
+            },
+            // 获取历史记录
+            getHistory(projectId, type) {
+                return this.FesApi.fetch(`/api/v1/projector/project/event/${projectId}/${type}`, {
+                    project_id: projectId,
+                    page: this.historyPagination.current - 1,
+                    size: this.historyPagination.size
+                }, 'post');
+            },
+            // 历史记录页码改变
+            async historyChangePage({current, size}) {
+                this.historyPagination.current = current;
+                this.historyPagination.size = size;
+                const {
+                    data,
+                    total
+                } = await this.getHistory(this.project_id, this.currentHistoryType);
+                this.history = data;
+                this.historyPagination.total = Math.ceil(total / this.historyPagination.size);
+            },
+            // 历史记录抽屉关闭
+            handleHistoryDrawClose() {
+                this.historyPagination.current = 1;
+                this.historyPagination.size = this.historyPagination.sizeList[0];
+            },
+            handlePermissionPanelDrawClose() {}
+        }
+    };
+
+</script>
+<style scoped lang="scss">
+    .ruleTable {
+        margin-top: 35px;
+    }
+    .tableContent {
+        margin-bottom: 20px;
+    }
+    .importBtn {
+        width: 80px;
+        display: inline-block;
+        margin-right: 50px;
+        line-height: 32px;
+        text-align: center;
+    }
+    .fileInput {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+    .execution-modal {
+        /deep/
+        .ui-modal-body {
+            min-height: 480px;
+        }
+    }
+    .submit-button {
+        position: absolute;
+        left: 50%;
+        bottom: 10px;
+        transform: translate(-50%);
+    }
+    .groupName {
+        font-size: 14px;
+    }
+    .button-container {
+        position: absolute;
+        right: 0;
+        bottom: 10px;
+    }
+    .pagination {
+        display: block;
+        float: left;
+        text-align: center;
+    }
+    .mt30 {
+        margin-top: 30px;
+    }
+    /deep/ .ui-modal-dialog {
+        overflow: initial!important;
+    }
+    .mask {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255,255,255,0.1);
+        z-index: 9999;
+    }
+    .panelAction {
+        display: flex;
+        align-items: center;
+        .panelActionOpen {
+            margin-left: 15px;
+            color: rgba(0,0,0,.35);
+        }
+    }
+    .history-title {
+        margin-bottom: 20px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .history-pagination-container {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .modify-rules{
+        padding-top: 30px;
+        .ui-button{
+            display: block;
+            width: 100%;
+        }
+    }
+    /deep/
+    .btn-list {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .btn-item {
+            margin-right: 12px;
+            &:last-of-type {
+                margin-right: 0;
+            }
+        }
+    }
+    .small-btn {
+        padding: 0 20px;
+        height: 30px;
+        line-height: 28px;
+    }
+</style>

@@ -1,0 +1,1180 @@
+<template>
+    <pageContainer>
+        <div class="all-wrapper">
+            <div class="topbar-container">
+                <div class="search-list">
+                    <div class="search-item">
+                        <div>{{ $t('indexManagement.indexName') }}</div>
+                        <Wb-input v-model="rule_metric_name" :placeholder="$t('indexManagement.indexName')" clearable />
+                    </div>
+                    <div class="search-item">
+                        <div>{{ $t('indexManagement.indexCategory') }}</div>
+                        <Wb-select v-model="type" filterable>
+                            <wb-option v-for="item in indexCategoryList" :key="item.value" :value="item.value">{{ item.label }}</wb-option>
+                        </Wb-select>
+                    </div>
+                    <div class="search-item">
+                        <div>{{ $t('indexManagement.inUse') }}</div>
+                        <Wb-select v-model="available" filterable>
+                            <wb-option v-for="item in FesMap.booleanList" :key="item.value" :value="item.value">{{ item.text }}</wb-option>
+                        </Wb-select>
+                    </div>
+                    <div class="search-item">
+                        <div>{{ $t('indexManagement.en_code') }}</div>
+                        <Wb-select v-model="en_code" filterable>
+                            <wb-option v-for="item in enCodeList" :key="item.value" :value="item.value">{{ item.label }}</wb-option>
+                        </Wb-select>
+                    </div>
+                    <div class="search-item">
+                        <div>{{ $t('indexManagement.subsystem') }}</div>
+                        <Wb-select v-model="sub_system_name" filterable>
+                            <wb-option v-for="(item,index) in sub_system_name_condition" :key="index" :value="item">{{ item }}</wb-option>
+                        </Wb-select>
+                    </div>
+                </div>
+                <div class="operation">
+                    <div class="flex justify-end align-center">
+                        <Wb-button type="primary" class="mr10" @click="search">{{ $t('common.search') }}</Wb-button>
+                        <Wb-button type="primary" class="mr10" @click="showAddModal">{{ $t('indexManagement.addIndicator') }}</Wb-button>
+                        <Wb-button class="mr10">
+                            <Icon type="ios-cloud-upload" size="14" />{{ $t('indexManagement.import') }}
+                            <input ref="indexFile" class="fileInput" type="file" accept=".xlsx" @change="importIndex">
+                        </Wb-button>
+                        <WbButton type="warn" @click="exportIndex">
+                            <Icon type="ios-cloud-download" size="14" />
+                            {{ $t('indexManagement.export') }}
+                        </WbButton>
+                    </div>
+                </div>
+            </div>
+            <Row>
+                <Cell span="24" class="p20">
+                    <Wb-table ref="indexTableRef" :data="indicatorsList" border :no-data-text="$t('common.noData')">
+                        <Column type="selection" width="40px" />
+                        <Column prop="name" :name="$t('indexManagement.indexName')" />
+                        <Column prop="metric_desc" :name="$t('indexManagement.indexDesc')" />
+                        <Column prop="sub_system_name" :filter="getInfoNameByBussCode" :name="`${$t('indexManagement.subsystem')}/${$t('indexManagement.product')}/${$t('indexManagement.customize')}`" />
+                        <Column prop="type" :filter="indexCategoryFilter" :name="$t('indexManagement.indexCategory')" />
+                        <Column prop="available" :filter="booleanFilter" :name="$t('indexManagement.inUse')" />
+                        <Column prop="frequency" :filter="frequencyFilter" :name="$t('indexManagement.indexFrequency')" />
+                        <Column prop="department_name" :name="$t('common.developmentDepartment')" />
+                        <Column prop="ops_department_name" :name="$t('indexManagement.maintainDepartment1')" />
+                        <Column prop="create_user" :name="$t('indexManagement.creator')" />
+                        <Column prop="modify_user" :name="$t('indexManagement.reviser')" />
+                        <Column prop="create_time" :name="$t('common.createTime')" />
+                        <Column prop="modify_time" :name="$t('common.changeTheTime')" />
+                        <Column :name="$t('common.operate')" :component="operateComponent" />
+                    </Wb-table>
+                    <div class="table-pagination pt20">
+                        <span class="table-pagination-total">{{ $t('common.pageinfo', {total: dataTotal, pageTotal: pagination.total}) }}</span>
+                        <Pagination ref="paginationRef" :size-list="sizeList" :current="pagination.page" :page="pagination.page" :size="pagination.size" :total="pagination.total" @on-change="changePage" />
+                    </div>
+                </Cell>
+            </Row>
+            <Loading v-show="showLoading" class="loading-layout" />
+        </div>
+        <Modal ref="indicatorsModal" :width="600" :close-on-click-shadow="false" :title="modalTitle">
+            <el-form ref="indicatorsForm" label-width="120px" :model="indicatorsForm" :rules="ruleValidate">
+                <!-- 指标英文名 -->
+                <el-form-item :label="$t('indexManagement.indexEnName')" prop="name">
+                    <p>{{ indicatorsForm.name }}</p>
+                </el-form-item>
+                <!-- 指标中文名 -->
+                <el-form-item :label="$t('indexManagement.indexCnName')" prop="cn_name">
+                    <p>{{ indicatorsForm.cn_name }}</p>
+                </el-form-item>
+                <!-- 指标描述 -->
+                <el-form-item :label="$t('indexManagement.indexDesc')" prop="metric_desc">
+                    <el-input v-model="indicatorsForm.metric_desc" clearable :maxlength="500" type="textarea" :placeholder="$t('common.pleaseEnter')" :disabled="isAdd === 3" />
+                </el-form-item>
+                <!-- 指标分类 -->
+                <el-form-item :label="$t('indexManagement.indexCategory')" prop="type">
+                    <el-select v-model="indicatorsForm.type" :disabled="isAdd === 3" clearable filterable default-first-option @change="selectIndicatorsType">
+                        <el-option v-for="item in indexCategoryList" :key="item.value" :label="item.label" :value="item.value" />
+                    </el-select>
+                </el-form-item>
+                <!-- 指标频率 -->
+                <el-form-item :label="$t('indexManagement.indexFrequency')" prop="frequency">
+                    <el-select v-model="indicatorsForm.frequency" :disabled="isAdd === 3" clearable filterable @change="selectIndicatorsFrequency">
+                        <el-option v-for="item in indexFrequencyList" :key="item.value" :label="item.label" :value="item.value" />
+                    </el-select>
+                </el-form-item>
+                <!-- 英文编码 -->
+                <el-form-item :label="$t('indexManagement.en_code')" prop="en_code">
+                    <el-input v-model="indicatorsForm.en_code" :maxlength="100" :placeholder="$t('common.pleaseEnter')" :disabled="isAdd === 3" @input="inputEnCodeHandler" />
+                </el-form-item>
+                <!-- 业务维度 -->
+                <el-form-item :label="$t('indexManagement.bussinessDimension')" prop="buss_code">
+                    <el-select
+                        v-model="indicatorsForm.buss_code"
+                        clearable
+                        default-first-option
+                        :disabled="isAdd === 3"
+                        :placeholder="$t('common.pleaseSelect')"
+                        @change="selectBussinessDimension">
+                        <el-option
+                            v-for="item in bussinessDimensions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value" />
+                    </el-select>
+                </el-form-item>
+                <template v-if="indicatorsForm.buss_code === '1'">
+                    <!-- 子系统 -->
+                    <el-form-item :label="$t('indexManagement.subsystem')" prop="sub_system_name">
+                        <el-input
+                            v-model="indicatorsForm.sub_system_name"
+                            clearable
+                            :disabled="isAdd === 3"
+                            :maxlength="50"
+                            :placeholder="$t('common.pleaseEnter')"
+                            @blur="selectSubSystem" />
+                    </el-form-item>
+                    <!-- 子系统中文名 -->
+                    <el-form-item :label="$t('indexManagement.subSystemCnName')" prop="full_cn_name">
+                        <el-input
+                            v-model="indicatorsForm.full_cn_name"
+                            clearable
+                            :disabled="isAdd === 3"
+                            :maxlength="50"
+                            :placeholder="$t('common.pleaseEnter')"
+                            @blur="selectSubSystem" />
+                    </el-form-item>
+                </template>
+                <!-- 产品 -->
+                <el-form-item v-if="indicatorsForm.buss_code === '2'" :label="$t('indexManagement.product')" prop="product_name">
+                    <el-input
+                        v-model="indicatorsForm.product_name"
+                        clearable
+                        :disabled="isAdd === 3"
+                        :maxlength="50"
+                        :placeholder="$t('common.pleaseEnter')"
+                        @blur="selectProduct" />
+                </el-form-item>
+                <!-- 自定义 -->
+                <el-form-item v-if="indicatorsForm.buss_code === '3'" :label="$t('indexManagement.customize')" prop="buss_custom">
+                    <el-input
+                        v-model="indicatorsForm.buss_custom"
+                        clearable
+                        :disabled="isAdd === 3"
+                        :maxlength="50"
+                        :placeholder="$t('common.pleaseEnter')"
+                        @blur="blurBussCustom" />
+                </el-form-item>
+                <!-- 开发部门 -->
+                <el-form-item :label="$t('common.developmentDepartment')" prop="department_code">
+                    <el-input
+                        v-model="indicatorsForm.department_code"
+                        clearable
+                        :disabled="isAdd === 3"
+                        :maxlength="50"
+                        :placeholder="$t('common.pleaseEnter')" />
+                </el-form-item>
+                <!-- 开发科室 -->
+                <el-form-item :label="$t('indexManagement.developDepartment')" prop="dev_department_name">
+                    <el-input
+                        v-model="indicatorsForm.dev_department_name"
+                        clearable
+                        :disabled="isAdd === 3"
+                        :maxlength="50"
+                        :placeholder="$t('common.pleaseEnter')" />
+                </el-form-item>
+                <!-- 运维科室 -->
+                <el-form-item :label="$t('indexManagement.maintainDepartment')" prop="ops_department_name">
+                    <el-input
+                        v-model="indicatorsForm.ops_department_name"
+                        clearable
+                        :disabled="isAdd === 3"
+                        :maxlength="50"
+                        :placeholder="$t('common.pleaseEnter')" />
+                </el-form-item>
+                <!-- 指标是否可用 -->
+                <el-form-item :label="$t('indexManagement.inUse')" prop="available">
+                    <el-radio-group v-model="indicatorsForm.available" :disabled="isAdd === 3">
+                        <el-radio :label="true">{{ $t('common.yes') }}</el-radio>
+                        <el-radio :label="false">{{ $t('common.no') }}</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <div class="fr">
+                    <Wb-button v-if="isAdd !== 3" style="margin-right: 30px;" type="primary" @click="submitIndicators">{{ $t('common.ok') }}</Wb-button>
+                    <Wb-button @click="cancelModal">{{ $t('common.cancel') }}</Wb-button>
+                </div>
+            </el-form>
+        </Modal>
+        <!-- 关联规则显示 -->
+        <div v-if="show">
+            <div class="dialog" />
+            <div class="management">
+                <div class="close">
+                    <icon type="ios-close-circle-outline" size="20" class="cursor" @click="closeAssociationRule" />
+                </div>
+                <div class="table-container">
+                    <div class="operate-container mb10">
+                        <WbButton type="primary" class="mr10" @click="taskExecution">
+                            {{ $t('ruleQueryPage.carriedOut') }}
+                        </WbButton>
+                        <WbButton type="ghost" class="mr10" @click="exportExcel">
+                            {{ $t('ruleQueryPage.export') }}
+                        </WbButton>
+                        <WbButton type="ghost" @click="deleteRule">
+                            {{ $t('common.delete') }}
+                        </WbButton>
+                    </div>
+                    <Wb-table ref="tableRule" :data="ruleList" border :no-data-text="$t('common.noData')">
+                        <Column type="selection" width="60px" />
+                        <Column prop="rule_name" :name="$t('ruleQueryPage.ruleName')" />
+                        <Column prop="template_name" :name="$t('tableThead.templateName')" />
+                        <Column prop="datasource" :filter="getDatasource" :name="$t('common.dataSource')" />
+                        <Column prop="rule_type" :name="$t('common.ruleType')" :filter="getType" />
+                        <Column prop="filter" :name="$t('common.condition')" />
+                    </Wb-table>
+                </div>
+            </div>
+        </div>
+        <!-- 执行表单 -->
+        <Modal
+            ref="executionUser"
+            class="execution-modal"
+            :title="executationConfigTitle"
+            :width="1000"
+            @on-close="clearConfigData">
+            <MyExecutationConfig
+                ref="executationConfigRef"
+                :user-data="userConfig"
+                :engine-data="engineConfig"
+                :condition-data="conditionConfig"
+                :spark-data="sparkConfig"
+                @on-update-title="executationConfigTitle = $event" />
+            <div class="button-container fr">
+                <WbButton class="mr10" @click="$refs.executionUser.hide()">
+                    {{ $t('common.cancel') }}
+                </WbButton>
+                <WbButton ref="doSve" :disabled="isDoSve" type="primary" @click="executionUserSubmit">
+                    <Loading v-if="isDoSve" color="#FFF" size="18px" border-width="1px" />
+                    {{ $t('common.ok') }}
+                </WbButton>
+            </div>
+        </Modal>
+        <MyDrawwer width="60%" :display.sync="historyVisible">
+            <div style="padding: 12px 24px;">
+                <WbTable
+                    border
+                    :data="historyList"
+                    :no-data-text="$t('common.noData')">
+                    <Column prop="generate_time" name="生成时间" />
+                    <Column prop="rule_metric_value" name="历史值" />
+                    <Column prop="related_rule_name" name="关联规则" />
+                </WbTable>
+                <div class="table-pagination pt20">
+                    <span class="table-pagination-total">{{ $t('common.pageinfo', {total: historyTotalCount, pageTotal: historyPagination.total}) }}</span>
+                    <Pagination
+                        ref="historyPaginationRef"
+                        :current="historyPagination.current"
+                        :size="historyPagination.size"
+                        :total="historyPagination.total"
+                        :size-list="historyPagination.sizeList"
+                        @on-change="historyPagination.changePage" />
+                </div>
+            </div>
+        </MyDrawwer>
+    </pageContainer>
+</template>
+<script>
+    import Vue from "vue";
+    import pageContainer from '../../components/template';
+    import MyDrawwer from '../../components/myDraw';
+    import MyExecutationConfig from '../../components/myExecutationConfig';
+    import { sizeList } from 'assets/js/sizeList';
+    import {forceDownload, isIE, isNullOrUndefined} from 'assets/js/utils';
+    export default {
+        FesHeader: true,
+        FesLeft: false,
+        FesReady: function () {
+          // 拿本地缓存页码
+            let indicatorsQuery = this.FesStorage.get("indicatorsQuery");
+            this.pagination = Object.assign(this.pagination, indicatorsQuery || {});
+            if(indicatorsQuery) {
+                // TODO: 查询指标列表
+                this.getSelectQuery();
+            } else {
+                this.init()
+            }
+        },
+        components: {
+            pageContainer,
+            MyDrawwer,
+            MyExecutationConfig
+        },
+        data() {
+            return {
+                isDoSve: false,
+                executationConfigTitle: '',
+                indicatorsForm: { // modal表单数据结构
+                    name: '',
+                    cn_name: '',
+                    metric_desc: '',
+                    type: '',
+                    frequency: '',
+                    en_code: '',
+                    available: false,
+                    dev_department_name: '',
+                    ops_department_name: '',
+                    buss_code: '',
+                    sub_system_name: '',
+                    full_cn_name: '',
+                    product_name: '',
+                    buss_custom: '',
+                    department_code: '',
+                },
+                templateType: [" ", this.$t('common.templateType'), this.$t('common.customType'), this.$t('common.crossTableType')],
+                selectRows: [], // 选择的规则数据
+                dataTotal: 0, // 列表数据的总数
+                ruleList: [], // 关联规则数据
+                show: false, // 是否展示关联规则
+                editId: "", // 编辑id
+                currentMetric: {},
+                enCodeList: [], // 英文编码列表
+                indexCategoryList: [], // 指标分类列表
+                indexFrequencyList: [
+                    {label: this.$t('indexManagement.daily'), value: '1', cnName: this.$t('indexManagement.daily', 'zh-cn'), enName: this.$t('indexManagement.daily', 'en')},
+                    {label: this.$t('indexManagement.monthly'), value: '2', cnName: this.$t('indexManagement.monthly', 'zh-cn'), enName: this.$t('indexManagement.monthly', 'en')},
+                    {label: this.$t('indexManagement.quarterly'), value: '3', cnName: this.$t('indexManagement.quarterly', 'zh-cn'), enName: this.$t('indexManagement.quarterly', 'en')},
+                    {label: this.$t('indexManagement.halfYear'), value: '4', cnName: this.$t('indexManagement.halfYear', 'zh-cn'), enName: this.$t('indexManagement.halfYear', 'en')},
+                    {label: this.$t('indexManagement.year'), value: '5', cnName: this.$t('indexManagement.year', 'zh-cn'), enName: this.$t('indexManagement.year', 'en')},
+                    {label: this.$t('indexManagement.single'), value: '6', cnName: this.$t('indexManagement.single', 'zh-cn'), enName: this.$t('indexManagement.single', 'en')}
+                ], // 指标频率列表
+                indicatorsList: [], // 指标数据列表
+                bussinessDimensions: [
+                    { label: this.$t('indexManagement.subsystem'), value: '1' },
+                    { label: this.$t('indexManagement.product'), value: '2' },
+                    { label: this.$t('indexManagement.customize'), value: '3' }
+                ], // 业务维度
+                isAdd: 1, // 是否为1新增,2编辑，3查看
+                ruleValidate: { // 表单验证规则
+                    name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    cn_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    metric_desc: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    type: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    frequency: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    en_code: [
+                        { required: true, message: this.$t('common.notEmpty') },
+                        { pattern: /^[a-zA-Z]+$/, message: this.$t('indexManagement.pleaseEnterEnChar') }
+                    ],
+                    available: [{ required: true, message: this.$t('common.notEmpty') }],
+                    dev_department_name: [{ required: true, message: this.$t('common.notEmpty') }],
+                    ops_department_name: [{ required: false, message: this.$t('common.notEmpty') }],
+                    buss_code: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    sub_system_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    full_cn_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    product_name: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    buss_custom: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                    department_code: [
+                        { required: true, message: this.$t('common.notEmpty') }
+                    ],
+                },
+                rule_metric_name: "", //刷选规则名称
+                en_code: '', // 搜索条件 英文编码
+                type: '', // 搜索条件 指标类型
+                available: '', // 搜索条件 指标是否可用
+                sub_system_name_condition: [], // 刷选子系统的列表数据
+                slectedCluster: "",
+                sub_system_name: "", // 刷选子系统名称
+                typeData: "",
+                showLoading: false,
+                pagination: {
+                    page: 1,
+                    size: 15,
+                    total: 0
+                },
+                sizeList,
+                // 执行用户配置
+                userConfig: {
+                    // 执行用户
+                    execution_user: ''
+                },
+                // 引擎配置
+                engineConfig: {
+                    // 切换集群
+                    cluster_name: '',
+                    // 引擎复用
+                    engine_reuse: false,
+                    // 执行参数
+                    startup_param_name: ''
+                },
+                // 过滤条件配置
+                conditionConfig: {
+                    // 是否动态分区
+                    dynamic_partition_bool: false,
+                    // 顶层分区
+                    dynamic_partition_prefix: '',
+                    // 变量替换
+                    execution_param: ''
+                },
+                // SPARK配置
+                sparkConfig: {
+                    set_flag: ''
+                },
+                // 操作组件
+                operateComponent(trData, tdData) {
+                    const that = this;
+                    return new Vue({
+                        data: function () {
+                            return {
+                                trData,
+                                tdData,
+                                dropdownData: [
+                                    { content: that.$t('indexManagement.reviewIndex'), id: 1, disabled: false },
+                                    { content: that.$t('indexManagement.editIndex'), id: 2, disabled: false },
+                                    { content: that.$t('indexManagement.deleteIndex'), id: 3, disabled: false },
+                                    { content: that.$t('common.associationRules'), id: 4, disabled: false },
+                                    { content: that.$t('common.historicalValue'), id: 5, disabled: false },
+                                ]
+                            }
+                        },
+                        methods: {
+                            // 查看
+                            getView(data) {
+                                that.isAdd = 3;
+                                that.indicatorsForm = Object.keys(that.indicatorsForm).reduce((t, c) => {
+                                    const value = data[c];
+                                    t[c] = isNullOrUndefined(value) ? '' : value;
+                                    return t;
+                                }, {});
+
+                                that.$refs.indicatorsModal.show();
+                            },
+                            // 编辑
+                            getEdit(data) {
+                                that.isAdd = 2;
+                                that.indicatorsForm = Object.keys(that.indicatorsForm).reduce((t, c) => {
+                                    const value = data[c];
+                                    t[c] = isNullOrUndefined(value) ? '' : value;
+                                    return t;
+                                }, {});
+                                that.editId = data.id;
+                                that.$refs.indicatorsModal.show()
+                            },
+                            // 删除
+                            getDelete(data) {
+                                that.$Message.confirm(that.$t('common.prompt'), that.$t('indexManagement.deleteCurrentIndex', {name: trData.name})).then(function (index) {
+                                    if(index === 0) {
+                                        that.deleteIndicators(data.id);
+                                    }
+                                })
+                            },
+                            // 关联规则
+                            getAssociationRules(data) {
+                                that.getRuleList(data.id);
+                                that.show = true;
+                                that.currentMetric = data;
+                            },
+                            viewHistoryInner(data) {
+                                that.viewHistory(data);
+                            }
+                        },
+                        render(h){
+                            const btnComp = h('div', {
+                                class: ['cursor'],
+                                style: {
+                                    padding: '6px',
+                                    borderRadius: '2px',
+                                    // background: '#f5f7fa'
+                                }
+                            }, [
+                                h('img', {
+                                    attrs: {
+                                        src: 'static/icon-shudian.svg',
+                                        width: '24px',
+                                        height: '24px',
+                                        alt: that.$t('common.operate'),
+                                        title: that.$t('common.operate')
+                                    }
+                                })
+                            ]);
+                            return h("Dropdown", {
+                                props: {
+                                    data: this.dropdownData,
+                                    trigger: 'click'
+                                },
+                                on: {
+                                    'on-choose': (data) => {
+                                        switch (data.id) {
+                                            case 1:
+                                                this.getView(trData);
+                                                break;
+                                            case 2:
+                                                this.getEdit(trData);
+                                                break;
+                                            case 3:
+                                                this.getDelete(trData);
+                                                break;
+                                            case 4:
+                                                this.getAssociationRules(trData);
+                                                break;
+                                            case 5:
+                                                this.viewHistoryInner(trData);
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+                                }
+                            }, [btnComp]);
+                        }
+                    })
+                },
+                currentRuleMetric: null, // 当前指标
+                historyVisible: false, // 指标历史弹窗标志
+                historyList: [], // 指标历史
+                historyTotalCount: 0, // 指标历史数据总条数
+                historyPagination: {
+                    current: 1,
+                    size: 15,
+                    total: 0,
+                    sizeList,
+                    changePage: this.historyChangePage
+                }, // 指标历史分页对象
+                inputEnCodeHandler: () => {}
+            }
+        },
+        computed: {
+            // modal标题
+            modalTitle() {
+                return this.isAdd === 1 ? this.$t('common.add') : this.isAdd === 2 ?this.$t('common.edit') : this.$t('common.view');
+            }
+        },
+        beforeRouteLeave (to, from, next) {
+            // 离开组件时将页码存储下来
+            if(to.path === '/ruleQuery/projectId') {
+                this.FesStorage.set("indicatorsQuery", this.pagination)
+            } else {
+                this.FesStorage.remove('indicatorsQuery');
+            }
+            next()
+        },
+        async mounted() {
+            this.inputEnCodeHandler = this.FesUtil._.debounce(this.changeEnCode, 200);
+        },
+        methods: {
+            filterBase(list, value, { labelField = 'label', valueField = 'value' } = {}) {
+                if (!Array.isArray(list)) return value;
+                const temp = list.find(item => String(item[valueField]) === String(value));
+                return temp ? temp[labelField] : value;
+            },
+            indexCategoryFilter(value) {
+                return this.filterBase(this.indexCategoryList, value);
+            },
+            booleanFilter(value) {
+                return value ? this.$t('common.yes') : this.$t('common.no');
+            },
+            frequencyFilter(value) {
+                return this.filterBase(this.indexFrequencyList, value);
+            },
+            init() {
+                this.search();
+                this.initQuerySelectDataList();
+            },
+            // 初始化刷选条件的参数列表
+            initQuerySelectDataList() {
+                this.FesApi.fetch("/api/v1/projector/rule_metric/condition", {}, "post").then(res => {
+                    this.sub_system_name_condition = res.sub_system_name_condition || [];
+                    if (Array.isArray(res.en_code)) {
+                        this.enCodeList = res.en_code
+                            .map(item => ({label: item, value: item}));
+                    }
+                    if (Array.isArray(res.rule_metric_type)) {
+                        const currentLanguage = this.FesFesx.get('currentLanguage');
+                        const labelFieldNameMap = {
+                            'zh-cn': 'cnName',
+                            'en': 'enName'
+                        };
+                        this.indexCategoryList = res.rule_metric_type.map(item => {
+                            let label = labelFieldNameMap[currentLanguage];
+                            label = item[label] || item.cnName;
+                            return Object.assign(item, {
+                                label,
+                                value: item.id
+                            });
+                        });
+                    }
+                });
+            },
+            // 拼接数据源
+            getDatasource(data) {
+                let dataList = data || [];
+                let str = dataList.reduce((t, c) => {
+                    return t + `${this.$t('common.databaseList')}:${c.db}, ${this.$t('common.tableLibst')}:${c.table}\n`;
+                }, '')
+                return str
+            },
+            getInfoNameByBussCode(data, tr) {
+                let bussCode = tr.buss_code;
+                bussCode = isNullOrUndefined(bussCode) ? '' : String(bussCode);
+                let result = '';
+                if (bussCode === '1') {
+                    result = this.getSystemName(data, tr);
+                } else if (bussCode === '2') {
+                    result = tr.product_name;
+                } else if (bussCode === '3') {
+                    result = tr.buss_custom;
+                }
+                return result;
+            },
+            // 拼接子系统名称
+            getSystemName(data, tr) {
+                let str = '';
+                if (tr.sub_system_name) str = tr.sub_system_name;
+                if (tr.subSystemName) str = tr.subSystemName;
+                if (str === '') {
+                    str = data;
+                }
+                return str;
+            },
+            selectBussinessDimension() {
+                this.indicatorsForm.sub_system_name = '';
+                this.indicatorsForm.full_cn_name = '';
+                this.indicatorsForm.product_name = '';
+                this.indicatorsForm.buss_custom = '';
+                this.updateIndicatorsNameInfo();
+            },
+            selectIndicatorsType() {
+                this.updateIndicatorsNameInfo();
+            },
+            selectIndicatorsFrequency() {
+                this.updateIndicatorsNameInfo();
+            },
+            selectSubSystem() {
+                this.updateIndicatorsNameInfo();
+            },
+            selectProduct() {
+                this.updateIndicatorsNameInfo();
+            },
+            changeEnCode() {
+                this.updateIndicatorsNameInfo();
+            },
+            blurBussCustom() {
+                this.updateIndicatorsNameInfo();
+            },
+            // 新增或编辑指标提交
+            submitIndicators() {
+                this.$refs.indicatorsForm.validate((valid) => {
+                    if(valid) {
+                        // 判断是否未新增和编辑
+                        let flag = this.isAdd === 2;
+                        // 获取选择的子系统和产品的所有信息
+                        let indicatorsFormData = {};
+                        indicatorsFormData.name = this.indicatorsForm.name;
+                        indicatorsFormData.cn_name = this.indicatorsForm.cn_name;
+                        indicatorsFormData.metric_desc = this.indicatorsForm.metric_desc;
+                        indicatorsFormData.type = this.indicatorsForm.type;
+                        indicatorsFormData.frequency = Number.parseInt(this.indicatorsForm.frequency);
+                        indicatorsFormData.en_code = this.indicatorsForm.en_code;
+                        indicatorsFormData.available = this.indicatorsForm.available;
+                        indicatorsFormData.dev_department_name = this.indicatorsForm.dev_department_name;
+                        indicatorsFormData.ops_department_name = this.indicatorsForm.ops_department_name;
+                        indicatorsFormData.department_code = this.indicatorsForm.department_code;
+                        indicatorsFormData.department_name = this.indicatorsForm.department_code;
+                        indicatorsFormData.buss_code = Number.parseInt(this.indicatorsForm.buss_code);
+                        indicatorsFormData.sub_system_name = this.indicatorsForm.sub_system_name;
+                        indicatorsFormData.full_cn_name = this.indicatorsForm.full_cn_name;
+                        indicatorsFormData.product_name = this.indicatorsForm.product_name;
+                        indicatorsFormData.buss_custom = this.indicatorsForm.buss_custom;
+                        // 根据判断条件改变接口和参数
+                        this.FesApi.fetch("/api/v1/projector/rule_metric/" + (flag ? 'modify' : 'add'), (flag ? { ...indicatorsFormData, id: this.editId } : indicatorsFormData), {
+                            method: "post",
+                            resultFormat: {
+                                successCode : "200",
+                                codePath : "code",
+                                messagePath : "message",
+                                resultPath : "*"
+                            }
+                        }).then((res) => {
+                            // 如果为添加，清空筛选条件，重置分页
+                            if(!flag) {
+                                this.sub_system_name = '';
+                                this.rule_metric_name = '';
+                                this.en_code = '';
+                                this.type = '';
+                                this.available = '';
+                                this.pagination.page = 1;
+                                this.pagination.total = 0;
+                                this.pagination.size = 15;
+                                this.$refs.paginationRef.mySize = 15;
+                            }
+                            // TODO: 查询指标列表
+                            this.getSelectQuery();
+                            this.$Toast.success(res.message);
+                            this.cancelModal();
+                        }).finally(()=> {
+                            this.showLoading = false;
+                        });
+                    }
+                })
+            },
+            // 取消新增或者查看
+            cancelModal() {
+                this.$refs.indicatorsModal.close();
+                this.editId = "";
+
+            },
+            // modal标表单显示
+            showAddModal() {
+                this.isAdd = 1;
+                this.$refs.indicatorsModal.show()
+                this.initIndicatorsForm(); // 显示表单时初始化数据
+
+            },
+            // 删除单个指标
+            deleteIndicators(id) {
+                this.FesApi.fetch("/api/v1/projector/rule_metric/delete/" + id, {}, 'post').then(() => {
+                    this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                    // TODO: 查询指标列表 计算删除后是否为当前页最后一个
+                    if (this.indicatorsList.length === 1) this.pagination.page = this.pagination.page - 1;
+                    this.getSelectQuery();
+                }).finally(()=> {
+                    this.showLoading = false;
+                });
+            },
+            // 初始化表单
+            initIndicatorsForm() {
+                this.indicatorsForm = { // modal表单数据结构
+                    name: '',
+                    cn_name: '',
+                    metric_desc: '',
+                    type: '',
+                    frequency: '',
+                    en_code: '',
+                    available: false,
+                    dev_department_name: '',
+                    ops_department_name: '',
+                    buss_code: '',
+                    sub_system_name: '',
+                    full_cn_name: '',
+                    product_name: '',
+                    department_code: '',
+                    buss_custom: ''
+                };
+                this.$nextTick(() => {
+                    this.$refs.indicatorsForm.resetFields();
+                });
+            },
+            // 关闭关联规则
+            closeAssociationRule() {
+                this.show = false;
+            },
+            // 按需搜索数据
+            search() {
+                // 搜索时初始化页码数据
+                this.pagination.page = 1;
+                this.pagination.size = 15;
+                this.pagination.total = 0;
+                this.$refs.paginationRef.mySize = 15;
+                this.getSelectQuery();
+            },
+            // 刷选指标列表数据
+            getSelectQuery() {
+                this.FesApi.fetch("/api/v1/projector/rule_metric/query", {
+                    sub_system_name: this.sub_system_name,
+                    rule_metric_name: this.rule_metric_name,
+                    en_code: this.en_code,
+                    type: this.type || null,
+                    available: this.available === '' ? null : this.available === '1',
+                    page: this.pagination.page - 1,
+                    size: this.pagination.size
+                }, 'post').then(res => {
+                    this.indicatorsList = Array.isArray(res.data) ? res.data : [];
+                    this.indicatorsList = this.indicatorsList.map(item => {
+                        return Object.assign({}, item, {
+                            buss_code: String(item.buss_code),
+                            frequency: String(item.frequency)
+                        });
+                    });
+                    this.pagination.total = Math.ceil(res.total/this.pagination.size);
+                    this.dataTotal = res.total;
+                }).finally(()=> {
+                    this.showLoading = false;
+                });
+                this.showLoading = true;
+            },
+            // 规则执行
+            taskExecution() {
+                if (this.checkSelect()) {
+                    this.$refs.executionUser.show();
+                }
+            },
+            // 导出规则
+            exportExcel() {
+                if (this.checkSelect()) {
+                    let fileName = '', params = {};
+                    let ruleId = this.selectRows.map((item)=> {
+                        return item.rule_id
+                    })
+                    params.rule_ids = ruleId;
+                    let exporturl = this.FesEnv.api + '/api/v1/projector/rule/batch/download';
+                    fetch(exporturl, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json",
+                            'Content-Language': this.FesFesx.get('Language')
+                        },
+                        mode: 'cors',
+                        credentials: 'include',
+                        body: JSON.stringify(params),
+                        responseType: 'blob'
+                    }).then( res => {
+                        let fileNameUnicode = res.headers.get('Content-Disposition').split("filename*=")[1];
+                        fileName = fileNameUnicode ? decodeURIComponent(fileNameUnicode.split("''")[1]) : '技术规则.xlsx';
+                        return res.blob();
+                    }).then( blob => {
+                        let blobUrl = window.URL.createObjectURL(blob);
+                        forceDownload(blobUrl, fileName, () => {
+                            window.URL.revokeObjectURL(blobUrl);
+                        });
+                    }).catch( err => {
+                        this.$Toast.error(`${this.$t('toastError.importFail')}:${err.message}`)
+                    })
+                }
+            },
+            // 删除规则
+            deleteRule() {
+                if (this.checkSelect()) {
+                    let name = [];
+                    let ids = this.selectRows.map((item)=> {
+                        name.push(item.rule_name);
+                        return item.rule_id
+                    })
+                    if(name.some(item => /^(qualitis)/.test(item))) return this.$Toast.error(this.$t('ruleQueryPage.deleteTip'))
+                    name = name.length > 1 ? name.join(',') : name[0];
+                    let params = {
+                        rule_id_list: ids
+                    }
+                    this.$Message.confirm(this.$t('common.prompt'), `${this.$t('ruleQueryPage.deleteRule', {name})}`).then(index=> {
+                        if (index === 0) {
+                            this.FesApi.fetch(`api/v1/projector/query/rules/delete`, params, 'post').then(()=> {
+                                this.$Toast.success(this.$t('toastSuccess.deleteSuccess'));
+                                this.getRuleList(this.currentMetric.id);
+                            })
+                        }
+                    })
+                }
+                this.selectRows = [];
+            },
+            // 规则显示类型
+            getType(value) {
+                return this.templateType[value];
+            },
+            // 获取关联规则
+            getRuleList(id) {
+                if(!id) return this.$Toast.error(this.$t('common.invalidMetric'))
+                this.FesApi.fetch('/api/v1/projector/rule_metric/rules/' + id, {}, 'post').then(res=> {
+                    this.ruleList = res.content || [];
+                })
+            },
+            clearConfigData() {
+                this.$set(this.userConfig, 'execution_user', '');
+                this.$set(this.engineConfig, 'cluster_name', '');
+                this.$set(this.engineConfig, 'engine_reuse', false);
+                this.$set(this.engineConfig, 'startup_param_name', '');
+                this.$set(this.conditionConfig, 'dynamic_partition_bool', false);
+                this.$set(this.conditionConfig, 'dynamic_partition_prefix', '');
+                this.$set(this.conditionConfig, 'execution_param', '');
+                this.$set(this.sparkConfig, 'set_flag', '');
+            },
+            // 执行用户确认
+            executionUserSubmit() {
+                this.$refs.executationConfigRef.validate(isValid => {
+                    if (!isValid) return;
+                    let rule_list = this.selectRows.map((item)=> {
+                        return item.rule_id;
+                    });
+                    let create_user = this.FesApp.get("FesUserName");
+                    const engineReuse = this.engineConfig.engine_reuse;
+                    let startupParamName = this.engineConfig.startup_param_name;
+                    startupParamName = startupParamName === ''
+                        ? `engine_reuse=${engineReuse}`
+                        : `${startupParamName};engine_reuse=${engineReuse}`;
+                    let params = {
+                        rule_list,
+                        cluster_name: this.engineConfig.cluster_name,
+                        startup_param_name: startupParamName,
+                        set_flag: this.sparkConfig.set_flag,
+                        dynamic_partition_bool: this.conditionConfig.dynamic_partition_bool,
+                        dynamic_partition_prefix: this.conditionConfig.dynamic_partition_prefix,
+                        execution_param: this.conditionConfig.execution_param,
+                        execution_user: this.userConfig.execution_user,
+                        create_user,
+                    }
+                    this.FesApi.fetch('api/v1/projector/execution/rule', params,{
+                        button:this.$refs.doSave,//防止重复请求
+                        }).then(() => {
+                            this.$Toast.success(this.$t('toastSuccess.executeSuccess'));
+                            this.$refs.executionUser.hide();
+                        }).finally(() => {
+                            this.isDoSve = false;
+                        });
+                    this.isDoSve = true;
+                });
+            },
+            // 判断是否选择了规则
+            checkSelect() {
+                this.selectRows = this.$refs.tableRule ? this.$refs.tableRule.getSelected() : [];
+                if (this.selectRows.length === 0) {
+                    this.$Toast.warn(this.$t('common.selectOne'));
+                    return false
+                }else {
+                    return true
+                }
+            },
+            changePage({ current, size }) {
+                this.pagination.page = current;
+                this.pagination.size = size;
+                // TODO: 查询指标列表
+                this.getSelectQuery();
+            },
+            // 历史值
+            async viewHistory(data) {
+                this.historyPagination.current = 1;
+                this.historyPagination.size = 15;
+                this.$refs.historyPaginationRef.mySize = 15;
+                const { totalCount, content } = await this.getHistoricalValue(data);
+                this.currentRuleMetric = data;
+                this.historyTotalCount = totalCount;
+                this.historyPagination.total = Math.ceil(totalCount / this.historyPagination.size);
+                this.historyList = content;
+                this.historyVisible = true;
+            },
+            getHistoricalValue(data) {
+                return this.FesApi.fetch('/api/v1/projector/rule_metric/rule_metric_value', {
+                    rule_metric_id: data.id,
+                    page: this.historyPagination.current - 1,
+                    size: this.historyPagination.size
+                }, 'post');
+            },
+            async historyChangePage({ current, size }) {
+                this.historyPagination.current = current;
+                this.historyPagination.size = size;
+                const { totalCount, content } = await this.getHistoricalValue(this.currentRuleMetric);
+                this.historyTotalCount = totalCount;
+                this.historyList = content;
+                this.historyPagination.total = Math.ceil(totalCount / this.historyPagination.size);
+            },
+            getFileNameFromHeaderStr(str, defaultName = '指标') {
+                if (!str || typeof str !== 'string') return defaultName;
+                let tempStr = '';
+                let tempArr = str.split('filename*=');
+                if (tempArr.length < 2) return defaultName;
+                tempStr = tempArr[1];
+                tempArr = tempStr.split('\'\'');
+                if (tempArr.length < 2) return defaultName;
+                return tempArr[1];
+            },
+            importIndex() {
+                isIE();
+                const file = this.$refs.indexFile.files[0];
+                const SIZE = 5;
+                if (file.size > SIZE * 1024 * 1024) return this.$Toast.warn(this.$t('toastWarn.importFile'));
+                const formData = new FormData();
+                formData.append('file', file);
+                this.FesApi.fetch('/api/v1/projector/project/batch/upload', formData, {
+                    button: this.$refs.indexFile
+                }).then(()=> {
+                    this.$Toast.success(this.$t('indexManagement.successImport'));
+                    this.search();
+                });
+                this.$refs.indexFile.value = null;
+            },
+            exportIndex() {
+                isIE();
+                const selectedIndexList = this.$refs.indexTableRef.getSelected();
+                if (selectedIndexList.length === 0 ) {
+                    this.$Toast.warn(this.$t('indexManagement.selectIndex'));
+                    return;
+                }
+                const rule_metric_ids = selectedIndexList.map(item => item.id);
+                const params = {
+                    rule_metric_ids
+                };
+                const url = this.FesEnv.api + '/api/v1/projector/rule_metric/download';
+                let fileName = '';
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                        'Content-Language': this.FesFesx.get('Language')
+                    },
+                    mode: 'cors',
+                    credentials: 'include',
+                    body: JSON.stringify(params),
+                    responseType: 'blob'
+                }).then(res => {
+                    fileName = this.getFileNameFromHeaderStr(res.headers.get('Content-Disposition')) + '.xlsx';
+                    return res.blob();
+                }).then(blob => {
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    forceDownload(blobUrl, fileName, () => {
+                        window.URL.revokeObjectURL(blobUrl);
+                    });
+                }).catch(err => {
+                    this.$Toast.error(`${this.$t('toastError.importFail')}:${err.message}`);
+                });
+            },
+            updateIndicatorsNameInfo() {
+                const buss_code = this.indicatorsForm.buss_code;
+                const en_code = this.indicatorsForm.en_code;
+                const category = this.indexCategoryList.find(item => item.value === this.indicatorsForm.type);
+                const frequency = this.indexFrequencyList.find(item => item.value === this.indicatorsForm.frequency);
+                let nameItems = [];
+                let tempObj = {};
+                let enName = '';
+                let cnName = '';
+                if ([1, '1'].includes(buss_code)) {
+                    tempObj = {
+                        enName: this.indicatorsForm.sub_system_name,
+                        cnName: this.indicatorsForm.full_cn_name
+                    };
+                } else if ([2, '2'].includes(buss_code)) {
+                    tempObj = {
+                        enName: this.indicatorsForm.product_name,
+                        cnName: this.indicatorsForm.product_name
+                    };
+                } else {
+                    tempObj = {
+                        enName: this.indicatorsForm.buss_custom,
+                        cnName: this.indicatorsForm.buss_custom
+                    };
+                }
+                if (tempObj) {
+                    nameItems.push(tempObj);
+                }
+                if (category) {
+                    nameItems.push(category);
+                }
+                if (en_code) {
+                    tempObj = {
+                        enName: en_code,
+                        cnName: en_code
+                    };
+                    nameItems.push(tempObj);
+                }
+                if (frequency) {
+                    nameItems.push(frequency);
+                }
+                nameItems.forEach((item, index) => {
+                    if (item.enName) {
+                        enName += index === nameItems.length - 1 ? item.enName : `${item.enName}_`;
+                    }
+                    if (item.cnName) {
+                        cnName += index === nameItems.length - 1 ? item.cnName : `${item.cnName}_`;
+                    }
+                });
+                this.indicatorsForm.name = enName;
+                this.indicatorsForm.cn_name = cnName;
+            }
+        }
+    }
+
+</script>
+<style lang="scss" scoped>
+    .operate {
+        margin: 20px 20px 0px;
+    }
+    .fr {
+        padding-bottom: 30px;
+    }
+    .dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: black;
+        opacity: 0.6;
+        z-index: 999;
+    }
+    .management {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 60%;
+        background: #fff;
+        z-index: 1000;
+    }
+    .table-container {
+        margin-top: 60px;
+        padding: 0 20px;
+    }
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .execution-modal {
+        /deep/ .ui-modal-body {
+            min-height: 480px;
+        }
+    }
+    .buttonExecutionUser {
+        text-align: right;
+    }
+    .fileInput {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+    }
+    .topbar-container {
+        margin: 20px 20px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .search-list {
+            margin-right: 40px;
+            flex: 1 1 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .search-item {
+                flex: 0 0 212px;
+            }
+        }
+
+        .operation {
+            margin-bottom: -14px;
+        }
+    }
+    .el-form-item {
+        &.is-error.is-required {
+            .ui-select {
+                /deep/
+                .ui-select-selection {
+                    border-color: #F56C6E;
+                }
+            }
+        }
+    }
+</style>

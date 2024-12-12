@@ -1,0 +1,59 @@
+<template>
+    <div class="myPanel">
+        <div class="myPanelTitle">
+            <slot name="title">
+                {{ title }}
+            </slot>
+        </div>
+        <div class="myPanelContent">
+            <slot />
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        data() {
+            return {
+            };
+        },
+        props: {
+            title: { // 标题
+                type: String,
+                default: ""
+            },
+        },
+        computed: {
+
+        },
+        FesReady: function(){
+        },
+        methods: {
+
+        }
+    }
+</script>
+<style lang="scss" scoped>
+    .myPanel {
+        position: relative;
+        // border: 1px solid #d7dde4;
+        border-radius: 4px;
+        background-color: #ffffff;
+        // &:hover {
+        //     -webkit-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        //     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        // }
+        .myPanelTitle {
+            padding: 0 20px;
+            color: #464c5b;
+            height: 40px;
+            line-height: 40px;
+            border-bottom: 1px solid #e3e8ee;
+        }
+        .myPanelContent {
+            position: relative;
+            padding: 8px 20px;
+        }
+    }
+</style>
+

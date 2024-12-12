@@ -1,0 +1,42 @@
+<template>
+    <div class="ui-icon-tips" :data-title="content">
+        <i class="ui-icon ui-icon-ios-help-circle-outline" style="font-size: 20px;" />
+    </div>
+</template>
+<script>
+export default {
+    props: {
+        content: {
+            type: String,
+            default: ''
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.ui-icon-tips {
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    transform: translateY(-50%);
+    z-index: 9999;
+
+}
+.ui-icon-tips:hover:after {
+    content: attr(data-title);
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    padding: 10px 10px;
+    width: 280px;
+    background-color: #555e67;
+    color: #fff;
+    opacity: 0.9;
+    white-space: pre-wrap;
+    font-size: 14px;
+    border: 1px solid #9e9e9e;
+    border-radius: 5px;
+}
+</style>

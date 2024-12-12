@@ -1,0 +1,37 @@
+spring:
+  profiles:
+    active: dev
+  jersey:
+    type: servlet
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  messages:
+    encoding: UTF-8
+    basename: i18n/messages
+
+
+# logging
+logging:
+  config: classpath:log4j2-${spring.profiles.active}.xml
+
+server:
+  port: 8090
+  connection-timeout: 6000000 # 600s
+  # error page
+  error:
+    whitelabel:
+      enabled: false
+
+
+workflow:
+  enable: true
+
+ha:
+  enable: false
+
+system:
+  config:
+    save_database_pattern: save_database_pattern

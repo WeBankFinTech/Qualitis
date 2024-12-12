@@ -1,0 +1,103 @@
+<template>
+    <div class="executation-param-setting">
+        <WbButton
+            icon="ios-add-circle-outline"
+            :style="{width: '83%'}"
+            @click="add" />
+        <Row v-show="parameterList.length > 0">
+            <Cell span="9">{{ $t('common.parameterName') }}</Cell>
+            <Cell span="10" offset="1">{{ $t('common.parameterValue') }}</Cell>
+        </Row>
+        <Row
+            v-for="(item, idx) of parameterList"
+            :key="idx"
+            style="margin-bottom: 8px;">
+            <Cell span="9">
+                <el-input
+                    v-model="item.parameterName"
+                    :placeholder="$t('common.pleaseEnter')"
+                    @blur="blurHandler" />
+            </Cell>
+            <Cell span="10" offset="1">
+                <el-input
+                    v-model="item.parameterValue"
+                    :placeholder="$t('common.pleaseEnter')"
+                    @blur="blurHandler" />
+            </Cell>
+            <Cell span="3" offset="1">
+                <Icon
+                    style="cursor: pointer;"
+                    type="ios-close"
+                    @click="deleteRow(idx)" />
+            </Cell>
+        </Row>
+    </div>
+</template>
+<script>
+export default {
+    props: {
+        value: {
+            type: String,
+            required: true
+        }
+    },
+    watch: {
+        value: {
+            immediate: true,
+            deep: false,
+            handler(value) {
+                if (typeof value !== 'string') return;
+                const currentValue = this.transfrom2String(this.parameterList);
+                if (value !== currentValue) {
+                    this.parameterList = this.transform2List(value);
+                }
+            }
+        }
+    },
+    FesData() {
+        return {
+            parameterList: []
+        }
+    },
+    methods: {
+        transform2List(parameterStr) {
+            return parameterStr.split(';')
+                .map(item => {
+                    const data = item.split(':');
+                    const parameterName = data.length > 0 ? data[0] : '';
+                    const parameterValue = data.length > 1 ? data[1] : '';
+                    return {
+                        parameterName,
+                        parameterValue
+                    };
+                });
+        },
+        transfrom2String(list) {
+            return list.map(item => `${item.parameterName}:${item.parameterValue}`).join(';');
+        },
+        add() {
+            const parameter = {
+                parameterName: '',
+                parameterValue: ''
+            };
+            this.parameterList.push(parameter);
+        },
+        deleteRow(index) {
+            this.parameterList.splice(index, 1);
+            this.updateValue();
+        },
+        updateValue() {
+            const value = this.transfrom2String(this.parameterList);
+            this.$emit('input', value);
+        },
+        blurHandler() {
+            this.updateValue();
+        }
+    }
+};
+</script>
+<style lang="scss" scoped>
+.executation-param-setting {
+    color: #657180;
+}
+</style>

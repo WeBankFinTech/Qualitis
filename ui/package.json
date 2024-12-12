@@ -1,0 +1,55 @@
+{
+    "name": "webank-bqm",
+    "version": "1.0.0",
+    "description": "webank DQM系统",
+    "scripts": {
+        "build": "fes build",
+        "dev": "fes dev",
+        "fix": "eslint --ext .js,.fes,.vue src --fix",
+        "lint": "eslint --ext .js,.fes,.vue src",
+        "precommit": "lint-staged"
+    },
+    "husky": {
+        "hooks": {
+            "postcommit": "git update-index --again",
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "src/**/*.{js,fes,vue}": [
+            "eslint --fix",
+            "git add"
+        ]
+    },
+    "keywords": [
+        "DQM系统后台"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "***REMOVED***"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@vue/test-utils": "^1.1.0",
+        "@webank/eslint-config-webank": "^0.1.4",
+        "@webank/fes-cli": "^0.4.0",
+        "babel-plugin-component": "^1.1.1",
+        "chai": "^4.2.0",
+        "csp-html-webpack-plugin": "^4.0.0",
+        "eslint": "^5.8.0",
+        "eslint-plugin-vue": "^5.0.0-beta.3",
+        "husky": "^1.2.0",
+        "lint-staged": "^13.0.0"
+    },
+    "eslintIgnore": [
+        "*.min.js"
+    ],
+    "dependencies": {
+        "@webank/fes-core": "^0.4.8",
+        "@webank/fes-ui": "^0.4.8",
+        "chart.js": "^2.9.4",
+        "date-fns": "^2.21.3",
+        "element-ui": "^2.15.3",
+        "vue-chartjs": "^3.5.1"
+    }
+}

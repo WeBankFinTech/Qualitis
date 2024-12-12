@@ -1,0 +1,881 @@
+<template>
+    <Wb-form ref="formValidate" :rule="ruleValidate" :label-width="140">
+        <myRuleTemplate :is-padding="false">
+            <!-- 创建人，创建时间，修改人，修改时间 -->
+            <template slot="operateInformation">
+                <slot name="operateInformation" />
+            </template>
+            <!-- 规则基础信息 -->
+            <template slot="base">
+                <Row>
+                    <Cell span="8">
+                        <Form-item :label="`${$t('common.ruleEnName')}：`" prop="ruleName">
+                            <Wb-input v-model="ruleName" :disabled="pageType=='view'" :maxlength="50" />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="8">
+                        <Form-item :label="`${$t('common.ruleCnName')}：`" prop="cn_name">
+                            <Wb-input v-model="cn_name" :disabled="pageType=='view'" :maxlength="50" />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="16">
+                        <FormItem :label="`${$t('addGroupTechniqueRule.technicalRulesDetails')}：`" prop="ruleDetails">
+                            <WbInput
+                                v-model="ruleDetails"
+                                autosize
+                                type="textarea"
+                                :disabled="isView"
+                                :maxlength="340" />
+                        </FormItem>
+                    </Cell>
+                </Row>
+            </template>
+            <!-- 规则数据源 -->
+            <template slot="source">
+                <div class="upstreamAndfpsSwitch">
+                    <div v-if="showDSSNode" class="upstream" :data-title="upstreamTitle">
+                        <Wb-switch v-model="upstream" :disabled="pageType=='view'">
+                            <span slot="open">{{ $t('common.open') }}</span>
+                            <span slot="close">{{ $t('common.close') }}</span>
+                        </Wb-switch>
+                    </div>
+                </div>
+                <Row>
+                    <Cell span="11">
+                        <Form-item prop="cluster_name" :label="`${$t('common.cluster')}：`">
+                            <Wb-select v-model="cluster_name" filterable :disabled="pageType=='view'" @on-change="clusterChange">
+                                <wb-option v-for="(w,i) in clusterList" :key="i" :disabled="w.disabled" :value="w.cluster_name">
+                                    {{ w.cluster_name }}
+                                </wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <!-- 代理用户 -->
+                        <FormItem :label="`${$t('common.proxyUser')}：`" prop="proxyUser">
+                            <WbSelect v-model="proxy_user" :disabled="isView" @on-change="clusterChange(true)">
+                                <WbOption v-for="(usr) in proxyUserList" :key="usr" :value="usr">
+                                    {{ usr }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="11">
+                        <!-- 数据源 -->
+                        <FormItem :label="`${$t('common.dataSource')}：`">
+                            <WbSelect v-model="linkis_datasoure_id" filterable :disabled="isView" @click.native="clickDataSource">
+                                <WbOption v-for="(dataSource) in dataSources" :key="dataSource.id" :value="dataSource.id">
+                                    {{ dataSource.dataSourceName }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Row v-if="upstream">
+                    <Cell span="10">
+                        <Form-item :label="`${$t('common.table')}：`" class="select-options">
+                            <Wb-select v-model="tableName" filterable :disabled="isView" @click.native="loadTable">
+                                <wb-option v-for="(w,i) in tableList" :key="i" :value="w.table_name">
+                                    {{ w.table_name }}
+                                </wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row v-if="upstream">
+                    <Cell span="11">
+                        <Form-item :label="`${$t('common.column')}：`" class="select-options">
+                            <Loading v-show="isLoadingFileld" class="loadingField" />
+                            <WbSelect v-model="selectColumn" filterable multiple :disabled="isView" @click.native="loadColumn">
+                                <WbOption v-for="(z,zz) in columnList" :key="zz" :value="z.column_name" :label="`${z.column_name} (${z.data_type})`" />
+                            </WbSelect>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <!-- SQL校验 -->
+                <Row>
+                    <Cell span="11">
+                        <FormItem :label="$t('sqlVerification.indexCalculateSQL')" prop="sql_check_area">
+                            <WbInput
+                                v-model="sql_check_area"
+                                type="textarea"
+                                :disabled="isView"
+                                :rows="8"
+                                :max-length="1000" />
+                            <div style="margin-top: 10px; color: #666;">{{ $t('myProject.sqlVerificationInputTips') }}</div>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <div class="cellWrap">
+                    <filterDescription />
+                </div>
+            </template>
+            <!-- 规则校验方式 -->
+            <template slot="mode">
+                <Tabs ref="tabsRef" v-model="currentTab" :closable="closable()" :disabled="pageType=='view'" @on-tab-remove="removeQuaCheck">
+                    <Tab
+                        v-for="(item,index) in quaCheckList"
+                        :key="item.id"
+                        :name="index + 1"
+                        :label="$t('common.qualityCheck')">
+                        <Row>
+                            <Cell span="8">
+                                <FormItem
+                                    prop="ruleMetric"
+                                    :rule="ruleValidate.ruleMetric"
+                                    :label="`${$t('common.ruleMetric')}：`">
+                                    <WbSelect
+                                        v-model="item.rule_metric_id"
+                                        filterable
+                                        :disabled="isView"
+                                        class="inlineField">
+                                        <WbOption
+                                            v-for="ruleMetricItem in ruleMetricList"
+                                            :key="ruleMetricItem.id"
+                                            :value="ruleMetricItem.id">{{ ruleMetricItem.name }}</WbOption>
+                                    </WbSelect>
+                                </FormItem>
+                            </Cell>
+                            <Cell span="8">
+                                <Form-item
+                                    :rule="ruleValidate.check_template"
+                                    :prop="`output_meta_id${item.id}`"
+                                    :label="`${$t('common.template')}：`">
+                                    <Wb-select
+                                        v-model="item.check_template"
+                                        class="inlineField"
+                                        :disabled="pageType=='view'">
+                                        <WbOption
+                                            v-for="checkTemplateItem in checkTemplateList"
+                                            :key="checkTemplateItem.value"
+                                            :label="checkTemplateItem.label"
+                                            :value="checkTemplateItem.value" />
+                                    </Wb-select>
+                                </Form-item>
+                            </Cell>
+                            <Cell span="8">
+                                <Form-item
+                                    v-if="specialCheckTemplateValueList.includes(item.check_template)"
+                                    :rule="ruleValidate.compareValue"
+                                    prop="compareValue"
+                                    :label="`${$t('label.comparisonMethod')}：`">
+                                    <Wb-select
+                                        v-model="item.compareValue"
+                                        class="inlineField"
+                                        :disabled="pageType=='view'">
+                                        <wb-option :value="1">{{ $t('common.equal') }}</wb-option>
+                                        <wb-option :value="2">{{ $t('common.greaterThan') }}</wb-option>
+                                        <wb-option :value="3">{{ $t('common.lessThan') }}</wb-option>
+                                        <wb-option :value="4">{{ $t('common.greatThanOrEqualTo') }}</wb-option>
+                                        <wb-option :value="5">{{ $t('common.lessThanOrEqualTo') }}</wb-option>
+                                        <wb-option :value="6">{{ $t('common.unequalTo') }}</wb-option>
+                                    </Wb-select>
+                                </Form-item>
+                            </Cell>
+                            <Cell span="8">
+                                <Form-item
+                                    :rule="ruleValidate.threshold"
+                                    prop="threshold"
+                                    :label="$t('common.thresholdValue')">
+                                    <div class="threshoFlex">
+                                        <Wb-input
+                                            v-model="item.threshold"
+                                            type="number"
+                                            :disabled="pageType=='view'"
+                                            class="inlineField"
+                                            @on-input="watchThreshold(item)"
+                                        />
+                                        <span v-if="item.check_template !== 4">%</span>
+                                    </div>
+                                </Form-item>
+                            </Cell>
+                        </Row>
+                        <!-- 是否剔除失败指标值 -->
+                        <div class="pl32">
+                            <Checkbox v-model="item.delete_fail_check_result" :label="$t('common.rejectFailedResults')" :disabled="isView" />
+                        </div>
+                    </Tab>
+                    <Icon
+                        slot="action"
+                        type="ios-add-circle-outline"
+                        color="rgba(51, 153, 255, 0.9)"
+                        size="20"
+                        @click="addQuaCheck"
+                    />
+                </Tabs>
+            </template>
+            <!-- 规则执行参数 -->
+            <template slot="param">
+                <editRuleParams
+                    ref="ruleParamsPanel"
+                    class="pl32"
+                    :is-view="isView"
+                    :params="ruleParams" />
+                <div class="saveResult pl32" style="margin-top: 12px;">
+                    <Checkbox v-model="saveResult" :label="$t('customTechnicalRule.save')" :disabled="pageType=='view'" />
+                    <Icon :data-title="$t('customTechnicalRule.text')" type="ios-help-circle-outline" size="20" />
+                </div>
+            </template>
+        </myRuleTemplate>
+        <Cell span="24" class="cellWrap align-center">
+            <Wb-button
+                v-if="pageType!='view'"
+                type="primary"
+                :disabled="isSubmit"
+                @click.prevent="submit"
+            >{{ $t('common.save') }}</Wb-button>
+        </Cell>
+    </Wb-form>
+</template>
+
+<script type="text/ecmascript-6">
+import { RuleMixin } from '../../mixins/rule';
+import { DWSMessage } from "assets/js/utils.js";
+import editRuleParams from '../../components/editRuleParams';
+import { COMMON_REG } from '../../assets/js/const';
+export default {
+    FesHeader: true,
+    FesLeft: false,
+    mixins: [RuleMixin],
+    components: {
+        editRuleParams
+    },
+    props: {
+        projectId: {
+            type: String,
+            default: ''
+        },
+        ruleGroupId: {
+            type: Number,
+            default: 0
+        },
+        dssParams: {
+            type: Object,
+            default: {}
+        }
+    },
+    computed: {
+        isView() {
+            return this.pageType === 'view'
+        },
+        ruleValidate() {
+            return {
+                ruleName: [
+                    { required: true, message: this.$t('common.notEmpty') },
+                    { pattern: COMMON_REG.EN_NAME, message: this.$t('myProject.projectEnNameRegTips') }
+                ],
+                cn_name: [
+                    { required: false, message: this.$t('common.notEmpty') },
+                    { pattern: COMMON_REG.CN_NAME, message: this.$t('myProject.projectCnNameRegTips') }
+                ],
+                ruleDetails: [
+                    { required: false, message: this.$t('common.notEmpty') }
+                ],
+                compareValue: [{ required: true, message: this.$t('common.notEmpty') }],
+                sql_check_area: [{ required: true, message: this.$t('common.notEmpty') }],
+                cluster_name: [{ required: true, message: this.$t('common.notEmpty') }],
+                check_template: [{ required: true, message: this.$t('common.notEmpty') }],
+                threshold: [{ required: true, message: this.$t('common.notEmpty') }],
+                ruleMetric: [{ required: true, message: this.$t('common.notEmpty') }]
+            }
+        },
+        showDSSNode() {
+            return top !== self
+        },
+        EditDSSUpstream() {
+            let { ruleId, ruleTemplateId, showDSSNode, upstream } = this;
+            //已存上游规则在DQM无法编辑
+            return ruleId && ruleTemplateId && !showDSSNode && upstream
+        },
+        upstreamTitle() {
+            return this.upstream ? this.$t('common.openUpstream') : this.$t('common.closeUpstream');
+        }
+    },
+    data() {
+        return {
+            inited: false,
+            proxyUserList: [],
+            dataSources: [],
+            initedDataSources: false,
+            proxy_user: '',
+            linkis_datasoure_id: '',
+            isSubmit: false,
+            value: '',
+            ruleName: '',
+            cn_name: '',
+            ruleDetails: '',
+            ruleMetricList: [], // 指标列表
+            clusterList: [],
+            checkTemplateList: [
+                {
+                    label: this.$t('common.monthlyFluctuation'),
+                    value: 1
+                },
+                {
+                    label: this.$t('common.weeklyFluctuation'),
+                    value: 2
+                },
+                {
+                    label: this.$t('common.daillyFluctuation'),
+                    value: 3
+                },
+                {
+                    label: this.$t('common.fixedValue'),
+                    value: 4
+                },
+                {
+                    label: this.$t('common.yearCircleCompare'),
+                    value: 5
+                },
+                {
+                    label: this.$t('common.halfYearCircleCompare'),
+                    value: 6
+                },
+                {
+                    label: this.$t('common.seasonCircleCompare'),
+                    value: 7
+                },
+                {
+                    label: this.$t('common.monthCircleCompare'),
+                    value: 8
+                },
+                {
+                    label: this.$t('common.weekCircleCompare'),
+                    value: 9
+                },
+                {
+                    label: this.$t('common.dayCircleCompare'),
+                    value: 10
+                },
+                {
+                    label: this.$t('common.hourCircleCompare'),
+                    value: 11
+                },
+                {
+                    label: this.$t('common.monthSameCompare'),
+                    value: 12
+                }
+            ],
+            // 带有比较方式的校验模板
+            specialCheckTemplateValueList: [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+            ],
+            pageType: 'add',
+            sql_check_area: '', // sql规则校验
+            quaCheckList: [],
+            currentTab: 1,
+            saveResult: false,
+            cluster_name: '',
+            thresholdLimit: false,
+            ruleId: '',
+            ruleTemplateId: '',
+            upstream: false, //dss上游节点
+            context_key: {},
+            tableName: '',
+            selectColumn: [],
+            tableList: [],
+            isLoadingFileld: false,
+            maxSize: 2147483647,
+            columnList: [],
+            taskSwitch: '',
+            ruleParams: {}
+        }
+    },
+    FesReady: function () {
+        // this.init()
+    },
+    methods: {
+        async init(action, ruleId, ruleTemplateId) {
+            try {
+                if (this.showDSSNode && this.pageType !== "view") {
+                    this.upstream = false //从dss页面新建 默认关闭
+                    this.ruleName = this.$route.query.nodeName;
+                    this.cn_name = this.$route.query.cn_name;
+                }
+                if (typeof ruleId !== "undefined" && typeof ruleTemplateId !== "undefined") {
+                    this.ruleId = ruleId;
+                    this.ruleTemplateId = ruleTemplateId
+                }
+                if (action === 'view') {
+                    this.pageType = "view";
+                }
+                await this.loadCluster();
+                this.getUsrGroup();
+                if (this.pageType === "edit" || this.pageType === "view") {
+                    await this.loadTemplateData(ruleId);
+                }
+            } catch (error) {
+                window.console.error(error)
+            }
+            this.getRuleMetricAll();
+            // FIX Tabs组件内部 激活tab不准确的bug
+            this.$refs.tabsRef.activeKey = this.currentTab;
+        },
+        // 获取指标列表所有数据
+        getRuleMetricAll() {
+            this.FesApi.fetch('api/v1/projector/rule_metric/all', {
+                page: 0,
+                size: 2147483647
+            }, "post").then(res => {
+                this.ruleMetricList = res.data;
+            })
+        },
+        // 获取代理用户列表
+        getUsrGroup() {
+            this.FesApi.fetch("api/v1/projector/proxy_user", {}, "get").then((res) => {
+                let list = res || [];
+                if(list.length) {
+                    this.proxyUserList = list;
+                } else {
+                    this.proxyUserList = [this.FesApp.get("FesUserName")];
+                }
+            });
+        },
+        async loadCluster() {
+            let result = await this.FesApi.fetch('api/v1/projector/meta_data/cluster', {});
+            if (Array.isArray(result.data) && result.optional_clusters) {
+                result.data.forEach(item => {
+                    item.disabled = result.optional_clusters.indexOf(item.cluster_name) < 0;
+                })
+                this.clusterList = result.data;
+            }
+            return result;
+        },
+        async loadTemplateData(id) {
+            try {
+                this.$emit('get-load', true);
+                let quaCheckList = [];
+                this.quaCheckList = [];
+                let result = await this.FesApi.fetch('api/v1/projector/rule/custom/' + id, {}, 'get');
+                this.ruleName = result.rule_name;
+                this.cn_name = result.cn_name;
+                this.ruleDetails = result.rule_detail;
+                this.saveResult = result.save_mid_table;
+                this.sql_check_area = result.sql_check_area;
+                this.cluster_name = result.cluster_name;
+                this.proxy_user = result.proxy_user;
+                this.upstream = result.context_service;
+                this.$emit('get-upstream', this.upstream);
+                this.linkis_datasoure_id = result.linkis_datasoure_id;
+                this.$emit("get-info", {
+                    create_user: result.create_user || '--', // 创建人
+                    create_time: result.create_time || '--', // 创建时间
+                    modify_time: result.modify_time || '--', // 修改时间
+                    modify_user: result.modify_user || '--', // 修改人
+                });
+                this.taskSwitch = result.abort_on_failure;
+                this.ruleParams = {
+                    abort_on_failure: result.abort_on_failure,
+                    specify_static_startup_param: result.specify_static_startup_param,
+                    static_startup_param: result.static_startup_param
+                };
+                this.$emit('change-task', result.abort_on_failure, this.pageType);
+                if (Array.isArray(result.alarm_variable)) { // 质量检查告警配置
+                    result.alarm_variable.forEach((item, index) => {
+                        let alarm = {
+                            "compareValue": null,
+                            "output_meta_name": item.output_meta_name,
+                            "id": item.alarm_config_id || new Date().valueOf() + index*100,// 执行太快加index为了避免key重复
+                            "threshold": item.threshold,
+                            "output_meta_id": item.output_meta_id,
+                            "check_template": item.check_template,
+                            "compare_type": item.compare_type,
+                            'rule_metric_id': item.rule_metric_id,
+                            delete_fail_check_result: item.delete_fail_check_result,
+                        };
+                        if (this.specialCheckTemplateValueList.includes(item.check_template)) {
+                            alarm.compareValue = item.compare_type;
+                        }
+                        quaCheckList.push(alarm);
+                    })
+                }
+                if (quaCheckList.length < 1) {
+                    quaCheckList = [{
+                        id: new Date().valueOf(),
+                        rule_metric_id: '',
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: "",
+                        delete_fail_check_result: true,
+                    }]
+                }
+                this.quaCheckList.push(...quaCheckList)
+                if (this.linkis_datasoure_id) {
+                    this.dataSources = await this.getDataSources(this.cluster_name, this.proxy_user);
+                    this.initedDataSources = true;
+                }
+                this.inited = true;
+                this.$emit('get-load', false);
+            } catch (error) {
+                this.$emit('get-load', false);
+                window.console.error(error)
+            }
+        },
+        clusterChange(is_proxy_user) {
+            // 如果回填时有代理用户则直接返回，避免多次请求
+            if(this.pageType === "view" && !is_proxy_user) return;
+            if (this.pageType === 'view' && !this.inited) return;
+            this.linkis_datasoure_id = '';
+            this.dataSources = [];
+            this.initedDataSources = false;
+        },
+        clickDataSource(e) {
+            if (this.initedDataSources) return;
+            const target = e.target || e.srcElement;
+            const nodeName = target.nodeName || '';
+            if (nodeName.toUpperCase() === 'LI') return;
+            this.getDataSources(this.cluster_name, this.proxy_user).then((list) => {
+                this.dataSources = list;
+                this.initedDataSources = true;
+            });
+        },
+        removeQuaCheck(name, index) {
+            this.currentTab = 1;
+            if(!index) return; // this.quaCheckList数据的重置和替换操作都会导致此函数的触发
+            this.quaCheckList.splice(index, 1);
+        },
+        closable() {
+            return this.pageType === 'edit' || this.pageType === 'add'
+        },
+        addQuaCheck() {
+            this.quaCheckList.push({
+                id: new Date().valueOf(),
+                rule_metric_id: '',
+                output_meta_id: "",
+                check_template: "",
+                threshold: "",
+                compareValue: "",
+                delete_fail_check_result: true,
+            });
+            this.currentTab = this.quaCheckList.length;
+        },
+        toastText() {
+            this.$Message.alert(this.$t('message.thresholdTitle'), this.$t('message.thresholdText')).then(function () {
+            })
+        },
+        watchThreshold(data) {
+            if (data.check_template !== 4 && data.threshold > 10000) this.toastText()
+        },
+        thresholdCheck() {
+            if (this.quaCheckList) {
+                this.quaCheckList.map(item => {
+                    if (item.check_template !== 4 && item.threshold > 10000) {
+                        this.thresholdLimit = true;
+                        this.toastText()
+                    }
+                })
+            }
+        },
+        submit() {
+            this.$refs["formValidate"].validate(valid => {
+                this.thresholdCheck();
+                if (this.thresholdlimit) return;
+                if (valid) {
+                    this.isSubmit = true;
+                    this.$emit('get-load', true);
+                    const {
+                        abort_on_failure,
+                        specify_static_startup_param,
+                        static_startup_param
+                    } = this.$refs.ruleParamsPanel;
+                    let param = {
+                        abort_on_failure,
+                        specify_static_startup_param,
+                        static_startup_param,
+                        project_id: this.projectId,
+                        proxy_user: this.proxy_user,
+                        rule_name: this.ruleName,
+                        cn_name: this.cn_name,
+                        rule_detail: this.ruleDetails,
+                        cluster_name: this.cluster_name,
+                        sql_check_area: this.sql_check_area,
+                        alarm: true,
+                        save_mid_table: this.saveResult
+                    }
+                    const dataSource = this.dataSources.find((item) => String(item.id) === String(this.linkis_datasoure_id)) || {};
+                    const dataSourceType = dataSource.dataSourceType || {};
+                    param = Object.assign({}, param, {
+                        linkis_datasoure_id: this.linkis_datasoure_id,
+                        linkis_datasource_name: dataSource.dataSourceName,
+                        linkis_datasource_type: dataSourceType.name
+                    });
+                    //告警内容
+                    param.alarm_variable = this.quaCheckList.map(({
+                        check_template,
+                        threshold,
+                        compareValue,
+                        delete_fail_check_result,
+                        rule_metric_id
+                    }) => {
+                        const ruleMetric = this.ruleMetricList.find(item => item.id === rule_metric_id);
+                        const ruleMetricEnCode = ruleMetric ? ruleMetric.en_code : '';
+                        let alarmRule = {
+                            check_template,
+                            threshold,
+                            delete_fail_check_result,
+                            rule_metric_id,
+                            rule_metric_en_code: ruleMetricEnCode
+                        };
+                        if (this.specialCheckTemplateValueList.includes(check_template)) {
+                            alarmRule.compare_type = compareValue;
+                        }
+                        return alarmRule;
+                    })
+                    let action = 'add';
+                    let path = 'add';
+                    let key = this.$route.query.nodeId;
+                    // 如果参数带有ruleTemplateId 则是编辑技术规则
+                    if (this.ruleId && this.ruleTemplateId) {
+                        param.rule_id = this.ruleId;
+                        action = 'edit';
+                        path = 'modify';
+                    }
+                    if (this.ruleGroupId) {
+                        param.rule_group_id = this.ruleGroupId
+                    }
+                    if (this.upstream) {
+                        param.cs_id = this.dssParams.contextID,
+                            param.node_name = this.dssParams.nodeName,
+                            param.nodeId = this.dssParams.nodeId;
+                    }
+                    this.FesApi.fetch(`/api/v1/projector/rule/custom/${path}`, param, 'post').then((res) => {
+                        let inIframe = top != self;
+                        this.isSubmit = false;
+                        this.$Toast.success(this.$t('common.successfulOperate'));
+                        this.pageType = "view";
+                        this.$emit('get-list', res.rule_group_id, res.rule_id);
+                        if (inIframe && res.rule_group_id) {
+                            DWSMessage(key, res.rule_group_id, action);
+                        }
+                        this.$emit('get-load', false);
+                    }).catch(() => {
+                        this.isSubmit = false;
+                        this.$emit('get-load', false);
+                    })
+                }
+            })
+        },
+        editRule() {
+            if (this.EditDSSUpstream) {
+                return this.$Toast.warn(this.$t('addTechniqueRule.notSupportUpstream'))
+            }
+            this.pageType = 'edit';
+            this.$emit('change-task', this.taskSwitch, this.pageType);
+        },
+        clearParam() {
+            Object.assign(this, {
+                proxyUserList: [],
+                proxy_user: '',
+                value: '',
+                ruleName: '',
+                cn_name: '',
+                ruleDetails: '',
+                ruleMetricList: [],
+                cluster_name: '',
+                sql_check_area: '',
+                saveResult: false,
+                quaCheckList: [{
+                    id: new Date().valueOf(),
+                    rule_metric_id: '',
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: "",
+                    delete_fail_check_result: true,
+                }],
+                pageType: 'add',
+                ruleId: '',
+                ruleTemplateId: ''
+            })
+            if (this.showDSSNode && this.dssParams && this.dssParams.nodeName) {
+                this.ruleName = this.dssParams.nodeName;
+                this.cn_name = this.dssParams.cn_name;
+            }
+            this.$emit("get-info", {
+                pageType: 'add',
+            });
+            this.$nextTick(() => {
+                this.$refs.formValidate.resetFields();
+            })
+            this.init()
+        },
+        async loadTable() {
+            let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_table', {
+                cs_id: this.dssParams.contextID,
+                node_name: this.dssParams.nodeName,
+                cluster_name: this.cluster_name,
+                start_index: 0,
+                page_size: this.maxSize
+            }, "post");
+            this.tableList = result.data;
+            this.context_key = this.tableList.filter((item) => item.table_name === this.tableName)
+        },
+        async loadColumn() {
+            this.isLoadingFileld = true;
+            let context_key = (this.context_key[0] && this.context_key[0]['context_Key']) || '';
+            try {
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_column', {
+                    cs_id: this.dssParams.contextID,
+                    node_name: this.dssParams.nodeName,
+                    cluster_name: this.cluster_name,
+                    context_key,
+                    start_index: 0,
+                    page_size: this.maxSize,
+                    proxy_user: this.proxy_user || undefined
+                });
+                if (result && Array.isArray(result.data)) {
+                    this.columnList = result.data;
+                }
+                this.isLoadingFileld = false;
+            } catch (error) {
+                this.isLoadingFileld = false;
+            }
+        },
+    }
+};
+</script>
+
+<style scoped lang="scss">
+.upstreamAndfpsSwitch {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    right: 20px;
+    top: 20px;
+}
+.fromTextClass {
+    padding-bottom: 0px;
+    /deep/.ui-form-content {
+        margin-left: 0px!important;
+    }
+}
+.rule-content,
+.select-content,
+.select-fun {
+    display: flex;
+    justify-content: flex-start;
+}
+.saveResult {
+    position: relative;
+    i {
+        vertical-align: middle;
+    }
+    i:hover:after {
+        content: attr(data-title);
+        display: block;
+        position: absolute;
+        top: -5px;
+        left: 225px;
+        width: 360px;
+        padding: 6px 4px;
+        text-align: left;
+        border: 1px solid #9e9e9e;
+        border-radius: 2px;
+        background-color: #555e67;
+        font-size: 14px;
+        color: #fff;
+    }
+}
+.select-content {
+    margin-left: 10px;
+}
+.source {
+    width: 50%;
+}
+.cellWrap {
+    padding-left: 32px;
+    .ui-button {
+        margin: 20px auto;
+    }
+}
+.align-center {
+    text-align: center;
+}
+.sqlWrapper {
+    height: 20px;
+    line-height: 20px;
+    text-align: left;
+    margin-bottom: 10px;
+}
+.projectTextbox {
+    padding: 5px;
+    height: 100px;
+    width: 100%;
+    background-color: #f3f3f3;
+}
+.inlineField {
+    width: 400px;
+}
+.loadingField {
+    position: absolute;
+    z-index: 3;
+    margin-top: 10px;
+    right: 25px;
+    width: 15px !important;
+    height: 15px !important;
+}
+.disableEdit {
+    color: #666;
+}
+.taskSwitch {
+    margin-right: 50px;
+    position: absolute;
+    top: -30px;
+    right: 150px;
+}
+/deep/
+.ui-input-swap .ui-input-prepend {
+    width: 100px;
+}
+.upstream:hover:after {
+    content: attr(data-title);
+    display: block;
+    position: absolute;
+    top: 26px;
+    left: -34px;
+    width: 110px;
+    padding: 6px 4px;
+    text-align: left;
+    border: 1px solid #9e9e9e;
+    border-radius: 2px;
+    background-color: #555e67;
+    font-size: 14px;
+    color: #fff;
+    white-space: pre-wrap;
+    z-index: 2;
+}
+.threshoFlex {
+    display: flex;
+    align-items: center;
+    span {
+        flex: 0;
+        margin-left: 10px;
+    }
+}
+.alert_label {
+    /deep/.ui-form-label {
+        text-align: left;
+        padding-left: 20px;
+    }
+}
+.pl32 {
+    padding-left: 32px;
+}
+</style>

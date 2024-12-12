@@ -1,0 +1,51 @@
+<template>
+    <div class="executation-config-detail">
+        <!-- 配置参数
+        <FormItem :label="$t('common.configParams')" prop="set_flag">
+            <WbInput v-model="data.set_flag" :placeholder="$t('common.pleaseEnter')" />
+        </FormItem>
+        -->
+        <!-- 配置参数 -->
+        <el-form-item :label="`${$t('common.configParams')}：`" prop="set_flag">
+            <ExecutationParamSetting
+                v-model="data.set_flag"
+                filterable
+                createable
+                :parameter-name-list="parameterNameList" />
+        </el-form-item>
+    </div>
+</template>
+<script>
+import ExecutationParamSetting from './components/executationParamSetting';
+export default {
+    name: 'executation-spark-config',
+    components: {
+        ExecutationParamSetting
+    },
+    props: {
+        data: {
+            type: Object,
+            required: true
+        }
+    },
+    FesData() {
+        return {
+            parameterNameList: [
+                {
+                    label: 'spark.sql.adaptive.skewJoin.enabled',
+                    value: 'spark.sql.adaptive.skewJoin.enabled'
+                },
+                {
+                    label: 'spark.sql.adaptive.skewJoin.skewedPartitionFactor',
+                    value: 'spark.sql.adaptive.skewJoin.skewedPartitionFactor'
+                },
+                {
+                    label: 'spark.sql.shuffle.partitions',
+                    value: 'spark.sql.shuffle.partitions'
+                }
+            ]
+        };
+    }
+};
+</script>
+<style lang="scss" scoped></style>

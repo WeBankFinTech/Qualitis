@@ -1,0 +1,129 @@
+spring:
+  datasource:
+    username: [your_name]
+    password: [your_pwd]
+    url: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    driver-class-name: com.mysql.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      minimum-idle: 20
+      maximum-pool-size: 500
+      idle-timeout: 60000 # 1 min
+      max-lifetime: 180000 # 3 min
+      leak-detection-threshold: 120000 # 2 min
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    show-sql: false
+
+restTemplate:
+  thread:
+    maxTotal: 200 # max thread number
+    maxPerRoute: 100 # max concurrent thread per route
+
+  request:
+    socketTimeout: 10000 # the max time waiting for response
+    connectTimeout: 2000 # the max time waiting for shaking hand
+    connectionRequestTimeout: 2000 # the max time waiting for getting connection from connection pool
+
+task:
+  persistent:
+    type: jdbc
+    username: [your_name]
+    password: [your_pwd]
+    address: jdbc:mysql://[your_mysql_ip]:[your_mysql_port]/[your_db_name]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
+    tableName: qualitis_application_task_result
+  execute:
+    limit_thread: 10
+    rule_size: 10
+
+timer:
+  thread:
+    size: 5
+  check:
+    period: 10000
+    update_job_size: 100
+  lock:
+    zk:
+      path: /qualitis/tmp/monitor
+
+zk:
+  address:
+  base_sleep_time: 1000
+  max_retries: 3
+  session_time_out: 10000
+  connection_time_out: 15000
+  lock_wait_time: 3
+
+auth:
+  unFilterUrls:
+    - /qualitis/api/v1/login/local
+    - /qualitis/api/v1/redirect
+  uploadUrls:
+    - /qualitis/api/v1/projector/rule/batch/upload/*
+    - /qualitis/api/v1/projector/project/batch/upload*
+
+linkis:
+  api:
+    prefix: api/rest_j/v1
+    submitJob: entrance/execute
+    submitJobNew: entrance/submit
+    killJob: entrance
+    status: jobhistory/{id}/get
+    runningLog: entrance/{id}/log
+    finishLog: filesystem/openLog
+    upload: filesystem/upload
+    upload_tmp_path: ./tmp
+    upload_prefix: hdfs://hdfs://
+    getFullTree: configuration/getFullTreesByAppName
+    saveFullTree: configuration/saveFullTree
+    meta_data:
+      db_path: datasource/dbs
+      table_path: datasource/tables
+      table_info: datasource/getTableBaseInfo
+      column_path: datasource/columns
+      column_info: datasource/getTableFieldsInfo
+      table_statistics: datasource/getTableStatisticInfo
+      partition_statistics: datasource/getPartitionStatisticInfo
+      datasource_types: data-source-manager/type/all
+      datasource_env: data-source-manager/env
+      datasource_info: data-source-manager/info
+      datasource_publish: data-source-manager/publish
+      datasource_info_name: data-source-manager/info/name
+      datasource_connect: data-source-manager/op/connect/json
+      datasource_connect_param: data-source-manager/{DATA_SOURCE_ID}/connect_params
+      datasource_key_define: data-source-manager/key_define/type
+      datasource_expire: data-source-manager/info/{DATA_SOURCE_ID}/expire
+      datasource_modify: data-source-manager/info/{DATA_SOURCE_ID}/json
+      datasource_create: data-source-manager/info/json
+      datasource_init_version: data-source-manager/parameter/{DATA_SOURCE_ID}/json
+      datasource_versions: data-source-manager/{DATA_SOURCE_ID}/versions
+      datasource_db: metadatamanager/dbs/{DATA_SOURCE_ID}
+      datasource_table: metadatamanager/tables/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}
+      datasource_column: metadatamanager/columns/{DATA_SOURCE_ID}/db/{DATA_SOURCE_DB}/table/{DATA_SOURCE_TABLE}
+  kill_stuck_tasks: true
+  kill_stuck_tasks_time: 1800000 # 30 min
+  lightweight_query: true
+  skip_table_size: 10
+  skip_table_size_unit: GB
+  spark:
+    application:
+      name: IDE
+      reparation: 50
+    engine:
+      name: spark
+      version: 2.4.3
+  log:
+    maskKey: task.persistent.username, task.persistent.password
+
+front_end:
+  home_page: http://127.0.0.1:8090/#/dashboard
+  domain_name: http://127.0.0.1:8090
+  local: zh_CN
+  center: dev
+
+ldap:
+  ip: xx
+  port: 00
+

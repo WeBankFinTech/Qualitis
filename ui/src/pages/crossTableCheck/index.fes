@@ -1,0 +1,2035 @@
+<template>
+    <Wb-form ref="crossValidate" :label-width="140" :rule="ruleValidate">
+        <myRuleTemplate :is-padding="false">
+            <!-- 创建人，创建时间，修改人，修改时间 -->
+            <template slot="operateInformation">
+                <slot name="operateInformation" />
+            </template>
+            <!-- 规则基础信息 -->
+            <template slot="base">
+                <Row>
+                    <Cell span="8">
+                        <Form-item :label="`${$t('common.ruleEnName')}：`" prop="ruleName">
+                            <Wb-input v-model="ruleName" :disabled="isView" :maxlength="50" />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="8">
+                        <Form-item :label="`${$t('common.ruleCnName')}：`" prop="cn_name">
+                            <Wb-input v-model="cn_name" :disabled="isView" :maxlength="50" />
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="8">
+                        <Form-item :label="`${$t('common.template')}：`" class="select-options" prop="templateId">
+                            <Wb-select v-model="templateId" :disabled="isView" @on-change="checkRule">
+                                <wb-option
+                                    v-for="(w, i) in templateList"
+                                    :key="i"
+                                    :value="w.template_id"
+                                >{{ w.template_name }}</wb-option>
+                            </Wb-select>
+                        </Form-item>
+                    </Cell>
+                </Row>
+                <Row>
+                    <Cell span="16">
+                        <FormItem :label="`${$t('addGroupTechniqueRule.technicalRulesDetails')}：`" prop="ruleDetails">
+                            <WbInput
+                                v-model="ruleDetails"
+                                autosize
+                                type="textarea"
+                                :disabled="isView"
+                                :maxlength="340" />
+                        </FormItem>
+                    </Cell>
+                </Row>
+            </template>
+            <!-- 规则数据源 -->
+            <template slot="source">
+                <Form-item :label="`${$t('common.cluster')}：`" class="select-options sqlWhere pl32" prop="clusterName" style="width: calc(50% - 10px);">
+                    <Wb-select
+                        v-model="clusterName"
+                        filterable
+                        :disabled="isView"
+                        @on-change="clusterNameChange">
+                        <wb-option
+                            v-for="(w,i) in clusterList"
+                            :key="i"
+                            :disabled="w.disabled"
+                            :value="w.cluster_name"
+                        >{{ w.cluster_name }}</wb-option>
+                    </Wb-select>
+                </Form-item>
+                <div class="config pl32">
+                    <!-- source -->
+                    <Config
+                        action-type="source"
+                        :is-view="isView"
+                        :data-source-id="source_linkis_datasoure_id"
+                        :db-name="sourceDbName"
+                        :proxy-user="sourceProxyUser"
+                        :proxy-user-list="proxyUserList"
+                        :table-name="sourceTableName"
+                        :data-sources="sourceDataSources"
+                        :db-list="sourceDbList"
+                        :filter-value="sourceFilter"
+                        :source-table="sourceTable"
+                        :upstream="sourceUpstream"
+                        :show-dssnode="showDSSNode"
+                        :template-id="templateId"
+                        @getproxyUser="getproxyUser"
+                        @filter-action="filterAction"
+                        @table-change="tableChange"
+                        @getTableInfo="getTableInfo"
+                        @getColumnInfo="getColumnInfo"
+                        @getDataSources="getDataSourcesWithTargetName('source')"
+                        @getDataSourceInfo="getDataSourceInfo($event, 'source')"
+                        />
+                    <!-- target -->
+                    <Config
+                        style="margin-left:20px;"
+                        action-type="target"
+                        :is-view="isView"
+                        :proxy-user-list="proxyUserList"
+                        :proxy-user="targetProxyUser"
+                        :data-source-id="target_linkis_datasoure_id"
+                        :db-name="targetDbName"
+                        :table-name="targetTableName"
+                        :data-sources="targetDataSources"
+                        :db-list="targetDbList"
+                        :filter-value="targetFilter"
+                        :source-table="targetTable"
+                        :upstream="targetUpstream"
+                        :show-dssnode="showDSSNode"
+                        :template-id="templateId"
+                        @getproxyUser="getproxyUser"
+                        @filter-action="filterAction"
+                        @table-change="tableChange"
+                        @getTableInfo="getTableInfo"
+                        @getColumnInfo="getColumnInfo"
+                        @getDataSources="getDataSourcesWithTargetName('target')"
+                        @getDataSourceInfo="getDataSourceInfo($event, 'target')"
+                        />
+                </div>
+                <!-- 跨表全量校验模板不展示 映射关系模块 -->
+                <div v-if="![20].includes(templateId)" class="pl32">
+                    <Panel :title="$t('crossTableCheck.mappingRelationship')">
+                        <div>
+                            <WbButton v-if="pageType!='view'" type="primary" class="add-button mb10 mt10" @click="open">{{ $t('crossTableCheck.add') }}</WbButton>
+                        </div>
+                        <div v-if="mappings.length" class="table-cell">
+                            <WbTable :data="mappings" border>
+                                <Column :name="$t('crossTableCheck.leftSide')" prop="left_statement" align="left" :filter="replaceStr" width="20%" />
+                                <Column :name="$t('crossTableCheck.relationshipBetween')" prop="operation" align="left" :filter="formatOperation" />
+                                <Column :name="$t('crossTableCheck.rightSide')" prop="right_statement" :filter="replaceStr" align="left" />
+                                <Column :action="action" :name="$t('common.operate')" align="left" width="20%" />
+                            </WbTable>
+                        </div>
+                    </Panel>
+                </div>
+                <div v-if="whereShow" span="10" class="mt20 sqlWhere pl32">
+                    <Form-item prop="where" label="where：">
+                        <Wb-input v-model="whereExpression" :disabled="isView" :rows="3" type="textarea" @click="whereFilter" />
+                    </Form-item>
+                </div>
+                <div span="24" class="cellWrap mt20 pl32">
+                    <div class="sqlWrapper">{{ $t('common.SQL') }}</div>
+                    <div ref="sql" class="projectTextbox">
+                        <p v-if="sqlTpl">{{ sqlTpl }}</p>
+                        <p v-if="sqlTpl">{{ sqlTpl2 }}</p>
+                        <p v-if="sqlGeneralTpl">{{ sqlGeneralTpl }}</p>
+                    </div>
+                </div>
+                <div class="pl32">
+                    <filterDescription />
+                </div>
+            </template>
+            <!-- 规则校验方式 -->
+            <template slot="mode">
+                <Row>
+                    <Cell span="8">
+                        <FormItem prop="ruleMetric" :label="`${$t('common.ruleMetric')}：`">
+                            <WbSelect v-model="rule_metric_id" filterable class="inlineField" :disabled="isView">
+                                <WbOption v-for="item in ruleMetricList" :key="item.id" :value="item.id">
+                                    {{ item.name }}
+                                </WbOption>
+                            </WbSelect>
+                        </FormItem>
+                    </Cell>
+                </Row>
+                <Tabs
+                    ref="tabsRef"
+                    v-model="currentTab"
+                    :closable="closable()"
+                    :disabled="isView" @on-tab-remove="removeQuaCheck">
+                        <Tab v-for="(item,index) in quaCheckList" :key="item.id" :name="index + 1" :label="$t('common.qualityCheck')">
+                            <Row>
+                                <Cell span="8">
+                                    <Form-item :rule="ruleValidate.output_meta_id" :label="$t('common.parityField')" :prop="`${item.output_meta_id || item.id}`">
+                                        <Wb-select v-model="item.output_meta_id" class="inlineField" :disabled="isView">
+                                            <wb-option v-for="w in ruleConfig.checkFieldList" :key="w.output_id" :value="w.output_id">
+                                                {{ w.output_name }}
+                                            </wb-option>
+                                        </Wb-select>
+                                    </Form-item>
+                                </Cell>
+                                <Cell span="8">
+                                    <Form-item :rule="ruleValidate.fieldWrapper" :prop="`${item.output_meta_id || item.id}`" :label="`${$t('common.template')}：`">
+                                        <Wb-select v-model="item.check_template" class="inlineField" :disabled="isView">
+                                            <WbOption
+                                                v-for="checkTemplateItem in checkTemplateList"
+                                                :key="checkTemplateItem.value"
+                                                :label="checkTemplateItem.label"
+                                                :value="checkTemplateItem.value" />
+                                        </Wb-select>
+                                    </Form-item>
+                                </Cell>
+                                <Cell span="8">
+                                    <Form-item v-show="specialCheckTemplateValueList.includes(item.check_template)" :rule="[{required: specialCheckTemplateValueList.includes(item.check_template),message: $t('common.notEmpty')}]" :prop="`${item.compareValue || item.id}`" :label="$t('crossTableCheck.compareTheWay')">
+                                        <Wb-select v-model="item.compareValue" class="inlineField" :disabled="isView">
+                                            <wb-option :value="1">{{ $t('common.equal') }}</wb-option>
+                                            <wb-option :value="2">{{ $t('common.greaterThan') }}</wb-option>
+                                            <wb-option :value="3">{{ $t('common.lessThan') }}</wb-option>
+                                            <wb-option :value="4">{{ $t('common.greatThanOrEqualTo') }}</wb-option>
+                                            <wb-option :value="5">{{ $t('common.lessThanOrEqualTo') }}</wb-option>
+                                            <wb-option :value="6">{{ $t('common.unequalTo') }}</wb-option>
+                                        </Wb-select>
+                                    </Form-item>
+                                </Cell>
+                                <Cell span="8">
+                                    <Form-item :prop="`${item.threshold || item.id}`" :label="$t('common.thresholdValue')" :rule="ruleValidate.threshold">
+                                        <div class="threshoFlex">
+                                            <Wb-input v-model="item.threshold" class="inlineField" type="number"
+                                                :disabled="isView" @on-input="watchThreshold(item)" />
+                                            <span v-if="item.check_template !== 4">%</span>
+                                        </div>
+                                    </Form-item>
+                                </Cell>
+                            </Row>
+                            <div class="pl32">
+                                <Checkbox v-model="delete_fail_check_result" :label="$t('common.rejectFailedResults')" :disabled="isView" />
+                            </div>
+                        </Tab>
+                        <Icon v-if="pageType!='view'" slot="action" type="ios-add-circle-outline" color="rgba(51, 153, 255, 0.9)" size="20" @click="addQuaCheck" />
+                </Tabs>
+            </template>
+            <!-- 规则执行参数 -->
+            <template slot="param">
+                <editRuleParams
+                    ref="ruleParamsPanel"
+                    class="pl32"
+                    :is-view="isView"
+                    :params="ruleParams" />
+            </template>
+        </myRuleTemplate>
+        <Cell span="24" class="cellWrap align-center">
+            <WbButton v-if="pageType!='view'" :disabled="isSubmit" type="primary" @click="submit">
+                {{ $t('common.save') }}
+            </WbButton>
+        </Cell>
+        <Modal ref="leftfilterModal" :title="$t('crossTableCheck.addFilterConditions')" width="700" :close-on-click-shadow="false">
+            <FilterCondition
+                arrow="left"
+                only-id="sourceFilter"
+                data-tag="source"
+                arrow-filter-col="leftFilterCol"
+                type-column-list="sourceColumnList"
+                :table-name="sourceTableName"
+                :filter-col="leftFilterCol"
+                :selected-col="sourceFilterCol"
+                @search-field="searchField"
+                @change-value="changeValue"
+                @compare="compare"
+                @filter-cancel="filterCancel"
+                @filter-modal="sourceFilterModal"
+                @sql-change="sqlChange" />
+        </Modal>
+
+        <Modal ref="rightfilterModal" :title="$t('crossTableCheck.addFilterConditions')" width="700" :close-on-click-shadow="false">
+            <FilterCondition
+                arrow="right"
+                only-id="targetFilter"
+                data-tag="target"
+                arrow-filter-col="rightFilterCol"
+                type-column-list="targetColumnList"
+                :table-name="targetTableName"
+                :filter-col="rightFilterCol"
+                :selected-col="targetFilterCol"
+                @search-field="searchField"
+                @change-value="changeValue"
+                @compare="compare"
+                @filter-cancel="filterCancel"
+                @filter-modal="targetFilterModal"
+                @sql-change="sqlChange" />
+        </Modal>
+        <Modal ref="addMapModal" :title="$t('crossTableCheck.addTheMappingRelationship')" class="add-map-modal" width="1000" :close-on-click-shadow="false" @on-close="mapModalClose">
+            <div class="box">
+                <div class="statement">
+                    <span v-for="(item, i) in sourceField" :key="i">{{ item }} <Icon type="ios-close-circle-outline" color="#3399ff" size="14" @click.stop="deleteRelation('leftRelations','sqlLeft','sourceStatement',i)" /></span>
+                </div>
+                <div class="operation" style="width:150px">
+                    <select v-model="operation" class="select">
+                        <option v-for="item in operationList" :key="item.type" :value="item.type">
+                            {{ item.value }}
+                        </option>
+                    </select>
+                </div>
+                <div class="statement">
+                    <span v-for="(item, i) in targetField" :key="i">{{ item }} <Icon type="ios-close-circle-outline" color="#3399ff" size="14" @click.stop="deleteRelation('rightRelations','sqlRight','targetStatement',i)" /></span>
+                </div>
+            </div>
+            <mapRelation
+                :source-table-name="sourceTableName"
+                :target-table-name="targetTableName"
+                arrow-col="leftSourceCol"
+                relation="leftRelations"
+                arrow-sql="sqlLeft"
+                col-list="sourceColumnList"
+                data-tag="source"
+                target-col-str="leftTargetCol"
+                :filter-col="leftSourceCol"
+                :map-col="sourceLeftMapCol"
+                :arrow-target-col="leftTargetCol"
+                :filter-target-col="targetLeftMapCol"
+                @search-field="searchField"
+                @join-statement="joinStatement"
+                @compare="compare"
+                @trans-data="transData"
+                @trans-sql="transSql"
+                @assembly-sql="assemblySql"
+                @custom-value="customValue" />
+
+            <mapRelation
+                :source-table-name="sourceTableName"
+                :target-table-name="targetTableName"
+                arrow-col="rightSourceCol"
+                relation="rightRelations"
+                arrow-sql="sqlRight"
+                col-list="targetColumnList"
+                data-tag="target"
+                target-col-str="rightTargetCol"
+                :filter-col="rightSourceCol"
+                :map-col="sourceRightMapCol"
+                :arrow-target-col="rightTargetCol"
+                :filter-target-col="targetRightMapCol"
+                @search-field="searchField"
+                @join-statement="joinStatement"
+                @compare="compare"
+                @trans-data="transData"
+                @trans-sql="transSql"
+                @assembly-sql="assemblySql"
+                @custom-value="customValue" />
+            <div class="button-action">
+                <WbButton v-if="isAdding" type="primary" @click="addMapping">{{ $t('crossTableCheck.confirmToAdd') }}</WbButton>
+                <WbButton v-else type="primary" @click="addMapping">{{ $t('crossTableCheck.confirmTheChange') }}</WbButton>
+            </div>
+        </Modal>
+
+        <Modal ref="whereModal" :title="$t('crossTableCheck.addWhere')" width="700" :close-on-click-shadow="false">
+            <whereCondition
+                :source-table-name="sourceTableName"
+                :target-table-name="targetTableName"
+                :left-filter-col="leftFilterCol"
+                :source-col="whereSourceCol"
+                :right-filter-col="rightFilterCol"
+                :express-condition="whereExpression"
+                :target-col="whereTargetCol"
+                @search-field="searchField"
+                @express-change="expressChange"
+                @compare="compare"
+                @determine="whereDetermine"
+                @cancel="whereCancel" />
+        </Modal>
+    </Wb-form>
+</template>
+<script>
+import { RuleMixin } from '../../mixins/rule';
+import Config from './config';
+import FilterCondition from './filterCondition';
+import mapRelation from './mapRelation';
+import whereCondition from './whereCondition';
+import editRuleParams from '../../components/editRuleParams';
+import { dateFormat, DWSMessage } from "assets/js/utils.js";
+import { COMMON_REG } from '../../assets/js/const';
+export default {
+    mixins: [RuleMixin],
+    components: {
+        Config,
+        FilterCondition,
+        mapRelation,
+        whereCondition,
+        editRuleParams
+    },
+    props: {
+        projectId: {
+            type: String,
+            default: ''
+        },
+        ruleGroupId: {
+            type: Number,
+            default: 0
+        },
+        dssParams: {
+            type: Object,
+            default: {}
+        }
+    },
+    data() {
+        return {
+            targetProxyUser: "",
+            sourceProxyUser: "",
+            proxyUserList: [],
+            isSubmit: false,
+            ruleName: '',
+            cn_name: '',
+            ruleDetails: '',
+            clusterName: '',
+            templateId: null,
+            rule_metric_id: '', // 规则指标id
+            ruleMetricList: '', // 规则指标列表
+            templateList: [],
+            clusterList: [],
+            sourceDataSources: [],
+            targetDataSources: [],
+            sourceDbList: [],
+            targetDbList: [],
+            source_linkis_datasoure_id: '',
+            target_linkis_datasoure_id: '',
+            targetDbName: '',
+            sourceDbName: '',
+            tableList: [],
+            sourceTable: [],
+            targetTable: [],
+            sourceTableName: '',
+            targetTableName: '',
+            //左过滤条件
+            sourceFilter: '',
+            //右过滤条件
+            targetFilter: '',
+            sourceColumnList: [],
+            targetColumnList: [],
+            initSourceColumnList: [],
+            initTargetColumnList: [],
+            sourceField: [],
+            targetField: [],
+            operationList: [
+                {
+                    type: 1,
+                    value: '='
+                },
+                {
+                    type: 2,
+                    value: '!='
+                },
+                {
+                    type: 3,
+                    value: '>'
+                },
+                {
+                    type: 4,
+                    value: '>='
+                },
+                {
+                    type: 5,
+                    value: '<'
+                },
+                {
+                    type: 6,
+                    value: '<='
+                }
+            ],
+            mappings: [],
+            index: 0,
+            pageType: 'add',
+            delete_fail_check_result: true, // 是否剔除失败结果
+            quaCheckList: [],
+            sourceStatement: '',
+            targetStatement: '',
+            left1: [],
+            left2: [],
+            right1: [],
+            right2: [],
+            //左映射关系式
+            leftRelations: [],
+            //右映射关系式
+            rightRelations: [],
+            currentTab: 1,
+            operation: '',
+            whereExpression: '',
+            thresholdLimit: false,
+            sourceFilterField: '',
+            targetFilterField: '',
+            leftSourceMapField: '',
+            leftTargetMapField: '',
+            rightSourceMapField: '',
+            rightTargetMapField: '',
+            whereSourceField: '',
+            whereTargetField: '',
+            sourceFilterCol: [],
+            targetFilterCol: [],
+            //搜索&点击过的字段记录
+            sourceLeftMapCol: [],
+            targetLeftMapCol: [],
+            sourceRightMapCol: [],
+            targetRightMapCol: [],
+            whereSourceCol: [],
+            whereTargetCol: [],
+            isAdding: true, //添加映射关系状态
+            ruleConfig: {checkFieldList :[]}, //质量校验配置
+            checkTemplateList: [
+                {
+                    label: this.$t('common.monthlyFluctuation'),
+                    value: 1
+                },
+                {
+                    label: this.$t('common.weeklyFluctuation'),
+                    value: 2
+                },
+                {
+                    label: this.$t('common.daillyFluctuation'),
+                    value: 3
+                },
+                {
+                    label: this.$t('common.fixedValue'),
+                    value: 4
+                },
+                {
+                    label: this.$t('common.yearCircleCompare'),
+                    value: 5
+                },
+                {
+                    label: this.$t('common.halfYearCircleCompare'),
+                    value: 6
+                },
+                {
+                    label: this.$t('common.seasonCircleCompare'),
+                    value: 7
+                },
+                {
+                    label: this.$t('common.monthCircleCompare'),
+                    value: 8
+                },
+                {
+                    label: this.$t('common.weekCircleCompare'),
+                    value: 9
+                },
+                {
+                    label: this.$t('common.dayCircleCompare'),
+                    value: 10
+                },
+                {
+                    label: this.$t('common.hourCircleCompare'),
+                    value: 11
+                },
+                {
+                    label: this.$t('common.monthSameCompare'),
+                    value: 12
+                }
+            ],
+            // 带有比较方式的校验模板
+            specialCheckTemplateValueList: [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+            ],
+            sourceCustomValue: '',
+            targetCustomValue: '',
+            sqlTpl: '',   //当前规则sql模板,
+            sqlTpl2: '',
+            sqlGeneralTpl: '',//通用校验模板需要展示两条sql
+            tpl: '',
+            sqlLeft: [], //sql预览左边表达式
+            sqlRight: [], //sql预览右边表达式
+            source_column_is_null: [],
+            target_column_is_null: [],
+            sourceField1: [],
+            targetField1: [],
+            sourceField2: [],
+            targetField2: [],
+            //字段列表
+            leftFilterCol: [],
+            rightFilterCol: [],
+            leftSourceCol: [],
+            leftTargetCol: [],
+            rightSourceCol: [],
+            rightTargetCol: [],
+            ruleId: '',
+            ruleTemplateId: '',
+            upstream: false, //dss上游节点
+            context_key: {},
+            sourceUpstream: false,
+            targetUpstream: false,
+            taskSwitch: false,
+            ruleParams: {}
+        }
+    },
+    async FesReady() {
+        this.templateList = await this.loadTemplate();
+    },
+    watch: {
+
+    },
+    computed: {
+        whereShow() {
+            return [17, 20].includes(this.templateId) ? false : true;
+        },
+        isView() {
+            return this.pageType === 'view';
+        },
+        ruleValidate() {
+            return {
+                ruleName: [
+                    {required: true,message: this.$t('common.notEmpty')},
+                    { pattern: COMMON_REG.EN_NAME, message: this.$t('myProject.projectEnNameRegTips') }
+                ],
+                cn_name: [
+                    {required: false,message: this.$t('common.notEmpty')},
+                    { pattern: COMMON_REG.CN_NAME, message: this.$t('myProject.projectCnNameRegTips') }
+                ],
+                ruleDetails: [
+                    {required: false,message: this.$t('common.notEmpty')}
+                ],
+                clusterName: [{required: true,message: this.$t('common.notEmpty')}],
+                templateId: [{required: true,message: this.$t('common.notEmpty')}],
+                where: [{required: true, message: this.$t('common.notEmpty')}],
+                output_meta_id: [{required: true, message: this.$t('common.notEmpty')}],
+                fieldWrapper: [{required: true, message: this.$t('common.notEmpty')}],
+                threshold: [{required: true, message: this.$t('common.notEmpty')}],
+                ruleMetric: [{required: false, message: this.$t('common.notEmpty')}]
+            }
+        },
+        action() {
+            return [
+                {
+                    text: this.$t('common.edit'),
+                    func: function (trData) {
+                        if (this.isView) return;
+                        this.operation = trData.operation;
+                        this.index = trData.index;
+                        this.isAdding = false;
+                        this.sqlLeft = trData.left_statement.split(' ');
+                        this.sqlRight = trData.right_statement.split(' ');
+                        this.left1 = this.translate(this.sqlLeft, 'tmp1.');
+                        this.left2 = this.translate(this.sqlLeft, 'tmp2.');
+                        this.right1 = this.translate(this.sqlRight, 'tmp1.');
+                        this.right2 = this.translate(this.sqlRight, 'tmp2.');
+                        this.sourceField = this.replaceStr(trData.left_statement).split(' ');
+                        this.targetField = this.replaceStr(trData.right_statement).split(' ');
+                        this.leftRelations = this.replaceStr(trData.left_statement).split(' ');
+                        this.rightRelations = this.replaceStr(trData.right_statement).split(' ');
+                        this.$refs.addMapModal.show();
+                    }
+                },
+                {
+                    text: this.$t('common.delete'),
+                    func: function(trData) {
+                        if (this.isView) return;
+                        this.mappings.splice(trData.index, 1);
+                        this.resetIndex();
+                        this.sqlChange();
+                }
+            }]
+        },
+        showDSSNode() {
+            return top !== self
+        },
+        EditDSSUpstream() {
+            let {ruleId, ruleTemplateId, showDSSNode, targetUpstream, sourceUpstream} = this;
+            //已存上游规则在DQM无法编辑
+            return ruleId && ruleTemplateId && !showDSSNode && (targetUpstream || sourceUpstream)
+        }
+    },
+    methods: {
+        async init(action,ruleId,ruleTemplateId) {
+            try {
+                this.colInit()
+                this.listInit();
+                if (this.showDSSNode && this.pageType !== 'view') {
+                    this.targetUpstream = false;  //从dss页面 默认关闭
+                    this.sourceUpstream = false;
+                    this.ruleName = this.$route.query.nodeName;
+                    this.cn_name = this.$route.query.cn_name;
+                }
+                if(typeof ruleId !== "undefined" && typeof ruleTemplateId !== "undefined") {
+                    this.ruleId = ruleId;
+                    this.ruleTemplateId = ruleTemplateId;
+                    this.pageType = "view";
+                    this.initEditData = true;
+                }
+                let params ={
+                    start_index: 0,
+                    page_size: 100
+                }
+                let result =  await this.FesApi.fetch('api/v1/projector/meta_data/cluster', params, 'post' ); // 获取集群列表
+                if(Array.isArray(result.data) && result.optional_clusters) {
+                    result.data.forEach(item=> {
+                        item.disabled = result.optional_clusters.indexOf(item.cluster_name) < 0;
+                    })
+                    this.clusterList = result.data;
+                }
+                if(this.pageType === "edit" || this.pageType === "view") {
+                    await this.loadCheckField(ruleTemplateId);
+                    this.loadTemplateData(ruleId);
+                    this.templateId = ruleTemplateId - 0;
+                }
+                this.getUsrGroup();
+                this.getRuleMetricAll();
+                return result;
+
+            } catch (error) {
+                window.console.error(error)
+            }
+        },
+        // 获取指标列表所有数据
+        getRuleMetricAll() {
+            this.FesApi.fetch('api/v1/projector/rule_metric/all', {
+                page: 0,
+                size: 2147483647
+            }, "post").then(res => {
+                this.ruleMetricList = res.data;
+            })
+        },
+        getCommonInfoByTargetName(targetName) {
+            const fieldNameMap = {
+                source: {
+                    dataSourceId: 'source_linkis_datasoure_id',
+                    proxyUser: 'sourceProxyUser'
+                },
+                target: {
+                    dataSourceId: 'target_linkis_datasoure_id',
+                    proxyUser: 'targetProxyUser'
+                }
+            };
+            const handleResponse = (res) => {
+                if (!Array.isArray(res.data)) return [];
+                return res.data;
+            };
+            const dataSourceId = this[fieldNameMap[targetName].dataSourceId];
+            const proxyUser = this[fieldNameMap[targetName].proxyUser];
+            return {
+                fieldNameMap,
+                dataSourceId,
+                proxyUser,
+                handleResponse
+            }
+        },
+        getDbList(targetName) {
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = commonInfo.proxyUser;
+            const handleResponse = commonInfo.handleResponse;
+            let url = '';
+            let method = 'post';
+            let params = {};
+            if (dataSourceId) {
+                url = '/api/v1/projector/meta_data/data_source/dbs';
+                method = 'get';
+                params = {
+                    dataSourceId,
+                    proxyUser,
+                    clusterName: this.clusterName,
+                };
+            } else {
+                url = '/api/v1/projector/meta_data/db';
+                params = {
+                    cluster_name: this.clusterName,
+                    proxy_user: proxyUser,
+                    start_index: 0,
+                    page_size: 50000
+                };
+            }
+            return new Promise((resolve) => {
+                this.FesApi.fetch(url, params, method).then((res) => resolve(handleResponse(res)));
+            });
+        },
+        getTableList(targetName, dbName) {
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = commonInfo.proxyUser;
+            const handleResponse = commonInfo.handleResponse;
+            let url = '';
+            let method = 'post';
+            let params = {};
+            if (dataSourceId) {
+                url = '/api/v1/projector/meta_data/data_source/tables';
+                method=  'get';
+                params = {
+                    clusterName: this.clusterName,
+                    proxyUser,
+                    dataSourceId,
+                    dbName
+                };
+            } else {
+                url = '/api/v1/projector/meta_data/table';
+                params = {
+                    cluster_name: this.clusterName,
+                    proxy_user: proxyUser,
+                    db_name: dbName,
+                    start_index: 0,
+                    page_size: 50000
+                };
+            }
+            return new Promise((resolve) => {
+                this.FesApi.fetch(url, params, method).then((res) => resolve(handleResponse(res)));
+            });
+        },
+        getColumnList(targetName, dbName, tableName) {
+            const commonInfo = this.getCommonInfoByTargetName(targetName);
+            const dataSourceId = commonInfo.dataSourceId;
+            const proxyUser = commonInfo.proxyUser;
+            const handleResponse = commonInfo.handleResponse;
+            let url = '';
+            let method = 'post';
+            let params = {};
+            if (dataSourceId) {
+                url = '/api/v1/projector/meta_data/data_source/columns';
+                method=  'get';
+                params = {
+                    clusterName: this.clusterName,
+                    proxyUser,
+                    dataSourceId,
+                    dbName,
+                    tableName
+                };
+            } else {
+                url = '/api/v1/projector/meta_data/column';
+                params = {
+                    cluster_name: this.clusterName,
+                    proxy_user: proxyUser,
+                    db_name: dbName,
+                    table_name: tableName,
+                    start_index: 0,
+                    page_size: 50000
+                };
+            }
+            return new Promise((resolve) => {
+                this.FesApi.fetch(url, params, method).then((res) => resolve(handleResponse(res)));
+            });
+        },
+        async loadTemplateData(id) {
+            try {
+                this.$emit('get-load', true);
+                let quaCheckList = [];
+                this.quaCheckList = [];
+                let result = await this.FesApi.fetch('api/v1/projector/mul_source_rule/' + id, {}, 'get');
+                this.clusterName = result.cluster_name;
+                this.ruleName = result.rule_name;
+                this.cn_name = result.cn_name;
+                this.ruleDetails = result.rule_detail;
+                this.sourceFilter = result.source.filter;
+                this.targetFilter = result.target.filter;
+                this.$emit("get-info", {
+                    create_user: result.create_user || '--', // 创建人
+                    create_time: result.create_time || '--', // 创建时间
+                    modify_time: result.modify_time || '--', // 修改时间
+                    modify_user: result.modify_user || '--', // 修改人
+                })
+                // 由于this.mappings新增上传需要字段类型，所以在未改变原逻辑的基础上，在数据来源上拼接了'(type)',用于上传时拆分，获取后台数据时将数据合并，用于原逻辑
+                let mappings = result.mappings.map(item => {
+                    item.left = item.left.map(leftItem => {
+                        let column_name = `${leftItem.column_name}(${leftItem.column_type})`;
+                        return {
+                            column_name
+                        }
+                    })
+                    item.right = item.right.map(rightItem => {
+                        let column_name = `${rightItem.column_name}(${rightItem.column_type})`;
+                        return {
+                            column_name
+                        }
+                    })
+                    return item;
+                })
+                this.mappings = mappings;
+                this.sourceUpstream = result.source.context_service;
+                this.sourceProxyUser = result.source.proxy_user;
+                this.targetUpstream = result.target.context_service;
+                this.targetProxyUser = result.target.proxy_user;
+                let upstream = false;
+                if (this.sourceUpstream || this.targetUpstream) {
+                    upstream = true
+                }
+                this.$emit('get-upstream', upstream)
+                this.sourceTable.push({table_name: result.source.table_name});
+                this.targetTable.push({table_name: result.target.table_name});
+                const { abort_on_failure, specify_static_startup_param, static_startup_param } = result;
+                this.taskSwitch = abort_on_failure;
+                this.ruleParams = {
+                    abort_on_failure,
+                    specify_static_startup_param,
+                    static_startup_param
+                };
+                this.$emit('change-task', abort_on_failure, this.pageType);
+                for (let i = 0; i < this.mappings.length; i++) {
+                    this.mappings[i].index = i;
+                    this.mappings[i].sourceStatement = '';
+                    this.mappings[i].targetStatement = '';
+                }
+                this.whereExpression = result.filter;
+                if(Array.isArray(result.alarm_variable)) { // 质量检查告警配置
+                    result.alarm_variable.forEach((item, index) => {
+                        let alarm = {
+                            "compareValue": null,
+                            "output_meta_name": "",
+                            "id": item.alarm_config_id || new Date().valueOf() + index*100,// 执行太快加index为了避免key重复
+                            "threshold": item.threshold,
+                            "output_meta_id": item.output_meta_id,
+                            "check_template": item.check_template,
+                            "compare_type": item.compare_type,
+                        };
+                        if(this.specialCheckTemplateValueList.includes(item.check_template)){
+                            alarm.compareValue = item.compare_type;
+                        }
+                        quaCheckList.push(alarm);
+                    })
+                    if (this.pageType === 'view') {
+                        this.hidden(quaCheckList);
+                    }
+                    if (result.alarm_variable.length > 0) {
+                        this.rule_metric_id = result.alarm_variable[0].rule_metric_id || '';
+                    }
+                }
+                if(quaCheckList.length < 1) { // 质量检查部分
+                    quaCheckList = [{
+                        id: new Date().valueOf(),
+                        output_meta_id: "",
+                        check_template: "",
+                        threshold: "",
+                        compareValue: "",
+                    }]
+                }
+                this.quaCheckList.push(...quaCheckList);
+                this.delete_fail_check_result = result.delete_fail_check_result;
+
+                // 优化编辑时 数据库、数据表 优先显示值
+                this.source_linkis_datasoure_id = result.source.linkis_datasoure_id;
+                this.target_linkis_datasoure_id = result.target.linkis_datasoure_id;
+                this.sourceDbName = result.source.db_name;
+                this.targetDbName = result.target.db_name;
+                this.sourceTableName = result.source.table_name;
+                this.targetTableName = result.target.table_name;
+                this.sourceDbList = [{ db_name: result.source.db_name }];
+                this.targetDbList = [{ db_name: result.target.db_name }];
+                this.sourceTable = [
+                    {
+                        table_name: result.source.table_name,
+                        table_desc: ''
+                    }
+                ];
+                this.targetTable = [
+                    {
+                        table_name: result.target.table_name,
+                        table_desc: ''
+                    }
+                ];
+
+                this.$nextTick(async () => {
+                    if (this.source_linkis_datasoure_id) {
+                        this.sourceDataSources = await this.getDataSources(this.clusterName, this.sourceProxyUser);
+                    }
+                    if (this.target_linkis_datasoure_id) {
+                        this.targetDataSources = await this.getDataSources(this.clusterName, this.targetProxyUser);
+                    }
+                    // 获取源数据库列表
+                    this.sourceDbList = await this.getDbList('source');
+                    // 获取目标数据库列表
+                    this.targetDbList = await this.getDbList('target');
+                    // 获取表列表
+                    await this.getTableInfo(result.source.db_name, 'source', this.sourceUpstream);
+                    await this.getTableInfo(result.target.db_name, 'target', this.targetUpstream);
+                    // 获取列信息
+                    await this.getColumnInfo(result.source.table_name, result.source.db_name, 'source', this.sourceUpstream);
+                    await this.getColumnInfo(result.target.table_name, result.target.db_name, 'target', this.targetUpstream);
+                    await this.getMapField();
+                    this.sqlChange()
+                    this.initEditData = false;
+                });
+            } catch (error) {
+                window.console.error(error)
+            } finally {
+                this.$emit('get-load', false);
+            }
+        },
+        loadTemplate(dataSourceType = 'hive') {
+            return new Promise((resolve, reject) => {
+                this.FesApi.fetch('api/v1/projector/rule_template/multi/all', {
+                    dataSourceType,
+                    page: 0,
+                    size: 10
+                }, 'post').then((res)=> {
+                    if (!Array.isArray(res.data)) resolve([]);
+                    resolve(res.data);
+                }).catch((error) => {
+                    reject(error);
+                });
+            });
+        },
+        loadTemplateWithDataSourceType() {
+            const sourceDataSource = this.sourceDataSources.find(item => item.id === this.source_linkis_datasoure_id) || {};
+            const targetDataSource = this.targetDataSources.find(item => item.id === this.target_linkis_datasoure_id) || {};
+            const sourceDataSourceType = sourceDataSource.dataSourceType || {};
+            const targetDataSourceType = targetDataSource.dataSourceType || {};
+            const sourceDataSourceTypeName = sourceDataSourceType.name;
+            const targetDataSourceTypeName = targetDataSourceType.name;
+            return new Promise((resolve, reject) => {
+                Promise.all([
+                    this.loadTemplate(sourceDataSourceTypeName),
+                    this.loadTemplate(targetDataSourceTypeName)
+                ]).then((res) => {
+                    const sourceTemplateList = res[0];
+                    const targetTemplateList = res[1];
+                    const sourceTemplateIdList = sourceTemplateList.map(item => item.template_id);
+                    const targetTemplateIdList = targetTemplateList.map(item => item.template_id);
+                    const templateIdList = sourceTemplateIdList.filter(id => targetTemplateIdList.includes(id));
+                    const templateList = sourceTemplateList.filter(item => templateIdList.includes(item.template_id));
+                    resolve(templateList);
+                }).catch((error) => {
+                    reject(error);
+                });
+            });
+        },
+        async checkRule() {
+            if(this.quaCheckList.length > 0) { // 清空质量检查部分
+                this.quaCheckList = [{
+                    id: new Date().valueOf(),
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: "",
+                }]
+            }
+            if ([20].includes(this.templateId)) {
+                this.mappings = [];
+            }
+            if(this.initEditData){ return }
+            await this.loadCheckField(this.templateId);
+            this.sqlChange();
+        },
+        async loadCheckField(id) {
+            if(!id) return;
+            let result = await this.FesApi.fetch('api/v1/projector/rule_template/meta_input/multi_source/' + id, 'get');
+            this.ruleConfig = {
+                checkFieldList: result.template_output || [],
+            }
+            const checkFieldList = this.ruleConfig.checkFieldList || [];
+            const defaultOutputMetaId = checkFieldList.length > 0 ? checkFieldList[0].output_id : '';
+            this.quaCheckList = [{
+                id: new Date().valueOf(),
+                output_meta_id: defaultOutputMetaId,
+                check_template: "",
+                threshold: "",
+                compareValue: ""
+            }];
+            this.parseSqlTpl(result);
+        },
+        parseSqlTpl({sql_display_response}) {
+            //切换规则，sql模板会变化
+            this.tpl = sql_display_response.show_sql;
+            this.sqlTpl = this.tpl;
+        },
+        // 集群切换时更新Db
+        async clusterNameChange(val, type, isDataSource) {
+            if (!val || this.isView) return;
+            const dataSourcesInfoMap = {
+                source: {
+                    dataSourcesFieldName: 'sourceDataSources',
+                    proxyUserFieldName: 'sourceProxyUser'
+                },
+                target: {
+                    dataSourcesFieldName: 'targetDataSources',
+                    proxyUserFieldName: 'targetProxyUser'
+                }
+            };
+            const dbListInfoMap = {
+                source: {
+                    dbListFieldName: 'sourceDbList'
+                },
+                target: {
+                    dbListFieldName: 'targetDbList'
+                }
+            };
+            if (!isDataSource) {
+                const infos = Object.entries(dataSourcesInfoMap)
+                    .filter(entry => !type || (type === entry[0]));
+                infos.forEach(async (entry) => {
+                    const info = entry[1];
+                    this[info.dataSourcesFieldName] = [];
+                });
+            }
+            const dbListInfos = Object.entries(dbListInfoMap)
+                .filter(entry => !type || type === entry[0]);
+            if (dbListInfos.length === Object.keys(dbListInfoMap).length) {
+                this.listInit();
+            }
+            dbListInfos.forEach(async (entry) => {
+                const targetName = entry[0];
+                const info = entry[1];
+                this[info.dbListFieldName] = [];
+                this[info.dbListFieldName] = await this.getDbList(targetName);
+            });
+
+            this.sqlChange();
+            if(this.initEditData) { return }
+            this.sqlChange();
+        },
+        listInit(type) {
+            if(type) {
+                if (type === 'source') {
+                    Object.assign(this,{
+                        source_linkis_datasoure_id: '',
+                        target_linkis_datasoure_id: '',
+                        sourceDbName: '',
+                        sourceTableName: '',
+                        sourceTable:[],
+                        sourceFilter: '',
+                        whereExpression: '',
+                        mappings: [],
+                    })
+                }
+                if(type === 'target') {
+                    Object.assign(this,{
+                        targetDbName: '',
+                        targetTableName: '',
+                        targetTable: [],
+                        targetFilter: '',
+                        whereExpression: '',
+                        mappings: [],
+                    })
+                }
+            } else {
+                Object.assign(this,{
+                    source_linkis_datasoure_id: '',
+                    target_linkis_datasoure_id: '',
+                    sourceDbName: '',
+                    sourceTableName: '',
+                    sourceTable:[],
+                    sourceFilter: '',
+                    targetDbName: '',
+                    targetTableName: '',
+                    targetTable: [],
+                    targetFilter: '',
+                    whereExpression: '',
+                    mappings: [],
+                })
+            }
+            this.colInit(type);
+        },
+        // 获取表名列表信息
+        async getTableInfo(value, type, upstream) {
+            let {clusterName, maxSize} = this;
+            let params = {
+                cluster_name: clusterName,
+                start_index: 0,
+                page_size: maxSize,
+                proxy_user: (type === 'source' ? this.sourceProxyUser : this.targetProxyUser) || undefined
+            };
+            let tableList = [];
+            if (!upstream) {
+                // 如果清空了数据库名称
+                if(!value) return;
+                params.db_name = value;
+                // 表信息
+                tableList = await this.getTableList(type, value);
+            } else {
+                let {contextID, nodeName} = this.dssParams;
+                params.cs_id = contextID;
+                params.node_name = nodeName;
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_table', params, "post");
+                // 上游表信息
+                tableList = result.data || []
+            }
+            // 根据type赋值
+            if (type === 'source') {
+                this.sourceTable = tableList;
+                this.sourceDbName = value;
+                this.sourceUpstream = upstream;
+            } else {
+                this.targetTable = tableList;
+                this.targetDbName = value;
+                this.targetUpstream = upstream;
+            }
+            if(this.initEditData) { return;}
+            this.sqlChange();
+        },
+        tableChange(type, str) {
+            this.whereExpression = '';
+            this.mappings = [];
+            this.colInit();
+            if (type === 'source') {
+                if (str === 'change') {
+                    this.sourceDbName = '';
+                }
+                this.sourceFilter = '';
+                this.leftFilterCol = [];
+                this.leftSourceCol = [];
+                this.rightSourceCol = [];
+            }else {
+                if (str === 'change') {
+                    this.targetDbName = '';
+                }
+                this.targetFilter = '';
+                this.rightFilterCol = [];
+                this.leftTargetCol = [];
+                this.rightTargetCol = [];
+            }
+        },
+        // 获取代理用户信息
+        getproxyUser(user, type) {
+            if (type === 'source') {
+                this.sourceProxyUser = user;
+            } else {
+                this.targetProxyUser = user;
+            }
+            this.clusterNameChange(this.clusterName, type);
+        },
+        // 获取代理用户列表
+        getUsrGroup() {
+            this.FesApi.fetch("api/v1/projector/proxy_user", {}, "get").then((res) => {
+                let list = res || [];
+                if(list.length) {
+                    this.proxyUserList = list;
+                } else {
+                    this.proxyUserList = [this.FesApp.get("FesUserName")];
+                }
+            });
+        },
+        // 获取表列的列表信息
+        async getColumnInfo(table_name, db_name, type, upstream) {
+            // 如果为进入详情，观察时不进行清空
+            if(this.pageType !== "view") this.tableChange(type);
+            let {clusterName, maxSize} = this;
+            let params = {
+                cluster_name: clusterName,
+                start_index: 0,
+                page_size: maxSize,
+                proxy_user: (type === 'source' ? this.sourceProxyUser : this.targetProxyUser) || undefined
+            }
+            if (!upstream) {
+                params.db_name = db_name;
+                params.table_name = table_name;
+                const columnList = await this.getColumnList(type, db_name, table_name);
+                this.dataInit({data: columnList}, type)
+            } else {
+                // 开启上游表模式时获取列的参数和接口不一样
+                if (type === 'source') {
+                    this.context_key = this.sourceTable.filter((item)=> item.table_name === table_name)
+                } else {
+                    this.context_key = this.targetTable.filter((item)=> item.table_name === table_name)
+                }
+                let context_key = this.context_key[0]['context_Key'];
+                let {contextID, nodeName} = this.dssParams
+                params.cs_id = contextID;
+                params.node_name = nodeName;
+                params.context_key = context_key;
+                let result = await this.FesApi.fetch('api/v1/projector/meta_data/cs_column',params,'post') || {};
+                this.dataInit(result, type)
+            }
+            if (type === 'source') {
+                this.sourceDbName = db_name;
+                this.sourceUpstream = upstream;
+                this.sourceTableName = table_name;
+            }else {
+                this.targetDbName = db_name;
+                this.targetUpstream = upstream
+                this.targetTableName = table_name;
+            }
+            if(this.initEditData) { return }
+            this.colInit();
+            if (type === 'source') {
+                this.sourceFilter = '';
+            }else {
+                this.targetFilter = '';
+            }
+            this.mappings = [];
+            this.whereExpression = '';
+            this.sqlChange();
+        },
+        dataInit(result, type) {
+            let data = result.data || []
+            if (type === 'source') {
+                this.sourceColumnList = data;
+                this.initSourceColumnList = data;
+                this.leftFilterCol = data;
+                this.leftSourceCol = data;
+                this.rightSourceCol = data;
+            }else {
+                this.targetColumnList = data;
+                this.initTargetColumnList = data;
+                this.rightFilterCol = data;
+                this.leftTargetCol = data;
+                this.rightTargetCol = data;
+            }
+        },
+        colInit(type) {
+            if(type) {
+                if (type === 'source') {
+                    Object.assign(this,{
+                        sourceFilterCol: [],
+                        sourceLeftMapCol: [],
+                        sourceRightMapCol: [],
+                        whereSourceCol: []
+                    })
+                }
+                if(type === 'target') {
+                    Object.assign(this,{
+                        targetFilterCol: [],
+                        targetLeftMapCol: [],
+                        targetRightMapCol: [],
+                        whereSourceCol: []
+                    })
+                }
+            } else {
+                Object.assign(this,{
+                    sourceFilterCol: [],
+                    targetFilterCol: [],
+                    sourceLeftMapCol: [],
+                    targetLeftMapCol: [],
+                    sourceRightMapCol: [],
+                    targetRightMapCol: [],
+                    whereSourceCol: []
+                })
+            }
+        },
+        sqlMappingsReplace(str) {
+            //跨表准确定性校验sql预览第二条语句，需要把前缀反过来。
+            return str.replace(/\b(tmp1.|tmp2.)\b/g, function($0, $1) {
+                    return {
+                        "tmp1.": "tmp2.",
+                        "tmp2.": "tmp1."
+                    }[$1];
+                });
+        },
+        getMappingArgument(type) {
+            //sql预览中的${mapping_argument}替换内容(映射关系表达式)
+            let str = '';
+            this.mappings.map((item)=> {
+                let oper = this.operationList.filter((it)=>it.type === item.operation)[0].value;
+                str += `(${item.left_statement} ${oper} ${item.right_statement}) and `
+            })
+            if (type === 'secondSql') {
+                str = this.sqlMappingsReplace(str);
+            }
+            return this.subStr(str);
+        },
+        getSqlColumn(data,type) {
+            let arr = Array.from(new Set(data));
+            //sql预览中的${source_column_is_null} & ${target_column_is_null}替换内容
+            let str = '';
+            arr.map((item)=> {
+                str += `(${item} is null) and `
+            })
+            if (type === 'secondSql') {
+                str = this.sqlMappingsReplace(str)
+            }
+            return this.subStr(str);
+        },
+        subStr(str) {
+            //字符切割把最后一个and 去掉
+            if (str.length > 0) {
+                str = str.substr(0, str.length-4)
+            }
+            return str;
+        },
+        async sqlChange() {
+            //通用校验模板的时候展示两条sql信息&左边选择的数据，表和右边的调换下位置
+            let mapping_argument_fir = this.getMappingArgument('firstSql').length > 0 ? this.getMappingArgument('firstSql') : '${mapping_argument}';
+            let mapping_argument_sec = this.getMappingArgument('secondSql').length > 0 ? this.getMappingArgument('secondSql') : '${mapping_argument}';
+            let source_column_fir = this.getSqlColumn(this.source_column_is_null, 'firstSql').length > 0 ? this.getSqlColumn(this.source_column_is_null,'firstSql') : '${source_column_is_null}';
+            let source_column_sec = this.getSqlColumn(this.source_column_is_null, 'secondSql').length > 0 ? this.getSqlColumn(this.source_column_is_null,'secondSql') : '${source_column_is_null}';
+            let target_column_fir = this.getSqlColumn(this.target_column_is_null, 'firstSql').length > 0 ? this.getSqlColumn(this.target_column_is_null,'firstSql') : '${target_column_is_null}';
+            let target_column_sec = this.getSqlColumn(this.target_column_is_null,'secondSql').length > 0 ? this.getSqlColumn(this.target_column_is_null,'secondSql') : '${target_column_is_null}';
+            let source_db = this.sourceDbName;
+            let source_table = this.sourceTableName;
+            let filter_left = this.changeSqlResult(this.sourceFilter) || '${filter_left}';
+            let target_db = this.targetDbName;
+            let target_table = this.targetTableName;
+            let filter_right = this.changeSqlResult(this.targetFilter) || '${filter_right}';
+            let filter = this.changeSqlResult(this.whereExpression) || '${filter}';
+            if (this.templateId === 17) {
+                this.sqlGeneralTpl = '';
+                this.sqlTpl = this.tpl.replace(/(\$\{source_db\}|\$\{source_table\}|\$\{filter_left\}|\$\{target_db\}|\$\{target_table\}|\$\{filter_right\}|\$\{mapping_argument\}|\$\{source_column_is_null\}|\$\{target_column_is_null\})/g, function($0, $1){
+                    return {
+                        "${source_db}": source_db || '${source_db}',
+                        "${source_table}": source_table || '${source_table}',
+                        "${filter_left}": filter_left,
+                        "${target_db}": target_db || '${target_db}',
+                        "${target_table}": target_table || '${target_table}',
+                        "${filter_right}": filter_right,
+                        "${mapping_argument}": mapping_argument_fir,
+                        "${source_column_is_null}": source_column_fir,
+                        "${target_column_is_null}":target_column_fir,
+                    }[$1]
+                });
+
+                this.sqlTpl2 = this.tpl.replace(/(\$\{source_db\}|\$\{source_table\}|\$\{filter_left\}|\$\{target_db\}|\$\{target_table\}|\$\{filter_right\}|\$\{mapping_argument\}|\$\{source_column_is_null\}|\$\{target_column_is_null\})/g, function($0, $1){
+                    return {
+                        "${source_db}": target_db || '${source_db}',
+                        "${source_table}": target_table || '${source_table}',
+                        "${filter_left}": filter_right,
+                        "${target_db}": source_db || '${target_db}',
+                        "${target_table}": source_table || '${target_table}',
+                        "${filter_right}": filter_left,
+                        "${mapping_argument}": mapping_argument_sec,
+                        "${source_column_is_null}": target_column_sec,
+                        "${target_column_is_null}":source_column_sec,
+                    }[$1]
+                });
+            }else {
+                this.sqlTpl = '', this.sqlTpl2 = '';
+                const reg = /(\$\{source_db\}|\$\{source_table\}|\$\{filter_left\}|\$\{target_db\}|\$\{target_table\}|\$\{filter_right\}|\$\{mapping_argument\}|\$\{filter\})/g;
+                const tempMap =  {
+                    "${source_db}": source_db,
+                    "${source_table}": source_table,
+                    "${filter_left}": filter_left,
+                    "${target_db}": target_db,
+                    "${target_table}": target_table,
+                    "${filter_right}": filter_right,
+                    "${mapping_argument}": mapping_argument_fir,
+                    "${filter}": filter,
+                };
+                this.sqlGeneralTpl = this.tpl.replace(reg, ($0, $1) => tempMap[$1]);
+            }
+        },
+        addQuaCheck() {
+            this.quaCheckList.push({
+                id: new Date().valueOf(),
+                output_meta_id: "",
+                check_template: "",
+                threshold: "",
+                compareValue: "",
+            });
+            this.currentTab = this.quaCheckList.length;
+        },
+        resetIndex() {
+            for (let i = 0; i < this.mappings.length; i++) {
+                this.mappings[i].index = i;
+            }
+        },
+        removeQuaCheck(name, index) {
+            this.currentTab = 1;
+            this.$refs.tabsRef.activeKey = 1;
+            if(!index) return; // this.quaCheckList数据的重置和替换操作都会导致此函数的触发
+            this.quaCheckList.splice(index,1);
+        },
+        transData(type, value, arrowCol, arrowSql, tmp) {
+            const reg = /\((.*)\)/;
+            let data = value.match(reg) || [];
+            let newValue = value.replace(data[0] || '', '');
+            this[type].push(value);
+            this[arrowCol] = this.mapping(this[type], tmp);
+            this[arrowSql].push(`${tmp}.${newValue}`);
+        },
+        transSql(type, field) {
+            let str = this[type].join(' ');
+            this[field] = this.replaceStr(str).split(' ');
+        },
+        assemblySql(type, value) {
+            this[type].push(value);
+        },
+        customValue(value,type,sql) {
+            //映射关系中，用户输入的自定义值
+            if (!value) return;
+            this[type].push(value);
+            this[sql].push(value);
+            let sqlStr = this[sql].join(' ');
+            if (sql === 'sqlLeft') {
+                this.sourceStatement = this.leftRelations.join(' ');
+                this.sourceField = this.replaceStr(sqlStr).split(' ');
+            }else {
+                this.targetStatement = this.rightRelations.join(' ');
+                this.targetField = this.replaceStr(sqlStr).split(' ');
+            }
+        },
+        formatOperation(data) {
+            return this.operationList.filter((item)=>item.type === data)[0].value;
+        },
+        addMapping() {
+            if (!this.operation) return this.$Toast.warn(this.$t('toastWarn.selectRelation'));
+            if (this.sqlLeft.length < 1 || this.sqlRight.length < 1) return this.$Toast.warn(this.$t('toastWarn.expressionEmpty'));
+            let index = this.isAdding === true ? this.mappings.length : this.index;
+            const tmpArr = {
+                left: this.left1.concat(this.left2),
+                right: this.right1.concat(this.right2),
+                left_statement: this.sqlLeft.join(' '),
+                right_statement: this.sqlRight.join(' '),
+                operation: this.operation,
+                index,
+                sourceStatement: this.sourceStatement,
+                targetStatement: this.targetStatement,
+            };
+            if (this.isAdding) {
+                this.mappings.push(tmpArr);
+            }else {
+                this.mappings[index] = tmpArr;
+                this.isAdding = true
+            }
+            this.getMapField();
+            this.sqlChange();
+            this.$refs.addMapModal.hide();
+            this.paramInit();
+        },
+        paramInit() {
+            Object.assign(this,{
+                operation: '',
+                sourceStatement:'',
+                targetStatement:'',
+                left1: [],
+                left2: [],
+                right1: [],
+                right2: [],
+                sourceField: [],
+                targetField: [],
+                leftRelations: [],
+                rightRelations: [],
+                sqlLeft: [],
+                sqlRight: [],
+                sourceField1: [],
+                targetField1: [],
+                sourceField2: [],
+                targetField2: [],
+            })
+        },
+        getMapField() {
+            //获取mappings里面的字段，sql预览展示
+            if (this.mappings.length > 0) {
+                this.mappings.map((item)=> {
+                    item.left.map((it)=> {
+                        if (it.column_name.indexOf('tmp1.') > -1) {
+                            this.source_column_is_null.push(it.column_name);
+                        }
+                        if (it.column_name.indexOf('tmp2.') > -1) {
+                            this.target_column_is_null.push(it.column_name);
+                        }
+                    })
+                    item.right.map((t)=> {
+                        if (t.column_name.indexOf('tmp1.') > -1) {
+                            this.source_column_is_null.push(t.column_name);
+                        }
+                        if (t.column_name.indexOf('tmp2.') > -1) {
+                            this.target_column_is_null.push(t.column_name);
+                        }
+                    })
+                })
+            }
+        },
+        replaceStr(str) {
+            if (str.length>0) {
+                //映射关系表里面的左右表达式要把tmp1.&tmp2.前缀去掉
+                return str.replace(/\b(tmp1.|tmp2.)\b/g, function($0, $1) {
+                    return {
+                        "tmp1.": "",
+                        "tmp2.": ""
+                    }[$1];
+                });
+            }
+        },
+        mapping(data, str) {
+            let arr = [];
+            for (let i = 0; i < data.length; i++) {
+                const obj = {
+                    column_name: `${str}.${data[i]}`
+                };
+                arr.push(obj);
+            }
+            return arr;
+        },
+        watchThreshold(data) {
+            if (data.check_template !== 4 && data.threshold > 10000) this.toastText();
+        },
+        toastText() {
+            this.$Message.alert(this.$t('message.thresholdTitle'), this.$t('message.thresholdText')).then(function () {
+            });
+        },
+        thresholdCheck() {
+            if (this.quaCheckList) {
+                this.quaCheckList.map(item => {
+                    if (item.check_template !== 4 && item.threshold > 10000) {
+                        this.thresholdLimit = true;
+                        this.toastText();
+                    }
+                })
+            }
+        },
+        joinStatement(type, cloName) {
+            if (type === 'source') {
+                this.leftRelations.push(cloName);
+                this.sourceStatement = this.leftRelations.join(' ');
+            }else {
+                this.rightRelations.push(cloName);
+                this.targetStatement = this.rightRelations.join(' ');
+            }
+        },
+        translate(data,type) {
+            let arr = [];
+            for (let i = 0; i < data.length; i++) {
+                if (data[i].indexOf(type)>-1) {
+                    let obj = {
+                    column_name: data[i]
+                }
+                    arr.push(obj)
+                }
+            }
+            return arr;
+        },
+        compare(data, str) {
+            //映射关系弹窗中展示的已经筛选过的字段，防止重复添加。
+            let flag = false;
+            let len = this[data].length;
+            for (let i = 0; i < len; i++) {
+                if (this[data][i] === str) {
+                    flag = true;
+                }
+            }
+            if (flag == false) {
+                this[data].push(str);
+            }
+        },
+        deleteRelation(data,type,str,key) {
+            //分别展示sqlleft和sqlright,声明两个临时变量存这个去除掉tmp前缀的；
+            this[data].splice(key,1);
+            this[type].splice(key, 1);
+            this[str] = this[data].join(' ');
+            let sqlStr = this[type].join(' ');
+            if (type === 'sqlLeft') {
+                this.sourceField = sqlStr.length > 0 ? this.replaceStr(sqlStr).split(' ') : [];
+                this.left1 = this.translate(this.sqlLeft, 'tmp1.');
+                this.left2 = this.translate(this.sqlLeft, 'tmp2.');
+            }else {
+                this.targetField = sqlStr.length > 0 ? this.replaceStr(sqlStr).split(' ') : [];
+                this.right1 = this.translate(this.sqlRight, 'tmp1.');
+                this.right2 = this.translate(this.sqlRight, 'tmp2.');
+            }
+        },
+        expressChange(value) {
+            this.whereExpression = value;
+        },
+        changeSqlResult(data) {
+            let value = data;
+            let dateReg = /\$\{(yyyy(?:-|\/|\s)?MM(?:-|\/|\s)?dd(?:(?:-|\/|\s)?HH)?(?:(?:-|\/|\s|:)?mm)?(?:(?:-|\/|\s|:)?ss)?)\}(?:-(\d+))?/;
+            if (dateReg.test(value)) {
+                let d;
+                while ((d = value.match(dateReg))) {
+                    let dateObj = new Date();
+                    if (d[2]) {
+                        dateObj = new Date(new Date() - 24 * 60 * 60 * 1000 * d[2]);
+                    }
+                    let formated = dateFormat(d[1], dateObj);
+                    value = value.replace(d[0], formated);
+                }
+            }
+            return value;
+        },
+        searchField(value,arr, type) {
+            if (!value && type === 'sourceColumnList') {
+                this[type] = this.initSourceColumnList;
+            }else if(!value && type === 'targetColumnList'){
+                this[type] = this.initTargetColumnList;
+            }
+            this[arr] = this[type].filter((item)=> {
+                return item.column_name.indexOf(value) > -1
+            })
+        },
+        changeValue(value, type) {
+            if (type === 'source') {
+                this.sourceFilter = value;
+            }else {
+                this.targetFilter = value;
+            }
+        },
+        filterCancel(type) {
+            if (type === 'source') {
+                this.sourceFilterModal();
+                this.sourceFilter = '';
+            }else {
+                this.targetFilterModal();
+                this.targetFilter = '';
+            }
+        },
+        sourceFilterModal(value) {
+            this.sourceFilter = value;
+            this.$refs.leftfilterModal.hide();
+        },
+        targetFilterModal(value) {
+            this.targetFilter = value;
+            this.$refs.rightfilterModal.hide();
+        },
+        whereDetermine(value) {
+            this.whereExpression = value;
+            this.hideWhereModal();
+            this.sqlChange();
+        },
+        whereCancel() {
+            this.hideWhereModal();
+            this.whereExpression = '';
+            this.sqlChange();
+        },
+        hideWhereModal() {
+            this.$refs.whereModal.hide();
+        },
+        open() {
+            if (!this.sourceTableName && !this.targetTableName) {
+                return this.$Toast.warn(this.$t('toastWarn.cannotBeEmpty'))
+            }
+            this.$refs.addMapModal.show()
+        },
+        filterAction(type, value) {
+            if (type === 'source') {
+                this.$refs.leftfilterModal.show();
+                this.sourceFilter = value;
+            } else {
+                this.$refs.rightfilterModal.show();
+                this.targetFilter = value;
+            }
+        },
+        whereFilter() {
+            this.$refs.whereModal.show();
+        },
+        mapModalClose() {
+            this.paramInit();
+        },
+        closable() {
+            return this.pageType === 'edit' || this.pageType === 'add'
+        },
+        hidden(data){
+            data.forEach(element => {
+                element.hidden = true
+            });
+        },
+        deleteIndex() {
+            for (let i = 0; i < this.mappings.length; i++) {
+                delete this.mappings[i].index;
+                delete this.mappings[i].sourceStatement;
+                delete this.mappings[i].targetStatement;
+            }
+        },
+        async getDataSourceInfo(dataSourceId, targetName) {
+            if (targetName === 'source') {
+                this.source_linkis_datasoure_id = dataSourceId;
+            } else if (targetName === 'target') {
+                this.target_linkis_datasoure_id = dataSourceId;
+            }
+            this.templateList = await this.loadTemplateWithDataSourceType();
+            this.clusterNameChange(this.clusterName, targetName, true);
+        },
+        async getDataSourcesWithTargetName(targetName) {
+            if (targetName === 'source') {
+                this.sourceDataSources = await this.getDataSources(this.clusterName, this.sourceProxyUser);
+            } else if (targetName === 'target') {
+                this.targetDataSources = await this.getDataSources(this.clusterName, this.targetProxyUser);
+            }
+        },
+        submit() {
+            let cacheMappings = { ...this.mappings }; // 为了修复提交失败时，导致字段丢失出现的bug
+            this.deleteIndex();
+            this.$refs["crossValidate"].validate(valid => {
+                this.thresholdCheck();
+                if (this.thresholdLimit) return;
+                if (valid) {
+                    this.$emit('get-load', true);
+                    this.isSubmit = true;
+                    // 由于this.mappings新增上传需要字段类型，所以在未改变原逻辑的基础上，在数据来源上拼接了'(type)',用于上传时拆分
+                    const reg = /\((.*)\)/;
+                    let mappings = this.mappings.map(item => {
+                        item.left = item.left.map(leftItem => {
+                            let data = leftItem.column_name.match(reg) || [];
+                            let column_name = leftItem.column_name.replace(data[0] || '', '');
+                            let column_type = data[1] === undefined || data[1] === 'undefined' ? undefined : data[1];
+                            return {
+                                column_name,
+                                column_type,
+                            }
+                        })
+                        item.right = item.right.map(rightItem => {
+                            let data = rightItem.column_name.match(reg) || [];
+                            let column_name = rightItem.column_name.replace(data[0] || '', '');
+                            let column_type = (data[1] === undefined || data[1] === 'undefined') ? undefined : data[1];
+                            return {
+                                column_name,
+                                column_type,
+                            }
+                        })
+                        return item;
+                    })
+                    let rule_metric = this.ruleMetricList.find(item => item.id === this.rule_metric_id);
+                    let rule_metric_en_code = '';
+                    if (rule_metric) {
+                        rule_metric_en_code = rule_metric.en_code;
+                    }
+                    const { abort_on_failure, specify_static_startup_param, static_startup_param } = this.$refs.ruleParamsPanel;
+                    const sourceDataSource = this.sourceDataSources.find((item) => String(item.id) === String(this.source_linkis_datasoure_id)) || {};
+                    const targetDataSource = this.targetDataSources.find((item) => String(item.id) === String(this.target_linkis_datasoure_id)) || {};
+                    const sourceDataSourceType = sourceDataSource.dataSourceType || {};
+                    const targetDataSourceType = targetDataSource.dataSourceType || {};
+                    let params = {
+                        rule_name: this.ruleName,
+                        cn_name: this.cn_name,
+                        rule_detail: this.ruleDetails,
+                        rule_metric_en_code,
+                        cluster_name: this.clusterName,
+                        multi_source_rule_template_id: this.templateId,
+                        project_id: this.projectId,
+                        source: {
+                            linkis_datasoure_id: this.source_linkis_datasoure_id,
+                            linkis_datasource_name: sourceDataSource.dataSourceName,
+                            linkis_datasource_type: sourceDataSourceType.name,
+                            db_name: this.sourceDbName,
+                            table_name: this.sourceTableName,
+                            filter: this.sourceFilter,
+                            proxy_user: this.sourceProxyUser,
+                        },
+                        target: {
+                            linkis_datasoure_id: this.target_linkis_datasoure_id,
+                            linkis_datasource_name: targetDataSource.dataSourceName,
+                            linkis_datasource_type: targetDataSourceType.name,
+                            db_name: this.targetDbName,
+                            table_name: this.targetTableName,
+                            filter: this.targetFilter,
+                            proxy_user: this.targetProxyUser,
+                        },
+                        mappings: mappings,
+                        alarm: true,
+                        delete_fail_check_result: this.delete_fail_check_result,
+                        filter: this.whereExpression,
+                        abort_on_failure,
+                        specify_static_startup_param,
+                        static_startup_param
+                    }
+                    //告警内容
+                    params.alarm_variable = this.quaCheckList.map(({
+                        output_meta_id,
+                        check_template,
+                        threshold,
+                        compareValue,
+                    }) => {
+                        let alarmRule = {
+                            rule_metric_en_code,
+                            output_meta_id,
+                            check_template,
+                            threshold,
+                            rule_metric_id: this.rule_metric_id
+                        };
+                        if (this.specialCheckTemplateValueList.includes(check_template)) {
+                            alarmRule.compare_type = compareValue;
+                        }
+                        return alarmRule;
+                    })
+                    let action = 'add';
+                    let path = 'add';
+                    let key = this.$route.query.nodeId;
+                    // 如果参数带有ruleTemplateId 则是编辑技术规则
+                    if(this.ruleId && this.ruleTemplateId) {
+                        params.rule_id = this.ruleId;
+                        action = 'edit';
+                        path = 'modify'
+                    }
+                    if (this.ruleGroupId) {
+                        params.rule_group_id = this.ruleGroupId
+                    }
+                    if (this.sourceUpstream || this.targetUpstream) {
+                        params.cs_id = this.dssParams.contextID,
+                        params.node_name= this.dssParams.nodeName,
+                        params.nodeId = this.dssParams.nodeId;
+                    }
+                    this.FesApi.fetch(`/api/v1/projector/mul_source_rule/${path}`, params, 'post').then((res)=> {
+                        let inIframe = top != self;
+                        this.isSubmit = false;
+                        this.$Toast.success(this.$t('common.successfulOperate'));
+                        this.pageType = "view";
+                        this.$emit('get-list', res.rule_group_id, res.rule_id);
+                        if (inIframe && res.rule_group_id) {
+                            DWSMessage(key, res.rule_group_id, action);
+                        }
+                    }).catch(() => {
+                        this.isSubmit = false;
+                        this.cacheMappings = cacheMappings;
+                    }).finally(() => {
+                        this.$emit('get-load', false);
+                    });
+                }
+            });
+        },
+        editRule() {
+            if (this.EditDSSUpstream) {
+                return this.$Toast.warn(this.$t('addTechniqueRule.notSupportUpstream'));
+            }
+            this.pageType = 'edit';
+            this.$emit('change-task', this.taskSwitch, this.pageType);
+        },
+        clearParam() {
+            Object.assign(this,{
+                targetProxyUser: "",
+                sourceProxyUser: "",
+                proxyUserList: [],
+                ruleName: '',
+                cn_name: '',
+                ruleDetails: '',
+                clusterName: '',
+                leftFilterCol: [],
+                leftSourceCol: [],
+                rightSourceCol: [],
+                rightFilterCol: [],
+                leftTargetCol: [],
+                rightTargetCol: [],
+                sourceTable: [],
+                targetTable: [],
+                sourceFilter: '',
+                targetFilter: '',
+                templateId: '',
+                rule_metric_id: '',
+                ruleMetricList: [],
+                delete_fail_check_result: true,
+                quaCheckList: [{
+                    id: new Date().valueOf(),
+                    output_meta_id: "",
+                    check_template: "",
+                    threshold: "",
+                    compareValue: "",
+                }],
+                pageType: 'add',
+                sourceDbList: [],
+                targetDbList: [],
+                ruleId: '',
+                ruleTemplateId: '',
+                initEditData: false
+            })
+            if (this.showDSSNode && this.dssParams && this.dssParams.nodeName) {
+                this.ruleName = this.dssParams.nodeName;
+                this.cn_name = this.dssParams.cn_name;
+            }
+            this.$emit("get-info", {
+                pageType: 'add',
+            });
+            this.$nextTick(() => {
+                this.$refs.crossValidate.resetFields();
+            })
+            this.init()
+        }
+    },
+};
+</script>
+<style lang="scss" scoped>
+.box {
+    display: flex;
+    .statement {
+        width: 400px;
+        height: 130px;
+        overflow: auto;
+        overflow-y: visible;
+        border: 1px solid #d7dde4;
+        border-radius: 4px;
+        span {
+            margin: 2px 2px;
+            padding: 5px 10px;
+            display: inline-block;
+            border: 1px solid #d7dde4;
+            border-radius: 2px;
+            text-align: center;
+        }
+    }
+    .operation {
+        margin: 50px 10px 0;
+        .select {
+            width: 150px;
+            height: 30px;
+            display: inline-block;
+            border: 1px solid #d7dde4;
+            appearance:none;
+            -moz-appearance:none;
+            -webkit-appearance:none;
+            background: url('../../assets/images/caret-down.png') no-repeat scroll 130px center transparent;
+        }
+    }
+}
+.align-center {
+    text-align: center;
+}
+.cellWrap {
+    padding-left: 10px;
+    .ui-button {
+        margin: 20px auto;
+    }
+}
+.sqlWrapper {
+    height: 20px;
+    line-height: 20px;
+    text-align: left;
+    margin-bottom: 10px;
+}
+.sqlWhere {
+    padding-left: 10px;
+    /deep/
+    .ui-form-label {
+        text-align: left;
+    }
+    .ui-form-item {
+        padding-bottom: 0;
+    }
+}
+.projectTextbox {
+    padding: 5px;
+    height: 100px;
+    width:100%;
+    overflow: auto;
+    overflow-y: visible;
+    background-color: #f3f3f3;
+}
+.inlineField {
+    width: 400px;
+}
+.add-map-modal {
+    /deep/
+    .ui-modal-dialog {
+        top: 10%;
+        bottom: 5%;
+        max-height: 85%;
+        .ui-modal-body {
+            max-height: calc(100% - 12px - 52px);
+            overflow-y: auto;
+        }
+    }
+}
+.button-action {
+    margin-top: 20px;
+    text-align: center;
+}
+.upstream {
+    position: absolute;
+    top: -30px;
+    right: 20px;
+}
+.disableEdit {
+    color: #666
+}
+.config {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.threshoFlex {
+    display: flex;
+    align-items: center;
+    span {
+        flex: 0;
+        margin-left: 10px;
+    }
+}
+.alert_label {
+    /deep/.ui-form-label {
+        text-align: left;
+        padding-left: 20px;
+    }
+}
+.pl32 {
+    padding-left: 32px;
+}
+</style>
