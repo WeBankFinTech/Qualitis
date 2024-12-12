@@ -1,0 +1,73 @@
+@import "@/style/varible";
+
+.nav-bar-container {
+    position: relative;
+    padding: 0 20px 0 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 54px;
+    font-size: @font-regular-size;
+    font-weight: @font-regular-weight;
+    color: @black-color;
+    background-color: #fff;
+    border-radius: 4px;
+    &::after{
+        content: ' ';
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        right: 0;
+        width: 50px;
+        height: 100%;
+        background: linear-gradient(-90deg, rgb(255 255 255), rgb(255 255 255 / 20%));;
+    }
+    // 没有数据的时候没办法垂直居中，这里要覆盖组件的样式
+    :deep(.fes-scrollbar-container){
+        display: flex;
+    }
+    .scroll {
+        width: calc(100% - 118px);
+        .nav-bar-list {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            margin-bottom: 0;
+            padding-left: 0;
+            height: 100%;
+            :deep(.fes-btn) {
+                flex-shrink: 0;
+            }
+            .nav-bar-item {
+                flex-shrink: 0;
+                position: relative;
+                height: 100%;
+                text-align: center;
+                user-select: none;
+                cursor: pointer;
+                transition: all ease .2s;
+                &.active{
+                    color: @blue-color;
+                    & > .nav-bar-main {
+                        border-bottom-color: @blue-color;
+                    }
+                }
+                &:hover{
+                    color: @blue-color;
+                }
+                &.disabled {
+                    color: var(--f-text-color-disabled);
+                    cursor: not-allowed;
+                }
+                & > .nav-bar-main {
+                    display: block;
+                    height: 100%;
+                    margin:0 16px;
+                    line-height: 52px;
+                    border-bottom: 2px solid transparent;
+                }
+            }
+        }
+    }
+    
+}
