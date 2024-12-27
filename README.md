@@ -71,7 +71,7 @@ Community partners are very welcome to contribute new engines and codes to us!
 
 ## Communication
 If you desire immediate response, please kindly raise issues to us or scan the below QR code by WeChat and QQ to join our group:   
-![](images/en_US/ch1/ContractUs.png)
+![](images/en_US/ch1/ContractUs.jpg)
 
 ## License
 **Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
