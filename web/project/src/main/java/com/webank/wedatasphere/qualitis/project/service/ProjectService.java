@@ -118,14 +118,15 @@ public interface ProjectService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Create project user.
      * @param project
      * @param user
+     * @param switchType
      */
-    void createProjectUser(Project project, User user);
+    void createProjectUser(Project project, User user, Boolean switchType);
 
     /**
      * Delete project by id
@@ -249,8 +250,8 @@ public interface ProjectService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request)
-        throws UnExpectedRequestException, PermissionDeniedRequestException;
+//    GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request)
+//        throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * save And Flush

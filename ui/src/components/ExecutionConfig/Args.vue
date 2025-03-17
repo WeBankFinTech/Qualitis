@@ -1,10 +1,10 @@
 <template>
     <FForm ref="form" labelPosition="right" :model="{ dynamic,args,partition }" :rules="rules" :labelWidth="71">
         <!-- 并发粒度 -->
-        <FFormItem label="并发粒度" prop="batchType">
+        <FFormItem :label="$t('_.并发粒度')" prop="batchType">
             <FRadioGroup v-model="batchType" @change="radioChange">
-                <FRadio :value="true">库粒度</FRadio>
-                <FRadio :value="false">表粒度</FRadio>
+                <FRadio :value="true">{{$t('_.库粒度')}}</FRadio>
+                <FRadio :value="false">{{$t('_.表粒度')}}</FRadio>
             </FRadioGroup>
         </FFormItem>
         <FFormItem :label="`${$t('common.isDynamicPartition')}`" prop="dynamic">
@@ -19,6 +19,7 @@
     </FForm>
 </template>
 <script setup>
+
 import {
     defineProps, watchEffect, ref, defineEmits, watch, defineExpose,
 } from 'vue';
@@ -57,7 +58,7 @@ const rules = {
     //         }
     //     }),
     // }],
-    args: [{ asyncValidator: (_, arr) => repeatValidator('执行变量配置-变量替换', arr) }],
+    args: [{ asyncValidator: (_, arr) => repeatValidator($t('_.执行变量配置-变量替换'), arr) }],
 };
 const form = ref();
 const emit = defineEmits(['update:dynamic', 'update:args', 'update:partition']);
@@ -86,4 +87,5 @@ function valid() {
     return form.value.validate();
 }
 defineExpose({ valid });
+
 </script>

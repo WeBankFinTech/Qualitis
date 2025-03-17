@@ -13,7 +13,7 @@ export function deleteClusterInfo(params = {}) {
     return FRequest('/api/v1/admin/cluster_info/delete', params);
 }
 // 获取部门列表（本地）
-export function getDepartment(params = {}) {
+export function getDepartment(params = { size: 1000000, page: 0 }) {
     return FRequest('/api/v1/admin/department/all', params);
 }
 // 获取科室列表（本地）

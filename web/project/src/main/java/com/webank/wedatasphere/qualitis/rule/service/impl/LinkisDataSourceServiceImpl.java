@@ -3,8 +3,10 @@ package com.webank.wedatasphere.qualitis.rule.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -23,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -51,6 +54,10 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
     private OperateCiService operateCiService;
     @Autowired
     private LinkisDataSourceEnvDao linkisDataSourceEnvDao;
+    @Value("${department.data_source_from: hr}")
+    private String departmentSourceType;
+    @Autowired
+    private DepartmentDao departmentDao;
 
     @Override
     public LinkisDataSource save(Long linkisDataSourceId, Long dataSourceTypeId, LinkisDataSourceRequest request, User userInDb) throws UnExpectedRequestException, JsonProcessingException {
@@ -112,6 +119,16 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
         if (null == subDepartmentCode) {
             throw new UnExpectedRequestException("Invalid sub-department");
         }
+        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(departmentSourceType)) {
+            Department subDepartmentInfo = departmentDao.findByCode(String.valueOf(subDepartmentCode));
+            if (subDepartmentInfo == null) {
+                throw new UnExpectedRequestException("Sub department isn't existing");
+            }
+            DepartmentSubResponse departmentSubResponse = new DepartmentSubResponse();
+            departmentSubResponse.setId(String.valueOf(subDepartmentInfo.getId()));
+            departmentSubResponse.setName(subDepartmentInfo.getName());
+            return departmentSubResponse;
+        }
         List<DepartmentSubResponse> departmentSubResponseList = operateCiService.getDevAndOpsInfo(Integer.valueOf(department.getDepartmentCode()));
         Optional<DepartmentSubResponse> subDeptOptional = departmentSubResponseList.stream()
                 .filter(cmdbDepartmentResponse -> subDepartmentCode.equals(Long.valueOf(cmdbDepartmentResponse.getId())))
@@ -171,7 +188,6 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      * 1. If the env name the user enters is: env_name
      * 2. then format it to:
      * manual input: 212_env_name
-     * automatic input: 212_env_name-0.0.0.0:00(epccmaindb_G-DCN_D21_set_4)
      *
      * @param linkisDataSourceId
      * @param originalEnvName
@@ -200,7 +216,6 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
     /**
      * 1. If the env name store in database is:
      * linkisEnvName with input manually: 212_env_name
-     * linkisEnvName with input automatically: 212_env_name-0.0.0.0-00(epccmaindb_G-DCN_D21_set_4)
      * 2. then recovery it to: env_name
      *
      * @param linkisDataSourceId
@@ -210,7 +225,6 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      */
     @Override
     public String convertLinkisEnvNameToOriginal(Long linkisDataSourceId, String linkisEnvName, Integer inputType) {
-//        1. 212_env_name-0.0.0.0-00(epccmaindb_G-DCN_D21_set_4)
         String tmpLinkisEnvName = linkisEnvName;
 //        removing the prefix of the env_name: 212_
         int prefixIndex = 0;
@@ -218,7 +232,6 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
         if (-1 != tmpLinkisEnvName.indexOf(prefixStr)) {
             prefixIndex = prefixStr.length();
         }
-//        2. env_name-0.0.0.0-00(epccmaindb_G-DCN_D21_set_4)
         tmpLinkisEnvName = StringUtils.substring(tmpLinkisEnvName, prefixIndex);
 
         if (isAutoInput(inputType)) {

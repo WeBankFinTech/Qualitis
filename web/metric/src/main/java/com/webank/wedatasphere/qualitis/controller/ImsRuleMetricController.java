@@ -3,19 +3,24 @@ package com.webank.wedatasphere.qualitis.controller;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
 import com.webank.wedatasphere.qualitis.project.request.ParameterChecker;
 import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
 import com.webank.wedatasphere.qualitis.service.ImsRuleMetricService;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -80,6 +85,15 @@ public class ImsRuleMetricController {
 //        }
 //    }
 
+//    @GET
+//    @Path("/metadata/sync")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse syncMetadata(@Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+//        String userName = HttpUtils.getUserName(httpServletRequest);
+//        return imsRuleMetricService.syncMetadata(userName);
+//    }
+
 //    @POST
 //    @Path("/template/list")
 //    @Produces(MediaType.APPLICATION_JSON)
@@ -88,7 +102,7 @@ public class ImsRuleMetricController {
 //        GetAllResponse<MetricTemplateQueryResponse> getAllResponse = imsRuleMetricService.getTemplateList(request);
 //        return new GeneralResponse(ResponseStatusConstants.OK, "success", getAllResponse);
 //    }
-//
+
 //    @POST
 //    @Path("/template/create")
 //    @Produces(MediaType.APPLICATION_JSON)
@@ -106,7 +120,7 @@ public class ImsRuleMetricController {
 //        }
 //        return new GeneralResponse(ResponseStatusConstants.OK, "success", null);
 //    }
-//
+
 //    @POST
 //    @Path("/template/modify")
 //    @Produces(MediaType.APPLICATION_JSON)
@@ -125,7 +139,7 @@ public class ImsRuleMetricController {
 //
 //        return new GeneralResponse(ResponseStatusConstants.OK, "success", null);
 //    }
-
+//
 //    @GET
 //    @Path("/template/{id}")
 //    @Produces(MediaType.APPLICATION_JSON)
@@ -134,7 +148,7 @@ public class ImsRuleMetricController {
 //
 //        return new GeneralResponse(ResponseStatusConstants.OK, "success", imsRuleMetricService.getMetricTemplateDetail(templateId));
 //    }
-
+//
 //    @GET
 //    @Path("/option/user_list")
 //    @Produces(MediaType.APPLICATION_JSON)
@@ -150,5 +164,22 @@ public class ImsRuleMetricController {
 //    public GeneralResponse<DataSourcesConditionResponse> getAllDataSources(@QueryParam("cluster") String cluster, @QueryParam("db") String db) throws UnExpectedRequestException {
 //        return new GeneralResponse(ResponseStatusConstants.OK, "success", imsRuleMetricService.getAllDataSources(StringUtils.isNotBlank(cluster) ? cluster : null, StringUtils.isNotBlank(db) ? db : null));
 //    }
+//
+//    @POST
+//    @Path("getMetricRelation")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse<Map<String, Object>> getMetricRelation(ImsRuleMetricQueryRequest request) {
+//        try {
+//            return imsRuleMetricService.getMetricRelation(request.getMetricId());
+//        } catch (UnExpectedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            return new GeneralResponse<>(String.valueOf(e.getStatus()), e.getMessage(), null);
+//        } catch (Exception e) {
+//            LOGGER.error("Failed to get ims rule metric relation, caused by system error: {}", e.getMessage());
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to get ims rule metric relation", null);
+//        }
+//    }
+
 
 }

@@ -13,13 +13,13 @@
                 <div v-if="mode !== 'add' && isPreviewMode" class="modalFooter" @click="authority">
                     <FTooltip
                         mode="confirm"
-                        :confirmOption="{ okText: '确认删除' }"
+                        :confirmOption="{ okText: $t('_.确认删除') }"
                         placement="top"
                         @ok="deleteTemplate"
                     >
                         <FButton type="danger">{{$t('common.delete')}}</FButton>
                         <template #title>
-                            <div style="width: 200px">确认删除此模板吗？</div>
+                            <div style="width: 200px">{{$t('_.确认删除此模板吗？')}}</div>
                         </template>
                     </FTooltip>
                     <FButton type="info" @click="authorityEdit">{{$t('common.edit')}}</FButton>
@@ -48,7 +48,7 @@
                 :booleanFormatter="booleanFormatter"
                 :dataSourceTypeFormatter="dataSourceTypeFormatter"></Detail>
             <FTabs v-else v-model="activeTab">
-                <FTabPane name="模版定义" displayDirective="show" value="defined">
+                <FTabPane :name="$t('_.模版定义')" displayDirective="show" value="defined">
                     <FForm ref="templateFormRef" labelWidth="90px" labelPosition="right" :model="templateForm" :rules="templateFormRules" style="padding: 20px 0 0;">
                         <FFormItem :label="`${$t('ruleTemplatelist.templateName')}`" prop="templateName">
                             <FInput v-model="templateForm.templateName" :placeholder="$t('common.pleaseEnter')" :disabled="mode === 'edit'" />
@@ -133,7 +133,7 @@
                 <FTabPane value="step1" disabled>
                     <template #tab><RightOutlined /></template>
                 </FTabPane>
-                <FTabPane name="数据统计" displayDirective="show" value="caculate" :disabled="!isCaculateFormValid">
+                <FTabPane :name="$t('_.数据统计')" displayDirective="show" value="caculate" :disabled="!isCaculateFormValid">
                     <FForm ref="caculateFormRef" labelWidth="100px" labelPosition="right" :model="caculateForm" :rules="caculateFormRules" style="padding: 20px 0 0;">
                         <FFormItem :label="`${$t('ruleTemplatelist.templateStatisticalFunctions')}`" prop="statisticalFunctions">
                             <FSelect v-model="caculateForm.statisticalFunctions">
@@ -148,7 +148,7 @@
                         <FFormItem :label="`${$t('ruleTemplatelist.templateStatisticsName')}`" prop="statisticsName">
                             <FInput v-model="caculateForm.statisticsName" :placeholder="$t('common.pleaseEnter')" />
                         </FFormItem>
-                        <FFormItem :label="'统计函数值'" prop="funcValue">
+                        <FFormItem :label="$t('_.统计函数值')" prop="funcValue">
                             <FInput v-model="caculateForm.funcValue" :placeholder="$t('common.pleaseEnter')" />
                         </FFormItem>
                     </FForm>
@@ -156,7 +156,7 @@
                 <FTabPane value="step2" disabled>
                     <template #tab><RightOutlined /></template>
                 </FTabPane>
-                <FTabPane name="中间表" displayDirective="show" value="table" :disabled="!isTableFormValid">
+                <FTabPane :name="$t('_.中间表')" displayDirective="show" value="table" :disabled="!isTableFormValid">
                     <FForm ref="tableFormRef" labelPosition="right" :model="tableForm" :rules="tableFormRules" style="padding: 20px 0 0;">
                         <FFormItem prop="templateSql">
                             <template v-slot:label>
@@ -276,7 +276,17 @@ const {
 } = useDepartment(devCurSubDepartData, opsCurSubDepartData, visCurSubDepartData, visDivisions);
 
 const emit = defineEmits(['update:show', 'loadData']);
-
+const show = computed(
+    {
+        get() {
+            return props.show;
+        },
+        set(v) {
+            // eslint-disable-next-line no-use-before-define
+            emit('update:show', v);
+        },
+    },
+);
 const templateForm = ref({
     templateName: '', // 模板名称
     clusterNum: 0, // 集群数量

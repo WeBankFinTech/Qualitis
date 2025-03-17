@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.rule.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 /**

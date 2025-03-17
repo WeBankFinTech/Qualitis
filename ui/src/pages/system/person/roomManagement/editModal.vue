@@ -77,6 +77,7 @@
     </FModal>
 </template>
 <script setup>
+
 import { computed, ref, onUpdated } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { FMessage } from '@fesjs/fes-design';
@@ -86,8 +87,8 @@ import { getDepartments } from '../departmentManagement/api';
 
 const { t: $t } = useI18n();
 const fromList = [
-    { value: 0, label: 'HR系统' },
-    { value: 1, label: '自定义' },
+    { value: 0, label: $t('_.HR系统') },
+    { value: 1, label: $t('_.自定义') },
 ];
 const roomList = ref([]);
 // eslint-disable-next-line no-undef
@@ -177,7 +178,7 @@ const onDepartmentChange = async () => {
                 if (roomList.value.findIndex(item => item.value === formModel.value.sub_department_code) > -1) {
                     roomList.value = roomList.value.filter(item => item.value === formModel.value.sub_department_code);
                 } else {
-                    FMessage.warn('当前部门下不存在该科室');
+                    FMessage.warn($t('_.当前部门下不存在该科室'));
                     formModel.value.department_code = '';
                     roomList.value = roomListBak.value;
                 }
@@ -240,5 +241,6 @@ onUpdated(async () => {
         getDepartmentNameList();
     }
 });
+
 </script>
 <style lang='less' scoped></style>

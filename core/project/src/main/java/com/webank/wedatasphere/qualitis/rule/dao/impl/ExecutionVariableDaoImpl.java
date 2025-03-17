@@ -43,6 +43,11 @@ public class ExecutionVariableDaoImpl implements ExecutionVariableDao {
     }
 
     @Override
+    public void deleteByExecutionParametersId(Long id) {
+        executionVariableRepository.deleteByExecutionParametersId(id);
+    }
+
+    @Override
     public List<ExecutionVariable> selectMateExecutionVariable(Integer type, String name, String value, ExecutionParameters executionParametersInDb) {
         return executionVariableRepository.selectMateExecutionVariable(type, name, value, executionParametersInDb);
     }

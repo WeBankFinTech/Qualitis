@@ -1,7 +1,6 @@
-/* eslint-disable no-template-curly-in-string */
 <template>
     <div class="rule-detail-form" :class="{ edit: ruleData.currentProject.editMode !== 'display' }">
-        <h6 class="wd-body-title">校验规则</h6>
+        <h6 class="wd-body-title">{{$t('_.校验规则')}}</h6>
         <BasicInfo ref="basicInfoRef" v-model:basicInfo="verifyRuleData" />
         <FForm
             ref="verifyObjectFormRef"
@@ -21,14 +20,12 @@
                 :rules="comparisonFormRules"
                 :labelWidth="96"
                 :labelPosition="ruleData.currentProject.editMode !== 'display' ? 'right' : 'left'">
-                <!-- 字段数据一致性比对--17 -->
-                <!-- 行数据一致性比对--20 -->
                 <FFormItem :label="$t('common.verificationTemplate')" prop="multi_source_rule_template_id">
                     <FSelect
                         v-model="verifyRuleData.multi_source_rule_template_id"
                         class="form-edit-input"
                         filterable
-                        placeholder="请选择校验模板"
+                        :placeholder="$t('_.请选择校验模板')"
                         style="width:315px"
                         @change="onTemplateChange(verifyRuleData.multi_source_rule_template_id)"
                     >
@@ -41,66 +38,127 @@
                     </FSelect>
                     <div class="form-preview-label">{{verifyRuleData.rule_template_name}}</div>
                 </FFormItem>
-                <div v-for="(w,k) in (verifyRuleData.ruleArgumentList || [])" :key="k">
-                    <!-- 需要下拉选择 -->
-                    <FFormItem v-if="w.flag" :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]" class="form-item">
-                        <FSelect
-                            v-model="verifyRuleData.ruleArgumentList[k].argument_value"
-                            labelField="key_name"
-                            valueField="value"
-                            :options="w.argsSelectList"
-                            class="form-edit-input" @change="replaceParameter(k)">
-                        </FSelect>
-                        <div class="form-preview-label">{{getRuleArgumentName(w)}}</div>
-                        <FTooltip v-if="ruleArgumentTips.textShow">
-                            <ExclamationCircleOutlined class="tip edit hint" />
-                            <template #content>{{ruleArgumentTips.regText.find(item => w.argument_type === item.input_type)?.description}}</template>
-                        </FTooltip>
-                    </FFormItem>
-                    <FFormItem v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONNECT_FIELDS" :label="w.argument_name" prop="mappings">
-                        <div v-show="verifyRuleData?.mappings?.length > 0 || ruleData.currentProject.editMode !== 'display'" class="rule-form-table">
-                            <MappingRelationship v-model:mappings="verifyRuleData.mappings" :datasourceGroupData="datasourceGroupData" :title="w.argument_name" @mapSaved="mapSaved('mappings', k)" @valid="validate('mappings')" />
+                <FFormItem v-if="[TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(getTemplateEnName(verifyRuleData.multi_source_rule_template_id))" FFormItem prop="standard_params" :label="$t('_.标准值')">
+                    <FSelect
+                        v-model="verifyRuleData.standard_params"
+                        labelField="label"
+                        valueField="value"
+                        filterable
+                        collapseTags
+                        :collapseTagsLimit="3"
+                        multiple
+                        :placeholder="$t('_.请选择-自定义sql')"
+                        :options="standardValueList"
+                        class="form-edit-input"
+                        @change="handleChangeStandardValue">
+                    </FSelect>
+                    <div class="form-preview-label">
+                        {{getEnumNameString(verifyRuleData.standard_params)}}
+                    </div>
+                    <FTooltip>
+                        <ExclamationCircleOutlined class="tip edit hint" />
+                        <template #content>{{$t('_.在 sql 中请使用 ${标准值名称}')}}</template>
+                    </FTooltip>
+                </FFormItem>
+
+                <!-- 自定义字段一致性校验需要脱离通用模板控制的逻辑 -->
+                <template v-if="[TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(getTemplateEnName(verifyRuleData.multi_source_rule_template_id))">
+                    <div class="config-wrapper">
+                        <div class="config">
+                            <SamplingSQL ref="leftSamplingSQLRef" v-model:linkis_udf_names="verifyRuleData.left_linkis_udf_names" v-model:samplingSql="verifyRuleData.leftArguments" type="source" />
                         </div>
-                        <div v-if="!(verifyRuleData?.mappings?.length > 0 || ruleData.currentProject.editMode !== 'display')">--</div>
-                    </FFormItem>
-                    <FFormItem v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.COMPARISON_FIELD" :label="w.argument_name" prop="compare_cols">
-                        <div v-show="verifyRuleData?.compare_cols?.length > 0 || ruleData.currentProject.editMode !== 'display'" class="rule-form-table">
-                            <MappingRelationship v-model:mappings="verifyRuleData.compare_cols" :datasourceGroupData="datasourceGroupData" :title="w.argument_name" @mapSaved="mapSaved('compare_cols', k)" @valid="validate('compare_cols')" />
+                        <div class="config">
+                            <SamplingSQL ref="rightSamplingSQLRef" v-model:linkis_udf_names="verifyRuleData.right_linkis_udf_names" v-model:samplingSql="verifyRuleData.rightArguments" type="target" />
                         </div>
-                        <div v-if="!(verifyRuleData?.compare_cols?.length > 0 || ruleData.currentProject.editMode !== 'display')">--</div>
-                    </FFormItem>
-                    <FFormItem
-                        v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONTRAST_TYPE"
-                        :label="w.argument_name"
-                        :prop="`ruleArgumentList[${k}].argument_value`"
-                        :rules="[{ required: true, type: 'number', message: $t('common.notEmpty') }]">
-                        <FSelect
-                            v-model="verifyRuleData.ruleArgumentList[k].argument_value"
-                            class="form-edit-input"
-                            filterable
-                            :placeholder="`请选择${w.argument_name}`"
-                            style="width:315px"
-                            @change="replaceParameter(k)"
-                        >
-                            <FOption
-                                v-for="item in directionList"
-                                :key="item.value"
-                                :value="item.value"
-                                :label="item.label"
-                            ></FOption>
-                        </FSelect>
-                        <div class="form-preview-label">{{directionList.find(v => v.value === verifyRuleData.contrast_type)?.label || '--'}}</div>
-                    </FFormItem>
-                    <!-- 其他普通类型 -->
-                    <FFormItem v-else :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]">
-                        <FInput v-model="verifyRuleData.ruleArgumentList[k].argument_value" class="form-edit-input" @input="replaceParameter(k)" />
-                        <div class="form-preview-label">{{w.argument_value}}</div>
-                        <FTooltip v-if="ruleArgumentTips.textShow">
-                            <ExclamationCircleOutlined class="tip edit hint" />
-                            <template #content>{{ruleArgumentTips.regText.find(item => w.argument_type === item.input_type)?.description}}</template>
-                        </FTooltip>
-                    </FFormItem>
-                </div>
+                    </div>
+                    <div v-for="(w,k) in (verifyRuleData.ruleArgumentList || [])" :key="k">
+                        <FFormItem
+                            v-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONTRAST_TYPE"
+                            :label="w.argument_name"
+                            :prop="`ruleArgumentList[${k}].argument_value`"
+                            :rules="[{ required: true, type: 'number', message: $t('common.notEmpty') }]">
+                            <FSelect
+                                v-model="verifyRuleData.ruleArgumentList[k].argument_value"
+                                class="form-edit-input"
+                                filterable
+                                :placeholder="`请选择${w.argument_name}`"
+                                style="width:315px"
+                                @change="replaceParameter(k)"
+                            >
+                                <FOption
+                                    v-for="item in directionList"
+                                    :key="item.value"
+                                    :value="item.value"
+                                    :label="item.label"
+                                ></FOption>
+                            </FSelect>
+                            <div class="form-preview-label">{{directionList.find(v => v.value === verifyRuleData.contrast_type)?.label || '--'}}</div>
+                        </FFormItem>
+                    </div>
+                </template>
+                <!-- 支持动态表单 -->
+                <template v-else>
+                    <div v-for="(w,k) in (verifyRuleData.ruleArgumentList || [])" :key="k">
+                        <!-- 需要下拉选择 -->
+                        <FFormItem v-if="w.flag" :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]" class="form-item">
+                            <FSelect
+                                v-model="verifyRuleData.ruleArgumentList[k].argument_value"
+                                labelField="key_name"
+                                valueField="value"
+                                :options="w.argsSelectList"
+                                class="form-edit-input" @change="replaceParameter(k)">
+                            </FSelect>
+                            <div class="form-preview-label">{{getRuleArgumentName(w)}}</div>
+                            <FTooltip v-if="ruleArgumentTips.textShow">
+                                <ExclamationCircleOutlined class="tip edit hint" />
+                                <template #content>{{ruleArgumentTips.regText.find(item => w.argument_type === item.input_type)?.description}}</template>
+                            </FTooltip>
+                        </FFormItem>
+                        <FFormItem v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONNECT_FIELDS" :label="w.argument_name" prop="mappings">
+                            <div v-show="verifyRuleData?.mappings?.length > 0 || ruleData.currentProject.editMode !== 'display'" class="rule-form-table">
+                                <MappingRelationship v-model:mappings="verifyRuleData.mappings" :datasourceGroupData="datasourceGroupData" :title="w.argument_name" @mapSaved="mapSaved('mappings', k)" @valid="validate('mappings')" />
+                            </div>
+                            <div v-if="!(verifyRuleData?.mappings?.length > 0 || ruleData.currentProject.editMode !== 'display')">--</div>
+                        </FFormItem>
+                        <FFormItem v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.COMPARISON_FIELD" :label="w.argument_name" prop="compare_cols">
+                            <div v-show="verifyRuleData?.compare_cols?.length > 0 || ruleData.currentProject.editMode !== 'display'" class="rule-form-table">
+                                <MappingRelationship v-model:mappings="verifyRuleData.compare_cols" :datasourceGroupData="datasourceGroupData" :title="w.argument_name" @mapSaved="mapSaved('compare_cols', k)" @valid="validate('compare_cols')" />
+                            </div>
+                            <div v-if="!(verifyRuleData?.compare_cols?.length > 0 || ruleData.currentProject.editMode !== 'display')">--</div>
+                        </FFormItem>
+                        <FFormItem
+                            v-else-if="w.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONTRAST_TYPE"
+                            :label="w.argument_name"
+                            :prop="`ruleArgumentList[${k}].argument_value`"
+                            :rules="[{ required: true, type: 'number', message: $t('common.notEmpty') }]">
+                            <FSelect
+                                v-model="verifyRuleData.ruleArgumentList[k].argument_value"
+                                class="form-edit-input"
+                                filterable
+                                :placeholder="`请选择${w.argument_name}`"
+                                style="width:315px"
+                                @change="replaceParameter(k)"
+                            >
+                                <FOption
+                                    v-for="item in directionList"
+                                    :key="item.value"
+                                    :value="item.value"
+                                    :label="item.label"
+                                ></FOption>
+                            </FSelect>
+                            <div class="form-preview-label">{{directionList.find(v => v.value === verifyRuleData.contrast_type)?.label || '--'}}</div>
+                        </FFormItem>
+                        <!-- 其他普通类型 -->
+                        <FFormItem v-else :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]">
+                            <FInput v-model="verifyRuleData.ruleArgumentList[k].argument_value" class="form-edit-input" @input="replaceParameter(k)" />
+                            <div class="form-preview-label">{{w.argument_value}}</div>
+                            <FTooltip v-if="ruleArgumentTips.textShow">
+                                <ExclamationCircleOutlined class="tip edit hint" />
+                                <template #content>{{ruleArgumentTips.regText.find(item => w.argument_type === item.input_type)?.description}}</template>
+                            </FTooltip>
+                        </FFormItem>
+                    </div>
+                </template>
             </FForm>
             <FForm
                 ref="filterFormRef"
@@ -111,13 +169,13 @@
                 :rules="filterFormRules"
                 :labelWidth="96"
                 :labelPosition="ruleData.currentProject.editMode !== 'display' ? 'right' : 'left'">
-                <FFormItem v-if="verifyRuleData.isFilterFields" label="过滤字段">
+                <FFormItem v-if="verifyRuleData.isFilterFields" :label="$t('_.过滤字段')">
                     <FSelect
                         v-model="verifyRuleData.filter_col_names"
                         class="form-edit-input"
                         filterable
                         multiple
-                        placeholder="请选择"
+                        :placeholder="$t('_.请选择')"
                         style="width:315px"
                         collapseTags
                         :collapseTagsLimit="2"
@@ -139,7 +197,7 @@
                     </div>
                 </FFormItem>
             </FForm>
-            <FFormItem label="SQL预览">
+            <FFormItem v-if="![TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.DATA_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1, TEMPLATE_ID.SINGLE_TABLE_ROWS_CONSISTENSY].includes(getTemplateEnName(verifyRuleData.multi_source_rule_template_id))" :label="$t('_.SQL预览')">
                 <div class="rule-sql-preview">
                     <p v-if="sqlPreviewString" v-html="sqlPreviewString"></p>
                 </div>
@@ -150,7 +208,7 @@
                 :needUploadMetric="needUploadMetric"
                 :solidification="solidification"
             />
-            <FFormItem label="执行参数" prop="execution_parameters_name">
+            <FFormItem :label="$t('_.执行参数')" prop="execution_parameters_name">
                 <FInput
                     v-model="verifyRuleData.execution_parameters_name"
                     class="form-edit-input execution-parameters-name-input"
@@ -182,8 +240,12 @@ import {
     ref, computed, provide, nextTick, inject, onMounted, unref,
 } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n, request } from '@fesjs/fes';
-import { TEMPLATE_TYPES, TEMPLATE_ARGUMENT_INPUT_TYPE } from '@/common/constant.js';
+import {
+    useI18n, request, useRoute, useRouter,
+} from '@fesjs/fes';
+import {
+    TEMPLATE_TYPES, TEMPLATE_ARGUMENT_INPUT_TYPE, TEMPLATE_ARGUMENT_INPUT_ID, TEMPLATE_ID,
+} from '@/common/constant.js';
 import { clone, cloneDeep, intersectionBy } from 'lodash-es';
 import eventbus from '@/common/useEvents';
 import BasicInfo from '@/components/rules/BasicInfo';
@@ -200,6 +262,7 @@ import { getColumns, getTables } from '@/components/rules/utils/datasource';
 import RuleConditionList from '@/components/rules/forms/RuleConditionList';
 import useTemplateSelector from '@/components/rules/hook/useTemplateSelector';
 import MappingRelationship from '@/components/rules/forms/MappingRelationship.vue';
+import SamplingSQL from '@/components/rules/forms/SamplingSQL.vue';
 
 const store = useStore();
 const { t: $t } = useI18n();
@@ -221,10 +284,17 @@ const verifyRuleData = ref({
     datasource: [{}],
     alarm_variable: [{}],
     filter_col_names: [],
+    leftArguments: {},
+    rightArguments: {},
 });
 const ruleArgumentsList = ref([]);
 // 加载模板
 const checkTemplateList = ref([]);
+// 获取模板en_name
+const getTemplateEnName = (id) => {
+    if (!id) return;
+    return checkTemplateList.value.find(item => item.template_id === id)?.en_name || '';
+};
 const sqlDataSource = ref({});
 // 比对方向
 const directionList = ref([]);
@@ -332,6 +402,39 @@ const getSpecialSqlShowVal = (argumentType, argumentVal) => {
 
     return ruleItemSqlValue;
 };
+// 标准值
+const standardValueList = ref([]);
+let isLoadingStandard = false;
+const getStandValueList = async () => {
+    try {
+        if (isLoadingStandard) {
+            return;
+        }
+        isLoadingStandard = true;
+        const { data = [] } = await request('/api/v1/projector/standardValue/query', {
+            page: 0,
+            size: 2147483647,
+        }, { mergeRequest: true });
+        // value 需要是字符串，不然没法拼接
+        standardValueList.value = data.map(item => ({
+            label: item.en_name,
+            value: `${item.edition_id}`,
+        }));
+        isLoadingStandard = false;
+    } catch (err) {
+        console.warn(err);
+        isLoadingStandard = false;
+    }
+};
+const handleChangeStandardValue = (value) => {
+    verifyRuleData.value.standard_value_variables = verifyRuleData.value.standard_params.map(item => ({
+        standard_value_variables_id: item,
+    })) || [{}];
+};
+const getEnumNameString = (ids) => {
+    const getEnumLabel = id => standardValueList.value.find(item => item.value === id)?.label || '';
+    return ids?.map(getEnumLabel)?.join(';') || '--';
+};
 
 // 模板参数替换
 const replaceParameter = (index) => {
@@ -362,18 +465,21 @@ const getJSONParsedResult = (jsonString) => {
         console.log(error);
     }
 };
-
+// 解析字段
+const parseColumns = (colString, target) => {
+    console.log(colString, target, 'parse columns');
+    return JSON.parse(colString)[0][target].map(item => item.column_name).join(',');
+};
 // eslint-disable-next-line complexity
-async function buildSql(isInit = false) {
+async function buildSql(isInit = false, type) {
     console.log('buildSql', sqlTpl.value);
     await nextTick();
-    const sourceDB = verifyRuleData.value.source.db_name;
-    const sourceTable = verifyRuleData.value.source.table_name;
-    const filterLeft = verifyRuleData.value.source.filter;
-    const targetDB = verifyRuleData.value.target.db_name;
-    const targetTable = verifyRuleData.value.target.table_name;
-    const filterRight = verifyRuleData.value.target.filter;
-
+    const sourceDB = verifyRuleData.value.source?.db_name || '';
+    const sourceTable = verifyRuleData.value.source?.table_name || '';
+    const filterLeft = verifyRuleData.value.source?.filter || '';
+    const targetDB = verifyRuleData.value.target?.db_name || '';
+    const targetTable = verifyRuleData.value.target?.table_name || '';
+    const filterRight = verifyRuleData.value.target?.filter || '';
     sqlDataSource.value = {
         // '${source_db}': sourceDB,
         // '${source_table}': sourceTable,
@@ -391,10 +497,12 @@ async function buildSql(isInit = false) {
         '${mapping_argument}': '',
     };
 
-    if (!verifyRuleData.value?.template_arguments?.length && !isInit) return;
-
-    // 给占位符赋值
-    if (Array.isArray(verifyRuleData.value?.template_arguments)) { // 模版参数
+    if (!verifyRuleData.value?.template_arguments?.length && !isInit) {
+        return;
+    }
+    if (!isInit && ['cluster', 'type', 'proxy_user', 'db', 'table', 'source_name'].includes(type)) {
+        if (verifyRuleData.value.template_arguments) verifyRuleData.value.template_arguments = [];
+    } else if (Array.isArray(verifyRuleData.value?.template_arguments)) { // 模版参数
         // 从后台拿的数据给规则参数列表的value赋值
         verifyRuleData.value.ruleArgumentList = verifyRuleData.value.ruleArgumentList?.map((arg) => {
             const args = { ...arg };
@@ -413,16 +521,33 @@ async function buildSql(isInit = false) {
 
                     // 连接字段和比对字段需要对拿到的json字符串做反序列化，且赋值给对应变量
                     if (tv.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.CONNECT_FIELDS) {
-                        verifyRuleData.value.mappings = getJSONParsedResult(tv.argument_value) || [];
+                        if ([TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(getTemplateEnName(verifyRuleData.value.multi_source_rule_template_id))) {
+                            // 控件逻辑不一样了，单独写个解析赋值逻辑
+                            verifyRuleData.value.leftArguments.connect_col = parseColumns(tv.argument_value, 'left');
+                            verifyRuleData.value.rightArguments.connect_col = parseColumns(tv.argument_value, 'right');
+                        } else {
+                            verifyRuleData.value.mappings = getJSONParsedResult(tv.argument_value) || [];
+                        }
                     }
                     if (tv.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.COMPARISON_FIELD) {
-                        verifyRuleData.value.compare_cols = getJSONParsedResult(tv.argument_value) || [];
+                        if ([TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(getTemplateEnName(verifyRuleData.value.multi_source_rule_template_id))) {
+                            // 控件逻辑不一样了，单独写个解析赋值逻辑
+                            verifyRuleData.value.leftArguments.compare_col = parseColumns(tv.argument_value, 'left');
+                            verifyRuleData.value.rightArguments.compare_col = parseColumns(tv.argument_value, 'right');
+                        } else {
+                            verifyRuleData.value.compare_cols = getJSONParsedResult(tv.argument_value) || [];
+                        }
+                    }
+                    if (tv.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.LEFT_SAMPLE_SQL) {
+                        verifyRuleData.value.leftArguments.sql = tv.argument_value;
+                    }
+                    if (tv.argument_type === TEMPLATE_ARGUMENT_INPUT_TYPE.RIGHT_SAMPLE_SQL) {
+                        verifyRuleData.value.rightArguments.sql = tv.argument_value;
                     }
                 }
             });
             return args;
         });
-
         const sqlKeys = Object.keys(sqlDataSource.value);
         verifyRuleData.value?.template_arguments.forEach((item) => {
             const key = item.argument_placeholder;
@@ -435,20 +560,31 @@ async function buildSql(isInit = false) {
         });
     }
 }
-
 const solidification = ref(false); // 规则模板是否固化了校验条件
-const handleTemplateChange = async (id, isInit = false) => {
+const handleTemplateChange = async (id, isInit = false, type = '') => {
     try {
         if (!id) {
             return;
         }
-
+        if ([TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(getTemplateEnName(id))) {
+            // 通知校验对象隐藏、显示库表
+            eventbus.emit('SHOW_DB_TABLE', false);
+            eventbus.emit('SHOW_FILTER', false);
+        } else if ([TEMPLATE_ID.SINGLE_CLUSTER_TABLE_STRUCTURE_CONSISTENCY_VALIDATION, TEMPLATE_ID.CROSS_CLUSTER_STRUCTURE_CONSISTENCY_VALIDATION].includes(getTemplateEnName(id))) {
+            eventbus.emit('SHOW_DB_TABLE', true);
+            // 控制校验模板为单集群表结构一致性时不显示过滤条件
+            eventbus.emit('SHOW_FILTER', false);
+        } else {
+            eventbus.emit('SHOW_DB_TABLE', true);
+            eventbus.emit('SHOW_FILTER', true);
+        }
         const result = await request(`api/v1/projector/rule_template/meta_input/${id}`, {}, 'get');
         checkFieldList.value = result.template_output || [];
         verifyRuleData.value.ruleArgumentList = initRuleArgsList({
             list: result.rule_arguments,
             placeholders: cloneDeep(result.sql_display_response.placeholders),
         });
+        console.log(verifyRuleData.value.ruleArgumentList);
         // 占位符控件顺序
         const order = [
             TEMPLATE_ARGUMENT_INPUT_TYPE.CONNECT_FIELDS,
@@ -467,7 +603,7 @@ const handleTemplateChange = async (id, isInit = false) => {
             id,
         });
         sqlTpl.value = result.sql_display_response.show_sql;
-        buildSql(isInit);
+        buildSql(isInit, type);
         // 是否固化校验条件相关逻辑
         const template = await fetchTemplateDetail({ template_id: id });
         console.log('rule template:', template);
@@ -491,16 +627,24 @@ const onTemplateChange = async (id) => {
     verifyRuleData.value.mappings = [];
     verifyRuleData.value.compare_cols = [];
     verifyRuleData.value.filter_col_names = [];
+    verifyRuleData.value.leftArguments = {};
+    verifyRuleData.value.rightArguments = {};
 };
 
 const basicInfoRef = ref(null);
 const verifyObjectFormRef = ref(null);
 const comparisonFormRef = ref(null);
 const filterFormRef = ref(null);
+const leftSamplingSQLRef = ref(null);
+const rightSamplingSQLRef = ref(null);
 const valid = async () => {
     try {
         await verifyObjectFormRef.value.validate();
         const validList = [filterFormRef.value.validate(), basicInfoRef.value.valid(), ruleconditionlistRef.value.valid(), comparisonFormRef.value.validate()];
+        if (leftSamplingSQLRef.value && rightSamplingSQLRef.value) {
+            validList.push(leftSamplingSQLRef.value.valid());
+            validList.push(rightSamplingSQLRef.value.valid());
+        }
         const result = await Promise.all(validList);
         store.commit('rule/updateCurrentRuleDetail', cloneDeep(verifyRuleData.value));
         return !result.includes(false);
@@ -577,7 +721,8 @@ const filterFormRules = ref({
 // 列过滤下拉数据为源表字段
 const sourceTableColumns = ref([]);
 const upstreamParams = cloneDeep(unref(inject('upstreamParams')));
-const init = async (isLoad = true) => {
+const init = async (isLoad = true, type = '') => {
+    await getStandValueList();
     const target = cloneDeep(ruleData.value.currentRuleDetail);
     target.alarm_variable = target.alarm_variable || [{}];
     upstreamParams.isUpStream = target.isUpStream;
@@ -617,13 +762,22 @@ const init = async (isLoad = true) => {
         }
         target.filter_col_names = allColumns.filter(v => !target.filter_col_names?.find(i => i.column_name === v.column_name)).map(i => i.column_name);
     }
+    // 兜底
+    if (!target.leftArguments) target.leftArguments = {};
+    if (!target.rightArguments) target.rightArguments = {};
+    if (target?.standard_value_variables && target.standard_value_variables.length) {
+        target.standard_params = target.standard_value_variables.length ? target.standard_value_variables.map(item => `${item?.standard_value_variables_id ?? ''}`) : [];
+    }
     verifyRuleData.value = target;
     // 如果是数据源修改，且用户修改过模版id，则当前模版id赋值之前用户修改选择的id
     if (!isLoad && currentTemplateId.value) {
         verifyRuleData.value.multi_source_rule_template_id = currentTemplateId.value;
         verifyRuleData.value.alarm_variable = [{}];
     }
-    handleTemplateChange(verifyRuleData.value.multi_source_rule_template_id, isLoad);
+    // eslint-disable-next-line no-use-before-define
+    if (isLoad) await loadVerifyTpl(target.source.type);
+    await handleTemplateChange(verifyRuleData.value.multi_source_rule_template_id, isLoad, type);
+    eventbus.emit('INIT_FINISHED');
 };
 // mappings/cols_compare 校验触发
 const validate = async (type) => {
@@ -646,11 +800,52 @@ const mapSaved = async (type, index) => {
 };
 
 // 当数据库、数据表、过滤条件、字段等发生变化的时候，需要调用updateSqlDataSource进行预览SQL更新
-useListener('SHOULD_UPDATE_NECESSARY_DATA', () => init(false));
-
+useListener('SHOULD_UPDATE_NECESSARY_DATA', (type) => {
+    init(false, type);
+});
+// 过滤条件单独更新
+useListener('ONLY_UPDATE_FILTER', () => {
+    const target = cloneDeep(ruleData.value.currentRuleDetail);
+    console.log(target);
+    if (target?.source?.filter) {
+        verifyRuleData.value.source.filter = target.source.filter;
+    }
+    if (target?.target?.filter) {
+        verifyRuleData.value.target.filter = target.target.filter;
+    }
+    // verifyRuleData.value.target.filter = target.datasource[0].filter;
+});
 // 初始化数据
 useListener('IS_RULE_DETAIL_DATA_LOADED', () => init(true));
 
+// 数据源变化
+useListener('TYPE_CHANGE', (type) => {
+    // eslint-disable-next-line no-use-before-define
+    loadVerifyTpl(type);
+    verifyRuleData.value.multi_source_rule_template_id = '';
+    verifyRuleData.value.alarm_variable = [{}];
+});
+const route = useRoute();
+const router = useRouter();
+// 切换复制模式，规则名称改成xxx_副本
+useListener('COPY_MODE', () => {
+    verifyRuleData.value.rule_name = `${verifyRuleData.value.rule_name}_copy`;
+    if (verifyRuleData.value.cn_name) verifyRuleData.value.cn_name = `${verifyRuleData.value.cn_name}_副本`;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_id;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_en_code;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_name;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_en_code;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_name;
+    // const tempQuery = { ...route.query };
+    // delete tempQuery.id;
+    // const queryString = Object.keys(tempQuery)
+    //     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(tempQuery[key])}`)
+    //     .join('&');
+
+    // // 构建新的 URL
+    // const newUrl = `${route.path}?${queryString}`;
+    // router.replace(newUrl);
+});
 // mappding组件需要拿到表的信息
 const datasourceGroupData = ref({});
 useListener('UPDATE_COLUMN_LIST', ({ data, target }) => {
@@ -661,15 +856,20 @@ useListener('UPDATE_COLUMN_LIST', ({ data, target }) => {
         datasourceGroupData.value.rightGroup = data;
     }
 });
-
-const loadVerifyTpl = async () => {
+const currentRuleType = inject('currentRuleType');
+const loadVerifyTpl = async (dataSourceType = 'hive') => {
     try {
         const tempResp = await fetchTemplatesWithCache({
             page: 0,
             size: 512,
             template_type: TEMPLATE_TYPES.CROSS_TABLE_CHECK_TYPE,
+            data_source_type: dataSourceType || 'hive',
         });
-        checkTemplateList.value = tempResp.data || [];
+        if (currentRuleType.value === '3-3') {
+            checkTemplateList.value = tempResp.data?.filter(item => item.cluster_num >= 2) || [];
+        } else {
+            checkTemplateList.value = tempResp.data?.filter(item => item.cluster_num < 2) || [];
+        }
     } catch (error) {
         console.log(error);
     }
@@ -679,7 +879,6 @@ onMounted(async () => {
     try {
         const constrastResp = await request('api/v1/projector/mul_source_rule/constrast/all', {}, 'post');
         directionList.value = constrastResp.map(v => ({ label: v.message, value: v.code, content: v.join_type }));
-        loadVerifyTpl();
     } catch (err) {
         console.log(err);
     }
@@ -693,5 +892,20 @@ defineExpose({ valid });
     display: inline-block;
     margin-left: 8px;
     color: #646670;
+}
+.config-wrapper {
+    border-radius: 4px;
+    padding-left: 112px;
+    margin-bottom: 22px;
+    display: grid;
+    gap: 0 24px;
+    grid-template-columns: 498px 498px;
+    .config {
+        width: 498px;
+        background: #FFFFFF;
+        background: rgba(15,18,34,0.03);
+        border-radius: 4px;
+        padding: 24px 24px 0 24px;
+    }
 }
 </style>

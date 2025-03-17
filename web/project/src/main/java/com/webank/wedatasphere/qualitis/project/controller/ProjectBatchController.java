@@ -115,9 +115,12 @@ public class ProjectBatchController {
     @Produces(MediaType.APPLICATION_JSON)
     public GeneralResponse downloadProject(DownloadProjectRequest downloadProjectRequest, @Context HttpServletResponse response)
         throws UnExpectedRequestException {
+        if (checkIfDuplicatedProject(downloadProjectRequest.getProjectIds())) {
+            throw new UnExpectedRequestException("Only export rules within same project.");
+        }
         List<Project> projectLists= Lists.newArrayList();
         try {
-            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectId());
+            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectIds());
             return projectBatchService.downloadProjectsToLocalOrGit(downloadProjectRequest, response);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
@@ -130,6 +133,10 @@ public class ProjectBatchController {
         }
     }
 
+    private boolean checkIfDuplicatedProject(List<Long> projectIds) {
+        return projectIds.stream().distinct().count() > 1;
+    }
+
     @POST
     @Path("download_files_to_git")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -138,7 +145,7 @@ public class ProjectBatchController {
         throws UnExpectedRequestException, PermissionDeniedRequestException {
         List<Project> projectLists= Lists.newArrayList();
         try {
-            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectId());
+            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectIds());
             return projectBatchService.downloadProjectsToLocalOrGit(downloadProjectRequest, response);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);

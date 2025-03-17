@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import java.util.Objects;
 import javax.persistence.Column;
@@ -26,7 +27,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Id;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author allenzhou

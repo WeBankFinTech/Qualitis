@@ -101,8 +101,12 @@ public class TaskDaoImpl implements TaskDao {
     }
 
     @Override
-    public int countByApplication(Application application) {
-        return repository.countByApplication(application);
+    public int countByApplication(Application application, boolean isNonPassStatus) {
+        if (isNonPassStatus) {
+            return repository.countByApplicationWithNonPassStatus(application);
+        } else {
+            return repository.countByApplication(application);
+        }
     }
 
     @Override
@@ -133,5 +137,20 @@ public class TaskDaoImpl implements TaskDao {
     @Override
     public void delete(Task task) {
         repository.delete(task);
+    }
+
+    @Override
+    public Task getCollectTaskStatus(String applicationId, String collectId) {
+        return repository.findCollectTaskStatus(applicationId, collectId);
+    }
+
+    @Override
+    public List<Task> findByRulGroupId(Long ruleGroupId) {
+        return repository.findByRulGroupId(ruleGroupId);
+    }
+
+    @Override
+    public void deleteAllInBatch(List<Task> taskList) {
+        repository.deleteAllInBatch(taskList);
     }
 }

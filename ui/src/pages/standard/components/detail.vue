@@ -22,7 +22,7 @@
             <FEllipsis v-if="standdard.action_range?.length" :line="2">
                 {{actionRangeDetail(standdard.action_range)}}
                 <template #tooltip>
-                    <div style="text-align:center">可见范围</div>
+                    <div style="text-align:center">{{$t('_.可见范围')}}</div>
                     <div style="width:300px;word-wrap:break-word">
                         {{actionRangeDetail(standdard.action_range)}}
                     </div>

@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.dao.repository;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionVariable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -36,4 +37,12 @@ public interface ExecutionVariableRepository extends JpaRepository<ExecutionVari
      */
     @Query(value = "SELECT ac from ExecutionVariable ac WHERE ac.variableType = ?1 and ac.variableName=?2 and ac.variableValue=?3 and ac.executionParameters=?4 ")
     List<ExecutionVariable> selectMateExecutionVariable(Integer type, String name, String value, ExecutionParameters executionParametersInDb);
+
+    /**
+     * delete by ExecutionParametersId
+     * @param id
+     */
+    @Modifying
+    @Query(value = "delete from qualitis_execution_variable where execution_parameters_id = ?1", nativeQuery = true)
+    void deleteByExecutionParametersId(Long id);
 }

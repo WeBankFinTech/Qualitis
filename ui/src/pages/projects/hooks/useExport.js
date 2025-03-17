@@ -2,11 +2,11 @@ import { ref } from 'vue';
 import { isIE, forceDownload } from '@/assets/js/utils';
 import { FMessage } from '@fesjs/fes-design';
 import { useI18n } from '@fesjs/fes';
+import { downloadMetric } from '@/pages/metricManagement/dqmetricManagement/api';
 import {
     downloadProject,
     downloadProjectRules,
 } from '../api';
-import { downloadMetric } from '../../metricManagement/api';
 import { downloadRelatedRulesOfTableDetail } from '../../rules/query/api';
 
 /**
@@ -58,6 +58,7 @@ export default function useExport(type = 'project') {
             console.error(error);
             FMessage.error(`${$t('toastError.exportFail', { name: nameMap[type] })}`);
             window.URL.revokeObjectURL(blobUrl);
+            throw Error(error);
         }
     };
 

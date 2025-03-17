@@ -277,4 +277,14 @@ public interface ApplicationDao {
    */
   List<Application> findByProject(Project project);
 
+  /**
+   * get collect task status
+   * @param projectName
+   * @param collectId
+   * @param filterPartition
+   * @param submitDate
+   * @return
+   */
+  Application getCollectTaskStatus(String projectName, String collectId, String filterPartition, String submitDate);
+
 }

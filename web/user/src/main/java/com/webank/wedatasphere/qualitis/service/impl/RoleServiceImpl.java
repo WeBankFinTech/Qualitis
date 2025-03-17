@@ -23,6 +23,7 @@ import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.RolePermissionDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
+import com.webank.wedatasphere.qualitis.dto.RoleDepartmentDto;
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.RolePermission;
@@ -46,10 +47,12 @@ import org.apache.commons.lang.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Date;
@@ -77,6 +80,9 @@ public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private DepartmentDao departmentDao;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
 
     public static final FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
@@ -243,7 +249,12 @@ public class RoleServiceImpl implements RoleService {
         UserAndRoleResponse response = new UserAndRoleResponse();
         response.setRoles(roleNames);
         response.setUsername(username);
-
+        if (overseasVersionEnabled){
+            LOGGER.info(" return login random.");
+            HttpSession session = httpServletRequest.getSession();
+            response.setLoginRandom((Integer) session.getAttribute("loginRandom"));
+        }
+        response.setOverseasVersionEnabled(overseasVersionEnabled);
         LOGGER.info("Succeed to get role of user, {}  role: {}, current_user: {}", username, roleNames.toString(), username);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_ROLE_SUCCESSFULLY}", response);
     }
@@ -284,8 +295,35 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public List<Role> getAllById(List<Long> ids) {
-        return roleDao.findByIds(ids);
+    public RoleDepartmentDto getRoleAndDepartments(User loginUser) {
+        List<UserRole> userRoles =  userRoleDao.findByUser(loginUser);
+        Integer roleType = getRoleType(userRoles);
+
+        RoleDepartmentDto roleDepartmentDto = new RoleDepartmentDto();
+        if (roleType.equals(RoleSystemTypeEnum.ADMIN.getCode())) {
+            LOGGER.info("SYS_ADMIN will get all rule metrics with conditions.");
+            roleDepartmentDto.setRoleSystemType(RoleSystemTypeEnum.ADMIN);
+        } else if (roleType.equals(RoleSystemTypeEnum.DEPARTMENT_ADMIN.getCode())){
+            LOGGER.info("DEPARTMENT_ADMIN will get rule metrics of all management departments and all projectors.");
+            List<Department> departments = new ArrayList<>();
+            for (UserRole temp : userRoles) {
+                Department department = temp.getRole().getDepartment();
+                if (department != null) {
+                    departments.add(department);
+                }
+            }
+            departments.add(loginUser.getDepartment());
+            roleDepartmentDto.setRoleSystemType(RoleSystemTypeEnum.DEPARTMENT_ADMIN);
+            roleDepartmentDto.setDepartmentList(departments);
+        } else {
+            LOGGER.info("PROJECTOR  will get rule metrics of department and own.");
+            List<Department> departments = new ArrayList<>();
+            departments.add(loginUser.getDepartment());
+            roleDepartmentDto.setRoleSystemType(RoleSystemTypeEnum.PROJECTOR);
+            roleDepartmentDto.setDepartmentList(departments);
+        }
+
+        return roleDepartmentDto;
     }
 
     private void checkRequest(RoleAddRequest request) throws UnExpectedRequestException {

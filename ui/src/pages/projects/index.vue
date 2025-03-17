@@ -19,7 +19,7 @@
 import {
     ref, onMounted, onUnmounted,
 } from 'vue';
-import { useI18n, useRoute } from '@fesjs/fes';
+import { useI18n, useRoute, onBeforeRouteLeave } from '@fesjs/fes';
 import ProjectNavBar from './components/NavBar';
 import CommonProject from './components/commonProject';
 import WorkflowProject from './components/workflowProject';
@@ -53,14 +53,17 @@ onMounted(() => {
 });
 
 //  离开页面重置筛选条件
-onUnmounted(() => {
-    const storageKeys = [
-        'commonProjectFilter',
-        'workflowProjectFilter',
-    ];
-    storageKeys.forEach((name) => {
-        sessionStorage.removeItem(name);
-    });
+onBeforeRouteLeave((to, from, next) => {
+    if (to.path !== 'detail') {
+        const storageKeys = [
+            'commonProjectFilter',
+            'workflowProjectFilter',
+        ];
+        storageKeys.forEach((name) => {
+            sessionStorage.removeItem(name);
+        });
+    }
+    next();
 });
 </script>
 <config>

@@ -40,4 +40,11 @@ public interface AlarmConfigDao {
      */
     List<AlarmConfig> getByRuleMetric(RuleMetric ruleMetric);
 
+    /**
+     *
+     * @param ruleIds
+     * @return
+     */
+    List<AlarmConfig> getByRuleIds(List<Long> ruleIds);
+
 }

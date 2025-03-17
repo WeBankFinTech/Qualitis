@@ -48,7 +48,7 @@ public class TaskCheckResultResponse {
                                    Map<Long, List<TaskResult>> taskResultMap) {
         this.clusterName = task.getClusterName();
         boolean allMatch = task.getTaskRuleSimples().stream().anyMatch(taskRuleSimple -> (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())
-                || QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.CROSS_CLUSTER_TABLE_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())));
+                || QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.MULTI_CLUSTER_TABLE_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())));
         if (allMatch) {
             crossCluster = true;
         } else {

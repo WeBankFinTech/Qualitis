@@ -108,26 +108,26 @@ public class DatasourceEnvUtil {
         return linkisEnvName.replace(dataSourceId + SpecCharEnum.BOTTOM_BAR.getValue(), "");
     }
 
-    public static void getDatasourceIdOrName(StringBuilder datasourceId, StringBuilder datasourceName, StringBuilder envsStringBuffer, StringBuilder dbAndTableOrCluster) {
-        Matcher matcherId = QualitisConstants.DATA_SOURCE_ID.matcher(dbAndTableOrCluster.toString().toUpperCase());
-        Matcher matcherName = QualitisConstants.DATA_SOURCE_NAME.matcher(dbAndTableOrCluster.toString().toUpperCase());
+    public static void getDatasourceIdOrName(StringBuilder datasourceId, StringBuilder datasourceName, StringBuilder envsStringBuffer, StringBuilder dbAndTable) {
+        Matcher matcherId = QualitisConstants.DATA_SOURCE_ID.matcher(dbAndTable.toString().toUpperCase());
+        Matcher matcherName = QualitisConstants.DATA_SOURCE_NAME.matcher(dbAndTable.toString().toUpperCase());
         while (matcherId.find()) {
             String group = matcherId.group();
             datasourceId.append(group.replace(".(", "").replace(")", "").split("=")[1]);
 
-            int startIndex = dbAndTableOrCluster.toString().toUpperCase().indexOf(group);
-            dbAndTableOrCluster.delete(startIndex, startIndex + group.length());
+            int startIndex = dbAndTable.toString().toUpperCase().indexOf(group);
+            dbAndTable.delete(startIndex, startIndex + group.length());
             handleDatasourceEnvs(envsStringBuffer, datasourceId);
         }
         if (StringUtils.isBlank(datasourceId.toString())) {
             while (matcherName.find()) {
                 String group = matcherName.group();
-                int startIndex = dbAndTableOrCluster.toString().toUpperCase().indexOf(group);
-                String replaceStr = dbAndTableOrCluster.substring(startIndex, startIndex + group.length());
+                int startIndex = dbAndTable.toString().toUpperCase().indexOf(group);
+                String replaceStr = dbAndTable.substring(startIndex, startIndex + group.length());
                 replaceStr = replaceStr.replace(".(", "");
                 replaceStr = replaceStr.substring(0, replaceStr.lastIndexOf(")"));
                 datasourceName.append(replaceStr.split("=")[1]);
-                dbAndTableOrCluster.delete(startIndex, startIndex + group.length());
+                dbAndTable.delete(startIndex, startIndex + group.length());
                 handleDatasourceEnvs(envsStringBuffer, datasourceName);
             }
         }

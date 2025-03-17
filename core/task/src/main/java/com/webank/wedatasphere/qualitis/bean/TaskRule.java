@@ -40,9 +40,18 @@ public class TaskRule {
     private String projectCreator;
     private List<TaskRuleAlarmConfigBean> taskRuleAlarmConfigBeans;
     private Boolean deleteFailCheckResult;
+    private String regRuleCode;
 
     public TaskRule() {
         // Default Constructor
+    }
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
     }
 
     public String getRuleName() {

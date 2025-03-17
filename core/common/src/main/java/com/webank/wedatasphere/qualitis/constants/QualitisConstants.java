@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.qualitis.constants;
 
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,12 +10,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,6 +28,7 @@ public class QualitisConstants {
 
     public static final String LOCAL_IP = "127.0.0.1";
     public static final String UNKNOWN = "unknown";
+    public static final String ALL_STARS = "******";
 
     /**
      * 导入导出内置变量
@@ -44,9 +44,15 @@ public class QualitisConstants {
     public static final String SUPPORT_CONFIG_SUFFIX_NAME = ".properties";
     public static final String SUPPORT_SCALA_SUFFIX_NAME = ".scala";
     public static final String SUPPORT_EXCEL_SUFFIX_NAME = ".xlsx";
+    public static final String SUPPORT_CSV_SUFFIX_NAME = ".csv";
     public static final String SUPPORT_PYTHON_SUFFIX_NAME = ".py";
     public static final String SUPPORT_JAR_SUFFIX_NAME = ".jar";
     public static final String SUPPORT_ZIP_SUFFIX_NAME = ".zip";
+
+    /**
+     * 指标业务扩展字段-监控能力
+     */
+    public static final String SYSTEM_CONFIG_MONITORING_CAPABILITY = "monitoring_capabilities";
 
     /**
      * Cluster type
@@ -75,6 +81,16 @@ public class QualitisConstants {
      * Check alert default alert content columns' num
      */
     public static final int DEFAULT_CONTENT_COLUMN_LENGTH = 5;
+
+    /**
+     * Retry max
+     */
+    public static final int RETRY_MAX = 5;
+
+    /**
+     * Retry interval MINUTES
+     */
+    public static final int RETRY_INTERVAL = 30;
 
     /**
      * Dss node version num
@@ -148,6 +164,15 @@ public class QualitisConstants {
     public static final FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
     /**
+     * Hive column type
+     */
+    public static final String DATE_TYPE = "date";
+    public static final String TIMESTAMP_TYPE = "timestamp";
+    public static final String INT_TYPE = "int";
+    public static final String BIGINT_TYPE = "bigint";
+    public static final String DECIMAL_TYPE = "decimal";
+
+    /**
      * AlarmEventEnum
      * 告警事件：
      * 校验成功(1)：仅通过校验的任务
@@ -212,8 +237,6 @@ public class QualitisConstants {
      * qualitis_template_output_meta   校验值(output_name)  英文名(output_en_name)
      */
     public static final String DISSATISFIED_EN_NAME = "Number of dissatisfied en_name";
-    public static final String DISSATISFACTION = "不满足";
-    public static final String NUMS = "的数量";
 
     /**
      * qualitis_template_statistic_input_meta  result_type属性
@@ -248,55 +271,11 @@ public class QualitisConstants {
         }
     }
 
-    /**
-     * @Description：获取客户端外网ip 此方法要接入互联网才行，内网不行
-     **/
-    public static String getPublicIp() {
-        try {
-            // 要获得html页面内容的地址
-            String path = "http://www.net.cn/static/customercare/yourip.asp";
-            // 创建url对象
-            URL url = new URL(path);
-            // 打开连接
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            // 设置url中文参数编码
-            conn.setRequestProperty("contentType", "GBK");
-            // 请求的时间
-            conn.setConnectTimeout(5 * 1000);
-            // 请求方式
-            conn.setRequestMethod("GET");
-            InputStream inStream = conn.getInputStream();
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    inStream, "GBK"));
-            StringBuffer buffer = new StringBuffer();
-            String line = "";
-            // 读取获取到内容的最后一行,写入
-            while ((line = in.readLine()) != null) {
-                buffer.append(line);
-            }
-            List<String> ips = new ArrayList<String>();
-
-            //用正则表达式提取String字符串中的IP地址
-            String regEx = "((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)";
-            String str = buffer.toString();
-            Pattern p = Pattern.compile(regEx);
-            Matcher m = p.matcher(str);
-            while (m.find()) {
-                String result = m.group();
-                ips.add(result);
-            }
-            String PublicIp = ips.get(0);
-
-            // 返回公网IP值
-            return PublicIp;
-        } catch (Exception e) {
-            LOGGER.error("获取公网IP连接超时");
-            return "";
-        }
-    }
-
     public static final String DEFAULT_NODE_NAME = "qualitis_0000";
     public static final String CHECKALERT_NODE_NAME_PREFIX = "checkalert";
+
+
+    public static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     /**
      * Rule group default filter placeholder
@@ -369,7 +348,7 @@ public class QualitisConstants {
     public static final String SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME = "Single cluster custom field consistency check";
     public static final String MULTI_SOURCE_ACROSS_TEMPLATE_NAME = "Multi table rows consistensy";
     public static final String SINGLE_SOURCE_ACROSS_TEMPLATE_NAME = "Single table rows consistensy";
-    public static final String CROSS_CLUSTER_TABLE_TEMPLATE_NAME = "Cross cluster table structure consistency";
+    public static final String MULTI_CLUSTER_TABLE_TEMPLATE_NAME = "Multi cluster table structure consistency";
     public static final String SINGLE_CLUSTER_TABLE_TEMPLATE_NAME = "Single cluster table structure consistency";
 
 
@@ -387,7 +366,7 @@ public class QualitisConstants {
     }
 
     public static boolean isTableStructureConsistent(String templateEnName) {
-        return CROSS_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName) || SINGLE_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName);
+        return MULTI_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName) || SINGLE_CLUSTER_TABLE_TEMPLATE_NAME.equals(templateEnName);
     }
 
     public static boolean isRepeatDataCheck(String templateEnName) {
@@ -429,5 +408,72 @@ public class QualitisConstants {
             }
         }
         return ip;
+    }
+
+    public static String getLocalIp(String interfaceName){
+        String LOCAL_ADDRESS = "127.0.0.1";
+        try{
+            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+            while(nis.hasMoreElements()){
+                NetworkInterface networkInterface = nis.nextElement();
+                Enumeration<InetAddress> ias = networkInterface.getInetAddresses();
+                if(StringUtils.isBlank(interfaceName) || interfaceName.equalsIgnoreCase(networkInterface.getName())) {
+                    while (ias.hasMoreElements()) {
+                        InetAddress inetAddress = ias.nextElement();
+                        if (inetAddress instanceof Inet4Address &&
+                                !inetAddress.getHostAddress().equals(LOCAL_ADDRESS)) {
+                            return inetAddress.getHostAddress();
+                        }
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            LOGGER.error("Failed to get local ip. error: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    public static String getPublicIp() {
+        try {
+            // 要获得html页面内容的地址
+            String path = "http://www.net.cn/static/customercare/yourip.asp";
+            // 创建url对象
+            URL url = new URL(path);
+            // 打开连接
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            // 设置url中文参数编码
+            conn.setRequestProperty("contentType", "GBK");
+            // 请求的时间
+            conn.setConnectTimeout(5 * 1000);
+            // 请求方式
+            conn.setRequestMethod("GET");
+            InputStream inStream = conn.getInputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                    inStream, "GBK"));
+            StringBuffer buffer = new StringBuffer();
+            String line = "";
+            // 读取获取到内容的最后一行,写入
+            while ((line = in.readLine()) != null) {
+                buffer.append(line);
+            }
+            List<String> ips = new ArrayList<String>();
+
+            //用正则表达式提取String字符串中的IP地址
+            String regEx = "((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)";
+            String str = buffer.toString();
+            Pattern p = Pattern.compile(regEx);
+            Matcher m = p.matcher(str);
+            while (m.find()) {
+                String result = m.group();
+                ips.add(result);
+            }
+            String PublicIp = ips.get(0);
+
+            // 返回公网IP值
+            return PublicIp;
+        } catch (Exception e) {
+            LOGGER.error("获取公网IP连接超时");
+            return "";
+        }
     }
 }

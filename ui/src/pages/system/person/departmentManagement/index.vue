@@ -10,7 +10,7 @@
                                 v-model="searchForm.department_name"
                                 clearable
                                 filterable
-                                placeholder="请选择"
+                                :placeholder="$t('_.请选择')"
                                 :options="departmentNameList"
                             ></FSelect>
                         </div>
@@ -69,6 +69,7 @@
         type="department_management" />
 </template>
 <script setup>
+
 import { ref, reactive, onMounted } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { FMessage, FModal } from '@fesjs/fes-design';
@@ -87,7 +88,7 @@ import { getDepartments, deleteDepartment, fetchDepartments } from './api';
 
 
 const { t: $t } = useI18n();
-const formmatSourceType = ({ cellValue }) => (cellValue ? '自定义' : 'HR系统');
+const formmatSourceType = ({ cellValue }) => (cellValue ? $t('_.自定义') : $t('_.HR系统'));
 
 const showLoading = ref(false);
 
@@ -153,7 +154,10 @@ function refreshDepartments() {
     };
     getDepartments(params).then((res) => {
         const { data, total } = res;
-        if (!Array.isArray(data)) return;
+        if (!Array.isArray(data)) {
+            departments.value = [];
+            return;
+        }
         departments.value = data;
         pagination.total = total;
     }).finally(() => {
@@ -176,8 +180,11 @@ const handleSearch = () => {
 const departmentNameList = ref([]);
 const getDepartmentNameList = async () => {
     try {
-        const res = await fetchDepartments({ t: new Date() });
-        departmentNameList.value = res.map(item => ({
+        const res = await getDepartments({
+            page: 0,
+            size: 100000000,
+        });
+        departmentNameList.value = res.data.map(item => ({
             value: item.department_name,
             label: item.department_name,
         }));
@@ -237,4 +244,5 @@ onMounted(() => {
     refreshDepartments();
     getDepartmentNameList();
 });
+
 </script>

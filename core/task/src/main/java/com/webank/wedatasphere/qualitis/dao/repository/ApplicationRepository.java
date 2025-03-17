@@ -17,7 +17,6 @@
 package com.webank.wedatasphere.qualitis.dao.repository;
 
 import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.project.entity.Project;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -322,4 +321,21 @@ public interface ApplicationRepository extends JpaRepository<Application, String
      */
     @Query(value = "select /*slave*/ * from qualitis_application  where project_id=?1", nativeQuery = true)
     List<Application> findByProject(Long projectId);
+
+    /**
+     *
+     * @param projectName
+     * @param collectId
+     * @return
+     */
+    @Query(value = "SELECT * FROM (" +
+            " SELECT * FROM qualitis_application qa WHERE project_name = ?1 AND collect_ids LIKE CONCAT('%', CONCAT(?2, '%')) " +
+            " AND filter_partition is not null AND REPLACE(REPLACE(filter_partition,'/',''),'-','') = ?3" +
+            " UNION ALL " +
+            " SELECT * FROM qualitis_application qa WHERE project_name = ?1 AND collect_ids LIKE CONCAT('%', CONCAT(?2, '%')) " +
+            " AND filter_partition is null AND DATE_FORMAT(DATE_SUB(STR_TO_DATE(submit_time, '%Y-%m-%d %H:%i:%s'), INTERVAL 1 DAY), '%Y%m%d') = ?4 " +
+            " ) AS a order by submit_time desc " +
+            "limit 1", nativeQuery = true)
+    Application getCollectTaskStatus(String projectName, String collectId, String filterPartition, String submitDate);
+
 }

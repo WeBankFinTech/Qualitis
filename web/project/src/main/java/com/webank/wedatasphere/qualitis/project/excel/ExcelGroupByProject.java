@@ -17,12 +17,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author howeye
  */
-public class ExcelGroupByProject extends BaseRowModel {
+public class ExcelGroupByProject {
 
     @ExcelProperty(value = "Rule Group Json Object", index = 0)
     private String ruleGroupJsonObject;

@@ -3,10 +3,10 @@
         <div v-if=" mappings?.length > 0 || ruleData.currentProject.editMode !== 'display'" class="rule-form-table">
             <table class="form-table cross-table">
                 <thead class="table-header">
-                    <th>左侧表达式</th>
-                    <th>关系</th>
-                    <th>右侧表达式</th>
-                    <th v-if="ruleData.currentProject.editMode === 'edit'">操作</th>
+                    <th>{{$t('_.左侧表达式')}}</th>
+                    <th>{{$t('_.关系')}}</th>
+                    <th>{{$t('_.右侧表达式')}}</th>
+                    <th v-if="ruleData.currentProject.editMode !== 'display'">{{$t('_.操作')}}</th>
                 </thead>
                 <tbody>
                     <tr v-for="(m, index) in mappings" :key="index" class="table-row">
@@ -14,14 +14,14 @@
                         <td>{{operationList[m.operation - 1]}}</td>
                         <td>{{m.right_statement}}</td>
                         <td v-if="ruleData.currentProject.editMode !== 'display'">
-                            <a class="btn" href="javascript:;" @click="editMap(index, m)">编辑</a>
-                            <a class="btn del" href="javascript:;" @click="delMap(index)">删除</a>
+                            <a class="btn" href="javascript:;" @click="editMap(index, m)">{{$t('_.编辑')}}</a>
+                            <a class="btn del" href="javascript:;" @click="delMap(index)">{{$t('_.删除')}}</a>
                         </td>
                     </tr>
                 </tbody>
             </table>
             <div v-if="ruleData.currentProject.editMode !== 'display'" class="table-operation cross-table">
-                <FButton type="info" @click="addMap"><PlusOutlined />添加映射关系</FButton>
+                <FButton type="info" @click="addMap"><PlusOutlined />{{$t('_.添加映射关系')}}</FButton>
                 <AddMapModal v-model:show="mapShowModal" v-model:form="mapForm" :type="mapEditType" :modelTitle="curModelTitle" @saved="mapSaved" @cancel="cancel" />
             </div>
         </div>
@@ -29,6 +29,7 @@
     </div>
 </template>
 <script setup>
+
 import { FMessage } from '@fesjs/fes-design';
 import { PlusOutlined } from '@fesjs/fes-design/icon';
 import {
@@ -88,22 +89,22 @@ const mapShowModal = ref(false);
 
 const validData = (config) => {
     if (!config.source.type || !config.target.type) {
-        FMessage.error('请完善数据源类型信息');
+        FMessage.error($t('_.请完善数据源类型信息'));
         return false;
     }
     if ((!config.source.type || !config.target.type) && !config.isUpStream) {
-        FMessage.error('请完善数据库信息');
+        FMessage.error($t('_.请完善数据库信息'));
         return false;
     }
     if (!config.source.table_name || !config.target.table_name) {
-        FMessage.error('请完善数据表信息');
+        FMessage.error($t('_.请完善数据表信息'));
         return false;
     }
     if (['hive', 'fps'].includes(config.source.type.toLowerCase()) || ['hive', 'fps'].includes(config.target.type.toLowerCase())) {
         return true;
     }
     if (!config.source.linkis_datasource_id || !config.target.linkis_datasource_id) {
-        FMessage.error('请完善数据源名称');
+        FMessage.error($t('_.请完善数据源名称'));
         return false;
     }
     return true;
@@ -168,7 +169,7 @@ async function addMap() {
         mapEditType.value = 'add';
         // 直接校验stor中的规则详情数据
         if (!ruleData.value.currentRuleDetail.cluster_name && !ruleData.value.currentRuleDetail.source.cluster_name) {
-            FMessage.error('请完善任务执行集群信息');
+            FMessage.error($t('_.请完善任务执行集群信息'));
             return;
         }
         if (!validData(ruleData.value.currentRuleDetail)) {
@@ -219,4 +220,5 @@ watch(datasourceGroupData, () => {
     mapForm.value.leftGroup = datasourceGroupData.value.leftGroup;
     mapForm.value.rightGroup = datasourceGroupData.value.rightGroup;
 }, { immediate: true, deep: true });
+
 </script>

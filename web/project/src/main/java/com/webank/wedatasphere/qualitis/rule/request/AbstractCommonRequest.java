@@ -87,6 +87,48 @@ public abstract class AbstractCommonRequest {
     @JsonProperty("execution_completed")
     private String executionCompleted;
 
+    @JsonProperty("create_user")
+    private String actualCreateUser;
+    @JsonProperty("execution_user")
+    private String actualExecutionUser;
+
+    @JsonProperty("reg_rule_code")
+    private String regRuleCode;
+    @JsonProperty("standard_value_variables")
+    private List<StandardValueVariableRequest> standardValueVariables;
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
+    }
+
+    public List<StandardValueVariableRequest> getStandardValueVariables() {
+        return standardValueVariables;
+    }
+
+    public void setStandardValueVariables(List<StandardValueVariableRequest> standardValueVariables) {
+        this.standardValueVariables = standardValueVariables;
+    }
+
+    public String getActualCreateUser() {
+        return actualCreateUser;
+    }
+
+    public void setActualCreateUser(String actualCreateUser) {
+        this.actualCreateUser = actualCreateUser;
+    }
+
+    public String getActualExecutionUser() {
+        return actualExecutionUser;
+    }
+
+    public void setActualExecutionUser(String actualExecutionUser) {
+        this.actualExecutionUser = actualExecutionUser;
+    }
+
     public Long getRuleId() {
         return ruleId;
     }
@@ -411,6 +453,7 @@ public abstract class AbstractCommonRequest {
                 ", alarm=" + alarm +
                 ", projectId=" + projectId +
                 ", ruleGroupId=" + ruleGroupId +
+                ", newRuleGroupId=" + newRuleGroupId +
                 ", csId='" + csId + '\'' +
                 ", ruleGroupName='" + ruleGroupName + '\'' +
                 ", datasource=" + datasource +
@@ -440,6 +483,8 @@ public abstract class AbstractCommonRequest {
                 ", verificationSuccessful='" + verificationSuccessful + '\'' +
                 ", verificationFailed='" + verificationFailed + '\'' +
                 ", executionCompleted='" + executionCompleted + '\'' +
+                ", actualCreateUser='" + actualCreateUser + '\'' +
+                ", actualExecutionUser='" + actualExecutionUser + '\'' +
                 '}';
     }
 }

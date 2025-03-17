@@ -20,16 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.constant.RoleTypeEnum;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 
-import javax.persistence.Column;
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**

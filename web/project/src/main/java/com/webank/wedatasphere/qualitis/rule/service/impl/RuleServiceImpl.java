@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.webank.wedatasphere.qualitis.constant.TemplateFunctionNameEnum;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
@@ -46,6 +45,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
 import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
+import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.BdpClientHistory;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
@@ -81,9 +81,9 @@ import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMeta
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateStatisticsUtil;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
-//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.UserService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
@@ -168,14 +168,14 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     private ProjectService projectService;
     @Autowired
     private StandardValueVersionDao standardValueVersionDao;
-//    @Autowired
-//    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
-//    @Autowired
-//    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
+    @Autowired
+    private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
+    @Autowired
+    private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
     @Autowired
     private RuleLockService ruleLockService;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleServiceImpl.class);
 
@@ -265,7 +265,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
 
         // Create and save rule
         Rule newRule = new Rule();
-        setBasicInfo(newRule, ruleGroup, templateInDb, projectInDb, request, loginUser);
+        setExecutionParametersFields(newRule, ruleGroup, templateInDb, projectInDb, request, loginUser);
         // For workflow node context.
         boolean cs = false;
         if (StringUtils.isNotBlank(request.getCsId())) {
@@ -276,6 +276,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         setExecutionParametersInfo(request, groupRules, projectInDb, newRule);
 
         handleStandardValue(request, newRule);
+        newRule.setRegRuleCode(request.getRegRuleCode());
 
         Rule savedRule = ruleDao.saveRule(newRule);
         LOGGER.info("Succeed to save rule, rule ID: {}", savedRule.getId());
@@ -421,7 +422,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
         // Delete rule
-//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         ruleDao.deleteRule(rule);
         LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
 
@@ -480,6 +481,10 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             throw new UnExpectedRequestException("rule_id [" + request.getRuleId() + "] {&DOES_NOT_EXIST}");
         }
 
+        if (Boolean.FALSE.equals(ruleInDb.getEnable())) {
+            request.setRuleEnable(false);
+        }
+
         // Check existence of project
         Project projectInDb = projectService.checkProjectExistence(ruleInDb.getProject().getId(), loginUser);
         if (!ruleInDb.getRuleType().equals(RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode())) {
@@ -525,6 +530,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         Template templateInDb = ruleTemplateService.checkRuleTemplate(request.getRuleTemplateId());
 
 //        ruleTemplateService.checkAccessiblePermission(templateInDb);
+        ruleInDb.setRegRuleCode(request.getRegRuleCode());
 
         // Check cluster name supported
         checkDataSourceClusterLimit(request.getDatasource());
@@ -535,7 +541,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         //check the same rule name number
         checkRuleNameNumber(request.getRuleName(), projectInDb);
         // Basic rule info.
-        setBasicInfo(ruleInDb, templateInDb, request, loginUser);
+        setExecutionParametersFields(ruleInDb, templateInDb, request, loginUser);
         Rule savedRule = ruleDao.saveRule(ruleInDb);
         LOGGER.info("Succeed to save rule, rule id: {}", savedRule.getId());
         // Delete all alarm_config,rule_variable,rule_datasource
@@ -623,7 +629,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
                 , request.getAbnormalDatabase(), request.getAbnormalCluster(), request.getAlert(), request.getAlertLevel(), request.getAlertReceiver(), request.getAbnormalProxyUser(), request.getDeleteFailCheckResult(), request.getUploadRuleMetricValue(), request.getUploadAbnormalValue(), executionParameters);
     }
 
-    private void setBasicInfo(Rule newRule, RuleGroup ruleGroup, Template templateInDb, Project projectInDb, AddRuleRequest request, String loginUser) {
+    private void setExecutionParametersFields(Rule newRule, RuleGroup ruleGroup, Template templateInDb, Project projectInDb, AddRuleRequest request, String loginUser) {
         String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
         newRule.setTemplate(templateInDb);
         newRule.setName(request.getRuleName());
@@ -646,7 +652,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         newRule.setUnionWay(request.getUnionWay());
     }
 
-    private void setBasicInfo(Rule ruleInDb, Template templateInDb, ModifyRuleRequest request, String loginUser) {
+    private void setExecutionParametersFields(Rule ruleInDb, Template templateInDb, ModifyRuleRequest request, String loginUser) {
         String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
         ruleInDb.setTemplate(templateInDb);
         ruleInDb.setAlarm(request.getAlarm());
@@ -746,7 +752,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
             Rule rule = ruleDao.findMinWorkFlowVersionRule(ruleName, project.getId());
             if (rule != null) {
                 // Delete rule
-//                scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+                scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
                 ruleDao.deleteRule(rule);
                 LOGGER.info("Succeed to delete rule, rule id: {}", rule.getId());
             }
@@ -889,33 +895,24 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         EnableRuleRequest.checkRequest(request);
         LOGGER.info("rule enable or disable request detail: {}", request.toString());
         //Check existence of rules
-        List<Long> ruleIds = request.getRuleEnableList().stream().map(EnableRequest::getRuleId).collect(Collectors.toList());
-        List<Rule> rules = ruleDao.findByIds(ruleIds);
-        List<Long> collect = rules.stream().map(Rule::getId).collect(Collectors.toList());
-        List<Long> nonexistentRule = ruleIds.stream().filter(o -> !collect.contains(o)).collect(Collectors.toList());
-
-        if (!nonexistentRule.isEmpty()) {
-            throw new UnExpectedRequestException("rule_ids :" + nonexistentRule + " {&DOES_NOT_EXIST}");
+        List<Long> ruleIds = request.getRuleIds();
+        Boolean enableStatus = request.getRuleEnable();
+        Project project = projectDao.findById(request.getProjectId());
+        if (project == null) {
+            throw new UnExpectedRequestException("Project {&DOES_NOT_EXIST}");
         }
-        //Check existence of projects
-        List<Long> projectIds = rules.stream().map(rule -> rule.getProject().getId()).distinct().collect(Collectors.toList());
-        List<Project> projectList = projectService.checkProjectsExistence(projectIds, loginUser);
 
-        // Check permissions of project
+//        1. 判断项目权限
+//        // Check permissions of project
         List<Integer> permissions = new ArrayList<>();
         permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
-        for (Project project : projectList) {
-            projectService.checkProjectPermission(project, loginUser, permissions);
-        }
-        Map<Long, Boolean> ruleEnableMap = request.getRuleEnableList().stream().collect(Collectors.toMap(EnableRequest::getRuleId, EnableRequest::isRuleEnable, (oldVal, newVal) -> oldVal));
-        for (Rule rule : rules) {
-            setExecutionParametersInfo(rule, ruleEnableMap.get(rule), rule.getProject().getId());
-            rule.setEnable(ruleEnableMap.get(rule.getId()));
-        }
-        List<Rule> rulesList = ruleDao.saveRules(rules);
-        List<Long> ruleIdList = rulesList.stream().map(o -> o.getId()).collect(Collectors.toList());
+        projectService.checkProjectPermission(project, loginUser, permissions);
+//        3. 批量更新规则的启用状态
+        ruleDao.updateEnableStatus(enableStatus, ruleIds);
+
+//        4. 设置Response
         RuleEnableResponse ruleEnableResponse = new RuleEnableResponse();
-        ruleEnableResponse.setRuleList(ruleIdList);
+        ruleEnableResponse.setRuleList(ruleIds);
 
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_TO_ENABLE_RULE}", ruleEnableResponse);
     }

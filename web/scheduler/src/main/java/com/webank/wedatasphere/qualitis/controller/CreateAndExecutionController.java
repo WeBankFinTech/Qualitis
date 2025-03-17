@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 import com.webank.wedatasphere.qualitis.request.CreateAndSubmitRequest;
+import com.webank.wedatasphere.qualitis.request.WhiteListRequest;
 import com.webank.wedatasphere.qualitis.response.CreateAndSubmitResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.CreateAndExecutionService;
@@ -43,5 +44,21 @@ public class CreateAndExecutionController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<CreateAndSubmitResponse> createAndSubmit(CreateAndSubmitRequest request) {
         return createAndExecutionService.createOrModifyAndSubmitRule(request);
+    }
+
+    @POST
+    @Path("white_list/add")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<String> addWhiteList(WhiteListRequest request) {
+        return createAndExecutionService.addWhiteList(request);
+    }
+
+    @POST
+    @Path("white_list/delete")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<String> deleteWhiteList(WhiteListRequest request) {
+        return createAndExecutionService.deleteWhiteList(request);
     }
 }

@@ -29,7 +29,7 @@ import java.util.List;
 public class DownloadProjectRequest {
 
     @JsonProperty("project_ids")
-    private List<Long> projectId;
+    private List<Long> projectIds;
 
     @JsonProperty("download_type")
     private Integer downloadType;
@@ -38,6 +38,8 @@ public class DownloadProjectRequest {
     private String gitRepo;
     @JsonProperty("git_type")
     private Integer gitType;
+    @JsonProperty("git_commit")
+    private String gitCommit;
     @JsonProperty("git_branch")
     private String gitBranch;
     @JsonProperty("git_root_dir")
@@ -59,12 +61,12 @@ public class DownloadProjectRequest {
         // Default Constructor
     }
 
-    public List<Long> getProjectId() {
-        return projectId;
+    public List<Long> getProjectIds() {
+        return projectIds;
     }
 
-    public void setProjectId(List<Long> projectId) {
-        this.projectId = projectId;
+    public void setProjectIds(List<Long> projectIds) {
+        this.projectIds = projectIds;
     }
 
     public Integer getDownloadType() {
@@ -89,6 +91,14 @@ public class DownloadProjectRequest {
 
     public void setGitType(Integer gitType) {
         this.gitType = gitType;
+    }
+
+    public String getGitCommit() {
+        return gitCommit;
+    }
+
+    public void setGitCommit(String gitCommit) {
+        this.gitCommit = gitCommit;
     }
 
     public String getGitBranch() {
@@ -119,7 +129,7 @@ public class DownloadProjectRequest {
         if (request == null) {
             throw new UnExpectedRequestException("Request {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
-        if (CollectionUtils.isEmpty(request.getProjectId())) {
+        if (CollectionUtils.isEmpty(request.getProjectIds())) {
             throw new UnExpectedRequestException("Project {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
         if (request.getDownloadType() == null) {

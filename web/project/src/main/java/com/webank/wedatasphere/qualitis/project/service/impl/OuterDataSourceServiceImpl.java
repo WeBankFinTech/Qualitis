@@ -529,6 +529,12 @@ public class OuterDataSourceServiceImpl implements OuterDataSourceService {
                 connectMap.put("host", connectParams.getHost());
                 connectMap.put("port", connectParams.getPort());
                 connectMap.put("params", connectParams.getConnectParam());
+                if (StringUtils.isNotBlank(connectParams.getUserClientIp())) {
+                    connectMap.put("userClientIp", connectParams.getUserClientIp());
+                }
+                if (linkisDataSourceResponse.getConnectParams() != null && StringUtils.isNotBlank(linkisDataSourceResponse.getConnectParams().getUserClientIp())) {
+                    connectMap.put("userClientIp", linkisDataSourceResponse.getConnectParams().getUserClientIp());
+                }
                 dataSourceJson = objectMapper.writeValueAsString(dataSourceMap);
                 try {
                     GeneralResponse<Map<String, Object>> resultMap = metaDataClient.connectDataSource(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), dataSourceJson);

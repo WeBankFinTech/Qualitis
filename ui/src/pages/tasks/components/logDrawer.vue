@@ -2,17 +2,19 @@
     <!-- 日志详情 -->
     <FDrawer
         v-model:show="showLogDetailDrawer"
-        title="日志详情"
+        :title="$t('_.日志详情')"
         displayDirective="if"
-        :width="940"
+        width="50%"
         contentClass="task-drawer"
+        resizable
+        resizeMin="50%"
         @cancel="cancel"
     >
         <div class="log-detail">
             <div class="task-id">
                 <div>{{$t('common.number')}}: {{taskId}}</div>
                 <div>
-                    <span>校验状态：</span>
+                    <span>{{$t('_.校验状态：')}}</span>
                     <FSelect
                         v-model="filter_status"
                         filterable
@@ -20,7 +22,7 @@
                         labelField="name"
                         style="width: 200px"
                         :options="optionList"
-                        @change="handleChange"
+                        @change="handleChange(1)"
                     >
                     </FSelect>
                 </div>
@@ -185,6 +187,7 @@
     </FDrawer>
 </template>
 <script setup>
+
 import {
     defineProps, ref, defineExpose, reactive,
 } from 'vue';
@@ -247,7 +250,7 @@ const optionList = [
     //     key: 0,
     // },
     {
-        name: '筛除通过校验状态',
+        name: $t('_.筛除通过校验状态'),
         key: 1,
     },
 ];
@@ -363,15 +366,15 @@ const getRuleNames = rules => rules.map(it => it.rule_name).join(',');
 
 const tempLogList = {
     1: {
-        label: '已提交',
+        label: $t('_.已提交'),
         color: '#00CB91',
     },
     2: {
-        label: '初始化',
+        label: $t('_.初始化'),
         color: '#00CB91',
     },
     3: {
-        label: '运行中',
+        label: $t('_.运行中'),
         color: '#00CB91',
     },
     4: {
@@ -379,27 +382,27 @@ const tempLogList = {
         color: '#00CB91',
     },
     5: {
-        label: '通过校验',
+        label: $t('_.通过校验'),
         color: '#00CB91',
     },
     6: {
-        label: '未通过校验',
+        label: $t('_.未通过校验'),
         color: '#FF9540',
     },
     7: {
-        label: '失败',
+        label: $t('_.失败'),
         color: '#FF4D4F',
     },
     8: {
-        label: '任务不存在',
+        label: $t('_.任务不存在'),
         color: '#FF4D4F',
     },
     9: {
-        label: '取消',
+        label: $t('_.取消'),
         color: '#FF4D4F',
     },
     10: {
-        label: '超时',
+        label: $t('_.超时'),
         color: '#FF4D4F',
     },
     11: {
@@ -410,6 +413,7 @@ const tempLogList = {
 
 const formatStatus = data => (tempLogList[data] ? tempLogList[data].label : '');
 const getStatusColor = data => (tempLogList[data] ? tempLogList[data].color : '');
+
 
 </script>
 <style lang="less" scoped></style>

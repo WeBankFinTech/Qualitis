@@ -3,14 +3,8 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricBussCodeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
-import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
-import com.webank.wedatasphere.qualitis.dao.RuleMetricTypeConfigDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
-import com.webank.wedatasphere.qualitis.entity.RuleMetric;
-import com.webank.wedatasphere.qualitis.entity.RuleMetricTypeConfig;
-import com.webank.wedatasphere.qualitis.entity.User;
-import com.webank.wedatasphere.qualitis.entity.UserRole;
+import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
@@ -18,9 +12,12 @@ import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.ProductResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.SubSystemResponse;
-import com.webank.wedatasphere.qualitis.request.AddRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyRuleMetricRequest;
+import com.webank.wedatasphere.qualitis.request.AddCommonRuleMetricRequest;
+import com.webank.wedatasphere.qualitis.request.ModifyCommonRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
@@ -38,12 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -58,7 +50,10 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     private RuleMetricTypeConfigDao ruleMetricTypeConfigDao;
     @Autowired
     private RuleMetricDao ruleMetricDao;
-
+    @Autowired
+    private TaskRuleAlarmConfigDao taskRuleAlarmConfigDao;
+    @Autowired
+    private AlarmConfigDao alarmConfigDao;
     @Autowired
     private UserDao userDao;
     @Autowired
@@ -69,7 +64,8 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     private DataVisibilityService dataVisibilityService;
     @Autowired
     private RoleService roleService;
-
+    @Autowired
+    private RuleDao ruleDao;
 
     @Autowired
     private RuleMetricCommonService ruleMetricCommonService;
@@ -117,15 +113,15 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
         Map<String, Object> maps = ruleMetricCommonService.checkRuleMetricNameAndAddOrModify(ruleMetricName, loginUser, multiEnv, null);
         RuleMetric ruleMetricData = (RuleMetric) maps.get("rule_metric");
-        AddRuleMetricRequest ruleMetricRequest = (AddRuleMetricRequest) maps.get("rule_metric_request");
+        AddCommonRuleMetricRequest ruleMetricRequest = (AddCommonRuleMetricRequest) maps.get("rule_metric_request");
         if (ruleMetricData == null) {
             ruleMetric = ruleMetricCommonService.addRuleMetricForObject(ruleMetricRequest, loginUser);
             LOGGER.info("Finish to create metric with name: {}", ruleMetricName);
         } else {
-            ModifyRuleMetricRequest modifyRuleMetricRequest = new ModifyRuleMetricRequest();
-            modifyRuleMetricRequest.setId(ruleMetricData.getId());
-            BeanUtils.copyProperties(ruleMetricRequest, modifyRuleMetricRequest);
-            ruleMetric = ruleMetricCommonService.modifyRuleMetricReal(modifyRuleMetricRequest, loginUser);
+            ModifyCommonRuleMetricRequest modifyCommonRuleMetricRequest = new ModifyCommonRuleMetricRequest();
+            modifyCommonRuleMetricRequest.setId(ruleMetricData.getId());
+            BeanUtils.copyProperties(ruleMetricRequest, modifyCommonRuleMetricRequest);
+            ruleMetric = ruleMetricCommonService.modifyRuleMetricReal(modifyCommonRuleMetricRequest, loginUser);
         }
         return ruleMetric;
     }
@@ -249,9 +245,12 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         }
 
         String finalDept = dept;
-        CmdbDepartmentResponse currentDept = deptResponse.stream().filter(map -> finalDept.equals(map.getName())).iterator().next();
+        Optional<CmdbDepartmentResponse> currentDept = deptResponse.stream().filter(map -> finalDept.equals(map.getName())).findFirst();
+        if (!currentDept.isPresent()) {
+            throw new UnExpectedRequestException("The department doesn't exists: {" + finalDept + "}");
+        }
 
-        String deptCode = currentDept.getCode();
+        String deptCode = currentDept.get().getCode();
         String opsDept = devDept;
 
         List<DepartmentSubResponse> departmentSubResponses = operateCiService.getDevAndOpsInfo(Integer.parseInt(deptCode));
@@ -261,7 +260,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         Long devDeptId = CollectionUtils.isNotEmpty(conformCollect) ? Long.parseLong(conformCollect.iterator().next().getId()) : null;
         Long opsDeptId = devDeptId;
 
-        AddRuleMetricRequest ruleMetricRequest = new AddRuleMetricRequest();
+        AddCommonRuleMetricRequest ruleMetricRequest = new AddCommonRuleMetricRequest();
         setBasicInfoForRequest(ruleMetricName, en, frequency, cnFrequency, currentRuleMetricTypeConfig, cnType,
                 null != currentSystem ? currentSystem : null, dept, deptCode, devDept, opsDept, devDeptId, opsDeptId, ruleMetricRequest,null != currentProduct ? currentProduct : null);
 
@@ -280,7 +279,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     }
 
     @Override
-    public RuleMetric modifyRuleMetricReal(ModifyRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public RuleMetric modifyRuleMetricReal(ModifyCommonRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException {
         if (request == null) {
             throw new UnExpectedRequestException("{&REQUEST_CAN_NOT_BE_NULL}");
         }
@@ -310,6 +309,33 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         return ruleMetricInDb;
     }
 
+    @Transactional(rollbackFor = {Exception.class, RuntimeException.class})
+    @Override
+    public void deleteRuleMetric(String name, String userName) throws UnExpectedRequestException {
+        RuleMetric ruleMetric = ruleMetricDao.findByName(name);
+        if (ruleMetric == null) {
+            return;
+        }
+        if (!userName.equals(ruleMetric.getCreateUser())) {
+            throw new UnExpectedRequestException("no delete permission.");
+        }
+        List<AlarmConfig> alarmConfigList = alarmConfigDao.getByRuleMetric(ruleMetric);
+        if (CollectionUtils.isNotEmpty(alarmConfigList)) {
+            alarmConfigList.forEach(alarmConfig -> {
+                alarmConfig.setRuleMetric(null);
+            });
+            alarmConfigDao.saveAllAlarmConfig(alarmConfigList);
+        }
+        List<TaskRuleAlarmConfig> taskRuleAlarmConfigList = taskRuleAlarmConfigDao.findByRuleMetric(ruleMetric);
+        if (CollectionUtils.isNotEmpty(taskRuleAlarmConfigList)) {
+            taskRuleAlarmConfigList.forEach(taskRuleAlarmConfig -> {
+                taskRuleAlarmConfig.setRuleMetric(null);
+            });
+            taskRuleAlarmConfigDao.saveAll(taskRuleAlarmConfigList);
+        }
+        ruleMetricDao.delete(ruleMetric);
+    }
+
     private void checkDuplicateName(String name) throws UnExpectedRequestException {
         RuleMetric ruleMetricInDb = ruleMetricDao.findByName(name);
 
@@ -326,7 +352,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         }
     }
 
-    private void setRuleMetricInDb(ModifyRuleMetricRequest request, String userName, RuleMetric ruleMetricInDb, Integer bussCode) {
+    private void setRuleMetricInDb(ModifyCommonRuleMetricRequest request, String userName, RuleMetric ruleMetricInDb, Integer bussCode) {
         ruleMetricInDb.setName(request.getName());
         ruleMetricInDb.setCnName(request.getCnName());
         ruleMetricInDb.setMetricDesc(request.getDesc());
@@ -375,7 +401,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
     @Override
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class, UnExpectedRequestException.class})
-    public RuleMetric addRuleMetricForObject(AddRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public RuleMetric addRuleMetricForObject(AddCommonRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException {
         LOGGER.info("Start to add rule metric, add request: [{}], user: [{}]", request.toString(), userName);
         User loginUser = userDao.findByUsername(userName);
         List<UserRole> userRoles = userRoleDao.findByUser(loginUser);
@@ -389,7 +415,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         return savedRuleMetric;
     }
 
-    private RuleMetric buildRuleMetric(AddRuleMetricRequest request, String createUser) {
+    private RuleMetric buildRuleMetric(AddCommonRuleMetricRequest request, String createUser) {
         RuleMetric newRuleMetric = new RuleMetric(request.getName(), request.getCnName(), request.getDesc(), request.getSubSystemId()
                 , request.getSubSystemName(), request.getFullCnName(), request.getProductId(), request.getProductName(), request.getDepartmentCode()
                 , request.getDepartmentName(), request.getDevDepartmentName(), request.getOpsDepartmentName(), request.getType(), request.getEnCode()
@@ -403,7 +429,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
     private void setBasicInfoForRequest(String ruleMetricName, String en, String frequency, String cnFrequency,
                                         RuleMetricTypeConfig currentRuleMetricTypeConfig, String cnType, SubSystemResponse currentSystem, String dept, String deptCode,
-                                        String devDept, String opsDept, Long devDeptId, Long opsDeptId, AddRuleMetricRequest ruleMetricRequest, ProductResponse currentProduct) {
+                                        String devDept, String opsDept, Long devDeptId, Long opsDeptId, AddCommonRuleMetricRequest ruleMetricRequest, ProductResponse currentProduct) {
         ruleMetricRequest.setName(ruleMetricName);
         ruleMetricRequest.setDesc("Auto created.");
         String result = (null != currentProduct ? currentProduct.getProductName().concat(SpecCharEnum.BOTTOM_BAR.getValue()) : "");

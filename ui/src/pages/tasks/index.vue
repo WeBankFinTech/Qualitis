@@ -40,10 +40,14 @@
             <template v-slot:table>
                 <f-table ref="taskTable" rowKey="application_id" :data="tasksData" :no-data-text="$t('common.noData')" @cellClick="clickTableCell" @selectionChange="tableSelectionChange">
                     <template #empty>
-                        <BPageLoading :loadingText="loadingText" :actionType="resultByInit ? 'emptyInitResult' : 'emptyQueryResult'" />
+                        <BPageLoading :actionType="resultByInit ? 'emptyInitResult' : 'emptyQueryResult'" />
                     </template>
                     <f-table-column :visible="exportStatus !== 'no'" type="selection" :width="32" :selectable="selectable"></f-table-column>
-                    <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('application_id')" prop="application_id" :label="$t('common.number')" align="left" classes="idlink" :width="164" ellipsis></f-table-column>
+                    <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('application_id')" prop="application_id" :label="$t('common.number')" align="left" :width="164">
+                        <template #default="{ row }">
+                            <clipboard :val="row.application_id" />
+                        </template>
+                    </f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('project_name')" prop="project_name" :label="$t('common.projectName')" align="left" :width="160" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('task_group_name')" prop="task_group_name" :label="$t('taskQuery.groupRuleName')" align="left" :width="160" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('table_name')" prop="application_rule_datasource" :label="$t('common.tableLibst')" align="left" :width="140" ellipsis></f-table-column>
@@ -51,7 +55,7 @@
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('start_time')" prop="start_time" :label="$t('taskQuery.submissionTime')" align="left" :width="184" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('end_time')" prop="end_time" :label="$t('taskQuery.endTime')" align="left" :width="184" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('partition')" prop="partition" :label="$t('taskQuery.partition')" align="left" :width="184" ellipsis></f-table-column>
-                    <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('execute_user')" prop="execute_user" :label="$t('common.runUser')" align="left" :width="80" ellipsis></f-table-column>
+                    <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('execute_user')" prop="execute_user" :label="$t('common.runUser')" align="left" :width="88" ellipsis></f-table-column>
                     <f-table-column v-slot="{ row }" :visible="checkTColShow('status')" prop="status" :label="$t('taskQuery.status')" align="left" :width="130" ellipsis><div :style="{ color: tempStatusList[row.status] ? tempStatusList[row.status].color : '' }">{{tempStatusList[row.status] ? tempStatusList[row.status].label : row.status}}</div></f-table-column>
                     <f-table-column :visible="checkTColShow('comment')" prop="comment" :label="$t('taskQuery.remark')" :formatter="commentFormatter" align="left" :width="140" ellipsis></f-table-column>
                     <f-table-column :visible="checkTColShow('invoke_type')" prop="invoke_type" :label="$t('taskQuery.scheduling')" align="left" :formatter="formatInvoke" :width="88" ellipsis></f-table-column>
@@ -74,7 +78,6 @@
                     :total-count="tasksTotal"
                     class="pagination"
                     @change="tasksPageChange"
-                    @pageSizeChange="tasksPageChange"
                 ></FPagination>
             </template>
         </BTablePage>
@@ -100,6 +103,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     onMounted, computed, watch, ref,
 } from 'vue';
@@ -121,12 +125,13 @@ import ExecRulePanel from '@/components/ExecutionConfig/ExecRulePanel';
 import { getURLQueryParams, formatterEmptyValue } from '@/common/utils';
 import { cloneDeep } from 'lodash-es';
 import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
+import clipboard from '@/components/clipboard';
 import useExecutation from '../projects/hooks/useExecutation';
-
 import firstActionBar from './components/firstActionBar';
 import secondActionBar from './components/secondActionBar';
 import logDrawer from './components/logDrawer';
 import statusDrawer from './components/statusDrawer';
+// import clipboard from '@/components/clipboard';
 
 import {
     fetchTasksData, fetchProjects, fetchSearchData, stopBatch, fetchOptions, fetchRuleGroupList, fetchExecuteUserList,
@@ -134,11 +139,6 @@ import {
 
 
 const { t: $t } = useI18n();
-
-const loadingText = {
-    emptyInitResult: $t('common.emptyInitResult'),
-    emptyQueryResult: $t('common.emptyQueryResult'),
-};
 
 const router = useRouter();
 const route = useRoute();
@@ -163,98 +163,98 @@ const dataQualityDataTableList = ref([]);
 const taskStatusList = ref([
     {
         value: '1',
-        label: '已提交执行器',
+        label: $t('_.已提交执行器'),
     },
     {
         value: '3',
-        label: '运行中',
+        label: $t('_.运行中'),
     },
     {
         value: '4',
-        label: '通过校验',
+        label: $t('_.通过校验'),
     },
     {
         value: '7',
-        label: '失败',
+        label: $t('_.失败'),
     },
     {
         value: '8',
-        label: '未通过校验',
+        label: $t('_.未通过校验'),
     },
     {
         value: '9',
-        label: '任务初始化失败',
+        label: $t('_.任务初始化失败'),
     },
     {
         value: '10',
-        label: '任务初始化成功',
+        label: $t('_.任务初始化成功'),
     },
     {
         value: '11',
-        label: '参数错误',
+        label: $t('_.参数错误'),
     },
     {
         value: '12',
-        label: '提交阻塞',
+        label: $t('_.提交阻塞'),
     },
 ]);
 const taskNumberValue = ref('');
 const exceptionRemarksList = ref([
     {
         value: '7-1',
-        label: '数据被修改或者权限问题',
+        label: $t('_.数据被修改或者权限问题'),
     },
     {
         value: '7-2',
-        label: '队列权限问题',
+        label: $t('_.队列权限问题'),
     },
     {
         value: '7-3',
-        label: '内存不足问题',
+        label: $t('_.内存不足问题'),
     },
     {
         value: '7-4',
-        label: '校验语法问题',
+        label: $t('_.校验语法问题'),
     },
     {
         value: '7-5',
-        label: '请求引擎失败',
+        label: $t('_.请求引擎失败'),
     },
     {
         value: '7-6',
-        label: '未知错误',
+        label: $t('_.未知错误'),
     },
     {
         value: '8-7',
-        label: '数据不符合校验规则',
+        label: $t('_.数据不符合校验规则'),
     },
     {
         value: '8-8',
-        label: '左表存在为空的表或者分区',
+        label: $t('_.左表存在为空的表或者分区'),
     },
     {
         value: '4-9',
-        label: '数据符合校验规则',
+        label: $t('_.数据符合校验规则'),
     },
     {
         value: '4-10',
-        label: '两个表都为空',
+        label: $t('_.两个表都为空'),
     },
     {
         value: '9-11',
-        label: '元数据信息接口异常，可能是数据不存在导致接口请求失败',
+        label: $t('_.元数据信息接口异常，可能是数据不存在导致接口请求失败'),
     },
     {
         value: '7-12',
-        label: '任务被取消',
+        label: $t('_.任务被取消'),
     },
     {
         value: '8-13',
-        label: '右表存在为空的表或者分区',
+        label: $t('_.右表存在为空的表或者分区'),
     },
     {
         value: '9-14',
-        label: '敏感表无法操作',
+        label: $t('_.敏感表无法操作'),
     },
 ]);
 
@@ -336,6 +336,7 @@ const resetAdvanceQueryData = () => {
         // 规则组id
         rule_group_id: '',
     };
+    if (firstActionBarRef.value?.timeRangeOfAdvanceQuery) firstActionBarRef.value.timeRangeOfAdvanceQuery = [];
     console.log('firstActionBarRef.value: ', firstActionBarRef.value);
 };
 
@@ -515,7 +516,7 @@ const tableSelectionChange = (value) => {
 };
 
 const lastQueryParams = ref({}); // 最后一次获取表格数据时的请求参数
-const language = localStorage.getItem('currentLanguage');
+const language = localStorage.getItem('fes_locale');
 const getTasksData = async () => {
     const params = {
         current: tasksPagination.value.current,
@@ -712,10 +713,12 @@ watch(advanceQueryData, () => {
 }, { immediate: true, deep: true });
 
 const advanceQueryDataBak = ref({});
+const advanceQueryTimeRangeBak = ref([]);
 // 打开高级筛选弹框
 const clickAdvanceQuery = () => {
     showAdvanceSearchModal.value = true;
     advanceQueryDataBak.value = cloneDeep(advanceQueryData.value);
+    advanceQueryTimeRangeBak.value = cloneDeep(firstActionBarRef.value?.timeRangeOfAdvanceQuery || []);
 };
 
 watch(advanceQueryData, () => {
@@ -734,7 +737,8 @@ watch(advanceQueryData, () => {
 }, { immediate: true, deep: true });
 
 // 高级筛选
-const advanceSearch = () => {
+const advanceSearch = (resetPage = false) => {
+    if (resetPage) tasksPagination.value.current = 1;
     let commentType = null;
     try {
         commentType = advanceQueryData.value.comment_type.split('-')[1];
@@ -766,6 +770,7 @@ const advanceSearch = () => {
 const cancelAdvanceSearch = () => {
     showAdvanceSearchModal.value = false;
     advanceQueryData.value = cloneDeep(advanceQueryDataBak.value);
+    firstActionBarRef.value.timeRangeOfAdvanceQuery = advanceQueryTimeRangeBak.value;
 };
 
 // 重置
@@ -781,7 +786,7 @@ const reset = () => {
         params: { page: tasksPagination.value.current, pageSize: tasksPagination.value.size },
     })}`);
     // 回到列表顶部
-    document.getElementsByClassName('wd-content')[0].scrollTop = 0;
+    document.getElementsByClassName('wd-table-page')[0].scrollTop = 0;
     resultByInit.value = true;
 };
 
@@ -861,20 +866,20 @@ const getTableMoreOptions = (row) => {
     const result = [
         {
             value: 'reExecute',
-            label: '重新执行',
+            label: $t('_.重新执行'),
         }, {
             value: 'viewLog',
-            label: '查看日志',
+            label: $t('_.查看日志'),
         }, {
             value: 'statusDetail',
-            label: '状态详情',
+            label: $t('_.状态详情'),
         },
     ];
 
     if (['1', '3', '10'].includes(row.status)) {
         result.push({
             value: 'stopTask',
-            label: '停止任务',
+            label: $t('_.停止任务'),
         });
     }
 
@@ -968,7 +973,7 @@ const tasksPageChange = () => {
         advanceSearch();
     }
     // 回到列表顶部
-    document.getElementsByClassName('wd-content')[0].scrollTop = 0;
+    document.getElementsByClassName('wd-table-page')[0].scrollTop = 0;
 };
 // const tasksPageSizeChange = () => {
 //     tasksPagination.value.current = 1;
@@ -1007,6 +1012,9 @@ const getExecuteUserList = async () => {
 };
 
 const taskNumber = route.query.application_id;
+const dataSource = route.query.dataSource || '';
+const dataBase = route.query.dataBase || '';
+const dataTable = route.query.dataTable || '';
 const init = async () => {
     try {
         await getDataSourceList();
@@ -1020,13 +1028,21 @@ const init = async () => {
         console.log('error: ', error);
     }
     if (taskNumber && taskNumber !== 'undefined') {
+        queryCondition.value.value = 'taskNumber';
+        queryData.value.taskNumber = taskNumber;
         await filterAction('/api/v1/projector/application/filter/advance', {
             application_id: taskNumber,
             size: 10,
             page: 0,
         });
+    } else if (dataSource && dataBase && dataTable) {
+        queryCondition.value.value = 'dataSource';
+        queryData.value.dataSource = dataSource;
+        queryData.value.dataBase = dataBase;
+        queryData.value.dataTable = dataTable;
+        search();
     } else {
-        await getTasksData();
+        await advanceSearch();
     }
     await getExecuteUserList();
 };
@@ -1077,6 +1093,7 @@ const resetOperation = () => {
     }, true);
 };
 
+
 </script>
 <style lang="less" scoped>
 .dashboard {
@@ -1124,6 +1141,8 @@ const resetOperation = () => {
             overflow: auto;
         }
     }
+
+
 </style>
 
 <config>

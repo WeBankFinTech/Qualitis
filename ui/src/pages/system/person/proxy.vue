@@ -2,36 +2,36 @@
     <div>
         <BTablePage :isLoading="showLoading" actionType="loading" :loadingText="{ loading: '' }">
             <template v-slot:search>
-                <BSearch v-model:form="searchForm" :isReset="false" @search="fetch(true)">
+                <BSearch v-model:form="searchForm" :isReset="false" @search="search">
                     <template v-slot:form>
                         <div>
-                            <span class="condition-label">{{$t('system.division')}}</span>
+                            <span class="condition-label">{{$t('_.部门')}}</span>
                             <FSelect
                                 v-model="searchForm.department_code"
                                 clearable
                                 filterable
-                                placeholder="请选择"
+                                :placeholder="$t('_.请选择')"
                                 :options="departmentList"
                                 @change="onDepartmentChange"
                             ></FSelect>
                         </div>
                         <div>
-                            <span class="condition-label">{{$t('system.department')}}</span>
+                            <span class="condition-label">{{$t('_.科室')}}</span>
                             <FSelect
                                 v-model="searchForm.sub_department_code"
                                 clearable
                                 filterable
-                                placeholder="请选择"
+                                :placeholder="$t('_.请选择')"
                                 :options="roomList"
                             ></FSelect>
                         </div>
                         <div>
-                            <span class="condition-label">{{$t('system.proxyUserName')}}</span>
+                            <span class="condition-label">{{$t('_.代理用户名')}}</span>
                             <FSelect
                                 v-model="searchForm.proxy_user_name"
                                 clearable
                                 filterable
-                                placeholder="请选择"
+                                :placeholder="$t('_.请选择')"
                                 :options="proxyUserNameList"
                             ></FSelect>
                         </div>
@@ -49,7 +49,7 @@
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="proxy_user_id" :label="$t('personnelManagePage.proxyUserId')" :width="112" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="proxy_user_name" :label="$t('personnelManagePage.proxyUserName')" :width="120" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="department_name" :label="$t('personnelManagePage.beSubDepartment')" :width="160" />
-                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="proxy_user_members_num" label="成员数量" :width="88" />
+                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="proxy_user_members_num" :label="$t('_.成员数量')" :width="88" />
                     <f-table-column v-slot="{ row }" :formatter="formatterEmptyValue" :ellipsis="{ line: 1, tooltip: false }" :label="$t('personnelManagePage.userConfig')" :minWidth="88">
                         <ColumnDetail
                             :content="row.content"
@@ -66,15 +66,9 @@
                     <f-table-column :formatter="formatterEmptyValue" prop="modify_time" :label="$t('personnelManagePage.modify_time')" :minWidth="180" ellipsis />
                     <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="176" fixed="right">
                         <ul class="btn-list">
-                            <li class="btn-item btn-link edit" @click="manage(row, $event)">
-                                成员管理
-                            </li>
-                            <li class="btn-item btn-link edit" @click="edit(row, $event)">
-                                编辑
-                            </li>
-                            <li class="btn-item btn-link del" @click="del(row, $event)">
-                                删除
-                            </li>
+                            <li class="btn-item btn-link edit" style="flex: 2" @click="manage(row, $event)">{{$t('_.成员管理')}}</li>
+                            <li class="btn-item btn-link edit" style="flex: 1" @click="edit(row, $event)">{{$t('_.编辑')}}</li>
+                            <li class="btn-item btn-link del" style="flex: 1" @click="del(row, $event)">{{$t('_.删除')}}</li>
                         </ul>
                     </f-table-column>
                 </f-table>
@@ -124,11 +118,11 @@
                 <FInput v-model="proxyForm.user_config_json" :placeholder="$t('common.pleaseEnter')" clearable type="textarea" />
             </FFormItem>
             <div class="footer">
-                <FButton type="link" @click="() => showMoreConfig = !showMoreConfig">{{showMoreConfig ? '收起更多配置' : '展开更多配置'}}</FButton>
+                <FButton type="link" @click="() => showMoreConfig = !showMoreConfig">{{showMoreConfig ? $t('common.closeMoreConfig') : $t('common.openMoreConfig')}}</FButton>
             </div>
         </FForm>
     </FModal>
-    <FDrawer v-model:show="showDrawer" :title="$t('personnelManagePage.memberManagement')" width="800px" @cancel="showDrawer = false">
+    <FDrawer v-model:show="showDrawer" displayDirective="if" :title="$t('personnelManagePage.memberManagement')" width="800px" @cancel="handleAddMemberCancel">
         <div class="operate">
             <div class="operate-header" @click="() => expandAddMember = !expandAddMember">
                 <div class="title">{{$t('personnelManagePage.addMembers')}}</div>
@@ -139,7 +133,7 @@
             </div>
             <FForm v-show="expandAddMember" ref="memberFormRef" class="operate-form" :model="memberForm" :rules="memberFormRules" labelWidth="100px" labelPosition="right">
                 <FFormItem :label="$t('personnelManagePage.userEnName')" prop="userName">
-                    <FInput v-model="memberForm.userName" :placeholder="$t('common.pleaseEnter')" :disabled="mode === 'edit'" :maxlength="50" showWordLimit />
+                    <FInput v-model="memberForm.userName" :placeholder="$t('_.支持多用户录入，英文逗号隔开')" :maxlength="50" showWordLimit />
                 </FFormItem>
             </FForm>
             <div v-show="expandAddMember" class="operate-footer">
@@ -153,9 +147,7 @@
             <f-table-column ellipsis prop="proxy_user_name" :label="$t('personnelManagePage.proxyUserName')" :width="192" />
             <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="132">
                 <ul class="btn-list">
-                    <li class="btn-item btn-link del" @click="delUser(row, $event)">
-                        删除
-                    </li>
+                    <li class="btn-item btn-link del" @click="delUser(row, $event)">{{$t('_.删除')}}</li>
                 </ul>
             </f-table-column>
         </f-table>
@@ -178,6 +170,7 @@ import {
 } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { FMessage, FModal } from '@fesjs/fes-design';
+import { cloneDeep, differenceWith } from 'lodash-es';
 import {
     PlusOutlined, MoreCircleOutlined, ExclamationCircleOutlined, DownOutlined, UpOutlined,
 } from '@fesjs/fes-design/es/icon';
@@ -185,7 +178,7 @@ import {
     getProxyUser, delProxyUser, changeProxyUser, getUserProxyUser, addUserProxyUser, delUserProxyUser, getProxyUserName,
 } from '@/pages/system/api';
 import ActionBar from '@/pages/projects/components/projectActionBar';
-import { differenceWith } from 'lodash-es';
+
 import { formatterEmptyValue } from '@/common/utils';
 import { BPageLoading, BTablePage, BSearch } from '@fesjs/traction-widget';
 import { MAX_PAGE_SIZE, CONDITIONBUTTONSPACE, COMMON_REG } from '@/assets/js/const';
@@ -238,14 +231,20 @@ const {
     loadDivisions: loadDevDivisions,
     curSubDepartData,
 } = useDivisions();
-
+const currentSearchForm = ref({});
+const search = async () => {
+    pagination.current = 1;
+    currentSearchForm.value = cloneDeep(searchForm.value);
+    // eslint-disable-next-line no-use-before-define
+    await fetch();
+};
 async function fetch(flag) {
     try {
         showLoading.value = true;
         const result = await getProxyUser({
             page: flag === true ? pagination.current - 1 : 0,
             size: pagination.size,
-            ...searchForm.value,
+            ...currentSearchForm.value,
         });
         tableData.value = result.data;
         tableData.value.forEach((item) => {
@@ -312,7 +311,7 @@ const memberFormRef = ref(null);
 const memberFormRules = ref({
     userName: [
         { required: true, message: $t('common.notEmpty'), trigger: ['change'] },
-        { pattern: COMMON_REG.ONLY_EN_NAME, message: $t('common.lettersNumbers'), trigger: 'blur' },
+        { pattern: COMMON_REG.EN_NAMES, message: $t('common.lettersNumbers'), trigger: 'blur' },
     ],
 });
 async function add() {
@@ -332,6 +331,7 @@ async function add() {
 const handleAddMemberCancel = () => {
     expandAddMember.value = false;
     memberForm.value.userName = '';
+    showDrawer.value = false;
 };
 
 async function delUser(row, e) {
@@ -339,6 +339,8 @@ async function delUser(row, e) {
     FModal.confirm({
         title: $t('common.prompt'),
         content: $t('personnelManagePage.deleteCurrentUser', { name: row.username }),
+        okText: $t('common.ok'),
+        cancelText: $t('common.cancel'),
         async onOk() {
             await delUserProxyUser({ user_proxy_user_id: row.user_proxy_user_id });
             FMessage.success($t('toastSuccess.deleteSuccess'));
@@ -349,7 +351,7 @@ async function delUser(row, e) {
 }
 
 function manage(row, e) {
-    console.log('manage', row, e);
+    console.log('manage', row, e, mode.value);
     proxyForm.value.proxyUserName = row.proxy_user_name;
     fetchUser();
     showDrawer.value = true;

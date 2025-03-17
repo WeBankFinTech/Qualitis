@@ -5,7 +5,7 @@
             <FInput
                 ref="taskNumberRef"
                 v-model="queryData.project_name"
-                placeholder="请输入项目名称"
+                :placeholder="$t('_.请输入项目名称')"
                 class="query-input"
                 clearable
             />
@@ -13,7 +13,7 @@
         <div class="query-item">
             <span class="query-item-label">{{$t('common.founder')}}</span>
             <FSelect v-model="queryData.create_user" class="query-input" clearable filterable>
-                <FOption v-for="v in projectUserList" :key="v" :value="v" :label="v"></FOption>
+                <FOption v-for="v in projectUserList" :key="v" :value="v" :label="v" :placeholder="$t('common.pleaseSelect')"></FOption>
             </FSelect>
         </div>
         <FButton type="primary" class="operation-item white" @click="search">{{$t('common.query')}}</FButton>
@@ -21,7 +21,7 @@
             :class="advanceQuerySelectedCount > 0 ? 'operation-item selected-count' : 'operation-item'"
             @click="clickAdvanceQuery"
         >
-            {{$t('common.advancedFilter')}}{{advanceQuerySelectedCount > 0 ? `（已选${advanceQuerySelectedCount}项）` : ''}}
+            {{$t('common.advancedFilter')}}{{advanceQuerySelectedCount > 0 ? `（${$t('common.selected')} ${advanceQuerySelectedCount} ${$t('common.item')}）` : ''}}
         </FButton>
         <FButton class="operation-item" @click="reset">{{$t('common.reset')}}</FButton>
 
@@ -46,7 +46,7 @@
                 <FFormItem :label="$t('common.projectName')" prop="projectName">
                     <FInput
                         v-model="advanceQueryData.project_name"
-                        placeholder="请输入项目名称"
+                        :placeholder="$t('_.请输入项目名称')"
                         class="query-input"
                         clearable
                     />
@@ -56,12 +56,16 @@
                         <FOption v-for="v in projectUserList" :key="v" :value="v" :label="v"></FOption>
                     </FSelect>
                 </FFormItem>
-                <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="subsystem_name">
-                    <FInput
-                        v-model="advanceQueryData.subsystem_name"
+                <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="subsystem_id">
+                    <FSelect
+                        v-model="advanceQueryData.subsystem_id"
                         clearable
-                        :placehodler="$t('common.pleaseEnter')"
-                    />
+                        filterable
+                        valueField="value"
+                        labelField="label"
+                        :filter="upperCaseFilter"
+                        :options="subSystemList"
+                    ></FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('common.databaseList')" prop="db_name">
                     <FSelect
@@ -106,6 +110,7 @@ import {
 } from '@fesjs/fes';
 import eventbus from '@/common/useEvents';
 import useProjectAuth from '@/pages/projects/hooks/useProjectAuth';
+import { upperCaseFilter } from '@/common/utils';
 import useDataSource from '../hooks/useDataSource';
 
 const { t: $t } = useI18n();

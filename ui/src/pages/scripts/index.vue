@@ -7,7 +7,7 @@
                     ref="nameInput"
                     v-model="groupName"
                     class="input"
-                    placeholder="请输入规则组名称"
+                    :placeholder="$t('_.请输入规则组名称')"
                     @blur="updateGroupNameOnBlur"
                 />
                 <FEllipsis v-if="!showEdit" class="display">{{groupName || '默认规则组名称'}}</FEllipsis>
@@ -20,7 +20,7 @@
         </div>
         <FForm ref="scriptsFormRef" :model="script" :rules="scriptFormRules">
             <FFormItem>
-                <FButton class="save" type="primary" :loading="isLoading" @click="saveScripts">保存</FButton>
+                <FButton class="save" type="primary" :loading="isLoading" @click="saveScripts">{{$t('_.保存')}}</FButton>
             </FFormItem>
             <FFormItem prop="detail">
                 <FInput
@@ -33,6 +33,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, onMounted, nextTick,
 } from 'vue';
@@ -67,7 +68,7 @@ const updateGroupNameOnBlur = async () => {
             rule_group_id: ruleGroupId,
             rule_group_name: groupName.value,
         }, 'post');
-        FMessage.success('修改成功');
+        FMessage.success($t('_.修改成功'));
         showEdit.value = false;
     } catch (error) {
         console.warn(error);
@@ -137,7 +138,7 @@ const saveScripts = async () => {
         const action = ruleGroupId && ruleGroupId !== 'undefined' ? 'edit' : 'add';
         const contextObj = JSON.parse(JSON.parse(contextID)?.value || '{}');
         if (!projectId || projectId === 'undefined') {
-            FMessage.error('URL参数必须包含projectId');
+            FMessage.error($t('_.URL参数必须包含projectId'));
             return;
         }
         await scriptsFormRef.value.validate();
@@ -154,12 +155,9 @@ const saveScripts = async () => {
             work_flow_version: workflowVersion,
             work_flow_space: contextObj?.workspace,
             node_name: nodeName,
-        }, {
-            closeResDataCheck: true,
-            dataField: false,
         });
 
-        const { bash_content: detail, rule_group_id: targetGroudId } = result.data || {};
+        const { bash_content: detail, rule_group_id: targetGroudId } = result || {};
 
         if (isEmbedInFrame.value && targetGroudId) {
             DWSMessage(route.query.nodeId, targetGroudId, action);
@@ -201,6 +199,7 @@ onMounted(async () => {
     await getGroupName();
     await getRuleDetail();
 });
+
 </script>
 <config>
 {

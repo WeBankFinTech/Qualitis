@@ -2,8 +2,8 @@
     <div class="root">
         <div v-for="(value,i) in tempList" :key="i" class="row-wrap">
             <div class="row">
-                <FInput v-model="value.name" placeholder="请输入参数名" clearable></FInput>
-                <FInput v-model="value.value" class="value" placeholder="请输入参数值" clearable></FInput>
+                <FInput v-model="value.name" :placeholder="$t('_.请输入参数名')" clearable></FInput>
+                <FInput v-model="value.value" class="value" :placeholder="$t('_.请输入参数值')" clearable></FInput>
                 <PlusCircleFilled v-if="i === tempList.length - 1" class="add" @click="add" />
                 <MinusCircleOutlined v-else @click="remove(i)" />
             </div>
@@ -15,7 +15,9 @@ import {
     defineProps, watchEffect, ref, defineEmits, computed,
 } from 'vue';
 import { PlusCircleFilled, MinusCircleOutlined } from '@fesjs/fes-design/icon';
+import { useI18n } from '@fesjs/fes';
 
+const { t: $t } = useI18n();
 function configRepeatValidator(value) {
     const set = new Set();
     value.forEach((v) => {

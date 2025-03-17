@@ -67,6 +67,17 @@ public class Permission {
     @Column(name = "en_name")
     private String enName;
 
+    @Column(name = "res_code")
+    private String resCode;
+
+    public String getResCode() {
+        return resCode;
+    }
+
+    public void setResCode(String resCode) {
+        this.resCode = resCode;
+    }
+
     public String getCreateUser() {
         return createUser;
     }

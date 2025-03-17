@@ -23,7 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.stringtemplate.v4.ST;
 
 import java.util.List;
 import java.util.Map;
@@ -401,7 +400,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long>, JpaSp
      * @param templateEnName
      * @return
      */
-    @Query(value = "select t from Template t where t.enName = ?1")
+    @Query(value = "select t from Template t where t.enName is not null and t.enName = ?1")
     Template findTemplateByEnName(String templateEnName);
 
     /**

@@ -16,8 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.dao.repository;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
+
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -34,4 +37,11 @@ public interface TaskRuleAlarmConfigRepository extends JpaRepository<TaskRuleAla
      */
     @Query("select j from TaskRuleAlarmConfig j where j.id = ?1")
     TaskRuleAlarmConfig findTaskRuleAlarmConfig(Long taskRuleAlarmConfigId);
+
+    /**
+     * Get by rule metric id.
+     * @param ruleMetric
+     * @return
+     */
+    List<TaskRuleAlarmConfig> findByRuleMetric(RuleMetric ruleMetric);
 }

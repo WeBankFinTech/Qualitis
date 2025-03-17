@@ -24,6 +24,7 @@ import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.dao.TaskNewVauleDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
+import com.webank.wedatasphere.qualitis.rule.request.StandardValueVariableRequest;
 import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.util.AlarmConfigTypeUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
@@ -98,6 +99,7 @@ public class RuleDetailResponse extends AbstractCommonRequest {
         this.createTime = rule.getCreateTime();
         this.modifyUser = rule.getModifyUser();
         this.modifyTime = rule.getModifyTime();
+        super.setRegRuleCode(rule.getRegRuleCode());
         super.setWorkFlowName(rule.getWorkFlowName());
         super.setWorkFlowVersion(rule.getWorkFlowVersion());
         super.setWorkFlowProject(rule.getProject().getName());

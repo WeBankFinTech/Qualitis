@@ -23,7 +23,7 @@ public class SubscribeOperateReportResponse {
     private List<Long> projectIds;
     private String receiver;
     @JsonProperty("execution_frequency")
-    private String executionFrequency;
+    private Integer executionFrequency;
     @JsonProperty("create_time")
     private String createTime;
     @JsonProperty("create_user")
@@ -54,11 +54,11 @@ public class SubscribeOperateReportResponse {
         this.receiver = receiver;
     }
 
-    public String getExecutionFrequency() {
+    public Integer getExecutionFrequency() {
         return executionFrequency;
     }
 
-    public void setExecutionFrequency(String executionFrequency) {
+    public void setExecutionFrequency(Integer executionFrequency) {
         this.executionFrequency = executionFrequency;
     }
 
@@ -104,7 +104,7 @@ public class SubscribeOperateReportResponse {
 
     public SubscribeOperateReportResponse(SubscribeOperateReport subscribeOperateReport) {
         BeanUtils.copyProperties(subscribeOperateReport, this);
-        this.executionFrequency = ExecutionFrequencyEnum.getExecutionFrequencyName(subscribeOperateReport.getExecutionFrequency());
+        this.executionFrequency = subscribeOperateReport.getExecutionFrequency();
         this.projectName = subscribeOperateReport.getSubscribeOperateReportProjectsSet().stream().map(item -> item.getProject().getName()).collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));
 
         String ids = subscribeOperateReport.getSubscribeOperateReportProjectsSet().stream().map(item -> item.getProject().getId().toString()).collect(Collectors.joining(SpecCharEnum.COMMA.getValue()));

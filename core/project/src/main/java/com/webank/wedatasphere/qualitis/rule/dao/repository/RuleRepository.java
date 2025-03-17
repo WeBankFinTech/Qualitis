@@ -25,10 +25,13 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.LockModeType;
+import javax.persistence.Tuple;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 /**
@@ -291,7 +294,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @return
      */
     @Query(value = "select count(*) FROM qualitis_rule where name = ?1 and project_id= ?2 ", nativeQuery = true)
-    int countByProjectAndRuleName(String ruleName,Long projectId);
+    int countByProjectAndRuleName(String ruleName, Long projectId);
 
     /**
      * select mate rule by ruleName workFlowName workFlowVersion
@@ -360,6 +363,32 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param projectId
      * @return
      */
-    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.id in(?1) and qr.project_id=?2 ", nativeQuery = true)
+    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.id in (?1) and qr.project_id = ?2", nativeQuery = true)
     List<Rule> findByIdsAndProject(List<Long> ruleIds, Long projectId);
+
+    /**
+     * find ByNames And Project
+     *
+     * @param ruleNames
+     * @param projectId
+     * @return
+     */
+    @Query(value = "SELECT qr.* FROM qualitis_rule qr where qr.name in (?1) and qr.project_id = ?2", nativeQuery = true)
+    List<Rule> findByNamesAndProject(List<String> ruleNames, Long projectId);
+
+    /**
+     * get rules by rule group id
+     * @param ruleGroupId
+     * @return
+     */
+    List<Rule> findByRuleGroupId(Long ruleGroupId);
+
+    /**
+     * update enable status in batch
+     * @param enableStatus
+     * @param ruleIds
+     */
+    @Query(value = "update qualitis_rule set enable = ?1 where id in (?2)", nativeQuery = true)
+    @Modifying
+    void updateEnableStatus(Boolean enableStatus, List<Long> ruleIds);
 }

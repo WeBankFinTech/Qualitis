@@ -68,9 +68,10 @@ public interface TaskDao {
     /**
      * Count
      * @param application
+     * @param isNonPassStatus
      * @return
      */
-    int countByApplication(Application application);
+    int countByApplication(Application application, boolean isNonPassStatus);
 
     /**
      * findByApplicationList
@@ -118,4 +119,25 @@ public interface TaskDao {
      * @param task
      */
     void delete(Task task);
+
+    /**
+     * Get collect task status
+     * @param applicationId
+     * @param collectId
+     * @return
+     */
+    Task getCollectTaskStatus(String applicationId, String collectId);
+
+    /**
+     * Find by rule gorup id
+     * @param ruleGroupId
+     * @return
+     */
+    List<Task> findByRulGroupId(Long ruleGroupId);
+
+    /**
+     * Delete in batch
+     * @param taskList
+     */
+    void deleteAllInBatch(List<Task> taskList);
 }

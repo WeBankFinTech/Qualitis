@@ -1,13 +1,14 @@
 package com.webank.wedatasphere.qualitis.request.user;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author v_minminghe@webank.com
@@ -53,6 +54,19 @@ public class ItsmRequest implements Serializable {
         return Collections.emptyList();
     }
 
+    public List<Map<String, Object>> getItsmRoleUserList() {
+        if (StringUtils.isBlank(this.data)) {
+            return Collections.emptyList();
+        }
+        TypeReference<ItsmDataListDto<Map<String, Object>>> typeRef = new TypeReference<ItsmDataListDto<Map<String, Object>>>(){};
+        try {
+            ItsmDataListDto<Map<String, Object>> dataListObject = new ObjectMapper().readValue(this.data, typeRef);
+            return dataListObject.getDataList();
+        } catch (IOException e) {
+            // doNothing
+        }
+        return Collections.emptyList();
+    }
 
     public List<ItsmAlertWhitelistRequest> getItsmAlertWhitelist() {
         if (StringUtils.isBlank(this.data)) {

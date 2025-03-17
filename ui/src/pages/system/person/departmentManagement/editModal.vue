@@ -87,6 +87,7 @@
     </FModal>
 </template>
 <script setup>
+
 import {
     defineProps, defineEmits, ref, computed, onMounted, onUnmounted, onUpdated, nextTick,
 } from 'vue';
@@ -101,8 +102,8 @@ import { addDepartment, updateDepartment, fetchDepartments } from './api';
 const { t: $t } = useI18n();
 
 const fromList = [
-    { value: 0, label: 'HR系统' },
-    { value: 1, label: '自定义' },
+    { value: 0, label: $t('_.HR系统') },
+    { value: 1, label: $t('_.自定义') },
 ];
 
 const props = defineProps({
@@ -181,7 +182,7 @@ const departmentList = ref([]);
 const onDepartmentChange = async (key) => {
     const target = departmentList.value.filter(item => item.department_code === key);
     if (target.length > 0 && props.mode === 'ADD' && props.departmentNameList.findIndex(item => item.value === target[0].department_name) > -1) {
-        FMessage.warn('部门名已存在');
+        FMessage.warn($t('_.部门名已存在'));
         await nextTick();
         formModel.value.department_code = '';
         formModel.value.department_name = '';
@@ -258,4 +259,5 @@ onUpdated(() => {
 onUnmounted(() => {
     eventbus.off('departmentManagement:set-form-model');
 });
+
 </script>

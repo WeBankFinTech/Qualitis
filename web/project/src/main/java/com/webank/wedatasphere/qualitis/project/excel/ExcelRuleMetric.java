@@ -17,12 +17,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author allenzhou
  */
-public class ExcelRuleMetric extends BaseRowModel {
+public class ExcelRuleMetric  {
     @ExcelProperty(value = "Rule Metric Json Object", index = 0)
     private String ruleMetricJsonObject;
 

@@ -1,7 +1,7 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: editMode !== 'display' }">
-        <p v-if="listType === 'listByTemplate'" class="wd-body-title-template">{{`校验对象${titleIndex + 1}`}}</p>
-        <h6 v-else class="wd-body-title">校验对象</h6>
+        <p v-if="listType === 'listByTemplate'" class="wd-body-title-template">{{`${$t('_.校验对象')}${titleIndex + 1}`}}</p>
+        <h6 v-else class="wd-body-title">{{$t('_.校验对象')}}</h6>
         <FForm
             ref="verifyObjectFormRef"
             :model="formDataSource"
@@ -26,7 +26,7 @@
                     class="form-edit-input"
                     filterable
                     :disabled="editMode !== 'create'"
-                    placeholder="请选择规则类型"
+                    :placeholder="$t('_.请选择规则类型')"
                 >
                     <FOption
                         v-for="(item, index) in showRuleTypes"
@@ -38,15 +38,15 @@
                 <div class="form-preview-label">{{ruleTypeLabel}}</div>
             </FFormItem>
             <!-- 上游表 -->
-            <FFormItem v-if="ruleData.currentProject.isWorkflowProject && (['sqlVerification', 'newSingleTableRule'].includes(ruleType) || listType === 'groupList')" class="upstream" label="数据来源">
+            <FFormItem v-if="ruleData.currentProject.isWorkflowProject && (['sqlVerification', 'newSingleTableRule'].includes(ruleType) || listType === 'groupList')" class="upstream" :label="$t('_.数据来源')">
                 <FRadioGroup v-if="editMode !== 'display'" v-model="verifyObjectData.isUpStream" class="form-edit-input" :cancelable="false" @change="onUpStreamChange">
-                    <FRadio :value="true">上游表</FRadio>
-                    <FRadio :value="false">正常表</FRadio>
+                    <FRadio :value="true">{{$t('_.上游表')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.正常表')}}</FRadio>
                 </FRadioGroup>
                 <div class="form-preview-label">{{verifyObjectData.isUpStream ? '上游表' : '正常表'}}</div>
             </FFormItem>
             <!-- 任务执行集群 -->
-            <FFormItem v-if="!['crossDatabaseFullVerification', 'newMultiTableRule'].includes(ruleType)" label="任务执行集群" prop="cluster_name">
+            <FFormItem v-if="!['crossDatabaseFullVerification', 'newMultiTableRule'].includes(ruleType) && !formDataSource.isSameCluster" :label="$t('_.任务执行集群')" prop="cluster_name">
                 <FSelect
                     v-model="formDataSource.cluster_name"
                     filterable
@@ -64,7 +64,7 @@
                 <div class="form-preview-label">{{formDataSource.cluster_name}}</div>
             </FFormItem>
             <!-- 任务执行用户 -->
-            <FFormItem label="任务执行用户" prop="proxy_user">
+            <FFormItem v-show="!(formDataSource.isSameProxyUser && formDataSource.isSameCluster)" :label="$t('_.任务执行用户')" prop="proxy_user">
                 <FSelect
                     v-model="formDataSource.proxy_user"
                     class="form-edit-input"
@@ -82,7 +82,7 @@
                 <div class="form-preview-label">{{formDataSource.proxy_user || '--'}}</div>
             </FFormItem>
             <!-- 数据源类型 -->
-            <FFormItem label="数据源类型" prop="type">
+            <FFormItem v-if="!isSameTypeListByTemplate" :label="$t('_.数据源类型')" prop="type">
                 <FSelect
                     v-model="formDataSource.type"
                     class="form-edit-input"
@@ -97,7 +97,7 @@
             <!-- 自定义SQL支持多环境映射 -->
             <template v-if="!['HIVE', 'FPS'].includes(dataSourceType)">
                 <!-- 数据源名称 -->
-                <FFormItem label="数据源名称" prop="linkis_datasource_id">
+                <FFormItem v-show="!isSameTypeListByTemplate" :label="$t('_.数据源名称')" prop="linkis_datasource_id">
                     <FSelect
                         v-model="formDataSource.linkis_datasource_id"
                         :options="connections"
@@ -109,38 +109,69 @@
                     ></FSelect>
                     <div class="form-preview-label">{{connection?.label}}</div>
                 </FFormItem>
-                <FFormItem v-if="['sqlVerification'].includes(ruleType)" label="是否启用环境库表映射" prop="isMappingMode">
+                <FFormItem v-if="['sqlVerification'].includes(ruleType)" :label="$t('_.是否启用环境库表映射')" prop="isMappingMode">
                     <FRadioGroup v-model="formDataSource.isMappingMode" class="form-edit-input" @change="radioChange">
-                        <FRadio :value="true">是</FRadio>
-                        <FRadio :value="false">否</FRadio>
+                        <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                        <FRadio :value="false">{{$t('_.否')}}</FRadio>
                     </FRadioGroup>
                     <div class="form-preview-label">{{formDataSource.isMappingMode ? '是' : '否'}}</div>
                 </FFormItem>
-                <!-- 数据源环境 -->
-                <FFormItem v-if="!formDataSource.isMappingMode" label="数据源环境" prop="linkis_datasource_envs">
-                    <FSelect
-                        v-model="formDataSource.linkis_datasource_envs"
-                        :options="envs"
-                        class="form-edit-input"
-                        filterable
-                        clearable
-                        multiple
-                        labelField="env_name"
-                        collapseTags
-                        :collapseTagsLimit="2"
-                        @change="onEnvChange($event, -1)"
-                    ></FSelect>
-                    <div class="form-preview-label project-tags">
-                        <div v-for="(item, index) in formDataSource.linkis_datasource_envs" :key="index" class="tags-item">{{item.env_name}}</div>
-                    </div>
-                </FFormItem>
-                <FFormItem v-else label="环境库表映射" prop="linkis_datasource_envs_mappings" class="multi-components">
+                <template v-if="!formDataSource.isMappingMode">
+                    <FFormItem v-show="!isSameTypeListByTemplate" :label="$t('_.数据源环境选择方式')" prop="dcn_range_type">
+                        <FRadioGroup v-model="formDataSource.dcn_range_type" class="form-edit-input" :cancelable="false" @change="onDcnTypeChange">
+                            <FRadio value="all">{{$t('_.直接选择')}}</FRadio>
+                            <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
+                            <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio>
+                        </FRadioGroup>
+                        <div class="form-preview-label">{{DCNTypeMap[formDataSource.dcn_range_type]}}</div>
+                    </FFormItem>
+                    <FFormItem v-if="['dcn_num', 'logic_area'].includes(formDataSource?.dcn_range_type) && !isSameTypeListByTemplate " :label="formDataSource.dcn_range_type === 'dcn_num' ? '环境编号' : '逻辑区域'" prop="linkis_datasource_dcn_range_values">
+                        <FSelect
+                            v-model="formDataSource.linkis_datasource_dcn_range_values"
+                            :options="dcnValueOptions"
+                            class="form-edit-input"
+                            filterable
+                            clearable
+                            multiple
+                            collapseTags
+                            :collapseTagsLimit="2"
+                            @change="onDcnChange"
+                        ></FSelect>
+                        <div class="form-preview-label project-tags">
+                            <div v-for="(item, index) in formDataSource.linkis_datasource_dcn_range_values" :key="index" class="tags-item">{{item}}</div>
+                        </div>
+                    </FFormItem>
+                    <!-- 数据源环境 -->
+                    <FFormItem v-if="!isSameTypeListByTemplate" :label="$t('_.数据源环境')" prop="linkis_datasource_envs">
+                        <FSelect
+                            v-model="formDataSource.linkis_datasource_envs"
+                            :options="envs"
+                            class="form-edit-input"
+                            filterable
+                            clearable
+                            multiple
+                            labelField="env_name"
+                            :disabled="['dcn_num', 'logic_area'].includes(formDataSource?.dcn_range_type)"
+                            collapseTags
+                            :collapseTagsLimit="2"
+                            @change="onEnvChange($event, -1)"
+                        ></FSelect>
+                        <div class="form-preview-label project-tags">
+                            <div v-for="(item, index) in formDataSource.linkis_datasource_envs" :key="index" class="tags-item">{{item.env_name}}</div>
+                        </div>
+                    </FFormItem>
+                </template>
+
+
+                <FFormItem v-else :label="$t('_.环境库表映射')" prop="linkis_datasource_envs_mappings" class="multi-components">
                     <EnvMapping v-for="(item, index) in formDataSource.linkis_datasource_envs_mappings" :key="item" :no="index" :deletable="editMode !== 'display'" @deleteMapping="deleteMapping(index)">
                         <template v-slot:form>
                             <FForm :ref="el => { if (el) envFormRefs[index] = el; }"
                                    :model="item"
-                                   :rules="getEnvFormRule(index)">
-                                <FFormItem label="环境名" prop="datasource_envs">
+                                   :rules="getEnvFormRule(index)"
+                                   labelPosition="left"
+                                   align="center">
+                                <FFormItem :label="$t('_.环境名')" prop="datasource_envs">
                                     <FSelect
                                         v-model="item.datasource_envs"
                                         :options="envs"
@@ -152,11 +183,11 @@
                                         valueField="value"
                                         @change="onEnvChange($event, index)"
                                     ></FSelect>
-                                    <div class="form-preview-label project-tags">
+                                    <div class="form-preview-label project-tags env-tag env-label">
                                         <div v-for="(env, index) in item.datasource_envs" :key="index" class="tags-item">{{env.env_name}}</div>
                                     </div>
                                 </FFormItem>
-                                <FFormItem label="数据库" prop="db_name">
+                                <FFormItem :label="$t('_.数据库')" prop="db_name">
                                     <FSelect
                                         v-model="item.db_name"
                                         :options="dbsList[index]"
@@ -167,27 +198,27 @@
                                         valueField="db_name"
                                         @change="onDBChange($event, index)"
                                     ></FSelect>
-                                    <div class="form-preview-label">{{item.db_name}}</div>
+                                    <div class="form-preview-label env-label">{{item.db_name}}</div>
                                 </FFormItem>
-                                <FFormItem label="库别名" prop="db_alias_name">
+                                <FFormItem :label="$t('_.库别名')" prop="db_alias_name">
                                     <FInput
                                         v-model="item.db_alias_name"
                                         class="form-edit-input"
                                         clearable
                                         @change="onTableChange($event, index)"
                                     />
-                                    <div class="form-preview-label">{{item.db_alias_name}}</div>
+                                    <div class="form-preview-label env-label">{{item.db_alias_name}}</div>
                                 </FFormItem>
                             </FForm>
                         </template>
                     </EnvMapping>
-                    <div v-if="editMode !== 'display'" class="add-btn" @click="addMapping"><PlusCircleOutlined /><a style="display: inline-block; margin-left: 4.58px" href="javascript:;">新增</a></div>
+                    <div v-if="editMode !== 'display'" class="add-btn" @click="addMapping"><PlusCircleOutlined /><a style="display: inline-block; margin-left: 4.58px" href="javascript:;">{{$t('_.新增')}}</a></div>
                 </FFormItem>
             </template>
             <!-- 数据库 -->
             <!-- 数据表 -->
             <template v-if="dataSourceType !== 'FPS' && !['sqlVerification'].includes(ruleType)">
-                <FFormItem v-if="!verifyObjectData.isUpStream" :label="$t('crossTableCheck.Database')" prop="db_name">
+                <FFormItem v-if="!verifyObjectData.isUpStream" v-show="showDBAndTable && !isSameDbListByTemplate" :label="$t('crossTableCheck.Database')" prop="db_name">
                     <FSelect
                         v-model="formDataSource.db_name"
                         filterable
@@ -199,7 +230,7 @@
                     <div class="form-preview-label">{{formDataSource.db_name || '--'}}</div>
                     <!-- <Tip v-if="props.tips.textShow && editMode !== 'display'" :content="props.tips.dbText"></Tip> -->
                 </FFormItem>
-                <FFormItem v-if="!['crossDatabaseFullVerification'].includes(ruleType)" label="数据表" prop="table_name" class="tabel">
+                <FFormItem v-if="!['crossDatabaseFullVerification'].includes(ruleType) && !isSameTableListByTemplate" v-show="showDBAndTable" :label="$t('_.数据表')" prop="table_name" class="tabel">
                     <FSelect
                         v-model="formDataSource.table_name"
                         filterable
@@ -213,9 +244,9 @@
                 </FFormItem>
             </template>
             <!-- FPS模块 -->
-            <template v-else-if="dataSourceType === 'FPS'">
-                <template v-if="!formDataSource.file_id">
-                    <FFormItem label="数据库/表" prop="file_id">
+            <template v-else-if="dataSourceType === 'FPS' && !isSameDbTableListByTemplate">
+                <template v-if="!formDataSource.file_type">
+                    <FFormItem :label="$t('_.数据库/表')" prop="file_type">
                         <TableStructureButton @click="() => tableStructrueShow = true" />
                     </FFormItem>
                 </template>
@@ -231,7 +262,7 @@
                             @change="onDBChange($event, -1)" />
                         <div class="form-preview-label">{{formDataSource.db_name}}</div>
                     </FFormItem>
-                    <FFormItem v-if="!['crossDatabaseFullVerification'].includes(ruleType)" label="数据表" prop="table_name">
+                    <FFormItem v-if="!['crossDatabaseFullVerification'].includes(ruleType)" :label="$t('_.数据表')" prop="table_name">
                         <FInput
                             v-model="formDataSource.table_name"
                             class="form-edit-input"
@@ -261,20 +292,25 @@
                 @getRuleMetricData="getRuleMetricData"
             ></RuleMetricSelect>
             <!-- 过滤条件 -->
-            <FFormItem v-if="!['sqlVerification', 'crossDatabaseFullVerification'].includes(ruleType)" label="过滤条件" prop="filter">
+            <FFormItem v-if="!['sqlVerification', 'crossDatabaseFullVerification'].includes(ruleType)" v-show="showDBAndTable && showFilter" :label="$t('_.过滤条件')" prop="filter">
                 <FInput
                     v-model="formDataSource.filter"
                     class="form-edit-input"
                     type="textarea"
-                    :placeholder="dataSourceType === 'FPS' ? '' : 'ds=${run_date}或ds=${run_date_std}'"
+                    :placeholder="dataSourceType === 'FPS' ? '' : 'ds=\'${run_date}\'or ds=\'${run_date_std}\', ds=\'${run_today}\' or ds=\'${run_today_std}\''"
                     @change="onFilterChange"
                 />
                 <div class="form-preview-label">{{formDataSource.filter}}</div>
                 <FTooltip v-if="editMode !== 'display'" mode="popover">
                     <ExclamationCircleOutlined class="tip edit hint" />
-                    <template #title>过滤条件说明</template>
+                    <template #title>{{$t('_.过滤条件说明')}}</template>
                     <template #content>
-                        <div style="width: 300px;">可在过滤条件中添加分区变量表达式,用于指定运行时的分区。 例子：1. ds=${run_date},表示程序运行时的实际日期前一天，格式为ds=yyyyMMdd；ds=${run_date_std},表示程序运行时的实际日期前一天，格式为ds=yyyy-MM-dd。2.ds=${run_date-N}，表示程序运行时的实际日期前N + 1天；若今天是20210707，填写了ds=${run_date-2},运行时替换为ds=20210704。</div>
+                        <div style="width: 300px;">
+                            {{$t('common.filter0')}}<br />
+                            {{`1.ds='$\{run_date},${$t('common.filter1')}ds='yyyyMMdd'; ds='$\{run_date_std}'${$t('common.filter1')}ds='yyyy-MM-dd'.`}}<br />
+                            {{`2.ds='$\{run_date-N}'${$t('common.filter2')}ds='$\{run_date-2}',${$t('common.filter3')}`}}<br />
+                            {{`3.ds='$\{run_today}' or ds='$\{run_today_std}'${$t('common.filter4')}ds='$\{run_today}' or ds='$\{run_today_std}'${$t('common.filter5')}`}}
+                        </div>
                     </template>
                 </FTooltip>
             </FFormItem>
@@ -283,19 +319,20 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, inject, nextTick, watch, provide, unref, onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
 import { ruleTypes, NUMBER_TYPES } from '@/common/utils';
 import { cloneDeep } from 'lodash-es';
-import { useI18n, request } from '@fesjs/fes';
+import { useI18n } from '@fesjs/fes';
 import eventbus from '@/common/useEvents';
 import {
     ExclamationCircleOutlined, PlusCircleOutlined,
 } from '@fesjs/fes-design/es/icon';
 import {
-    ruleTypeChangeEvent, getDataSourceType, buildColumnData, useListener, getColumnMapData, columnData2Str,
+    ruleTypeChangeEvent, dataSourceTypeList, getDataSourceType, buildColumnData, useListener, getColumnMapData, columnData2Str,
 } from '@/components/rules/utils';
 import { getColumns, getTables } from '@/components/rules/utils/datasource';
 import useDataSource from '@/components/rules/hook/useDataSource';
@@ -311,8 +348,6 @@ const store = useStore();
 const { t: $t } = useI18n();
 const envFormRefs = ref([]);
 const ruleData = computed(() => store.state.rule);
-
-
 // 环境库表映射不能重复
 // const duplicateDetection = (mappings, index) => {
 //     if (mappings.length < 1) {
@@ -444,10 +479,21 @@ const feildsData = ref({
     filterColNamesStrArr: [],
 });
 
+const singleFormDataSource = () => ({
+    linkis_datasource_envs_mappings: [],
+    isMappingMode: false,
+    isSameCluster: false,
+    isSameProxyUser: false,
+    isSameType: false,
+    isSameDb: false,
+    isSameTable: false,
+    isSameDbTable: false,
+});
 // 判断是否为dss中iframe
 const formDataSource = ref({});
 switch (props.type) {
     case 'single':
+        // formDataSource.value = listType.value === 'listByTemplate' ? Object.assign(singleFormDataSource(), verifyObjectData.value.datasource[0]) : verifyObjectData.value.datasource[0];
         formDataSource.value = verifyObjectData.value.datasource[0];
         break;
     case 'target':
@@ -459,6 +505,11 @@ switch (props.type) {
     default:
         break;
 }
+const isSameTypeListByTemplate = computed(() => formDataSource.value.isSameType && formDataSource.value.isSameProxyUser && formDataSource.value.isSameCluster);
+const isSameDbListByTemplate = computed(() => formDataSource.value.isSameDb && formDataSource.value.isSameType && formDataSource.value.isSameProxyUser && formDataSource.value.isSameCluster);
+const isSameTableListByTemplate = computed(() => formDataSource.value.isSameTable && formDataSource.value.isSameDb && formDataSource.value.isSameType && formDataSource.value.isSameProxyUser && formDataSource.value.isSameCluster);
+const isSameDbTableListByTemplate = computed(() => formDataSource.value.isSameDbTable && formDataSource.value.isSameDb && formDataSource.value.isSameType && formDataSource.value.isSameProxyUser && formDataSource.value.isSameCluster);
+
 const {
     connections,
     dbs,
@@ -473,9 +524,29 @@ const {
     updateDataSource,
     updateUpstreamParams,
     dbsList,
+    dcnValueOptions,
 } = useDataSource(upstreamParams);
 
 provide('dbs', dbs);
+
+// 控制库表字段显隐
+const showDBAndTable = ref(true);
+const showFilter = ref(true);
+useListener('SHOW_DB_TABLE', async (val) => {
+    showDBAndTable.value = val;
+    // eslint-disable-next-line no-use-before-define
+    verifyObjectRules.value.db_name[0].required = val;
+    // eslint-disable-next-line no-use-before-define
+    verifyObjectRules.value.table_name[0].required = val;
+    // eslint-disable-next-line no-use-before-define
+    verifyObjectRules.value.filter[0].required = val;
+});
+useListener('SHOW_FILTER', async (val) => {
+    // eslint-disable-next-line no-use-before-define
+    showFilter.value = val;
+    // eslint-disable-next-line no-use-before-define
+    verifyObjectRules.value.filter[0].required = val;
+});
 
 // 表单规则
 const verifyObjectRules = ref({
@@ -506,6 +577,7 @@ const verifyObjectRules = ref({
         message: $t('common.notEmpty'),
     }],
     db_name: [{
+        // eslint-disable-next-line no-use-before-define
         required: true,
         trigger: ['change', 'blur'],
         message: $t('common.notEmpty'),
@@ -517,11 +589,11 @@ const verifyObjectRules = ref({
         trigger: ['change', 'blur'],
         message: $t('common.notEmpty'),
     }],
-    // FPS表单完成时file_id必有值，取file_id来判断FPS表单是否完成
-    file_id: [{
+    // FPS表单完成时file_type必有值，取file_type来判断FPS表单是否完成
+    file_type: [{
         required: true,
         trigger: ['change', 'blur'],
-        message: '数据库/表未完成',
+        message: $t('_.数据库/表未完成'),
     }],
     filter: [{
         required: currentRuleType !== '4-1',
@@ -532,8 +604,19 @@ const verifyObjectRules = ref({
         required: true,
         type: 'boolean',
         trigger: ['change', 'blur'],
-        message: '请选择是否启用环境库表映射',
+        message: $t('_.请选择是否启用环境库表映射'),
     }],
+    dcn_range_type: [{
+        required: true,
+        trigger: ['change', 'blur'],
+        message: $t('_.请选择方式'),
+    }],
+    linkis_datasource_dcn_range_values: [{
+        required: true,
+        trigger: ['change', 'blur'],
+        message: $t('common.notEmpty'),
+    }],
+
 });
 
 // eslint-disable-next-line complexity
@@ -549,6 +632,7 @@ const resetFormItems = (type = '') => {
                 connections.value = [];
                 formDataSource.value.linkis_datasource_envs = [];
                 envs.value = [];
+                dcnValueOptions.value = [];
                 if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
                     formDataSource.value.db_name = '';
                     dbs.value = [];
@@ -560,6 +644,7 @@ const resetFormItems = (type = '') => {
                 formDataSource.value.linkis_datasource_id = '';
                 formDataSource.value.linkis_datasource_envs = [];
                 envs.value = [];
+                dcnValueOptions.value = [];
                 if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
                     formDataSource.value.db_name = '';
                     dbs.value = [];
@@ -575,9 +660,11 @@ const resetFormItems = (type = '') => {
                     formDataSource.value.linkis_datasource_type = null;
                 }
                 formDataSource.value.linkis_datasource_id = '';
+                formDataSource.value.dcn_range_type = 'all';
                 connections.value = [];
                 formDataSource.value.linkis_datasource_envs = [];
                 envs.value = [];
+                dcnValueOptions.value = [];
                 if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
                     formDataSource.value.db_name = '';
                     dbs.value = [];
@@ -588,6 +675,28 @@ const resetFormItems = (type = '') => {
             case 'source_name':
                 formDataSource.value.linkis_datasource_envs = [];
                 envs.value = [];
+                dcnValueOptions.value = [];
+                if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
+                    formDataSource.value.db_name = '';
+                    dbs.value = [];
+                    formDataSource.value.table_name = '';
+                    tables.value = [];
+                }
+                break;
+            case 'dcn_type':
+                formDataSource.value.linkis_datasource_envs = [];
+                formDataSource.value.linkis_datasource_dcn_range_values = [];
+                envs.value = [];
+                dcnValueOptions.value = [];
+                if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
+                    formDataSource.value.db_name = '';
+                    dbs.value = [];
+                    formDataSource.value.table_name = '';
+                    tables.value = [];
+                }
+                break;
+            case 'dcn':
+                // formDataSource.value.linkis_datasource_envs = [];
                 if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
                     formDataSource.value.db_name = '';
                     dbs.value = [];
@@ -616,8 +725,13 @@ const resetFormItems = (type = '') => {
                 break;
         }
         // important需要更新hook的数据
-        console.log(verifyObjectData.value, 'verifyObjectData.value');
         updateDataSource(verifyObjectData.value, props.type);
+        // if (listType.value === 'listByTemplate') {
+        //     updateDataSource(formDataSource.value, props.type, 'listByTemplate');
+        // } else {
+        //     updateDataSource(verifyObjectData.value, props.type);
+        // }
+
         // 更新store
         const tempData = cloneDeep(formDataSource.value);
         const targetTempData = {};
@@ -632,16 +746,25 @@ const resetFormItems = (type = '') => {
                 targetTempData.source = tempData;
                 targetTempData.isUpStream = target.isUpStream || verifyObjectData.value.isUpStream;
                 targetTempData.filter_col_names = [];
+                targetTempData.mappings = [];
+                targetTempData.compare_cols = [];
                 break;
             case 'target':
                 targetTempData.target = tempData;
+                targetTempData.mappings = [];
+                targetTempData.compare_cols = [];
                 break;
             default:
                 break;
         }
         targetTempData.isUpStream = verifyObjectData.value.isUpStream;
+
         store.commit('rule/updateCurrentRuleDetail', targetTempData);
-        eventbus.emit('SHOULD_UPDATE_NECESSARY_DATA', type);
+        if (type !== 'filter') {
+            eventbus.emit('SHOULD_UPDATE_NECESSARY_DATA', type);
+        } else {
+            eventbus.emit('ONLY_UPDATE_FILTER');
+        }
     } catch (err) {
         console.warn(err);
     }
@@ -678,8 +801,7 @@ const onProxyUserChange = async () => {
     clearList();
     resetFormItems('proxy_user');
     await nextTick();
-    // eslint-disable-next-line no-use-before-define
-    handleDataSourcesDependenciesChange(map.value);
+    handleDataSourcesDependenciesChange();
     if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
         handleDbsDependenciesChange();
         handleDbChange();
@@ -687,16 +809,22 @@ const onProxyUserChange = async () => {
 };
 
 // 数据源类型变化
-const onSourceTypeChange = async () => {
+const onSourceTypeChange = async (type) => {
     clearList();
     resetFormItems('type');
     await nextTick();
-    // eslint-disable-next-line no-use-before-define
-    handleDataSourcesDependenciesChange(map.value);
+    updateDataSource(verifyObjectData.value, props.type);
+    // if (listType.value === 'listByTemplate') {
+    //     updateDataSource(formDataSource.value, props.type, 'listByTemplate');
+    // } else {
+    //     updateDataSource(verifyObjectData.value, props.type);
+    // }
+    handleDataSourcesDependenciesChange();
     if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
         handleDbsDependenciesChange();
         handleDbChange();
     }
+    if (props.type === 'source') eventbus.emit('TYPE_CHANGE', type);
 };
 
 // 数据源名称变化
@@ -711,7 +839,37 @@ const onSourceNameChange = async (value) => {
     }
     handleEnvChange();
 };
-
+// DCN选择方式改变，获取DCN选项
+const onDcnTypeChange = async () => {
+    clearList();
+    resetFormItems('dcn_type');
+    await nextTick();
+    await handleEnvChange();
+};
+const rebuildEnvs = (dcnList) => {
+    const tempEnvs = [];
+    for (let i = 0; i < dcnList.length; i++) {
+        const tempDcn = dcnValueOptions.value.find(item => item.value === dcnList[i]);
+        if (tempDcn) {
+            for (let j = 0; j < tempDcn.envs.length; j++) {
+                const tempEnv = envs.value.find(item => item.env_id === tempDcn.envs[j].env_id).value;
+                tempEnvs.push(tempEnv);
+            }
+        }
+    }
+    return tempEnvs;
+};
+const onDcnChange = async (val, index) => {
+    clearList();
+    formDataSource.value.linkis_datasource_envs = rebuildEnvs(formDataSource.value.linkis_datasource_dcn_range_values);
+    // eslint-disable-next-line no-use-before-define
+    await verifyObjectFormRef.value.validate(['linkis_datasource_envs']);
+    resetFormItems('dcn');
+    // 自定义sql中不为环境映射的时候不对数据源环境的变化做处理
+    if (formDataSource.value.isMappingMode || !['sqlVerification'].includes(ruleType.value) || ['fps'].includes(formDataSource.value.type)) {
+        handleDbsDependenciesChange(index);
+    }
+};
 // 设置数据源名称
 watch(connection, (val) => {
     if (val) {
@@ -734,7 +892,7 @@ const onDBChange = async (val, index = -1) => {
 // 数据表变化
 const onTableChange = async (val, index = -1) => {
     // 非环境库表的映射中，TableChange不会传入参数，取默认值-1；环境库表映射中，传入index为环境库表映射列表的序号
-    resetFormItems();
+    resetFormItems('table');
     await nextTick();
     if (index === -1) {
         handleTableChange(props.type);
@@ -743,7 +901,7 @@ const onTableChange = async (val, index = -1) => {
 
 // 过滤条件变化
 const onFilterChange = async () => {
-    resetFormItems();
+    resetFormItems('filter');
 };
 // 数据源环境变化
 const onEnvChange = async (val, index = -1) => {
@@ -760,27 +918,18 @@ const onEnvChange = async (val, index = -1) => {
     resetFormItems();
     await nextTick();
 };
-const dataSourceTypeList = ref([]);
 // 数据源类型的相关处理
 // 表文件校验可选数据源类型仅有Hive
-// const handleCurDataSourceTypeList = () => {
-//     if (ruleType.value === 'documentVerification') {
-//         return dataSourceTypeList.filter(item => item.value === 'hive');
-//     }
-//     if (props.isNormalMode) {
-//         return dataSourceTypeList;
-//     }
-//     return dataSourceTypeList.filter(item => item.value !== 'fps');
-// };
-const currentDataSourceTypeList = computed(() => {
+const handleCurDataSourceTypeList = () => {
     if (ruleType.value === 'documentVerification') {
-        return dataSourceTypeList.value.filter(item => item.value === 'hive');
+        return dataSourceTypeList.filter(item => item.value === 'hive');
     }
     if (props.isNormalMode) {
-        return dataSourceTypeList.value;
+        return dataSourceTypeList;
     }
-    return dataSourceTypeList.value.filter(item => item.value !== 'fps');
-});
+    return dataSourceTypeList.filter(item => item.value !== 'fps');
+};
+const currentDataSourceTypeList = ref(handleCurDataSourceTypeList());
 const dataSourceType = computed(() => getDataSourceType(formDataSource.value.type === 'fps', formDataSource.value.type, false));
 
 // FPS表单校验完成后发送信号，监听并将数据同步到formDataSource，区别触发来源，两个verifyobject都在监听这个事件，会导致同步更新。
@@ -860,8 +1009,7 @@ useListener('IS_RULE_DETAIL_DATA_LOADED', async () => {
         }
         updateUpstreamParams(target.isUpStream, target.rule_name, target.cs_id);
         updateDataSource(cloneDeep(target), props.type);
-        // eslint-disable-next-line no-use-before-define
-        await handleDataSourcesDependenciesChange(map.value);
+        await handleDataSourcesDependenciesChange();
         datasource.isMappingMode = datasource?.linkis_datasource_envs_mappings?.length > 0 && ruleType.value === 'sqlVerification';
         // 非自定义SQL做的初始化
         if (!['sqlVerification'].includes(ruleType.value) || ['fps'].includes(datasource.type)) {
@@ -942,15 +1090,22 @@ useListener('UPDATE_COLUMN_LIST', ({ data, target }) => {
         columns.value = data;
     }
 });
+// 校验为模板空值或空字符串检测时，校验字段为字符串
+const storeRuleData = computed(() => store.state.rule);
+const currentRule = computed(() => storeRuleData.value.currentRuleDetail);
+const isVerifyColumnString = computed(() => currentRule.value?.rule_template_name === $t('_.空值或空字符串检测') && verifyObjectData.value.datasource[0]?.type === 'hive');
 // 校验字段/过滤字段校验规则
 const colNamesRules = ref({
     colNamesStrArr: [{
         required: true,
         validator: (rule, value) => new Promise((resolve, reject) => {
             if (aboutColumnsSelectData.value.field_type === '') {
-                reject('请选择校验模板');
+                reject($t('_.请选择校验模板'));
             }
-
+            // 表规则组时需要从store拿数据
+            if (!(columns.value && columns.value.length)) {
+                columns.value = ruleData.value.verifyColumns;
+            }
             // 需要更新字段，组件支持的数组和提交给接口的数据不相同，是在麻烦
             const colNames = value.map((name) => {
                 // eslint-disable-next-line camelcase
@@ -978,7 +1133,11 @@ const colNamesRules = ref({
                     reject($t('toastWarn.atMost') + 1 + $t('addTechniqueRule.fields'));
                 }
             }
-
+            if (isVerifyColumnString.value) {
+                if (colNames.some(item => item.data_type !== 'string')) {
+                    reject($t('_.不符合规则的字段'));
+                }
+            }
             resolve();
         }),
     }],
@@ -987,7 +1146,7 @@ const colNamesRules = ref({
         trigger: 'change',
         validator: (rule, value) => new Promise((resolve, reject) => {
             if (aboutColumnsSelectData.value.field_type === '') {
-                reject('请选择校验模板');
+                reject($t('_.请选择校验模板'));
             }
             if (!value || value?.length === 0) {
                 value = [];
@@ -1019,7 +1178,6 @@ const colNamesRules = ref({
         }),
     }],
 });
-
 
 const verifyObjectFormRef = ref(null);
 const feildRef = ref(null);
@@ -1073,29 +1231,20 @@ const onUpStreamChange = (data) => {
 };
 
 const getRuleMetricData = (ruleMetricData) => {
-    console.log('指标校验');
     verifyObjectData.value.ruleMetricData = ruleMetricData;
     console.log(ruleMetricData);
 };
-const map = ref({});
-onMounted(async () => {
-    try {
-        const res = await request('/api/v1/projector/meta_data/data_source/types/custom', {}, { method: 'get', cache: true });
-        dataSourceTypeList.value = res.typeList.map(item => ({
-            label: item?.name?.toUpperCase() || '',
-            value: item?.name,
-        }));
-        for (let i = 0; i < res.typeList.length; i++) {
-            map.value[res.typeList[i].name] = res.typeList[i].id;
-        }
-        console.log('数据源类型map-', map.value);
-    } catch (err) {
-        console.error(err);
-    }
+const DCNTypeMap = {
+    all: $t('_.直接选择'),
+    dcn_num: $t('_.按环境编号选择'),
+    logic_area: $t('_.按逻辑区域选择'),
+};
+useListener('COPY_MODE', () => {
+    delete verifyObjectData.value.rule_id;
 });
-
 // eslint-disable-next-line no-undef
 defineExpose({ valid, verifyObjectData });
+
 </script>
 <style scoped lang="less">
 .edit-table-icon {
@@ -1131,5 +1280,11 @@ defineExpose({ valid, verifyObjectData });
     color: #646670;
     display: inline-block;
     margin-left: 8px;
+}
+.env-tag {
+    margin-top: 4px
+}
+.env-label {
+    line-height: 32px;
 }
 </style>

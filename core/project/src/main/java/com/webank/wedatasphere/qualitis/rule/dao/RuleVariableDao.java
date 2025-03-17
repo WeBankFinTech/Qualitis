@@ -39,4 +39,6 @@ public interface RuleVariableDao {
      * @return
      */
     List<RuleVariable> findByRule(Rule rule);
+
+    void deleteAll(List<RuleVariable> ruleVariables);
 }

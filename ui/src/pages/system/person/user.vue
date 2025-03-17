@@ -5,32 +5,35 @@
                 <BSearch v-model:form="searchForm" :isReset="false" @search="loadUser">
                     <template v-slot:form>
                         <div>
-                            <span class="condition-label">{{$t('system.division')}}</span>
+                            <span class="condition-label">{{$t('_.部门')}}</span>
                             <FSelect
                                 v-model="searchForm.department_code"
                                 clearable
                                 filterable
-                                :placeholder="$t('system.select')"
+                                :placeholder="$t('_.请选择')"
                                 :options="departmentList"
                                 @change="onDepartmentChange"
                             ></FSelect>
                         </div>
                         <div>
-                            <span class="condition-label">{{$t('system.department')}}</span>
+                            <span class="condition-label">{{$t('_.科室')}}</span>
                             <FSelect
                                 v-model="searchForm.sub_department_code"
                                 clearable
                                 filterable
-                                :placeholder="$t('system.select')"
+                                :placeholder="$t('_.请选择')"
                                 :options="roomList"
                             ></FSelect>
                         </div>
                         <div>
-                            <span class="condition-label">{{$t('system.userName')}}</span>
-                            <FInput
+                            <span class="condition-label">{{$t('_.用户名')}}</span>
+                            <FSelect
                                 v-model="searchForm.user_name"
-                                :placeholder="$t('system.enter')"
-                            ></FInput>
+                                clearable
+                                filterable
+                                :placeholder="$t('_.请选择')"
+                                :options="userNameList"
+                            ></FSelect>
                         </div>
                     </template>
                 </BSearch>
@@ -110,7 +113,7 @@
                     checkStrictly="child"
                 ></FSelectCascader>
             </FFormItem>
-            <FFormItem label="职位角色" prop="position_en">
+            <FFormItem :label="$t('_.职位角色')" prop="position_en">
                 <FSelect
                     v-model="form.position_en"
                     :placeholder="$t('common.pleaseSelect')"
@@ -121,7 +124,7 @@
                 <FInput v-model="form.user_config_json" :placeholder="$t('common.pleaseEnter')" clearable type="textarea" />
             </FFormItem>
             <div class="footer">
-                <FButton type="link" @click="() => showMoreConfig = !showMoreConfig">{{showMoreConfig ? '收起更多配置' : '展开更多配置'}}</FButton>
+                <FButton type="link" @click="() => showMoreConfig = !showMoreConfig">{{showMoreConfig ? $t('common.closeMoreConfig') : $t('common.openMoreConfig')}}</FButton>
             </div>
         </FForm>
     </FModal>
@@ -148,18 +151,18 @@ import useDepartmentList from '../hooks/useDepartmentList';
 const { t: $t } = useI18n();
 const showLoading = ref(false);
 
-// const userNameList = ref([]);
-// const getUserNameList = async () => {
-//     try {
-//         const result = await getUserName();
-//         userNameList.value = result.map(item => ({
-//             value: item,
-//             label: item,
-//         })).filter(item => item.label);
-//     } catch (error) {
-//         console.log('getUserNameList Error:', error);
-//     }
-// };
+const userNameList = ref([]);
+const getUserNameList = async () => {
+    try {
+        const result = await getUserName();
+        userNameList.value = result.map(item => ({
+            value: item,
+            label: item,
+        })).filter(item => item.label);
+    } catch (error) {
+        console.log('getUserNameList Error:', error);
+    }
+};
 const searchForm = ref({});
 const { departmentList, roomList, getRoomList } = useDepartmentList();
 const onDepartmentChange = () => {
@@ -239,6 +242,8 @@ function del(row, e) {
     FModal.confirm({
         title: $t('common.prompt'),
         content: $t('personnelManagePage.deleteCurrentUser', { name: row.username }),
+        okText: $t('common.ok'),
+        cancelText: $t('common.cancel'),
         async onOk() {
             await delUser({ user_id: row.user_id });
             FMessage.success($t('toastSuccess.deleteSuccess'));
@@ -252,7 +257,7 @@ const positionRoleList = ref([]);
 const getPositionRoleList = async () => {
     try {
         const res = await getPositionRole();
-        positionRoleList.value = res.map(item => ({ value: item.code, label: item.message }));
+        positionRoleList.value = res.map(item => ({ value: item?.code, label: item.message }));
     } catch (error) {
         console.log('getPositionRoleList', error);
     }
@@ -320,8 +325,9 @@ async function saveUser() {
         let subDepCode = '';
         if (Array.isArray(curSubDepartData.value)) {
             const curSubDep = curSubDepartData.value.filter(item => item.id === depId)[0].subDep;
-            subDepCode = curSubDep.filter(item => item.value === form.value.department_name)[0].code;
+            subDepCode = curSubDep.find(item => item.value === form.value.department_name)?.code ?? '';
         }
+        if (!subDepCode) return FMessage.error($t('toastError.departmentError'));
         const params = {
             username: form.value.username,
             chinese_name: form.value.chinese_name,
@@ -339,9 +345,10 @@ async function saveUser() {
         reset();
         showModal.value = false;
         await loadUser();
-        // await getUserNameList();
+        await getUserNameList();
         pagination.current = 1;
     } catch (error) {
+        FMessage.error($t('toastError.saveFail'));
         console.error(error);
         showLoading.value = false;
     }
@@ -363,8 +370,9 @@ async function editUser() {
         let subDepCode = '';
         if (Array.isArray(curSubDepartData.value)) {
             const curSubDep = curSubDepartData.value.filter(item => item.id === depId)[0].subDep;
-            subDepCode = curSubDep.filter(item => item.value === form.value.department_name)[0].code;
+            subDepCode = curSubDep.find(item => item.value === form.value.department_name)?.code ?? '';
         }
+        if (!subDepCode) return FMessage.error($t('toastError.departmentError'));
         const params = {
             user_id: userId.value,
             chinese_name: form.value.chinese_name,
@@ -384,6 +392,7 @@ async function editUser() {
         await loadUser();
         pagination.current = 1;
     } catch (error) {
+        FMessage.error($t('toastError.saveFail'));
         console.error(error);
         showLoading.value = false;
     }
@@ -397,7 +406,7 @@ function handleSaveOrEdit() {
 }
 onMounted(async () => {
     await getPositionRoleList();
-    // await getUserNameList();
+    await getUserNameList();
     await loadUser();
     resultByInit.value = true;
 });

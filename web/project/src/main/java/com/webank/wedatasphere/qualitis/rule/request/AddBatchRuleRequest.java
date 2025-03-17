@@ -25,6 +25,8 @@ public class AddBatchRuleRequest {
     private String ruleCnName;
     @JsonProperty(value = "rule_detail")
     private String ruleDetail;
+    @JsonProperty(value = "reg_rule_code")
+    private String regRuleCode;
     @JsonProperty(value = "execution_parameters_name", required = true)
     private String executionParametersName;
     @JsonProperty(value = "check_object_list", required = true)
@@ -33,6 +35,14 @@ public class AddBatchRuleRequest {
     private List<FileAlarmConfigRequest> checkVariableList;
     @JsonProperty(value = "template_arguments")
     private List<TemplateArgumentRequest> templateArgumentRequests;
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
+    }
 
     public Long getProjectId() {
         return projectId;

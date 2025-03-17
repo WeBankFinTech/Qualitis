@@ -33,7 +33,7 @@ public class AbnormalDataRecordInfo {
     @Column(name = "dept")
     private String departmentName;
     @Column(name = "sub_system_id")
-    private Integer subSystemId;
+    private String subSystemId;
     @Column(name = "execute_num")
     private Integer executeNum;
     @Column(name = "event_num")
@@ -48,7 +48,7 @@ public class AbnormalDataRecordInfo {
         // Do nothing.
     }
 
-    public AbnormalDataRecordInfo(Long ruleId, String ruleName, String datasourceType, String dbName, String tableName, String departmentName, Integer subSystemId, int execNum, int alarmNum) {
+    public AbnormalDataRecordInfo(Long ruleId, String ruleName, String datasourceType, String dbName, String tableName, String departmentName, String subSystemId, int execNum, int alarmNum) {
         this.ruleId = ruleId;
         this.ruleName = ruleName;
         this.datasource = datasourceType;
@@ -116,11 +116,11 @@ public class AbnormalDataRecordInfo {
         this.departmentName = departmentName;
     }
 
-    public Integer getSubSystemId() {
+    public String getSubSystemId() {
         return subSystemId;
     }
 
-    public void setSubSystemId(Integer subSystemId) {
+    public void setSubSystemId(String subSystemId) {
         this.subSystemId = subSystemId;
     }
 

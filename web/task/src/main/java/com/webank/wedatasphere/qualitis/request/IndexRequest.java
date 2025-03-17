@@ -30,7 +30,6 @@ import org.apache.commons.lang.StringUtils;
  * @date 2018-11-14
  */
 public class IndexRequest {
-
   @JsonIgnore
   private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
   @JsonProperty("step_size")
@@ -46,19 +45,18 @@ public class IndexRequest {
   }
 
   public static void checkRequest(IndexRequest request) throws UnExpectedRequestException {
-    boolean useStepSize = request.getStepSize() != null;
+    boolean useStepSize = (request.getStepSize() != null);
     boolean useDate = StringUtils.isNotBlank(request.getStartDate()) || StringUtils.isNotBlank(request.getEndDate());
     if (useStepSize && useDate) {
       throw new UnExpectedRequestException("{&STEP_SIZE_AND_START_DATE_END_DATE_CAN_NOT_ALL_USE_AT_THE_SAME_TIME}");
     }
     if (request.getStepSize() == null) {
-      com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getStartDate(), "start_date");
-      com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkString(request.getEndDate(), "end_date");
-      com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkDateStringPattern(request.getStartDate(), DATE_FORMAT_PATTERN,
-                                           "start_date");
-      com.webank.wedatasphere.qualitis.project.request.CommonChecker.checkDateStringPattern(request.getEndDate(), DATE_FORMAT_PATTERN, "end_date");
+      CommonChecker.checkString(request.getStartDate(), "start_date");
+      CommonChecker.checkString(request.getEndDate(), "end_date");
+      CommonChecker.checkDateStringPattern(request.getStartDate(), DATE_FORMAT_PATTERN, "start_date");
+      CommonChecker.checkDateStringPattern(request.getEndDate(), DATE_FORMAT_PATTERN, "end_date");
     }
-    if (StringUtils.isBlank(request.getStartDate())) {
+    if (StringUtils.isBlank(request.getStartDate()) && StringUtils.isBlank(request.getEndDate())) {
       CommonChecker.checkObject(request.getStepSize(), "step_size");
     }
   }

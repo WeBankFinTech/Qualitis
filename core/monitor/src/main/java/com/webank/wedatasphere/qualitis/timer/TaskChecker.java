@@ -18,49 +18,29 @@ package com.webank.wedatasphere.qualitis.timer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import com.webank.wedatasphere.qualitis.bean.JobChecker;
+import com.webank.wedatasphere.qualitis.checkalert.dao.repository.CheckAlertWhiteListRepository;
 import com.webank.wedatasphere.qualitis.client.AlarmClient;
+import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.config.ImsConfig;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
-import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.ApplicationCommentEnum;
-import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
-import com.webank.wedatasphere.qualitis.constant.ImsLevelEnum;
-import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
-import com.webank.wedatasphere.qualitis.constant.TaskStatusEnum;
+import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
+import com.webank.wedatasphere.qualitis.constant.*;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
-import com.webank.wedatasphere.qualitis.dao.AbnormalDataRecordInfoDao;
-import com.webank.wedatasphere.qualitis.dao.AlarmInfoDao;
-import com.webank.wedatasphere.qualitis.dao.ApplicationCommentDao;
-import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.LinksErrorCodeDao;
-import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDataSourceDao;
-import com.webank.wedatasphere.qualitis.dao.TaskResultDao;
-import com.webank.wedatasphere.qualitis.dao.TaskResultStatusDao;
-import com.webank.wedatasphere.qualitis.dao.TaskRuleAlarmConfigDao;
-import com.webank.wedatasphere.qualitis.dao.TaskRuleSimpleDao;
-import com.webank.wedatasphere.qualitis.dao.UploadRecordDao;
-import com.webank.wedatasphere.qualitis.dao.UserDao;
-import com.webank.wedatasphere.qualitis.entity.AbnormalDataRecordInfo;
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.ApplicationComment;
-import com.webank.wedatasphere.qualitis.entity.LinksErrorCode;
-import com.webank.wedatasphere.qualitis.entity.ReportBatchInfo;
-import com.webank.wedatasphere.qualitis.entity.RuleMetric;
-import com.webank.wedatasphere.qualitis.entity.Task;
-import com.webank.wedatasphere.qualitis.entity.TaskDataSource;
-import com.webank.wedatasphere.qualitis.entity.TaskResult;
-import com.webank.wedatasphere.qualitis.entity.TaskResultStatus;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
-import com.webank.wedatasphere.qualitis.entity.TaskRuleSimple;
-import com.webank.wedatasphere.qualitis.entity.UploadRecord;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.dao.repository.AuthListRepository;
+import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.TaskNotExistException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.NoiseStrategyEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
@@ -73,9 +53,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.NoiseEliminationManagement;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.response.CheckConditionsResponse;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
-import com.webank.wedatasphere.qualitis.util.AlarmUtil;
-import com.webank.wedatasphere.qualitis.util.PassUtil;
-import com.webank.wedatasphere.qualitis.util.ReportUtil;
+import com.webank.wedatasphere.qualitis.util.*;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -90,11 +68,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -106,8 +87,12 @@ import java.util.stream.Collectors;
 public class TaskChecker implements IChecker {
     @Autowired
     private MonitorManager monitorManager;
+//    @Autowired(required = false)
+//    private ServicisRpc servicisRpc;
     @Autowired
     private TaskDao taskDao;
+    @Autowired
+    private ProxyUserDao proxyUserDao;
     @Autowired
     private TaskResultDao taskResultDao;
     @Autowired
@@ -115,7 +100,11 @@ public class TaskChecker implements IChecker {
     @Autowired
     private TaskDataSourceDao taskDataSourceDao;
     @Autowired
+    private AuthListRepository authListRepository;
+    @Autowired
     private TaskRuleAlarmConfigDao taskRuleAlarmConfigDao;
+    @Autowired
+    private CheckAlertWhiteListRepository checkAlertWhiteListRepository;
     @Autowired
     private RuleMetricDao ruleMetricDao;
     @Autowired
@@ -148,12 +137,40 @@ public class TaskChecker implements IChecker {
     private LinksErrorCodeDao linksErrorCodeDao;
     @Autowired
     private ApplicationCommentDao applicationCommentDao;
+    @Autowired
+    private RestTemplate restTemplate;
 
-//    @Value("${intellect.check.project_name}")
-//    private String intellectCheckProjectName;
+    @Value("${intellect.check.project_name}")
+    private String intellectCheckProjectName;
 
     @Value("${alarm.ims.receiver.collect:leoli,dqdong}")
     private String collectReceiver;
+
+    @Value("${rule.dgsmDataBatch.size:50}")
+    private Integer dgsmDataBatchSize;
+
+    @Value("${rule.dgsmDataBatch.enable:false}")
+    private Boolean dgsmDataBatchEnable;
+
+    @Value("${metric.collector.host}")
+    private String collectorServerHost;
+
+    @Value("${metric.collector.path.collect_submit:/qualitis/outer/api/v1/imsmetric/collect}")
+    private String collectorCollectSubmitPath;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
+    @Autowired
+    private SpecialProjectRuleConfig specialProjectRuleConfig;
+
+    @Autowired
+    AbstractThreadPoolManager threadPoolManager;
+
+    private static final Gson GSON = new Gson();
+
+    private GeneralThreadPool rerunThreadPool;
+    private GeneralThreadPool dgsmThreadPool;
 
     private static final int BATCH_ABNORMAL_DATA_RECORD = 500;
     private static final String PRINT_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
@@ -167,7 +184,7 @@ public class TaskChecker implements IChecker {
     private static final String IMS_LOG = "{\"TYPE\": \"QUALITIS\",\"RES_CODE\": %d,\"COST_TIME\": %d,\"RES_MSG\": \"%s\"}";
 
     @PostConstruct
-    public void init() {
+    public void init() throws ThreadPoolNotFoundException {
         List<LinksErrorCode> allLinksErrorCode = linksErrorCodeDao.findAllLinksErrorCode();
         if (CollectionUtils.isNotEmpty(allLinksErrorCode)) {
             for (LinksErrorCode linksErrorCode : allLinksErrorCode) {
@@ -180,8 +197,9 @@ public class TaskChecker implements IChecker {
             APPLICATION_COMMENT_LIST.addAll(allApplicationComment);
         }
 
+        this.rerunThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.TASK_RERUN);
+        this.dgsmThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.DGSM);
     }
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -227,6 +245,74 @@ public class TaskChecker implements IChecker {
                 }
 
                 taskDao.save(taskInDb);
+            }
+
+            // Check collect task and decide to rerun.
+            if (jobStatus.equals(TaskStatusEnum.FAILED.getState()) || jobStatus.equals(TaskStatusEnum.CANCELLED.getState())) {
+
+                if (errCode != null && specialProjectRuleConfig.getErrorCodeWhiteList().contains(errCode.toString())) {
+                    return;
+                }
+
+                rerunThreadPool.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.currentThread().setName("Collect-Rerun-Thread-" + UuidGenerator.generate());
+                            Task taskInDb = taskDao.findByRemoteTaskIdAndClusterName(jobChecker.getTaskId(), jobChecker.getClusterName());
+                            if (null != taskInDb.getRetry() && taskInDb.getRetry() < QualitisConstants.RETRY_MAX) {
+                                if (StringUtils.isBlank(taskInDb.getTaskProxyUser())) {
+                                    LOGGER.error("Collect task[ID: {}, REMOTE_ID: {}] has no proxy user, cannot rerun.", taskInDb.getId(), taskInDb.getTaskRemoteId());
+                                } else {
+                                    ProxyUser proxyUser = proxyUserDao.findByProxyUserName(taskInDb.getTaskProxyUser());
+                                    // Compare with proxy user's end time of queue using.
+                                    Map<String, Object> userConfigMap = proxyUser.getUserConfigMap();
+                                    if (userConfigMap.get("collect_end_time") != null) {
+                                        String collectEndTime = (String) userConfigMap.get("collect_end_time");
+                                        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+                                        LocalTime givenTime = LocalTime.parse(collectEndTime, formatter);
+                                        LocalTime currentTime = LocalTime.now();
+                                        Duration duration = Duration.between(currentTime, givenTime);
+                                        if (duration.toMinutes() <= QualitisConstants.RETRY_INTERVAL) {
+                                            return;
+                                        }
+                                        // Call api to submit collect task with different execution param template.
+                                        List<Long> realCollectIds = Arrays.asList(taskInDb.getCollectIds().split(SpecCharEnum.COMMA.getValue())).stream().map(collectId -> Long.parseLong(collectId)).collect(Collectors.toList());
+                                        Map<String, Object> paramMap = new HashMap<>();
+                                        paramMap.put("create_user", proxyUser.getProxyUserName());
+                                        paramMap.put("execution_user", proxyUser.getProxyUserName());
+                                        paramMap.put("imsmetric_collect_id_list", realCollectIds);
+                                        Application applicationInDb = applicationDao.findById(jobChecker.getApplicationId());
+                                        if (applicationInDb != null && StringUtils.isNotBlank(applicationInDb.getPartition())) {
+                                            paramMap.put("execution_parameters", "partition:" + applicationInDb.getPartition());
+                                        }
+                                        paramMap.put("execution_parameters_name", "default" + (taskInDb.getRetry() + 1));
+
+                                        String appId = QualitisConstants.DEFAULT_AUTH_APP_ID;
+                                        String nonce = "16895";
+                                        String timestamp = String.valueOf(System.currentTimeMillis());
+                                        AuthList authList = authListRepository.findByAppId(appId);
+                                        String signature = SignUtil.generateSignature(appId, authList.getAppToken(), nonce, timestamp);
+                                        String collectorServerUri = collectorServerHost + collectorCollectSubmitPath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
+
+                                        LOGGER.info("Start to submit collect to collector server, url: {}, data: {}", collectorServerUri, GSON.toJson(paramMap));
+                                        GeneralResponse generalResponse = restTemplate.postForObject(collectorServerUri, paramMap, GeneralResponse.class);
+                                        LOGGER.info("Finish to submit collect to collector server");
+                                        if (! ResponseStatusConstants.OK.equals(generalResponse.getCode())) {
+                                            LOGGER.error("Failed to submit collect from collector server.");
+                                        }
+                                    } else {
+                                        LOGGER.error("Collect task[ID: {}, REMOTE_ID: {}] proxy user has no config json, cannot rerun.", taskInDb.getId(), taskInDb.getTaskRemoteId());
+                                    }
+                                }
+                            }
+
+                            LOGGER.info("Success to rerun collect.");
+                        } catch (Exception e) {
+                            LOGGER.error("Rerun collect failed exception.", e);
+                        }
+                    }
+                });
             }
         } catch (TaskNotExistException e) {
             LOGGER.error("Spark Task [{}] does not exist, application id : [{}]", jobChecker.getTaskId(), jobChecker.getApplicationId(), e);
@@ -394,7 +480,7 @@ public class TaskChecker implements IChecker {
     private Boolean checkTaskRuleSimplePass(String applicationId, TaskRuleSimple taskRuleSimple) {
         Boolean passFlag = Boolean.TRUE;
         Application application = applicationDao.findById(applicationId);
-        if (StringUtils.isNotEmpty(application.getClusterName()) && application.getClusterName().contains(SpecCharEnum.COMMA.getValue()) && (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName()))) {
+        if (StringUtils.isNotEmpty(application.getClusterName()) && application.getClusterName().contains(SpecCharEnum.COMMA.getValue()) && (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()))) {
             return Boolean.TRUE;
         }
         List<TaskResult> taskResults = taskResultDao.findByApplicationAndRule(applicationId, taskRuleSimple.getRuleId());
@@ -408,7 +494,7 @@ public class TaskChecker implements IChecker {
             Long ruleMetricId = taskResult.getRuleMetricId();
             if (ruleMetricId != null && ruleMetricId.longValue() != -1) {
                 taskRuleAlarmConfigList = taskRuleAlarmConfigList.stream().filter(taskRuleAlarmConfig ->
-                        taskRuleAlarmConfig.getRuleMetric().getId().equals(ruleMetricId)
+                        (taskRuleAlarmConfig.getRuleMetric() != null && taskRuleAlarmConfig.getRuleMetric().getId().equals(ruleMetricId))
                 ).collect(Collectors.toList());
             }
             // 遍历校验预期
@@ -474,7 +560,7 @@ public class TaskChecker implements IChecker {
 
                 for (Long ruleId : ruleTaskResults.keySet()) {
                     List<TaskRuleSimple> taskRuleSimples = taskRuleSimpleDao.findByApplicationAndRule(applicationInDb.getId(), ruleId);
-                    boolean allMatch = taskRuleSimples.stream().allMatch(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName()));
+                    boolean allMatch = taskRuleSimples.stream().allMatch(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()));
                     if (! allMatch) {
                         continue;
                     }
@@ -558,16 +644,16 @@ public class TaskChecker implements IChecker {
                     .collect(Collectors.toList());
                 Integer applicationCommentCode = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
                 applicationInDb.setApplicationComment(applicationCommentCode);
-                printImsLog(applicationInDb,ApplicationStatusEnum.FINISHED);
+                printImsLog(applicationInDb, ApplicationStatusEnum.FINISHED);
             } else if (!applicationInDb.getFailTaskNum().equals(0) || !applicationInDb.getAbnormalTaskNum().equals(0)) {
                 applicationInDb.setStatus(ApplicationStatusEnum.FAILED.getCode());
-                printImsLog(applicationInDb,ApplicationStatusEnum.FAILED);
+                printImsLog(applicationInDb, ApplicationStatusEnum.FAILED);
             } else {
                 applicationInDb.setStatus(ApplicationStatusEnum.NOT_PASS.getCode());
                 List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.DIFF_DATA_ISSUES.getCode().toString())).collect(Collectors.toList());
                 Integer applicationCommentCode = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
                 applicationInDb.setApplicationComment(applicationCommentCode);
-                printImsLog(applicationInDb,ApplicationStatusEnum.NOT_PASS);
+                printImsLog(applicationInDb, ApplicationStatusEnum.NOT_PASS);
             }
             checkIfSendAlarm(applicationInDb);
             checkIfReport(applicationInDb, imsConfig);
@@ -596,17 +682,19 @@ public class TaskChecker implements IChecker {
                 LOGGER.info("No failed collect task.");
                 return;
             }
-//            Set<String> dbTableFilters = failedTask.stream().map(task -> task.getTaskDataSources())
-//                    .flatMap(taskDataSources -> taskDataSources.stream()).map(taskDataSource -> taskDataSource.getDatabaseName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + taskDataSource.getTableName() + SpecCharEnum.COLON.getValue() + taskDataSource.getFilter()).collect(Collectors.toSet());
-//            Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
-//            String alertInfo = linkisConfig.getCollectTemplate();
-//            alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
-//            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
+            Set<String> dbTableFilters = failedTask.stream().map(task -> task.getTaskDataSources())
+                    .flatMap(taskDataSources -> taskDataSources.stream()).map(taskDataSource -> taskDataSource.getDatabaseName() + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + taskDataSource.getTableName() + SpecCharEnum.COLON.getValue() + taskDataSource.getFilter()).collect(Collectors.toSet());
+            Set<Long> failedTaskRemoteIds = failedTask.stream().map(task -> task.getTaskRemoteId()).collect(Collectors.toSet());
+            Set<Integer> failedTaskRetrys = failedTask.stream().filter(task -> null != task.getRetry()).map(task -> task.getRetry()).collect(Collectors.toSet());
+            String alertInfo = linkisConfig.getCollectTemplate();
+            alertInfo = alertInfo.replace("taskRetry", CollectionUtils.isNotEmpty(failedTaskRetrys) ? ("重跑第" + failedTaskRetrys.iterator().next() + "次") : "");
+            alertInfo = alertInfo.replace("dbTableFilters", StringUtils.join(dbTableFilters, SpecCharEnum.COMMA.getValue())).replace("applicationID", application.getId()).replace("failedTaskRemoteIds", Arrays.toString(failedTaskRemoteIds.toArray()));
+            alarmClient.sendAlarm(imsConfig.getFailReceiver() + SpecCharEnum.COMMA.getValue() + collectReceiver, imsConfig.getTitlePrefix() + "集群 Qualitis 采集任务告警", alertInfo, String.valueOf(ImsLevelEnum.MINOR.getCode()), QualitisConstants.SUB_SYSTEM_ID);
             LOGGER.info("Finish to alarm collect task.");
             return;
         }
 
-        LOGGER.info("Start to collect alarm info.");
+        LOGGER.info("Start to collect alarm info. Application ID: {}", application.getId());
         List<Task> tasks = taskDao.findByApplication(application);
 
 //      Previously, tasks that didn't pass and were aborted had been modified as failed tasks, but when sending alarm to receivers,
@@ -628,7 +716,7 @@ public class TaskChecker implements IChecker {
 
         LOGGER.info("Succeed to collect failed pass tasks. Task ID: {}", notPassTask.stream().map(Task::getId).collect(Collectors.toList()));
         List<TaskRuleSimple> notPassTaskRuleSimples = AlarmUtil.notSafeTaskRuleSimple(notPassTask);
-        List<TaskRuleSimple> checkAlarmAcrossClusters = notPassTaskRuleSimples.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        List<TaskRuleSimple> checkAlarmAcrossClusters = notPassTaskRuleSimples.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())).collect(Collectors.toList());
         List<Long> alarmedRuleIds = null;
         if (CollectionUtils.isNotEmpty(checkAlarmAcrossClusters)) {
             alarmedRuleIds = new ArrayList<>(checkAlarmAcrossClusters.size());
@@ -865,7 +953,7 @@ public class TaskChecker implements IChecker {
             String standardRuleDetail = taskRuleSimple.getProjectName() + "-" + taskRuleSimple.getRuleName() + "-" + taskRuleSimple.getTemplateName();
             if (abnormalDataRecordInfoExists == null) {
                 AbnormalDataRecordInfo abnormalDataRecordInfo = new AbnormalDataRecordInfo(taskRuleSimple.getRuleId(), standardRuleName, datasourceType
-                        , dbName, tableName, departmentName, Integer.valueOf(subSystemId), execNum, alarmNum);
+                        , dbName, tableName, departmentName, subSystemId, execNum, alarmNum);
                 abnormalDataRecordInfo.setRuleDetail(StringUtils.isEmpty(taskRuleSimple.getRuleDetail()) ? standardRuleDetail : taskRuleSimple.getRuleDetail());
                 abnormalDataRecordInfo.setRecordDate(nowDate);
                 abnormalDataRecordInfo.setRecordTime(QualitisConstants.PRINT_TIME_FORMAT.format(currentTime));
@@ -878,7 +966,7 @@ public class TaskChecker implements IChecker {
                 abnormalDataRecordInfoExists.setEventNum(abnormalDataRecordInfoExists.getEventNum() + alarmNum);
                 abnormalDataRecordInfoExists.setDepartmentName(departmentName);
                 abnormalDataRecordInfoExists.setDatasource(datasourceType);
-                abnormalDataRecordInfoExists.setSubSystemId(Integer.valueOf(subSystemId));
+                abnormalDataRecordInfoExists.setSubSystemId(subSystemId);
                 abnormalDataRecordInfoList.add(abnormalDataRecordInfoDao.save(abnormalDataRecordInfoExists));
             }
         }
@@ -973,7 +1061,53 @@ public class TaskChecker implements IChecker {
             LOGGER.error(e.getMessage(), e);
         }
 
+        if (Boolean.FALSE.equals(dgsmDataBatchEnable)) {
+            return;
+        }
+
+        // DGSM
+//        dgsmThreadPool.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    Thread.currentThread().setName("DgsmReport-Thread-" + UuidGenerator.generate());
+//                    LOGGER.info("Start to collect dgsm data. Application ID: {}", application.getId());
+//                    List<DgsmData> dgsmDataList = ReportUtil.collectDgsmData(application, tasks, taskResultDao, checkAlertWhiteListRepository);
+//                    LOGGER.info("Success to collect dgsm data. Application ID: {}, dgsm data'size: {}", application.getId(), CollectionUtils.isNotEmpty(dgsmDataList) ? dgsmDataList.size() : 0);
+//
+//                    LOGGER.info("Start to report dgsm data. Application ID: {}", application.getId());
+//
+//                    if (CollectionUtils.isNotEmpty(dgsmDataList)) {
+//                        int size = dgsmDataList.size();
+//                        int batchNo = size / dgsmDataBatchSize + 1;
+//                        if (size % dgsmDataBatchSize == 0) {
+//                            batchNo = size / dgsmDataBatchSize;
+//                        }
+//
+//                        for (int index = 0; index < size; index += dgsmDataBatchSize) {
+//                            if (index + dgsmDataBatchSize < size) {
+//                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, index + dgsmDataBatchSize);
+//                                callRpcSync(subDgsmDataList, batchNo);
+//                            } else {
+//                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, size);
+//                                callRpcSync(subDgsmDataList, batchNo);
+//                            }
+//                            batchNo --;
+//                        }
+//                    }
+//
+//                    LOGGER.info("Success to report dgsm data. Application ID: {}", application.getId());
+//                } catch (Exception e) {
+//                    LOGGER.error("Dgsm report async failed exception.", e);
+//                }
+//            }
+//        });
     }
+
+//    private void callRpcSync(List<DgsmData> subDgsmDataList, int batchNo) {
+//        servicisRpc.invokeAsync(subDgsmDataList);
+//        LOGGER.info("Batch NO: {}", batchNo);
+//    }
 
     /**
      * 查询规则配置是否匹配去噪管理参数
@@ -1096,19 +1230,19 @@ public class TaskChecker implements IChecker {
         return false;
     }
 
-    private void printImsLog(Application applicationInDb, ApplicationStatusEnum applicationStatusEnum){
-//        try {
-//            if(!intellectCheckProjectName.equals(applicationInDb.getProjectName())){
-//                return;
-//            }
-//            java.time.LocalDateTime submitTime = java.time.LocalDateTime.parse(applicationInDb.getSubmitTime(), FORMATTER);
-//            java.time.LocalDateTime finishTime = java.time.LocalDateTime.parse(applicationInDb.getFinishTime(), FORMATTER);
-//            long costTime = ChronoUnit.SECONDS.between(submitTime, finishTime);
-//            LOGGER.info(String.format(IMS_LOG, applicationStatusEnum.getCode(), costTime, applicationStatusEnum.getMessage()));
-//        } catch (Exception e) {
-//            LOGGER.error("ims_omnis_prophet collect log printing failure");
-//            LOGGER.error(e.getMessage(), e);
-//        }
+    private void printImsLog(Application applicationInDb, ApplicationStatusEnum applicationStatusEnum) {
+        try {
+            if (!intellectCheckProjectName.equals(applicationInDb.getProjectName())) {
+                return;
+            }
+            java.time.LocalDateTime submitTime = java.time.LocalDateTime.parse(applicationInDb.getSubmitTime(), FORMATTER);
+            java.time.LocalDateTime finishTime = java.time.LocalDateTime.parse(applicationInDb.getFinishTime(), FORMATTER);
+            long costTime = ChronoUnit.SECONDS.between(submitTime, finishTime);
+            LOGGER.info(String.format(IMS_LOG, applicationStatusEnum.getCode(), costTime, applicationStatusEnum.getMessage()));
+        } catch (Exception e) {
+            LOGGER.error("ims_omnis_prophet collect log printing failure");
+            LOGGER.error(e.getMessage(), e);
+        }
     }
 
 }

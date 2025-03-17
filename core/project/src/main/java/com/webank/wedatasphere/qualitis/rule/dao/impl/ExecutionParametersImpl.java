@@ -24,14 +24,14 @@ public class ExecutionParametersImpl implements ExecutionParametersDao {
 
     @Override
     public List<ExecutionParameters> findAllExecutionParameters(Long projectId, String name, int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return executionParametersRepository.findByName(projectId, name, pageable).getContent();
     }
 
     @Override
     public List<ExecutionParameters> findAll(Long projectId, int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
         return executionParametersRepository.findByProjectId(projectId, pageable).getContent();
     }

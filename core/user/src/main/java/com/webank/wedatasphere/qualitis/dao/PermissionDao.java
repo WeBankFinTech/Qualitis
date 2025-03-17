@@ -49,6 +49,13 @@ public interface PermissionDao {
     Permission findById(long id);
 
     /**
+     * find by en_name
+     * @param resCode
+     * @return
+     */
+    Permission findByResCode(String resCode);
+
+    /**
      * Delete permission
      * @param permission
      */

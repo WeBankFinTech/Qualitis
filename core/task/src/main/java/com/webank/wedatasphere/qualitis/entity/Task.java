@@ -73,6 +73,15 @@ public class Task {
     @Column(name = "task_comment")
     private Integer taskComment;
 
+    @Column(name = "collect_ids", columnDefinition = "TEXT")
+    private String collectIds;
+
+    @Column(name = "data_size")
+    private String dataSize;
+
+    @Column(name = "retry")
+    private Integer retry;
+
     public Task() {
     }
 
@@ -227,6 +236,30 @@ public class Task {
 
     public void setTaskComment(Integer taskComment) {
         this.taskComment = taskComment;
+    }
+
+    public String getCollectIds() {
+        return collectIds;
+    }
+
+    public void setCollectIds(String collectIds) {
+        this.collectIds = collectIds;
+    }
+
+    public String getDataSize() {
+        return dataSize;
+    }
+
+    public void setDataSize(String dataSize) {
+        this.dataSize = dataSize;
+    }
+
+    public Integer getRetry() {
+        return retry;
+    }
+
+    public void setRetry(Integer retry) {
+        this.retry = retry;
     }
 
     @Override

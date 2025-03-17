@@ -8,28 +8,50 @@ import java.util.List;
 
 public class EnableRuleRequest {
 
-    @JsonProperty("rule_enable_list")
-    private List<EnableRequest> ruleEnableList;
+    @JsonProperty("project_id")
+    private Long projectId;
+    @JsonProperty("rule_enable")
+    private Boolean ruleEnable;
+    @JsonProperty("rule_ids")
+    private List<Long> ruleIds;
 
     public static void checkRequest(EnableRuleRequest request) throws UnExpectedRequestException {
         CommonChecker.checkObject(request,"request");
-        for (EnableRequest enableRequest : request.getRuleEnableList()) {
-            CommonChecker.checkObject(enableRequest.isRuleEnable(),"rule_enable");
-        }
+        CommonChecker.checkObject(request.getProjectId(), "project_id");
+        CommonChecker.checkObject(request.getRuleEnable(), "rule_enable");
+        CommonChecker.checkListMinSize(request.getRuleIds(), 1, "rule_ids");
     }
 
-    public List<EnableRequest> getRuleEnableList() {
-        return ruleEnableList;
+    public Long getProjectId() {
+        return projectId;
     }
 
-    public void setRuleEnableList(List<EnableRequest> ruleEnableList) {
-        this.ruleEnableList = ruleEnableList;
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
+
+    public Boolean getRuleEnable() {
+        return ruleEnable;
+    }
+
+    public void setRuleEnable(Boolean ruleEnable) {
+        this.ruleEnable = ruleEnable;
+    }
+
+    public List<Long> getRuleIds() {
+        return ruleIds;
+    }
+
+    public void setRuleIds(List<Long> ruleIds) {
+        this.ruleIds = ruleIds;
     }
 
     @Override
     public String toString() {
         return "EnableRuleRequest{" +
-                "ruleEnableList=" + ruleEnableList +
+                "projectId=" + projectId +
+                ", ruleEnable=" + ruleEnable +
+                ", ruleIds=" + ruleIds +
                 '}';
     }
 }

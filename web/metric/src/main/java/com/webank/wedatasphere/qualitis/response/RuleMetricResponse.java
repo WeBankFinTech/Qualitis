@@ -1,16 +1,20 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.entity.MetricExtInfo;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/2/24 16:30
  */
-public class RuleMetricResponse {
+public class RuleMetricResponse extends MetricExtInfoResponse {
 
   @JsonProperty("id")
   private Long id;
@@ -83,11 +87,31 @@ public class RuleMetricResponse {
   @JsonProperty("visibility_department_list")
   private List<DepartmentSubInfoResponse> visibilityDepartmentList;
 
+
   public RuleMetricResponse() {
+  }
+
+  public RuleMetricResponse(RuleMetric ruleMetric, MetricExtInfo metricExtInfo) {
+    BeanUtils.copyProperties(ruleMetric, this);
+    this.devDepartmentId = ruleMetric.getDevDepartmentId();
+    this.opsDepartmentId = ruleMetric.getOpsDepartmentId();
+
+    if (metricExtInfo != null) {
+      super.setCalculationMode(metricExtInfo.getCalculationMode());
+      if (StringUtils.isNotBlank(metricExtInfo.getMonitoringCapabilities())) {
+        super.setMonitoringCapabilities(Arrays.asList(StringUtils.split(metricExtInfo.getMonitoringCapabilities(), SpecCharEnum.COMMA.getValue())));
+      }
+      super.setBusinessDomain(metricExtInfo.getBusinessDomain());
+      super.setBusinessModel(metricExtInfo.getBusinessModel());
+      super.setBusinessStrategy(metricExtInfo.getBusinessStrategy());
+      super.setMetricDefinition(metricExtInfo.getMetricDefinition());
+      super.setBusinessSystem(metricExtInfo.getBusinessSystem());
+    }
   }
 
   public RuleMetricResponse(RuleMetric ruleMetric) {
     BeanUtils.copyProperties(ruleMetric, this);
+    this.id = ruleMetric.getId();
     this.devDepartmentId = ruleMetric.getDevDepartmentId();
     this.opsDepartmentId = ruleMetric.getOpsDepartmentId();
   }

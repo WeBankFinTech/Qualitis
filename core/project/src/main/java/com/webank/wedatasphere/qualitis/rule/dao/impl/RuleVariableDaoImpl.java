@@ -44,4 +44,9 @@ public class RuleVariableDaoImpl implements RuleVariableDao {
     public List<RuleVariable> findByRule(Rule rule) {
         return ruleVariableRepository.findByRule(rule);
     }
+
+    @Override
+    public void deleteAll(List<RuleVariable> ruleVariables) {
+        ruleVariableRepository.deleteAll(ruleVariables);
+    }
 }

@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.project.dao.impl;
 
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
 import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectUserRepository;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -31,9 +34,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.criteria.Predicate;
@@ -41,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author howeye
@@ -55,6 +59,15 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private AbstractThreadPoolManager threadPoolManager;
+    private ThreadPoolExecutor asyncServiceThreadPool;
+
+    @PostConstruct
+    public void init() throws ThreadPoolNotFoundException {
+        this.asyncServiceThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.OPERATE_PROJECT_IN_BATCH);
+    }
 
 
     @Override
@@ -155,34 +168,38 @@ public class ProjectUserDaoImpl implements ProjectUserDao {
         return projectUserRepository.findByUserName(userName);
     }
 
-
     @Override
-    @Async("asyncServiceExecutor")
-    public void deleteInBatch(List<ProjectUser> projectUserList, CountDownLatch countDownLatch) {
-        try{
-            log.warn("start executeAsync");
-            projectUserRepository.deleteAll(projectUserList);
-            log.warn("end executeAsync");
-        }finally {
-            countDownLatch.countDown();
-        }
+    public void deleteByPermissionAndUsername(int permission, String userName) {
+        projectUserRepository.deleteByPermissionAndUsername(permission, userName);
     }
 
     @Override
-    @Async("asyncServiceExecutor")
-    public void batchInsert(List<ProjectUser> projectUserList,CountDownLatch countDownLatch) {
-        try{
-            log.warn("start executeAsync");
-            projectUserRepository.saveAll(projectUserList);
-            log.warn("end executeAsync");
-        }finally {
-            countDownLatch.countDown();
-        }
+    public void batchInsert(List<ProjectUser> projectUserList, CountDownLatch countDownLatch) {
+        asyncServiceThreadPool.execute(() -> {
+            try{
+                log.warn("start executeAsync batchInsert");
+                printCurrentThreadPoolInfo();
+                projectUserRepository.saveAll(projectUserList);
+                log.warn("end executeAsync batchInsert");
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
     }
 
     @Override
     public List<ProjectUser> findByIds(List<Long> projectUserIds) {
         return projectUserRepository.findAllById(projectUserIds);
+    }
+
+    private void printCurrentThreadPoolInfo () {
+        log.info("当前线程池情况：名称前缀-{},任务总数-[{}],已完成的任务总数-[{}],可调度执行的工作线程总数-[{}],任务队列大小-[{}]",
+                ThreadPoolConstant.OPERATE_PROJECT_IN_BATCH,
+                asyncServiceThreadPool.getTaskCount(),
+                asyncServiceThreadPool.getCompletedTaskCount(),
+                asyncServiceThreadPool.getActiveCount(),
+                asyncServiceThreadPool.getQueue().size()
+        );
     }
 
 }

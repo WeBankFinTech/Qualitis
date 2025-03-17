@@ -23,7 +23,13 @@ public enum WhiteListTypeEnum {
     /**
      * White list type
      */
-    CHECK_ALERT_TABLE(1, "Check Alert Table")
+    CHECK_ALERT_TABLE(1, "Check Alert Table"),
+    BLACK_DGSM_PROJECT(2, "DGSM Project Black"),
+    BLACK_DGSM_USER(3, "DGSM User Black"),
+    BLACK_DGSM_DB(4, "DGSM Db Black"),
+    BLACK_API_APPID(5, "API AppId Black"),
+    BLACK_API_PROJECT(6, "API Project Black"),
+    BLACK_API_USER(7, "API User Black")
     ;
 
     private Integer code;

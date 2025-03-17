@@ -3,11 +3,11 @@ package com.webank.wedatasphere.qualitis.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
+import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.BeanUtils;
 
-import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -60,7 +60,7 @@ public class ClusterInfoResponse {
     public ClusterInfoResponse(ClusterInfo clusterInfo) {
         BeanUtils.copyProperties(clusterInfo, this);
         if (StringUtils.isNotBlank(this.skipDataSize)) {
-            this.skipDataSize = this.skipDataSize.replace(" G", "");
+            this.skipDataSize = this.skipDataSize.replace(FileOutputUnitEnum.GB.getMessage(), "").trim();
         }
     }
 

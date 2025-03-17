@@ -8,6 +8,7 @@ import com.webank.wedatasphere.qualitis.checkalert.service.CheckAlertService;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDepartmentUserDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -16,6 +17,9 @@ import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -24,55 +28,10 @@ import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.config.RuleConfig;
-import com.webank.wedatasphere.qualitis.rule.constant.GroupTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.MappingTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.TemplateInputTypeEnum;
-import com.webank.wedatasphere.qualitis.rule.dao.AlarmArgumentsExecutionParametersDao;
-import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
-import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
-import com.webank.wedatasphere.qualitis.rule.dao.ExecutionVariableDao;
-import com.webank.wedatasphere.qualitis.rule.dao.NoiseEliminationManagementDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceMappingDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleVariableDao;
-import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
-import com.webank.wedatasphere.qualitis.rule.dao.StaticExecutionParametersDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateDataSourceTypeDao;
-import com.webank.wedatasphere.qualitis.rule.dao.TemplateOutputMetaDao;
-import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
-import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceMapping;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleVariable;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
-import com.webank.wedatasphere.qualitis.rule.request.AddCustomRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddFileRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.BatchExecutionParametersRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CopyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CopyRuleWithDatasourceRequest;
-import com.webank.wedatasphere.qualitis.rule.request.CustomAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.FileAlarmConfigRequest;
-import com.webank.wedatasphere.qualitis.rule.request.ModifyRuleRequest;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequest;
-import com.webank.wedatasphere.qualitis.rule.request.RuleNodeRequests;
-import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
+import com.webank.wedatasphere.qualitis.rule.constant.*;
+import com.webank.wedatasphere.qualitis.rule.dao.*;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.request.*;
 import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceConfigRequest;
 import com.webank.wedatasphere.qualitis.rule.request.multi.MultiDataSourceJoinColumnRequest;
@@ -81,24 +40,9 @@ import com.webank.wedatasphere.qualitis.rule.response.CopyRuleWithDatasourceResp
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponses;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import com.webank.wedatasphere.qualitis.rule.service.AlarmConfigService;
-import com.webank.wedatasphere.qualitis.rule.service.CustomRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.FileRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.MultiSourceRuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceMappingService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleNodeService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.service.RuleVariableService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateMidTableInputMetaService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateOutputMetaService;
-import com.webank.wedatasphere.qualitis.rule.service.TemplateStatisticsInputMetaService;
+import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeCallable;
-import com.webank.wedatasphere.qualitis.rule.timer.RuleNodeThreadFactory;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.UserService;
@@ -108,8 +52,8 @@ import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -118,22 +62,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.management.relation.RoleNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -233,13 +170,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     @Autowired
     private StaticExecutionParametersDao staticExecutionParametersDao;
 
-    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(50,
-            Integer.MAX_VALUE,
-            60,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1000),
-            new RuleNodeThreadFactory(),
-            new ThreadPoolExecutor.DiscardPolicy());
+    private GeneralThreadPool dssRuleNodeThreadPool;
 
     private static final String RULE_NAME = "--rule-name";
 
@@ -248,6 +179,18 @@ public class RuleNodeServiceImpl implements RuleNodeService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleNodeServiceImpl.class);
 
     private HttpServletRequest httpServletRequest;
+
+    @Autowired
+    AbstractThreadPoolManager threadPoolManager;
+
+    @PostConstruct
+    public void injectThreadPools() throws ThreadPoolNotFoundException {
+        dssRuleNodeThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.DSS_RULE_NODE);
+    }
+
+    public RuleNodeServiceImpl() {
+//        doing nothing
+    }
 
     public RuleNodeServiceImpl(@Context HttpServletRequest httpServletRequest) {
         this.httpServletRequest = httpServletRequest;
@@ -622,10 +565,10 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         CountDownLatch latch = new CountDownLatch(updateThreadSize);
         for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
             if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), null, projectInDb, ruleGroupInDb, objectMapper, latch));
+                Future<List<Exception>> exceptionFuture = dssRuleNodeThreadPool.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), null, projectInDb, ruleGroupInDb, objectMapper, latch));
                 exceptionList.add(exceptionFuture);
             } else {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, total), null, projectInDb, ruleGroupInDb, objectMapper, latch));
+                Future<List<Exception>> exceptionFuture = dssRuleNodeThreadPool.submit(new RuleNodeCallable(ruleNodeRequests.getRuleNodeRequests().subList(indexThread, total), null, projectInDb, ruleGroupInDb, objectMapper, latch));
                 exceptionList.add(exceptionFuture);
             }
             updateThreadSize--;
@@ -712,10 +655,10 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             CountDownLatch latch = new CountDownLatch(updateThreadSize);
             for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
                 if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
-                    Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), checkAlertGroup ? checkAlerts.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
+                    Future<List<Exception>> exceptionFuture = dssRuleNodeThreadPool.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), checkAlertGroup ? checkAlerts.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
                     exceptionList.add(exceptionFuture);
                 } else {
-                    Future<List<Exception>> exceptionFuture = POOL.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, total), checkAlertGroup ? checkAlerts.subList(indexThread, total) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
+                    Future<List<Exception>> exceptionFuture = dssRuleNodeThreadPool.submit(new RuleNodeCallable(null, checkAlertGroup ? null : rules.subList(indexThread, total), checkAlertGroup ? checkAlerts.subList(indexThread, total) : null, request, ruleService, customRuleService, multiSourceRuleService, fileRuleService, ruleDao, checkAlertDao, targetRuleGroup, targetProject, objectMapper, latch));
                     exceptionList.add(exceptionFuture);
                 }
                 updateThreadSize--;
@@ -741,6 +684,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             }
             if (CollectionUtils.isEmpty(exceptions)) {
                 modifyRuleContextService(targetRuleGroup, request.getCsId(), "");
+                LOGGER.info("Copy target rule group ID: {}", targetRuleGroup.getId());
                 return new GeneralResponse<>(ResponseStatusConstants.OK, "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
             } else {
                 for (Exception e : exceptions) {
@@ -751,6 +695,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             }
         }
         modifyRuleContextService(targetRuleGroup, request.getCsId(), "");
+        LOGGER.info("Copy target rule group ID: {}", targetRuleGroup.getId());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&COPY_RULE_SUCCESSFULLY}", new RuleResponse(targetRuleGroup.getId()));
     }
 
@@ -979,6 +924,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addFileRuleRequest.setRuleGroupId(ruleGroup.getId());
         addFileRuleRequest.setProjectId(ruleGroup.getProjectId());
         addFileRuleRequest.setRuleTemplateId(rule.getTemplate().getId());
+        addFileRuleRequest.setRegRuleCode(rule.getRegRuleCode());
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             addFileRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
@@ -1071,7 +1017,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addMultiSourceRuleRequest.setUnionWay(rule.getUnionWay());
         addMultiSourceRuleRequest.setClusterName(clusterName);
         addMultiSourceRuleRequest.setCsId(rule.getCsId());
-
+        addMultiSourceRuleRequest.setRegRuleCode(rule.getRegRuleCode());
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             addMultiSourceRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
             // Sync execution parameters in different project.
@@ -1228,6 +1174,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addCustomRuleRequest.setRuleEnable(rule.getEnable());
         addCustomRuleRequest.setUnionWay(rule.getUnionWay());
         addCustomRuleRequest.setCsId(rule.getCsId());
+        addCustomRuleRequest.setRegRuleCode(rule.getRegRuleCode());
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             addCustomRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());
@@ -1325,6 +1272,7 @@ public class RuleNodeServiceImpl implements RuleNodeService {
         addRuleRequest.setRuleEnable(rule.getEnable());
         addRuleRequest.setUnionWay(rule.getUnionWay());
         addRuleRequest.setCsId(rule.getCsId());
+        addRuleRequest.setRegRuleCode(rule.getRegRuleCode());
 
         if (StringUtils.isNotBlank(rule.getExecutionParametersName())) {
             addRuleRequest.setExecutionParametersName(rule.getExecutionParametersName());

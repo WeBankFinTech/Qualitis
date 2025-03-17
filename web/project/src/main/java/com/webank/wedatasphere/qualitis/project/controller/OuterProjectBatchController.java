@@ -102,7 +102,7 @@ public class OuterProjectBatchController {
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         List<Project> projectLists = Lists.newArrayList();
         try {
-            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectId());
+            projectLists = projectBatchService.checkProjects(downloadProjectRequest.getProjectIds());
             if (CollectionUtils.isNotEmpty(projectLists) && projectLists.size() > 1) {
                 throw new UnExpectedRequestException("project id the size of the input parameter cannot be greater than 1");
             }

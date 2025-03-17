@@ -16,11 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelReader;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.metadata.Sheet;
+import com.alibaba.excel.read.metadata.ReadSheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Maps;
+import com.webank.wedatasphere.qualitis.constants.ExportedFileNameConstant;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
@@ -35,7 +36,11 @@ import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelExecutionParametersByProject;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelGroupByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelProjectInfoListeners;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelRuleByProject;
+import com.webank.wedatasphere.qualitis.project.excel.listener.ExcelExecutionParameterListener;
+import com.webank.wedatasphere.qualitis.project.excel.listener.ExcelGroupListener;
+import com.webank.wedatasphere.qualitis.project.excel.listener.ExcelRuleByProjectListener;
 import com.webank.wedatasphere.qualitis.project.request.DiffVariableRequest;
 import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
@@ -50,13 +55,12 @@ import com.webank.wedatasphere.qualitis.rule.excel.ExcelRuleListener;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,10 +220,10 @@ public class RuleBatchServiceImpl implements RuleBatchService {
 
         // Check suffix name of file
         String suffixName = fileName.substring(fileName.lastIndexOf('.'));
-        if (!suffixName.equals(QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME)) {
-            throw new UnExpectedRequestException("{&DO_NOT_SUPPORT_SUFFIX_NAME}: [" + suffixName + "]. {&ONLY_SUPPORT} [" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME + "]", 422);
+        if (!suffixName.equals(QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME) && !suffixName.equals(QualitisConstants.SUPPORT_CSV_SUFFIX_NAME)) {
+            throw new UnExpectedRequestException("{&DO_NOT_SUPPORT_SUFFIX_NAME}: [" + suffixName + "]. {&ONLY_SUPPORT} [" + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME + " and " + QualitisConstants.SUPPORT_CSV_SUFFIX_NAME + "]", 422);
         }
-        ExcelRuleListener excelRuleListener = readExcel(fileInputStream);
+        ExcelProjectInfoListeners excelRuleListener = readExcel(fileInputStream, suffixName);
         if (excelRuleListener.getExcelRuleContent().isEmpty()) {
             throw new UnExpectedRequestException("{&FILE_CAN_NOT_BE_EMPTY_OR_FILE_CAN_NOT_BE_RECOGNIZED}", 422);
         }
@@ -259,6 +263,8 @@ public class RuleBatchServiceImpl implements RuleBatchService {
 
             Rule rule = objectMapper.readValue(modifiedJsonStr, Rule.class);
             rule.setId(Long.MAX_VALUE);
+            rule.setCreateUser(userName);
+            rule.setModifyUser(userName);
             Rule ruleInDb = ruleDao.findByProjectAndRuleName(projectInDb, rule.getName());
             LOGGER.info("{} start to handle rule {}", userName, rule.getName());
             String ruleGroupName = excelRuleByProject.getRuleGroupName();
@@ -561,11 +567,26 @@ public class RuleBatchServiceImpl implements RuleBatchService {
         }
     }
 
-    private ExcelRuleListener readExcel(InputStream inputStream) {
+    private ExcelProjectInfoListeners readExcel(InputStream inputStream, String fileType) {
         LOGGER.info("Start to read excel");
-        ExcelRuleListener excelRuleListener = read(inputStream);
-        LOGGER.info("Finish to read excel. Rule content: {}", excelRuleListener.getExcelRuleContent());
-        return excelRuleListener;
+        ExcelProjectInfoListeners listeners = new ExcelProjectInfoListeners();
+        try (ExcelReader excelReader = EasyExcel.read(inputStream).build()) {
+            if (QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME.equals(fileType)) {
+                ExcelRuleByProjectListener excelRuleByProjectListener = new ExcelRuleByProjectListener(listeners);
+                ExcelGroupListener excelGroupListener = new ExcelGroupListener(listeners);
+                ExcelExecutionParameterListener excelExecutionParameterListener = new ExcelExecutionParameterListener(listeners);
+                ReadSheet readSheet1 =
+                        EasyExcel.readSheet(0, ExcelSheetName.RULE_NAME).head(ExcelRuleByProject.class).registerReadListener(excelRuleByProjectListener).build();
+                ReadSheet readSheet2 =
+                        EasyExcel.readSheet(1, ExcelSheetName.TABLE_GROUP).head(ExcelGroupByProject.class).registerReadListener(excelGroupListener).build();
+                ReadSheet readSheet3 =
+                        EasyExcel.readSheet(2, ExcelSheetName.EXECUTION_PARAMETERS_NAME).head(ExcelExecutionParametersByProject.class).registerReadListener(excelExecutionParameterListener).build();
+                excelReader.read(readSheet1, readSheet2, readSheet3);
+            }
+        }
+
+        LOGGER.info("Finish to read excel. Rule content: {}", listeners.getExcelRuleContent());
+        return listeners;
     }
 
     private TemplateMidTableInputMeta findMidTableInputMetaByTemplateAndMidTableName(Template template, String argumentKey) {
@@ -588,47 +609,24 @@ public class RuleBatchServiceImpl implements RuleBatchService {
         return null;
     }
 
-    private ExcelRuleListener read(InputStream inputStream) {
-        ExcelRuleListener listener = new ExcelRuleListener();
-        ExcelReader excelReader = new ExcelReader(inputStream, null, listener);
-        List<Sheet> sheets = excelReader.getSheets();
-        for (Sheet sheet : sheets) {
-            if (sheet.getSheetName().equals(ExcelSheetName.EXECUTION_PARAMETERS_NAME)) {
-                sheet.setClazz(ExcelExecutionParametersByProject.class);
-                sheet.setHeadLineMun(1);
-                excelReader.read(sheet);
-            } else if (sheet.getSheetName().equals(ExcelSheetName.RULE_NAME)) {
-                sheet.setClazz(ExcelRuleByProject.class);
-                sheet.setHeadLineMun(1);
-                excelReader.read(sheet);
-            } else if (sheet.getSheetName().equals(ExcelSheetName.TABLE_GROUP)) {
-                sheet.setClazz(ExcelGroupByProject.class);
-                sheet.setHeadLineMun(1);
-                excelReader.read(sheet);
-            }
-        }
-
-        return listener;
-    }
-
     private GeneralResponse<?> downloadRulesReal(List<Rule> rules, HttpServletResponse response) throws IOException, WriteExcelException {
-        String fileName = "batch_rules_export_" + QualitisConstants.FILE_DATE_FORMATTER.format(new Date()) + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
+        String fileName = ExportedFileNameConstant.RULES + "_" + QualitisConstants.FILE_DATE_FORMATTER.format(new Date()) + QualitisConstants.SUPPORT_EXCEL_SUFFIX_NAME;
 
         fileName = URLEncoder.encode(fileName, "UTF-8");
         response.setContentType("application/octet-stream");
 
         response.addHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName);
         response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
-
+        Map<Long, Set<Rule>> projectRules;
         List<Project> projects = rules.stream().map(rule -> rule.getProject()).collect(Collectors.toList());
-        List<String> executionParamNames = rules.stream().filter(rule -> StringUtils.isNotEmpty(rule.getExecutionParametersName())).map(rule -> rule.getExecutionParametersName()).collect(Collectors.toList());
+        projectRules = rules.stream().collect(Collectors.groupingBy(rule -> rule.getProject().getId(), Collectors.toSet()));
 
         // Write to response.getOutputStream
         OutputStream outputStream = response.getOutputStream();
 
         List<ExcelRuleByProject> templateRules = getRule(rules, null);
         List<ExcelGroupByProject> excelGroupByProjects = projectBatchService.getTableGroup(rules, null);
-        List<ExcelExecutionParametersByProject> excelExecutionParametersByProject = projectBatchService.getExecutionParameters(projects, executionParamNames, true);
+        List<ExcelExecutionParametersByProject> excelExecutionParametersByProject = projectBatchService.getExecutionParameters(projects, projectRules);
         writeExcelToOutput(templateRules, excelGroupByProjects, excelExecutionParametersByProject, outputStream);
         outputStream.flush();
 
@@ -641,20 +639,21 @@ public class RuleBatchServiceImpl implements RuleBatchService {
                                     OutputStream outputStream) throws WriteExcelException, IOException {
         try {
             LOGGER.info("Start to write excel");
-            ExcelWriter writer = new ExcelWriter(outputStream, ExcelTypeEnum.XLSX, true);
-            Sheet templateSheet = new Sheet(1, 0, ExcelRuleByProject.class);
-            templateSheet.setSheetName(ExcelSheetName.RULE_NAME);
-            writer.write(templateRules, templateSheet);
+            EasyExcel.write(outputStream, ExcelRuleByProject.class)
+                    .excelType(ExcelTypeEnum.XLSX)
+                    .sheet(0, ExcelSheetName.RULE_NAME)
+                    .doWrite(templateRules);
 
-            Sheet groupSheet = new Sheet(2, 0, ExcelGroupByProject.class);
-            groupSheet.setSheetName(ExcelSheetName.TABLE_GROUP);
-            writer.write(excelGroupByProjects, groupSheet);
+            EasyExcel.write(outputStream, ExcelGroupByProject.class)
+                    .excelType(ExcelTypeEnum.XLSX)
+                    .sheet(1, ExcelSheetName.TABLE_GROUP)
+                    .doWrite(excelGroupByProjects);
 
-            Sheet executionParametersSheet = new Sheet(3, 0, ExcelExecutionParametersByProject.class);
-            executionParametersSheet.setSheetName(ExcelSheetName.EXECUTION_PARAMETERS_NAME);
-            writer.write(excelExecutionParametersByProject, executionParametersSheet);
+            EasyExcel.write(outputStream, ExcelExecutionParametersByProject.class)
+                    .excelType(ExcelTypeEnum.XLSX)
+                    .sheet(2, ExcelSheetName.EXECUTION_PARAMETERS_NAME)
+                    .doWrite(excelExecutionParametersByProject);
 
-            writer.finish();
             LOGGER.info("Finish to write excel");
         } catch (Exception e) {
             throw new WriteExcelException(e.getMessage(), 500);
@@ -680,12 +679,12 @@ public class RuleBatchServiceImpl implements RuleBatchService {
             // Template visibility department name list
             List<DataVisibility> dataVisibilityList = dataVisibilityService.filter(rule.getTemplate().getId(), TableDataTypeEnum.RULE_TEMPLATE);
             // Template preview
-            if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())) {
-                ruleLine.setRuleTemplatePreview(rule.getTemplate().getMidTableAction());
-            } else if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(rule.getRuleType())){
-                String templatePreview = getTemplatePreview(rule.getRuleDataSources(), rule.getRuleVariables(), rule.getTemplate().getMidTableAction());
-                ruleLine.setRuleTemplatePreview(templatePreview);
-            }
+//            if (RuleTypeEnum.CUSTOM_RULE.getCode().equals(rule.getRuleType())) {
+//                ruleLine.setRuleTemplatePreview(rule.getTemplate().getMidTableAction());
+//            } else if (RuleTypeEnum.SINGLE_TEMPLATE_RULE.getCode().equals(rule.getRuleType())){
+//                String templatePreview = getTemplatePreview(rule.getRuleDataSources(), rule.getRuleVariables(), rule.getTemplate().getMidTableAction());
+//                ruleLine.setRuleTemplatePreview(templatePreview);
+//            }
 
             if (CollectionUtils.isNotEmpty(dataVisibilityList)) {
                 ruleLine.setRuleTemplateVisibilityObject(objectMapper.writerWithType(new TypeReference<List<DataVisibility>>() {

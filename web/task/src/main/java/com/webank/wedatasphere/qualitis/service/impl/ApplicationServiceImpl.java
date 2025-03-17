@@ -16,8 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.metadata.Sheet;
+import com.alibaba.excel.read.metadata.ReadSheet;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.client.RequestLinkis;
@@ -66,8 +67,8 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
-//import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
+import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
 import com.webank.wedatasphere.qualitis.service.ApplicationService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
@@ -145,8 +146,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Autowired
     private RequestLinkis requestLinkis;
 
-//    @Autowired
-//    private ScheduledTaskDao scheduledTaskDao;
+    @Autowired
+    private ScheduledTaskDao scheduledTaskDao;
 
     private HttpServletRequest httpServletRequest;
 
@@ -221,7 +222,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             }
             applicationResponses.add(response);
         }
-//        setScheduleInfo(applicationResponses);
+        setScheduleInfo(applicationResponses);
 
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
@@ -232,31 +233,31 @@ public class ApplicationServiceImpl implements ApplicationService {
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
     }
 
-//    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
-//        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
-//                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
-//                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
-//                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
-//        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
-//        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
-//        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
-//        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
-//        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
-//            allRuleGroupMapList.addAll(frontBackMapList);
-//        }
-//        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
-//            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
-//        }
-//        allRuleGroupMapList.forEach(entry -> {
-//            Long ruleGroupId = (Long) entry.get("rule_group_id");
-//            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
-//            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
-//            applicationResponseList.forEach(applicationResponse -> {
-//                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
-//                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
-//            });
-//        });
-//    }
+    private void setScheduleInfo(List<ApplicationResponse> applicationResponses) {
+        Map<Long, List<ApplicationResponse>> applicationResponseMap = applicationResponses.stream()
+                .filter(applicationResponse -> InvokeTypeEnum.BDP_CLIENT_API_INVOKE.getCode().equals(applicationResponse.getInvokeType())
+                        || InvokeTypeEnum.FLOW_API_INVOKE.getCode().equals(applicationResponse.getInvokeType()))
+                .collect(Collectors.groupingBy(ApplicationResponse::getRuleGroupId));
+        Set<Long> ruleGroupIds = applicationResponseMap.keySet();
+        List<Map<String, Object>> frontBackMapList = scheduledTaskDao.findByRuleGroupsInFrontAndBack(ruleGroupIds);
+        List<Map<String, Object>> workflowTaskRelationMapList = scheduledTaskDao.findByRuleGroupsInWorkflowTaskRelation(ruleGroupIds);
+        List<Map<String, Object>> allRuleGroupMapList = Lists.newArrayListWithExpectedSize(frontBackMapList.size() + workflowTaskRelationMapList.size());
+        if (CollectionUtils.isNotEmpty(frontBackMapList)) {
+            allRuleGroupMapList.addAll(frontBackMapList);
+        }
+        if (CollectionUtils.isNotEmpty(workflowTaskRelationMapList)) {
+            allRuleGroupMapList.addAll(workflowTaskRelationMapList);
+        }
+        allRuleGroupMapList.forEach(entry -> {
+            Long ruleGroupId = (Long) entry.get("rule_group_id");
+            ScheduledTask scheduledTask = (ScheduledTask) entry.get("schedule_task");
+            List<ApplicationResponse> applicationResponseList = applicationResponseMap.get(ruleGroupId);
+            applicationResponseList.forEach(applicationResponse -> {
+                applicationResponse.setScheduleProjectName(scheduledTask.getProjectName());
+                applicationResponse.setScheduleWorkflowName(scheduledTask.getWorkFlowName());
+            });
+        });
+    }
 
     @Override
     public GeneralResponse<GetAllResponse<ApplicationResponse>> filterProjectApplication(FilterProjectRequest request) throws UnExpectedRequestException {
@@ -366,7 +367,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             int taskPageTemp = taskPage != null ? taskPage : 0;
             int taskSizeTemp = taskSize != null ? taskSize : 5;
             List<Task> tasks = taskDao.findByApplicationPageable(application, logSelect && filterStatus == 1, taskPageTemp, taskSizeTemp);
-            int taskTotal = taskDao.countByApplication(application);
+            int taskTotal = taskDao.countByApplication(application, logSelect && filterStatus == 1);
             ApplicationResponse response = new ApplicationResponse(application, tasks);
             if (application.getCreateUser().equals(user.getUsername()) || application.getExecuteUser().equals(user.getUsername())) {
                 response.setKillOption(true);
@@ -498,7 +499,6 @@ public class ApplicationServiceImpl implements ApplicationService {
                 }
             }
 
-            ExcelWriter writer = new ExcelWriter(tmpOutputStream, ExcelTypeEnum.XLSX, true);
             // Find task with the start time and end time.
             for (String tableName : tables) {
                 List<Task> tasks = taskDao.findWithSubmitTimeAndDatasource(request.getStartTime(), request.getEndTime(), request.getClusterName()
@@ -526,11 +526,11 @@ public class ApplicationServiceImpl implements ApplicationService {
                     StringBuilder resultStr = new StringBuilder();
                     joinAlarmConfig(results, taskRuleSimple, excelResult, request, checkTemplateStr, resultStr);
                 }
-                Sheet templateSheet = new Sheet(sheetNo++, 0, ExcelResult.class);
-                templateSheet.setSheetName(tableName + "-" + ExcelSheetName.ANALYSIS_NAME);
-                writer.write(results, templateSheet);
+                EasyExcel.write(tmpOutputStream, ExcelResult.class)
+                        .excelType(ExcelTypeEnum.CSV)
+                        .sheet(sheetNo++, tableName + "-" + ExcelSheetName.ANALYSIS_NAME)
+                        .doWrite(results);
             }
-            writer.finish();
         } catch (FileNotFoundException e) {
             LOGGER.error(e.getMessage(), e);
             throw new UnExpectedRequestException("{&FAILED_TO_CREATE_LOCAL_FILE}");
@@ -641,7 +641,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             applicationResponses.add(response);
         }
 
-//        setScheduleInfo(applicationResponses);
+        setScheduleInfo(applicationResponses);
         getAllResponse.setData(applicationResponses);
         getAllResponse.setTotal(total);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_APPLICATIONS}", getAllResponse);
