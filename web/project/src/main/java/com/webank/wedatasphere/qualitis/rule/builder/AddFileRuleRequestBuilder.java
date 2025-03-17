@@ -106,7 +106,6 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
         taskSetting(abortOnFailure);
         // Init alarm properties.
         List<FileAlarmConfigRequest> alarmVariable = new ArrayList<>(1);
-
         initAlarm(alarmVariable);
         return this;
     }
@@ -154,12 +153,11 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
         String table;
         String filter;
 
-        String[] datasourceStrs = datasource.split(SpecCharEnum.COLON.getValue());
-        if (datasourceStrs.length > TWO) {
-            throw new UnExpectedRequestException("Datasource param is illegle");
-        }
+        String[] datasourceStrs = datasource.split(SpecCharEnum.COLON.getValue(), TWO);
+
         String[] datasources = datasourceStrs[0].split(SpecCharEnum.PERIOD.getValue());
         filter = datasourceStrs.length >= TWO ? datasourceStrs[1] : "";
+
         if (datasources.length != FOUR && datasources.length != THREE) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
@@ -187,12 +185,32 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception {
-        return null;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
     }
 
     @Override
     public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
-        return null;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return this;
     }
 
     @Override
@@ -270,9 +288,9 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
         if (ruleMetricInDb != null) {
             setRuleMetricEnCode(ruleMetricInDb.getEnCode());
 
-            setUploadAbnormalValue(uploadAbnormalValue);
-            setUploadRuleMetricValue(uploadRuleMetricValue);
-            setDeleteFailCheckResult(deleteFailCheckResult);
+            this.uploadAbnormalValue = uploadAbnormalValue;
+            this.uploadRuleMetricValue = uploadRuleMetricValue;
+            this.deleteFailCheckResult = deleteFailCheckResult;
             return this;
         }
         String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
@@ -291,9 +309,9 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
         }
 
         setRuleMetricEnCode(en);
-        setUploadAbnormalValue(uploadAbnormalValue);
-        setUploadRuleMetricValue(uploadRuleMetricValue);
-        setDeleteFailCheckResult(deleteFailCheckResult);
+        this.uploadAbnormalValue = uploadAbnormalValue;
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+        this.deleteFailCheckResult = deleteFailCheckResult;
 
         addFileRuleRequest.setUploadAbnormalValue(uploadAbnormalValue);
         addFileRuleRequest.setUploadRuleMetricValue(uploadRuleMetricValue);
@@ -1594,28 +1612,162 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder createBy(String createUser) {
+        addFileRuleRequest.setActualCreateUser(createUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder submitBy(String submitUser) {
+        addFileRuleRequest.setActualExecutionUser(submitUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withRegRuleCode(String regRuleCode) {
+        addFileRuleRequest.setRegRuleCode(regRuleCode);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withStandardValue(String standardValueEnName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDatasource(String datasource) throws Exception {
+        // Datasource
+        solveDatasource(datasource);
+
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+
+        // Task running info.
+        taskSetting(false);
+
+        // Init alarm properties.
+        List<FileAlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+        initAlarm(alarmVariable);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDatasource(String sourceDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDatasource(String targetDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDbAndTable(String sourceDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDbAndTable(String targetDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceFilter(String sourceFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetFilter(String targetFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceSql(String sourceSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetSql(String targetSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAlert(String alertInfo) throws Exception {
+        alertSetting(alertInfo);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setResource(String resource) {
+        return this;
+    }
+
     public boolean getDeleteFailCheckResult() {
         return deleteFailCheckResult;
     }
 
-    public void setDeleteFailCheckResult(boolean deleteFailCheckResult) {
+    public AddRequestBuilder setDeleteFailCheckResult(boolean deleteFailCheckResult) {
         this.deleteFailCheckResult = deleteFailCheckResult;
+        return this;
     }
 
     public boolean getUploadRuleMetricValue() {
         return uploadRuleMetricValue;
     }
 
-    public void setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
+    public AddRequestBuilder setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
         this.uploadRuleMetricValue = uploadRuleMetricValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAbortonFailure(boolean abortonFailure) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCluster(String clusterName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceCluster(String clusterName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetCluster(String clusterName) {
+        return this;
     }
 
     public boolean getUploadAbnormalValue() {
         return uploadAbnormalValue;
     }
 
-    public void setUploadAbnormalValue(boolean uploadAbnormalValue) {
+    public AddRequestBuilder setUploadAbnormalValue(boolean uploadAbnormalValue) {
         this.uploadAbnormalValue = uploadAbnormalValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
     }
 
     public String getRuleMetricEnCode() {

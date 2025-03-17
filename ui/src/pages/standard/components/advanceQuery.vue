@@ -7,29 +7,29 @@
             </FSpace>
         </template>
         <FForm ref="standardQueryFormRef" :model="condition" :labelWidth="56" :rules="standardFormRules" labelPosition="right">
-            <FFormItem label="标准值ID" prop="edition_id">
+            <FFormItem :label="$t('_.标准值ID')" prop="edition_id">
                 <FInput
                     v-model="condition.edition_id"
                     class="form-edit-input"
-                    placeholder="请输入标准值ID"
+                    :placeholder="$t('_.请输入标准值ID')"
                 />
             </FFormItem>
-            <FFormItem label="中文名称" prop="cn_name">
+            <FFormItem :label="$t('_.中文名称')" prop="cn_name">
                 <FInput
                     v-model="condition.cn_name"
                     :maxlength="128"
                     showWordLimit
                     class="form-edit-input"
-                    placeholder="请输入中文名称"
+                    :placeholder="$t('_.请输入中文名称')"
                 />
             </FFormItem>
-            <FFormItem label="英文名称" prop="en_name">
+            <FFormItem :label="$t('_.英文名称')" prop="en_name">
                 <FInput
                     v-model="condition.en_name"
                     :maxlength="128"
                     showWordLimit
                     class="form-edit-input"
-                    placeholder="请输入英文名称"
+                    :placeholder="$t('_.请输入英文名称')"
                 />
             </FFormItem>
             <!-- <FFormItem v-if="condition.edition_id && showVersionList" label="版本号" prop="version">
@@ -49,7 +49,7 @@
             </FFormItem> -->
             <FFormItem :label="`来源类型`" prop="source_type">
                 <FSelect v-model="condition.source_type" :options="stdSourceList" filterable clearable
-                         valueField="code" labelField="message" placeholder="请选择" />
+                         valueField="code" labelField="message" :placeholder="$t('_.请选择')" />
             </FFormItem>
             <FFormItem :label="$t('ruleTemplatelist.developDepartment')">
                 <FSelectCascader
@@ -75,7 +75,7 @@
                     checkStrictly="child"
                 ></FSelectCascader>
             </FFormItem>
-            <FFormItem label="可见范围" prop="action_range">
+            <FFormItem :label="$t('_.可见范围')" prop="action_range">
                 <FSelectCascader
                     v-model="condition.action_range"
                     :data="visDivisions"
@@ -90,11 +90,11 @@
                     :collapseTagsLimit="3"
                     @change="visSelectChange" />
             </FFormItem>
-            <FFormItem label="创建人" prop="create_user">
+            <FFormItem :label="$t('_.创建人')" prop="create_user">
                 <FSelect v-model="condition.create_user" :options="formatProjectUserList" clearable filterable>
                 </FSelect>
             </FFormItem>
-            <FFormItem label="修改人" prop="modify_user">
+            <FFormItem :label="$t('_.修改人')" prop="modify_user">
                 <FSelect v-model="condition.modify_user" :options="formatProjectUserList" clearable filterable>
                 </FSelect>
             </FFormItem>

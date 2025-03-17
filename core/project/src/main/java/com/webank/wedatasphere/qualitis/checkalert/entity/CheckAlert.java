@@ -17,18 +17,12 @@
 package com.webank.wedatasphere.qualitis.checkalert.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * @author allenzhou
@@ -43,10 +37,10 @@ public class CheckAlert {
 
     private String topic;
 
-    @Column(name = "info_receiver")
-    private String infoReceiver;
-    @Column(name = "major_receiver")
-    private String majorReceiver;
+    @Column(name = "default_receiver")
+    private String defaultReceiver;
+    @Column(name = "advanced_receiver")
+    private String advancedReceiver;
 
     @Column(name = "alert_table")
     private String alertTable;
@@ -55,8 +49,8 @@ public class CheckAlert {
 
     @Column(name = "alert_col")
     private String alertCol;
-    @Column(name = "major_alert_col")
-    private String majorAlertCol;
+    @Column(name = "advanced_alert_col")
+    private String advancedAlertCol;
 
     @Column(name = "content_cols")
     private String contentCols;
@@ -82,6 +76,15 @@ public class CheckAlert {
     @Column(name = "work_flow_space")
     private String workFlowSpace;
 
+    @Column(name = "default_alert_level")
+    private Integer defaultAlertLevel;
+    @Column(name = "default_alert_ways")
+    private String defaultAlertWays;
+    @Column(name = "advanced_alert_level")
+    private Integer advancedAlertLevel;
+    @Column(name = "advanced_alert_ways")
+    private String advancedAlertWays;
+    
     @ManyToOne
     @JsonIgnore
     private Project project;
@@ -110,21 +113,6 @@ public class CheckAlert {
         this.topic = topic;
     }
 
-    public String getInfoReceiver() {
-        return infoReceiver;
-    }
-
-    public void setInfoReceiver(String infoReceiver) {
-        this.infoReceiver = infoReceiver;
-    }
-
-    public String getMajorReceiver() {
-        return majorReceiver;
-    }
-
-    public void setMajorReceiver(String majorReceiver) {
-        this.majorReceiver = majorReceiver;
-    }
 
     public String getAlertTable() {
         return alertTable;
@@ -148,14 +136,6 @@ public class CheckAlert {
 
     public void setAlertCol(String alertCol) {
         this.alertCol = alertCol;
-    }
-
-    public String getMajorAlertCol() {
-        return majorAlertCol;
-    }
-
-    public void setMajorAlertCol(String majorAlertCol) {
-        this.majorAlertCol = majorAlertCol;
     }
 
     public String getContentCols() {
@@ -246,27 +226,88 @@ public class CheckAlert {
         this.workFlowSpace = workFlowSpace;
     }
 
+    public String getDefaultReceiver() {
+        return defaultReceiver;
+    }
+
+    public void setDefaultReceiver(String defaultReceiver) {
+        this.defaultReceiver = defaultReceiver;
+    }
+
+    public String getAdvancedReceiver() {
+        return advancedReceiver;
+    }
+
+    public void setAdvancedReceiver(String advancedReceiver) {
+        this.advancedReceiver = advancedReceiver;
+    }
+
+    public String getAdvancedAlertCol() {
+        return advancedAlertCol;
+    }
+
+    public void setAdvancedAlertCol(String advancedAlertCol) {
+        this.advancedAlertCol = advancedAlertCol;
+    }
+
+    public Integer getDefaultAlertLevel() {
+        return defaultAlertLevel;
+    }
+
+    public void setDefaultAlertLevel(Integer defaultAlertLevel) {
+        this.defaultAlertLevel = defaultAlertLevel;
+    }
+
+    public String getDefaultAlertWays() {
+        return defaultAlertWays;
+    }
+
+    public void setDefaultAlertWays(String defaultAlertWays) {
+        this.defaultAlertWays = defaultAlertWays;
+    }
+
+    public Integer getAdvancedAlertLevel() {
+        return advancedAlertLevel;
+    }
+
+    public void setAdvancedAlertLevel(Integer advancedAlertLevel) {
+        this.advancedAlertLevel = advancedAlertLevel;
+    }
+
+    public String getAdvancedAlertWays() {
+        return advancedAlertWays;
+    }
+
+    public void setAdvancedAlertWays(String advancedAlertWays) {
+        this.advancedAlertWays = advancedAlertWays;
+    }
+
     @Override
     public String toString() {
         return "CheckAlert{" +
-            "id=" + id +
-            ", topic='" + topic + '\'' +
-            ", infoReceiver='" + infoReceiver + '\'' +
-            ", majorReceiver='" + majorReceiver + '\'' +
-            ", alertTable='" + alertTable + '\'' +
-            ", filter='" + filter + '\'' +
-            ", alertCol='" + alertCol + '\'' +
-            ", majorAlertCol='" + majorAlertCol + '\'' +
-            ", contentCols='" + contentCols + '\'' +
-            ", createUser='" + createUser + '\'' +
-            ", createTime='" + createTime + '\'' +
-            ", modifyUser='" + modifyUser + '\'' +
-            ", modifyTime='" + modifyTime + '\'' +
-            ", nodeName='" + nodeName + '\'' +
-            ", workFlowName='" + workFlowName + '\'' +
-            ", workFlowVersion='" + workFlowVersion + '\'' +
-            ", project=" + project +
-            ", ruleGroup=" + ruleGroup +
-            '}';
+                "id=" + id +
+                ", topic='" + topic + '\'' +
+                ", defaultReceiver='" + defaultReceiver + '\'' +
+                ", advancedReceiver='" + advancedReceiver + '\'' +
+                ", alertTable='" + alertTable + '\'' +
+                ", filter='" + filter + '\'' +
+                ", alertCol='" + alertCol + '\'' +
+                ", advancedAlertCol='" + advancedAlertCol + '\'' +
+                ", contentCols='" + contentCols + '\'' +
+                ", createUser='" + createUser + '\'' +
+                ", createTime='" + createTime + '\'' +
+                ", modifyUser='" + modifyUser + '\'' +
+                ", modifyTime='" + modifyTime + '\'' +
+                ", nodeName='" + nodeName + '\'' +
+                ", workFlowName='" + workFlowName + '\'' +
+                ", workFlowVersion='" + workFlowVersion + '\'' +
+                ", workFlowSpace='" + workFlowSpace + '\'' +
+                ", defaultAlertLevel=" + defaultAlertLevel +
+                ", defaultAlertWays='" + defaultAlertWays + '\'' +
+                ", advancedAlertLevel=" + advancedAlertLevel +
+                ", advancedAlertWays='" + advancedAlertWays + '\'' +
+                ", project=" + project +
+                ", ruleGroup=" + ruleGroup +
+                '}';
     }
 }

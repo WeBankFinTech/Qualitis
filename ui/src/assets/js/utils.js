@@ -1,56 +1,8 @@
-import { access, request as FRequest, useRouter } from '@fesjs/fes';
+import { request as FRequest, access, useRouter } from '@fesjs/fes';
 import { FMessage } from '@fesjs/fes-design';
 import { RULE_TYPE_MAP } from './const';
 
 const router = useRouter();
-// 获取用户信息
-export async function getUserRole() {
-    let username = '';
-    let roles = [];
-    // eslint-disable-next-line camelcase
-    let login_random;
-    try {
-        const res = await FRequest('api/v1/projector/role', {}, { method: 'GET' });
-
-        username = res.username;
-        roles = res.roles;
-        // eslint-disable-next-line camelcase
-        login_random = res.login_random;
-        sessionStorage.setItem('login_random', login_random);
-        if (Array.isArray(roles) && roles.length > 0) {
-            access.setRole(roles[0].toLowerCase());
-        }
-        let role = 'noauth';
-        sessionStorage.setItem('userLogin', true);
-        // 如果没有设置模拟账户走原来正常初始化的逻辑
-        const isSimulatorMode = !!sessionStorage.getItem('simulatedUser');
-        if (!isSimulatorMode) {
-            // 兜底处理
-            if (roles.length && (roles.includes('admin') || roles.includes('ADMIN'))) {
-                role = 'admin';
-            }
-            // 缓存原本的身份
-            sessionStorage.setItem('firstRole', role);
-            // 缓存原本身份的名字
-            sessionStorage.setItem('firstUserName', username);
-            access.setRole(role);
-        }
-        return {
-            userName: username,
-            role,
-        };
-    } catch (error) {
-        FMessage.error('登录失败');
-        console.error(error);
-        access.setRole('noauth');
-        sessionStorage.setItem('firstRole', 'noauth');
-        sessionStorage.setItem('firstUserName', 'noauth');
-        return {
-            userName: 'noauth',
-            role: 'noauth',
-        };
-    }
-}
 /**
  *是否为IE浏览器
  */
@@ -123,6 +75,55 @@ const executeConfigRepeatValidator = (value, separator1 = ';', separator2 = '=')
     }
     return true;
 };
+// 获取用户信息
+export async function getUserRole() {
+    let username = '';
+    let roles = [];
+    // eslint-disable-next-line camelcase
+    let login_random;
+    try {
+        const res = await FRequest('/auth/common/projector/role', {}, { method: 'GET' });
+
+        username = res.username;
+        roles = res.roles;
+        // eslint-disable-next-line camelcase
+        login_random = res.login_random;
+        sessionStorage.setItem('login_random', login_random);
+        if (Array.isArray(roles) && roles.length > 0) {
+            access.setRole(roles[0].toLowerCase());
+        }
+        let role = 'noauth';
+        sessionStorage.setItem('userLogin', true);
+        // 如果没有设置模拟账户走原来正常初始化的逻辑
+        const isSimulatorMode = !!sessionStorage.getItem('simulatedUser');
+        if (!isSimulatorMode) {
+            // 兜底处理
+            if (roles.length && (roles.includes('admin') || roles.includes('ADMIN'))) {
+                role = 'admin';
+            }
+            // 缓存原本的身份
+            sessionStorage.setItem('firstRole', role);
+            // 缓存原本身份的名字
+            sessionStorage.setItem('firstUserName', username);
+            access.setRole(role);
+        }
+        return {
+            userName: username,
+            role,
+        };
+    } catch (error) {
+        FMessage.error('登录失败');
+        console.error(error);
+        access.setRole('noauth');
+        sessionStorage.setItem('firstRole', 'noauth');
+        sessionStorage.setItem('firstUserName', 'noauth');
+        return {
+            userName: 'noauth',
+            role: 'noauth',
+        };
+    }
+}
+
 
 export {
     SINGLE_TABLE_RULE_FLAG,

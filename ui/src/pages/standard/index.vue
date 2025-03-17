@@ -5,32 +5,32 @@
                 <BSearch v-model:form="condition" :isReset="false" @search="search">
                     <template v-slot:form>
                         <div>
-                            <span class="condition-label">标准值ID</span>
-                            <FInput v-model="condition.edition_id" placeholder="请输入标准值ID"></FInput>
+                            <span class="condition-label">{{$t('_.标准值ID')}}</span>
+                            <FInput v-model="condition.edition_id" :placeholder="$t('_.请输入标准值ID')"></FInput>
                         </div>
                         <div>
-                            <span class="condition-label">中文名称</span>
-                            <FInput v-model="condition.cn_name" placeholder="请输入中文名关键词"></FInput>
+                            <span class="condition-label">{{$t('_.中文名称')}}</span>
+                            <FInput v-model="condition.cn_name" :placeholder="$t('_.请输入中文名关键词')"></FInput>
                         </div>
                         <div>
-                            <span class="condition-label">英文名称</span>
-                            <FInput v-model="condition.en_name" placeholder="请输入英文名关键词"></FInput>
+                            <span class="condition-label">{{$t('_.英文名称')}}</span>
+                            <FInput v-model="condition.en_name" :placeholder="$t('_.请输入英文名关键词')"></FInput>
                         </div>
                     </template>
                     <template v-slot:exButton>
                         <FButton
                             :class="advanceQuerySelectedCount > 0 ? 'selected-count' : ''"
                             @click="toggleAdvanceQuery">
-                            高级筛选{{advanceQuerySelectedCount > 0 ? `（已选${advanceQuerySelectedCount}项）` : ''}}
+                            {{$t('_.高级筛选')}}{{advanceQuerySelectedCount > 0 ? `（${$t('common.selected')}${advanceQuerySelectedCount}${$t('common.item')}）` : ''}}
                         </FButton>
-                        <FButton @click="reset">重置</FButton>
+                        <FButton @click="reset">{{$t('_.重置')}}</FButton>
                     </template>
                 </BSearch>
             </template>
             <template v-slot:operate>
                 <FSpace :size="CONDITIONBUTTONSPACE">
                     <template v-if="!isExporting">
-                        <FButton type="primary" @click="openEditPanel('add')"><PlusOutlined />新增标准值</FButton>
+                        <FButton type="primary" @click="openEditPanel('add')"><PlusOutlined />{{$t('_.新增标准值')}}</FButton>
                         <FDropdown trigger="hover" :options="moreMenus" @click="clickMore">
                             <FButton><MoreCircleOutlined />{{$t('myProject.more')}}</FButton>
                         </FDropdown>
@@ -57,10 +57,18 @@
                         <BPageLoading actionType="emptyInitResult" />
                     </template>
                     <f-table-column :visible="isExporting" type="selection" :width="32" />
-                    <f-table-column :visible="checkTColShow('edition_id')" prop="edition_id" label="标准值ID" :width="90" ellipsis />
-                    <f-table-column :visible="checkTColShow('cn_name')" prop="cn_name" label="中文名称" :width="120" ellipsis />
-                    <f-table-column :visible="checkTColShow('en_name')" prop="en_name" label="英文名称" :width="140" ellipsis />
-                    <f-table-column :visible="checkTColShow('content')" prop="content" label="标准值内容" :width="180">
+                    <f-table-column :visible="checkTColShow('edition_id')" prop="edition_id" :label="$t('_.标准值ID')" :width="90" ellipsis />
+                    <f-table-column :visible="checkTColShow('cn_name')" prop="cn_name" :label="$t('_.中文名称')" :width="120">
+                        <template #default="{ row }">
+                            <clipboard :val="row.cn_name" />
+                        </template>
+                    </f-table-column>
+                    <f-table-column :visible="checkTColShow('en_name')" prop="en_name" :label="$t('_.英文名称')" :width="140">
+                        <template #default="{ row }">
+                            <clipboard :val="row.en_name" />
+                        </template>
+                    </f-table-column>
+                    <f-table-column :visible="checkTColShow('content')" prop="content" :label="$t('_.标准值内容')" :width="180">
                         <template #default="{ row }">
                             <FEllipsis v-if="row.content">
                                 {{row.content}}
@@ -73,12 +81,12 @@
                             <div v-else>--</div>
                         </template>
                     </f-table-column>
-                    <f-table-column :visible="checkTColShow('source_value_name')" prop="source_value_name" label="来源类型" :width="106" ellipsis>
+                    <f-table-column :visible="checkTColShow('source_value_name')" prop="source_value_name" :label="$t('_.来源类型')" :width="106" ellipsis>
                         <template #default="{ row }">
                             {{row.source_value_name || '--'}}
                         </template>
                     </f-table-column>
-                    <f-table-column :visible="checkTColShow('source')" prop="source" label="来源" :width="180" ellipsis>
+                    <f-table-column :visible="checkTColShow('source')" prop="source" :label="$t('_.来源')" :width="180" ellipsis>
                         <template #default="{ row }">
                             {{row.source || '--'}}
                         </template>
@@ -103,26 +111,26 @@
                                 <div v-else>--</div>
                             </template>
                         </f-table-column> -->
-                    <f-table-column :visible="checkTColShow('create_user')" prop="create_user" label="创建人" :width="120" ellipsis />
-                    <f-table-column prop="create_time" :visible="checkTColShow('create_time')" label="创建时间" align="left" :width="182" ellipsis></f-table-column>
-                    <f-table-column :visible="checkTColShow('modify_user')" prop="modify_user" label="修改人" :width="120" ellipsis>
+                    <f-table-column :visible="checkTColShow('create_user')" prop="create_user" :label="$t('_.创建人')" :width="120" ellipsis />
+                    <f-table-column prop="create_time" :visible="checkTColShow('create_time')" :label="$t('_.创建时间')" align="left" :width="182" ellipsis></f-table-column>
+                    <f-table-column :visible="checkTColShow('modify_user')" prop="modify_user" :label="$t('_.修改人')" :width="120" ellipsis>
                         <template #default="{ row }">
                             {{row.modify_user || '--'}}
                         </template>
                     </f-table-column>
-                    <f-table-column prop="modify_time" :visible="checkTColShow('modify_time')" label="修改时间" align="left" :width="182" ellipsis></f-table-column>
-                    <f-table-column ellipsis prop="dev_department_name" :visible="checkTColShow('dev_department_name')" label="开发科室" :width="152">
+                    <f-table-column prop="modify_time" :visible="checkTColShow('modify_time')" :label="$t('_.修改时间')" align="left" :width="182" ellipsis></f-table-column>
+                    <f-table-column ellipsis prop="dev_department_name" :visible="checkTColShow('dev_department_name')" :label="$t('_.开发科室')" :width="152">
                         <template #default="{ row }">{{row.dev_department_name || '--'}}</template>
                     </f-table-column>
-                    <f-table-column ellipsis prop="ops_department_name" :visible="checkTColShow('ops_department_name')" label="运维科室" :width="152">
+                    <f-table-column ellipsis prop="ops_department_name" :visible="checkTColShow('ops_department_name')" :label="$t('_.运维科室')" :width="152">
                         <template #default="{ row }">{{row.ops_department_name || '--'}}</template>
                     </f-table-column>
-                    <f-table-column :visible="checkTColShow('action_range')" prop="action_range" label="可见范围" :width="152" ellipsis>
+                    <f-table-column :visible="checkTColShow('action_range')" prop="action_range" :label="$t('_.可见范围')" :width="152" ellipsis>
                         <template #default="{ row }">
                             <FEllipsis v-if="row.action_range">
                                 {{getActionRangeString(row.action_range)}}
                                 <template #tooltip>
-                                    <div style="text-align:center">可见范围</div>
+                                    <div style="text-align:center">{{$t('_.可见范围')}}</div>
                                     <div style="max-width:300px;word-wrap:break-word">
                                         {{getActionRangeString(row.action_range)}}
                                     </div>
@@ -189,8 +197,9 @@
     </div>
 </template>
 <script setup>
+
 import {
-    onMounted, ref, computed, provide,
+    onMounted, ref, computed, provide, toRefs,
 } from 'vue';
 import { request as FRequest, useRoute, useI18n } from '@fesjs/fes';
 import {
@@ -204,6 +213,7 @@ import { cloneDeep } from 'lodash-es';
 import {
     BTableHeaderConfig, BPageLoading, BTablePage, BSearch,
 } from '@fesjs/traction-widget';
+import clipboard from '@/components/clipboard';
 import EditTemplate from './components/editTemplate';
 import AdvanceQuery from './components/advanceQuery.vue';
 // import Versions from './components/versions.vue';
@@ -231,20 +241,20 @@ const pagination = ref({
 });
 
 const originTableHeaders = [
-    { prop: 'edition_id', label: '标准值ID' },
-    { prop: 'cn_name', label: '中文名称' },
-    { prop: 'en_name', label: '英文名称' },
-    { prop: 'content', label: '标准值内容' },
-    { prop: 'source_value_name', label: '来源类型' },
-    { prop: 'source', label: '来源' },
+    { prop: 'edition_id', label: $t('_.标准值ID') },
+    { prop: 'cn_name', label: $t('_.中文名称') },
+    { prop: 'en_name', label: $t('_.英文名称') },
+    { prop: 'content', label: $t('_.标准值内容') },
+    { prop: 'source_value_name', label: $t('_.来源类型') },
+    { prop: 'source', label: $t('_.来源') },
     // { prop: 'total', label: '版本数量' },
-    { prop: 'create_user', label: '创建人' },
-    { prop: 'create_time', label: '创建时间', hidden: true },
-    { prop: 'modify_user', label: '修改人' },
-    { prop: 'modify_time', label: '修改时间', hidden: true },
-    { prop: 'dev_department_name', label: '开发科室' },
-    { prop: 'ops_department_name', label: '运维科室' },
-    { prop: 'action_range', label: '可见范围', hidden: true },
+    { prop: 'create_user', label: $t('_.创建人') },
+    { prop: 'create_time', label: $t('_.创建时间'), hidden: true },
+    { prop: 'modify_user', label: $t('_.修改人') },
+    { prop: 'modify_time', label: $t('_.修改时间'), hidden: true },
+    { prop: 'dev_department_name', label: $t('_.开发科室') },
+    { prop: 'ops_department_name', label: $t('_.运维科室') },
+    { prop: 'action_range', label: $t('_.可见范围'), hidden: true },
     // { prop: 'label_name', label: '标签' },
 ];
 // 未设置过缓存，默认不展示创建时间/修改时间/可见范围
@@ -271,14 +281,14 @@ const loadListData = async () => {
         if (isLoading.value) {
             return;
         }
-        const tempCondition = cloneDeep(condition);
+        const tempCondition = cloneDeep(condition.value);
         // eslint-disable-next-line no-use-before-define
-        tempCondition.value.action_range = advanceQueryRef.value.selectVisDate.map(item => item.id);
+        tempCondition.action_range = advanceQueryRef.value.selectVisDate.map(item => item.id);
         isLoading.value = true;
         const { data = [], total = 0 } = await FRequest('/api/v1/projector/standardValue/query', Object.assign({
             page: pagination.value.page - 1,
             size: pagination.value.size,
-        }, tempCondition.value));
+        }, tempCondition));
         pagination.value.total = total;
         standardLists.value = data;
         isLoading.value = false;
@@ -372,7 +382,7 @@ const ruleTemplateTableActions = [
             if (selectedDataId.value && selectedDataId.value !== -1) {
                 currentDetail = await editTemplateRef.value.getDetailByTable(selectedDataId.value);
                 if (!currentDetail.editable) {
-                    return FMessage.error('没有编辑权限');
+                    return FMessage.error($t('_.没有编辑权限'));
                 }
                 openEditPanel('view');
             }
@@ -388,7 +398,7 @@ const ruleTemplateTableActions = [
             if (selectedDataId.value && selectedDataId.value !== -1) {
                 currentDetail = await editTemplateRef.value.getDetailByTable(selectedDataId.value);
                 if (!currentDetail.editable) {
-                    return FMessage.error('没有删除权限');
+                    return FMessage.error($t('_.没有删除权限'));
                 }
             }
             FModal.confirm({
@@ -414,4 +424,5 @@ onMounted(() => {
     loadListData();
     // getSystemList();
 });
+
 </script>

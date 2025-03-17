@@ -19,14 +19,14 @@ public class DataMapConfig {
     private String tablePath;
     @Value("${datamap.columns_path}")
     private String columnPath;
+    @Value("${datamap.fields_path}")
+    private String fieldPath;
     @Value("${datamap.standard_path}")
     private String standardPath;
-    @Value("${datamap.query_all_path}")
-    private String queryAllPath;
+    @Value("${datamap.search_table}")
+    private String searchTable;
     @Value("${datamap.dataset_tag_relations_path}")
     private String datasetTagRelationsPath;
-    @Value("${datamap.tags_path}")
-    private String tagsPath;
     @Value("${datamap.app_id}")
     private String appId;
     @Value("${datamap.app_token}")
@@ -49,6 +49,39 @@ public class DataMapConfig {
     @Value("${datamap.data_standard_small_category}")
     private String dataStandardSmallCategory;
 
+    @Value("${datamap.special_proxy_user:}")
+    private String specialProxyUser;
+
+    @Value("${datamap.special_app_id:}")
+    private String specialAppId;
+
+    @Value("${datamap.special_app_token:}")
+    private String specialAppToken;
+
+    public String getSpecialProxyUser() {
+        return specialProxyUser;
+    }
+
+    public void setSpecialProxyUser(String specialProxyUser) {
+        this.specialProxyUser = specialProxyUser;
+    }
+
+    public String getSpecialAppId() {
+        return specialAppId;
+    }
+
+    public void setSpecialAppId(String specialAppId) {
+        this.specialAppId = specialAppId;
+    }
+
+    public String getSpecialAppToken() {
+        return specialAppToken;
+    }
+
+    public void setSpecialAppToken(String specialAppToken) {
+        this.specialAppToken = specialAppToken;
+    }
+
     public String getIsolateEnvFlag() {
         return isolateEnvFlag;
     }
@@ -67,6 +100,14 @@ public class DataMapConfig {
 
     public String getDatabasePath() {
         return databasePath;
+    }
+
+    public String getFieldPath() {
+        return fieldPath;
+    }
+
+    public void setFieldPath(String fieldPath) {
+        this.fieldPath = fieldPath;
     }
 
     public void setDatabasePath(String databasePath) {
@@ -97,12 +138,12 @@ public class DataMapConfig {
         this.standardPath = standardPath;
     }
 
-    public String getQueryAllPath() {
-        return queryAllPath;
+    public String getSearchTable() {
+        return searchTable;
     }
 
-    public void setQueryAllPath(String queryAllPath) {
-        this.queryAllPath = queryAllPath;
+    public void setSearchTable(String searchTable) {
+        this.searchTable = searchTable;
     }
 
     public String getDatasetTagRelationsPath() {
@@ -111,14 +152,6 @@ public class DataMapConfig {
 
     public void setDatasetTagRelationsPath(String datasetTagRelationsPath) {
         this.datasetTagRelationsPath = datasetTagRelationsPath;
-    }
-
-    public String getTagsPath() {
-        return tagsPath;
-    }
-
-    public void setTagsPath(String tagsPath) {
-        this.tagsPath = tagsPath;
     }
 
     public String getAppId() {

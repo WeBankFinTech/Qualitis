@@ -1,6 +1,8 @@
 package com.webank.wedatasphere.qualitis.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 
 /**
@@ -66,6 +68,11 @@ public class ImsRuleMetricQueryRequest {
 
     public void setEndDate(int endDate) {
         this.endDate = endDate;
+    }
+
+    public void checkRequest() throws UnExpectedRequestException {
+        CommonChecker.checkString(this.metricId, "metricId");
+        CommonChecker.checkString(this.username, "username");
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -38,13 +39,13 @@ public class HttpUtils {
     public static Map<String, Object> getUser(HttpServletRequest request) {
         if (request == null) {
             LOGGER.warn("No request provided!~");
-            return null;
+            return Collections.emptyMap();
         }
 
         HttpSession session = request.getSession(false);
         if (session == null) {
             LOGGER.warn("No current session found!~");
-            return null;
+            return Collections.emptyMap();
         }
 
         Object proxyUserObj = session.getAttribute("proxyUser");
@@ -71,7 +72,7 @@ public class HttpUtils {
 
     public static Long getUserId(HttpServletRequest request) {
         Map<String, Object> user = getUser(request);
-        if (user == null) {
+        if (user == null || user.isEmpty()) {
             return null;
         }
         return (Long) user.get("userId");
@@ -79,7 +80,7 @@ public class HttpUtils {
 
     public static String getUserName(HttpServletRequest request) {
         Map<String, Object> user = getUser(request);
-        if (user == null) {
+        if (user == null || user.isEmpty()) {
             return null;
         }
         return (String) user.get("username");

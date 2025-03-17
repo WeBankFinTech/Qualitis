@@ -8,7 +8,7 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -67,7 +67,7 @@ public class AddDirector {
 
     private ProjectDao projectDao;
 
-//    private LinkisUdfDao linkisUdfDao;
+    private LinkisUdfDao linkisUdfDao;
 
     private RuleGroupDao ruleGroupDao;
 
@@ -84,7 +84,7 @@ public class AddDirector {
     private LinkisConfig linkisConfig;
 
     public AddDirector(SubDepartmentPermissionService subDepartmentPermissionService, ProjectService projectService, MetaDataClient metaDataClient
-        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, RuleGroupDao ruleGroupDao
+        , RuleMetricDao ruleMetricDao, RuleDao ruleDao, UserDao userDao, ProjectDao projectDao, LinkisUdfDao linkisUdfDao, RuleGroupDao ruleGroupDao
         , RuleTemplateDao ruleTemplateDao, StandardValueVersionDao standardValueVersionDao, LinkisDataSourceEnvService linkisDataSourceEnvService, LinkisDataSourceDao linkisDataSourceDao, BdpClientHistoryDao bdpClientHistoryDao, LinkisConfig linkisConfig) {
         this.subDepartmentPermissionService = subDepartmentPermissionService;
         this.projectService = projectService;
@@ -93,7 +93,7 @@ public class AddDirector {
         this.ruleDao = ruleDao;
         this.userDao = userDao;
         this.projectDao = projectDao;
-//        this.linkisUdfDao = linkisUdfDao;
+        this.linkisUdfDao = linkisUdfDao;
         this.ruleGroupDao = ruleGroupDao;
         this.ruleTemplateDao = ruleTemplateDao;
         this.standardValueVersionDao = standardValueVersionDao;
@@ -118,6 +118,26 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    /**
+     * columnNotNull, 无参方法，独立于 expectColumnNotNull，减少参数使用，本质上依然是空值校验，需配合其它方法链式调用，比如：.setDatasource().setAlert().setResource()...
+     * @return
+     * @throws Exception
+     */
+    public AddRequestBuilder columnNotNull() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, linkisDataSourceDao, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMN_NOT_NULL.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -298,6 +318,22 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnsPrimaryNotRepeat() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_PRIMARY_NOT_REPEAT.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectTableRows(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -312,6 +348,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder tableRows() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -332,6 +383,21 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnAvg() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_AVG.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnSum(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -348,6 +414,22 @@ public class AddDirector {
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
         return addRequestBuilder;
     }
+
+    public AddRequestBuilder columnSum() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_SUM.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnMax(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -362,6 +444,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnMax() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MAX.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -382,6 +479,21 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnMin() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MIN.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnMatchRegx(String datasource, String regx, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -396,6 +508,23 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, regx, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnMatchRegx(String regx) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_REGX.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setRegxOrRangeOrEnum(regx);
+
         return addRequestBuilder;
     }
 
@@ -416,6 +545,23 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnMatchDate(String dateRegx) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_DATE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setRegxOrRangeOrEnum(dateRegx);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnMatchNum(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -430,6 +576,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnMatchNum() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_NUM.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -450,6 +611,23 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnInList(String seriesOfValues) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setRegxOrRangeOrEnum(seriesOfValues);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnInListNewValueCheck(String datasource, String seriesOfValues, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -464,6 +642,23 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, seriesOfValues, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnInListNewValueCheck(String seriesOfValues) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setRegxOrRangeOrEnum(seriesOfValues);
+
         return addRequestBuilder;
     }
 
@@ -496,6 +691,36 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnInStandardValueListNewValueCheck(String standardValueEnName) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_LIST_NEW_VALUE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        StandardValueVersion standardValueVersion = standardValueVersionDao.findByEnName(standardValueEnName);
+        if (standardValueVersion == null) {
+            throw new UnExpectedRequestException(standardValueEnName + "{&DOES_NOT_EXIST}");
+        }
+        List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>();
+        // Handle special template argument
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : templateInDb.getTemplateMidTableInputMetas()) {
+            if (TemplateMidTableUtil.shouldResponse(templateMidTableInputMeta)) {
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), standardValueVersion.getId().toString()));
+            }
+        }
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setStandardValueVersionId(standardValueVersion.getId());
+        ((AddRuleRequestBuilder) addRequestBuilder).setTemplateArgumentRequests(templateArgumentRequests);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnInRange(String datasource, String range, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -510,6 +735,23 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, range, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnInRange(String range) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setRegxOrRangeOrEnum(range);
+
         return addRequestBuilder;
     }
 
@@ -539,6 +781,34 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnInRangeNewValueCheck(int min, String range, int max) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_IN_RANGE_NEW_VALUE.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>();
+        // Handle special template argument
+        for (TemplateMidTableInputMeta templateMidTableInputMeta : templateInDb.getTemplateMidTableInputMetas()) {
+            if (TemplateInputTypeEnum.MAXIMUM.getCode().equals(templateMidTableInputMeta.getInputType())) {
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), max + ""));
+            } else if (TemplateInputTypeEnum.MINIMUM.getCode().equals(templateMidTableInputMeta.getInputType())) {
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), min + ""));
+            } else if (TemplateInputTypeEnum.INTERMEDIATE_EXPRESSION.getCode().equals(templateMidTableInputMeta.getInputType())) {
+                templateArgumentRequests.add(new TemplateArgumentRequest(templateMidTableInputMeta.getId(), templateMidTableInputMeta.getInputType(), InputActionStepEnum.TEMPLATE_INPUT_META.getCode(), range));
+            }
+        }
+        ((AddRuleRequestBuilder) addRequestBuilder).setTemplateArgumentRequests(templateArgumentRequests);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnMatchIdCard(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -553,6 +823,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnMatchIdCard() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_MATCH_ID_CARD.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -573,6 +858,24 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnLogicCheck(String condition1, String condition2) throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_LOGIC_CHECK.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        ((AddRuleRequestBuilder) addRequestBuilder).setCondition1(condition1);
+        ((AddRuleRequestBuilder) addRequestBuilder).setCondition2(condition2);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectColumnNotEmpty(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -587,6 +890,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder columnNotEmpty() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_EMPTY.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -607,6 +925,21 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder columnNotNullNotEmpty() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_COLUMNS_NOT_NULL_NOT_EMPTY.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectTableConsistent(String cluster, String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -624,8 +957,23 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder tableConsistent() throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_CONSISTENT.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     /**
-     * Without compare cols, the mappings cols are the same. Only mappings.
+     * Without compare cols, the mappings cols are the same, only mappings.
      * @param cluster
      * @param datasource
      * @param mappings
@@ -687,33 +1035,53 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
-    public AddRequestBuilder expectCustomColumnConsistent(String clusters, String datasource, String mappings, String compareCols, String collectSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-                                                          boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+    public AddRequestBuilder specifiedColumnConsistent() throws Exception {
         addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
         // Template
-        int clusterNum = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue()).length;
-//        distinguish single-cluster rule or multi-cluster rule with the numbers of clusters
-        TemplateFunctionNameEnum templateFunctionName;
-        if (clusterNum == QualitisConstants.LENGTH_TWO) {
-            templateFunctionName = TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_MULTI_CLUSTER;
-        } else {
-            templateFunctionName = TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_SINGLE_CLUSTER;
-        }
-        Template templateInDb = ruleTemplateDao.findTemplateByEnName(templateFunctionName.getEnName());
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_SPECIFIED_COLUMN_CONSISTENT.getEnName());
         addRequestBuilder.setTemplate(templateInDb);
-        // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
-        getCurrentNameFromMultiCluster(names, clusters, templateFunctionName.getName());
-        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
-        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
-        addRequestBuilder.basicInfoWithoutDataSource(clusters, datasource, mappings, compareCols, collectSqls, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder expectCustomColumnConsistent(String cluster, String datasource, String mappings, String compareCols, String collectSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+                                                          boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_SINGLE_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+        // Project and rule related with builder.
+        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
+        getCurrentNameFromMultiCluster(names, cluster, TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_SINGLE_CLUSTER.getName());
+        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
+        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
-    public AddRequestBuilder expectTableStructureConsistent(String clusters,String datasource,String dbAndTable,boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
-                                                            boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)throws Exception{
+        addRequestBuilder.basicInfoWithoutDataSource(cluster, datasource, mappings, compareCols, collectSqls, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder customColumnConsistent() throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_CUSTOM_COLUMN_CONSISTENT_SINGLE_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder expectTableStructureConsistent(String clusters, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
+                                                            boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception{
         addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
         // Template
         int clusterNum = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue()).length;
@@ -732,7 +1100,37 @@ public class AddDirector {
         setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
-        addRequestBuilder.basicInfoWithDataSourceAndCluster(clusters,datasource,dbAndTable,deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        addRequestBuilder.basicInfoWithDataSourceAndCluster(clusters, datasource, dbAndTable, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder tableStructureConsistentInOneCluster() throws Exception{
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_STRUCTURE_CONSISTENT_SINGLE_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder tableStructureConsistentInTwoCluster() throws Exception{
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_STRUCTURE_CONSISTENT_MULTI_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -744,8 +1142,8 @@ public class AddDirector {
         if (datasourceStrs.length != QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
-        String sourceCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_O].split(SpecCharEnum.COLON.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
-        String targetCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_1].split(SpecCharEnum.COLON.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
+        String sourceCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_O].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
+        String targetCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_1].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
 
         // Template
         Template templateInDb;
@@ -755,13 +1153,46 @@ public class AddDirector {
             templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_MULTI_CLUSTER.getEnName());
         }
         addRequestBuilder.setTemplate(templateInDb);
-        // Project and rule related with builder.
-        Map<String, String> names = new HashMap<>(QualitisConstants.LENGTH_TWO);
-        getCurrentNameFromDatasource(names, datasource, TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_MULTI_CLUSTER.getName());
-        setProject(project, StringUtils.isNotBlank(projectName) ? projectName : names.get("project"));
-        setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder tableRowsConsistentInOneCluster() throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_SINGLE_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder tableRowsConsistentInTwoCluster() throws Exception {
+        addRequestBuilder = new AddMultiRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisConfig, linkisDataSourceEnvService);
+
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_TABLE_ROWS_CONSISTENT_MULTI_CLUSTER.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -781,6 +1212,21 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder partitionAmountCount() throws UnExpectedRequestException {
+        addRequestBuilder = new AddFileRuleRequestBuilder(ruleMetricDao, ruleGroupDao);
+        // Template
+        Template templateInDb = ruleTemplateDao.findByName("分区数");
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectFileAmountCount(String datasource, String alertInfo, boolean abortOnFailure)
         throws UnExpectedRequestException, MetaDataAcquireFailedException {
         addRequestBuilder = new AddFileRuleRequestBuilder(ruleMetricDao, ruleGroupDao);
@@ -794,6 +1240,21 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, abortOnFailure, alertInfo);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder fileAmountCount() throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        addRequestBuilder = new AddFileRuleRequestBuilder(ruleMetricDao, ruleGroupDao);
+        // Template
+        Template templateInDb = ruleTemplateDao.findByName("目录文件数");
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 
@@ -813,14 +1274,39 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder fileSizePass() throws UnExpectedRequestException {
+        addRequestBuilder = new AddFileRuleRequestBuilder(ruleMetricDao);
+        // Template
+        Template templateInDb = ruleTemplateDao.findByName("目录容量");
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectSqlPass(String cluster, String sql, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
-        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
+        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisUdfDao, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
         // Project and rule related with builder.
         setProject(project, projectName);
         setRule(rule, ruleName);
 
         addRequestBuilder.basicInfoWithDataSource(cluster, sql, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder sqlPass(String sql) throws Exception {
+        addRequestBuilder = new AddCustomRuleRequestBuilder(ruleMetricDao, ruleGroupDao, metaDataClient, linkisUdfDao, subDepartmentPermissionService, linkisConfig, linkisDataSourceEnvService);
+        // Project and rule related with builder.
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        addRequestBuilder.basicInfoWithDataSource("", sql, "", false, "");
         return addRequestBuilder;
     }
 
@@ -842,6 +1328,22 @@ public class AddDirector {
         return addRequestBuilder;
     }
 
+    public AddRequestBuilder linesNotRepeat() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_LINES_NOT_REPEAT.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
+        return addRequestBuilder;
+    }
+
     public AddRequestBuilder expectDataNotRepeat(String datasource, boolean deleteFailCheckResult, boolean uploadRuleMetricValue,
         boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws Exception {
@@ -857,6 +1359,22 @@ public class AddDirector {
         setRule(rule, StringUtils.isNotBlank(ruleName) ? ruleName : names.get("rule"));
 
         addRequestBuilder.basicInfoWithDataSource(datasource, deleteFailCheckResult, uploadRuleMetricValue, uploadAbnormalValue, alertInfo, abortOnFailure, execParams);
+        return addRequestBuilder;
+    }
+
+    public AddRequestBuilder dataNotRepeat() throws Exception {
+        addRequestBuilder = new AddRuleRequestBuilder(ruleMetricDao, ruleGroupDao, linkisDataSourceEnvService, metaDataClient, linkisConfig);
+
+        // Template
+        Template templateInDb = ruleTemplateDao.findTemplateByEnName(TemplateFunctionNameEnum.EXPECT_DATA_NOT_REPEAT.getEnName());
+        addRequestBuilder.setTemplate(templateInDb);
+
+        if (StringUtils.isBlank(projectName) || StringUtils.isBlank(ruleName)) {
+            throw new UnExpectedRequestException("Project name or rule name {&CAN_NOT_BE_NULL_OR_EMPTY}");
+        }
+        setProject(project, projectName);
+        setRule(rule, ruleName);
+
         return addRequestBuilder;
     }
 

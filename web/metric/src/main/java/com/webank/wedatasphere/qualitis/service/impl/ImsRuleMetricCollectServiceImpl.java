@@ -1,59 +1,67 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
-//import com.google.common.collect.Maps;
-//import com.webank.wedatasphere.qualitis.constant.ImsRuleCalcTypeEnum;
-//import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
-//import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
-//import com.webank.wedatasphere.qualitis.dao.CalcuUnitDao;
-//import com.webank.wedatasphere.qualitis.dao.ImsMetricCollectDao;
-//import com.webank.wedatasphere.qualitis.dao.ImsMetricSchedulerDao;
-//import com.webank.wedatasphere.qualitis.dao.UserDao;
-//import com.webank.wedatasphere.qualitis.dao.repository.AuthListRepository;
-//import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
-//import com.webank.wedatasphere.qualitis.entity.*;
-//import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
-//import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-//import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-//import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
-//import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
-//import com.webank.wedatasphere.qualitis.project.entity.Project;
-//import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
-//import com.webank.wedatasphere.qualitis.project.request.ParameterChecker;
-//import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
-//import com.webank.wedatasphere.qualitis.query.request.ExecutionParametersRequest;
-//import com.webank.wedatasphere.qualitis.request.*;
-//import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-//import com.webank.wedatasphere.qualitis.response.GetAllResponse;
-//import com.webank.wedatasphere.qualitis.response.MetricCollectQueryResponse;
-//import com.webank.wedatasphere.qualitis.response.MetricSchedulerDetailResponse;
-//import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
-//import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
-//import com.webank.wedatasphere.qualitis.rule.entity.Template;
-//import com.webank.wedatasphere.qualitis.rule.response.ExecutionParametersResponse;
-//import com.webank.wedatasphere.qualitis.rule.service.ExecutionParametersService;
-//import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.util.CronUtil;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.webank.wedatasphere.qualitis.constant.AutoCollectStatusEnum;
+import com.webank.wedatasphere.qualitis.constant.ImsRuleCalcTypeEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.dao.repository.AuthListRepository;
+import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
+import com.webank.wedatasphere.qualitis.entity.*;
+import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
+import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
+import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import com.webank.wedatasphere.qualitis.project.entity.Project;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.project.request.ParameterChecker;
+import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
+import com.webank.wedatasphere.qualitis.query.request.ExecutionParametersRequest;
+import com.webank.wedatasphere.qualitis.request.*;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+import com.webank.wedatasphere.qualitis.response.GetAllResponse;
+import com.webank.wedatasphere.qualitis.response.MetricCollectQueryResponse;
+import com.webank.wedatasphere.qualitis.response.MetricSchedulerDetailResponse;
+import com.webank.wedatasphere.qualitis.rule.constant.MetricClassEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
+import com.webank.wedatasphere.qualitis.rule.dao.MetricExtInfoDao;
+import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
+import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.response.ExecutionParametersResponse;
+import com.webank.wedatasphere.qualitis.rule.service.ExecutionParametersService;
+import com.webank.wedatasphere.qualitis.scheduled.constant.ExecuteIntervalEnum;
+import com.webank.wedatasphere.qualitis.scheduled.util.CronUtil;
 import com.webank.wedatasphere.qualitis.service.ImsRuleMetricCollectService;
-//import com.webank.wedatasphere.qualitis.util.DateUtils;
-//import com.webank.wedatasphere.qualitis.util.HttpUtils;
-//import com.webank.wedatasphere.qualitis.util.SignUtil;
-//import org.apache.commons.collections4.CollectionUtils;
-//import org.apache.commons.lang3.StringUtils;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.data.domain.Page;
+import com.webank.wedatasphere.qualitis.service.SystemConfigService;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
+import com.webank.wedatasphere.qualitis.util.HttpUtils;
+import com.webank.wedatasphere.qualitis.util.SignUtil;
+import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-//import org.springframework.web.client.RestTemplate;
-//
-//import javax.servlet.http.HttpServletRequest;
-//import javax.ws.rs.core.Context;
-//import java.text.ParseException;
-//import java.util.*;
-//import java.util.function.Function;
-//import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+import java.text.ParseException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author v_minminghe@webank.com
@@ -66,13 +74,25 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //    private static final Logger LOGGER = LoggerFactory.getLogger(ImsRuleMetricCollectServiceImpl.class);
 //
 //    @Autowired
+//    private MetricExtInfoDao metricExtInfoDao;
+//    @Autowired
+//    private SystemConfigService systemConfigService;
+//    @Autowired
 //    private ImsMetricCollectDao imsMetricCollectDao;
+//    @Autowired
+//    private ImsMetricDao imsMetricDao;
 //    @Autowired
 //    private ExecutionParametersService executionParametersService;
 //    @Autowired
 //    private ProjectDao projectDao;
 //    @Autowired
 //    private ImsMetricSchedulerDao imsMetricSchedulerDao;
+//    @Autowired
+//    private ImsMetricAutoCollectRecordDao imsMetricAutoCollectRecordDao;
+//    @Autowired
+//    private ImsmetricDataDao imsmetricDataDao;
+//    @Autowired
+//    private ColumnAnalysisResultDao columnAnalysisResultDao;
 //    @Autowired
 //    private RuleTemplateDao ruleTemplateDao;
 //    @Autowired
@@ -85,11 +105,29 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //    private AuthListRepository authListRepository;
 //    @Autowired
 //    private RestTemplate restTemplate;
+//    @Autowired
+//    private ApplicationDao applicationDao;
+//    @Autowired
+//    private TaskDao taskDao;
 //
 //    @Value("${metric.collector.host}")
 //    private String collectorServerHost;
 //
+//    @Value("${metric.collector.path.scheduler_update:/qualitis/outer/api/v1/imsmetric/collect/scheduler/update}")
+//    private String collectorSchedulerUpdatePath;
+//
+//    @Value("${overseas_external_version.enable:false}")
+//    private Boolean overseasVersionEnabled;
+//
 //    private final Integer DATA_TYPE_NUM = 1;
+//
+//    private static final String DATE_PATTERN = "yyyy-MM-dd";
+//
+//    private final Gson gson = new Gson();
+//
+//    private final Cache<String, Task> collectTaskStatusCache = CacheBuilder.newBuilder()
+//            .expireAfterAccess(5, TimeUnit.MINUTES)
+//            .build();
 //
 //    private HttpServletRequest httpServletRequest;
 //
@@ -141,19 +179,18 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //            }
 //        }
 //
-//        String collectorServerPath = "/qualitis/outer/api/v1/imsmetric/collect/scheduler/update";
 //        String appId = QualitisConstants.DEFAULT_AUTH_APP_ID;
 //        String nonce = "16895";
 //        String timestamp = String.valueOf(System.currentTimeMillis());
 //        AuthList authList = authListRepository.findByAppId(appId);
 //        String signature = SignUtil.generateSignature(appId, authList.getAppToken(), nonce, timestamp);
-//        collectorServerPath += "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
+//        String collectorServerUri = collectorServerHost + collectorSchedulerUpdatePath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
 //
 //        if (CollectionUtils.isNotEmpty(imsMetricSchedulersInDb)) {
-//            pushToCollectorServer(imsMetricSchedulersInDb, collectorServerHost + collectorServerPath);
+//            pushToCollectorServer(imsMetricSchedulersInDb, collectorServerUri);
 //        }
 //        if (CollectionUtils.isNotEmpty(newImsMetricSchedulers)) {
-//            pushToCollectorServer(newImsMetricSchedulers, collectorServerHost + collectorServerPath);
+//            pushToCollectorServer(newImsMetricSchedulers, collectorServerUri);
 //        }
 //    }
 //
@@ -246,14 +283,13 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        }
 //
 //        if (CollectionUtils.isNotEmpty(pausedMetricSchedulers)) {
-//            String collectorServerPath = "/qualitis/outer/api/v1/imsmetric/collect/scheduler/update";
 //            String appId = QualitisConstants.DEFAULT_AUTH_APP_ID;
 //            String nonce = "16895";
 //            String timestamp = String.valueOf(System.currentTimeMillis());
 //            AuthList authList = authListRepository.findByAppId(appId);
 //            String signature = SignUtil.generateSignature(appId, authList.getAppToken(), nonce, timestamp);
-//            collectorServerPath += "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
-//            pushToCollectorServer(pausedMetricSchedulers, collectorServerHost + collectorServerPath);
+//            String collectorServerUri = collectorServerHost + collectorSchedulerUpdatePath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
+//            pushToCollectorServer(pausedMetricSchedulers, collectorServerUri);
 //        }
 //
 //        imsMetricCollectDao.deleteByIds(metricCollectIds);
@@ -313,6 +349,16 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        metricCollect.setModifyTime(DateUtils.now());
 //        metricCollect.setModifyUser(loginUser);
 //        imsMetricCollectDao.saveAll(Arrays.asList(metricCollect));
+//
+//        MetricExtInfo metricExtInfo = metricExtInfoDao.get(metricCollect.getId(), MetricClassEnum.IMS_METRIC);
+//        if (metricExtInfo == null) {
+//            metricExtInfo = new MetricExtInfo();
+//            metricExtInfo.setCreateTime(new Date());
+//            metricExtInfo.setCreateUser(loginUser);
+//        } else {
+//            metricExtInfo.setModifyTime(new Date());
+//            metricExtInfo.setModifyUser(loginUser);
+//        }
 //    }
 //
 //    @Override
@@ -339,23 +385,10 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        if (requests.size() != actualCount) {
 //            throw new UnExpectedRequestException("Found duplicated partition, please checking.");
 //        }
-//        Map<String, Long> calcuUnitNameAndTemplateMap = getCalcuUnitNameAndTemplateIdMap();
-//        Long enumNumTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_NUM.getDescribe());
-//        Long enumRateTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_RATE.getDescribe());
-////        判断数据库中是否已存在集群、库、表、分区, 如果已存在，则删除已有的集群+库+表+分区下的所有采集配置
-//        for (AddMetricCollectRequest addMetricCollectRequest : requests) {
-//            List<ImsMetricCollect> metricCollectList = imsMetricCollectDao.findByDatasource(addMetricCollectRequest.getClusterName(), addMetricCollectRequest.getDatabase(), addMetricCollectRequest.getTable(), null, StringUtils.isNotBlank(addMetricCollectRequest.getPartition()) ? addMetricCollectRequest.getPartition() : null);
-//            if (CollectionUtils.isNotEmpty(metricCollectList)) {
-//                List<Long> ids = metricCollectList.stream().filter(imsMetricCollect -> ! (enumNumTemplate.equals(imsMetricCollect.getTemplateId()) || enumRateTemplate.equals(imsMetricCollect.getTemplateId()))).map(ImsMetricCollect::getId).collect(Collectors.toList());
-//                if (CollectionUtils.isNotEmpty(ids)) {
-//                    imsMetricCollectDao.deleteByIds(ids);
-//                }
-//            }
-//        }
-//
 ////        设置默认参数
 //        requests.forEach(metricCollectRequest -> metricCollectRequest.setDatasourceType(TemplateDataSourceTypeEnum.HIVE.getCode()));
 //
+//        LOGGER.info("Start to write collect config in batch. request body: {}", CustomObjectMapper.transObjectToJson(requests));
 //        addMetricCollectConfigs(requests);
 //
 //    }
@@ -363,7 +396,6 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //    @Override
 //    public void addMetricCollectConfigs(List<AddMetricCollectRequest> addMetricCollectRequests) throws UnExpectedRequestException {
 //        Map<String, Long> calcuUnitNameAndTemplateMap = getCalcuUnitNameAndTemplateIdMap();
-//        List<ImsMetricCollect> allImsMetricCollectList = new ArrayList<>();
 //        String loginUser = HttpUtils.getUserName(httpServletRequest);
 //        try {
 ////            采集组（最小粒度为分区）
@@ -373,31 +405,67 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //                    LOGGER.warn("No any fields. cluster: {}, database: {}, table: {}, user: {}", collectRequest.getClusterName(), collectRequest.getDatabase(), collectRequest.getTable(), collectRequest.getProxyUser());
 //                    continue;
 //                }
+//                List<ImsMetricCollect> partitionImsMetricCollectList = new ArrayList<>();
 //                Map<String, ColumnInfoDetail> columnInfoDetailMap = columnInfoDetailList.stream().collect(Collectors.toMap(ColumnInfoDetail::getFieldName, Function.identity(), (oldVal, newVal) -> oldVal));
 //
 ////                录入用户手动指定的采集配置（算子-字段）
 //                List<ImsMetricCollect> manualMetricCollects = getManualMetricCollects(collectRequest, columnInfoDetailMap, loginUser);
 //
-////                自动录入采集配置(如果某个采集配置已经在手动录入阶段处理，则跳过)
-//                List<ImsMetricCollect> automationMetricCollects = getAutomationMetricCollects(collectRequest, calcuUnitNameAndTemplateMap, columnInfoDetailMap.values(), loginUser);
 //
+////        如果没有自动录入，则按增量配置方式只处理手动录入的采集配置
+//                List<ImsMetricCollect> automationMetricCollects = Collections.emptyList();
+//                Optional<AddMetricCollectConfigRequest> autoMetricCollectConfigReuqest = collectRequest.getCollectConfigRequests().stream().filter(item -> !item.isManualCollect()).findFirst();
+//                if (autoMetricCollectConfigReuqest.isPresent()) {
+//                    automationMetricCollects = getAutomationMetricCollects(collectRequest, calcuUnitNameAndTemplateMap, columnInfoDetailMap.values(), loginUser);
+////                获得COUNT采集配置，统一采用 1 作为字段名称，int 作为字段类型
+//                    ImsMetricCollect metricCollectForRowCount = createImsMetricCollect(calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.COUNT.getDescribe()), "1", QualitisConstants.INT_TYPE, autoMetricCollectConfigReuqest.isPresent() ? autoMetricCollectConfigReuqest.get().getExecutionParametersName(): null, loginUser, collectRequest);
+//                    automationMetricCollects.add(metricCollectForRowCount);
+//                    LOGGER.info("added [1:int] as row count statistics.");
+//                }
+//
+////                自动录入采集配置(如果某个采集配置已经在手动录入阶段处理，则跳过)
 //                removeManualFromAutomationMetricCollect(manualMetricCollects, automationMetricCollects);
 //
-////                获得COUNT采集配置
-//                ColumnInfoDetail columnForRowCount = columnInfoDetailList.get(0);
-//                ImsMetricCollect metricCollectForRowCount = createImsMetricCollect(calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.COUNT.getDescribe()), columnForRowCount.getFieldName(), columnForRowCount.getDataType(), null, loginUser, collectRequest);
+//                partitionImsMetricCollectList.addAll(manualMetricCollects);
+//                partitionImsMetricCollectList.addAll(automationMetricCollects);
 //
-//                allImsMetricCollectList.addAll(manualMetricCollects);
-//                allImsMetricCollectList.addAll(automationMetricCollects);
-//                allImsMetricCollectList.add(metricCollectForRowCount);
+//                partitionImsMetricCollectList = updateOrDeleteImsMetricCollectInDb(collectRequest, partitionImsMetricCollectList, calcuUnitNameAndTemplateMap);
+//
+//                imsMetricCollectDao.saveAll(partitionImsMetricCollectList);
 //            }
 //        } catch (Exception e) {
 //            throw new UnExpectedRequestException("Failed to get columns from cmdb. error: " + e.getMessage());
 //        }
-//
-//        imsMetricCollectDao.saveAll(allImsMetricCollectList);
-//
 //        LOGGER.info("Success to save metric config.");
+//    }
+//
+//    private List<ImsMetricCollect> updateOrDeleteImsMetricCollectInDb(AddMetricCollectRequest collectRequest, List<ImsMetricCollect> partitionImsMetricCollectList, Map<String, Long> calcuUnitNameAndTemplateMap) {
+//        Long enumNumTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_NUM.getDescribe());
+//        Long enumRateTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_RATE.getDescribe());
+//        boolean containAutoType = collectRequest.getCollectConfigRequests().stream().anyMatch(item -> !item.isManualCollect());
+//        List<ImsMetricCollect> partitionImsMetricCollectListInDb = imsMetricCollectDao.findByDatasource(collectRequest.getClusterName(), collectRequest.getDatabase(), collectRequest.getTable(), null, StringUtils.isNotBlank(collectRequest.getPartition()) ? collectRequest.getPartition() : null);
+//        if (CollectionUtils.isNotEmpty(partitionImsMetricCollectListInDb)) {
+//            if (containAutoType) {
+////                        不删除枚举类采集配置
+//                List<Long> ids = partitionImsMetricCollectListInDb.stream().filter(imsMetricCollect -> !(enumNumTemplate.equals(imsMetricCollect.getTemplateId()) || enumRateTemplate.equals(imsMetricCollect.getTemplateId()))).map(ImsMetricCollect::getId).collect(Collectors.toList());
+//                if (CollectionUtils.isNotEmpty(ids)) {
+//                    imsMetricCollectDao.deleteByIds(ids);
+//                }
+//            } else {
+////                        如果partitionImsMetricCollectListInDb中包含手动录入的配置，则修改；否则，新增
+//                Map<String, ImsMetricCollect> imsMetricCollectMap = partitionImsMetricCollectListInDb.stream().collect(Collectors.toMap(item -> item.getClusterName() + item.getDbName() + item.getTableName() + item.getFilter() + item.getColumnName() + item.getTemplateId(), Function.identity(), (newVal, oldVal) -> oldVal));
+//                for (ImsMetricCollect imsMetricCollect: partitionImsMetricCollectList) {
+//                    String key = imsMetricCollect.getClusterName() + imsMetricCollect.getDbName() + imsMetricCollect.getTableName() + imsMetricCollect.getFilter() + imsMetricCollect.getColumnName() + imsMetricCollect.getTemplateId();
+//                    if (imsMetricCollectMap.containsKey(key)) {
+//                        ImsMetricCollect imsMetricCollectInDb = imsMetricCollectMap.get(key);
+//                        imsMetricCollect.setId(imsMetricCollectInDb.getId());
+//                        imsMetricCollect.setCreateUser(imsMetricCollectInDb.getCreateUser());
+//                        imsMetricCollect.setCreateTime(imsMetricCollectInDb.getCreateTime());
+//                    }
+//                }
+//            }
+//        }
+//        return partitionImsMetricCollectList;
 //    }
 //
 //    private void removeManualFromAutomationMetricCollect(List<ImsMetricCollect> manualMetricCollects, List<ImsMetricCollect> automationMetricCollects) {
@@ -443,6 +511,164 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        }
 //    }
 //
+//    @Override
+//    public void addCollectConfigWithAnalysis() {
+//        // Find auto record
+//        List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByStatus(AutoCollectStatusEnum.ANALYSISED.getCode());
+//        if (CollectionUtils.isEmpty(imsMetricAutoCollectRecords)) {
+//            LOGGER.warn("There is no record for collect.");
+//            return;
+//        }
+//        Map<String, Long> calcuUnitNameAndTemplateMap = getCalcuUnitNameAndTemplateIdMap();
+//        Long enumNumTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_NUM.getDescribe());
+//        Long enumRateTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_RATE.getDescribe());
+//        Long maxTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.MAX.getDescribe());
+//        Long minTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.MIN.getDescribe());
+//        Long avgTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.AVG.getDescribe());
+//        Long sumTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.SUM.getDescribe());
+//        Long stdTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.STDDEV.getDescribe());
+//
+//        for (ImsMetricAutoCollectRecord imsMetricAutoCollectRecord : imsMetricAutoCollectRecords) {
+//            // Find analysis result, create add metric collect request
+//            List<AddMetricCollectRequest> requests = new ArrayList<>(QualitisConstants.LENGTH_TWO);
+//
+//            StringBuilder formattedPartition = new StringBuilder();
+//            AddMetricCollectRequest addMetricCollectRequest = new AddMetricCollectRequest();
+//            addMetricCollectRequest.setClusterName(imsMetricAutoCollectRecord.getClusterName());
+//            addMetricCollectRequest.setDatabase(imsMetricAutoCollectRecord.getDbName());
+//            addMetricCollectRequest.setTable(imsMetricAutoCollectRecord.getTableName());
+//            addMetricCollectRequest.setPartition("ds='${run_date}'");
+//            addMetricCollectRequest.setProxyUser(imsMetricAutoCollectRecord.getProxyUser());
+//            addMetricCollectRequest.setDatasourceType(TemplateDataSourceTypeEnum.HIVE.getCode());
+//            List<AddMetricCollectConfigRequest> addMetricCollectConfigRequests = new ArrayList<>();
+//            AddMetricCollectConfigRequest addMetricCollectConfigRequest = new AddMetricCollectConfigRequest();
+//            addMetricCollectConfigRequest.setManualCollect(Boolean.FALSE);
+//            addMetricCollectConfigRequest.setExecutionParametersName("default");
+//            addMetricCollectConfigRequests.add(addMetricCollectConfigRequest);
+//
+//            List<ColumnAnalysisResult> analysisResults = columnAnalysisResultDao.queryColumnAnalysisResult(imsMetricAutoCollectRecord.getClusterName(), imsMetricAutoCollectRecord.getDbName(), imsMetricAutoCollectRecord.getTableName());
+//            if (CollectionUtils.isNotEmpty(analysisResults)) {
+//                List<String> enumString = new ArrayList<>();
+//                List<Map<String, String>> analysisMap = new ArrayList<>();
+//                for (ColumnAnalysisResult analysisResult : analysisResults) {
+//                    Map<String, String> result = gson.fromJson(analysisResult.getColumnAnalysisResultJson(), Map.class);
+//                    boolean isEnum = Boolean.parseBoolean(result.get("isEnum"));
+//                    if (isEnum) {
+//                        enumString.add(analysisResult.getColumnName());
+//                        continue;
+//                    }
+//
+//                    boolean isPartition = result.get("isPartition") != null && Boolean.parseBoolean(result.get("isPartition"));
+//                    if (isPartition) {
+//                        if (DATE_PATTERN.equals(result.get("dateFormat")) && formattedPartition.length() == 0) {
+//                            formattedPartition.append("ds='${run_date_std}'");
+//                        }
+//                        continue;
+//                    }
+//
+//                    if (QualitisConstants.DATE_TYPE.equals(result.get("columnAnalysisType"))) {
+//                        if (StringUtils.isBlank(result.get("dateFormat"))) {
+//                            continue;
+//                        }
+//                        Map<String, String> columnSelfCalcuUnitMap = new HashMap<>();
+//                        columnSelfCalcuUnitMap.put(analysisResult.getColumnName(), "((unix_timestamp('${run_date}', 'yyyyMMdd') - unix_timestamp(from_unixtime(unix_timestamp(${field}, '" + result.get("dateFormat") + "')), 'yyyy-MM-dd')) / 86400)");
+//                        analysisMap.add(columnSelfCalcuUnitMap);
+//                        continue;
+//                    }
+//
+//                    if (QualitisConstants.INT_TYPE.equals(result.get("columnAnalysisType")) || QualitisConstants.BIGINT_TYPE.equals(result.get("columnAnalysisType")) || QualitisConstants.DECIMAL_TYPE.equals(result.get("columnAnalysisType"))) {
+//                        Map<String, String> columnSelfCalcuUnitMap = new HashMap<>();
+//                        columnSelfCalcuUnitMap.put(analysisResult.getColumnName(), "CAST(${field} AS DOUBLE)");
+//                        analysisMap.add(columnSelfCalcuUnitMap);
+//                    }
+//                }
+//
+//                if (CollectionUtils.isNotEmpty(enumString)) {
+//                    AddMetricCollectConfigRequest enumCollectConfigRequest = new AddMetricCollectConfigRequest();
+//                    enumCollectConfigRequest.setManualCollect(Boolean.TRUE);
+//                    enumCollectConfigRequest.setExecutionParametersName("default");
+//
+//                    List<AddMetricCalcuUnitConfigRequest> metricCalcuUnitConfigRequestList = new ArrayList<>();
+//                    metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(enumNumTemplate, enumString));
+//                    metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(enumRateTemplate, enumString));
+//                    enumCollectConfigRequest.setMetricCalcuUnitConfigRequestList(metricCalcuUnitConfigRequestList);
+//                    addMetricCollectConfigRequests.add(enumCollectConfigRequest);
+//                }
+//
+//                if (CollectionUtils.isNotEmpty(analysisMap)) {
+//                    AddMetricCollectConfigRequest dateCollectConfigRequest = new AddMetricCollectConfigRequest();
+//                    dateCollectConfigRequest.setManualCollect(Boolean.TRUE);
+//                    dateCollectConfigRequest.setExecutionParametersName("default");
+//
+//                    List<AddMetricCalcuUnitConfigRequest> metricCalcuUnitConfigRequestList = new ArrayList<>();
+//
+//                    for (Map<String, String> current : analysisMap) {
+//                        metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(maxTemplate, current));
+//                        metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(minTemplate, current));
+//                        metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(avgTemplate, current));
+//                        metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(sumTemplate, current));
+//                        metricCalcuUnitConfigRequestList.add(new AddMetricCalcuUnitConfigRequest(stdTemplate, current));
+//                    }
+//                    dateCollectConfigRequest.setMetricCalcuUnitConfigRequestList(metricCalcuUnitConfigRequestList);
+//                    addMetricCollectConfigRequests.add(dateCollectConfigRequest);
+//                }
+//            }
+//            if (formattedPartition.length() > 0) {
+//                addMetricCollectRequest.setPartition(formattedPartition.toString());
+//            }
+//            addMetricCollectRequest.setCollectConfigRequests(addMetricCollectConfigRequests);
+//            requests.add(addMetricCollectRequest);
+//            try {
+//                // Save collect
+//                createBatch(requests);
+//
+//                // change auto record status
+//                imsMetricAutoCollectRecord.setStatus(AutoCollectStatusEnum.COLLECTED.getCode());
+//                imsMetricAutoCollectRecordDao.save(imsMetricAutoCollectRecord);
+//            } catch (UnExpectedRequestException e) {
+//                LOGGER.error(e.getMessage(), e);
+//            }
+//        }
+//    }
+//
+//    @Override
+//    public Task getCollectTaskStatus(ImsMetricTaskStatusQueryRequest queryRequest) throws UnExpectedRequestException {
+//        List<ImsMetric> imsMetricList = imsMetricDao.findByIds(Arrays.asList(queryRequest.getMetricId()));
+//        if (CollectionUtils.isEmpty(imsMetricList)) {
+//            throw new UnExpectedRequestException("ImsMetric {&DOES_NOT_EXIST}");
+//        }
+//        Long collectId = imsMetricList.get(0).getMetricCollectId();
+//
+//        Task taskInCache = collectTaskStatusCache.getIfPresent(QualitisConstants.IMSMETRIC_PROJECT + "_task_status");
+//        if (taskInCache != null) {
+//            String[] collectIds = StringUtils.split(taskInCache.getCollectIds(), SpecCharEnum.COMMA.getValue());
+//            boolean hitCache = Arrays.stream(collectIds).anyMatch(item -> item.equals(String.valueOf(collectId)));
+//            if (hitCache) {
+//                return taskInCache;
+//            }
+//        }
+//
+////        formatting filter_partition condition
+//        Optional<ImsMetricCollect> imsMetricCollect = imsMetricCollectDao.findById(collectId);
+//        if (!imsMetricCollect.isPresent()) {
+//            throw new UnExpectedRequestException("ImsMetricCollect {&DOES_NOT_EXIST}");
+//        }
+//        String filterPartition = queryRequest.getDataDate();
+//        if (StringUtils.isNotBlank(imsMetricCollect.get().getFilter()) && imsMetricCollect.get().getFilter().startsWith("ds=")) {
+//            filterPartition = "ds=\"" + queryRequest.getDataDate() + "\"";
+//        }
+//
+//        Application application = applicationDao.getCollectTaskStatus(QualitisConstants.IMSMETRIC_PROJECT, "" + collectId, filterPartition, queryRequest.getDataDate());
+//        Task task = null;
+//        if (application != null) {
+//            task = taskDao.getCollectTaskStatus(application.getId(), "" + collectId);
+//            if (task != null && StringUtils.isNotBlank(task.getCollectIds())) {
+//                collectTaskStatusCache.put(QualitisConstants.IMSMETRIC_PROJECT + "_task_status", task);
+//            }
+//        }
+//        return task;
+//    }
+//
 //    private List<ImsMetricCollect> getManualMetricCollects(AddMetricCollectRequest addMetricCollectRequest, Map<String, ColumnInfoDetail> columnInfoDetailMap, String loginUser) throws UnExpectedRequestException {
 //        List<AddMetricCollectConfigRequest> collectConfigRequests = addMetricCollectRequest.getCollectConfigRequests();
 //        if (CollectionUtils.isEmpty(collectConfigRequests)) {
@@ -453,17 +679,35 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        for (AddMetricCollectConfigRequest metricCollectConfigRequest : collectConfigRequests) {
 //            List<AddMetricCalcuUnitConfigRequest> metricCalcuUnitConfigRequestList = metricCollectConfigRequest.getMetricCalcuUnitConfigRequestList();
 ////                        一个算子多个字段
-//            for (AddMetricCalcuUnitConfigRequest metricCalcuUnitConfigRequest : metricCalcuUnitConfigRequestList) {
-//                Optional<String> invalidatedColumn = metricCalcuUnitConfigRequest.getColumns().stream().filter(column -> !columnInfoDetailMap.containsKey(column)).findFirst();
-//                if (invalidatedColumn.isPresent()) {
-//                    throw new UnExpectedRequestException("The field is not exists: " + invalidatedColumn.get());
+//            if (CollectionUtils.isNotEmpty(metricCalcuUnitConfigRequestList)) {
+//                for (AddMetricCalcuUnitConfigRequest metricCalcuUnitConfigRequest : metricCalcuUnitConfigRequestList) {
+//                    Map<String, String> columnSelfCalcuUnitMap = metricCalcuUnitConfigRequest.getColumnSelfCalcuUnitMap();
+//                    if (CollectionUtils.isNotEmpty(metricCalcuUnitConfigRequest.getColumns())) {
+//                        Optional<String> invalidatedColumn = metricCalcuUnitConfigRequest.getColumns().stream().filter(column -> !columnInfoDetailMap.containsKey(column)).findFirst();
+//                        if (invalidatedColumn.isPresent()) {
+//                            throw new UnExpectedRequestException("The field is not exists: " + invalidatedColumn.get());
+//                        }
+//                        List<ImsMetricCollect> imsMetricCollectList = metricCalcuUnitConfigRequest.getColumns().stream().map(column -> {
+//                            ColumnInfoDetail columnInfoDetail = columnInfoDetailMap.get(column);
+//                            ImsMetricCollect imsMetricCollect = createImsMetricCollect(metricCalcuUnitConfigRequest.getTemplateId(), column, columnInfoDetail.getDataType(), metricCollectConfigRequest.getExecutionParametersName(), loginUser, addMetricCollectRequest);
+//                            return imsMetricCollect;
+//                        }).collect(Collectors.toList());
+//                        manualImsMetricCollectList.addAll(imsMetricCollectList);
+//                    } else if (columnSelfCalcuUnitMap != null && columnSelfCalcuUnitMap.size() > 0) {
+//                        Optional<String> invalidatedColumn = columnSelfCalcuUnitMap.keySet().stream().filter(column -> !columnInfoDetailMap.containsKey(column)).findFirst();
+//                        if (invalidatedColumn.isPresent()) {
+//                            throw new UnExpectedRequestException("The field is not exists: " + invalidatedColumn.get());
+//                        }
+//                        List<ImsMetricCollect> imsMetricCollectList = columnSelfCalcuUnitMap.keySet().stream().map(column -> {
+//                            ColumnInfoDetail columnInfoDetail = columnInfoDetailMap.get(column);
+//                            ImsMetricCollect imsMetricCollect = createImsMetricCollect(metricCalcuUnitConfigRequest.getTemplateId(), column, columnInfoDetail.getDataType(), metricCollectConfigRequest.getExecutionParametersName(), loginUser, addMetricCollectRequest);
+//                            imsMetricCollect.setSelfCalcuUnit(columnSelfCalcuUnitMap.get(column));
+//                            return imsMetricCollect;
+//                        }).collect(Collectors.toList());
+//                        manualImsMetricCollectList.addAll(imsMetricCollectList);
+//                    }
+//
 //                }
-//                List<ImsMetricCollect> imsMetricCollectList = metricCalcuUnitConfigRequest.getColumns().stream().map(column -> {
-//                    ColumnInfoDetail columnInfoDetail = columnInfoDetailMap.get(column);
-//                    ImsMetricCollect imsMetricCollect = createImsMetricCollect(metricCalcuUnitConfigRequest.getTemplateId(), column, columnInfoDetail.getDataType(), metricCollectConfigRequest.getExecutionParametersName(), loginUser, addMetricCollectRequest);
-//                    return imsMetricCollect;
-//                }).collect(Collectors.toList());
-//                manualImsMetricCollectList.addAll(imsMetricCollectList);
 //            }
 //        }
 //        return manualImsMetricCollectList;
@@ -505,9 +749,10 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //    private List<ImsMetricCollect> createMetricCollectByDataType(AddMetricCollectRequest addMetricCollectRequest, Map<String, Long> calcuUnitNameAndTemplateMap, List<ColumnInfoDetail> columnList, Integer dataType, String loginUser) {
 //        List<ImsMetricCollect> imsMetricCollectListByTable = new ArrayList<>();
 //        List<Long> templateIdsInDataType = getTemplateIdsByDataType(calcuUnitNameAndTemplateMap, dataType);
+//        Optional<AddMetricCollectConfigRequest> autoMetricCollectConfigReuqest = addMetricCollectRequest.getCollectConfigRequests().stream().filter(item -> !item.isManualCollect()).findFirst();
 //        for (ColumnInfoDetail column : columnList) {
 ////            按照模板（算子）维度新增指标
-//            List<ImsMetricCollect> imsMetricCollectList = templateIdsInDataType.stream().map(templateId -> createImsMetricCollect(templateId, column.getFieldName(), column.getDataType(), null, loginUser, addMetricCollectRequest)).collect(Collectors.toList());
+//            List<ImsMetricCollect> imsMetricCollectList = templateIdsInDataType.stream().map(templateId -> createImsMetricCollect(templateId, column.getFieldName(), column.getDataType(), autoMetricCollectConfigReuqest.isPresent() ? autoMetricCollectConfigReuqest.get().getExecutionParametersName(): null, loginUser, addMetricCollectRequest)).collect(Collectors.toList());
 //            imsMetricCollectListByTable.addAll(imsMetricCollectList);
 //        }
 //
@@ -553,10 +798,19 @@ public class ImsRuleMetricCollectServiceImpl implements ImsRuleMetricCollectServ
 //        imsMetricCollect.setDatasourceType(request.getDatasourceType());
 //        imsMetricCollect.setFilter(request.getPartition());
 //        imsMetricCollect.setColumnType(columnType);
+//        if (QualitisConstants.DATE_TYPE.equals(columnType.toLowerCase())) {
+//            imsMetricCollect.setSelfCalcuUnit("datediff(CAST(from_unixtime(unix_timestamp('${run_date}', 'yyyyMMdd')) AS DATE), ${field})");
+//        }
+////        if (QualitisConstants.TIMESTAMP_TYPE.equals(columnType.toLowerCase())) {
+////            imsMetricCollect.setSelfCalcuUnit("datediff(CAST(from_unixtime(unix_timestamp('${run_date}', 'yyyyMMdd')) AS DATE), CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(${field}, 'yyyy-MM-dd HH:mm:ss')) AS DATE))");
+////        }
+//        if (QualitisConstants.TIMESTAMP_TYPE.equals(columnType.toLowerCase())) {
+//            imsMetricCollect.setSelfCalcuUnit("CAST(${field} AS DOUBLE)");
+//        }
 //        imsMetricCollect.setCreateUser(loginUser);
 //        imsMetricCollect.setCreateTime(DateUtils.now());
 //        if (StringUtils.isBlank(imsMetricCollect.getFilter())) {
-//            imsMetricCollect.setFilter("ds='${run_today}'");
+//            imsMetricCollect.setFilter("ds='${run_date}'");
 //        }
 //        imsMetricCollect.setCollectAge(0);
 //        imsMetricCollect.setProxyUser(request.getProxyUser());

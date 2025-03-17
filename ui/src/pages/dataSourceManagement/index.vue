@@ -6,13 +6,13 @@
                     <template v-slot:form>
                         <div>
                             <span class="condition-label">{{$t('dataSourceManagement.dataSourceType')}}</span>
-                            <FSelect v-model="queryData.data_source_type_id" :placeholder="$t('common.pleaseSelect')" clearable filterable @change="handleCommonChange">
+                            <FSelect v-model="queryData.data_source_type_id" clearable filterable @change="handleReset(true)">
                                 <FOption v-for="(item, index) in dataSourceTypeList" :key="index" :value="item.id" :label="item.name"></FOption>
                             </FSelect>
                         </div>
                         <div>
                             <span class="condition-label">{{$t('dataSourceManagement.dataSourceName')}}</span>
-                            <FSelect v-model="queryData.name" :placeholder="$t('common.pleaseSelect')" filterable clearable :options="dataSourceNameList" @change="handleCommonChange">
+                            <FSelect v-model="queryData.name" filterable clearable :options="dataSourceNameList" @change="handleReset(true)">
                             </FSelect>
                         </div>
                     </template>
@@ -37,16 +37,20 @@
                         <div class="empty-block">
                             <div v-if="resultByInit">
                                 <div class="empty-data"></div>
-                                <div class="table-empty-tips">{{$t('common.emptyInitResult')}}</div>
+                                <div class="table-empty-tips">{{$t('_.这里还没有数据')}}</div>
                             </div>
                             <div v-else>
                                 <div class="empty-query-result"></div>
-                                <div class="table-empty-tips">{{$t('common.emptyQueryResult')}}</div>
+                                <div class="table-empty-tips">{{$t('_.没有符合条件的结果')}}</div>
                             </div>
                         </div>
                     </template>
                     <f-table-column :formatter="formatterEmptyValue" prop="id" :label="$t('dataSourceManagement.dataSourceId')" align="left" classes="idlink" :width="88" ellipsis></f-table-column>
-                    <f-table-column :formatter="formatterEmptyValue" prop="dataSourceName" :label="$t('dataSourceManagement.dataSourceName')" align="left" :width="160" ellipsis></f-table-column>
+                    <f-table-column :formatter="formatterEmptyValue" prop="dataSourceName" :label="$t('dataSourceManagement.dataSourceName')" align="left" :width="160">
+                        <template #default="{ row }">
+                            <clipboard :val="row.dataSourceName" />
+                        </template>
+                    </f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" prop="dataSourceType" :visible="checkTColShow('dataSourceType')" :label="$t('dataSourceManagement.dataSourceType')" align="left" :width="102" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" prop="dataSourceDesc" :visible="checkTColShow('dataSourceDesc')" :label="$t('dataSourceManagement.dataSourceDesc')" align="left" :width="120">
                         <template #default="{ row }">
@@ -97,7 +101,7 @@
                             <FEllipsis v-if="row?.visibility_department_list">
                                 {{getvisibilityDepartment(row.visibility_department_list)}}
                                 <template #tooltip>
-                                    <div style="text-align:center">可见范围</div>
+                                    <div style="text-align:center">{{$t('_.可见范围')}}</div>
                                     <div style="max-width:300px;word-wrap:break-word">
                                         {{getvisibilityDepartment(row.visibility_department_list)}}
                                     </div>
@@ -142,7 +146,7 @@
                 <template #empty>
                     <div class="empty-block">
                         <div class="empty-data"></div>
-                        <div class="table-empty-tips">这里还没有数据. . .</div>
+                        <div class="table-empty-tips">{{$t('_.这里还没有数据. . .')}}</div>
                     </div>
                 </template>
                 <f-table-column :formatter="formatterEmptyValue" prop="versionId" :label="$t('dataSourceManagement.version')" align="left" classes="idlink" :width="60" ellipsis></f-table-column>
@@ -159,7 +163,7 @@
             :show="spinShow"
             :delay="200"
             style="width: 100%"
-            description="加载中"
+            :description="$t('_.加载中')"
         />
         <!--新增数据源弹窗、数据源详情弹窗-->
         <AddOrEditManagement
@@ -194,12 +198,13 @@
             displayDirective="if"
             @ok="handleExpire"
         >
-            <div>确认继续数据源【{{trData.dataSourceName}}】的过期操作?</div>
+            <div>{{$t('_.确认继续数据源【')}}{{trData.dataSourceName}}{{$t('_.】的过期操作?')}}</div>
         </FModal>
     </div>
 </template>
 
 <script setup>
+
 import {
     onMounted, ref, nextTick, computed, provide, reactive,
 } from 'vue';
@@ -217,6 +222,7 @@ import {
     UpOutlined,
 } from '@fesjs/fes-design/es/icon';
 import { MAX_PAGE_SIZE, CONDITIONBUTTONSPACE } from '@/assets/js/const';
+import clipboard from '@/components/clipboard';
 import dayjs from 'dayjs';
 import { PlusOutlined } from '@fesjs/fes-design/icon';
 import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
@@ -293,13 +299,25 @@ const toggleAdvanceQuery = async () => {
     // eslint-disable-next-line no-use-before-define
     await getSubSystemInfo();
 };
-const handleReset = () => {
+const handleReset = (common = false) => {
     console.log('handleReset-重置操作，重置页码重新查询');
+    if (common) {
+        const keys = Object.keys(advanceQuery.value);
+        for (let i = 0; i < keys.length; i++) {
+            if (Array.isArray(advanceQuery.value[keys[i]])) {
+                advanceQuery.value[keys[i]] = [];
+            } else {
+                advanceQuery.value[keys[i]] = '';
+            }
+        }
+    }
     advancedQueryRef.value.selectDevDate = '';
     advancedQueryRef.value.selectOpsDate = '';
     advancedQueryRef.value.selectVisDate = [];
-    // eslint-disable-next-line no-use-before-define
-    search();
+    if (!common) {
+        // eslint-disable-next-line no-use-before-define
+        search();
+    }
 };
 // 表格新增/详情弹框的数据
 const addDataSourceForm = ref({ // modal表单数据结构
@@ -449,23 +467,23 @@ const search = async () => {
     getTasksData(0, tasksPagination.value.size);
     resultByInit.value = false;
 };
-const handleCommonChange = () => {
-    const keys = Object.keys(advanceQuery.value);
-    for (let i = 0; i < keys.length; i++) {
-        if (Array.isArray(advanceQuery.value[keys[i]])) {
-            advanceQuery.value[keys[i]] = [];
-        } else {
-            advanceQuery.value[keys[i]] = '';
-        }
-    }
-    advancedQueryRef.value.selectDevDate = '';
-    advancedQueryRef.value.selectOpsDate = '';
-    advancedQueryRef.value.selectVisDate = [];
+// const handleCommonChange = () => {
+//     const keys = Object.keys(advanceQuery.value);
+//     for (let i = 0; i < keys.length; i++) {
+//         if (Array.isArray(advanceQuery.value[keys[i]])) {
+//             advanceQuery.value[keys[i]] = [];
+//         } else {
+//             advanceQuery.value[keys[i]] = '';
+//         }
+//     }
+//     advancedQueryRef.value.selectDevDate = '';
+//     advancedQueryRef.value.selectOpsDate = '';
+//     advancedQueryRef.value.selectVisDate = [];
 
-    // advanceQuery.value = {
-    //     action_range: [],
-    // };
-};
+//     // advanceQuery.value = {
+//     //     action_range: [],
+//     // };
+// };
 // “更多”下拉弹框
 const moreOptions = ref([
     {
@@ -485,7 +503,7 @@ const clickMore = (value) => {
     }
     if (value === 'batchOffline') {
         // 预留的批量下线功能
-        FMessage.warn('敬请期待');
+        FMessage.warn($t('_.敬请期待'));
     }
 };
 
@@ -556,16 +574,16 @@ const getVersionList = async (id, currentPage, pageSize) => {
         if (publishedId) {
             versionListTableData.value.forEach((item) => {
                 if (item.versionId === publishedId) {
-                    item.versionStatus = '已发布';
+                    item.versionStatus = $t('_.已发布');
                 } else if (item.versionId < publishedId) {
-                    item.versionStatus = '不可发布';
+                    item.versionStatus = $t('_.不可发布');
                 } else if (item.versionId > publishedId) {
-                    item.versionStatus = '未发布';
+                    item.versionStatus = $t('_.未发布');
                 }
             });
         } else {
             versionListTableData.value.forEach((item) => {
-                item.versionStatus = '未发布';
+                item.versionStatus = $t('_.未发布');
             });
         }
     } catch (error) {
@@ -859,7 +877,7 @@ const editRuleValidate = ref({ // 表单验证规则
 const confirmDeleteMetric = async () => {
     const id = addDataSourceForm.value.id;
     // TODOS：现在还没有删除接口
-    FMessage.warn('暂无删除功能');
+    FMessage.warn($t('_.暂无删除功能'));
 };
 
 const showFModal = (type) => {
@@ -875,8 +893,8 @@ const showFModal = (type) => {
 };
 
 const getAuthType = (value) => {
-    if (value === 'accountPwd') return '账户密码';
-    if (value === 'dpm') return '密码管家';
+    if (value === 'accountPwd') return $t('_.账户密码');
+    if (value === 'dpm') return $t('_.密码管家');
     return '';
 };
 
@@ -967,7 +985,10 @@ const getDataSourceDetailByVersionId = async (versionId = '') => {
                 // 数据源环境列表
                 dataSourceEnvs: res.info.dataSourceEnvs,
                 // DCN 多环境是Tree选择器对象数据
-                dcnSequence: res.info.dcnSequence,
+                // dcnSequence: res.info.dcnSequence,
+                // dcn选择类型
+                dcn_range_type: res.info.dcn_range_type,
+                dcn_range_values: res.info.dcn_range_values,
                 // 操作权限
                 is_editable: res.info.is_editable,
                 // 开发科室
@@ -1069,6 +1090,7 @@ const testConnection = async (id) => {
     }
 };
 // 版本列表 drawer 结束
+
 
 </script>
 <style lang="less" scoped>

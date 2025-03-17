@@ -31,10 +31,7 @@ import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsReques
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.PartitionStatisticsInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableStatisticsInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
+import com.webank.wedatasphere.qualitis.metadata.response.table.*;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import org.json.JSONException;
 import java.io.File;
@@ -43,6 +40,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author howeye
@@ -667,4 +665,43 @@ public interface MetaDataClient {
      */
     void deployUdfNewVersion(String currentCluster, String linkisUdfAdminUser, Long udfId, String version)
         throws UnExpectedRequestException, IOException, JSONException, MetaDataAcquireFailedException;
+
+    /**
+     * get tag of table
+     * @param sourceType
+     * @param clusterType
+     * @param dbName
+     * @param tableName
+     * @param loginUser
+     * @return
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     */
+    TableTagInfo getTableTag(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, UnExpectedRequestException;
+
+    /**
+     *
+     * @param sourceType
+     * @param clusterType
+     * @param dbName
+     * @param tableName
+     * @param loginUser
+     * @return
+     * @throws MetaDataAcquireFailedException
+     * @throws UnExpectedRequestException
+     */
+    Optional<SearchMetadataInfo> getTableMetaData(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, UnExpectedRequestException;
+
+    /**
+     *
+     * @param sourceType
+     * @param clusterType
+     * @param dbId
+     * @param tableId
+     * @param fieldName
+     * @param loginUser
+     * @return
+     * @throws MetaDataAcquireFailedException
+     */
+    List<Map<String, Object>> getDmsFieldData(String sourceType, String clusterType, String dbId, String tableId, String fieldName, String loginUser) throws MetaDataAcquireFailedException;
 }

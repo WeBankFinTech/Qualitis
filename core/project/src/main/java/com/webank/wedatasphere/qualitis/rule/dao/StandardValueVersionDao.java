@@ -35,20 +35,26 @@ public interface StandardValueVersionDao {
     StandardValueVersion findById(Long id);
 
     /**
-     * Find by StandardValueVersion by standardValue
-     *
-     * @param id
-     * @return
-     */
-    List<StandardValueVersion> findByStandardValueVersion(Long id);
-
-    /**
      * Find by StandardValueVersion by enName
      *
      * @param enName
      * @return
      */
     List<StandardValueVersion> findAllData(String enName);
+
+    /**
+     * get latest version
+     * @param enName
+     * @return
+     */
+    StandardValueVersion findLatestVersion(String enName);
+
+    /**
+     * find by ids
+     * @param ids
+     * @return
+     */
+    List<StandardValueVersion> findByIds(List<Long> ids);
 
     /**
      * delete StandardValueVersion

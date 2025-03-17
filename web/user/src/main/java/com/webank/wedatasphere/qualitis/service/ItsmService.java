@@ -20,4 +20,5 @@ public interface ItsmService {
 
     void addUser(ItsmUserDto itsmUserDto) throws UnExpectedRequestException, RoleNotFoundException;
 
+    void deleteUserRoles(ItsmRequest request) throws UnExpectedRequestException, RoleNotFoundException;
 }

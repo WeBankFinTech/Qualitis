@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  
 
-[English](../../../README.md) | 中文  
+[English](../../../) | 中文  
 
 ## 引言
 Qualitis是一个支持多种异构数据源的质量校验、通知、管理服务的数据质量管理平台，用于解决业务系统运行、数据中心建设及数据治理过程中的各种数据质量问题。
@@ -29,7 +29,7 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 
 - **支持工作流**
 支持在工作流当中进行数据质量校验  
-工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/DataSphereStudio).
+工作流必装[DataSphereStudio](https://github.com/WeBankFinTech/Linkis).
 
 - **管理员控制台**  
 提供管理员控制台界面，支持人员管理，权限管理，权限管理，元数据管理等管理功能。  
@@ -38,11 +38,10 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 ![](../../../images/zh_CN/ch1/相似系统对比图.png)
 
 ## 文档列表
-[快速搭建手册](快速搭建手册——单机.md)  
+[快速搭建手册](快速搭建手册.md)  
 [架构设计文档](架构设计文档.md)  
 [用户手册](用户手册.md)  
 <br/>
-**点击[这里](docs/zh_CN/ch1)可以参考更多文档**
 
 ## Architecture
 ![](../../../images/zh_CN/ch1/总体架构设计.png)
@@ -70,9 +69,13 @@ Qualitis基于Spring Boot，依赖于Linkis进行数据计算，提供数据质�
 非常欢迎广大的社区伙伴给我们贡献新引擎和代码！
 
 ## Communication
-如果您想得到最快的响应，请给我们提 issue，或者您也可以扫码进群：  
+如果您想得到最快的响应，请给我们提issue，或者您也可以扫码进群：  
 ![](../../../images/en_US/ch1/ContractUs.png)
 
 ## License
-**Qualitis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
+**Linkis is under the Apache 2.0 license. See the [LICENSE](/LICENSE) file for details.**
 
+## Tips
+由于Qualitis的前端代码是采用WeBank自研的前端框架FES，但是FES框架目前没有开源，所以Qualitis的前端代码暂不开源。我们会尽快推进Qualitis的前端开源。对此我们感到非常抱歉。
+
+你可以通过源码下载，并解压web/app/src/main/resources/static/static.zip来获取编译后的前端代码，或者通过下载release直接使用。

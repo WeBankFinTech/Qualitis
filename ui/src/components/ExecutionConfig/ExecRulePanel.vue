@@ -1,8 +1,8 @@
 <template>
-    <FDrawer :show="show" :maskClosable="false" title="执行规则" :footer="true" width="50%" @cancel="cancel">
+    <FDrawer :show="show" :maskClosable="false" :title="$t('_.执行规则')" :footer="true" width="50%" displayDirective="if" @cancel="cancel">
         <template #footer>
             <FSpace justify="start">
-                <FButton type="primary" :loading="isLoading" @click="ok">确认执行</FButton>
+                <FButton type="primary" :loading="isLoading" @click="ok">{{$t('_.确认执行')}}</FButton>
                 <FButton @click="cancel">{{$t('common.cancel')}}</FButton>
             </FSpace>
         </template>
@@ -26,6 +26,7 @@
                         :data="props.list.list"
                         :clearable="false"
                         cascade
+                        virtualList
                         checkStrictly="parent"
                         collapseTags
                         :collapseTagsLimit="2"
@@ -44,13 +45,7 @@
                             <QuestionCircleOutlined />
                         </FTooltip>
                     </template>
-                    <FSelect v-model="model.actor" filterable>
-                        <FOption
-                            v-for="v in userList"
-                            :key="v"
-                            :value="v"
-                            :label="v"
-                        ></FOption>
+                    <FSelect v-model="model.actor" filterable :options="userList">
                     </FSelect>
                 </FFormItem>
             </FForm>
@@ -95,7 +90,7 @@
                             />
                         </div>
 
-                        <div class="add-param" @click="addParam('engine')"><PlusCircleOutlined class="add-icon" /><a class="add-text" href="javascript:;">添加引擎参数</a></div>
+                        <div class="add-param" @click="addParam('engine')"><PlusCircleOutlined class="add-icon" /><a class="add-text" href="javascript:;">{{$t('_.添加引擎参数')}}</a></div>
                     </template>
                 </ExpansionPanel>
                 <!-- 执行变量配置 -->
@@ -122,7 +117,7 @@
                             />
                         </div>
 
-                        <div class="add-param" @click="addParam('var')"><PlusCircleOutlined class="add-icon" /><a class="add-text" href="javascript:;">添加变量</a></div>
+                        <div class="add-param" @click="addParam('var')"><PlusCircleOutlined class="add-icon" /><a class="add-text" href="javascript:;">{{$t('_.添加变量')}}</a></div>
                     </template>
                 </ExpansionPanel>
                 <!-- 高级执行配置 -->
@@ -141,31 +136,31 @@
                                    labelWidth="66px"
                                    labelPosition="right"
                                    :model="model.advancedConfig">
-                                <FFormItem prop="reuse" label="引擎复用">
+                                <FFormItem prop="reuse" :label="$t('_.引擎复用')">
                                     <FRadioGroup v-model="model.advancedConfig.engineReuse" :cancelable="false" @change="() => advancedConfChanged = true">
-                                        <FRadio :value="true">是</FRadio>
-                                        <FRadio :value="false">否</FRadio>
+                                        <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                                        <FRadio :value="false">{{$t('_.否')}}</FRadio>
                                     </FRadioGroup>
                                 </FFormItem>
-                                <FFormItem prop="granularity" label="并发粒度">
+                                <FFormItem prop="granularity" :label="$t('_.并发粒度')">
                                     <FRadioGroup v-model="model.advancedConfig.granularity" :cancelable="false" @change="() => advancedConfChanged = true">
-                                        <FRadio :value="0">库粒度</FRadio>
-                                        <FRadio :value="1">表粒度</FRadio>
-                                        <FRadio :value="2">任务融合</FRadio>
+                                        <FRadio :value="0">{{$t('_.库粒度')}}</FRadio>
+                                        <FRadio :value="1">{{$t('_.表粒度')}}</FRadio>
+                                        <FRadio :value="2">{{$t('_.任务融合')}}</FRadio>
                                     </FRadioGroup>
                                 </FFormItem>
-                                <FFormItem prop="dynamicPartitionBool" label="动态分区">
+                                <FFormItem prop="dynamicPartitionBool" :label="$t('_.动态分区')">
                                     <FRadioGroup v-model="model.advancedConfig.dynamicPartitionBool" :cancelable="false" @change="() => advancedConfChanged = true">
-                                        <FRadio :value="true">是</FRadio>
-                                        <FRadio :value="false">否</FRadio>
+                                        <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                                        <FRadio :value="false">{{$t('_.否')}}</FRadio>
                                     </FRadioGroup>
                                 </FFormItem>
-                                <FFormItem v-if="model.advancedConfig.dynamicPartitionBool" prop="dynamicPartitionPrefix" label="顶层分区">
+                                <FFormItem v-if="model.advancedConfig.dynamicPartitionBool" prop="dynamicPartitionPrefix" :label="$t('_.顶层分区')">
                                     <FInput
                                         v-model="model.advancedConfig.dynamicPartitionPrefix"
                                         class="form-edit-input"
                                         clearable
-                                        placeholder="请输入顶层区分，示例 ds=${run_date}"
+                                        :placeholder="`${$t('common.partitonplaceholder')}ds=$\{run_date}`"
                                     />
                                 </FFormItem>
                             </FForm>
@@ -206,6 +201,7 @@
     </FDrawer>
 </template>
 <script setup>
+
 import {
     defineProps, defineEmits, ref, onMounted, watchEffect, computed, watch,
 } from 'vue';
@@ -261,7 +257,7 @@ const props = defineProps({
         // 规则: Array<{label:string,value:string,children:Array<{label:string,value:string}>}>
         // 任务: Aarray<{label:string,value:string}>
     },
-    gid: { type: Number, default: 0 },
+    gid: { type: [Number, Array], default: 0 },
 });
 const userList = ref([]);
 const initialState = useModel('@@initialState');
@@ -292,13 +288,17 @@ onMounted(async () => {
             list.push(group);
         }
         userList.value = Array.from(new Set(list)).filter(v => v);
+        userList.value = userList.value.map(v => ({
+            value: v,
+            label: v,
+        }));
         console.log(userList.value);
-        const paramTypeRes = await request('/api/v1/projector/execution_parameters/dynamic/engine/all', {});
+        const paramTypeRes = await request('/api/v1/projector/execution_parameters/dynamic/engine/all', {}, { cache: true });
         paramTypeList.value = paramTypeRes.map(item => ({
             label: item.message,
             value: item.code,
         }));
-        const varTypeRes = await request('/api/v1/projector/execution_parameters/execution/type/all', {});
+        const varTypeRes = await request('/api/v1/projector/execution_parameters/execution/type/all', {}, { cache: true });
         variableTypeList.value = varTypeRes.map(item => ({
             label: item.message,
             value: item.code,
@@ -307,7 +307,7 @@ onMounted(async () => {
         const { optional_clusters } = await request(
             'api/v1/projector/meta_data/cluster',
             {},
-            { method: 'POST' },
+            { method: 'POST', cache: true },
         );
         if (Array.isArray(optional_clusters)) {
             clusterList.value = optional_clusters.map(item => ({
@@ -382,7 +382,11 @@ watchEffect(() => {
         selectTreeRef.value = null;
     }
     if (selectTreeRef.value && props.gid) {
-        model.value.rules = [props.gid];
+        if (Array.isArray(props.gid)) {
+            model.value.rules = props.gid;
+        } else {
+            model.value.rules = [props.gid];
+        }
     }
 });
 watch(model, () => {
@@ -449,7 +453,7 @@ function ok() {
         .catch((err) => {
             console.warn('validate: ', err);
             FMessage.error({
-                content: '配置表单中存在必填项内容为空，请检查后提交',
+                content: $t('_.配置表单中存在必填项内容为空，请检查后提交'),
             });
             isLoading.value = false;
         });
@@ -479,6 +483,7 @@ function cancel() {
 eventbus.on('closeTaskLoading', () => {
     isLoading.value = false;
 });
+
 
 </script>
 <style lang="less" scoped>

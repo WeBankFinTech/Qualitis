@@ -69,9 +69,9 @@ public class LinkisConfigurationController {
             if (hash != null) {
                 Map<String, Object> map = new HashMap<>(2);
 
-                String nonce = "";
-                String appId = "";
-                String appToken = "";
+                String nonce = "16895";
+                String appId = "linkis_id";
+                String appToken = "X";
 
                 String timestamp = String.valueOf(System.currentTimeMillis());
 

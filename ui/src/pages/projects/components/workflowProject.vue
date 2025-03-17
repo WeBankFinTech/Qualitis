@@ -18,7 +18,7 @@
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('project_id')" prop="project_id" :label="$t('label.projectId')" :width="78" ellipsis></f-table-column>
                     <f-table-column ellipsis :visible="checkTColShow('project_name')" prop="project_name" :label="$t('common.projectName')" :width="160">
                         <template #default="{ row = {}}">
-                            <span class="a-link" href="javascript:void(0);" @click="navigateToProjectDetail(row)">{{row.project_name}}</span>
+                            <clipboard isLink :val="row.project_name" @clickLink="navigateToProjectDetail(row)" />
                         </template>
                     </f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" ellipsis :visible="checkTColShow('description')" prop="description" :label="$t('label.projectDesc')" :width="180"></f-table-column>
@@ -46,12 +46,17 @@
             v-model:headers="projectTableHeaders"
             v-model:show="showProjectTableColConfig"
             :originHeaders="originProjectHeaders"
-            type="workflow_project_list" />
+            type="workflow_project_list"
+        />
+        <!-- 运维报表订阅管理抽屉式列表 -->
+        <SubsManagementDrawer
+            v-model:show="showSubsManagementDrawer"
+        />
     </div>
 </template>
 <script setup>
 import {
-    ref, defineProps, onMounted, onUnmounted,
+    ref, defineProps, onMounted, onUnmounted, provide,
 } from 'vue';
 import { useI18n, useRouter } from '@fesjs/fes';
 import { MoreCircleOutlined } from '@fesjs/fes-design/es/icon';
@@ -61,6 +66,8 @@ import {
 import eventbus from '@/common/useEvents';
 import { formatterEmptyValue } from '@/common/utils';
 import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
+import clipboard from '@/components/clipboard';
+import SubsManagementDrawer from './subsManagementDrawer';
 import ProjectActionBar from './projectActionBar';
 import useProjects from '../hooks/useProject';
 import {
@@ -79,6 +86,10 @@ const { t: $t } = useI18n();
 const router = useRouter();
 
 const showLoading = ref(false);
+// 项目类型（1：普通项目 2：工作流项目）
+const projectType = 2;
+provide('projectType', projectType);
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
 // 项目topbar按钮配置
 const projectActions = [
     {
@@ -87,10 +98,27 @@ const projectActions = [
         icon: MoreCircleOutlined,
         label: $t('myProject.more'),
         trigger: 'click',
-        options: [
+        options: overseasVersion === 'true' ? [
             {
                 label: $t('common.setTableHeaderConfig'),
+                value: '2',
+                handler: () => {
+                    // eslint-disable-next-line no-use-before-define
+                    toggleTColConfig();
+                },
+            },
+        ] : [
+            {
+                label: $t('common.operReportingSubsManagement'),
                 value: '1',
+                handler: () => {
+                    // eslint-disable-next-line no-use-before-define
+                    openSubsManagement();
+                },
+            },
+            {
+                label: $t('common.setTableHeaderConfig'),
+                value: '2',
                 handler: () => {
                     // eslint-disable-next-line no-use-before-define
                     toggleTColConfig();
@@ -103,8 +131,10 @@ const projectActions = [
 const {
     checkTColShow,
     toggleTColConfig,
+    openSubsManagement,
     tableHeaders: projectTableHeaders,
     showTableHeaderConfig: showProjectTableColConfig,
+    showSubsManagement: showSubsManagementDrawer,
 } = useTableHeaderConfig();
 
 // 项目表格相关

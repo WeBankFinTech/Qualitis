@@ -1,5 +1,7 @@
 <template>
-    <div class="wd-content">
+    <div class="wd-content project-detail">
+        <ImportProjectByDetail v-if="showImport" v-model:show="showImport" :project="projectDetail" uploadRule type="detail" @uploadSucess="updateGit" />
+        <EXportProjectByDetail v-if="showExport" v-model:show="showExport" :project="projectDetail" downloadRule type="detail"></EXportProjectByDetail>
         <div class="wd-project-header">
             <LeftOutlined class="back" @click="backToProjectList" />
             <div class="name">{{$t('addGroupTechniqueRule.projectDetails')}}</div>
@@ -10,18 +12,21 @@
                 <li class="wd-body-menu-item" @click="showTaskRecordPanel">{{$t('myProject.record')}}</li>
                 <!-- <li class="wd-body-menu-item" @click="showExecuteParamsTemplate(projectId)">{{$t('myProject.executeParamsTemplate')}}</li> -->
                 <li class="wd-body-menu-item" @click="showTemplateDrawer">{{$t('myProject.executeParamsTemplate')}}</li>
+                <li v-if="overseasVersion === 'false'" class="wd-body-menu-item" @click="showApplicationInfoTemplateDrawer = true">{{$t('myProject.applicationInfoTemplate')}}</li>
             </ul>
             <h6 class="wd-body-title">{{$t('myProject.rules')}}</h6>
+            <!-- 规则筛选 -->
+            <ruleFilter :isWorkflowProject="workflowProject" @filtrateRules="filtrateRules" />
             <div class="rules-operate-menus">
                 <!-- 导入规则 -->
-                <input
+                <!-- <input
                     v-show="false"
                     :ref="el => { if (el) fileInputRefs = el }"
                     type="file"
                     class="btn-file-input"
                     accept=".xlsx"
                     @change="importRules(file)"
-                />
+                /> -->
                 <FSpace :size="[16, 16]">
                     <template v-if="!isExporting && !isEnable">
                         <template v-if="!workflowProject">
@@ -32,6 +37,20 @@
                                 <FButton type="primary"><PlusOutlined />{{$t('myProject.createBatch')}}</FButton>
                             </FDropdown>
                             <FButton type="primary" @click="excuteProjectRules"><fes-icon type="execute" style="margin-right: 4px;" />{{$t('myProject.run')}}</FButton>
+                            <FTooltip placement="top" popperClass="range-text-wrap">
+                                <div>
+                                    <FButton type="default" class="button" style="margin-right: 16px" @click="toTask(1)">
+                                        <img class="button-icon" src="@/assets/images/icons/scheduleIcon.svg" style="margin-right: 4px; height: 14px; width:14px;" />
+                                        {{$t('myProject.associateScheduledTask')}}
+                                    </FButton>
+                                    <FButton v-if="overseasVersion === 'false'" type="default" class="button" @click="toTask(2)">
+                                        <img class="button-icon" src="@/assets/images/icons/timingIcon.svg" style="margin-right: 4px; height: 14px; width:14px;" />{{$t('myProject.publishScheduledTask')}}
+                                    </FButton>
+                                </div>
+                                <template #content>
+                                    <div>{{$t('_.当前租户下可支持的最大峰值提交总量：')}}{{peakNum}}</div>
+                                </template>
+                            </FTooltip>
                         </template>
                         <!-- 数据告警规则按钮 -->
                         <FButton v-if="workflowProject" @click="showDataAlarmRuleDrawer">
@@ -40,10 +59,7 @@
                         <FButton type="default" class="button" @click="toggleExecuteParams">
                             <img class="button-icon" src="@/assets/images/icons/config.svg" style="margin-right: 4px; height: 14px; width:14px;" />{{$t('common.parameterExeBatchSet')}}
                         </FButton>
-                        <FButton :type="filtrateCount > 0 ? 'info' : 'default'" @click="showFiltrateModal = true">
-                            <FilterOutlined />
-                            {{$t('common.filter')}}{{filtrateCount > 0 ? `（已选${filtrateCount}项）` : ''}}
-                        </FButton>
+
                         <FDropdown trigger="hover" :options="moreMenus" @click="projectOperationActionHandler">
                             <FButton><MoreCircleOutlined />{{$t('myProject.more')}}</FButton>
                         </FDropdown>
@@ -51,7 +67,7 @@
                     <!-- 批量启用操作 -->
                     <template v-else-if="isEnable">
                         <FButton :disabled="isEnabling" type="primary" class="btn-item" @click="changeEnable">{{enableTurnon ? $t('myProject.confirmEnable') : $t('myProject.confirmDisenable')}}</FButton>
-                        <FButton key="enableCancel" :disabled="isEnabling" type="default" @click="enableCancel">取消</FButton>
+                        <FButton key="enableCancel" :disabled="isEnabling" type="default" @click="enableCancel">{{$t('_.取消')}}</FButton>
                     </template>
                     <template v-else>
                         <FButton :disabled="isDownloading" type="primary" class="btn-item" @click="exportProject">{{$t('myProject.confirmExport')}}</FButton>
@@ -59,24 +75,35 @@
                     </template>
                 </FSpace>
             </div>
-            <div v-for="(val, key, index) in projectRules" :key="index">
-                <p class="rule-table-name">{{$t('myProject.ruleGroupName')}}: <span class="rule-table-name-value" @click="toProjectRuleDetail({ row: val[0], column: { props: {}}})">{{val[0].rule_group_name}}</span></p>
-                <f-table :ref="ruleRefs[index]" :data="val" rowKey="rule_id" @selectionChange="(selectData) => projectSelectionChange(index, key, selectData)">
+            <!-- <div v-for="(val, key, index) in projectRules" :key="index"> -->
+            <div v-if="mergeCells">
+                <!-- <p class="rule-table-name">{{$t('myProject.ruleGroupName')}}: <span class="rule-table-name-value" @click="toProjectRuleDetail({ row: val[0], column: { props: {}}})">{{val[0].rule_group_name}}</span></p> -->
+
+                <f-table ref="ruleTableRef" :data="projectRuleList" rowKey="rule_id" :verticalLine="true" bordered :span-method="objectSpanMethod" @selectionChange="mergeProjectSelectionChange">
                     <f-table-column :visible="isExporting || isEnable" type="selection" :width="32" />
-                    <f-table-column :visible="checkTColShow('rule_name')" prop="rule_name" :label="$t('common.ruleName')" :width="160" ellipsis>
+                    <f-table-column prop="rule_group_name" :label="$t('_.规则组名称')" :width="160">
+                        <template #default="{ row }">
+                            <clipboard isLink :val="row.rule_group_name" @clickLink="toProjectRuleDetail({ row, column: { props: {}}})" />
+                        </template>
+                    </f-table-column>
+                    <f-table-column :visible="checkTColShow('rule_name')" prop="rule_name" :label="$t('common.ruleEnName')" :width="160">
                         <template #default="{ row = {}}">
-                            <span class="a-link" href="javascript:void(0);" @click="toProjectRuleDetail({ row, column: { props: {}}})">{{row.rule_name || '--'}}</span>
+                            <!-- <span class="a-link" href="javascript:void(0);" @click="toProjectRuleDetail({ row, column: { props: {}}})">{{row.rule_name || '--'}}</span> -->
+                            <clipboard isLink :val="row.rule_name" @clickLink="toProjectRuleDetail({ row, column: { props: {}}})" />
                         </template>
                     </f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('rule_cn_name')" prop="rule_cn_name" :label="$t('common.ruleCnName')" :width="160" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('rule_id')" prop="rule_id" :label="$t('tableThead.ruleId')" :width="92" ellipsis></f-table-column>
                     <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('template_name')" prop="template_name" :label="$t('tableThead.templateName')" :width="140" ellipsis></f-table-column>
                     <f-table-column :visible="checkTColShow('rule_type')" prop="rule_type" :label="$t('common.ruleType')" :formatter="formatter.rule" :width="102" ellipsis></f-table-column>
-                    <f-table-column v-slot="{ row }" :visible="checkTColShow('rule_enable')" prop="rule_enable" :label="$t('common.ruleEnable')" :width="102" ellipsis><span>{{row.rule_enable ? '启用' : '禁用'}}</span></f-table-column>
-                    <f-table-column :visible="checkTColShow('cluster')" prop="datasource" :label="$t('common.cluster')" :formatter="formatter.cluster" :width="140" ellipsis></f-table-column>
-                    <f-table-column v-slot="{ row }" :visible="checkTColShow('datasource')" :label="$t('tableThead.databaseAndTable')" :width="200" ellipsis>
-                        <template v-for="(ds,index) in row.datasource" :key="index">
-                            {{$t('common.databaseList')}}: {{ds.db}} {{$t('common.tableLibst')}}: {{ds.table}} <br>
+                    <f-table-column v-slot="{ row }" :visible="checkTColShow('rule_enable')" prop="rule_enable" :label="$t('common.ruleEnable')" :width="102" ellipsis><span :class="row.rule_enable ? 'enable' : 'disabled'">{{row.rule_enable ? $t('_.启用') : $t('_.禁用')}}</span></f-table-column>
+                    <f-table-column :visible="checkTColShow('cluster')" prop="cluster_name" :label="$t('common.cluster')" :formatter="formatterEmptyValue" :width="140" ellipsis></f-table-column>
+                    <f-table-column #default="{ row = {}}" :visible="checkTColShow('datasource')" :label="$t('tableThead.databaseAndTable')" :width="200" ellipsis>
+                        <template v-if="row.datasource.length === 0">
+                            - -
+                        </template>
+                        <template v-for="(ds,index) in row.datasource" v-else :key="index">
+                            {{$t('common.databaseList')}}: {{ds.db || '- -'}} {{$t('common.tableLibst')}}: {{ds.table || '- -'}} <br>
                         </template>
                     </f-table-column>
                     <f-table-column :visible="checkTColShow('filter')" prop="filter" :label="$t('common.condition')" :formatter="formatter.condition" :width="140" ellipsis></f-table-column>
@@ -94,37 +121,100 @@
                         prop="operate"
                         :label="$t('common.operate')"
                         :formatter="formatter.enable"
-                        :width="200"
-                        ellipsis
+                        :width="70"
                         fixed="right"
                     >
-                        <ul class="wd-table-operate-btns">
-                            <li class="btn-item" @click="projectOperationBtnEnable(row)">{{!row.rule_enable ? '启用' : '禁用'}} </li>
-                            <li
-                                v-for="item in ruleOperationBtns"
-                                :key="item.value"
-                                class="btn-item"
-                                :class="{ red: item.isDelete }"
-                                @click="projectOperationBtnHandler(item, row)"
-                            >
-                                {{item.label}}
-                            </li>
-                        </ul>
+                        <FDropdown :options="getOpertaions(row)" @click="handleOperationCick($event, row)">
+                            <FButton type="text" style="margin-left: -5px"><MoreCircleOutlined /></FButton>
+                        </FDropdown>
                     </f-table-column>
                 </f-table>
             </div>
+            <div v-else>
+                <div v-for="(val, key, index) in projectRules" :key="index">
+                    <p class="rule-table-name">{{$t('myProject.ruleGroupName')}}: <span class="rule-table-name-value" @click="toProjectRuleDetail({ row: val[0], column: { props: {}}})">{{val[0].rule_group_name}}</span></p>
+
+                    <f-table :ref="ruleRefs[index]" :data="val" rowKey="rule_id" @selectionChange="(selectData) => projectSelectionChange(index, key, selectData)">
+                        <f-table-column :visible="isExporting || isEnable" type="selection" :width="32" />
+                        <!-- <f-table-column prop="rule_group_name" label="规则组名称" :width="160" ellipsis>
+                        <template #default="{ row = {}}">
+                            <span class="a-link" href="javascript:void(0);" @click="toProjectRuleDetail({ row, column: { props: {}}})">{{row.rule_group_name || '--'}}</span>
+                        </template>
+                    </f-table-column> -->
+                        <f-table-column :visible="checkTColShow('rule_name')" prop="rule_name" :label="$t('common.ruleEnName')" :width="160" ellipsis>
+                            <template #default="{ row = {}}">
+                                <span class="a-link" href="javascript:void(0);" @click="toProjectRuleDetail({ row, column: { props: {}}})">{{row.rule_name || '--'}}</span>
+                            </template>
+                        </f-table-column>
+                        <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('rule_cn_name')" prop="rule_cn_name" :label="$t('common.ruleCnName')" :width="160" ellipsis></f-table-column>
+                        <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('rule_id')" prop="rule_id" :label="$t('tableThead.ruleId')" :width="92" ellipsis></f-table-column>
+                        <f-table-column :formatter="formatterEmptyValue" :visible="checkTColShow('template_name')" prop="template_name" :label="$t('tableThead.templateName')" :width="140" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('rule_type')" prop="rule_type" :label="$t('common.ruleType')" :formatter="formatter.rule" :width="102" ellipsis></f-table-column>
+                        <f-table-column v-slot="{ row }" :visible="checkTColShow('rule_enable')" prop="rule_enable" :label="$t('common.ruleEnable')" :width="102" ellipsis><span :class="row.rule_enable ? 'enable' : 'disabled'">{{row.rule_enable ? $t('_.启用') : $t('_.禁用')}}</span></f-table-column>
+                        <f-table-column :visible="checkTColShow('cluster')" prop="cluster_name" :label="$t('common.cluster')" :formatter="formatterEmptyValue" :width="140" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('datasource')" :label="$t('tableThead.databaseAndTable')" :width="200" ellipsis>
+                            <!-- <template v-for="(ds,index) in row.datasource" :key="index">
+                            {{$t('common.databaseList')}}: {{ds.db || '- -'}} {{$t('common.tableLibst')}}: {{ds.table || '- -'}} <br>
+                        </template> -->
+                            <template #default="{ row = {}}">
+                                <span v-if="row.datasource.length === 0">- -</span>
+                                <div v-else>
+                                    <div v-for="(ds,index) in row.datasource" :key="index">
+                                        {{$t('common.databaseList')}}: {{ds.db || '- -'}} {{$t('common.tableLibst')}}: {{ds.table || '- -'}} <br>
+                                    </div>
+                                </div>
+                            </template>
+                        </f-table-column>
+                        <f-table-column :visible="checkTColShow('filter')" prop="filter" :label="$t('common.condition')" :formatter="formatter.condition" :width="140" ellipsis></f-table-column>
+                        <f-table-column v-if="workflowProject" :visible="checkTColShow('work_flow_space')" prop="work_flow_space" :label="$t('myProject.workflowSpace')" :formatter="formatterEmptyValue" :width="140" ellipsis></f-table-column>
+                        <f-table-column v-if="workflowProject" :visible="checkTColShow('work_flow_project')" prop="work_flow_project" :label="$t('myProject.workflowProject')" :formatter="formatterEmptyValue" :width="160" ellipsis></f-table-column>
+                        <f-table-column v-if="workflowProject" :visible="checkTColShow('work_flow_name')" prop="work_flow_name" :label="$t('myProject.workflowName')" :formatter="formatterEmptyValue" :width="160" ellipsis></f-table-column>
+                        <f-table-column v-if="workflowProject" :visible="checkTColShow('node_name')" prop="node_name" :label="$t('myProject.workflowTaks')" :formatter="formatterEmptyValue" :width="160" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('create_user')" prop="create_user" :label="$t('myProject.creator')" :formatter="formatterEmptyValue" :width="120" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('create_time')" prop="create_time" :label="$t('myProject.createTime')" :formatter="formatterEmptyValue" :width="180" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('modify_user')" prop="modify_user" :label="$t('myProject.modifier')" :formatter="formatterEmptyValue" :width="120" ellipsis></f-table-column>
+                        <f-table-column :visible="checkTColShow('modify_time')" prop="modify_time" :label="$t('myProject.modifyTime')" :formatter="formatterEmptyValue" :width="180" ellipsis></f-table-column>
+                        <f-table-column
+                            v-if="!workflowProject"
+                            v-slot="{ row }"
+                            prop="operate"
+                            :label="$t('common.operate')"
+                            :formatter="formatter.enable"
+                            :width="70"
+                            fixed="right"
+                        >
+                            <!-- <ul class="wd-table-operate-btns">
+                                <li class="btn-item" @click="projectOperationBtnEnable(row)">{{!row.rule_enable ? $t('_.启用') : $t('_.禁用')}} </li>
+                                <li
+                                    v-for="item in ruleOperationBtns"
+                                    :key="item.value"
+                                    class="btn-item"
+                                    :class="{ red: item.isDelete }"
+                                    @click="projectOperationBtnHandler(item, row)"
+                                >
+                                    {{item.label}}
+                                </li>
+                            </ul> -->
+                            <FDropdown :options="getOpertaions(row)" @click="handleOperationCick($event, row)">
+                                <FButton type="text" style="margin-left: -5px"><MoreCircleOutlined /></FButton>
+                            </FDropdown>
+                        </f-table-column>
+                    </f-table>
+                </div>
+            </div>
+            <div class="table-pagination-container">
+                <FPagination
+                    v-model:currentPage="pagination.current"
+                    v-model:pageSize="pagination.size"
+                    show-size-changer
+                    show-total
+                    :total-count="pagination.total"
+                    @change="pageChange"
+                    @pageSizeChange="pageChange"
+                ></FPagination>
+            </div>
         </div>
-        <div class="table-pagination-container">
-            <FPagination
-                v-model:currentPage="pagination.current"
-                v-model:pageSize="pagination.size"
-                show-size-changer
-                show-total
-                :total-count="pagination.total"
-                @change="pageChange"
-                @pageSizeChange="pageChange"
-            ></FPagination>
-        </div>
+
         <!-- 显示执行记录 -->
         <FDrawer v-model:show="showTaskRecord" :title="$t('myProject.record')" width="800px" @cancel="resetTaskRecords">
             <div class="page-header-condition">
@@ -132,16 +222,17 @@
                     <span class="condition-label">{{$t('myProject.taskEndTime')}}</span>
                     <FDatePicker
                         v-model="taskRecordsQuery.taskEndTime"
-                        type="daterange"
+                        type="datetimerange"
                         clearable
-                        style="width: 294px;"
-                        placeholder="请选择"
+                        format="yyyy-MM-dd HH:mm:ss"
+                        style="width: 380px;"
+                        :placeholder="$t('_.请选择')"
                     >
                     </FDatePicker>
                 </div>
                 <div class="condition-item">
                     <FSpace size="middle">
-                        <FButton type="primary" @click="getProjectTaskRecord(taskRecordsQuery)">{{$t('common.query')}}</FButton>
+                        <FButton type="primary" @click="searchGetProjectTaskRecord">{{$t('common.query')}}</FButton>
                         <FButton @click="resetTaskRecordsQuery">{{$t('common.reset')}}</FButton>
                     </FSpace>
                 </div>
@@ -166,8 +257,8 @@
                     show-size-changer
                     show-total
                     :total-count="taskRecordsPagination.total"
-                    @change="getProjectTaskRecord"
-                    @pageSizeChange="getProjectTaskRecord"
+                    @change="getProjectTaskRecord(taskRecordsQuery)"
+                    @pageSizeChange="getProjectTaskRecord(taskRecordsQuery)"
                 ></FPagination>
             </div>
         </FDrawer>
@@ -208,6 +299,7 @@
                         :data="adaptDataToTreeSelect(projectAllRules)"
                         :clearable="false"
                         cascade
+                        virtualList
                         checkStrictly="parent"
                         collapseTags
                         :collapseTagsLimit="2"
@@ -215,7 +307,7 @@
                     >
                     </FSelectTree>
                 </FFormItem>
-                <FFormItem label="执行参数" class="rule-valid-style">
+                <FFormItem :label="$t('_.执行参数')" class="rule-valid-style">
                     <ProjectTemplate ref="templateRef" :showHeader="false" :isEmbed="true" :curExeName="editParamsConfig.params.execution_parameters_name" class="project-template-style"></ProjectTemplate>
                 </FFormItem>
             </FForm>
@@ -229,8 +321,16 @@
         >
             <ProjectTemplate ref="templateRef" :showHeader="false" :isEmbed="true" :isOperate="true" class="project-template-style"></ProjectTemplate>
         </FDrawer>
-        <!-- 规则筛选 -->
-        <ruleFilter v-model:show="showFiltrateModal" v-model:filtrateCount="filtrateCount" :isWorkflowProject="workflowProject" @filtrateRules="filtrateRules" />
+        <!-- 应用信息模版 -->
+        <FDrawer
+            v-model:show="showApplicationInfoTemplateDrawer"
+            :title="$t('myProject.applicationInfoTemplate')"
+            displayDirective="if"
+            width="50%"
+        >
+            <AppInfoTemplate :subSystemList="subSystemList"></AppInfoTemplate>
+        </FDrawer>
+
         <!-- 数据告警规则抽屉 -->
         <DataAlarmRuleDrawer
             v-if="workflowProject"
@@ -239,6 +339,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, provide, onMounted, toRaw, watch, reactive, nextTick,
 } from 'vue';
@@ -264,11 +365,16 @@ import {
 import ExecRulePanel from '@/components/ExecutionConfig/ExecRulePanel';
 import ExecutionParams from '@/components/rules/ExecutionParams';
 import ProjectTemplate from '@/pages/projects/template';
-import { RULE_TYPE_MAP } from '@/assets/js/const';
+import AppInfoTemplate from '@/pages/projects/appInfoTemplate';
+import { RULE_TYPE_MAP, MAX_PAGE_SIZE, CONDITIONBUTTONSPACE } from '@/assets/js/const';
 import { adaptDataToTreeSelect, getFlatDataFormTreeSelect, formatterEmptyValue } from '@/common/utils';
 import { cloneDeep } from 'lodash-es';
 import useTemplateSelector from '@/components/rules/hook/useTemplateSelector';
 import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
+import EXportProjectByDetail from '@/pages/projects/components/ImExport/exportProjectByDetail';
+import ImportProjectByDetail from '@/pages/projects/components/ImExport/importProjectByDetail';
+import useDataSource from '@/pages/projects/hooks/useDataSource';
+import clipboard from '@/components/clipboard';
 import useProjectDetail from './hooks/useProjectDetail';
 import useExecutation from './hooks/useExecutation';
 import useProjectTaskRecord from './hooks/useProjectTaskRecord';
@@ -278,11 +384,35 @@ import basicInfo from './components/basicInfo';
 import ruleFilter from './components/ruleFilter';
 import ParamsTemplate from './template';
 import {
-    fetchModifyRule, fetchTemplateList,
+    fetchModifyRule, fetchTemplateList, fetchRuleTemplate,
 } from './api';
 import DataAlarmRuleDrawer from './components/dataAlarmRuleDrawer.vue';
 
 const { t: $t } = useI18n();
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
+const subSystemList = ref([]);
+// 获取子系统中文名
+const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
+// 获取子系统列表
+const getSubSystemInfo = async () => {
+    try {
+        const timestamp = new Date().getTime();
+        const res = await FRequest(`/api/v1/projector/meta_data/subSystemInfo?timestamp=${timestamp}`, {}, 'post');
+        const list = res || [];
+        subSystemList.value = list.map((item) => {
+            const cnName = getSystemNameNew(item.subSystemId, item);
+            return Object.assign({}, item, {
+                subSystemName: cnName,
+                enName: item.subSystemName,
+                cnName,
+                value: String(item.subSystemId),
+                label: item.subSystemName,
+            });
+        });
+    } catch (error) {
+        console.log('error: ', error);
+    }
+};
 
 const tempStatusList = ref({
     0: {
@@ -349,7 +479,7 @@ const backToProjectList = () => {
     //     router.replace('/projects');
     // }
 };
-
+const mergeCells = ref(true);
 const projectId = route.query.projectId;
 const workflowProject = !!route.query.workflowProject;
 const {
@@ -371,6 +501,11 @@ const {
     resetTaskRecords,
 } = useProjectTaskRecord(projectId);
 
+const searchGetProjectTaskRecord = () => {
+    taskRecordsPagination.current = 1;
+    getProjectTaskRecord(taskRecordsQuery.value);
+};
+
 const resetTaskRecordsQuery = () => {
     resetTaskRecords();
     taskRecordsQuery.value = {};
@@ -382,14 +517,30 @@ const showTaskRecordPanel = () => {
     showTaskRecord.value = true;
     getProjectTaskRecord();
 };
+const ruleTableRef = ref(null);
 const ruleRefs = ref([]);
+const projectRuleList = ref([]);
+let colIndex = 0; // 记录合并单元格rowindex
+// 导出规则|修改规则
+let projectSelection = [];
+let enableSelection = [];
+// 是否点击复选框渲染
+let isSelectCheckbox = false;
+
 function clear() {
     console.log(ruleRefs.value, '🚀🚀');
-    for (let i = 0; i < Object.keys(projectRules.value).length; i++) {
-        ruleRefs.value[i].value[0].clearSelection();
+    projectSelection = [];
+    enableSelection = [];
+    if (mergeCells.value) {
+        ruleTableRef.value.clearSelection();
+    } else {
+        for (let i = 0; i < Object.keys(projectRules.value).length; i++) {
+            ruleRefs.value[i].value[0].clearSelection();
+        }
     }
 }
 const showExecuteParamsTemplateDrawer = ref(false);
+const showApplicationInfoTemplateDrawer = ref(false);
 const showTemplateDrawer = () => {
     showExecuteParamsTemplateDrawer.value = true;
 };
@@ -430,30 +581,57 @@ const excuteProjectRules = async () => {
 // 新建按钮 规则类型
 const createOptions = computed(() => [
     {
-        label: '创建普通规则组',
+        label: $t('_.创建普通规则组'),
         value: SINGLE_TABLE_RULE_FLAG,
     },
-    // {
-    //     label: '创建单表规则组',
-    //     value: 'TABLE_GROUP',
-    // },
+    {
+        label: $t('_.创建单表规则组'),
+        value: 'TABLE_GROUP',
+    },
 ]);
 
 const createBatchOptions = computed(() => [
-    // {
-    //     label: '基于规则模版创建',
-    //     value: 'CREATE_BY_RULE_TEMPLATE',
-    // },
     {
-        label: '库一致性对比配置',
+        label: $t('_.基于规则模版创建'),
+        value: 'CREATE_BY_RULE_TEMPLATE',
+    },
+    {
+        label: $t('_.库一致性对比配置'),
         value: 'CROSS_DB_VERIFICATION_FULLY_RULE_FLAG',
     },
 ]);
 
+const getOpertaions = (row) => {
+    const operations = [
+        {
+            value: 'enable',
+            label: row.rule_enable ? $t('_.禁用') : $t('_.启用'),
+        },
+        {
+            label: $t('common.executeParams'),
+            value: 'executeTask',
+        },
+        {
+            label: $t('_.复制'),
+            value: 'copy',
+            disabled: row.table_group,
+        },
+        {
+            label: $t('common.delete'),
+            value: 'deleteProject',
+            isDelete: true,
+        },
+    ];
+    return operations;
+};
 const ruleOperationBtns = [
     {
         label: $t('common.executeParams'),
         value: 'executeTask',
+    },
+    {
+        label: $t('_.复制'),
+        value: 'copy',
     },
     {
         label: $t('common.delete'),
@@ -463,14 +641,10 @@ const ruleOperationBtns = [
 ];
 
 const formatter = ref({
-    rule: ({ row: { rule_type } }) => {
-        const templateType = ['', $t('ruleTemplatelist.singleTableType'), $t('ruleTemplatelist.singleOrMultipleIndexType'), $t('common.crossTableType'), $t('common.fileType')];
-        return templateType[rule_type] || '--';
-    },
-    cluster: ({ row: { datasource } }) => {
-        for (let i = 0; i < datasource.length; i++) {
-            return datasource[i].cluster || '--';
-        }
+    rule: ({ row }) => {
+        const templateType = ['', $t('ruleTemplatelist.singleTableType'), $t('ruleTemplatelist.singleOrMultipleIndexType'), $t('common.crossTableType'), $t('common.fileType'), $t('verifyFailData.acrossCluster')];
+        const ruleType = row.cluster_num === 2 && row.rule_type === 3 ? 5 : row.rule_type;
+        return templateType[ruleType] || '--';
     },
     condition: ({ row: { filter } }) => {
         if (filter) {
@@ -492,7 +666,7 @@ const toTaskQuery = (row) => {
 };
 
 const originProjectHeaders = [
-    { prop: 'rule_name', label: $t('common.ruleName') },
+    { prop: 'rule_name', label: $t('common.ruleEnName') },
     { prop: 'rule_cn_name', label: $t('common.ruleCnName') },
     { prop: 'rule_id', label: $t('tableThead.ruleId') },
     { prop: 'template_name', label: $t('tableThead.templateName') },
@@ -508,7 +682,7 @@ const originProjectHeaders = [
 ];
 
 const originWorkflowProjectHeaders = [
-    { prop: 'rule_name', label: $t('common.ruleName') },
+    { prop: 'rule_name', label: $t('common.ruleEnName') },
     { prop: 'rule_cn_name', label: $t('common.ruleCnName') },
     { prop: 'rule_id', label: $t('tableThead.ruleId') },
     { prop: 'template_name', label: $t('tableThead.templateName') },
@@ -537,6 +711,7 @@ const {
 const moreMenus = computed(() => {
     const defaultMenus = [
         { label: $t('common.setTableHeaderConfig'), value: '1' },
+        { label: $t('_.切换表格'), value: '8' },
     ];
     const otherMenus = [
         //  { label: '库一致性比对配置', value: '7' },
@@ -547,7 +722,7 @@ const moreMenus = computed(() => {
         // { label: $t('myProject.associateScheduledTask'), value: '5' },
         // { label: $t('myProject.publishScheduledTask'), value: '6' },
     ];
-    return workflowProject ? defaultMenus : [...otherMenus, { label: $t('common.setTableHeaderConfig'), value: '1' }];
+    return workflowProject ? defaultMenus : [...otherMenus, ...defaultMenus];
 });
 
 const selectCreate = (opt) => {
@@ -571,9 +746,9 @@ const selectCreate = (opt) => {
 const selectCreateBatch = (opt) => {
     if (opt === 'CROSS_DB_VERIFICATION_FULLY_RULE_FLAG') {
         selectCreate(CROSS_DB_VERIFICATION_FULLY_RULE_FLAG);
-        // return;
+        return;
     }
-    // router.push(`/projects/createRulesByTemplate?projectId=${projectId}`);
+    router.push(`/projects/createRulesByTemplate?projectId=${projectId}`);
 };
 
 // 选择需要修改参数的规则
@@ -588,7 +763,7 @@ const editParamsConfig = ref({
         alert: false,
         abort_on_failure: false,
         rule_enable: true,
-        union_all: false,
+        union_way: 0,
         execution_parameters_name: '',
         rule_id_list: [],
     },
@@ -722,7 +897,7 @@ const projectOperationBtnHandler = async ({ value }, row) => {
 };
 // 规则类型操作
 const projectOperationBtnEnable = async (row) => {
-    const enablename = !row.rule_enable ? '启用' : '禁用';
+    const enablename = !row.rule_enable ? $t('_.启用') : $t('_.禁用');
     console.log('enablename', enablename);
     FModal.confirm({
         title: $t('common.prompt'),
@@ -731,10 +906,9 @@ const projectOperationBtnEnable = async (row) => {
             try {
                 const url = `${apiPrefix}/rule/enable`;
                 await FRequest(url, {
-                    rule_enable_list: [{
-                        rule_id: row.rule_id,
-                        rule_enable: !row.rule_enable,
-                    }],
+                    project_id: projectDetail.value.project_id,
+                    rule_enable: !row.rule_enable,
+                    rule_ids: [row.rule_id],
                 });
                 FMessage.success(`${enablename}成功`);
                 // 重新加载数据
@@ -752,7 +926,30 @@ const clearSelectedRow = () => {
     editParamsConfig.value.params.execution_parameters_name = '';
     comfirmCancel();
 };
-
+const copyRule = async ({ rule_group_id: ruleGroupId, rule_id: ruleId, table_group: tableGroup }) => {
+    // 进入详情页，让用户去编辑
+    router.push(`/projects/${tableGroup ? 'tableGroupRules' : 'rules'}?ruleGroupId=${ruleGroupId}&id=${ruleId}&workflowProject=${workflowProject}&projectId=${projectId}&copy=true`);
+};
+const handleOperationCick = (value, row) => {
+    switch (value) {
+        case 'executeTask':
+            // 执行任务
+            projectOperationBtnHandler({ value }, row);
+            break;
+        case 'copy':
+            // 复制
+            copyRule(row);
+            break;
+        case 'deleteProject':
+            // 删除
+            projectOperationBtnHandler({ value }, row);
+            break;
+        default:
+            // 禁用启用
+            projectOperationBtnEnable(row);
+            break;
+    }
+};
 const abnormalDataValid = (validData) => {
     if (!validData.abnormal_data_storage) {
         validData.abnormal_data_storage = false;
@@ -833,26 +1030,29 @@ const updateRowParams = async () => {
 
 const fileInputRefs = ref(null);
 const { importDatas, isImportingFiles } = useImport('rule');
-const importRules = async () => {
-    try {
-        const fileInputRef = fileInputRefs.value;
-        if (!fileInputRef) return;
-        const file = fileInputRef.files[0];
-        await importDatas(file, projectId);
-        pageChange();
-    } catch (err) {
-        console.warn(err);
-    }
+// const importRules = async () => {
+//     try {
+//         // todo
+//         const fileInputRef = fileInputRefs.value;
+//         if (!fileInputRef) return;
+//         const file = fileInputRef.files[0];
+//         await importDatas(file, projectId);
+//         pageChange();
+//     } catch (err) {
+//         console.warn(err);
+//     }
+// };
+const uploadSucess = async () => {
+    await pageChange();
 };
-
-// 导出规则|修改规则
-const projectSelection = [];
-const enableSelection = [];
 const projectSelectionChange = (index, key, selectData) => {
     console.log(index, key, selectData);
     projectSelection[index] = selectData;
     enableSelection[index] = key;
+    console.log('projectSelection', projectSelection);
+    console.log('enableSelection', enableSelection);
 };
+
 const {
     isExporting,
     isDownloading,
@@ -883,35 +1083,79 @@ const enableCancel = () => {
     // eslint-disable-next-line no-use-before-define
     filtrateRules();
 };
+
+const objectSpanMethod = ({ rowIndex, columnIndex }) => {
+    if (columnIndex === 0) {
+        // 调用clearSelection后会再次回调mergeProjectSelectionChange将isSelectCheckbox设置为true
+        // 点击表格复选框时会调用objectSpanMethod 重新渲染 rowIndex返回单元格合并后的rowIndex，此时colIndex一直为0
+        if (rowIndex === 0 && !isExporting.value && !isEnable.value) {
+            isSelectCheckbox = false;
+            colIndex = 0;
+        }
+        const ruleList = projectRuleList.value.filter(v => projectRuleList.value[rowIndex].rule_group_name === v.rule_group_name) || [];
+        if (!colIndex && ruleList.length) {
+            if (ruleList.length > 1) {
+                colIndex = isSelectCheckbox ? 0 : rowIndex + ruleList.length - 1;
+            }
+            return {
+                rowspan: ruleList.length,
+                colspan: 1,
+            };
+        }
+        if (rowIndex === colIndex) {
+            colIndex = 0;
+        }
+        return {
+            rowspan: 0,
+            colspan: 0,
+        };
+    }
+};
+
+// 过滤规则
+const filtrateRules = (conditions) => {
+    filrateCondition.value = conditions;
+    getProjectDetail();
+    clear();
+};
+let enableSelectData = [];
+const mergeProjectSelectionChange = (selectData) => {
+    isSelectCheckbox = true;
+    enableSelectData = selectData;
+    projectSelection = [];
+    enableSelection = [];
+    if (selectData.length) {
+        selectData.forEach((id, index) => {
+            const group = projectRuleList.value.find(rule => rule.rule_id === id);
+            const ruleList = projectRuleList.value.filter(rule => rule.rule_group_name === group.rule_group_name);
+            projectSelection[index] = ruleList.map(v => v.rule_id);
+            enableSelection[index] = group.rule_group_name;
+        });
+    }
+};
 const changeEnable = async () => {
     const selectedArray = [];
-    if (projectSelection.length === 0) return FMessage.warn($t('common.selectOne'));
-    for (let i = 0; i < projectSelection.length; i++) {
-        if (projectSelection[i]) {
-            for (let j = 0; j < projectSelection[i].length; j++) {
-                selectedArray.push({
-                    rule_id: projectSelection[i][j],
-                    rule_enable: enableTurnon.value,
-                });
-            }
-        }
-    }
+    if (enableSelectData.length === 0) return FMessage.warn($t('common.selectOne'));
     FModal.confirm({
         title: $t('common.prompt'),
-        content: '确认更改这些规则',
+        content: $t('_.确认更改这些规则'),
         onOk: async () => {
             try {
                 const url = `${apiPrefix}/rule/enable`;
                 await FRequest(url, {
-                    rule_enable_list: selectedArray,
+                    project_id: projectDetail.value.project_id,
+                    rule_enable: enableTurnon.value,
+                    rule_ids: enableSelectData,
                 });
                 isEnable.value = false;
                 isEnabling.value = false;
-                FMessage.success('更改成功');
+                FMessage.success($t('_.更改成功'));
+                await clear();
+                // await nextTick();
                 // 重新加载数据
                 // eslint-disable-next-line no-use-before-define
-                filtrateRules();
-                clear();
+                filrateCondition.value = null;
+                await getProjectDetail();
             } catch (derr) {
                 isEnabling.value = false;
                 console.warn(derr);
@@ -938,26 +1182,47 @@ const exportProject = async () => {
     clear();
 };
 const toggleExport = () => {
-    isExporting.value = !isExporting.value;
     clear();
+    isExporting.value = !isExporting.value;
 };
 
-
-// 显示规则筛选框
-const showFiltrateModal = ref(false);
-
-// 过滤规则
-const filtrateRules = (conditions) => {
-    showFiltrateModal.value = false;
-    filrateCondition.value = conditions;
-    getProjectDetail();
-};
 
 const toggleExecuteParams = () => {
     editParamsConfig.value.batch = true;
     showExecuteParamsDrawer.value = true;
 };
 
+const handleProjectRules = () => {
+    if (mergeCells.value) {
+        projectRuleList.value = [];
+        const ruleList = [];
+        Object.keys(projectRules.value).forEach((key) => {
+            projectRules.value[key].forEach((item) => {
+                item.datasource = item.datasource.filter(v => v.db && v.table);
+                ruleList.push(item);
+            });
+        });
+        // 修复objectSpanMethod 函数rowIndex 过滤时有时候值不是从0开始导致单元格合并显示异常
+        setTimeout(() => {
+            colIndex = 0;
+            isSelectCheckbox = false;
+            projectRuleList.value = ruleList;
+        }, 50);
+    } else {
+        for (let i = 0; i < Object.keys(projectRules.value).length; i++) {
+            ruleRefs.value[i] = ref(null);
+        }
+        console.log(ruleRefs.value, '🚀');
+        Object.keys(projectRules.value).forEach((key) => {
+            projectRules.value[key].forEach((item) => {
+                // 过滤空数据
+                item.datasource = item.datasource.filter(v => v.db || v.table);
+            });
+        });
+    }
+};
+const showImport = ref(false);
+const showExport = ref(false);
 const projectOperationActionHandler = (value) => {
     switch (value) {
         case '1':
@@ -969,14 +1234,14 @@ const projectOperationActionHandler = (value) => {
             break;
         case '3':
             try {
-                console.log(1, fileInputRefs);
-                fileInputRefs.value?.click();
+                // console.log(1, fileInputRefs);
+                showImport.value = true;
             } catch (error) {
                 console.warn(error);
             }
             break;
         case '4':
-            toggleExport();
+            showExport.value = true;
             break;
         case '5':
             toggleEnable('5');
@@ -987,6 +1252,11 @@ const projectOperationActionHandler = (value) => {
         // case '7':
         //     selectCreate(CROSS_DB_VERIFICATION_FULLY_RULE_FLAG);
         //     break;
+        case '8':
+            mergeCells.value = !mergeCells.value;
+            localStorage.setItem('projectMergeCells', mergeCells.value);
+            handleProjectRules();
+            break;
         default:
             break;
     }
@@ -1009,17 +1279,21 @@ function toTask(type) {
         });
     }
 }
+
 onMounted(() => {
-    getPeakNum();
-});
-// 已填写筛选条件的数量
-const filtrateCount = ref(0);
-watch(projectRules, () => {
-    for (let i = 0; i < Object.keys(projectRules.value).length; i++) {
-        ruleRefs.value[i] = ref(null);
+    const projectMergeCells = localStorage.getItem('projectMergeCells');
+    if (projectMergeCells) {
+        mergeCells.value = projectMergeCells !== 'false';
     }
-    console.log(ruleRefs.value, '🚀');
+    getPeakNum();
+    getSubSystemInfo();
 });
+
+
+watch(projectRules, () => {
+    handleProjectRules();
+});
+
 </script>
 <config>
 {
@@ -1053,6 +1327,7 @@ watch(projectRules, () => {
     // .fes-btn{
     //     margin-right: 16px;
     // }
+    margin-bottom: 24px;
     :deep(.button) {
         &:hover {
             .button-icon {
@@ -1124,4 +1399,32 @@ watch(projectRules, () => {
         border-radius: 4px;
     }
 }
+.enable {
+    color: #00CB91;
+}
+
+.disabled {
+    color: #93949B;
+}
+
+
+</style>
+<style lang="less">
+.project-detail {
+    .fes-table.is-bordered {
+        border: 1px solid #E7E7E8;
+    }
+    .fes-table.is-horizontal-line .fes-table-header .fes-table-td, .fes-table.is-horizontal-line .fes-table-body .fes-table-td, .fes-table.is-horizontal-line .fes-table-header .fes-table-th, .fes-table.is-horizontal-line .fes-table-body .fes-table-th{
+        border-bottom: 1px solid #E7E7E8;
+    }
+
+    .fes-table.is-vertical-line .fes-table-header .fes-table-th, .fes-table.is-vertical-line .fes-table-body .fes-table-th, .fes-table.is-vertical-line .fes-table-header .fes-table-td, .fes-table.is-vertical-line .fes-table-body .fes-table-td {
+        border-right: 1px solid #E7E7E8;
+    }
+
+    .fes-table .fes-table-header .fes-table-th, .fes-table .fes-table-body .fes-table-th {
+        font-weight: 600;
+    }
+}
+
 </style>

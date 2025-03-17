@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.Application;
-//import com.webank.wedatasphere.qualitis.entity.ImsmetricIdentify;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
@@ -26,14 +25,12 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.request.*;
-import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
-import com.webank.wedatasphere.qualitis.response.*;
+import com.webank.wedatasphere.qualitis.response.ApplicationTaskSimpleResponse;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import org.apache.commons.httpclient.util.DateParseException;
-import org.json.JSONException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,7 +86,7 @@ public interface OuterExecutionService {
      * @return 任务信息
      * @throws UnExpectedRequestException 参数异常
      */
-    GeneralResponse<ApplicationTaskResponse> getApplicationStatus(String applicationId) throws UnExpectedRequestException;
+    GeneralResponse<Object> getApplicationStatus(String applicationId) throws UnExpectedRequestException;
 
     /**
      * 获取顶层任务状态信息
@@ -98,7 +95,7 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<ApplicationTaskResponse> getApplicationDynamicStatus(String applicationId) throws UnExpectedRequestException;
+    GeneralResponse<Object> getApplicationDynamicStatus(String applicationId) throws UnExpectedRequestException;
 
     /**
      * 获取任务日志
@@ -108,7 +105,7 @@ public interface OuterExecutionService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<String> getTaskLog(GetTaskLogRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<Object> getTaskLog(GetTaskLogRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Submit rules, and update ruleDataSource
@@ -229,7 +226,7 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<ApplicationResultResponse> getApplicationSummary(String applicationId) throws UnExpectedRequestException;
+    GeneralResponse<Object> getApplicationSummary(String applicationId) throws UnExpectedRequestException;
 
     /**
      * Get application result value
@@ -239,7 +236,7 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<List<ApplicationResultValueResponse>> getApplicationResultValue(String applicationId, String executionUser) throws UnExpectedRequestException;
+    GeneralResponse<Object> getApplicationResultValue(String applicationId, String executionUser) throws UnExpectedRequestException;
 
     /**
      * 获取application的总日志
@@ -249,7 +246,7 @@ public interface OuterExecutionService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<String> getApplicationLog(String applicationId) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<Object> getApplicationLog(String applicationId) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * 杀死执行中的application
@@ -262,7 +259,7 @@ public interface OuterExecutionService {
      * @throws ClusterInfoNotConfigException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse<Integer> killApplication(String applicationId, String executionUser)
+    GeneralResponse<Object> killApplication(String applicationId, String executionUser)
             throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException, PermissionDeniedRequestException;
 
     /**
@@ -310,7 +307,7 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<GatewayJobInfoResponse> queryJobInfo(String jobId) throws UnExpectedRequestException;
+    GeneralResponse<Object> queryJobInfo(String jobId) throws UnExpectedRequestException;
 
     /**
      * Query application reponses
@@ -320,7 +317,7 @@ public interface OuterExecutionService {
      * @throws UnExpectedRequestException
      * @throws ParseException
      */
-    GeneralResponse<ApplicationProjectResponse> queryApplications(String jobId) throws UnExpectedRequestException, ParseException;
+    GeneralResponse<Object> queryApplications(String jobId) throws UnExpectedRequestException, ParseException;
 
     /**
      * 第三方批量删除规则 delete Rule
@@ -344,28 +341,18 @@ public interface OuterExecutionService {
     void reSubmitCheckAlertGroup(String executeUser, Long ruleGroupId, Long projectId, String executionParam) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
-     * execution Script
-     * @param request
-     * @return
-     * @throws UnExpectedRequestException
-     * @throws JSONException
-     */
-    GeneralResponse executionScript(OmnisScriptRequest request) throws UnExpectedRequestException, JSONException;
-
-    /**
      * query Identify
      * @param request
      * @return
      */
-//    GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request);
+//    GeneralResponse<Object> queryIdentify(OmnisScriptRequest request);
 
     /**
      * query Ims metric Data
      * @param request
      * @return
-     * @throws DateParseException
      */
-//    GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException;
+//    GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request);
 
 
     /**
@@ -375,7 +362,7 @@ public interface OuterExecutionService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<Object> batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
 
     /**
@@ -384,7 +371,7 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse getApplicationResult(List< String> applicationIdList)throws UnExpectedRequestException;
+    GeneralResponse<Object> getApplicationResult(List< String> applicationIdList)throws UnExpectedRequestException;
 
     /**
      * get Fields Analyse Result
@@ -392,5 +379,5 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-//    GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
+//    GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
 }

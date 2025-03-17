@@ -21,6 +21,7 @@ import com.webank.wedatasphere.qualitis.checkalert.request.QueryCheckAlertReques
 import com.webank.wedatasphere.qualitis.checkalert.request.QueryWorkFlowRequest;
 import com.webank.wedatasphere.qualitis.checkalert.response.CheckAlertResponse;
 import com.webank.wedatasphere.qualitis.checkalert.service.CheckAlertService;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
@@ -65,7 +66,7 @@ public class CheckAlertController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to add check alert node rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_ADD_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_ADD_RULE}", null);
         }
     }
 
@@ -84,7 +85,7 @@ public class CheckAlertController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to delete check alert node rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_DELETE_RULE}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE}", null);
         }
     }
 
@@ -103,7 +104,7 @@ public class CheckAlertController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to modify check alert node rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_MODIFY_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_RULE_DETAIL}", null);
         }
     }
 
@@ -122,7 +123,7 @@ public class CheckAlertController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get check alert node rule, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RULE_DETAIL}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_RULE_DETAIL}", null);
         }
     }
 
@@ -132,16 +133,16 @@ public class CheckAlertController {
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<Object> checkDatasource(CheckAlertRequest request) throws UnExpectedRequestException {
         try {
-            return checkAlertService.checkDatasource(request.getAlertTable(), request.getAlertCol(), request.getMajorAlertCol(), request.getContentCols());
+            return checkAlertService.checkDatasource(request.getAlertTable(), request.getAlertCol(), request.getAdvancedAlertCol(), request.getContentCols());
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (MetaDataAcquireFailedException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("400", e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, e.getMessage(), null);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>("500", "Failed to check datasource", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to check datasource", null);
         }
     }
 
@@ -167,7 +168,7 @@ public class CheckAlertController {
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get check alert, caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_CHECK_ALERT_QUERY}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_CHECK_ALERT_QUERY}", null);
         }
     }
 
@@ -178,14 +179,14 @@ public class CheckAlertController {
     public GeneralResponse<Map<String, Object>> getConditionList(QueryWorkFlowRequest request) throws UnExpectedRequestException {
         try {
             Map<String, Object> deduplicationField = checkAlertService.getDeduplicationField(request);
-            return new GeneralResponse("200", "{&GET_CHECK_ALERT_CONDITION_LIST_SUCCESSFULLY}"
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CHECK_ALERT_CONDITION_LIST_SUCCESSFULLY}"
                     , deduplicationField);
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             LOGGER.error("Failed to get check alert condition list, caused by: {}", e.getMessage(), e);
-            return new GeneralResponse<>("500", "{&FAILED_TO_GET_CHECK_ALERT_CONDITION_LIST}", null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_CHECK_ALERT_CONDITION_LIST}", null);
         }
     }
 

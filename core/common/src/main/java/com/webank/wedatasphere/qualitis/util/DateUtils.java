@@ -16,9 +16,11 @@
 
 package com.webank.wedatasphere.qualitis.util;
 
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import org.apache.commons.lang.time.FastDateFormat;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.util.Date;
 
 /**
@@ -48,4 +50,14 @@ public class DateUtils {
     return printTimeFormat.format(new Date());
   }
 
+  public static String generateRandomString(int length) {
+    String characters = QualitisConstants.CHARS;
+    StringBuilder stringBuilder = new StringBuilder();
+    SecureRandom secureRandom = new SecureRandom();
+    for (int i = 0; i < length; i++) {
+      int index = secureRandom.nextInt(characters.length());
+      stringBuilder.append(characters.charAt(index));
+    }
+    return stringBuilder.toString();
+  }
 }

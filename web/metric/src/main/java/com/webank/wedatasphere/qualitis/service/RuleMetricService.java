@@ -5,11 +5,7 @@ import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestExcepti
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.project.response.HiveRuleDetail;
-import com.webank.wedatasphere.qualitis.request.AddRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.DownloadRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.RuleMetricListValuesRequest;
-import com.webank.wedatasphere.qualitis.request.RuleMetricQueryRequest;
+import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.EnvResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
@@ -104,6 +100,15 @@ public interface RuleMetricService {
    * @throws UnExpectedRequestException
    */
   RuleMetricConditionResponse conditions();
+
+  /**
+   * query en_code with page
+   * @param enCode
+   * @param page
+   * @param size
+   * @return
+   */
+  List<String> queryEnCodeWithPage(String enCode, int page, int size);
 
   /**
    * Query rule metric.

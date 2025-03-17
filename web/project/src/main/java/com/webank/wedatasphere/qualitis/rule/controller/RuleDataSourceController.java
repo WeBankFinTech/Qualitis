@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.rule.controller;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
@@ -27,7 +28,7 @@ public class RuleDataSourceController {
     @GET
     @Path("metadata/sync")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<DataMapResultInfo<String>> syncMetadata(@Context HttpServletRequest httpServletRequest) {
+    public GeneralResponse<Object> syncMetadata(@Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
         String userName = HttpUtils.getUserName(httpServletRequest);
         return ruleDataSourceService.syncMetadata(userName);
     }

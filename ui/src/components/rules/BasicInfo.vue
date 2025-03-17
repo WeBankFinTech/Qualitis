@@ -10,7 +10,7 @@
     >
         <FFormItem v-if="listType === 'groupList' && editMode === 'edit'" :label="prefixTitle" class="title">
         </FFormItem>
-        <FFormItem :label="(listType === 'groupList' && editMode === 'display') ? '' : `规则名称`" prop="rule_name">
+        <FFormItem :label="(listType === 'groupList' && editMode === 'display') ? '' : $t('common.ruleName')" prop="rule_name">
             <FForm
                 v-if="editMode !== 'display'"
                 ref="nameFormRef"
@@ -36,7 +36,7 @@
                         :maxlength="128"
                         showWordLimit
                         :disabled="listType === 'listByTemplate'"
-                        :placeholder="listType === 'listByTemplate' ? '模版中文名' : `${$t('common.ruleCnName')}(非必填)`"
+                        :placeholder="listType === 'listByTemplate' ? $t('_.模版中文名') : `${$t('common.ruleCnName')}(${$t('_.非必填')})`"
                     />
                 </FFormItem>
                 <FFormItem v-if="listType === 'listByTemplate'" label="" prop="rule_name">
@@ -46,7 +46,7 @@
                         :maxlength="128"
                         showWordLimit
                         disabled
-                        :placeholder="listType === 'listByTemplate' ? '模版英文名' : `${$t('common.ruleEnName')}(必填)`"
+                        :placeholder="listType === 'listByTemplate' ? $t('_.模版英文名') : `${$t('common.ruleEnName')}(${$t('_.必填')})`"
                     />
                 </FFormItem>
             </FForm>
@@ -58,12 +58,22 @@
                 <span v-if="currentBasicInfo.cn_name">（{{currentBasicInfo.cn_name}}）</span>
             </div>
         </FFormItem>
+        <FFormItem :label="$t('common.regulatoryCode')" prop="reg_rule_code">
+            <FInput
+                v-model="currentBasicInfo.reg_rule_code "
+                class="form-edit-input"
+                :placeholder="$t('_.请确认监管编码并输入')"
+                :maxlength="1000"
+                showWordLimit
+            />
+            <div class="form-preview-label">{{currentBasicInfo.reg_rule_code || '--'}}</div>
+        </FFormItem>
         <FFormItem :label="$t('common.ruleDescription')" prop="rule_detail">
             <FInput
                 v-model="currentBasicInfo.rule_detail"
-                class="form-edit-input"
+                class="form-edit-input rule_detail"
                 type="textarea"
-                placeholder="请输入规则描述"
+                :placeholder="$t('_.请输入规则描述')"
                 :maxlength="1000"
                 showWordLimit
             />
@@ -152,6 +162,10 @@ const basicInfoRules = ref({
         trigger: ['blur', 'input'],
         message: $t('common.notEmpty'),
     }],
+    reg_rule_code: [{
+        trigger: ['blur', 'input'],
+        message: $t('common.notEmpty'),
+    }],
 });
 
 const basicInfoFormRef = ref(null);
@@ -187,5 +201,8 @@ defineExpose({ valid });
 }
 .title /deep/ .fes-form-item-label{
     color: #0F1222;
+}
+.rule_detail{
+    max-width: 615px;
 }
 </style>

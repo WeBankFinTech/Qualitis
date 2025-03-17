@@ -39,6 +39,12 @@ public interface ExecutionVariableDao {
     void deleteByExecutionParameters(ExecutionParameters executionParametersInDb);
 
     /**
+     * delete by ExecutionParametersId
+     * @param id
+     */
+    void deleteByExecutionParametersId(Long id);
+
+    /**
      * select Mate ExecutionVariable
      * @param type
      * @param name

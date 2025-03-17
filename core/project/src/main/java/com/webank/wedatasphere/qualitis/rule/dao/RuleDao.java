@@ -347,4 +347,28 @@ public interface RuleDao {
      * @return
      */
     List<Rule> findByIdsAndProject(List<Long> ruleIds, Long projectId);
+
+    /**
+     * find ByNames And Project
+     *
+     * @param ruleNames
+     * @param projectId
+     * @return
+     */
+    List<Rule> findByNamesAndProject(List<String> ruleNames, Long projectId);
+
+    /**
+     * find by rule group id
+     * @param ruleGroupId
+     * @return
+     */
+    List<Rule> findByRuleGroupId(Long ruleGroupId);
+
+    /**
+     *
+     * @param enableStatus
+     * @param ruleIds
+     */
+    void updateEnableStatus(Boolean enableStatus, List<Long> ruleIds);
+
 }

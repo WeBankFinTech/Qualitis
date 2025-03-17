@@ -1,7 +1,7 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: editMode !== 'display' }">
-        <h6 v-if="listType === 'commonList'" class="wd-body-title">校验规则</h6>
-        <BasicInfo v-if="listType !== 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" prefixTitle="单表校验" />
+        <h6 v-if="listType === 'commonList'" class="wd-body-title">{{$t('_.校验规则')}}</h6>
+        <BasicInfo v-if="listType !== 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" :prefixtitle="$t('_.单表校验')" />
         <FForm
             ref="verifyObjectFormRef"
             :layout="layout"
@@ -11,12 +11,12 @@
             :labelWidth="labelWidth"
             :labelPosition="editMode !== 'display' ? 'right' : 'left'"
         >
-            <FFormItem :label="listType === 'listByTemplate' ? '规则模版' : $t('common.verificationTemplate')" prop="rule_template_id">
+            <FFormItem :label="listType === 'listByTemplate' ? $t('ruleTemplate.ruleTemplate') : $t('common.verificationTemplate')" prop="rule_template_id">
                 <FSelect
                     v-model="verifyRuleData.rule_template_id"
                     class="form-edit-input"
                     filterable
-                    placeholder="请选择校验模板"
+                    :placeholder="$t('_.请选择校验模板')"
                     @change="onTemplateChange"
                 >
                     <FOption
@@ -28,7 +28,7 @@
                 </FSelect>
                 <div class="form-preview-label">{{getTemplateLabel}}</div>
             </FFormItem>
-            <BasicInfo v-if="listType === 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" prefixTitle="单表校验" />
+            <BasicInfo v-if="listType === 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" :prefixtitle="$t('_.单表校验')" />
             <div v-for="(w,k) in (verifyRuleData.ruleArgumentList || [])" :key="k">
                 <!-- 需要下拉选择 -->
                 <FFormItem v-if="w.flag" :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]" class="form-item">
@@ -63,9 +63,7 @@
                         class="color-danger"
                         style="margin-left: 6px;width: 400px"
                     >
-                        <ExclamationCircleOutlined />
-                        &nbsp;规则校验不通过，已产生新的校验值，
-                        <span class="btn-link" @click="showStandardListPanel('')">查看新值</span>
+                        <ExclamationCircleOutlined />{{$t('_.规则校验不通过，已产生新的校验值，')}}<span class="btn-link" @click="showStandardListPanel('')">{{$t('_.查看新值')}}</span>
                     </span>
                     <FTooltip v-else-if="ruleArgumentTips.textShow">
                         <ExclamationCircleOutlined class="tip edit hint" />
@@ -74,7 +72,7 @@
                 </FFormItem>
                 <!-- 其他普通类型 -->
                 <FFormItem v-else-if="w.argument_type !== TEMPLATE_ARGUMENT_INPUT_TYPE.FEILD" :prop="`ruleArgumentList[${k}].argument_value`" :label="w.argument_name" :rules="[{ required: true, message: $t('common.notEmpty') }]">
-                    <FInput v-model="verifyRuleData.ruleArgumentList[k].argument_value" class="form-edit-input" @input="replaceParameter(k)" />
+                    <FInput v-model="verifyRuleData.ruleArgumentList[k].argument_value" :placeholder="$t('_.请输入')" class="form-edit-input" @input="replaceParameter(k)" />
                     <div class="form-preview-label">{{w.argument_value}}</div>
                     <!-- 枚举值和数值范围需要判断是否有新值 new_value_exists，有新值1 无新值0 -->
                     <span
@@ -82,9 +80,7 @@
                         class="color-danger"
                         style="margin-left: 6px;width: 400px"
                     >
-                        <ExclamationCircleOutlined />
-                        &nbsp;规则校验不通过，已产生新的校验值，
-                        <span class="btn-link" @click="showStandardListPanel(w.argument_type === 8 ? 'mjz' : 'szfw')">查看新值</span></span>
+                        <ExclamationCircleOutlined />{{$t('_.规则校验不通过，已产生新的校验值，')}}<span class="btn-link" @click="showStandardListPanel(w.argument_type === 8 ? 'mjz' : 'szfw')">{{$t('_.查看新值')}}</span></span>
                     <FTooltip v-else-if="ruleArgumentTips.textShow">
                         <ExclamationCircleOutlined class="tip edit hint" />
                         <template #content>{{ruleArgumentTips.regText.find(item => w.argument_type === item.input_type)?.description}}</template>
@@ -103,7 +99,7 @@
                 :rules="verifyRuleRules"
                 @onColumnChange="onColumnChange">
             </FieldsSelect>
-            <FFormItem v-if="listType !== 'listByTemplate'" label="SQL预览">
+            <FFormItem v-if="listType !== 'listByTemplate'" :label="$t('_.SQL预览')">
                 <div class="rule-sql-preview">
                     <p v-if="sqlPreviewString" v-html="sqlPreviewString"></p>
                 </div>
@@ -116,7 +112,7 @@
                 :lisType="lisType"
                 :solidification="solidification"
             />
-            <FFormItem label="执行参数" prop="execution_parameters_name">
+            <FFormItem :label="$t('_.执行参数')" prop="execution_parameters_name">
                 <FInput
                     v-model="verifyRuleData.execution_parameters_name"
                     class="form-edit-input excution-parameters-name-input"
@@ -144,11 +140,14 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, provide, nextTick, watch, inject, unref, onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n, request } from '@fesjs/fes';
+import {
+    useI18n, request, useRoute, useRouter,
+} from '@fesjs/fes';
 import { cloneDeep } from 'lodash-es';
 import eventbus from '@/common/useEvents';
 import BasicInfo from '@/components/rules/BasicInfo';
@@ -559,14 +558,15 @@ const onTemplateChange = async (id) => {
     verifyRuleData.value.rule_template_name = checkTemplateList.value.find(v => v.template_id === id)?.template_name || '';
     // 清空校验参数
     ruleconditionlistRef.value.reset();
+    store.commit('rule/updateCurrentRuleDetail', cloneDeep(verifyRuleData.value));
 };
 
 // 枚举值列表
 const enumTypeList = ref([{
-    label: '枚举值',
+    label: $t('_.枚举值'),
     value: false,
 }, {
-    label: '标准值',
+    label: $t('_.标准值'),
     value: true,
 }]);
 
@@ -657,6 +657,16 @@ const onColumnChange = (selectedCol = []) => {
     updateSqlDataSource();
 };
 
+// 校验为模板空值或空字符串检测时，校验字段为字符串
+const isVerifyColumnString = computed(() => {
+    if (verifyRuleData.value.rule_template_id && verifyRuleData.value.datasource[0]?.type === 'hive') {
+        const template = checkTemplateList.value.find(
+            item => item.template_id === verifyRuleData.value.rule_template_id,
+        );
+        return template?.template_name === $t('_.空值或空字符串检测');
+    }
+    return false;
+});
 // 表单规则
 const verifyRuleRules = ref({
     rule_template_id: [{
@@ -667,14 +677,15 @@ const verifyRuleRules = ref({
     }],
     execution_parameters_name: [{
         required: true,
-        trigger: 'change',
+        trigger: ['change', 'blur'],
         message: $t('common.notEmpty'),
     }],
     colNamesStrArr: [{
         required: true,
+        trigger: ['change', 'blur'],
         validator: (rule, value) => new Promise((resolve, reject) => {
             if (ruleConfig.value.field_type === '') {
-                reject('请选择校验模板');
+                reject($t('_.请选择校验模板'));
             }
 
             // 表规则组时需要从store拿数据
@@ -704,11 +715,16 @@ const verifyRuleRules = ref({
             if (colNames?.length === 0) {
                 reject($t('common.notEmpty'));
             }
-
             // 单选提示，否则默认多选
             if (!fieldRuleArgument.value.field_multiple_choice && colNames.length > 1) {
                 if (colNames.length > 1) {
                     reject($t('toastWarn.atMost') + 1 + $t('addTechniqueRule.fields'));
+                }
+            }
+
+            if (isVerifyColumnString.value) {
+                if (colNames.some(item => item.data_type !== 'string')) {
+                    reject($t('_.不符合规则的字段'));
                 }
             }
 
@@ -719,7 +735,7 @@ const verifyRuleRules = ref({
         required: false,
         validator: (rule, value) => new Promise((resolve, reject) => {
             if (ruleConfig.value.field_type === '') {
-                reject('请选择校验模板');
+                reject($t('_.请选择校验模板'));
             }
             if (!value || value?.length === 0) {
                 value = [];
@@ -789,7 +805,10 @@ const init = async (isInitStep = true) => {
         verifyRuleData.value.rule_template_id = currentTemplateId.value;
         verifyRuleData.value.alarm_variable = [{}];
     }
-    handleTemplateChangePromise().then(() => loadVerifyTpl(currentRule.value.datasource ? currentRule.value.datasource[0]?.type : ''));
+    handleTemplateChangePromise().then(async () => {
+        await loadVerifyTpl(currentRule.value.datasource ? currentRule.value.datasource[0]?.type : '');
+        eventbus.emit('INIT_FINISHED');
+    });
     if (isInitStep) {
         onStandardChange();
     } else {
@@ -802,14 +821,35 @@ useListener('SHOULD_UPDATE_NECESSARY_DATA', () => {
     if (listType.value === 'groupList' || listType.value === 'listByTemplate') return;
     init(false);
 });
-
+// 过滤条件单独更新
+useListener('ONLY_UPDATE_FILTER', () => {
+    const target = cloneDeep(currentRule.value);
+    verifyRuleData.value.datasource[0].filter = target.datasource[0].filter;
+});
 // 初始化数据
 useListener('IS_RULE_DETAIL_DATA_LOADED', () => {
     if (listType.value === 'groupList' || listType.value === 'listByTemplate') return;
     init();
 });
+const router = useRouter();
+const route = useRoute();
+// 切换复制模式，规则名称改成xxx_副本
+useListener('COPY_MODE', () => {
+    verifyRuleData.value.rule_name = `${verifyRuleData.value.rule_name}_copy`;
+    if (verifyRuleData.value.cn_name) verifyRuleData.value.cn_name = `${verifyRuleData.value.cn_name}_副本`;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_id;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_en_code;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_name;
+    // const tempQuery = { ...route.query };
+    // delete tempQuery.id;
+    // const queryString = Object.keys(tempQuery)
+    //     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(tempQuery[key])}`)
+    //     .join('&');
 
-
+    // // 构建新的 URL
+    // const newUrl = `${route.path}?${queryString}`;
+    // router.replace(newUrl);
+});
 // eslint-disable-next-line no-undef
 defineExpose({ valid, verifyRuleData, init });
 
@@ -841,6 +881,7 @@ watch(() => verifyRuleData, () => {
         emit('update:rule', verifyRuleData.value);
     }
 }, { deep: true });
+
 
 </script>
 <style lang="less">

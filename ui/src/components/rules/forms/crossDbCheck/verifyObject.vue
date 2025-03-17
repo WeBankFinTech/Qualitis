@@ -1,6 +1,6 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: ruleData.currentProject.editMode !== 'display' }">
-        <h6 class="wd-body-title">校验对象</h6>
+        <h6 class="wd-body-title">{{$t('_.校验对象')}}</h6>
         <FForm
             ref="verifyObjectFormRef"
             :model="verifyObjectData"
@@ -99,8 +99,7 @@
                         :class="{ empty: verifyObjectData.white_list?.length === 0 }"
                     >
                         <FButton class="add-btn" @click="addNameList('white')">
-                            <PlusOutlined />
-                            添加名单
+                            <PlusOutlined />{{$t('_.添加名单')}}
                         </FButton>
                     </div>
                 </div>
@@ -137,7 +136,7 @@
                                         v-model="blackN.filterContent"
                                         :disabled="blackN.filterWay === 4"
                                         class="form-edit-input"
-                                        placeholder="请输入"
+                                        :placeholder="$t('_.请输入')"
                                     />
                                 </td>
                                 <td v-if="ruleData.currentProject.editMode !== 'display'">
@@ -155,8 +154,7 @@
                         :class="{ empty: verifyObjectData.black_list?.length === 0 }"
                     >
                         <FButton class="add-btn" @click="addNameList('black')">
-                            <PlusOutlined />
-                            添加名单
+                            <PlusOutlined />{{$t('_.添加名单')}}
                         </FButton>
                     </div>
                 </div>
@@ -165,6 +163,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, inject, nextTick, watch,
 } from 'vue';
@@ -206,19 +205,19 @@ const verifyObjectData = ref({
 const clusterList = inject('clusterList');
 // 黑名单 筛选方式list
 const filterList = ref([{
-    label: '包含',
+    label: $t('_.包含'),
     value: 1,
 }, {
-    label: '以字符开头',
+    label: $t('_.以字符开头'),
     value: 2,
 }, {
-    label: '以字符结尾',
+    label: $t('_.以字符结尾'),
     value: 3,
 }, {
-    label: '同名表',
+    label: $t('_.同名表'),
     value: 4,
 }, {
-    label: '正则表达式',
+    label: $t('_.正则表达式'),
     value: 5,
 }]);
 
@@ -361,6 +360,7 @@ const valid = async () => {
 };
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .add-btn{

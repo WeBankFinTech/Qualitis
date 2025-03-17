@@ -51,11 +51,9 @@ import org.springframework.web.client.ResourceAccessException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -210,6 +208,21 @@ public class MetaDataController {
     public GeneralResponse<List<SubSystemResponse>> getSubSystemInfo() throws UnExpectedRequestException {
         try {
             return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_SUB_SYSTEM_INFO_SUCCESS}", operateCiService.getAllSubSystemInfo());
+        } catch (UnExpectedRequestException e) {
+            throw new UnExpectedRequestException(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("Failed to get sub_system info, caused by: " + e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_SUB_SYSTEM_INFO_CMDB}", null);
+        }
+    }
+
+    @GET
+    @Path("subSystemInfoWithPage")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<List<SubSystemResponse>> getSubSystemInfoPage(@QueryParam("sub_system_name") String subSystemName, @QueryParam("page") int page, @QueryParam("size") int size) throws UnExpectedRequestException {
+        try {
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_SUB_SYSTEM_INFO_SUCCESS}", operateCiService.getSubSystemInfoByPage(subSystemName, page, size));
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {
@@ -960,6 +973,15 @@ public class MetaDataController {
             LOGGER.error(e.getMessage(), e);
             return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to get dcn tdsql info.", null);
         }
+    }
+
+    @GET
+    @Path("buzDomain")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse getBuzDomain() throws UnExpectedRequestException, IOException {
+        List<BuzDomainResponse> result = metaDataService.getBuzDomainList();
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", result);
     }
 
     @GET

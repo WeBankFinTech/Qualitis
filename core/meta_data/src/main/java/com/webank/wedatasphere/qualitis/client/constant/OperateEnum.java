@@ -13,7 +13,8 @@ public enum OperateEnum {
   DEPARTMENT(3, "部门信息请求"),
   DEV_DEPARTMENT(4, "开发部门信息请求"),
   OPS_DEPARTMENT(5, "运维部门信息请求"),
-  SUB_SYSTEM_FIND_DCN(6, "子系统查询DCN")
+  SUB_SYSTEM_FIND_DCN(6, "子系统查询DCN"),
+  BUZ_DOMAIN(7, "业务域查询")
   ;
 
   private int code;

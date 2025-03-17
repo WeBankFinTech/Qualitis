@@ -45,4 +45,10 @@ public class AlarmConfigDaoImpl implements AlarmConfigDao {
     public List<AlarmConfig> getByRuleMetric(RuleMetric ruleMetric) {
         return alarmConfigRepository.getByRuleMetric(ruleMetric);
     }
+
+    @Override
+    public List<AlarmConfig> getByRuleIds(List<Long> ruleIds) {
+        return alarmConfigRepository.findByRuleIdIn(ruleIds);
+    }
+
 }

@@ -12,8 +12,8 @@
             ></FSelect>
         </div>
         <div class="tag-label">
-            <span>已选：</span>
-            <span class="clear-btn" @click="clearAll">全部清除</span>
+            <span>{{$t('_.已选：')}}</span>
+            <span class="clear-btn" @click="clearAll">{{$t('_.全部清除')}}</span>
         </div>
         <div class="tag-container">
             <FTag
@@ -24,7 +24,7 @@
                 closable
                 @close="deleteTag(item, index)"
             >
-                {{item.label}}
+                <div class="tag-text" :title="item.label">{{item.label}}</div>
             </FTag>
         </div>
     </div>
@@ -34,7 +34,9 @@ import { unionWith } from 'lodash-es';
 import {
     defineProps, ref, defineEmits, computed, unref, watch, watchEffect,
 } from 'vue';
+import { useI18n } from '@fesjs/fes';
 
+const { t: $t } = useI18n();
 const emit = defineEmits(['update:selected', 'update:selectedList']);
 const props = defineProps({
     selected: {
@@ -105,6 +107,12 @@ const clearAll = () => {
             cursor: pointer;
             color: #93949B;
         }
+    }
+    :deep(.tag-text) {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 </style>

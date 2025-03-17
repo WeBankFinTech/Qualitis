@@ -5,12 +5,12 @@
                 <BSearch :form="{}" :isReset="false" @search="refreshUserRoles">
                     <template v-slot:form>
                         <div>
-                            <span class="condition-label">用户名</span>
+                            <span class="condition-label">{{$t('_.用户名')}}</span>
                             <FSelect
                                 v-model="userName"
                                 clearable
                                 filterable
-                                placeholder="请选择"
+                                :placeholder="$t('_.请选择')"
                                 :options="userNameList"
                             ></FSelect>
                         </div>

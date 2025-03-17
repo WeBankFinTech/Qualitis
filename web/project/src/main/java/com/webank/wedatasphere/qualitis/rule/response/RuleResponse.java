@@ -118,6 +118,9 @@ public class RuleResponse {
     @JsonIgnore
     private Boolean isModifiedRule;
 
+    @JsonProperty("reg_rule_code")
+    private String regRuleCode;
+
     public RuleResponse() {
     }
 
@@ -140,6 +143,7 @@ public class RuleResponse {
         this.ruleType = rule.getRuleType();
         this.workFlowName = rule.getWorkFlowName();
         this.workFlowVersion = rule.getWorkFlowVersion();
+        this.regRuleCode = rule.getRegRuleCode();
         if (ruleType.equals(RuleTypeEnum.CUSTOM_RULE.getCode()) && StringUtils.isEmpty(rule.getFromContent())) {
             // Just combine 2-2 code for sql check.
             this.tableType = RuleTypeEnum.CUSTOM_RULE.getCode().toString();
@@ -228,6 +232,7 @@ public class RuleResponse {
         }
         clusterName = new ArrayList<>();
         tableName = new ArrayList<>();
+        this.regRuleCode = rule.getRegRuleCode();
 
         if (CollectionUtils.isNotEmpty(rule.getRuleDataSources())) {
             for (RuleDataSource ruleDataSource : rule.getRuleDataSources()) {
@@ -305,6 +310,14 @@ public class RuleResponse {
         this.abnormalDatabase = abnormalDatabase;
         this.cluster = cluster;
         this.abnormalProxyUser = abnormalProxyUser;
+    }
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
     }
 
     public Rule getRule() {

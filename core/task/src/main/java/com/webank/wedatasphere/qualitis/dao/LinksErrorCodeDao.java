@@ -17,6 +17,12 @@ public interface LinksErrorCodeDao {
     List<LinksErrorCode> findAllLinksErrorCode();
 
     /**
+     * find all WTSS error expression
+     * @return
+     */
+    List<LinksErrorCode> findAllWtssErrorExpression();
+
+    /**
      * Save all LinksErrorCode .
      * @param linksErrorCodes
      * @return

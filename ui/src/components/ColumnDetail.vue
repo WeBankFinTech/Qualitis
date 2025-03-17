@@ -28,7 +28,14 @@
     </FTooltip>
 </template>
 <script setup>
+import { defineProps } from 'vue';
+import { useI18n } from '@fesjs/fes';
+
 import { FTooltip } from '@fesjs/fes-design';
+// eslint-disable-next-line no-undef
+
+const { t: $t } = useI18n();
+
 // eslint-disable-next-line no-undef
 const props = defineProps({
     title: {
@@ -49,6 +56,7 @@ const props = defineProps({
         default: '256px',
     },
 });
+
 
 </script>
 <style lang='less' scoped>

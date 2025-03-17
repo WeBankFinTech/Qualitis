@@ -1,7 +1,5 @@
 package com.webank.wedatasphere.qualitis.rule.request;
 
-import org.codehaus.jackson.annotate.JsonProperty;
-
 /**
  * @author allenzhou
  */
@@ -26,7 +24,6 @@ public class RuleNodeRequest {
     /**
      * Check alert object.
      */
-    @JsonProperty("check_alert_rule")
     private String checkAlertRule;
 
     public String getRuleObject() {

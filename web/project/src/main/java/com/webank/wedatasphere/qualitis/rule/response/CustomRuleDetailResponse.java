@@ -135,7 +135,6 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
     @JsonProperty("linkis_udf_names")
     private List<String> linkisUdfNames;
 
-
     public CustomRuleDetailResponse(Rule customRule) {
         super.setRuleId(customRule.getId());
         super.setRuleName(customRule.getName());
@@ -158,6 +157,7 @@ public class CustomRuleDetailResponse extends AbstractCommonRequest {
         super.setWorkFlowProject(customRule.getProject().getName());
         super.setWorkFlowSpace(customRule.getWorkFlowSpace());
         super.setNodeName(customRule.getNodeName());
+        super.setRegRuleCode(customRule.getRegRuleCode());
         // 根据contextService是否为true，决定页面是否开启上游表的显示
         if (StringUtils.isNotBlank(customRule.getCsId())) {
             contextService = true;

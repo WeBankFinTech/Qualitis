@@ -1,22 +1,20 @@
 <template>
     <div class="wd-content rule-detail">
         <div class="wd-project-header">
-            <div class="name">
-                数据告警规则配置
-            </div>
+            <div class="name">{{$t('_.数据告警规则配置')}}</div>
         </div>
         <div class="wd-content-body">
             <div v-if="ruleExist" class="rule-detail-form" :class="{ edit: mode !== 'display' }">
                 <ul v-if="mode === 'display'" class="wd-body-menus">
-                    <li class="wd-body-menu-item" @click="edit">编辑</li>
-                    <li class="wd-body-menu-item" @click="del">删除</li>
+                    <li class="wd-body-menu-item" @click="edit">{{$t('_.编辑')}}</li>
+                    <li class="wd-body-menu-item" @click="del">{{$t('_.删除')}}</li>
                 </ul>
                 <FForm ref="alarmFormRef" :model="alarm" :rules="alarmFormRules" labelWidth="110px" :labelPosition="mode === 'edit' ? 'right' : 'left'">
-                    <FFormItem label="告警主题" prop="topic">
+                    <FFormItem :label="$t('_.告警主题')" prop="topic">
                         <FInput
                             v-model="alarm.topic"
                             class="form-edit-input"
-                            placeholder="请输入告警主题"
+                            :placeholder="$t('_.请输入告警主题')"
                             :maxlength="100"
                         >
                             <template #suffix>
@@ -25,73 +23,109 @@
                         </FInput>
                         <div class="form-preview-label">{{alarm.topic}}</div>
                     </FFormItem>
-                    <FFormItem label="默认告警人" prop="info_receiver">
+                    <FFormItem :label="$t('_.默认告警人')" prop="default_receiver">
                         <FInput
-                            v-model="alarm.info_receiver"
+                            v-model="alarm.default_receiver"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <FTooltip v-if=" mode !== 'display'" placement="right">
                             <ExclamationCircleOutlined class="tip edit hint" />
                             <template #content>
-                                <div>请输入 RTX 英文名，多个用户请使用英文逗号分隔;</div>
-                                <div>仅进行IMS告警即可，告警等级为info</div>
+                                <div>{{$t('_.请输入 RTX 英文名，多个用户请使用英文逗号分隔')}}</div>
                             </template>
                         </FTooltip>
-                        <div class="form-preview-label">{{alarm.info_receiver}}</div>
+                        <div class="form-preview-label">{{alarm.default_receiver}}</div>
                     </FFormItem>
-                    <FFormItem label="高等级告警人" prop="major_receiver">
-                        <FInput
-                            v-model="alarm.major_receiver"
+                    <FFormItem :label="$t('_.默认告警级别')" prop="default_alert_level">
+                        <FSelect
+                            v-model="alarm.default_alert_level"
+                            clearable
+                            filterable
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :options="levelList"
+                        >
+                        </FSelect>
+                        <div class="form-preview-label">{{levelList.find(item => item.value === alarm.default_alert_level)?.label || ''}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.默认告警方式')" prop="default_alert_ways">
+                        <FCheckboxGroup v-model="alarm.default_alert_ways" class="form-edit-input">
+                            <FCheckbox v-for="way in wayList" :key="way" :value="way.value">
+                                {{way.label}}
+                            </FCheckbox>
+                        </FCheckboxGroup>
+                        <div class="form-preview-label">{{getWayLabel(alarm.default_alert_ways)}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.高等级告警人')" prop="advanced_receiver">
+                        <FInput
+                            v-model="alarm.advanced_receiver"
+                            class="form-edit-input"
+                            :placeholder="$t('_.请输入')"
                         />
                         <FTooltip v-if=" mode !== 'display'" placement="right">
                             <ExclamationCircleOutlined class="tip edit hint" />
                             <template #content>
-                                <div>请输入 RTX 英文名，多个用户请使用英文逗号分隔;</div>
-                                <div>均采用电话告警，告警等级为major</div>
+                                <div>{{$t('_.请输入 RTX 英文名，多个用户请使用英文逗号分隔')}}</div>
                             </template>
                         </FTooltip>
-                        <div class="form-preview-label">{{alarm.major_receiver}}</div>
+                        <div class="form-preview-label">{{alarm.advanced_receiver}}</div>
                     </FFormItem>
-                    <FFormItem label="告警表" prop="alert_table">
+                    <FFormItem :label="$t('_.高级告警级别')" prop="advanced_alert_level">
+                        <FSelect
+                            v-model="alarm.advanced_alert_level"
+                            clearable
+                            filterable
+                            class="form-edit-input"
+                            :options="levelList"
+                        >
+                        </FSelect>
+                        <div class="form-preview-label">{{levelList.find(item => item.value === alarm.advanced_alert_level)?.label || ''}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.高级告警方式')" prop="advanced_alert_ways">
+                        <FCheckboxGroup v-model="alarm.advanced_alert_ways" class="form-edit-input">
+                            <FCheckbox v-for="way in wayList" :key="way.value" :value="way.value">
+                                {{way.label}}
+                            </FCheckbox>
+                        </FCheckboxGroup>
+                        <div class="form-preview-label">{{getWayLabel(alarm.advanced_alert_ways)}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.告警表')" prop="alert_table">
                         <FInput
                             v-model="alarm.alert_table"
                             class="form-edit-input"
-                            placeholder="请输入，格式如：db.table"
+                            :placeholder="$t('_.请输入，格式如：dbtable')"
                         />
                         <div class="form-preview-label">{{alarm.alert_table}}</div>
                     </FFormItem>
-                    <FFormItem label="过滤条件" prop="filter">
+                    <FFormItem :label="$t('_.过滤条件')" prop="filter">
                         <FInput
                             v-model="alarm.filter"
                             class="form-edit-input"
-                            placeholder="请输入，格式如：ds=${run_date}"
+                            :placeholder="`${$t('common.format')} + $ + {run_date}`"
                         />
                         <div class="form-preview-label">{{alarm.filter}}</div>
                     </FFormItem>
-                    <FFormItem label="默认告警筛选列" prop="alert_col">
+                    <FFormItem :label="$t('_.默认告警筛选列')" prop="alert_col">
                         <FInput
                             v-model="alarm.alert_col"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <div class="form-preview-label">{{alarm.alert_col}}</div>
                     </FFormItem>
-                    <FFormItem label="高等级告警列" prop="major_alert_col">
+                    <FFormItem :label="$t('_.高等级告警列')" prop="advanced_alert_col">
                         <FInput
-                            v-model="alarm.major_alert_col"
+                            v-model="alarm.advanced_alert_col"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
-                        <div class="form-preview-label">{{alarm.major_alert_col}}</div>
+                        <div class="form-preview-label">{{alarm.advanced_alert_col}}</div>
                     </FFormItem>
-                    <FFormItem label="内容展示列" prop="content_cols">
+                    <FFormItem :label="$t('_.内容展示列')" prop="content_cols">
                         <FInput
                             v-model="alarm.content_cols"
                             class="form-edit-input"
-                            placeholder="请输入，格式如xx;yy; 这里xx指的是数据表的真实字段名，yy指字段别名"
+                            :placeholder="$t('_.请输入，格式如xx;yy; 这里xx指的是数据表的真实字段名，yy指字段别名')"
                             type="textarea"
                         />
                         <div class="form-preview-label">{{alarm.content_cols}}</div>
@@ -99,40 +133,53 @@
                 </FForm>
             </div>
         </div>
-        <FModal v-model:show="showPreview" title="告警内容预览" okText="保存" @ok="save">
+        <FModal v-model:show="showPreview" :title="$t('_.告警内容预览')" :oktext="$t('_.保存')" @ok="save">
             <div class="rule-detail-form">
                 <FForm labelWidth="110px" labelPosition="left">
-                    <FFormItem label="告警主题">
+                    <FFormItem :label="$t('_.告警主题')">
                         <div class="form-preview-label">{{alarm.topic}}</div>
                     </FFormItem>
-                    <FFormItem label="告警时间">
+                    <FFormItem :label="$t('_.告警时间')">
                         <div class="form-preview-label">yyyy-MM-dd hh:mm:sss</div>
                     </FFormItem>
-                    <FFormItem label="告警内容">
+                    <FFormItem :label="$t('_.告警内容')">
                         <div class="form-preview-label line-feed">{{formatContent(alarm.content_cols)}}</div>
                     </FFormItem>
-                    <FFormItem label="告警节点">
+                    <FFormItem :label="$t('_.告警节点')">
                         <div class="form-preview-label">{{alarm.topic}}</div>
                     </FFormItem>
-                    <FFormItem label="告警人">
-                        <div class="form-preview-label">{{alarm.info_receiver}}</div>
+                    <FFormItem :label="$t('_.告警人')">
+                        <div class="form-preview-label">{{alarm.default_receiver}}</div>
                     </FFormItem>
-                    <FFormItem label="高级告警人">
-                        <div class="form-preview-label">{{alarm.major_receiver}}</div>
+                    <FFormItem :label="$t('_.默认告警级别')">
+                        <div class="form-preview-label">{{levelList.find(item => item.value === alarm.default_alert_level)?.label || ''}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.默认告警方式')">
+                        <div class="form-preview-label">{{getWayLabel(alarm.default_alert_ways)}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.高级告警人')">
+                        <div class="form-preview-label">{{alarm.advanced_receiver}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.高级告警级别')">
+                        <div class="form-preview-label">{{levelList.find(item => item.value === alarm.advanced_alert_level)?.label || ''}}</div>
+                    </FFormItem>
+                    <FFormItem :label="$t('_.高级告警方式')">
+                        <div class="form-preview-label">{{getWayLabel(alarm.advanced_alert_ways)}}</div>
                     </FFormItem>
                 </FForm>
             </div>
         </FModal>
         <div v-if="mode !== 'display'" style="padding: 0 16px">
             <FSpace :size="16">
-                <FButton type="primary" class="button" @click="preview">预览</FButton>
-                <FButton type="primary" class="button" @click="save">保存</FButton>
-                <FButton v-if="ruleGroupId" type="default" class="button" @click="cancel">取消</FButton>
+                <FButton type="primary" class="button" @click="preview">{{$t('_.预览')}}</FButton>
+                <FButton type="primary" class="button" @click="save">{{$t('_.保存')}}</FButton>
+                <FButton v-if="ruleGroupId" type="default" class="button" @click="cancel">{{$t('_.取消')}}</FButton>
             </FSpace>
         </div>
     </div>
 </template>
 <script setup>
+
 import { ref, computed, onMounted } from 'vue';
 import {
     request, useI18n, useRoute, useRouter,
@@ -141,7 +188,7 @@ import { cloneDeep } from 'lodash-es';
 import {
     ExclamationCircleOutlined,
 } from '@fesjs/fes-design/es/icon';
-import { DWSMessage } from '@/common/utils';
+import { DWSMessage, wayList, levelList } from '@/common/utils';
 import { FMessage, FModal } from '@fesjs/fes-design';
 
 const route = useRoute();
@@ -152,10 +199,17 @@ const { t: $t } = useI18n();
 const showPreview = ref(false);
 const alarm = ref({
     topic: '',
+    default_alert_level: 5,
+    default_alert_ways: [1, 2, 3],
+    advanced_alert_level: 2,
+    advanced_alert_ways: [1, 2, 3],
 });
+// 请输入，格式如：ds=${run_date}
+const ff = `${$t('common.format')} + $ + {run_date}`;
+const getWayLabel = ways => ways.map(way => wayList.find(item => item.value === way)?.label || '').join(', ');
 const alarmFormRef = ref(null);
 const mode = ref('display');
-const alarmFormRulesArr = ['info_receiver', 'alert_table', 'alert_col', 'major_alert_col'].map(item => ({
+const alarmFormRulesArr = ['default_receiver', 'alert_table', 'alert_col', 'advanced_alert_col'].map(item => ({
     [item]: {
         trigger: ['change', 'blur'],
         required: true,
@@ -172,7 +226,7 @@ alarmFormRulesArr.push({
                 if (/^[\u4e00-\u9fa5a-zA-Z0-9_]{1,100}$/.test(value)) {
                     resolve();
                 } else {
-                    reject('最大长度为100，且只支持且只支持中文，英文，数字，下划线');
+                    reject($t('_.最大长度为100，且只支持且只支持中文，英文，数字，下划线'));
                 }
             } else {
                 reject($t('common.notEmpty'));
@@ -186,10 +240,28 @@ alarmFormRulesArr.push({
         trigger: ['change', 'blur'],
         validator: (rule, value) => new Promise((resolve, reject) => {
             if (/[\u4E00-\u9FA5]/g.test(value)) {
-                reject('不允许输入中文');
+                reject($t('_.不允许输入中文'));
             }
             resolve();
         }),
+    },
+
+});
+alarmFormRulesArr.push({
+    default_alert_ways: {
+        trigger: ['change', 'blur'],
+        required: true,
+        type: 'array',
+        message: $t('common.notEmpty'),
+    },
+
+});
+alarmFormRulesArr.push({
+    default_alert_level: {
+        trigger: ['change', 'blur'],
+        required: true,
+        type: 'number',
+        message: $t('common.notEmpty'),
     },
 
 });
@@ -236,10 +308,11 @@ const save = async () => {
             // edit
             action = 'edit';
             const res = await request('/api/v1/projector/checkAlert/modify', body);
+            if (!res.advanced_alert_ways) res.advanced_alert_ways = [];
             alarm.value = res;
             // eslint-disable-next-line no-use-before-define
             copyDetail.value = cloneDeep(res);
-            FMessage.success('编辑节点成功');
+            FMessage.success($t('_.编辑节点成功'));
             // eslint-disable-next-line no-use-before-define
             checkAlertId.value = res.id;
         } else {
@@ -262,12 +335,13 @@ const save = async () => {
                 }
                 await router.replace(`/checkAlert?${paramsRules.join('&')}`);
             }
+            if (!res.advanced_alert_ways) res.advanced_alert_ways = [];
             alarm.value = res;
             // eslint-disable-next-line no-use-before-define
             copyDetail.value = cloneDeep(res);
             // eslint-disable-next-line no-use-before-define
             checkAlertId.value = res.id;
-            FMessage.success('新建节点成功');
+            FMessage.success($t('_.新建节点成功'));
         }
         mode.value = 'display';
         showPreview.value = false;
@@ -277,10 +351,10 @@ const save = async () => {
 };
 const cancel = () => {
     FModal.confirm({
-        title: '提示',
-        content: '您处于编辑状态，离开后数据将不会被保存',
-        okText: '确认离开',
-        cancelText: '取消',
+        title: $t('_.提示'),
+        content: $t('_.您处于编辑状态，离开后数据将不会被保存'),
+        okText: $t('_.确认离开'),
+        cancelText: $t('_.取消'),
         onOk() {
             // eslint-disable-next-line no-use-before-define
             alarm.value = cloneDeep(copyDetail.value);
@@ -296,10 +370,10 @@ const edit = () => {
 const ruleExist = ref(true);
 const del = () => {
     FModal.confirm({
-        title: '提示',
-        content: '确认删除当前批量告警规则配置',
-        okText: '删除',
-        cancelText: '取消',
+        title: $t('_.提示'),
+        content: $t('_.确认删除当前批量告警规则配置'),
+        okText: $t('_.删除'),
+        cancelText: $t('_.取消'),
         async onOk() {
             try {
                 await request(`/api/v1/projector/checkAlert/delete/${checkAlertId.value}`, {});
@@ -320,17 +394,17 @@ onMounted(async () => {
             const firRes = await request(`/api/v1/projector/rule/group/${ruleGroupId.value}`, {}, 'get');
             checkAlertId.value = firRes.check_alert_id_list[0];
             const secRes = await request(`/api/v1/projector/checkAlert/get/${checkAlertId.value}`, {}, 'get');
+            if (!secRes.advanced_alert_ways) secRes.advanced_alert_ways = [];
             alarm.value = secRes;
             copyDetail.value = cloneDeep(secRes);
         } else {
             mode.value = 'edit';
         }
-        console.log(query.value, 'query');
-        console.log(alarm.value, 'alert');
     } catch (err) {
         console.warn(err);
     }
 });
+
 </script>
 <config>
 {

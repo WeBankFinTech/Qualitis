@@ -55,6 +55,10 @@ const props = defineProps({
         required: false,
         default: null,
     },
+    mode: {
+        type: String,
+        default: 'condition',
+    },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -82,10 +86,18 @@ const updateActiveNavBar = async (navBar) => {
         }
         // 这个地方只是重写url，并不会重新加载
         // 切换tab的时候page和pageSize都要重制
+        const condition = props.mode === 'condition'
+            ? {
+                page: 1,
+                pageSize: 10,
+                id: navBar?.rule_id ? navBar.rule_id : route.query?.id || '',
+            }
+            : {};
         router.replace(`${route.path}?${getURLQueryParams({
             query: route.query,
             params: {
-                tab: navBar.value, page: 1, pageSize: 10, id: navBar?.rule_id ? navBar.rule_id : route.query?.id || '',
+                tab: navBar.value,
+                ...condition,
             },
         })}`);
         // 下面通知更新一定要在url完成替换之后，否则会有时序问题

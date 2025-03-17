@@ -17,11 +17,15 @@
 package com.webank.wedatasphere.qualitis.checkalert.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Splitter;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author allenzhou
@@ -38,10 +42,10 @@ public class CheckAlertRequest {
 
     private String topic;
 
-    @JsonProperty("info_receiver")
-    private String infoReceiver;
-    @JsonProperty("major_receiver")
-    private String majorReceiver;
+    @JsonProperty("default_receiver")
+    private String defaultReceiver;
+    @JsonProperty("advanced_receiver")
+    private String advancedReceiver;
 
     @JsonProperty("alert_table")
     private String alertTable;
@@ -50,8 +54,8 @@ public class CheckAlertRequest {
 
     @JsonProperty("alert_col")
     private String alertCol;
-    @JsonProperty("major_alert_col")
-    private String majorAlertCol;
+    @JsonProperty("advanced_alert_col")
+    private String advancedAlertCol;
 
     @JsonProperty("content_cols")
     private String contentCols;
@@ -65,6 +69,15 @@ public class CheckAlertRequest {
 
     @JsonProperty("work_flow_space")
     private String workFlowSpace;
+
+    @JsonProperty("default_alert_level")
+    private Integer defaultAlertLevel;
+    @JsonProperty("default_alert_ways")
+    private List<Integer> defaultAlertWays;
+    @JsonProperty("advanced_alert_level")
+    private Integer advancedAlertLevel;
+    @JsonProperty("advanced_alert_ways")
+    private List<Integer> advancedAlertWays;
 
     public CheckAlertRequest() {
         // Default Constructor
@@ -110,22 +123,6 @@ public class CheckAlertRequest {
         this.topic = topic;
     }
 
-    public String getInfoReceiver() {
-        return infoReceiver;
-    }
-
-    public void setInfoReceiver(String infoReceiver) {
-        this.infoReceiver = infoReceiver;
-    }
-
-    public String getMajorReceiver() {
-        return majorReceiver;
-    }
-
-    public void setMajorReceiver(String majorReceiver) {
-        this.majorReceiver = majorReceiver;
-    }
-
     public String getAlertTable() {
         return alertTable;
     }
@@ -150,12 +147,60 @@ public class CheckAlertRequest {
         this.alertCol = alertCol;
     }
 
-    public String getMajorAlertCol() {
-        return majorAlertCol;
+    public String getDefaultReceiver() {
+        return defaultReceiver;
     }
 
-    public void setMajorAlertCol(String majorAlertCol) {
-        this.majorAlertCol = majorAlertCol;
+    public void setDefaultReceiver(String defaultReceiver) {
+        this.defaultReceiver = defaultReceiver;
+    }
+
+    public String getAdvancedReceiver() {
+        return advancedReceiver;
+    }
+
+    public void setAdvancedReceiver(String advancedReceiver) {
+        this.advancedReceiver = advancedReceiver;
+    }
+
+    public String getAdvancedAlertCol() {
+        return advancedAlertCol;
+    }
+
+    public void setAdvancedAlertCol(String advancedAlertCol) {
+        this.advancedAlertCol = advancedAlertCol;
+    }
+
+    public Integer getDefaultAlertLevel() {
+        return defaultAlertLevel;
+    }
+
+    public void setDefaultAlertLevel(Integer defaultAlertLevel) {
+        this.defaultAlertLevel = defaultAlertLevel;
+    }
+
+    public List<Integer> getDefaultAlertWays() {
+        return defaultAlertWays;
+    }
+
+    public void setDefaultAlertWays(List<Integer> defaultAlertWays) {
+        this.defaultAlertWays = defaultAlertWays;
+    }
+
+    public List<Integer> getAdvancedAlertWays() {
+        return advancedAlertWays;
+    }
+
+    public void setAdvancedAlertWays(List<Integer> advancedAlertWays) {
+        this.advancedAlertWays = advancedAlertWays;
+    }
+
+    public Integer getAdvancedAlertLevel() {
+        return advancedAlertLevel;
+    }
+
+    public void setAdvancedAlertLevel(Integer advancedAlertLevel) {
+        this.advancedAlertLevel = advancedAlertLevel;
     }
 
     public String getContentCols() {
@@ -207,7 +252,9 @@ public class CheckAlertRequest {
         CommonChecker.checkString(request.getTopic(),"Alert topic");
         CommonChecker.checkString(request.getAlertCol(),"Alert column");
         CommonChecker.checkString(request.getAlertTable(),"Alert table");
-        CommonChecker.checkString(request.getInfoReceiver(),"Alert info receiver");
+        CommonChecker.checkString(request.getDefaultReceiver(),"Alert default receiver");
+        CommonChecker.checkObject(request.getDefaultAlertLevel(),"Alert default alert level");
+        CommonChecker.checkListMinSize(request.getDefaultAlertWays(), 1,"Alert default alert ways");
         CommonChecker.checkString(request.getTopic(),"Alert topic");
 
         CommonChecker.checkString(request.getNodeName(),"Node name");
@@ -223,6 +270,32 @@ public class CheckAlertRequest {
                 throw new UnExpectedRequestException("Content cols is oversize.");
             }
         }
+
+        checkAlertReceivers(request.getDefaultReceiver());
+        checkAlertReceivers(request.getAdvancedReceiver());
+    }
+
+    private static void checkAlertReceivers (String alertReceiver) throws UnExpectedRequestException {
+        if (StringUtils.isBlank(alertReceiver)) {
+            return;
+        }
+        Iterable<String> defaultReceiverIterable = Splitter.on(SpecCharEnum.COMMA.getValue()).omitEmptyStrings().trimResults().split(alertReceiver);
+        List<Integer> erpGroupIds = new ArrayList<>();
+        List<String> defaultReceivers = new ArrayList<>();
+        defaultReceiverIterable.forEach(item -> {
+            if (item.matches(QualitisConstants.NUMBER_REGEX)) {
+                try {
+                    erpGroupIds.add(Integer.valueOf(item));
+                } catch (NumberFormatException e) {
+//                    doing nothing
+                }
+            } else {
+                defaultReceivers.add(item);
+            }
+        });
+        if (defaultReceivers.size() > 13 || erpGroupIds.size() > 1) {
+            throw new UnExpectedRequestException("告警接收人最多接收13个告警人和1个企业微信群号");
+        }
     }
 
     @Override
@@ -233,12 +306,12 @@ public class CheckAlertRequest {
             ", ruleGroupId=" + ruleGroupId +
             ", id=" + id +
             ", topic='" + topic + '\'' +
-            ", infoReceiver='" + infoReceiver + '\'' +
-            ", majorReceiver='" + majorReceiver + '\'' +
+            ", defaultReceiver='" + defaultReceiver + '\'' +
+            ", advancedReceiver='" + advancedReceiver + '\'' +
             ", alertTable='" + alertTable + '\'' +
             ", filter='" + filter + '\'' +
             ", alertCol='" + alertCol + '\'' +
-            ", majorAlertCol='" + majorAlertCol + '\'' +
+            ", majorAlertCol='" + advancedAlertCol + '\'' +
             ", contentCols='" + contentCols + '\'' +
             ", nodeName='" + nodeName + '\'' +
             ", workFlowName='" + workFlowName + '\'' +

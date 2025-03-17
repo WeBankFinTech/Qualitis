@@ -74,7 +74,7 @@ public interface ExecutionManager {
      * @throws UnExpectedRequestException
      * @throws ClusterInfoNotConfigException
      */
-    GeneralResponse<Integer> killApplication(Application applicationInDb, String user) throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException;
+    GeneralResponse<Object> killApplication(Application applicationInDb, String user) throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException;
 
     /**
      * File rule job.

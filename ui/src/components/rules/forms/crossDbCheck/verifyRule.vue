@@ -1,6 +1,6 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: ruleData.currentProject.editMode !== 'display' }">
-        <h6 class="wd-body-title">校验规则</h6>
+        <h6 class="wd-body-title">{{$t('_.校验规则')}}</h6>
         <!-- {{ verifyRuleData }} -->
         <BasicInfo ref="basicInfoRef" v-model:basicInfo="verifyRuleData" />
         <FForm
@@ -12,12 +12,12 @@
             :labelWidth="96"
             :labelPosition="ruleData.currentProject.editMode !== 'display' ? 'right' : 'left'"
         >
-            <FFormItem label="比对方向" prop="contrast_type">
+            <FFormItem :label="$t('_.比对方向')" prop="contrast_type">
                 <FSelect
                     v-model="verifyRuleData.contrast_type"
                     class="form-edit-input"
                     filterable
-                    placeholder="请选择比对方向"
+                    :placeholder="$t('_.请选择比对方向')"
                     :options="compareDirectionList"
                 ></FSelect>
                 <div
@@ -26,13 +26,13 @@
                     {{getLabelByValue(compareDirectionList, verifyRuleData.contrast_type)}}
                 </div>
             </FFormItem>
-            <FFormItem label="过滤设置">
+            <FFormItem :label="$t('_.过滤设置')">
                 <FilterSetting
                     ref="filterSettingRef"
                     v-model:filterSettingList="verifyRuleData.filterSettingList"
                 ></FilterSetting>
             </FFormItem>
-            <FFormItem label="执行参数" prop="execution_parameters_name">
+            <FFormItem :label="$t('_.执行参数')" prop="execution_parameters_name">
                 <FInput
                     v-model="verifyRuleData.execution_parameters_name"
                     class="form-edit-input excution-parameters-name-input"
@@ -69,7 +69,9 @@ import {
     ref, computed, onMounted, provide, watch, unref,
 } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n, request as FRequest } from '@fesjs/fes';
+import {
+    useI18n, request as FRequest, useRoute, useRouter,
+} from '@fesjs/fes';
 import BasicInfo from '@/components/rules/BasicInfo';
 import ProjectTemplate from '@/pages/projects/template';
 import { getLabelByValue } from '@/common/utils';
@@ -179,6 +181,22 @@ onMounted(async () => {
 
 // 初始化数据
 useListener('IS_RULE_DETAIL_DATA_LOADED', init);
+const route = useRoute();
+const router = useRouter();
+// 切换复制模式，规则名称改成xxx_副本
+useListener('COPY_MODE', () => {
+    verifyRuleData.value.rule_name = `${verifyRuleData.value.rule_name}_copy`;
+    if (verifyRuleData.value.cn_name) verifyRuleData.value.cn_name = `${verifyRuleData.value.cn_name}_副本`;
+    // const tempQuery = { ...route.query };
+    // delete tempQuery.id;
+    // const queryString = Object.keys(tempQuery)
+    //     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(tempQuery[key])}`)
+    //     .join('&');
+
+    // // 构建新的 URL
+    // const newUrl = `${route.path}?${queryString}`;
+    // router.replace(newUrl);
+});
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
 </script>

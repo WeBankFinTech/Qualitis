@@ -4,6 +4,8 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleLockRangeEnum;
 import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
 
+import java.time.Duration;
+
 /**
  * @author v_minminghe@webank.com
  * @date 2022-12-19 8:55

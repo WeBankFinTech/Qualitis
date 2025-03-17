@@ -1,52 +1,52 @@
 <template>
     <div class="query-container">
         <div class="query-item">
-            <span class="query-label">{{$t('common.queryCondition')}}</span>
-            <FSelect v-model="queryCondition.value" :placeholder="$t('common.pleaseSelect')" :width="160" filterable clearable valueField="value" labelField="label" :options="queryConditionsList" @change="resetAdvanceSearch">
+            <span class="query-label">{{$t('_.查询条件')}}</span>
+            <FSelect v-model="queryCondition.value" :width="160" filterable clearable valueField="value" labelField="label" :options="queryConditionsList" @change="resetAdvanceSearch">
             </FSelect>
         </div>
         <div v-show="queryCondition.value === 'project'" class="query-item">
-            <span class="query-label">{{$t('common.project')}}</span>
-            <FSelect v-model="queryData.projectName" :placeholder="$t('common.pleaseSelect')" :options="projectsList" filterable clearable @change="resetAdvanceSearch"></FSelect>
+            <span class="query-label">{{$t('_.项目')}}</span>
+            <FSelect v-model="queryData.projectName" :options="projectsList" filterable clearable @change="resetAdvanceSearch"></FSelect>
         </div>
         <div v-show="queryCondition.value === 'dataSource'" class="query-item">
-            <span class="query-label">{{$t('common.cluster')}}</span>
-            <FSelect v-model="queryData.dataSource" :placeholder="$t('common.pleaseSelect')" clearable class="query-value" filterable valueField="cluster_name" labelField="cluster_name" :options="dataSourceList" @change="changeOutsideDataSource">
+            <span class="query-label">{{$t('_.集群')}}</span>
+            <FSelect v-model="queryData.dataSource" clearable class="query-value" filterable valueField="cluster_name" labelField="cluster_name" :options="dataSourceList" @change="changeOutsideDataSource">
             </FSelect>
         </div>
         <div v-show="queryCondition.value === 'dataSource'" class="query-item">
-            <span class="query-label">{{$t('common.databaseList')}}</span>
-            <FSelect v-model="queryData.dataBase" :placeholder="$t('common.pleaseSelect')" clearable class="query-value" filterable valueField="database_name" labelField="database_name" :options="dataBaseList" @change="changeOutsideDataBase">
+            <span class="query-label">{{$t('_.数据库')}}</span>
+            <FSelect v-model="queryData.dataBase" clearable class="query-value" filterable valueField="database_name" labelField="database_name" :options="dataBaseList" @change="changeOutsideDataBase">
             </FSelect>
         </div>
         <div v-show="queryCondition.value === 'dataSource'" class="query-item">
-            <span class="query-label">{{$t('common.tableLibst')}}</span>
-            <FSelect v-model="queryData.dataTable" :placeholder="$t('common.pleaseSelect')" clearable class="query-value" filterable valueField="table_name" labelField="table_name" :options="dataTableList" @change="resetAdvanceSearch">
+            <span class="query-label">{{$t('_.数据表')}}</span>
+            <FSelect v-model="queryData.dataTable" clearable class="query-value" filterable valueField="table_name" labelField="table_name" :options="dataTableList" @change="resetAdvanceSearch">
             </FSelect>
         </div>
         <div v-show="queryCondition.value === 'taskStatus'" class="query-item">
-            <span class="query-label">{{$t('taskQuery.status')}}</span>
-            <FSelect v-model="queryData.taskStatus" :placeholder="$t('common.pleaseSelect')" filterable valueField="value" labelField="label" :options="taskStatusList" @change="resetAdvanceSearch">
+            <span class="query-label">{{$t('_.任务状态')}}</span>
+            <FSelect v-model="queryData.taskStatus" filterable valueField="value" labelField="label" :options="taskStatusList" @change="resetAdvanceSearch">
             </FSelect>
         </div>
         <div v-show="queryCondition.value === 'taskNumber'" class="query-item">
-            <span class="query-label">{{$t('common.number')}}</span>
+            <span class="query-label">{{$t('_.任务编号')}}</span>
             <FInput
                 ref="taskNumberRef"
                 v-model="queryData.taskNumber"
-                :placeholder="$t('common.pleaseInput')"
+                :placeholder="$t('_.请输入任务编号')"
                 class="query-input"
                 @change="resetAdvanceSearch"
             />
         </div>
         <div v-show="queryCondition.value === 'exceptionRemarks'" class="query-item">
-            <span class="query-label">{{$t('taskQuery.exceptionRemark')}}</span>
-            <FSelect v-model="queryData.exceptionRemarks" :placeholder="$t('common.pleaseSelect')" filterable valueField="value" labelField="label" :options="exceptionRemarksList" @change="resetAdvanceSearch">
+            <span class="query-label">{{$t('_.异常备注')}}</span>
+            <FSelect v-model="queryData.exceptionRemarks" filterable valueField="value" labelField="label" :options="exceptionRemarksList" @change="resetAdvanceSearch">
             </FSelect>
         </div>
-        <FButton type="primary" class="operation-item white" @click="search">{{$t('common.query')}}</FButton>
-        <FButton :class="advanceQuerySelectedCount > 0 ? 'operation-item selected-count' : 'operation-item'" @click="clickAdvanceQuery">{{$t('common.advanceSearch')}}{{advanceQuerySelectedCount > 0 ? `（${$t('common.hasSelect', { count: advanceQuerySelectedCount })}）` : ''}}</FButton>
-        <FButton class="operation-item" @click="reset">{{$t('common.reset')}}</FButton>
+        <FButton type="primary" class="operation-item white" @click="search">{{$t('_.查询')}}</FButton>
+        <FButton :class="advanceQuerySelectedCount > 0 ? 'operation-item selected-count' : 'operation-item'" @click="clickAdvanceQuery">{{$t('_.高级筛选')}}{{advanceQuerySelectedCount > 0 ? `（已选${advanceQuerySelectedCount}项）` : ''}}</FButton>
+        <FButton class="operation-item" @click="reset">{{$t('_.重置')}}</FButton>
 
         <!-- 高级筛选弹框 -->
         <FModal
@@ -70,16 +70,16 @@
                     <FInput v-model="advanceQueryData.taskNumber" clearable :placeholder="$t('common.pleaseEnter')" @change="resetCommonSearch" />
                 </FFormItem>
                 <FFormItem :label="$t('common.projectName')" prop="projectName">
-                    <FSelect v-model="advanceQueryData.projectName"
-                             :placeholder="$t('common.pleaseSelect')"
-                             :options="projectsList"
-                             filterable
-                             clearable
-                             @change="getRuleGroupList"
+                    <FSelect
+                        v-model="advanceQueryData.projectName"
+                        :options="projectsList"
+                        filterable
+                        clearable
+                        @change="getRuleGroupList"
                     ></FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('taskQuery.status')" prop="taskStatus">
-                    <FSelect v-model="advanceQueryData.taskStatus" :placeholder="$t('common.pleaseSelect')" clearable filterable valueField="value" labelField="label" :options="taskStatusList" @change="resetCommonSearch">
+                    <FSelect v-model="advanceQueryData.taskStatus" clearable filterable valueField="value" labelField="label" :options="taskStatusList" @change="resetCommonSearch">
                     </FSelect>
                 </FFormItem>
                 <FFormItem
@@ -87,64 +87,64 @@
                     prop="comment_type"
                     :label="$t('taskQuery.exceptionRemark')"
                 >
-                    <FSelect v-model="advanceQueryData.comment_type"
-                             :placeholder="$t('common.pleaseSelect')"
-                             clearable
-                             filterable
-                             valueField="value"
-                             labelField="label"
-                             :options="remarkListForAdvanceQuery"
-                             @change="resetCommonSearch"
+                    <FSelect
+                        v-model="advanceQueryData.comment_type"
+                        clearable
+                        filterable
+                        valueField="value"
+                        labelField="label"
+                        :options="remarkListForAdvanceQuery"
+                        @change="resetCommonSearch"
                     >
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('taskQuery.groupRuleName')" props="rule_group_id">
-                    <FSelect v-model="advanceQueryData.rule_group_id"
-                             :placeholder="$t('common.pleaseSelect')"
-                             filterable
-                             clearable
-                             valueField="rule_group_id"
-                             labelField="rule_group_name"
-                             :options="ruleGroupList"
-                             @change="resetCommonSearch"
+                    <FSelect
+                        v-model="advanceQueryData.rule_group_id"
+                        filterable
+                        clearable
+                        valueField="rule_group_id"
+                        labelField="rule_group_name"
+                        :options="ruleGroupList"
+                        @change="resetCommonSearch"
                     >
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('common.cluster')" props="cluster_name">
-                    <FSelect v-model="advanceQueryData.dataSource"
-                             :placeholder="$t('common.pleaseSelect')"
-                             filterable
-                             clearable
-                             valueField="cluster_name"
-                             labelField="cluster_name"
-                             :options="dataSourceList"
-                             @change="changeAdvanceQueryDataSource"
+                    <FSelect
+                        v-model="advanceQueryData.dataSource"
+                        filterable
+                        clearable
+                        valueField="cluster_name"
+                        labelField="cluster_name"
+                        :options="dataSourceList"
+                        @change="changeAdvanceQueryDataSource"
                     >
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('common.databaseList')" props="database_name">
-                    <FSelect v-model="advanceQueryData.dataBase"
-                             :placeholder="$t('common.pleaseSelect')"
-                             clearable
-                             filterable
-                             valueField="database_name"
-                             labelField="database_name"
-                             :options="advanceQueryDataBaseList"
-                             @change="changeAdvanceQueryDataBase"
+                    <FSelect
+                        v-model="advanceQueryData.dataBase"
+                        clearable
+                        filterable
+                        valueField="database_name"
+                        labelField="database_name"
+                        :options="advanceQueryDataBaseList"
+                        @change="changeAdvanceQueryDataBase"
                     >
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('common.tableLibst')" props="table">
-                    <FSelect v-model="advanceQueryData.dataTable" :placeholder="$t('common.pleaseSelect')" clearable filterable valueField="table_name" labelField="table_name" :options="advanceQueryDataTableList" @change="resetCommonSearch">
+                    <FSelect v-model="advanceQueryData.dataTable" clearable filterable valueField="table_name" labelField="table_name" :options="advanceQueryDataTableList" @change="resetCommonSearch">
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('common.runUser')" props="execute_user">
-                    <FSelect v-model="advanceQueryData.execute_user"
-                             :placeholder="$t('common.pleaseSelect')"
-                             clearable
-                             filterable
-                             :options="executeUserList"
-                             @change="resetCommonSearch"
+                    <FSelect
+                        v-model="advanceQueryData.execute_user"
+                        clearable
+                        filterable
+                        :options="executeUserList"
+                        @change="resetCommonSearch"
                     >
                     </FSelect>
                 </FFormItem>
@@ -163,6 +163,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     defineProps, ref, watch, defineExpose, defineEmits,
 } from 'vue';
@@ -285,23 +286,23 @@ const props = defineProps({
 const queryConditionsList = ref([
     {
         value: 'project',
-        label: $t('common.project'),
+        label: $t('_.项目'),
     },
     {
         value: 'dataSource',
-        label: $t('common.dataSource'),
+        label: $t('_.数据源'),
     },
     {
         value: 'taskStatus',
-        label: $t('taskQuery.status'),
+        label: $t('_.任务状态'),
     },
     {
         value: 'taskNumber',
-        label: $t('common.number'),
+        label: $t('_.任务编号'),
     },
     {
         value: 'exceptionRemarks',
-        label: $t('taskQuery.exceptionRemark'),
+        label: $t('_.异常备注'),
     },
 ]);
 
@@ -309,13 +310,13 @@ const advanceQueryForm = ref();
 
 const clickAdvanceSearch = () => {
     advanceQueryForm.value.validate().then((result) => {
-        props.advanceSearch();
+        props.advanceSearch(true);
     }).catch((error) => {
         console.log('表单验证失败: ', error);
     });
 };
-
-const timeRangeOfAdvanceQuery = ref([]);
+const today = new Date();
+const timeRangeOfAdvanceQuery = ref([new Date(today.setHours(0, 0, 0, 0)), new Date(today.setHours(23, 59, 59, 999))]);
 defineExpose({ timeRangeOfAdvanceQuery });
 
 // 高级筛选弹框里的起止时间的watch
@@ -341,6 +342,7 @@ const resetAdvanceSearch = () => {
 const resetCommonSearch = () => {
     emit('resetCommonSearch');
 };
+
 </script>
 <style lang="less" scoped>
 .query-container {

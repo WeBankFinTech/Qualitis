@@ -16,6 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 /**
@@ -25,6 +27,10 @@ public class UserAndRoleResponse {
 
     private List<String> roles;
     private String username;
+    @JsonProperty("login_random")
+    private Integer loginRandom;
+    @JsonProperty("overseas_external_version")
+    private Boolean overseasVersionEnabled;
 
     public UserAndRoleResponse() {
         // Default Constructor
@@ -44,5 +50,21 @@ public class UserAndRoleResponse {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public Integer getLoginRandom() {
+        return loginRandom;
+    }
+
+    public void setLoginRandom(Integer loginRandom) {
+        this.loginRandom = loginRandom;
+    }
+
+    public Boolean getOverseasVersionEnabled() {
+        return overseasVersionEnabled;
+    }
+
+    public void setOverseasVersionEnabled(Boolean overseasVersionEnabled) {
+        this.overseasVersionEnabled = overseasVersionEnabled;
     }
 }

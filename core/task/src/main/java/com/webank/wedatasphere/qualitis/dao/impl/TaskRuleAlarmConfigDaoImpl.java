@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.dao.impl;
 
 import com.webank.wedatasphere.qualitis.dao.TaskRuleAlarmConfigDao;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskRuleAlarmConfigRepository;
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,11 @@ public class TaskRuleAlarmConfigDaoImpl implements TaskRuleAlarmConfigDao {
     @Override
     public TaskRuleAlarmConfig findById(Long taskRuleAlarmConfigId) {
         return taskRuleAlarmConfigRepository.findTaskRuleAlarmConfig(taskRuleAlarmConfigId);
+    }
+
+    @Override
+    public List<TaskRuleAlarmConfig> findByRuleMetric(RuleMetric ruleMetric) {
+        return taskRuleAlarmConfigRepository.findByRuleMetric(ruleMetric);
     }
 
     @Override

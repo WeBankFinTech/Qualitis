@@ -21,7 +21,12 @@ public class LinksErrorCodeDaoImpl implements LinksErrorCodeDao {
 
     @Override
     public List<LinksErrorCode> findAllLinksErrorCode() {
-        return repository.findAll();
+        return repository.findByLinkisErrorCodeIsNotNull();
+    }
+
+    @Override
+    public List<LinksErrorCode> findAllWtssErrorExpression() {
+        return repository.findByWtssErrorExpressionIsNotNull();
     }
 
     @Override

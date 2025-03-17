@@ -217,4 +217,10 @@ public class ApplicationDaoImpl implements ApplicationDao {
         return repository.findByProject(project.getId());
     }
 
+    @Override
+    public Application getCollectTaskStatus(String projectName, String collectId, String filterPartition, String submitDate) {
+
+        return repository.getCollectTaskStatus(projectName, collectId, filterPartition, submitDate);
+    }
+
 }

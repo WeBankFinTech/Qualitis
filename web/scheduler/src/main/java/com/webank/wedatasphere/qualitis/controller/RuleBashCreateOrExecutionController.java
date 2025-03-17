@@ -16,9 +16,12 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
@@ -43,7 +46,6 @@ import com.webank.wedatasphere.qualitis.service.CreateAndExecutionService;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.timer.RuleBashThreadResponse;
 import com.webank.wedatasphere.qualitis.timer.RuleBashUpdaterCallable;
-import com.webank.wedatasphere.qualitis.timer.RuleBashUpdaterThreadFactory;
 import com.webank.wedatasphere.qualitis.util.BashUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.JexlUtil;
@@ -54,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -61,21 +64,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -114,6 +107,9 @@ public class RuleBashCreateOrExecutionController {
     @Autowired
     private ApplicationContext applicationContext;
 
+    @Autowired
+    private AbstractThreadPoolManager threadPoolManager;
+    private ThreadPoolExecutor ruleBaseUpdatePool;
 
     private static final String CMD = "-cmd";
     private static final String RULE_NAME = "--rule-name";
@@ -124,20 +120,17 @@ public class RuleBashCreateOrExecutionController {
     private static final String ERROR_MESSAGE_PREFIX = "> ";
     private static final String NOTE_MESSAGE_PREFIX = "# ";
 
-    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(100,
-            Integer.MAX_VALUE,
-            60,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1000),
-            new RuleBashUpdaterThreadFactory(),
-            new ThreadPoolExecutor.DiscardPolicy());
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleBashCreateOrExecutionController.class);
 
     private HttpServletRequest httpServletRequest;
 
     public RuleBashCreateOrExecutionController(@Context HttpServletRequest httpServletRequest) {
         this.httpServletRequest = httpServletRequest;
+    }
+
+    @PostConstruct
+    public void init() throws ThreadPoolNotFoundException {
+        this.ruleBaseUpdatePool = threadPoolManager.getThreadPool(ThreadPoolConstant.RULE_BASH_UPDATE);
     }
 
     @POST
@@ -246,12 +239,12 @@ public class RuleBashCreateOrExecutionController {
             if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
                 List<String> currentLineList = lines.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize());
 
-                Future<RuleBashThreadResponse> exceptionFuture = POOL.submit(new RuleBashUpdaterCallable(applicationContext.getBean(AddDirector.class), createAndExecutionService, project, ruleGroupInDb
+                Future<RuleBashThreadResponse> exceptionFuture = ruleBaseUpdatePool.submit(new RuleBashUpdaterCallable(applicationContext.getBean(AddDirector.class), createAndExecutionService, project, ruleGroupInDb
                         , ruleDao, currentLineList.stream().filter(lineWithOpt::containsKey).collect(Collectors.toMap(Function.identity(), lineWithOpt::get, (oValue, nValue) -> nValue)), loginUser, workFlowName, workFlowVersion, workFlowSpace, nodeName, latch));
                 execptionFutures.add(exceptionFuture);
             } else {
                 List<String> currentLineList = lines.subList(indexThread, total);
-                Future<RuleBashThreadResponse> exceptionFuture = POOL.submit(new RuleBashUpdaterCallable(applicationContext.getBean(AddDirector.class), createAndExecutionService, project, ruleGroupInDb
+                Future<RuleBashThreadResponse> exceptionFuture = ruleBaseUpdatePool.submit(new RuleBashUpdaterCallable(applicationContext.getBean(AddDirector.class), createAndExecutionService, project, ruleGroupInDb
                         , ruleDao, currentLineList.stream().filter(lineWithOpt::containsKey).collect(Collectors.toMap(Function.identity(), lineWithOpt::get, (oValue, nValue) -> nValue)), loginUser, workFlowName, workFlowVersion, workFlowSpace, nodeName, latch));
                 execptionFutures.add(exceptionFuture);
             }

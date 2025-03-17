@@ -15,7 +15,7 @@
                 <FSelect
                     v-model="difList[index].variable_type"
                     filterable
-                    :placeholder="'变量类型'"
+                    :placeholder="$t('_.变量类型')"
                     :options="variableTypeList"
                     :class="parentType === 'import' ? 'var-type-import' : 'var-type-export'"
                     @change="clearVariable(difList[index], 'variable_type')"
@@ -23,13 +23,13 @@
                 </FSelect>
             </FFormItem>
             <FFormItem prop="name" :class="parentType === 'import' ? 'var-name-form-item' : ''">
-                <FInput v-if="difList[index].variable_type === 2" v-model="difList[index].name" :placeholder="'变量名'"
+                <FInput v-if="[2, 3, 4].includes(difList[index].variable_type)" v-model="difList[index].name" :placeholder="getNamePlaceholder(difList[index].variable_type)"
                         :class="parentType === 'import' ? 'var-name-import' : 'var-name-export'" />
                 <FSelect
                     v-else
                     v-model="difList[index].name"
                     filterable
-                    :placeholder="'变量名'"
+                    :placeholder="$t('_.变量名')"
                     :options="variableNameList"
                     labelField="name"
                     valueField="name"
@@ -39,7 +39,7 @@
                 </FSelect>
             </FFormItem>
             <FFormItem v-if="parentType === 'import'" prop="value" :labelWidth="151" class="var-value-form-item">
-                <FInput v-model="difList[index].value" :placeholder="`变量值`" class="var-value" />
+                <FInput v-model="difList[index].value" :placeholder="getValPlaceholder(difList[index].variable_type)" class="var-value" />
             </FFormItem>
             <FFormItem props="icon" class="minus-icon-formItem">
                 <MinusCircleOutlined :class="parentType === 'import' ? 'var-icon-import' : 'var-icon-export'" @click="deleteVariableConfig(difList[index])" />
@@ -53,10 +53,11 @@
     >
         <template #icon>
             <PlusCircleOutlined />
-        </template>添加
+        </template>{{$t('_.添加')}}
     </FButton>
 </template>
 <script setup>
+
 import {
     computed, ref, inject, defineProps, defineExpose, defineEmits, onMounted, watch, provide,
 } from 'vue';
@@ -97,6 +98,30 @@ const deleteVariableConfig = (data) => {
 const addVariableConfig = () => {
     difList.value.push(getInitVariableConfig());
 };
+const getNamePlaceholder = (type) => {
+    switch (type) {
+        case 2:
+            return $t('_.变量名');
+        case 4:
+            return 'json key path';
+        case 3:
+            return 'old value';
+        default:
+            return '';
+    }
+};
+const getValPlaceholder = (type) => {
+    switch (type) {
+        case 2:
+            return $t('_.变量值');
+        case 4:
+            return 'value';
+        case 3:
+            return 'new value';
+        default:
+            return '';
+    }
+};
 const validateVariableNameRepeat = (rule, value) => {
     let count = 0;
     difList.value.forEach((item) => {
@@ -117,7 +142,7 @@ const difRuleValidate = ref({
         { trigger: ['change', 'blur'], required: true, message: $t('common.notEmpty') },
         {
             validator: validateVariableNameRepeat,
-            message: '变量名称不可重复设置',
+            message: $t('_.变量名称不可重复设置'),
         },
     ],
     value: [
@@ -145,6 +170,7 @@ const getDifData = () => {
     const returnDifList = cloneDeep(difList);
     returnDifList.value.forEach((item) => {
         delete item.timestamp;
+        item.type = item.variable_type;
         delete item.variable_type;
     });
     return returnDifList.value;
@@ -165,6 +191,7 @@ onMounted(() => {
     loadVariableNameList();
 });
 defineExpose({ valid, getDifData, clearData });
+
 </script>
 <style lang="less" scoped>
 .var-type-import {

@@ -17,12 +17,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author howeye
  */
-public class ExcelTemplate extends BaseRowModel {
+public class ExcelTemplate {
 
     @ExcelProperty(value = "Rule Template Json Object", index = 0)
     private String templateJsonObject;

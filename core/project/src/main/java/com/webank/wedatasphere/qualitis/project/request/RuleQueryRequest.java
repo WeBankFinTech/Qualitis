@@ -247,6 +247,7 @@ public class RuleQueryRequest {
     this.table = StringUtils.trimToNull(this.table);
     this.tagCode = StringUtils.trimToNull(this.tagCode);
     this.envName = StringUtils.trimToNull(this.envName);
+    this.subSystemId = StringUtils.trimToNull(this.subSystemId);
     if (StringUtils.isEmpty(this.departmentName)) {
       this.departmentName = null;
     } else {

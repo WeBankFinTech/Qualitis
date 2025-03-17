@@ -50,6 +50,12 @@ public class CheckAlertWhiteList {
         // Default do nothing.
     }
 
+    public CheckAlertWhiteList(String item, Integer type) {
+        this.item = item;
+        this.type = type;
+        this.authorizedUser = "";
+    }
+
     public Long getId() {
         return id;
     }

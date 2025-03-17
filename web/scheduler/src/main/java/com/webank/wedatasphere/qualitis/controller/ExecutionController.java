@@ -126,7 +126,7 @@ public class ExecutionController {
     @GET
     @Path("application/kill/{applicationId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse killApplication(@PathParam("applicationId") String applicationId)
+    public GeneralResponse<Object> killApplication(@PathParam("applicationId") String applicationId)
             throws UnExpectedRequestException {
         try {
             return executionService.killApplication(applicationId);

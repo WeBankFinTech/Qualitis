@@ -1,5 +1,5 @@
 import { ref, onMounted } from 'vue';
-import { fetchDepartments, fetchDepartmentsDivisionsByCode } from '@/pages/metricManagement/api';
+import { fetchDepartments, fetchDepartmentsDivisionsByCode } from '@/pages/metricManagement/dqmetricManagement/api';
 
 export default function useDivisions(rulesTemplate) {
     const divisions = ref([]);

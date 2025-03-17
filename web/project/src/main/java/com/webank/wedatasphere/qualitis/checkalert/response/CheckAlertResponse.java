@@ -17,13 +17,24 @@
 package com.webank.wedatasphere.qualitis.checkalert.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author allenzhou
  */
-public class CheckAlertResponse {
+public class CheckAlertResponse implements Serializable {
     @JsonProperty("project_id")
     private Long projectId;
     @JsonProperty("project_name")
@@ -35,10 +46,10 @@ public class CheckAlertResponse {
 
     private String topic;
 
-    @JsonProperty("info_receiver")
-    private String infoReceiver;
-    @JsonProperty("major_receiver")
-    private String majorReceiver;
+    @JsonProperty("default_receiver")
+    private String defaultReceiver;
+    @JsonProperty("advanced_receiver")
+    private String advancedReceiver;
 
     @JsonProperty("alert_table")
     private String alertTable;
@@ -47,8 +58,8 @@ public class CheckAlertResponse {
 
     @JsonProperty("alert_col")
     private String alertCol;
-    @JsonProperty("major_alert_col")
-    private String majorAlertCol;
+    @JsonProperty("advanced_alert_col")
+    private String advancedAlertCol;
 
     @JsonProperty("content_cols")
     private String contentCols;
@@ -72,6 +83,14 @@ public class CheckAlertResponse {
     private String modifyTime;
     @JsonProperty("modify_user")
     private String modifyUser;
+    @JsonProperty("default_alert_level")
+    private Integer defaultAlertLevel;
+    @JsonProperty("default_alert_ways")
+    private List<Integer> defaultAlertWays;
+    @JsonProperty("advanced_alert_level")
+    private Integer advancedAlertLevel;
+    @JsonProperty("advanced_alert_ways")
+    private List<Integer> advancedAlertWays;
 
     public CheckAlertResponse() {
         // Default Constructor
@@ -82,6 +101,18 @@ public class CheckAlertResponse {
         this.projectId = checkAlert.getProject().getId();
         this.ruleGroupId = checkAlert.getRuleGroup().getId();
         this.workFlowProject = checkAlert.getProject().getName();
+        if (StringUtils.isNotEmpty(checkAlert.getAdvancedAlertWays())) {
+            Iterable<String> stringIterable = Splitter.on(SpecCharEnum.COMMA.getValue()).omitEmptyStrings().trimResults().split(checkAlert.getAdvancedAlertWays());
+            this.advancedAlertWays = StreamSupport.stream(stringIterable.spliterator(), false).map(Integer::valueOf).sorted().collect(Collectors.toList());
+        } else {
+            this.advancedAlertWays = Collections.emptyList();
+        }
+        if (StringUtils.isNotEmpty(checkAlert.getDefaultAlertWays())) {
+            Iterable<String> stringIterable = Splitter.on(SpecCharEnum.COMMA.getValue()).omitEmptyStrings().trimResults().split(checkAlert.getDefaultAlertWays());
+            this.defaultAlertWays = StreamSupport.stream(stringIterable.spliterator(), false).map(Integer::valueOf).sorted().collect(Collectors.toList());
+        } else {
+            this.defaultAlertWays = Collections.emptyList();
+        }
     }
 
     public Long getProjectId() {
@@ -124,22 +155,6 @@ public class CheckAlertResponse {
         this.topic = topic;
     }
 
-    public String getInfoReceiver() {
-        return infoReceiver;
-    }
-
-    public void setInfoReceiver(String infoReceiver) {
-        this.infoReceiver = infoReceiver;
-    }
-
-    public String getMajorReceiver() {
-        return majorReceiver;
-    }
-
-    public void setMajorReceiver(String majorReceiver) {
-        this.majorReceiver = majorReceiver;
-    }
-
     public String getAlertTable() {
         return alertTable;
     }
@@ -162,14 +177,6 @@ public class CheckAlertResponse {
 
     public void setAlertCol(String alertCol) {
         this.alertCol = alertCol;
-    }
-
-    public String getMajorAlertCol() {
-        return majorAlertCol;
-    }
-
-    public void setMajorAlertCol(String majorAlertCol) {
-        this.majorAlertCol = majorAlertCol;
     }
 
     public String getContentCols() {
@@ -252,6 +259,62 @@ public class CheckAlertResponse {
         this.modifyUser = modifyUser;
     }
 
+    public String getDefaultReceiver() {
+        return defaultReceiver;
+    }
+
+    public void setDefaultReceiver(String defaultReceiver) {
+        this.defaultReceiver = defaultReceiver;
+    }
+
+    public String getAdvancedReceiver() {
+        return advancedReceiver;
+    }
+
+    public void setAdvancedReceiver(String advancedReceiver) {
+        this.advancedReceiver = advancedReceiver;
+    }
+
+    public String getAdvancedAlertCol() {
+        return advancedAlertCol;
+    }
+
+    public void setAdvancedAlertCol(String advancedAlertCol) {
+        this.advancedAlertCol = advancedAlertCol;
+    }
+
+    public Integer getDefaultAlertLevel() {
+        return defaultAlertLevel;
+    }
+
+    public void setDefaultAlertLevel(Integer defaultAlertLevel) {
+        this.defaultAlertLevel = defaultAlertLevel;
+    }
+
+    public List<Integer> getDefaultAlertWays() {
+        return defaultAlertWays;
+    }
+
+    public void setDefaultAlertWays(List<Integer> defaultAlertWays) {
+        this.defaultAlertWays = defaultAlertWays;
+    }
+
+    public Integer getAdvancedAlertLevel() {
+        return advancedAlertLevel;
+    }
+
+    public void setAdvancedAlertLevel(Integer advancedAlertLevel) {
+        this.advancedAlertLevel = advancedAlertLevel;
+    }
+
+    public List<Integer> getAdvancedAlertWays() {
+        return advancedAlertWays;
+    }
+
+    public void setAdvancedAlertWays(List<Integer> advancedAlertWays) {
+        this.advancedAlertWays = advancedAlertWays;
+    }
+
     @Override
     public String toString() {
         return "CheckAlertResponse{" +
@@ -260,16 +323,26 @@ public class CheckAlertResponse {
                 ", ruleGroupId=" + ruleGroupId +
                 ", id=" + id +
                 ", topic='" + topic + '\'' +
-                ", infoReceiver='" + infoReceiver + '\'' +
-                ", majorReceiver='" + majorReceiver + '\'' +
+                ", defaultReceiver='" + defaultReceiver + '\'' +
+                ", advancedReceiver='" + advancedReceiver + '\'' +
                 ", alertTable='" + alertTable + '\'' +
                 ", filter='" + filter + '\'' +
                 ", alertCol='" + alertCol + '\'' +
-                ", majorAlertCol='" + majorAlertCol + '\'' +
+                ", advancedAlertCol='" + advancedAlertCol + '\'' +
                 ", contentCols='" + contentCols + '\'' +
                 ", nodeName='" + nodeName + '\'' +
                 ", workFlowName='" + workFlowName + '\'' +
                 ", workFlowVersion='" + workFlowVersion + '\'' +
+                ", workFlowSpace='" + workFlowSpace + '\'' +
+                ", workFlowProject='" + workFlowProject + '\'' +
+                ", createTime='" + createTime + '\'' +
+                ", createUser='" + createUser + '\'' +
+                ", modifyTime='" + modifyTime + '\'' +
+                ", modifyUser='" + modifyUser + '\'' +
+                ", defaultAlertLevel=" + defaultAlertLevel +
+                ", defaultAlertWays=" + defaultAlertWays +
+                ", advancedAlertLevel=" + advancedAlertLevel +
+                ", advancedAlertWays=" + advancedAlertWays +
                 '}';
     }
 }

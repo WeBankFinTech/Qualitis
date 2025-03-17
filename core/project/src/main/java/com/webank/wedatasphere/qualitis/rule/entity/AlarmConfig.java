@@ -19,9 +19,11 @@ package com.webank.wedatasphere.qualitis.rule.entity;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+
 import javax.persistence.*;
 import java.util.Objects;
-import org.codehaus.jackson.annotate.JsonIgnore;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author howeye
@@ -169,8 +171,12 @@ public class AlarmConfig {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {return true;}
-        if (o == null || getClass() != o.getClass()) {return false;}
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         AlarmConfig that = (AlarmConfig) o;
         return Objects.equals(id, that.id);
     }
@@ -183,14 +189,17 @@ public class AlarmConfig {
     @Override
     public String toString() {
         return "AlarmConfig{" +
-            "id=" + id +
-            ", rule=" + rule +
-            ", templateOutputMeta=" + templateOutputMeta +
-            ", fileOutputName=" + fileOutputName +
-            ", fileOutputUnit=" + fileOutputUnit +
-            ", checkTemplate=" + checkTemplate +
-            ", threshold=" + threshold +
-            ", compareType=" + compareType +
-            '}';
+                "rule=" + (Objects.nonNull(rule) ? rule.getId() : "") +
+                ", templateOutputMeta=" + (Objects.nonNull(templateOutputMeta) ? templateOutputMeta.getId() : "") +
+                ", fileOutputName=" + fileOutputName +
+                ", fileOutputUnit=" + fileOutputUnit +
+                ", checkTemplate=" + checkTemplate +
+                ", threshold=" + threshold +
+                ", compareType=" + compareType +
+                ", ruleMetric=" + (Objects.nonNull(ruleMetric) ? ruleMetric.getId() : "") +
+                ", uploadRuleMetricValue=" + uploadRuleMetricValue +
+                ", uploadAbnormalValue=" + uploadAbnormalValue +
+                ", deleteFailCheckResult=" + deleteFailCheckResult +
+                '}';
     }
 }

@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.request.user;
 
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author v_minminghe@webank.com

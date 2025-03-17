@@ -36,5 +36,6 @@ public class ExcelSheetName {
 
     public static final String SCHEDULED_PUBLISHED = "SCHEDULED PUBLISHED";
     public static final String SCHEDULED_RELATION = "SCHEDULED RELATION";
+    public static final String SCHEDULED_WORKFLOW_BUSINESS = "SCHEDULED WORKFLOW BUSINESS";
 
 }

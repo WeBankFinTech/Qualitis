@@ -30,6 +30,15 @@ public class LinkisConnectParamsRequest {
     private String dk;
     @JsonProperty(value = "timestamp")
     private String timeStamp;
+    private String userClientIp;
+
+    public String getUserClientIp() {
+        return userClientIp;
+    }
+
+    public void setUserClientIp(String userClientIp) {
+        this.userClientIp = userClientIp;
+    }
 
     public String getTimeStamp() {
         return timeStamp;

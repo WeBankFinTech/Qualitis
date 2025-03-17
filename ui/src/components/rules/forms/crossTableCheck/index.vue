@@ -14,7 +14,7 @@ import {
 } from '@fesjs/fes';
 import eventbus from '@/common/useEvents';
 import { FMessage } from '@fesjs/fes-design';
-import { TEMPLATE_ARGUMENT_INPUT_TYPE } from '@/common/constant';
+import { TEMPLATE_ARGUMENT_INPUT_TYPE, TEMPLATE_ARGUMENT_INPUT_ID, TEMPLATE_ID } from '@/common/constant';
 import { NUMBER_TYPES, DWSMessage, handleExecuteParams } from '@/common/utils';
 import {
     saveEvent, useListener, ruleTypeChangeEvent, delEvent, cancelEvent, dataSourceTypeList, getDataSourceType, columnData2Str, forceFormPageUpdateEvent, getConfiguredRuleMetric, replaceRouter, getRuleMetricAll,
@@ -27,6 +27,7 @@ import {
 import { clone, cloneDeep } from 'lodash-es';
 import verifyObject from './verifyObject';
 import verifyRule from './verifyRule';
+import { buildCustomSqlTemp } from '../../utils';
 
 const store = useStore();
 const route = useRoute();
@@ -47,16 +48,18 @@ const ele = ref({
 // 加载规则详情
 const configuredRuleMetric = ref({});
 provide('configuredRuleMetric', computed(() => configuredRuleMetric.value));
-const ruleMetricList = ref([]);
-provide('ruleMetricList', computed(() => ruleMetricList.value));
+// const ruleMetricList = ref([]);
+// provide('ruleMetricList', computed(() => ruleMetricList.value));
 const loadRuleDetail = async () => {
+    console.log('reload', ruleData.value.currentRule);
     try {
-        ruleMetricList.value = await getRuleMetricAll();
+        // ruleMetricList.value = await getRuleMetricAll();
         if (!unref(ruleData.value.currentRule.rule_id)) {
             return;
         }
         // 后台返回数据不一致，做差异化处理
         // source和target分开处理
+        if (ruleData.value.currentRule.rule_type !== 3) return;
         const currentRuleDetail = await request(`api/v1/projector/mul_source_rule/${unref(ruleData.value.currentRule.rule_id)}`, {}, 'get');
         // 处理上游表逻辑
         currentRuleDetail.isUpStream = currentRuleDetail.target.context_service || currentRuleDetail.source.context_service;
@@ -66,6 +69,7 @@ const loadRuleDetail = async () => {
         }
 
         configuredRuleMetric.value = getConfiguredRuleMetric(currentRuleDetail);
+        currentRuleDetail.cluster_name = currentRuleDetail.cluster_name.split(',')[0];
         currentRuleDetail.source.cluster_name = currentRuleDetail.cluster_name;
         // 更新store
         store.commit('rule/setCurrentRuleDetail', currentRuleDetail);
@@ -132,8 +136,11 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
+            standard_value_variables,
             multi_source_rule_template_id,
             rule_template_name,
+            rule_template_en_name,
             source,
             target,
             alarm_variable,
@@ -146,9 +153,22 @@ useListener(saveEvent, async (cb) => {
             isUpStream,
             isFilterFields,
             ruleArgumentList,
+            leftArguments = {},
+            rightArguments = {},
+            // eslint-disable-next-line camelcase
+            left_linkis_udf_names = [],
+            // eslint-disable-next-line camelcase
+            right_linkis_udf_names = [],
         } = cloneDeep(ruleData.value.currentRuleDetail);
         // eslint-disable-next-line camelcase
         const cluster_name = source.cluster_name;
+        // eslint-disable-next-line camelcase
+        if ([TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(rule_template_en_name)) {
+            if (source.db_name) delete source.db_name;
+            if (source.table_name) delete source.table_name;
+            if (target.db_name) delete target.db_name;
+            if (target.table_name) delete target.table_name;
+        }
         // delete dataSourceValue.fpsData;
         const body = {
             work_flow_name: upstreamParams.workflowName,
@@ -160,6 +180,8 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
+            standard_value_variables,
             multi_source_rule_template_id,
             rule_template_name,
             source,
@@ -181,7 +203,10 @@ useListener(saveEvent, async (cb) => {
             filter,
             contrast_type,
             filter_col_names,
-            template_arguments: (ruleArgumentList || []).map(({
+            left_linkis_udf_names,
+            right_linkis_udf_names,
+            // eslint-disable-next-line camelcase
+            template_arguments: [TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION, TEMPLATE_ID.CUSTOM_SQL_CONSISTENCY_VALIDATION1].includes(rule_template_en_name) ? buildCustomSqlTemp(leftArguments, rightArguments, ruleArgumentList) : (ruleArgumentList || []).map(({
                 argument_step,
                 argument_id,
                 argument_value,
@@ -315,7 +340,7 @@ useListener(saveEvent, async (cb) => {
 
 // 取消事件
 useListener(cancelEvent, () => {
-    loadRuleDetail();
+    setTimeout(loadRuleDetail, 0);
 });
 // 删除规则
 let isDeleting = false;

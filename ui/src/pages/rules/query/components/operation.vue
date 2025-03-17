@@ -80,7 +80,7 @@
                     <!-- <FSelect v-model="advanceQueryData.sub_system_id" filterable clearable remote :width="160">
                         <FOption v-for="item in subSystems" :key="item.value" :value="item.value">{{item.label}}</FOption>
                     </FSelect> -->
-                    <FSelect v-model="advanceQueryData.sub_system_id" filterable clearable remote :options="subSystems" :width="160" />
+                    <FSelect v-model="advanceQueryData.sub_system_id" filterable clearable :filter="upperCaseFilter" :options="subSystems" :width="160" />
                 </FFormItem>
                 <FFormItem :label="$t('common.developDepartment')" prop="developDepartment">
                     <FSelectCascader
@@ -123,6 +123,7 @@ import {
 } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { CONDITIONBUTTONSPACE } from '@/assets/js/const';
+import { upperCaseFilter } from '@/common/utils';
 
 const { t: $t } = useI18n();
 const props = defineProps({

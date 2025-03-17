@@ -88,6 +88,15 @@ public class OperateRequest {
       resultColumn.add("set_name");
       resultColumn.add("dcn_num");
       resultColumn.add("logic_dcn");
+    } else if (code == OperateEnum.BUZ_DOMAIN.getCode()) {
+      filter = new HashMap<>();
+      type = "subsystem_app_instance";
+      startIndex = 0;
+      pageSize = Integer.MAX_VALUE;
+      action = "select";
+      isPaging = false;
+      resultColumn = new ArrayList<>(1);
+      resultColumn.add("appdomain_cnname");
     }
 
   }

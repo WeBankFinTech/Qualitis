@@ -2,14 +2,14 @@
     <div>
         <div v-if="exportStatus === 'no'" class="operation-container">
             <FButton type="primary" class="operation-item white" @click="dataQualityAnalysis">
-                <template #icon> <ClockCircleOutlined /> </template>{{$t('taskQuery.dataQualitisAnalysis')}}
+                <template #icon> <ClockCircleOutlined /> </template>{{$t('_.数据质量分析')}}
             </FButton>
             <FButton class="operation-item" @click="clickbatchReExecution">
-                <template #icon> <FileOutlined /> </template>{{$t('taskQuery.batchReExecution')}}
+                <template #icon> <FileOutlined /> </template>{{$t('_.批量重新执行')}}
             </FButton>
             <FDropdown :options="moreOptions" @click="clickMore">
                 <FButton class="operation-item">
-                    <template #icon> <MoreCircleOutlined /> </template>{{$t('common.more')}}
+                    <template #icon> <MoreCircleOutlined /> </template>{{$t('_.更多')}}
                 </FButton>
             </FDropdown>
         </div>
@@ -128,6 +128,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     defineProps, ref,
 } from 'vue';
@@ -198,10 +199,10 @@ const props = defineProps({
 const moreOptions = ref([
     {
         value: 'setTable',
-        label: '设置表格',
+        label: $t('_.设置表格'),
     }, {
         value: 'batchStop',
-        label: '批量停止',
+        label: $t('_.批量停止'),
     },
 ]);
 
@@ -315,6 +316,7 @@ const generate = () => {
         console.log('表单验证失败: ', error);
     });
 };
+
 
 </script>
 <style lang="less" scoped>

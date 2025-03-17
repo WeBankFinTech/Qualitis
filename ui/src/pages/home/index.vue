@@ -69,7 +69,7 @@ async function login() {
     const curPassword = sha256(password.value);
     // eslint-disable-next-line no-use-before-define
     if (validate()) {
-        await FRequest('api/v1/login/local', {
+        await FRequest('/auth/common/login/local', {
             username: curUsername,
             password: curPassword,
         });
@@ -77,17 +77,15 @@ async function login() {
         sessionStorage.setItem('firstUserName', username);
         sessionStorage.setItem('userLogin', true);
         // eslint-disable-next-line no-use-before-define
-        getRole();
+        await getUserRole();
         // 需要刷新应用，角色用户在渲染前设置
         const url = window.location.href;
-        const newUrl = url.replace('home', 'null');
+        const newUrl = url.replace('home', '');
         window.location.href = '';
         window.location.href = newUrl;
     }
 }
-function getRole() {
-    getUserRole();
-}
+
 function sha256(s) {
     const chrsz = 8;
     const hexcase = 0;

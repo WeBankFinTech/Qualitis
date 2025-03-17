@@ -1,8 +1,8 @@
 <template>
     <div class="engine-param">
         <div class="top">
-            <div class="param-name">引擎参数{{props.index + 1}}</div>
-            <div class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">删除</span></div>
+            <div class="param-name">{{$t('_.引擎参数')}}{{props.index + 1}}</div>
+            <div class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">{{$t('_.删除')}}</span></div>
         </div>
         <div class="param-form">
             <FForm ref="paramFormRef"
@@ -10,7 +10,7 @@
                    :rules="paramFormRules"
                    labelPosition="right"
                    labelWidth="66px">
-                <FFormItem label="参数类型" prop="param_type">
+                <FFormItem :label="$t('_.参数类型')" prop="param_type">
                     <FSelect
                         v-model="param.param_type"
                         :options="props.paramTypeList"
@@ -21,25 +21,25 @@
                     ></FSelect>
                 </FFormItem>
                 <template v-if="isCustom">
-                    <FFormItem label="参数名称" prop="param_name">
+                    <FFormItem :label="$t('_.参数名称')" prop="param_name">
                         <FInput
                             v-model="param.param_name"
                             class="form-edit-input"
-                            placeholder="请输入自定义参数名称"
+                            :placeholder="$t('_.请输入自定义参数名称')"
                             clearable
                         />
                     </FFormItem>
-                    <FFormItem label="参数值" prop="param_value">
+                    <FFormItem :label="$t('_.参数值')" prop="param_value">
                         <FInput
                             v-model="param.param_value"
                             class="form-edit-input"
-                            placeholder="请输入参数值"
+                            :placeholder="$t('_.请输入参数值')"
                             clearable
                         />
                     </FFormItem>
                 </template>
                 <template v-else>
-                    <FFormItem label="参数名称" prop="param_name">
+                    <FFormItem :label="$t('_.参数名称')" prop="param_name">
                         <FSelect
                             v-model="param.param_name"
                             :options="paramNameList"
@@ -49,13 +49,13 @@
                             @change="onNameChange"
                         ></FSelect>
                     </FFormItem>
-                    <FFormItem label="参数值" prop="param_value">
+                    <FFormItem :label="$t('_.参数值')" prop="param_value">
                         <FInput
                             v-model="param.param_value"
                             class="form-edit-input"
                             clearable
                             filterable
-                            placeholder="请输入参数值"
+                            :placeholder="$t('_.请输入参数值')"
                         />
                     </FFormItem>
                 </template>
@@ -64,6 +64,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     defineProps, computed, ref, defineEmits, defineExpose, watch,
 } from 'vue';
@@ -147,7 +148,7 @@ const paramFormRules = {
                 reject($t('common.notEmpty'));
             }
             if (props.params.findIndex(item => item === value) !== props.index) {
-                reject('该参数已存在');
+                reject($t('_.该参数已存在'));
             }
 
             resolve();
@@ -161,7 +162,7 @@ const paramFormRules = {
                 reject($t('common.notEmpty'));
             }
             if (props.params.findIndex(item => item === param.value.param_name) !== props.index) {
-                reject('该参数已存在');
+                reject($t('_.该参数已存在'));
             }
 
             resolve();
@@ -180,6 +181,7 @@ watch(() => props.params, (newVal, oldVal) => {
     }
 }, { deep: true });
 defineExpose({ valid });
+
 </script>
 
 <style scoped lang="less">

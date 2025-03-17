@@ -157,7 +157,8 @@
         @save="handleSave"
     ></EditModal>
 </template>
-<script setup >
+<script setup>
+
 import { BTablePage, BSearch, formatterEmptyValue } from '@fesjs/traction-widget';
 import {
     onMounted, ref, reactive, nextTick,
@@ -172,9 +173,10 @@ import EditModal from './editModal.vue';
 import { deleteRoom, fetchRoomTabelData } from './api';
 import { getDepartments } from '../departmentManagement/api';
 
-const formmatSourceType = ({ cellValue }) => (cellValue ? '自定义' : 'HR系统');
-
 const { t: $t } = useI18n();
+const formmatSourceType = ({ cellValue }) => (cellValue ? $t('_.自定义') : $t('_.HR系统'));
+
+
 const pagination = reactive({
     current: 1,
     size: 10,
@@ -286,7 +288,7 @@ const deleteRow = async (row) => {
 const handleDelete = async (row) => {
     Modal.confirm({
         closable: true,
-        title: '提示',
+        title: $t('_.提示'),
         content: `科室数据删除后不可恢复，确定删除当前科室Code为【${row.sub_department_code}】的数据？`,
         onOk: () => {
             deleteRow(row);
@@ -307,6 +309,7 @@ onMounted(() => {
     getDepartmentNameList();
     getRoomNameList();
 });
+
 
 </script>
 <style lang='less' scoped>

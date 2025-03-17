@@ -3,10 +3,12 @@ export const MAX_PAGE_SIZE = 2147483647;
 // 除了项目英文名称长度是64，其他都是128
 export const COMMON_REG = {
     EN_NAME_64: /^[a-zA-Z0-9_]{0,64}$/ig,
+    EN_NAME_64_SPACE: /^[a-zA-Z0-9_\s]{0,64}$/ig,
     EN_NAME: /^[a-zA-Z0-9_]{0,128}$/ig,
-    ONLY_EN_NAME: /^[a-zA-Z0-9]{0,128}$/ig,
+    EN_NAMES: /^[a-zA-Z0-9_,]{0,128}$/ig,
+    ONLY_EN_NAME: /^[a-zA-Z0-9_]{0,128}$/ig,
     CN_NAME: /^[\u4e00-\u9fa5a-zA-Z0-9_]{0,128}$/ig,
-    CN_NAME2: /^[\u4e00-\u9fa5a-zA-Z0-9]*$/, // 字母数字汉字
+    CN_NAME2: /^(\u3007|[\u3400-\u9FFF]|[\uE000-\uF8FF]|[\uD840-\uD87F][\uDC00-\uDFFD]|[\uD880-\uD8BF]|[\uDC00-\uDFFD]|[a-zA-Z0-9])+(\u00B7(\u3007|[\u3400—\u9FFF]|[\uE000-\uF8FF]|[\uD840-\uD87F][\uDC00-\uDFFD]|[\uD880-\uD8BF][\uDC00-\uDFFD]|[a-zA-Z0-9])+)*$/, // 字母数字汉字
     ONLY_EN_NUM: /^[a-zA-Z0-9]{0,30}$/ig,
     NUMBER_CONTAIN_FLOAT: /^-?(?:\d+)(?:.\d+)?$/, // 包含小数的数字正则
     NUMBER_CONTAIN_FLOAT_PLUS: /^(?:\d+)(?:.\d+)?$/, // 包含小数的数字正则,只允许正数

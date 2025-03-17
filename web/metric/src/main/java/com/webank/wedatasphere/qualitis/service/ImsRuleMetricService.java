@@ -2,11 +2,13 @@ package com.webank.wedatasphere.qualitis.service;
 
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
 import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.rule.request.TemplatePageRequest;
 
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -68,38 +70,60 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      */
 //    GetAllResponse<MetricTemplateQueryResponse> getTemplateList(TemplatePageRequest request) throws UnExpectedRequestException;
-
-    /**
-     * get all proxy users
-     * @return
-     */
+//
+//    /**
+//     * get all proxy users
+//     * @return
+//     */
 //    List<String> findAllDataUsers();
-
-    /**
-     *  get datasource
-     * @param cluster
-     * @param db
-     * @return
-     */
+//
+//    /**
+//     *  get datasource
+//     * @param cluster
+//     * @param db
+//     * @return
+//     */
 //    DataSourcesConditionResponse getAllDataSources(String cluster, String db) throws UnExpectedRequestException;
-
-    /**
-     *
-     * @param request
-     */
+//
+//    /**
+//     *
+//     * @param request
+//     */
 //    void createMetricTemplate(AddCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
-
-    /**
-     *
-     * @param request
-     */
+//
+//    /**
+//     *
+//     * @param request
+//     */
 //    void modifyMetricTemplate(ModifyCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
-
-    /**
-     * get detail of metric template
-     * @param templateId
-     * @return
-     */
+//
+//    /**
+//     * get detail of metric template
+//     * @param templateId
+//     * @return
+//     */
 //    MetricTemplateDetailResponse getMetricTemplateDetail(Long templateId) throws UnExpectedRequestException;
-
+//
+//    /**
+//     * get detail of metric collect
+//     *
+//     * @param metricId
+//     * @return
+//     */
+//    ImsMetricCollectQueryResponse getMetricIdentifyById(String metricId) throws UnExpectedRequestException;
+//
+//    /**
+//     * get metric relation
+//     *
+//     * @param metricId
+//     * @return
+//     */
+//    GeneralResponse<Map<String, Object>> getMetricRelation(String metricId) throws UnExpectedRequestException;
+//
+//    /**
+//     *
+//     * @param userName
+//     * @return
+//     */
+//    GeneralResponse syncMetadata(String userName) throws UnExpectedRequestException;
 }

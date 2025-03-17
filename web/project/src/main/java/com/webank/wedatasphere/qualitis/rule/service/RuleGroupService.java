@@ -139,7 +139,7 @@ public interface RuleGroupService {
      * @throws ExecutionException
      * @throws IOException
      */
-    GeneralResponse addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException, InterruptedException, ExecutionException, IOException;
+    GeneralResponse<RuleGroupResponse> addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException, InterruptedException, ExecutionException, IOException;
 
     /**
      * Generate

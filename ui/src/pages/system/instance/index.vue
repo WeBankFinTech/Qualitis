@@ -31,11 +31,11 @@
                     <f-table-column prop="modify_user" :label="$t('instanceConfig.modify_user')" :minWidth="120" ellipsis />
                     <f-table-column prop="modify_time" :label="$t('instanceConfig.modify_time')" :minWidth="180" ellipsis />
                     <f-table-column #default="{ row } = {}" :label="$t('instanceConfig.operate')" :minWidth="148" ellipsis fixed="right">
-                        <ul class="wd-label-btns">
-                            <li :class="row.status === 1 ? 'disabled' : '' " @click="handler(row, 'online')">{{$t('instanceConfig.online')}}</li>
-                            <li :class="row.status === 4 ? 'disabled' : '' " @click="handler(row, 'offline')">{{$t('instanceConfig.offline')}}</li>
-                            <li class="delete" @click="handler(row, 'delete')">{{$t('instanceConfig.delete')}}</li>
-                        </ul>
+                        <FDropdown :options="getActionOptions(row)" trigger="hover" @click="handler(row, $event)">
+                            <FButton class="el-dropdown-event table-operation-item" type="text" style="height: 19px">
+                                <template #icon> <MoreCircleOutlined /> </template>
+                            </FButton>
+                        </FDropdown>
                     </f-table-column>
                 </f-table>
             </template>
@@ -83,11 +83,12 @@
     </div>
 </template>
 <script setup>
+
 import { ref, reactive } from 'vue';
 import { FMessage, FModal } from '@fesjs/fes-design';
 
 import { useI18n } from '@fesjs/fes';
-import { PlusOutlined } from '@fesjs/fes-design/es/icon';
+import { PlusOutlined, MoreCircleOutlined } from '@fesjs/fes-design/es/icon';
 import { getLabelFromList } from '@/assets/js/utils';
 import { CONDITIONBUTTONSPACE } from '@/assets/js/const';
 import { formatterEmptyValue } from '@/common/utils';
@@ -188,13 +189,14 @@ const statuslist = [{ label: $t('instanceConfig.running'), value: 1 }, { label: 
 const formatterStatus = ({ cellValue }) => getLabelFromList(statuslist, cellValue);
 
 // 操作 上下线
-const handlerOnOffline = (row, status) => {
+const handlerOnOffline = (row, status, collectStatus) => {
     showLoading.value = true;
     const params = {
         id: row.id,
-        status,
+        status: status ?? row.status,
+        collect_status: collectStatus ?? row.collect_status,
     };
-    const message = status === 1 ? $t('instanceConfig.onlineSuccess') : $t('instanceConfig.offlineSuccess');
+    const message = typeof collectStatus === 'undefined' ? (status === 1 ? $t('instanceConfig.onlineSuccess') : $t('instanceConfig.offlineSuccess')) : (collectStatus === 1 ? $t('instanceConfig.startCollectSuccess') : $t('instanceConfig.stopCollectSuccess'));
     instanceConfigModify(params).then(() => {
         FMessage.success(message);
         getInstanceData();
@@ -263,11 +265,63 @@ const handler = (row, operate) => {
                 },
             });
             break;
+        case 'startCollect':
+            FModal.confirm({
+                title: $t('instanceConfig.startCollectConfirm'),
+                okText: $t('common.ok'),
+                cancelText: $t('common.cancel'),
+                onOk() {
+                    handlerOnOffline(row, row.status, 1);
+                },
+            });
+            break;
+        case 'stopCollect':
+            FModal.confirm({
+                title: $t('instanceConfig.stopCollectConfirm'),
+                okText: $t('common.ok'),
+                cancelText: $t('common.cancel'),
+                onOk() {
+                    handlerOnOffline(row, row.status, 0);
+                },
+            });
+            break;
         default:
             break;
     }
 };
+const actions = {
+    1: {
+        1: () => [
+            { label: $t('_.下线'), value: 'offline' },
+            { label: $t('_.删除实例'), value: 'delete' },
+            { label: $t('_.关闭采集'), value: 'stopCollect' },
+        ],
+        0: () => [
+            { label: $t('_.下线'), value: 'offline' },
+            { label: $t('_.删除实例'), value: 'delete' },
+            { label: $t('_.开启采集'), value: 'startCollect' },
+        ],
+    },
+    4: {
+        1: () => [
+            { label: $t('_.上线'), value: 'online' },
+            { label: $t('_.删除实例'), value: 'delete' },
+            { label: $t('_.关闭采集'), value: 'stopCollect', disabled: true },
+        ],
+        0: () => [
+            { label: $t('_.上线'), value: 'online' },
+            { label: $t('_.删除实例'), value: 'delete' },
+            { label: $t('_.开启采集'), value: 'startCollect', disabled: true },
+        ],
+    },
+};
 
+const getActionOptions = (row) => {
+    if (row?.status in actions && row?.collect_status in actions[row?.status]) {
+        return actions[row.status][row.collect_status]();
+    }
+    return [{ label: $t('_.删除实例'), value: 'delete' }];
+};
 
 </script>
 <style lang="less" scoped>
