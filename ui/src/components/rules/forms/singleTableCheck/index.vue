@@ -38,8 +38,8 @@ const upstreamParams = cloneDeep(unref(inject('upstreamParams')));
 
 provide('groupType', 'newSingleTableRule');
 provide('ruleType', '1-1');
-const ruleMetricList = ref([]);
-provide('ruleMetricList', computed(() => ruleMetricList.value));
+// const ruleMetricList = ref([]);
+// provide('ruleMetricList', computed(() => ruleMetricList.value));
 
 // 组件ref
 const ele = ref({
@@ -52,11 +52,12 @@ const configuredRuleMetric = ref({});
 provide('configuredRuleMetric', computed(() => configuredRuleMetric.value));
 const loadRuleDetail = async () => {
     try {
-        ruleMetricList.value = await getRuleMetricAll();
+        // ruleMetricList.value = await getRuleMetricAll();
         if (!unref(ruleData.value.currentRule.rule_id)) {
             return;
         }
 
+        if (ruleData.value.currentRule.rule_type !== 1) return;
         const currentRuleDetail = await request(`api/v1/projector/rule/${unref(ruleData.value.currentRule.rule_id)}`, {}, 'get');
         // 处理上游表逻辑
         currentRuleDetail.isUpStream = currentRuleDetail.context_service;
@@ -111,6 +112,7 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
             rule_template_id,
             rule_template_name,
             datasource,
@@ -135,6 +137,7 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
             rule_template_id,
             rule_template_name,
             datasource,
@@ -186,6 +189,7 @@ useListener(saveEvent, async (cb) => {
             // 将表结构拼接成后台需要的结构(由于利用了对象引用值类型的特性，需要进行一次深拷贝)
             // TODO
             const fpsData = JSON.parse(JSON.stringify(datasource || {}))[0];
+            console.log(fpsData);
             const fpsParams = {
                 file_id: fpsData.file_id,
                 file_hash_values: fpsData.file_hash_values,
@@ -297,7 +301,7 @@ useListener(delEvent, async (cb) => {
 
 // 取消事件
 useListener(cancelEvent, () => {
-    loadRuleDetail();
+    setTimeout(loadRuleDetail, 0);
 });
 
 onMounted(() => {

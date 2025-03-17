@@ -41,4 +41,9 @@ public class AlarmArgumentsExecutionParametersDaoImpl implements AlarmArgumentsE
     public void deleteByExecutionParameters(ExecutionParameters executionParametersInDb) {
         alarmArgumentsExecutionParametersRepository.deleteByExecutionParameters(executionParametersInDb);
     }
+
+    @Override
+    public void deleteByExecutionParametersId(Long id) {
+        alarmArgumentsExecutionParametersRepository.deleteByExecutionParametersId(id);
+    }
 }

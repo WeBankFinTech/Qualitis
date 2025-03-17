@@ -28,6 +28,8 @@ import com.webank.wedatasphere.qualitis.request.DeleteUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 
+import java.util.List;
+
 /**
  * @author howeye
  */
@@ -39,7 +41,7 @@ public interface UserProxyUserService {
      * @return
      * @throws UnExpectedRequestException
      */
-    GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException;
+    GeneralResponse<List<AddUserProxyUserResponse>> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException;
 
     /**
      * Remove proxy user of user

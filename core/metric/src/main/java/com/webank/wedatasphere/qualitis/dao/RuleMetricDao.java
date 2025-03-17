@@ -216,7 +216,7 @@ public interface RuleMetricDao {
      * @return
      */
     List<RuleMetric> findNotUsed(Integer level, List<Department> departmentList,
-                                 User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size);
+                                 User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, int page, int size);
 
     /**
      * Count not used rule metric
@@ -238,7 +238,7 @@ public interface RuleMetricDao {
      * @param size
      * @return
      */
-    List<RuleMetric> findAllNotUsed(int page, int size);
+    List<RuleMetric> findAllNotUsed(String name, int page, int size);
 
     /**
      * Count not used rule metric
@@ -261,7 +261,7 @@ public interface RuleMetricDao {
      * @return
      */
     List<RuleMetric> findUsed(Integer level, List<Department> departmentList,
-                              User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size);
+                              User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, int page, int size);
 
     /**
      * Count used rule metric
@@ -283,7 +283,7 @@ public interface RuleMetricDao {
      * @param size
      * @return
      */
-    List<RuleMetric> findAllUsed(int page, int size);
+    List<RuleMetric> findAllUsed(String name, int page, int size);
 
     /**
      * Count used rule metric
@@ -316,6 +316,12 @@ public interface RuleMetricDao {
     void delete(RuleMetric ruleMetric);
 
     /**
+     * delete all
+     * @param ruleMetrics
+     */
+    void deleteAll(List<RuleMetric> ruleMetrics);
+
+    /**
      * Find by id.
      *
      * @param id
@@ -346,4 +352,15 @@ public interface RuleMetricDao {
      * @return
      */
     RuleMetric findByName(String name);
+
+    /**
+     *
+     * @param departmentList
+     * @param user
+     * @param enCode
+     * @param page
+     * @param size
+     * @return
+     */
+    List<String> findEnCodeWithPage(List<Department> departmentList, User user, String enCode, int page, int size);
 }

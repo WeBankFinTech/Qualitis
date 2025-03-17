@@ -6,7 +6,7 @@
         :rules="rules"
         :labelPosition="editMode !== 'display' ? 'right' : 'left'"
     >
-        <FFormItem v-if="showFields" label="校验字段" prop="colNamesStrArr">
+        <FFormItem v-if="showFields" :label="$t('_.校验字段')" prop="colNamesStrArr">
             <FSelect
                 v-model="feildData.colNamesStrArr"
                 collapseTags
@@ -30,7 +30,7 @@
                 </FSpace>
             </div>
         </FFormItem>
-        <FFormItem v-if="showFilterFields" label="过滤字段" prop="filterColNamesStrArr">
+        <FFormItem v-if="showFilterFields" :label="$t('_.过滤字段')" prop="filterColNamesStrArr">
             <FSelect
                 v-model="feildData.filterColNamesStrArr"
                 collapseTags
@@ -120,8 +120,22 @@ const editMode = computed(() => {
 });
 
 const rules = computed(() => props.rules);
-const colNamesStrArr = computed(() => props.colNamesStrArr);
-const filterColNamesStrArr = computed(() => props.filterColNamesStrArr);
+const colNamesStrArr = computed({
+    get() {
+        return props.colNamesStrArr;
+    },
+    set(v) {
+        emit('update:colNamesStrArr', v);
+    },
+});
+const filterColNamesStrArr = computed({
+    get() {
+        return props.filterColNamesStrArr;
+    },
+    set(v) {
+        emit('update:filterColNamesStrArr', v);
+    },
+});
 const columns = computed(() => props.columns);
 const showFields = computed(() => props.showFields);
 const showFilterFields = computed(() => props.showFilterFields);

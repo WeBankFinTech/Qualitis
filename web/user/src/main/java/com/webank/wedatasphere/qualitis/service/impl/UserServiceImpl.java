@@ -54,7 +54,7 @@ import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -160,7 +160,8 @@ public class UserServiceImpl implements UserService {
         String username = request.getUsername();
         User userInDb = userDao.findByUsername(username);
         if (userInDb != null) {
-            throw new UnExpectedRequestException("username: " + username + " {&ALREADY_EXIST}");
+            LOGGER.warn("username [{}] already exist.", username);
+            return userInDb;
         }
 
         // Generate random password and save user

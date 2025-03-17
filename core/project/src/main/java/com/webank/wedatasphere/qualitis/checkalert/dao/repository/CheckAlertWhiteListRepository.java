@@ -20,6 +20,8 @@ import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlertWhiteList;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
+
 /**
  * @author allenzhou
  */
@@ -34,4 +36,21 @@ public interface CheckAlertWhiteListRepository extends JpaRepository<CheckAlertW
      */
     @Query(value = "SELECT qaw.* FROM qualitis_alert_whitelist qaw WHERE qaw.item = ?1 AND qaw.type = ?2 AND qaw.authorized_user = ?3", nativeQuery = true)
     CheckAlertWhiteList checkWhiteList(String item, Integer type, String user);
+
+    /**
+     * Find item with type
+     * @param type
+     * @return
+     */
+    @Query(value = "SELECT qaw.* FROM qualitis_alert_whitelist qaw WHERE qaw.type = ?1", nativeQuery = true)
+    List<CheckAlertWhiteList> findItem(Integer type);
+
+    /**
+     * Find with item and type
+     * @param item
+     * @param code
+     * @return
+     */
+    @Query(value = "SELECT qaw.* FROM qualitis_alert_whitelist qaw WHERE qaw.item = ?1 and qaw.type = ?2", nativeQuery = true)
+    CheckAlertWhiteList findItemAndType(String item, Integer code);
 }

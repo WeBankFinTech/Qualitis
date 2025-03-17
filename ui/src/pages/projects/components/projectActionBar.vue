@@ -52,7 +52,7 @@
     </template>
     <template v-else>
         <FSpace :size="CONDITIONBUTTONSPACE">
-            <FButton v-if="isVisual || isDelete" type="primary" :disabled="isDownloading" :loading="isDownloading" @click="confirmDownload">确认</FButton>
+            <FButton v-if="isVisual || isDelete" type="primary" :disabled="isDownloading" :loading="isDownloading" @click="confirmDownload">{{$t('_.确认')}}</FButton>
             <FButton v-else :disabled="isDownloading" :loading="isDownloading" type="primary" @click="confirmDownload">{{$t('myProject.confirmExport')}}</FButton>
             <FButton :disabled="isDownloading" @click="cancelDownload">{{$t('common.cancel')}}</FButton>
         </FSpace>

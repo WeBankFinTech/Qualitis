@@ -13,6 +13,7 @@
             v-if="listType !== 'listByTemplate'"
             ref="ruleMetricSelectRef"
             :defaultMetricId="ruleStandardData.rule_metric_id"
+            :defaultMetricName="ruleStandardData.rule_metric_name"
             :listType="listType"
             :needUploadMetric="needUploadMetric"
             @getRuleMetricData="getRuleMetricData"
@@ -70,7 +71,7 @@
                             >
                                 <template #icon>
                                     <MinusCircleOutlined />
-                                </template>删除
+                                </template>{{$t('_.删除')}}
                             </FButton>
                         </FFormItem>
                     </RuleConditionItem>
@@ -84,7 +85,7 @@
                 >
                     <template #icon>
                         <PlusCircleOutlined />
-                    </template>新增
+                    </template>{{$t('_.新增')}}
                 </FButton>
             </div>
         </FFormItem>
@@ -185,6 +186,7 @@ const cacheTemplateId = ref(0);
 const reset = () => {
     ruleStandardData.value.ruleConditionList = [{}];
     ruleStandardData.value.rule_metric_id = '';
+    ruleStandardData.value.rule_metric_name = '';
     // console.log(ruleStandardData.value)
 };
 // checkField注入
@@ -220,6 +222,7 @@ ruleStandardData.value.ruleConditionList = computed({
         console.log('alarmVariable', alarmVariable);
         if (alarmVariable?.length) {
             ruleStandardData.value.rule_metric_id = alarmVariable[0]?.rule_metric_id === -1 ? '' : alarmVariable[0].rule_metric_id;
+            ruleStandardData.value.rule_metric_name = alarmVariable[0]?.rule_metric_name === '' ? '' : alarmVariable[0].rule_metric_name;
         }
         if (cacheTemplateId.value !== props.templateId && groupType.value === 'executionParams') {
             cacheTemplateId.value = props.templateId;
@@ -334,6 +337,16 @@ defineExpose({ valid, reset });
             .link-icon {
                 display: none;
             }
+            &::after {
+            content: "";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 70%;
+            background: #cfd0d3;
+        }
         }
         &::after {
             content: "";

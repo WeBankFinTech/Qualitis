@@ -1,8 +1,8 @@
 <template>
     <div class="wd-page" @click="changeMenusDisplay">
-        <BHorizontalLayout v-if="(!isEmbedInFrame || isEmbedInDMS) && !unLogin" v-model:curPath="route.path" :menus="menus" @menuChange="onMenuClick">
-            <template v-slot:top>
-                <div v-if="!isEmbedInDMS" class="wd-logo">
+        <BHorizontalLayout v-if="(isEmbedInDMS || (isEmbedInFrame && showMenu === 'true') || !isEmbedInFrame) && !unLogin" v-model:curPath="route.path" :menus="menus" :footText="$t('common.copyright')" @menuChange="onMenuClick">
+            <template v-if="!isEmbedInFrame && !isEmbedInDMS" v-slot:top>
+                <div class="wd-logo">
                     <div class="avatar ava">
                         <img class="ava" src="@/assets/images/icons/avatar.svg" />
                         <div class="user-menus-list ava" :class="{ active: showMenus }">
@@ -25,9 +25,11 @@
                 </FModal>
             </template>
             <template v-slot:container>
-                <div style="margin: -16px -16px -32px">
-                    <router-view></router-view>
-                </div>
+                <FConfigProvider :locale="localeObj">
+                    <div style="margin: -16px -16px -32px; height: 100%">
+                        <router-view></router-view>
+                    </div>
+                </FConfigProvider>
             </template>
         </BHorizontalLayout>
         <template v-else>
@@ -36,11 +38,15 @@
     </div>
 </template>
 <script setup>
-import { ref, h, computed } from 'vue';
-import { getBaseUrlParam } from '@/common/utils';
+
+import {
+    ref, h, computed, onMounted,
+} from 'vue';
+import { getUrlParams } from '@/common/utils';
 import {
     useModel, useI18n, locale, request as FRequest, useRouter, useRoute, access, createWatermark,
 } from '@fesjs/fes';
+import { enUS, zhCN } from '@fesjs/fes-design/es/locales';
 import {
     FMessage, FModal, FMenu, FScrollbar,
 } from '@fesjs/fes-design';
@@ -49,11 +55,13 @@ import { BHorizontalLayout } from '@fesjs/traction-widget';
 const { t: $t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const localeObj = ref(zhCN);
 
 // 被嵌入其他项目的情况下不显示侧边栏
 // 如果url里面showMenus=true，即使被嵌入也要展示左侧菜单
+const showMenu = ref(decodeURIComponent(getUrlParams()?.showMenu || ''));
 // eslint-disable-next-line no-restricted-globals
-const isEmbedInFrame = computed(() => top !== self && route.query.showMenus !== 'true');
+const isEmbedInFrame = computed(() => top !== self);
 // dms里展示侧边栏
 // eslint-disable-next-line no-restricted-globals
 const isEmbedInDMS = computed(() => self.location.href.includes('microApp/dqm'));
@@ -70,6 +78,8 @@ const isLoadingUserData = ref(false);
 
 // 确认是否为管理员用户
 const isAdminUser = ref(sessionStorage.getItem('firstRole') === 'admin');
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
+
 // 未登录
 const unLogin = computed(() => route.path === '/home');
 
@@ -88,6 +98,7 @@ const menus = ref([{
 }, {
     label: $t('projects.projects'),
     icon: () => h(<fes-icon type="rules" />),
+    value: '/rules',
     children: [{
         label: $t('ruleQuery.ruleQuery'),
         value: '/rules/query',
@@ -96,11 +107,48 @@ const menus = ref([{
         label: $t('ruleTemplate.ruleTemplate'),
         icon: () => h(<fes-icon type="rules_template" />),
         value: '/rules/template',
+    }, {
+        label: $t('functionManagement.functionManagement'),
+        icon: () => h(<fes-icon type="function_manage" />),
+        value: '/rules/functionManagement',
     }],
 }, {
     label: $t('indexManagement.title'),
-    value: '/metricManagement',
     icon: () => h(<fes-icon type="quota" />),
+    value: '/metricManagement',
+    children: overseasVersion === 'true' ? [{
+        label: $t('_.校验指标管理'),
+        value: '/metricManagement/dqmetricManagement',
+        icon: () => h(<fes-icon type="quota" />),
+    },
+    ] : [{
+        label: $t('_.校验指标管理'),
+        value: '/metricManagement/dqmetricManagement',
+        icon: () => h(<fes-icon type="quota" />),
+    }, {
+        label: $t('_.统计指标管理'),
+        icon: () => h(<fes-icon type="ims" />),
+        value: '/metricManagement/statisticsMetric',
+        children: [
+            {
+                label: $t('_.采集概览'),
+                value: '/metricManagement/statisticsMetric/overview',
+            },
+            {
+                label: $t('_.采集指标'),
+                value: '/metricManagement/statisticsMetric/metricQuery',
+            }, {
+                label: $t('_.采集算子'),
+                value: '/metricManagement/statisticsMetric/metricTemplate',
+            }, {
+                label: $t('_.采集配置'),
+                value: '/metricManagement/statisticsMetric/collectionConfiguration',
+            }],
+    }],
+}, {
+    label: $t('_.标准值管理'),
+    value: '/standard',
+    icon: () => h(<fes-icon type="standard" />),
 }, {
     label: $t('dataSourceManagement.title'),
     value: '/dataSourceManagement',
@@ -111,11 +159,59 @@ const menus = ref([{
     icon: () => h(<fes-icon type="engine" />),
 }]);
 
+// eslint-disable-next-line no-undef
+const currentEnv = CURRENT_ENV;
+if (currentEnv === 'sit') {
+    menus.value.forEach((item) => {
+        if (item.value === '/projects') {
+            item.children = [
+                {
+                    label: $t('_.批量项目'),
+                    value: '/projects',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+                {
+                    label: $t('_.实时项目'),
+                    value: '/projects/realTimeProject/flink',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+            ];
+        } else if (item.value === '/tasks') {
+            item.children = [
+                {
+                    label: $t('_.离线任务查询'),
+                    value: '/tasks',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+                {
+                    label: $t('_.实时任务查询'),
+                    value: '/tasks/realTimeTasks',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+            ];
+        } else if (item.value === '/dataSourceManagement') {
+            item.children = [
+                {
+                    label: $t('_.批量数据源'),
+                    value: '/dataSourceManagement',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+                {
+                    label: $t('_.实时数据源'),
+                    value: '/dataSourceManagement/realTimeDataSource',
+                    icon: () => h(<fes-icon type="rules_query" />),
+                },
+            ];
+        }
+    });
+}
+
 if (isAdminUser.value) {
     // 系统设置只有管理员有权限
-    menus.value.push({
+    const item = {
         label: $t('configureParameter.configureParameter'),
         icon: () => h(<fes-icon type="setting" />),
+        value: '/system',
         children: [{
             label: $t('common.clustetrConfig'),
             value: '/system/cluster',
@@ -137,7 +233,34 @@ if (isAdminUser.value) {
             value: '/system/tenant',
             icon: () => h(<fes-icon type="tenant_manage" />),
         }],
-    });
+    };
+    if (currentEnv === 'sit') {
+        item.children.forEach((child) => {
+            if (child.value === '/system/cluster') {
+                child.children = [
+                    {
+                        label: $t('_.批量集群'),
+                        value: '/system/cluster',
+                    },
+                    {
+                        label: $t('_.实时集群'),
+                        value: '/system/cluster/realTimeCluster/kafkaClusterConfiguration',
+                        children: [
+                            {
+                                label: $t('_.计算集群'),
+                                value: '/system/cluster/computeCluster/flinkCluster',
+                            },
+                            {
+                                label: $t('_.数据源集群'),
+                                value: '/system/cluster/realTimeCluster/kafkaClusterConfiguration',
+                            },
+                        ],
+                    },
+                ];
+            }
+        });
+    }
+    menus.value.push(item);
 }
 
 const onMenuClick = (e) => {
@@ -228,7 +351,8 @@ const logout = async () => {
     try {
         const loginRandom = sessionStorage.getItem('login_random');
         sessionStorage.clear();
-        window.location.href = `${window.location.origin}/qualitis/api/v1/logout?loginRandom=${loginRandom}`;
+        await FRequest(`/auth/common/logout?loginRandom=${loginRandom}`, {}, 'get');
+        router.push('/home');
     } catch (error) {
         console.warn(error);
     }
@@ -241,11 +365,13 @@ const languageSwitching = () => {
         locale.setLocale({
             locale: 'en-US',
         });
+        // localeObj.value = enUS;
         localStorage.setItem('currentLanguage', 'en-US');
     } else {
         locale.setLocale({
             locale: 'zh-CN',
         });
+        // localeObj.value = zhCN;
         localStorage.setItem('currentLanguage', 'zh-CN');
     }
     window.location.reload();
@@ -283,6 +409,11 @@ const exitSimulatorUser = () => {
         },
     });
 };
+onMounted(() => {
+    if (localStorage.getItem('currentLanguage')) {
+        localeObj.value = localStorage.getItem('currentLanguage') === 'zh-CN' ? zhCN : enUS;
+    }
+});
 </script>
 <style lang="less" scoped>
 @import '@/style/varible.less';

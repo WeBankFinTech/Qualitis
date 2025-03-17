@@ -19,13 +19,17 @@ package com.webank.wedatasphere.qualitis.client.impl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.webank.wedatasphere.qualitis.client.RequestLinkis;
+import com.webank.wedatasphere.qualitis.client.config.DataMapConfig;
 import com.webank.wedatasphere.qualitis.client.request.AskLinkisParameter;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.LinkisResponseKeyEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
+import com.webank.wedatasphere.qualitis.encoder.Sha256Encoder;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
@@ -37,30 +41,26 @@ import com.webank.wedatasphere.qualitis.metadata.request.GetTableByUserAndDbRequ
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
+import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.cluster.ClusterInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.db.DbInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.PartitionStatisticsInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableInfoDetail;
-import com.webank.wedatasphere.qualitis.metadata.response.table.TableStatisticsInfo;
+import com.webank.wedatasphere.qualitis.metadata.response.table.*;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
+
+import com.webank.wedatasphere.qualitis.util.UuidGenerator;
+import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -71,14 +71,18 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -107,6 +111,12 @@ public class MetaDataClientImpl implements MetaDataClient {
     @Autowired
     private RequestLinkis requestLinkis;
 
+    @Autowired
+    private DataMapConfig dataMapConfig;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaDataClientImpl.class);
@@ -115,9 +125,9 @@ public class MetaDataClientImpl implements MetaDataClient {
      * key: cluster name, value: cluster object
      */
     private Cache<String, ClusterInfo> clusterInfoCache = CacheBuilder.newBuilder()
-        .expireAfterAccess(5, TimeUnit.MINUTES)
-        .expireAfterWrite(5, TimeUnit.MINUTES)
-        .build();
+            .expireAfterAccess(5, TimeUnit.MINUTES)
+            .expireAfterWrite(5, TimeUnit.MINUTES)
+            .build();
 
     @Override
     public DataInfo<ClusterInfoDetail> getClusterByUser(GetClusterByUserRequest request) {
@@ -129,7 +139,7 @@ public class MetaDataClientImpl implements MetaDataClient {
             return dataInfo;
         }
         // Remove datasource cluster
-        allCluster = allCluster.stream().filter(clusterInfo -> ! clusterInfo.getClusterName().equals(linkisConfig.getDatasourceCluster())).collect(Collectors.toList());
+        allCluster = allCluster.stream().filter(clusterInfo -> !clusterInfo.getClusterName().equals(linkisConfig.getDatasourceCluster())).collect(Collectors.toList());
         total -= 1;
 
         List<ClusterInfoDetail> details = new ArrayList<>();
@@ -264,10 +274,10 @@ public class MetaDataClientImpl implements MetaDataClient {
     }
 
     private Map<String, Object> gainResponseLinkisByPutBringJson(ClusterInfo clusterInfo, String authUser, String url, String logMessage, JSONObject jsonObject) throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        return requestLinkis.getLinkisResponseByPutBringJson(new AskLinkisParameter(url, clusterInfo.getLinkisToken(), authUser, logMessage),jsonObject);
+        return requestLinkis.getLinkisResponseByPutBringJson(new AskLinkisParameter(url, clusterInfo.getLinkisToken(), authUser, logMessage), jsonObject);
     }
 
-    private Map<String, Object> gainResponseLinkisByPutBringJsonArray(ClusterInfo clusterInfo, String authUser, String url, String logMessage, JSONArray jsonArray) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+    private Map<String, Object> gainResponseLinkisByPutBringJsonArray(ClusterInfo clusterInfo, String authUser, String url, String logMessage, JSONArray jsonArray) throws MetaDataAcquireFailedException {
         return requestLinkis.getLinkisResponseByPutBringJsonArray(new AskLinkisParameter(url, clusterInfo.getLinkisToken(), authUser, logMessage), jsonArray);
     }
 
@@ -311,7 +321,7 @@ public class MetaDataClientImpl implements MetaDataClient {
                 throw new UnExpectedRequestException("Failed to construct http body json with context ID and node name", 500);
             }
             // Retry
-            Map<String, Object> response = gainResponseLinkisByPostBringJsonRetry(clusterInfo, authUser, url, "get table with context service ID and node name by restful API.",jsonObject);
+            Map<String, Object> response = gainResponseLinkisByPostBringJsonRetry(clusterInfo, authUser, url, "get table with context service ID and node name by restful API.", jsonObject);
             Map<String, Object> data = (Map<String, Object>) response.get("data");
             List<Map<String, Object>> tables = (List<Map<String, Object>>) data.get("tables");
             if (tables == null || tables.size() == 0) {
@@ -329,7 +339,7 @@ public class MetaDataClientImpl implements MetaDataClient {
             result.setTotalCount(tables.size());
         } catch (RestClientException e) {
             LOGGER.error(e.getMessage(), e);
-            throw new MetaDataAcquireFailedException("Error! Can not get tables by context service ID and node name", 500);
+            throw new MetaDataAcquireFailedException("Error! Can not get tables by context service ID and node name");
         }
         return result;
     }
@@ -403,7 +413,7 @@ public class MetaDataClientImpl implements MetaDataClient {
             result.setContent(list);
         } catch (RestClientException e) {
             LOGGER.error(e.getMessage(), e);
-            throw new MetaDataAcquireFailedException("Error! Can not get column by context service ID", 500);
+            throw new MetaDataAcquireFailedException("Error! Can not get column by context service ID");
         }
         return result;
     }
@@ -483,7 +493,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         } else {// table level check or multi
             if (mappingCols != null && mappingCols.size() > 0) {
                 int diff = mappingCols.size();
-                for (Map.Entry<String,String> entry : mappingCols.entrySet()) {
+                for (Map.Entry<String, String> entry : mappingCols.entrySet()) {
                     String key = entry.getKey();
                     String value = entry.getValue();
                     for (ColumnInfoDetail columnInfoDetail : cols) {
@@ -551,7 +561,7 @@ public class MetaDataClientImpl implements MetaDataClient {
                 .toString();
 
         Map<String, Object> response = gainResponseLinkisByPutBringJsonArray(clusterInfo, authUser, url, "modify data source env by user and cluster by linkis."
-                ,new JSONArray(datasourceEnvs));
+                , new JSONArray(datasourceEnvs));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource", data);
     }
@@ -572,7 +582,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
     @Override
     public GeneralResponse<Map<String, Object>> getDataSourceInfoPage(String clusterName, String authUser, int page, int size, String searchName,
-                                                      Long typeId) throws UnExpectedRequestException, MetaDataAcquireFailedException, UnsupportedEncodingException {
+                                                                      Long typeId) throws UnExpectedRequestException, MetaDataAcquireFailedException, UnsupportedEncodingException {
         // Check existence of cluster name
         ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
         // send request to get dbs
@@ -675,7 +685,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         // send request to get dbs
         String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getDatasourceConnect()).toString();
 
-        Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "connect data source by user and cluster by linkis.",new JSONObject(jsonRequest));
+        Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "connect data source by user and cluster by linkis.", new JSONObject(jsonRequest));
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&CONNECT_SUCCESS}", data);
@@ -733,7 +743,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         // send request to get dbs
         String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getDatasourceModify()).toString().replace("{DATA_SOURCE_ID}", dataSourceId.toString());
 
-        Map<String, Object> response = gainResponseLinkisByPutBringJson(clusterInfo, authUser, url, "modify data source by user and cluster by linkis.",new JSONObject(jsonRequest));
+        Map<String, Object> response = gainResponseLinkisByPutBringJson(clusterInfo, authUser, url, "modify data source by user and cluster by linkis.", new JSONObject(jsonRequest));
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource", data);
     }
@@ -746,7 +756,7 @@ public class MetaDataClientImpl implements MetaDataClient {
         // send request to get dbs
         String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getDatasourceInitVersion()).toString().replace("{DATA_SOURCE_ID}", dataSourceId.toString());
 
-        Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "modify data source param by user and cluster by linkis.",new JSONObject(jsonRequest));
+        Map<String, Object> response = gainResponseLinkisByPostBringJson(clusterInfo, authUser, url, "modify data source param by user and cluster by linkis.", new JSONObject(jsonRequest));
 
         Map<String, Object> data = (Map<String, Object>) response.get(LinkisResponseKeyEnum.DATA.getKey());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "Success to modify datasource connect params", data);
@@ -903,14 +913,14 @@ public class MetaDataClientImpl implements MetaDataClient {
         ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
         long curSysTime = System.currentTimeMillis();
 
-        long deadtime = curSysTime - linkisConfig.getUnDoneDays()*24*60*60*1000L;
+        long deadtime = curSysTime - linkisConfig.getUnDoneDays() * 24 * 60 * 60 * 1000L;
 
         String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getUnDone())
-            .queryParam("engineType", linkisConfig.getEngineName())
-            .queryParam("creator", linkisConfig.getAppName())
-            .queryParam("startDate", deadtime)
-            .queryParam("endDate", curSysTime)
-            .toString();
+                .queryParam("engineType", linkisConfig.getEngineName())
+                .queryParam("creator", linkisConfig.getAppName())
+                .queryParam("startDate", deadtime)
+                .queryParam("endDate", curSysTime)
+                .toString();
 
         Map<String, Object> response = gainResponseLinkisByGet(clusterInfo, executionUser, url, "get undone task total.");
 
@@ -976,7 +986,7 @@ public class MetaDataClientImpl implements MetaDataClient {
     public String checkFilePathExistsAndUploadToWorkspace(String currentCluster, String userName, File uploadFile, Boolean needUpload) throws UnExpectedRequestException, MetaDataAcquireFailedException, IOException, JSONException {
         ClusterInfo clusterInfo = checkClusterNameExists(currentCluster);
         String targetFilePath = new StringBuffer(linkisConfig.getUploadWorkspacePrefix())
-            .append(File.separator).append(userName).append(File.separator).append("qualitis").toString();
+                .append(File.separator).append(userName).append(File.separator).append("qualitis").toString();
         String getPathUrl = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getUploadDir()).queryParam("path", targetFilePath).toString();
         try {
             getPathUrl = URLDecoder.decode(getPathUrl, "UTF-8");
@@ -1000,7 +1010,7 @@ public class MetaDataClientImpl implements MetaDataClient {
             }
         }
 
-        if (! needUpload) {
+        if (!needUpload) {
             return targetFilePath;
         }
 
@@ -1048,7 +1058,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
     @Override
     public Long clientAdd(String currentCluster, String targetFilePath, File uploadFile, String fileName, String udfDesc, String udfName, String returnType
-        , String enter, String registerName, Boolean status, String dir) throws MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException {
+            , String enter, String registerName, Boolean status, String dir) throws MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException {
         boolean commonJar = fileName.endsWith(".jar");
         boolean pythonScript = fileName.endsWith(".py");
 
@@ -1086,7 +1096,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
     @Override
     public void clientModify(String targetFilePath, File uploadFile, String currentCluster, Map<String, Long> clusterIdMaps, String fileName, String udfDesc
-        , String udfName, String returnType, String enter, String registerName) throws MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException {
+            , String udfName, String returnType, String enter, String registerName) throws MetaDataAcquireFailedException, UnExpectedRequestException, JSONException, IOException {
         boolean commonJar = fileName.endsWith(".jar");
         boolean pythonScript = fileName.endsWith(".py");
 
@@ -1119,7 +1129,7 @@ public class MetaDataClientImpl implements MetaDataClient {
             try {
                 // Share to proxy user.
                 LOGGER.info("Start to share udf to proxy users");
-                proxyUserNames = proxyUserNames.stream().filter(proxyUserName -> ! proxyUserName.equals(linkisConfig.getUdfAdmin())).collect(Collectors.toList());
+                proxyUserNames = proxyUserNames.stream().filter(proxyUserName -> !proxyUserName.equals(linkisConfig.getUdfAdmin())).collect(Collectors.toList());
                 shareUdfToProxyUsers(currentCluster, linkisConfig.getUdfAdmin(), proxyUserNames, udfId);
                 LOGGER.info("Finish to share udf to proxy users");
 
@@ -1201,15 +1211,15 @@ public class MetaDataClientImpl implements MetaDataClient {
             LOGGER.info("Succeed to delete udf, start to delete the udf file.");
             // Step 2
             String path = new StringBuffer(linkisConfig.getUploadWorkspacePrefix()).append(File.separator).append(userName)
-                                                                                   .append(File.separator).append("qualitis")
-                                                                                   .append(File.separator).append(fileName).toString();
+                    .append(File.separator).append("qualitis")
+                    .append(File.separator).append(fileName).toString();
             String deleteUrl = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getDeleteDir()).toString();
             Map<String, Object> requestBody = Maps.newHashMapWithExpectedSize(1);
             requestBody.put("path", path);
 
             try {
                 Map<String, Object> deleteResponse = gainResponseLinkisByPostBringJson(clusterInfo, userName, deleteUrl, "delete udf file with linkis api",
-                    new JSONObject(OBJECT_MAPPER.writeValueAsString(requestBody)));
+                        new JSONObject(OBJECT_MAPPER.writeValueAsString(requestBody)));
 
                 if (checkResponse(deleteResponse)) {
                     LOGGER.info("Succeed to delete the udf file.");
@@ -1253,7 +1263,7 @@ public class MetaDataClientImpl implements MetaDataClient {
 
     @Override
     public void deployUdfNewVersion(String clusterName, String userName, Long udfId, String version)
-        throws UnExpectedRequestException, IOException, JSONException, MetaDataAcquireFailedException {
+            throws UnExpectedRequestException, IOException, JSONException, MetaDataAcquireFailedException {
         ClusterInfo clusterInfo = checkClusterNameExists(clusterName);
         String url = getPath(clusterInfo.getLinkisAddress()).path(linkisConfig.getUdfPublish()).toString();
         Map<String, Object> requestBody = new HashMap<>(2);
@@ -1268,6 +1278,186 @@ public class MetaDataClientImpl implements MetaDataClient {
         LOGGER.error("");
         return;
     }
+
+    @Override
+    public TableTagInfo getTableTag(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, ResourceAccessException, UnExpectedRequestException {
+        if (overseasVersionEnabled) {
+            LOGGER.info(" get table tag return empty dto.");
+            return new TableTagInfo();
+        }
+        validateParameter(sourceType, clusterType, dbName, tableName);
+
+        UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
+                .path(dataMapConfig.getDatasetTagRelationsPath());
+        uriBuilder.queryParam("sourceType", sourceType);
+        uriBuilder.queryParam("clusterType", clusterType);
+        uriBuilder.queryParam("dbCode", dbName);
+        uriBuilder.queryParam("datasetName", tableName);
+        String authUser = getAuthUser(loginUser);
+        constructUrlWithSignature(uriBuilder, authUser);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("isAuth", String.valueOf(false));
+        LOGGER.info("Start to get table tag from dms. url: {}, method: {},", uriBuilder, HttpMethod.GET);
+        String response = restTemplate.getForObject(uriBuilder + "&confirmUser&tagCode", String.class);
+        LOGGER.info("Finish to get table tag from dms. response: {}", response);
+        if (StringUtils.isEmpty(response)) {
+            throw new MetaDataAcquireFailedException("Error!network occurred an unexpected error");
+        }
+        return convertTableTagInfo(response);
+    }
+
+    private TableTagInfo convertTableTagInfo(String response) throws MetaDataAcquireFailedException {
+        Gson gson = new Gson();
+        DataMapResultInfo<DataInfo<TableTagInfo>> dataMapResultInfo = gson.fromJson(response,
+                new TypeToken<DataMapResultInfo<DataInfo<TableTagInfo>>>() {
+                }.getType());
+        if (!String.valueOf(HttpStatus.SC_OK).equals(dataMapResultInfo.getCode())) {
+            throw new MetaDataAcquireFailedException("Error! Can not get table tag from DataMap, message: " + dataMapResultInfo.getMsg());
+        }
+        DataInfo<TableTagInfo> data = dataMapResultInfo.getData();
+        if (Objects.nonNull(data)) {
+            List<TableTagInfo> content = data.getContent();
+            if (CollectionUtils.isNotEmpty(content)) {
+                return content.get(0);
+            }
+        }
+        return TableTagInfo.build();
+    }
+
+    @Override
+    public Optional<SearchMetadataInfo> getTableMetaData(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, ResourceAccessException, UnExpectedRequestException {
+        if (overseasVersionEnabled) {
+            LOGGER.info(" get table tag return empty object.");
+            return Optional.empty();
+        }
+        validateParameter(sourceType, clusterType, dbName, tableName);
+
+        UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
+                .path(dataMapConfig.getSearchTable());
+        uriBuilder.queryParam("sourceType", sourceType.substring(0, 1).toUpperCase() + sourceType.substring(1).toLowerCase());
+        uriBuilder.queryParam("searchKey", tableName);
+        uriBuilder.queryParam("dbName", dbName);
+        uriBuilder.queryParam("clusterName", clusterType);
+        uriBuilder.queryParam("pageNo", 1);
+        uriBuilder.queryParam("pageSize", 5);
+        String authUser = getAuthUser(loginUser);
+        constructUrlWithSignature(uriBuilder, authUser);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("isAuth", String.valueOf(false));
+        LOGGER.info("Start to get metaData table from dms. url: {}, method: {}", uriBuilder, HttpMethod.GET);
+        String response = restTemplate.getForObject(uriBuilder.toString(), String.class);
+        LOGGER.info("Finish to get metaData table from dms. response: {}", response);
+        if (StringUtils.isEmpty(response)) {
+            throw new MetaDataAcquireFailedException("Error!network occurred an unexpected error");
+        }
+        return filterSearchMetadataInfo(response, clusterType, dbName, tableName, null);
+    }
+
+    @Override
+    public List<Map<String, Object>> getDmsFieldData(String sourceType, String clusterType, String dbId, String tableId, String fieldName, String loginUser) throws MetaDataAcquireFailedException {
+        UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
+                .path(dataMapConfig.getFieldPath());
+        uriBuilder.queryParam("sourceType", sourceType.substring(0,1).toUpperCase() + sourceType.substring(1).toLowerCase());
+        uriBuilder.queryParam("clusterType", clusterType);
+        uriBuilder.queryParam("dbId", dbId);
+        uriBuilder.queryParam("datasetId", tableId);
+        uriBuilder.queryParam("fieldName", fieldName);
+        uriBuilder.queryParam("pageNum", 1);
+        uriBuilder.queryParam("pageSize", 1);
+        String authUser = getAuthUser(loginUser);
+        constructUrlWithSignature(uriBuilder, authUser);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("isAuth", String.valueOf(false));
+        LOGGER.info("Start to get metaData field from dms. url: {}, method: {}", uriBuilder, HttpMethod.GET);
+        DataMapResultInfo dataMapResultInfo = restTemplate.getForObject(uriBuilder.toString(), DataMapResultInfo.class);
+        if (Objects.isNull(dataMapResultInfo)) {
+            throw new MetaDataAcquireFailedException("Error!network occurred an unexpected error");
+        }
+        LOGGER.info("Finish to get metaData field from dms. response: {}", dataMapResultInfo.toString());
+        if (!ResponseStatusConstants.OK.equals(dataMapResultInfo.getCode())) {
+            throw new MetaDataAcquireFailedException("Error!network occurred an unexpected error. error: " + dataMapResultInfo.getMsg());
+        }
+        Map<String, Object> dataMap = (Map<String, Object>) dataMapResultInfo.getData();
+        List<Map<String, Object>> contentMapList = (List<Map<String, Object>>) dataMap.getOrDefault("content", Collections.emptyMap());
+        return contentMapList;
+    }
+
+    private Optional<SearchMetadataInfo> filterSearchMetadataInfo(String response, String clusterType, String dbName, String tableName, String fieldName) throws MetaDataAcquireFailedException {
+        Gson gson = new Gson();
+        DataMapResultInfo<Map<String, Object>> dataMapResultInfo = gson.fromJson(response, new TypeToken<DataMapResultInfo<Map<String, Object>>>() {
+        }.getType());
+        if (!String.valueOf(HttpStatus.SC_OK).equals(dataMapResultInfo.getCode())) {
+            throw new MetaDataAcquireFailedException("Error!Can not get metaData from DataMap, message: " + dataMapResultInfo.getMsg());
+        }
+        Map<String, Object> dataMap = dataMapResultInfo.getData();
+        if (MapUtils.isNotEmpty(dataMap)) {
+            List<Object> contents = (List<Object>) dataMap.get("content");
+            if (CollectionUtils.isEmpty(contents)) {
+                return Optional.empty();
+            }
+            List<SearchMetadataInfo> deptInfoList = gson.fromJson(gson.toJson(contents), new TypeToken<List<SearchMetadataInfo>>() {
+            }.getType());
+            if (CollectionUtils.isNotEmpty(deptInfoList)) {
+                Optional<SearchMetadataInfo> optional = deptInfoList.stream().filter(result -> {
+                            if (StringUtils.isNotBlank(fieldName)) {
+                                if (fieldName.equals(result.getFieldName()) && tableName.equals(result.getTbName()) && dbName.equals(result.getDbName()) && clusterType.equals(result.getClusterName())) {
+                                    return true;
+                                }
+                            } else {
+                                if (tableName.equals(result.getTbName()) && dbName.equals(result.getDbName()) && clusterType.equals(result.getClusterName())) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
+                        .findFirst();
+                if (optional.isPresent()) {
+                    return optional;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void validateParameter(String sourceType, String clusterType, String dbName, String tableName) throws UnExpectedRequestException {
+        if (StringUtils.isEmpty(sourceType)
+                || StringUtils.isEmpty(clusterType)
+                || StringUtils.isEmpty(dbName)
+                || StringUtils.isEmpty(tableName)) {
+            throw new UnExpectedRequestException("parameter must be not null");
+        }
+    }
+
+    /**
+     * if execute a large number of data, maybe nonce conflict, cause http 403
+     *
+     * @param uriBuilder
+     * @param loginUser
+     */
+    private void constructUrlWithSignature(UriBuilder uriBuilder, String loginUser) {
+        String nonce = UuidGenerator.generateRandom(5);
+        String timestamp = String.valueOf(System.currentTimeMillis());
+
+        String appId = dataMapConfig.getAppId();
+        String appToken = dataMapConfig.getAppToken();
+
+        if (loginUser.equals(dataMapConfig.getSpecialProxyUser())) {
+            appId = dataMapConfig.getSpecialAppId();
+            appToken = dataMapConfig.getSpecialAppToken();
+        }
+
+        String signature = Sha256Encoder.encode(Sha256Encoder.encode(appId + nonce + loginUser + timestamp) + appToken);
+        uriBuilder.queryParam("appid", appId);
+        uriBuilder.queryParam("nonce", nonce);
+        uriBuilder.queryParam("timestamp", timestamp);
+        uriBuilder.queryParam("loginUser", loginUser);
+        uriBuilder.queryParam("signature", signature);
+        uriBuilder.queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag());
+    }
+
 
     private ClusterInfo checkClusterNameExists(String clusterName) throws UnExpectedRequestException {
         ClusterInfo currentClusterInfo = clusterInfoCache.getIfPresent(clusterName);
@@ -1296,5 +1486,18 @@ public class MetaDataClientImpl implements MetaDataClient {
         Integer responseStatus = (Integer) response.get(STATUS);
         return responseStatus == 0;
     }
+
+    private String getAuthUser(String loginUser) {
+        boolean systemUser = false;
+//        判断是否系统用户
+        if (loginUser.equals("hadoop") || loginUser.startsWith("hduser")) {
+            systemUser = true;
+        }
+        if (systemUser) {
+            return StringUtils.isNotBlank(dataMapConfig.getSpecialProxyUser()) ? dataMapConfig.getSpecialProxyUser() : loginUser;
+        }
+        return loginUser;
+    }
+
 
 }

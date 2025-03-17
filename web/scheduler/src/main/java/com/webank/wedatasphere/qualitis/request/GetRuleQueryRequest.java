@@ -11,6 +11,8 @@ public class GetRuleQueryRequest extends PageRequest {
 
     @JsonProperty("project_name")
     private String projectName;
+    @JsonProperty("rule_name")
+    private String ruleName;
     @JsonProperty("create_user")
     private String createUser;
     @JsonProperty("login_user")
@@ -22,6 +24,14 @@ public class GetRuleQueryRequest extends PageRequest {
 
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getRuleName() {
+        return ruleName;
+    }
+
+    public void setRuleName(String ruleName) {
+        this.ruleName = ruleName;
     }
 
     public String getLoginUser() {

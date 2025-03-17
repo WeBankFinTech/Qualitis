@@ -152,44 +152,44 @@ public class ProjectController {
         }
     }
 
-    @POST
-    @Path("git/modify")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
-        try {
-            RequestParametersUtils.transcoding(request);
-            return projectService.modifyProjectGitRelation(request);
-        } catch (UnExpectedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (PermissionDeniedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (Exception e) {
-            LOGGER.error("Failed to modify project git relation. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_PROJECT}", null);
-        }
-    }
+//    @POST
+//    @Path("git/modify")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+//        try {
+//            RequestParametersUtils.transcoding(request);
+//            return projectService.modifyProjectGitRelation(request);
+//        } catch (UnExpectedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            throw e;
+//        } catch (PermissionDeniedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            throw e;
+//        } catch (Exception e) {
+//            LOGGER.error("Failed to modify project git relation. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_MODIFY_PROJECT}", null);
+//        }
+//    }
 
-    @POST
-    @Path("git/delete")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
-        try {
-            return projectService.deleteProjectGitRelation(request);
-        } catch (UnExpectedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (PermissionDeniedRequestException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw e;
-        } catch (Exception e) {
-            LOGGER.error("Failed to delete project git relation. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to delete git relation of project", null);
-        }
-    }
+//    @POST
+//    @Path("git/delete")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+//        try {
+//            return projectService.deleteProjectGitRelation(request);
+//        } catch (UnExpectedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            throw e;
+//        } catch (PermissionDeniedRequestException e) {
+//            LOGGER.error(e.getMessage(), e);
+//            throw e;
+//        } catch (Exception e) {
+//            LOGGER.error("Failed to delete project git relation. Project ID: {}, caused by system error: {}", request.getProjectId(), e.getMessage(), e);
+//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to delete git relation of project", null);
+//        }
+//    }
 
     @POST
     @Path("delete")

@@ -223,12 +223,12 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
     List<String> findRuleCreateUserByDataSource(String clusterName, String dbName, String tableName, String userName);
 
     /**
-     * find By Rule Id
+     * find By Rule Ids
      * @param ruleIds
      * @return
      */
-    @Query(value = "select * from qualitis_rule_datasource where rule_id in (?1)",nativeQuery = true)
-    List<RuleDataSource> findByRuleId(List<Long> ruleIds);
+    @Query(value = "select * from qualitis_rule_datasource where rule_id in (?1)", nativeQuery = true)
+    List<RuleDataSource> findByRuleIds(List<Long> ruleIds);
 
     /**
      * find rule group by data source
@@ -276,4 +276,34 @@ public interface RuleDataSourceRepository extends JpaRepository<RuleDataSource, 
     @Query(value = "update qualitis_rule_datasource set sub_system_id=?2, sub_system_name=?3, department_code=?4, department_name=?5, dev_department_name=?6" +
             ", tag_code=?7, tag_name=?8 where id = ?1", nativeQuery = true)
     void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
+
+    /**
+     * find By Rule Id and non null linkis datasource ID
+     * @param ruleIds
+     * @return
+     */
+    @Query(value = "select * from qualitis_rule_datasource where linkis_datasource_id is not null and rule_id in (?1)", nativeQuery = true)
+    List<RuleDataSource> findByRuleIdAndNonNullLinkisDataSourceId(List<Long> ruleIds);
+
+    /**
+     * Find by rule id
+     * @param ruleId
+     * @return
+     */
+    @Query(value = "select * from qualitis_rule_datasource where rule_id = ?1", nativeQuery = true)
+    List<RuleDataSource> findByRuleId(Long ruleId);
+
+    /**
+     * find by usernames
+     * @param usernames
+     * @param pageable
+     * @return
+     */
+    @Query(value = "select ds.* from qualitis_rule_datasource ds " +
+            "inner join qualitis_project p on p.id = ds.project_id " +
+            "where EXISTS (select id from qualitis_project_user pu where pu.project_id = p.id and pu.user_name in (?1)) " +
+            "and ds.table_name is not null and ds.table_name != '' " +
+            "and ds.datasource_index is not null " +
+            "and ds.cluster_name is not null and ds.cluster_name != ''", nativeQuery = true)
+    Page<RuleDataSource> findByUserWithPage(List<String> usernames, Pageable pageable);
 }

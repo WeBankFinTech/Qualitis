@@ -38,5 +38,9 @@ public interface AlarmArgumentsExecutionParametersDao {
      */
     void deleteByExecutionParameters(ExecutionParameters executionParametersInDb);
 
-
+    /**
+     * delete by ExecutionParametersId
+     * @param id
+     */
+    void deleteByExecutionParametersId(Long id);
 }

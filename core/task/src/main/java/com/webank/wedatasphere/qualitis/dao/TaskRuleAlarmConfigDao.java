@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.dao;
 
+import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.TaskRuleAlarmConfig;
 
 import java.util.List;
@@ -33,8 +34,16 @@ public interface TaskRuleAlarmConfigDao {
     TaskRuleAlarmConfig findById(Long taskAlarmConfigId);
 
     /**
+     * Get by rule metric id.
+     * @param ruleMetric
+     * @return
+     */
+    List<TaskRuleAlarmConfig> findByRuleMetric(RuleMetric ruleMetric);
+
+    /**
      * Aave all.
      * @param taskRuleAlarmConfigs
      */
     void saveAll(List<TaskRuleAlarmConfig> taskRuleAlarmConfigs);
+
 }

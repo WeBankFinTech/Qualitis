@@ -25,6 +25,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
+import com.webank.wedatasphere.qualitis.metadata.response.BuzDomainResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
@@ -503,4 +504,6 @@ public interface MetaDataService {
      * @throws UnExpectedRequestException
      */
     Object getDcnList(String subSystemId, String dcnRangeType, List<String> dcnRangeValues) throws UnExpectedRequestException;
+
+    List<BuzDomainResponse> getBuzDomainList() throws UnExpectedRequestException, IOException;
 }

@@ -41,4 +41,9 @@ public class StaticExecutionParametersDaoImpl implements StaticExecutionParamete
     public void deleteByExecutionParameters(ExecutionParameters executionParametersInDb) {
         staticExecutionParametersRepository.deleteByExecutionParameters(executionParametersInDb);
     }
+
+    @Override
+    public void deleteByExecutionParametersId(Long id) {
+        staticExecutionParametersRepository.deleteByExecutionParametersId(id);
+    }
 }

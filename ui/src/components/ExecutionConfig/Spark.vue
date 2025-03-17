@@ -6,6 +6,7 @@
     </FForm>
 </template>
 <script setup>
+
 import {
     defineProps, onMounted, ref, watchEffect, defineEmits, watch, defineExpose,
 } from 'vue';
@@ -35,7 +36,7 @@ watchEffect(() => {
 });
 const emit = defineEmits(['update:modelValue']);
 const rules = {
-    param: [{ asyncValidator: (_, arr) => repeatValidator('SPARK配置-配置参数', arr) }],
+    param: [{ asyncValidator: (_, arr) => repeatValidator($t('_.SPARK配置-配置参数'), arr) }],
 };
 watch(param, () => {
     emit('update:modelValue', param.value);
@@ -45,6 +46,7 @@ function valid() {
     return form.value.validate();
 }
 defineExpose({ valid });
+
 </script>
 <style lang="less">
 .item{

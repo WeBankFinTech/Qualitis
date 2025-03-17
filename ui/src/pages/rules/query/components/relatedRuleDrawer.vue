@@ -30,7 +30,7 @@
             </div>
             <div class="condition-item">
                 <FSpace :size="CONDITIONBUTTONSPACE">
-                    <FButton type="primary" @click="search">查询</FButton>
+                    <FButton type="primary" @click="search">{{$t('_.查询')}}</FButton>
                 </FSpace>
             </div>
         </div>
@@ -81,10 +81,40 @@
             :list="executationRules"
             @ok="excuteRuleInProjectDetail" />
     </FDrawer>
+    <FModal
+        v-model:show="showDownload"
+        :title="$t('myProject.DownloadRules')"
+        displayDirective="if"
+        :okText="$t('myProject.confirmExport')"
+        :width="600"
+    >
+        <div style="margin-bottom: 22px;">{{$t('common.exportContent')}}</div>
+        <FForm
+            ref="dowmloadFormRef"
+            :label-width="70"
+            labelPosition="left"
+            class="task-form"
+            :model="downloadForm"
+        >
+            <FFormItem prop="download_type" :label="$t('_.导出方式')">
+                <FSelect v-model="downloadForm.download_type" :placeholder="$t('_.请选择导出方式')" :options="exportTypeList" disabled />
+            </FFormItem>
+            <FFormItem :label="$t('_.差异化变量')" class="diff-form-label">
+                <DifVariables ref="difVariablesRef" parentType="export"></DifVariables>
+            </FFormItem>
+        </FForm>
+        <template #footer>
+            <FSpace :size="CONDITIONBUTTONSPACE" justify="end">
+                <FButton @click="handleCancel">{{$t('common.cancel')}}</FButton>
+                <FButton type="primary" :loading="submitLoading" @click="handleSave">{{$t('common.ok')}}</FButton>
+            </FSpace>
+        </template>
+    </FModal>
 </template>
 <script setup>
+
 import {
-    defineProps, defineEmits, ref, reactive, onBeforeUpdate,
+    toRaw, defineProps, defineEmits, ref, reactive, onBeforeUpdate, onMounted, nextTick,
 } from 'vue';
 import { useI18n, useRouter } from '@fesjs/fes';
 import { FMessage } from '@fesjs/fes-design';
@@ -93,6 +123,7 @@ import useExport from '@/pages/projects/hooks/useExport';
 import useExecutation from '@/pages/projects/hooks/useExecutation';
 import { CONDITIONBUTTONSPACE, MAX_PAGE_SIZE } from '@/assets/js/const';
 import { BPageLoading } from '@fesjs/traction-widget';
+import DifVariables from '@/pages/projects/components/ImExport/difVariables';
 import { fetctRelatedRulesOfTableDetail, fetctRuleTemplateList, fetchColumnsOfTableDetail } from '../api';
 
 const router = useRouter();
@@ -124,15 +155,26 @@ const props = defineProps({
 const relationObjectTypeList = [
     {
         value: '1',
-        label: '表',
+        label: $t('_.表'),
     },
     {
         value: '2',
-        label: '字段',
+        label: $t('_.字段'),
     },
 ];
 const emit = defineEmits(['update:show']);
-
+// 导出
+const difVariablesRef = ref(null);
+const exportTypeList = ref([
+    {
+        value: 2,
+        label: $t('_.导出到Git'),
+    },
+    {
+        value: 1,
+        label: $t('_.导出到本地'),
+    },
+]);
 const showLoading = ref(false);
 const ruleTypes = ['', $t('ruleTemplatelist.singleTableType'), $t('ruleTemplatelist.singleOrMultipleIndexType'), $t('common.crossTableType'), $t('common.fileType')];
 const rules = ref([]);
@@ -186,7 +228,7 @@ const getParams = () => {
     if (searchForm.relation_object_type === '2' && searchForm.column) {
         params.column = searchForm.column;
     }
-    if (Object.keys(column).length > 0) {
+    if (Object.keys(column ?? {}).length > 0) {
         const { columnName, dataType } = column;
         params.column = `${columnName}:${dataType}`;
     }
@@ -231,7 +273,7 @@ const getcolumnList = async () => {
         const { content } = await fetchColumnsOfTableDetail(params);
         console.log('getcolumnList-res', content);
         // eslint-disable-next-line camelcase
-        columList.value = content.map(({ column_name, data_type }) => ({ value: `${column_name}:${data_type}`, label: column_name }));
+        columList.value = content?.map(({ column_name, data_type }) => ({ value: `${column_name}:${data_type}`, label: column_name })) || [];
     } catch (e) {
         console.error(e);
     }
@@ -274,16 +316,77 @@ const handleCancelExport = () => {
     isHandleExport.value = false;
     relatedRuleTable.value.clearSelection();
 };
+const showDownload = ref(false);
+const dowmloadFormRef = ref(null);
+const submitLoading = ref(false);
+const downloadForm = ref({
+    download_type: 1,
+});
 const handleExportConfirm = () => {
     const ruleIds = rulesSelection.value;
     if (ruleIds.length === 0) {
         FMessage.warn($t('common.selectOne'));
         return;
     }
-    exportFileByParams({ rule_ids: ruleIds });
-    handleCancelExport();
+    downloadForm.value.rule_ids = ruleIds;
+    downloadForm.value.project_ids = rules.value.filter(item => ruleIds.includes(item.rule_id)).map(obj => obj.project_id);
+    console.log('选择的参数', downloadForm.value);
+    showDownload.value = true;
+
+    // exportFileByParams({ rule_ids: ruleIds });
+    // handleCancelExport();
+};
+const initExportForm = () => ({
+    download_type: 1,
+    dif_array: [],
+    rule_ids: [],
+});
+const handleCancel = () => {
+    downloadForm.value = initExportForm();
+    showDownload.value = false;
+    submitLoading.value = false;
+    showDownload.value = false;
+};
+const handleParams = () => {
+    const {
+        // eslint-disable-next-line camelcase
+        download_type, rule_ids = [], project_ids = [],
+    } = downloadForm.value;
+    let params = {};
+    params = {
+        download_type,
+        rule_ids,
+        project_ids,
+    };
+    params.diff_variables = toRaw(difVariablesRef.value.getDifData());
+    return params;
 };
 
+const handleSave = async () => {
+    try {
+        let validR = [];
+        if (downloadForm.value.download_type === 1) {
+            validR = await Promise.all([dowmloadFormRef.value.validate(), difVariablesRef.value.valid()]);
+        }
+        if (!validR.includes(false)) {
+            submitLoading.value = true;
+            const params = handleParams();
+            console.log('params', params);
+            // 本地导出
+            await exportFileByParams(params);
+            nextTick();
+            FMessage.success($t('_.导出成功'));
+            handleCancel();
+            showDownload.value = false;
+            submitLoading.value = false;
+            handleCancelExport();
+        }
+    } catch (e) {
+        showDownload.value = false;
+        submitLoading.value = false;
+        console.log(e);
+    }
+};
 // 处理执行规则
 const {
     showExecutation,
@@ -319,13 +422,14 @@ const handleRowClick = (row) => {
     if (row.table_group) ruleType = 'tableGroupRules';
     router.push(`/projects/${ruleType}?ruleGroupId=${row.rule_group_id}&id=${row.rule_id}&workflowProject=${row.project_type === 2}&projectId=${row.project_id}`);
 };
-onBeforeUpdate(async () => {
+onMounted(async () => {
     resetSearchForm();
     getRuleTemplateList();
     getcolumnList();
     await search();
     resultByInit.value = true;
 });
+
 </script>
 <style lang="less" scoped>
 .related-rule-drawer {

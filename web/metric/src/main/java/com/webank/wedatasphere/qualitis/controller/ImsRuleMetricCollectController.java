@@ -29,7 +29,7 @@ import java.util.ListIterator;
  */
 @Path("api/v1/projector/imsmetric/collect")
 public class ImsRuleMetricCollectController {
-//
+
 //    @Autowired
 //    private ImsRuleMetricCollectService imsRuleMetricCollectService;
 //    @Autowired
@@ -47,7 +47,7 @@ public class ImsRuleMetricCollectController {
 //    @Path("/scheduler/detail")
 //    @Produces(MediaType.APPLICATION_JSON)
 //    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse getSchedulerDetail(MetricCollectQueryRequest request) throws UnExpectedRequestException {
+//    public GeneralResponse<MetricSchedulerDetailResponse> getSchedulerDetail(MetricCollectQueryRequest request) throws UnExpectedRequestException {
 //        CommonChecker.checkString(request.getPartition(), "partition");
 //        CommonChecker.checkString(request.getDatabase(), "database");
 //        CommonChecker.checkString(request.getTable(), "table");

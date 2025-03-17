@@ -20,11 +20,7 @@ import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmTodayResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
+import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.service.IndexService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
@@ -141,6 +137,31 @@ public class IndexController {
       return new GeneralResponse<>(ResponseStatusConstants.OK, "query successfully", response);
     } catch (Exception e) {
       LOG.error("[Home overview]Failed to query API: alarm/chart. Internal error", e);
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
+    }
+  }
+
+  /**
+   * Return applications status in given time.
+   * Including num of successful task, failed task and not pass task
+   *
+   * @param request
+   * @return
+   * @throws UnExpectedRequestException
+   */
+  @POST
+  @Path("auto_collect_record/chart")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public GeneralResponse getAutoCollectRecordChart(IndexRequest request, @Context HttpServletRequest httpServletRequest) throws UnExpectedRequestException {
+    IndexRequest.checkRequest(request);
+    String user = HttpUtils.getUserName(httpServletRequest);
+    request.setUser(user);
+    try {
+      List<IndexAutoCollectRecordChartResponse> response = indexService.getAutoCollectRecordChart(request);
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&QUERY_SUCCESSFULLY}", response);
+    } catch (Exception e) {
+      LOG.error("[Home overview]Failed to query API: auto_collect_record/chart, internal error", e);
       return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
     }
   }

@@ -9,10 +9,13 @@ import com.webank.wedatasphere.qualitis.constant.PositionRoleEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.WhiteListTypeEnum;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
+import com.webank.wedatasphere.qualitis.dao.UserRoleDao;
+import com.webank.wedatasphere.qualitis.dao.UserSpecPermissionDao;
 import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
 import com.webank.wedatasphere.qualitis.dto.ItsmUserDto;
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.UserSpecPermission;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.AddUserProxyUserRequest;
 import com.webank.wedatasphere.qualitis.request.user.*;
@@ -31,7 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.management.relation.RoleNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author v_minminghe@webank.com
@@ -55,6 +62,10 @@ public class ItsmServiceImpl implements ItsmService {
     private UserProxyUserService userProxyUserService;
     @Autowired
     private ProxyUserService proxyUserService;
+    @Autowired
+    private UserRoleDao userRoleDao;
+    @Autowired
+    private UserSpecPermissionDao userSpecPermissionDao;
 
     @Transactional(rollbackFor = {RuntimeException.class, Exception.class})
     @Override
@@ -138,8 +149,39 @@ public class ItsmServiceImpl implements ItsmService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    private void addUserProxyUser (String username, String proxyUserName) {
+    @Transactional(rollbackFor = {Exception.class, UnExpectedRequestException.class})
+    @Override
+    public void deleteUserRoles(ItsmRequest request) {
+        List<Map<String, Object>> itsmUserRequestList = request.getItsmRoleUserList();
+        LOGGER.info("Itsm role user list's size: " + (CollectionUtils.isNotEmpty(itsmUserRequestList) ? itsmUserRequestList.size() : 0));
+        for (Map<String, Object> itsmUserMap: itsmUserRequestList) {
+            String userName = String.valueOf(itsmUserMap.getOrDefault("userName", ""));
+            if (StringUtils.isBlank(userName)) {
+                userName = String.valueOf(itsmUserMap.getOrDefault("user_name", ""));
+            }
+            if (StringUtils.isBlank(userName)) {
+                LOGGER.warn("Request has no user name, index of list");
+                continue;
+            }
+            LOGGER.info("Current user name: " + userName);
+            // if contains (中文), remove it.
+            User user = userService.findByUsername(userName.replaceAll("\\(.*?\\)", ""));
+            if (user != null) {
+                LOGGER.info("User exists: " + userName + ", start to delete user role");
+                userRoleDao.deleteByUser(user);
+
+                List<UserSpecPermission> userSpecPermissionList = userSpecPermissionDao.findByUser(user);
+                LOGGER.info("User spec permission list's size: " + (CollectionUtils.isNotEmpty(userSpecPermissionList) ? userSpecPermissionList.size() : 0));
+                for (UserSpecPermission userSpecPermission: userSpecPermissionList) {
+                    userSpecPermissionDao.deleteUserSpecPermission(userSpecPermission);
+                }
+            } else {
+                LOGGER.info("User not exists: " + userName);
+            }
+        }
+    }
+
+    private void addUserProxyUser(String username, String proxyUserName) {
         try {
             userService.addUserIfNotExists(proxyUserName);
             proxyUserService.addProxyUserIfNotExists(proxyUserName);
@@ -149,37 +191,41 @@ public class ItsmServiceImpl implements ItsmService {
             addUserProxyUserRequest.setProxyUserName(proxyUserName);
             userProxyUserService.addUserProxyUser(addUserProxyUserRequest);
         } catch (UnExpectedRequestException e) {
-            LOGGER.warn("Failed add proxyUser: {}, username: {}", proxyUserName, username, e.getMessage());
+            LOGGER.warn("Failed add proxyUser: {}, username: {}, exception: {}", proxyUserName, username, e.getMessage());
         } catch (RoleNotFoundException e) {
-            LOGGER.warn("Failed add proxyUser: {}, username: {}", proxyUserName, username, e.getMessage());
+            LOGGER.warn("Failed add proxyUser: {}, username: {}, exception: {}", proxyUserName, username, e.getMessage());
         }
     }
 
     private void formatAndCheckAlertWhitelistRequest(List<ItsmAlertWhitelistRequest> dataList, List<CheckAlertWhiteList> addCheckAlertWhiteList, List<CheckAlertWhiteList> deleteCheckAlertWhiteList) {
         for (ItsmAlertWhitelistRequest alertWhitelistRequest : dataList) {
             String operationType = alertWhitelistRequest.getOperType();
-            String authorizedUser = alertWhitelistRequest.getWebankName();
+            String authorizedUsers = alertWhitelistRequest.getWebankName();
             String database = alertWhitelistRequest.getDatabase();
             String table = alertWhitelistRequest.getTable();
             Preconditions.checkArgument(StringUtils.isNotEmpty(operationType), "oper_type must be not empty");
-            Preconditions.checkArgument(StringUtils.isNotEmpty(authorizedUser), "webankName must be not empty");
+            Preconditions.checkArgument(StringUtils.isNotEmpty(authorizedUsers), "webankName must be not empty");
             Preconditions.checkArgument(StringUtils.isNotEmpty(database), "database must be not empty");
             Preconditions.checkArgument(StringUtils.isNotEmpty(table), "table must be not empty");
 
-            CheckAlertWhiteList checkAlertWhiteList = new CheckAlertWhiteList();
-            checkAlertWhiteList.setType(WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode());
-            checkAlertWhiteList.setAuthorizedUser(authorizedUser);
-            checkAlertWhiteList.setItem(linkisConfig.getBdapCheckAlertCluster()
-                    + SpecCharEnum.PERIOD_NO_ESCAPE.getValue()
-                    + database
-                    + SpecCharEnum.PERIOD_NO_ESCAPE.getValue()
-                    + table);
+            String[] authorizedUserList = StringUtils.split(authorizedUsers, SpecCharEnum.COMMA.getValue());
+            for (String authorizedUser: authorizedUserList) {
+                CheckAlertWhiteList checkAlertWhiteList = new CheckAlertWhiteList();
+                checkAlertWhiteList.setType(WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode());
+                checkAlertWhiteList.setAuthorizedUser(authorizedUser);
+                checkAlertWhiteList.setItem(linkisConfig.getBdapCheckAlertCluster()
+                        + SpecCharEnum.PERIOD_NO_ESCAPE.getValue()
+                        + database
+                        + SpecCharEnum.PERIOD_NO_ESCAPE.getValue()
+                        + table);
 
-            if ("add".equals(operationType)) {
-                addCheckAlertWhiteList.add(checkAlertWhiteList);
-            } else {
-                deleteCheckAlertWhiteList.add(checkAlertWhiteList);
+                if ("add".equals(operationType)) {
+                    addCheckAlertWhiteList.add(checkAlertWhiteList);
+                } else {
+                    deleteCheckAlertWhiteList.add(checkAlertWhiteList);
+                }
             }
+
         }
     }
 

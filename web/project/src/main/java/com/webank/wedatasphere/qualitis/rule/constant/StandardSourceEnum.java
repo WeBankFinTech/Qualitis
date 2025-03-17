@@ -13,7 +13,7 @@ public enum StandardSourceEnum {
      * 标准值来源枚举
      */
     CUSTOM_SOURCE(1, "自定义"),
-    DATA_SHAPIS(2, "DataShapis"),
+//    DATA_SHAPIS(2, "DataShapis"),
     ;
 
     private Integer code;

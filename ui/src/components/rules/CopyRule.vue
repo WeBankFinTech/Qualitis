@@ -8,7 +8,7 @@
         @cancel="toggleModal"
         @ok="copyRule">
         <FForm ref="copyRuleFormRef" :model="datasource" :rules="datasourceRules" :labelWidth="86" labelPosition="right">
-            <FFormItem label="集群" prop="cluster_name">
+            <FFormItem :label="$t('_.集群')" prop="cluster_name">
                 <FSelect
                     v-model="datasource.cluster_name"
                     filterable
@@ -25,7 +25,7 @@
                     ></FOption>
                 </FSelect>
             </FFormItem>
-            <FFormItem label="数据源类型" prop="type">
+            <FFormItem :label="$t('_.数据源类型')" prop="type">
                 <FSelect
                     v-model="datasource.type"
                     class="form-edit-input"
@@ -36,13 +36,13 @@
                 </FSelect>
             </FFormItem>
             <!-- 只有在dss嵌入的时候才给用户选择数据来源 -->
-            <FFormItem v-if="isEmbedInFrame" label="数据来源" prop="isUpStream">
+            <FFormItem v-if="isEmbedInFrame" :label="$t('_.数据来源')" prop="isUpStream">
                 <FRadioGroup v-model="datasource.isUpStream" @change="onUpstreamChange">
-                    <FRadio :value="true">上游表</FRadio>
-                    <FRadio :value="false">正常表</FRadio>
+                    <FRadio :value="true">{{$t('_.上游表')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.正常表')}}</FRadio>
                 </FRadioGroup>
             </FFormItem>
-            <FFormItem v-if="['mysql', 'tdsql'].includes(datasource.type)" label="连接" prop="linkis_datasource_name">
+            <FFormItem v-if="['mysql', 'tdsql'].includes(datasource.type)" :label="$t('_.连接')" prop="linkis_datasource_name">
                 <FSelect
                     v-model="datasource.linkis_datasource_id"
                     remote
@@ -64,7 +64,7 @@
                     :options="dbs"
                     @change="onDBChange" />
             </FFormItem>
-            <FFormItem label="数据表" prop="table_name">
+            <FFormItem :label="$t('_.数据表')" prop="table_name">
                 <FSelect
                     v-model="datasource.table_name"
                     filterable
@@ -75,7 +75,7 @@
                     :options="tables"
                     @change="onTableChange" />
             </FFormItem>
-            <FFormItem label="字段" prop="col_names">
+            <FFormItem :label="$t('_.字段')" prop="col_names">
                 <FSelect
                     v-model="datasource.col_names"
                     multiple
@@ -116,6 +116,7 @@
     </FModal>
 </template>
 <script setup>
+
 import {
     ref, reactive, inject, onMounted, computed, unref,
 } from 'vue';
@@ -364,7 +365,7 @@ const copyRule = async () => {
         datasource.value = {
             isUpStream: false,
         };
-        FMessage.success('复制规则成功');
+        FMessage.success($t('_.复制规则成功'));
         // 获取ruleid然后跳转
         // eslint-disable-next-line camelcase
         const { rule_list } = await FRequest(`api/v1/projector/rule/group/${rule_group_id}`, {}, 'get');
@@ -387,4 +388,5 @@ const copyRule = async () => {
 onMounted(() => {
     loadProjectList();
 });
+
 </script>

@@ -12,6 +12,7 @@
             v-if="groupType === 'sqlVerification'"
             ref="ruleMetricSelectRef"
             :defaultMetricId="currentCondition.ruleCondition.rule_metric_id"
+            :defaultMetricName="currentCondition.ruleCondition.rule_metric_name"
             :inlineMetric="true"
             @getRuleMetricData="getRuleMetricData"
         ></RuleMetricSelect>
@@ -44,7 +45,7 @@
         <FFormItem
             v-if="!['newCustomRule', 'sqlVerification'].includes(groupType)"
             class="item-min-width"
-            label="校验值"
+            :label="$t('_.校验值')"
             prop="output_meta_id"
         >
             <FSelect
@@ -119,7 +120,7 @@
                 v-model="currentCondition.ruleCondition.threshold"
                 class="form-edit-input number-input"
                 :class="isUnitShow() ? 'has-file-unit' : ''"
-                placeholder="请输入"
+                :placeholder="$t('_.请输入')"
             >
                 <template #suffix>
                     <span v-if="isPercentShow()">%</span>
@@ -146,8 +147,9 @@
     </FForm>
 </template>
 <script setup>
+
 import {
-    ref, inject, computed,
+    ref, inject, computed, watch,
 } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { getLabelByValue, ruleTypes } from '@/common/utils';
@@ -226,7 +228,7 @@ const ruleConditionFormRules = ref({
                     : COMMON_REG.NUMBER_CONTAIN_FLOAT.test(value)) {
                     resolve();
                 } else {
-                    reject('不合法的非数值输入');
+                    reject($t('_.不合法的非数值输入'));
                 }
             }),
         },
@@ -262,7 +264,7 @@ const valid = async () => {
 
 function isUnitShow() {
     return ['documentVerification'].includes(groupType.value)
-        && currentCondition.ruleCondition.output_meta_name === '目录容量'
+        && currentCondition.ruleCondition.output_meta_name === $t('_.目录容量')
         && specialTplList.includes(currentCondition.ruleCondition.check_template);
 }
 
@@ -394,8 +396,14 @@ function tplChange() {
     clearUnitValue();
 }
 
+watch(checkFieldList, (newVal, oldVal) => {
+    if (newVal.length === 1) {
+        currentCondition.ruleCondition.output_meta_id = newVal[0].output_id;
+    }
+});
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .item-min-width {

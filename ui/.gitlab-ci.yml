@@ -1,0 +1,52 @@
+.default:
+  script:
+    - export PATH="/data/node16/bin:$PATH"
+    - wnpm i
+    - wnpm run $ENV
+    - rm -rf *.zip
+    - fes-upload-aomp --dist="dist" --sys=BDP-DQM --tplId=$TPL  --version="{{PACKAGEJSON.version}}_$ENV"
+  stage: build
+  variables:
+    ENV: $ENV
+  tags:
+    - wxapp
+  environment:
+    name: $ENV_NAME
+
+# 测试环境
+test:
+  extends: .default
+  variables:
+    ENV: "test-sit" #根据项目实际情况设置ENV的值
+    TPL: "69760"
+  only:
+    - test
+
+# 测试环境
+dev-test:
+  extends: .default
+  variables:
+    ENV: "test-dev" #根据项目实际情况设置ENV的值
+    TPL: "72219"
+  only:
+    - dev-test
+
+# 测试环境
+uat-test:
+  extends: .default
+  variables:
+    ENV: "test-uat" #根据项目实际情况设置ENV的值
+    TPL: "72217"
+  only:
+    - uat-test
+
+# 生产环境
+release:
+  extends: .default
+  variables:
+    ENV: "prod" ##打包命令里用到环境参数
+    TPL: "69760"
+  only:
+   # 生产打包
+    - release
+    - hotfix

@@ -24,6 +24,8 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
  * @author howeye
  */
 public class GroupExecutionRequest {
+    @JsonProperty("application_id")
+    private String applicationId;
     @JsonProperty("group_id")
     private Long groupId;
     @JsonProperty("execution_param")
@@ -77,6 +79,14 @@ public class GroupExecutionRequest {
         this.executionUser = executionUser;
         this.createUser = createUser;
         this.nodeName = nodeName;
+    }
+
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    public void setApplicationId(String applicationId) {
+        this.applicationId = applicationId;
     }
 
     public String getEnvNames() {

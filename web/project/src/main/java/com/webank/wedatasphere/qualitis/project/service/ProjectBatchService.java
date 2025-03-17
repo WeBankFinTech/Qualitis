@@ -24,6 +24,7 @@ import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailed
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelExecutionParametersByProject;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelGroupByProject;
+import com.webank.wedatasphere.qualitis.project.excel.ExcelProjectInfoListeners;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelRuleMetric;
 import com.webank.wedatasphere.qualitis.project.request.DiffVariableRequest;
 import com.webank.wedatasphere.qualitis.project.request.DownloadProjectRequest;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -83,7 +85,7 @@ public interface ProjectBatchService {
      * @throws IOException
      * @throws UnExpectedRequestException
      */
-    void handleTableGroup(AnalysisEventListener listener, Long projectId, List<DiffVariableRequest> diffVariableRequestList)
+    void handleTableGroup(ExcelProjectInfoListeners listener, Long projectId, List<DiffVariableRequest> diffVariableRequestList)
         throws IOException, UnExpectedRequestException;
 
     /**
@@ -146,12 +148,11 @@ public interface ProjectBatchService {
     /**
      * Get execution parameter
      * @param projects
-     * @param executionParamNames
-     * @param batchRules
+     * @param projectRules
      * @return
      * @throws IOException
      */
-    List<ExcelExecutionParametersByProject> getExecutionParameters(List<Project> projects, List<String> executionParamNames, boolean batchRules) throws IOException;
+    List<ExcelExecutionParametersByProject> getExecutionParameters(List<Project> projects, Map<Long, Set<Rule>> projectRules) throws IOException;
 
     /**
      * Upload from local

@@ -1,12 +1,10 @@
 package com.webank.wedatasphere.qualitis.metadata.client;
 
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.response.CmdbDepartmentResponse;
-import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
-import com.webank.wedatasphere.qualitis.metadata.response.ProductResponse;
-import com.webank.wedatasphere.qualitis.metadata.response.SubSystemResponse;
+import com.webank.wedatasphere.qualitis.metadata.response.*;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -14,6 +12,13 @@ import java.util.List;
  * @date 2021/3/2 10:53
  */
 public interface OperateCiService {
+
+    /**
+     *  Get all buz_domain info from cmdb
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<BuzDomainResponse> getAllBuzDomainInfo() throws UnExpectedRequestException, IOException;
     /**
      * Get all sub_system info from http of cmdb, incloud: id,name,full english name.
      *
@@ -21,6 +26,8 @@ public interface OperateCiService {
      * @throws UnExpectedRequestException
      */
     List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException;
+
+    List<SubSystemResponse> getSubSystemInfoByPage(String subSystemName, int page, int size) throws UnExpectedRequestException;
 
     /**
      * Get the specific sub-system by its name

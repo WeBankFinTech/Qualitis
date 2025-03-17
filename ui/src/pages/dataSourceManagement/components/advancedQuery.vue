@@ -1,26 +1,28 @@
 <template>
     <!-- 高级筛选 -->
-    <FModal :maskClosable="false" :title="$t('common.advanceSearch')" :show="showAdvanceQuery" @cancel="advanceCancel" @ok="ok">
-        <FForm v-model="advanceQuery" :labelWidth="80" labelPosition="right">
-            <FFormItem :label="$t('dataSourceManagement.dataSourceType')">
-                <FSelect v-model="advanceQuery.data_source_type_id" clearable filterable :placeholder="$t('common.pleaseInput')" :options="dataSourceTypeList" labelField="name" valueField="id">
+    <FModal :maskClosable="false" :title="$t('_.高级筛选')" :show="showAdvanceQuery" @cancel="advanceCancel" @ok="ok">
+        <FForm v-model="advanceQuery" :labelWidth="71" labelPosition="right">
+            <FFormItem :label="$t('_.数据源类型')">
+                <FSelect v-model="advanceQuery.data_source_type_id" clearable filterable :placeholder="$t('_.请输入类型')" :options="dataSourceTypeList" labelField="name" valueField="id">
                 </FSelect>
             </FFormItem>
-            <FFormItem :label="$t('dataSourceManagement.dataSourceName')">
-                <FSelect v-model="advanceQuery.name" filterable clearable :options="dataSourceNameList" :placeholder="$t('common.pleaseInput')">
+            <FFormItem :label="$t('_.数据源名称')">
+                <FSelect v-model="advanceQuery.name" filterable clearable :options="dataSourceNameList" :placeholder="$t('_.请输入名称')">
                 </FSelect>
             </FFormItem>
             <!-- 关联子系统 -->
             <FFormItem :label="$t('dataSourceManagement.associatedSubSystem')">
-                <FInput
+                <FSelect
                     v-model="advanceQuery.sub_system_name"
                     filterable
                     clearable
-                    :placeholder="$t('common.pleaseInput')"
+                    :placeholder="$t('common.pleaseEnter')"
+                    :options="subSystemList"
+                    :fitler="upperCaseFilter"
                 />
             </FFormItem>
             <!-- 开发科室 -->
-            <FFormItem :label="$t('dataSourceManagement.developDepartment')" prop="dev_department_name">
+            <FFormItem :label="$t('_.开发科室')" prop="dev_department_name">
                 <FSelectCascader
                     v-model="advanceQuery.dev_department_name"
                     :data="devDivisions"
@@ -30,12 +32,11 @@
                     emitPath
                     showPath
                     checkStrictly="child"
-                    :placeholder="$t('common.pleaseSelect')"
                     @change="handleDevId"
                 ></FSelectCascader>
             </FFormItem>
             <!-- 运维科室 -->
-            <FFormItem :label="$t('dataSourceManagement.maintainDepartment')" prop="ops_department_name">
+            <FFormItem :label="$t('_.运维科室')" prop="ops_department_name">
                 <FSelectCascader
                     v-model="advanceQuery.ops_department_name"
                     :data="opsDivisions"
@@ -45,17 +46,15 @@
                     emitPath
                     showPath
                     checkStrictly="child"
-                    :placeholder="$t('common.pleaseSelect')"
                     @change="handleOpsId"
                 ></FSelectCascader>
             </FFormItem>
             <!-- 可见范围 -->
-            <FFormItem :label="$t('dataSourceManagement.visibleRange')" prop="visible_department_ids">
+            <FFormItem :label="$t('_.可见范围')" prop="visible_department_ids">
                 <FSelectCascader
                     v-model="advanceQuery.visible_department_ids"
                     :data="visDivisions"
                     :loadData="loadVisDivisions"
-                    :placeholder="$t('common.pleaseSelect')"
                     clearable
                     remote
                     emitPath
@@ -66,12 +65,12 @@
                     :collapseTagsLimit="3"
                     @change="visSelectChange" />
             </FFormItem>
-            <FFormItem :label="$t('dataSourceManagement.createUser')" prop="create_user">
-                <FSelect v-model="advanceQuery.create_user" :placeholder="$t('common.pleaseSelect')" :options="formatProjectUserList" clearable filterable>
+            <FFormItem :label="$t('_.创建人')" prop="create_user">
+                <FSelect v-model="advanceQuery.create_user" :options="formatProjectUserList" clearable filterable>
                 </FSelect>
             </FFormItem>
-            <FFormItem :label="$t('dataSourceManagement.modifyUser')" prop="modify_user">
-                <FSelect v-model="advanceQuery.modify_user" :placeholder="$t('common.pleaseSelect')" :options="formatProjectUserList" clearable filterable>
+            <FFormItem :label="$t('_.修改人')" prop="modify_user">
+                <FSelect v-model="advanceQuery.modify_user" :options="formatProjectUserList" clearable filterable>
                 </FSelect>
             </FFormItem>
         </FForm>
@@ -86,6 +85,7 @@ import useDivisions from '@/hooks/useDivisions';
 import useDepartment from '@/hooks/useDepartment';
 import usePermissionDivisions from '@/hooks/usePermissionDivisions';
 import useProjectAuth from '@/pages/projects/hooks/useProjectAuth';
+import { upperCaseFilter } from '@/common/utils';
 
 const { t: $t } = useI18n();
 // 获取用户列表

@@ -1,6 +1,6 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: ruleData.currentProject.editMode !== 'display' }">
-        <h6 class="wd-body-title">校验对象</h6>
+        <h6 class="wd-body-title">{{$t('_.校验对象')}}</h6>
         <FForm
             ref="verifyObjectFormRef"
             :layout="layout"
@@ -26,7 +26,7 @@
                     class="form-edit-input"
                     filterable
                     :disabled="ruleData.currentProject.editMode !== 'create'"
-                    placeholder="请选择规则类型"
+                    :placeholder="$t('_.请选择规则类型')"
                 >
                     <FOption
                         v-for="(item, index) in showRuleTypes"
@@ -37,15 +37,15 @@
                 </FSelect>
                 <div class="form-preview-label">{{ruleTypeLabel}}</div>
             </FFormItem>
-            <FFormItem v-if="ruleData.currentProject.isEmbedInFrame" label="数据来源">
+            <FFormItem v-if="ruleData.currentProject.isEmbedInFrame" :label="$t('_.数据来源')">
                 <FRadioGroup v-if="ruleData.currentProject.editMode !== 'display'" v-model="verifyObjectData.isUpStream" class="form-edit-input" :cancelable="false" @change="onUpStreamChange">
-                    <FRadio :value="true">上游表</FRadio>
-                    <FRadio :value="false">正常表</FRadio>
+                    <FRadio :value="true">{{$t('_.上游表')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.正常表')}}</FRadio>
                 </FRadioGroup>
                 <div class="form-preview-label">{{verifyObjectData.isUpStream ? '上游表' : '正常表'}}</div>
             </FFormItem>
             <!-- 任务执行集群 -->
-            <FFormItem label="任务执行集群" prop="cluster_name">
+            <FFormItem :label="$t('_.任务执行集群')" prop="cluster_name">
                 <FSelect
                     v-model="verifyObjectData.cluster_name"
                     filterable
@@ -171,6 +171,9 @@ const onClusterChange = () => {
 const onUpStreamChange = (data) => {
     eventbus.emit('UPSTREAM_CHANGE', data);
 };
+useListener('COPY_MODE', () => {
+    delete verifyObjectData.value.rule_id;
+});
 const verifyObjectFormRef = ref(null);
 const valid = async () => {
     try {

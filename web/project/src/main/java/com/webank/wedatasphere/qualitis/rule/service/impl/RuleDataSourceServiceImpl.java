@@ -17,22 +17,26 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
 import com.alibaba.excel.support.ExcelTypeEnum;
-import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.dao.ClusterInfoDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.ClusterInfo;
+import com.webank.wedatasphere.qualitis.entity.ProxyUser;
+import com.webank.wedatasphere.qualitis.entity.User;
+import com.webank.wedatasphere.qualitis.entity.UserProxyUser;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-import com.webank.wedatasphere.qualitis.metadata.client.RuleClient;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
-import com.webank.wedatasphere.qualitis.metadata.response.DataMapResultInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
+import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
@@ -41,34 +45,29 @@ import com.webank.wedatasphere.qualitis.rule.dao.RuleDatasourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleDataSourceCountRepository;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.RuleDataSourceRepository;
-import com.webank.wedatasphere.qualitis.rule.entity.Rule;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceCount;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceColumnRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvMappingRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
-import com.webank.wedatasphere.qualitis.rule.timer.MetadataOnRuleDataSourceTask;
-import com.webank.wedatasphere.qualitis.rule.timer.MetadataOnRuleDataSourceUpdater;
+import com.webank.wedatasphere.qualitis.rule.timer.MetadataSyncUpdater;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
-
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.PostConstruct;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -95,16 +94,13 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     private RuleDataSourceRepository ruleDataSourceRepository;
 
     @Autowired
-    private RuleClient ruleClient;
-
-    @Autowired
     private RuleDataSourceCountRepository ruleDataSourceCountRepository;
 
     @Autowired
     private RuleDatasourceEnvDao ruleDataSourceEnvDao;
 
     @Autowired
-    private MetadataOnRuleDataSourceUpdater metadataOnRuleDataSourceUpdater;
+    private MetadataSyncUpdater metadataSyncUpdater;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleDataSourceServiceImpl.class);
 
@@ -112,9 +108,20 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     private Integer ruleDatasourceMaxSize;
     @Value("${rule.datasource.per-size:500}")
     private Integer ruleDatasourcePerSize;
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
     private AtomicBoolean isEndedStatusOnSyncMetadata = new AtomicBoolean(Boolean.TRUE);
     private final static Integer SYNC_METADATA_STATUS_REPEATED_SUBMIT = 2;
     private final static Integer SYNC_METADATA_STATUS_SUCCESS = 1;
+
+    @Autowired
+    private AbstractThreadPoolManager threadPoolManager;
+    GeneralThreadPool sysMetadataThreadPool;
+
+    @PostConstruct
+    public void init() throws ThreadPoolNotFoundException {
+        sysMetadataThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.SYNC_METADATA);
+    }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
@@ -142,9 +149,9 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
                 fps = true;
             }
             // Check Arguments
-            Boolean isTableRowsConsistency = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isTableRowsConsistency(rule.getTemplate().getEnName());
-            Boolean isCustomColumnConsistence = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName());
-            Boolean isTableStructureConsistent = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false: QualitisConstants.isTableStructureConsistent(rule.getTemplate().getEnName());
+            Boolean isTableRowsConsistency = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false : QualitisConstants.isTableRowsConsistency(rule.getTemplate().getEnName());
+            Boolean isCustomColumnConsistence = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false : QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName());
+            Boolean isTableStructureConsistent = (Objects.isNull(rule) || Objects.isNull(rule.getTemplate())) ? false : QualitisConstants.isTableStructureConsistent(rule.getTemplate().getEnName());
             if (!isTableRowsConsistency && !isCustomColumnConsistence) {
                 DataSourceRequest.checkRequest(request, cs, fps, isTableStructureConsistent);
             }
@@ -180,7 +187,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
                 newRuleDataSource.setProjectId(ruleGroup.getProjectId());
             }
             newRuleDataSource.setCollectSql(request.getCollectSql());
-            String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType())?request.getDcnRangeType():QualitisConstants.DCN_RANGE_TYPE_ALL;
+            String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType()) ? request.getDcnRangeType() : QualitisConstants.DCN_RANGE_TYPE_ALL;
             newRuleDataSource.setDcnRangeType(dcnRangeType);
 
             ruleDataSources.add(newRuleDataSource);
@@ -195,7 +202,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
         }
 
         // add some fields from dms
-        metadataOnRuleDataSourceUpdater.submit(ruleDataSources, loginUser);
+        metadataSyncUpdater.submitRuleDataSourceTask(ruleDataSources, loginUser);
         return ruleDataSourceList;
     }
 
@@ -252,9 +259,9 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     @Override
     @Transactional(rollbackFor = {RuntimeException.class})
     public List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String fileId, String fpsTableDesc, String fileDb
-        , String fileTable, String fileDelimiter, String fileType, Boolean fileHeader, String proxyUser, String fileHashValues, String loginUser
-        , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName
-        , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests, String dcnRangeType) {
+            , String fileTable, String fileDelimiter, String fileType, Boolean fileHeader, String proxyUser, String fileHashValues, String loginUser
+            , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId, String linkisDataSourceName
+            , String linkisDataSourceType, List<DataSourceEnvRequest> dataSourceEnvRequests, List<DataSourceEnvMappingRequest> dataSourceEnvMappingRequests, String dcnRangeType) {
 
         List<RuleDataSource> ruleDataSources = new ArrayList<>();
         List<RuleDataSourceEnv> ruleDataSourceEnvs = new ArrayList<>();
@@ -273,7 +280,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
             ruleDataSource.setFileDelimiter(SpecCharEnum.STAR.getValue().equals(fileDelimiter) ? " " : fileDelimiter);
             ruleDataSource.setDatasourceType(TemplateDataSourceTypeEnum.FPS.getCode());
             ruleDataSource.setFileType(fileType);
-            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType)?dcnRangeType:QualitisConstants.DCN_RANGE_TYPE_ALL);
+            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType) ? dcnRangeType : QualitisConstants.DCN_RANGE_TYPE_ALL);
             if (Objects.isNull(fileHeader)) {
                 ruleDataSource.setFileHeader(Boolean.FALSE);
             } else {
@@ -309,7 +316,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
             }
             ruleDataSource.setProjectId(savedRule.getProject().getId());
             ruleDataSource.setDatasourceIndex(QualitisConstants.ORIGINAL_INDEX);
-            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType)?dcnRangeType:QualitisConstants.DCN_RANGE_TYPE_ALL);
+            ruleDataSource.setDcnRangeType(StringUtils.isNotBlank(dcnRangeType) ? dcnRangeType : QualitisConstants.DCN_RANGE_TYPE_ALL);
             ruleDataSources.add(ruleDataSource);
             LOGGER.info("Start to save custom rule datasource with cluster name and proxy user.");
         }
@@ -325,7 +332,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
         }
 
         // add some fields from dms
-        metadataOnRuleDataSourceUpdater.submit(ruleDataSources, loginUser);
+        metadataSyncUpdater.submitRuleDataSourceTask(ruleDataSources, loginUser);
         return ruleDataSourceList;
     }
 
@@ -438,12 +445,12 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
         newRuleDataSource.setProxyUser(request.getProxyUser());
         newRuleDataSource.setRule(rule);
         newRuleDataSource.setProjectId(rule.getProject().getId());
-        String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType())?request.getDcnRangeType():QualitisConstants.DCN_RANGE_TYPE_ALL;
+        String dcnRangeType = StringUtils.isNotBlank(request.getDcnRangeType()) ? request.getDcnRangeType() : QualitisConstants.DCN_RANGE_TYPE_ALL;
         newRuleDataSource.setDcnRangeType(dcnRangeType);
 
         RuleDataSource ruleDataSourceInDb = ruleDatasourceDao.saveRuleDataSource(newRuleDataSource);
 
-        metadataOnRuleDataSourceUpdater.submit(Arrays.asList(newRuleDataSource), loginUser);
+        metadataSyncUpdater.submitRuleDataSourceTask(Arrays.asList(newRuleDataSource), loginUser);
 
         return ruleDataSourceInDb;
     }
@@ -486,50 +493,50 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     }
 
     @Override
-    public GeneralResponse<DataMapResultInfo<String>> syncMetadata(String userName) {
+    public GeneralResponse<Object> syncMetadata(String userName) throws UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info("disable sync metadata");
+            return new GeneralResponse(ResponseStatusConstants.OK, "THIS_FEATURE_IS_TEMPORARILY_DISABLED", null);
+        }
         LOGGER.info("Ready to sync metadata, loginUser: {}", userName);
-        Map<String, Object> dataMap = Maps.newHashMapWithExpectedSize(1);
         if (isRepeatSubmitOnSyncMetadata()) {
-            dataMap.put("type", SYNC_METADATA_STATUS_REPEATED_SUBMIT);
-            return new GeneralResponse(ResponseStatusConstants.OK, "failed",
-                    new DataMapResultInfo(ResponseStatusConstants.OK, "已在同步，请勿重复提交", dataMap));
+            throw new UnExpectedRequestException("已在同步，请勿重复提交");
         }
-
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
-        Map<String, String> clusterNameAndTypeMap = getClusterNameAndTypeMap();
-        int maxSize = ruleDatasourceMaxSize >= 0 ? ruleDatasourceMaxSize: Long.valueOf(ruleDataSourceRepository.count()).intValue();
-        int perSize = ruleDatasourcePerSize < maxSize ? ruleDatasourcePerSize: maxSize;
-        int totalPage = maxSize / perSize + 1;
-        try {
-            executor.execute(() -> {
-                isEndedStatusOnSyncMetadata.set(Boolean.FALSE);
-                try {
-                    for (int page = 0; page < totalPage; page++) {
-                        List<RuleDataSource> ruleDataSourceList = ruleDatasourceDao.findAllWithPage(page, perSize).getContent();
-                        if (CollectionUtils.isEmpty(ruleDataSourceList)) {
-                            LOGGER.info("List of RuleDataSource is empty");
-                            break;
-                        }
-                        LOGGER.info("Query data from qualitis_rule_datasource, page: {}, count: {}", page, ruleDataSourceList.size());
-                        List<MetadataOnRuleDataSourceTask> metadataOnRuleDataSourceTaskList = ruleDataSourceList.stream().map(ruleDataSource -> new MetadataOnRuleDataSourceTask(ruleDataSource, userName)).collect(Collectors.toList());
-                        metadataOnRuleDataSourceUpdater.executeBatchUpdate(metadataOnRuleDataSourceTaskList, clusterNameAndTypeMap);
-                        try {
-                            Thread.sleep(60000);
-                        } catch (InterruptedException e) {
-                            LOGGER.warn("Thread was interrupted", e);
-                        }
+        User user = userDao.findByUsername(userName);
+        List<String> proxyUserList = user.getUserProxyUsers().stream().map(UserProxyUser::getProxyUser).map(ProxyUser::getProxyUserName).collect(Collectors.toList());
+        proxyUserList.add(userName);
+        sysMetadataThreadPool.execute(() -> {
+            isEndedStatusOnSyncMetadata.set(Boolean.FALSE);
+            try {
+                Page<RuleDataSource> resultPage = ruleDatasourceDao.findDmsTable(proxyUserList, 0, ruleDatasourcePerSize);
+                int totalPage = resultPage.getTotalPages();
+                int currentPage = 0;
+                do {
+                    List<RuleDataSource> ruleDataSourceList = resultPage.getContent();
+                    if (CollectionUtils.isEmpty(ruleDataSourceList)) {
+                        LOGGER.info("List of RuleDataSource is empty");
+                        break;
                     }
-                } finally {
-                    isEndedStatusOnSyncMetadata.set(Boolean.TRUE);
-                    LOGGER.info("Finished to sync metadata to qualitis_rule_datasource ");
-                }
-            });
-        } finally {
-            executor.shutdown();
-        }
+                    LOGGER.info("Query data from qualitis_rule_datasource, page: {}, count: {}", currentPage, ruleDataSourceList.size());
+                    metadataSyncUpdater.submitRuleDataSourceTask(ruleDataSourceList, userName);
 
-        dataMap.put("type", SYNC_METADATA_STATUS_SUCCESS);
-        return new GeneralResponse(ResponseStatusConstants.OK, "success", new DataMapResultInfo(ResponseStatusConstants.OK, "正在同步", dataMap));
+                    ++currentPage;
+
+                    try {
+                        Thread.sleep(60000);
+                    } catch (InterruptedException e) {
+                        LOGGER.warn("Thread was interrupted", e);
+                    }
+
+                    resultPage = ruleDatasourceDao.findDmsTable(proxyUserList, currentPage, ruleDatasourcePerSize);
+                } while (currentPage <= totalPage);
+            } finally {
+                isEndedStatusOnSyncMetadata.set(Boolean.TRUE);
+                LOGGER.info("Finished to sync metadata to qualitis_rule_datasource ");
+            }
+        });
+
+        return new GeneralResponse(ResponseStatusConstants.OK, "success", null);
     }
 
     @Override
@@ -550,12 +557,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
         }
     }
 
-    private Map<String, String> getClusterNameAndTypeMap() {
-        List<ClusterInfo> clusterInfoList = clusterInfoDao.findAllClusterInfo(0, 500);
-        return clusterInfoList.stream().collect(Collectors.toMap(ClusterInfo::getClusterName, ClusterInfo::getClusterType, (oldVal, newVal) -> oldVal));
-    }
-
-    private boolean isRepeatSubmitOnSyncMetadata(){
+    private boolean isRepeatSubmitOnSyncMetadata() {
         return !isEndedStatusOnSyncMetadata.get();
     }
 

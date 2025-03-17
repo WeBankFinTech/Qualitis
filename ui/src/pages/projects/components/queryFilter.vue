@@ -1,7 +1,7 @@
 <template>
     <div class="query-container">
         <div class="query-item">
-            <span class="query-label">查询条件</span>
+            <span class="query-label">{{$t('_.查询条件')}}</span>
             <FSelect
                 v-model="queryCondition"
                 :width="160"
@@ -15,7 +15,7 @@
         </div>
         <!-- 调度任务维度 -->
         <div v-show="queryCondition === 'schedulingTask'" class="query-item">
-            <span class="query-label">调度系统类型</span>
+            <span class="query-label">{{$t('_.调度系统类型')}}</span>
             <FSelect
                 v-model="queryData.sysType"
                 :width="160"
@@ -26,7 +26,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'schedulingTask'" class="query-item">
-            <span class="query-label">集群</span>
+            <span class="query-label">{{$t('_.集群')}}</span>
             <FSelect
                 v-model="queryData.cluster"
                 :width="160"
@@ -37,7 +37,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'schedulingTask'" class="query-item">
-            <span class="query-label">项目</span>
+            <span class="query-label">{{$t('_.项目')}}</span>
             <FSelect
                 v-model="queryData.project"
                 :width="160"
@@ -48,7 +48,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'schedulingTask'" class="query-item">
-            <span class="query-label">工作流</span>
+            <span class="query-label">{{$t('_.工作流')}}</span>
             <FSelect
                 v-model="queryData.workflow"
                 :width="160"
@@ -59,7 +59,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'schedulingTask'" class="query-item">
-            <span class="query-label">任务</span>
+            <span class="query-label">{{$t('_.任务')}}</span>
             <FSelect
                 v-model="queryData.task"
                 :width="160"
@@ -71,7 +71,7 @@
         </div>
         <!-- 规则组维度 -->
         <div v-show="queryCondition === 'ruleGroup'" class="query-item">
-            <span class="query-label">规则组名称</span>
+            <span class="query-label">{{$t('_.规则组名称')}}</span>
             <FSelect
                 v-model="queryData.ruleGroup"
                 :width="160"
@@ -83,7 +83,7 @@
         </div>
         <!-- 数据维度 -->
         <div v-show="queryCondition === 'data'" class="query-item">
-            <span class="query-label">集群</span>
+            <span class="query-label">{{$t('_.集群')}}</span>
             <FSelect
                 v-model="queryData.cluster"
                 :width="160"
@@ -94,7 +94,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'data'" class="query-item">
-            <span class="query-label">数据库</span>
+            <span class="query-label">{{$t('_.数据库')}}</span>
             <FSelect
                 v-model="queryData.database"
                 :width="160"
@@ -105,7 +105,7 @@
             ></FSelect>
         </div>
         <div v-show="queryCondition === 'data'" class="query-item">
-            <span class="query-label">数据表</span>
+            <span class="query-label">{{$t('_.数据表')}}</span>
             <FSelect
                 v-model="queryData.dataTable"
                 :width="160"
@@ -116,22 +116,26 @@
             ></FSelect>
         </div>
         <div class="query-item">
-            <FButton type="primary" class="operation-item white" @click="search">查询</FButton>
-            <FButton class="operation-item" @click="reset">重置</FButton>
+            <FButton type="primary" class="operation-item white" @click="search">{{$t('_.查询')}}</FButton>
+            <FButton class="operation-item" @click="reset">{{$t('_.重置')}}</FButton>
         </div>
     </div>
 </template>
 <script setup>
+
 import {
     defineEmits, defineProps, onMounted, ref,
 } from 'vue';
-import { request as FRequest } from '@fesjs/fes';
+import { request as FRequest, useI18n } from '@fesjs/fes';
 import {
     loadDatasource, loadRuleGroupList, loadSysTypeList, loadClusterList, loadProjectList, loadWorkflowList, loadTaskList, loadPublishClusterList, loadDBTable, loadInitOptions,
 } from '../task/loadListData';
 import {
     getQueryOptionsRuleGroup, fetchClusterList,
 } from '../api';
+
+
+const { t: $t } = useI18n();
 
 const props = defineProps({
     // 待查询任务列表所在的项目ID
@@ -150,15 +154,15 @@ const emit = defineEmits(['search', 'reset']);
 const queryConditionsList = ref([
     {
         value: 'schedulingTask',
-        label: '调度任务',
+        label: $t('_.调度任务'),
     },
     {
         value: 'ruleGroup',
-        label: '规则组',
+        label: $t('_.规则组'),
     },
     {
         value: 'data',
-        label: '数据',
+        label: $t('_.数据'),
     },
 ]);
 
@@ -542,6 +546,7 @@ onMounted(async () => {
         await initAllQueryList();
     }
 });
+
 
 </script>
 <style lang="less" scoped>

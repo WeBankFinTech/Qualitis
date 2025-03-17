@@ -22,9 +22,11 @@
                 filterable
                 :options="ruleStandardList"
                 tag
+                remote
                 popperClass="rule-metric-popper"
                 :getContainer="getContainer"
                 @change="onRuleMetricChange"
+                @search="onRuleMetricSearch"
             ></FSelect>
             <div
                 class="form-preview-label"
@@ -37,7 +39,7 @@
                     <div style="width: 490px;">{{$t('common.metricTip')}}</div>
                 </template>
             </FTooltip>
-            <div v-if="whetherVerify" class="verifyTip">指标未配置，上报开关无效</div>
+            <div v-if="whetherVerify" class="verifyTip">{{$t('_.指标未配置，上报开关无效')}}</div>
         </FFormItem>
     </FForm>
 </template>
@@ -46,6 +48,7 @@
 import {
     ref, reactive, computed, provide, nextTick, watch, inject, unref, onMounted, defineProps, defineEmits,
 } from 'vue';
+import { getRuleMetricAll } from '@/components/rules/utils';
 import { useI18n, request as FRequest } from '@fesjs/fes';
 import { useStore } from 'vuex';
 import { MAX_PAGE_SIZE } from '@/assets/js/const';
@@ -67,6 +70,10 @@ const props = defineProps({
         type: Number || String,
         default: '',
     },
+    defaultMetricName: {
+        type: String,
+        default: '',
+    },
     // 是否需要上报指标
     needUploadMetric: {
         type: Boolean,
@@ -83,6 +90,7 @@ const listType = computed(() => props.listType);
 const ruleData = computed(() => store.state.rule);
 const formData = reactive({
     ruleMetricId: null,
+    ruleMetricName: '',
 });
 /**
  * 规则类型的处理
@@ -97,11 +105,14 @@ watch(listType.value, () => {
 const groupType = computed(() => ruleTypes.find(item => item.type === ruleType).value || '');
 
 const defaultMetricId = computed(() => props.defaultMetricId);
-
+const defaultMetricName = computed(() => props.defaultMetricName);
 watch(defaultMetricId, () => {
-    if (defaultMetricId.value) {
-        formData.ruleMetricId = defaultMetricId.value;
-    }
+    formData.ruleMetricId = defaultMetricId.value;
+}, { immediate: true });
+watch(defaultMetricName, async () => {
+    formData.ruleMetricName = defaultMetricName.value;
+    // eslint-disable-next-line no-use-before-define
+    await getStandardRuleMetric(formData.ruleMetricName);
 }, { immediate: true });
 // label宽度
 const labelWidth = computed(() => {
@@ -124,13 +135,19 @@ const editMode = computed(() => {
 const emit = defineEmits(['getRuleMetricData']);
 
 const ruleStandardListCache = ref([]);
-// 从各规则index文件inject eg. src\components\rules\forms\singleTableCheck\index.vue
-const ruleMetricList = inject('ruleMetricList', []);
-async function getRuleMetricAll() {
-    console.log('ruleMetricList:', ruleMetricList.value);
+// // 从各规则index文件inject eg. src\components\rules\forms\singleTableCheck\index.vue
+// const ruleMetricList = inject('ruleMetricList', []);
+
+async function getStandardRuleMetric(val) {
     try {
-        if (Array.isArray(ruleMetricList.value)) {
-            ruleStandardListCache.value = ruleMetricList.value.map(({
+        let ruleMetricList = [];
+        if (!val && formData.ruleMetricName) {
+            ruleMetricList = await getRuleMetricAll(formData.ruleMetricName);
+        } else {
+            ruleMetricList = await getRuleMetricAll(val);
+        }
+        if (Array.isArray(ruleMetricList)) {
+            ruleStandardListCache.value = ruleMetricList.map(({
                 id, name, en_code, multi_env, used,
             }) => ({
                 value: id, label: name, en_code, multi_env, disabled: used,
@@ -141,17 +158,18 @@ async function getRuleMetricAll() {
         if (configuredRuleMetric.value > -1 && ruleStandardListCache.value) {
             ruleStandardListCache.value.push(configuredRuleMetric.value);
         }
-        console.log('ruleStandards', ruleStandardListCache.value);
     } catch (error) {
         console.warn(error);
     }
 }
-
-watch(ruleMetricList, () => {
-    if (ruleMetricList.value.length) {
-        getRuleMetricAll();
-    }
-}, { immediate: true });
+async function onRuleMetricSearch(val) {
+    await getStandardRuleMetric(val);
+}
+// watch(ruleMetricList, () => {
+//     if (ruleMetricList.value.length) {
+//         getRuleMetricAll();
+//     }
+// }, { immediate: true });
 
 const ruleStandardList = computed(() => {
     // TODO-根据规则类型做差异化，和verifyObject差不多
@@ -219,9 +237,9 @@ watch(whetherVerify, () => {
         });
     }
 });
-onMounted(() => {
-    getRuleMetricAll();
-});
+// onMounted(() => {
+//     getRuleMetricAll();
+// });
 const ruleConditionFormRef = ref(null);
 const valid = async () => {
     try {

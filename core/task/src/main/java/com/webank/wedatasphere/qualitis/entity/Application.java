@@ -148,23 +148,23 @@ public class Application {
     }
 
     public void addSuccessJobNum() {
-        this.finishTaskNum ++;
+        this.finishTaskNum++;
     }
 
     public void reduceSuccessJobNum() {
-        this.finishTaskNum --;
+        this.finishTaskNum--;
     }
 
     public void addFailJobNum() {
-        this.failTaskNum ++;
+        this.failTaskNum++;
     }
 
     public void addNotPassTaskNum() {
-        this.notPassTaskNum ++;
+        this.notPassTaskNum++;
     }
 
     public void addAbnormalTaskNum() {
-        this.abnormalTaskNum ++;
+        this.abnormalTaskNum++;
     }
 
     public String getEnvNames() {
@@ -497,18 +497,19 @@ public class Application {
     @Override
     public String toString() {
         return "Application{" +
-            "id='" + id + '\'' +
-            ", submitTime='" + submitTime + '\'' +
-            ", finishTime='" + finishTime + '\'' +
-            ", invokeType=" + invokeType +
-            ", finishTaskNum=" + finishTaskNum +
-            ", failTaskNum=" + failTaskNum +
-            ", notPassTaskNum=" + notPassTaskNum +
-            ", abnormalTaskNum=" + abnormalTaskNum +
-            ", totalTaskNum=" + totalTaskNum +
-            ", executeUser='" + executeUser + '\'' +
-            ", createUser='" + createUser + '\'' +
-            ", status=" + status +
-            '}';
+                "id='" + id + '\'' +
+                ", submitTime='" + submitTime + '\'' +
+                ", finishTime='" + finishTime + '\'' +
+                ", invokeType=" + invokeType +
+                ", finishTaskNum=" + finishTaskNum +
+                ", failTaskNum=" + failTaskNum +
+                ", notPassTaskNum=" + notPassTaskNum +
+                ", abnormalTaskNum=" + abnormalTaskNum +
+                ", totalTaskNum=" + totalTaskNum +
+                ", executeUser='" + executeUser + '\'' +
+                ", createUser='" + createUser + '\'' +
+                ", partition='" + partition + '\'' +
+                ", status=" + status +
+                '}';
     }
 }

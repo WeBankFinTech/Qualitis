@@ -2,7 +2,7 @@
     <div class="create-table-structure">
         <FModal
             v-model:show="showModal"
-            title="创建表结构"
+            :title="$t('_.创建表结构')"
             displayDirective="if"
             width="550px"
             :maskClosable="false"
@@ -10,25 +10,25 @@
             @cancel="cancel"
         >
             <FForm ref="structRef" :model="tableStructure" :rules="rules" :labelWidth="80" labelPosition="right">
-                <FFormItem label="文件ID" prop="file_id">
+                <!-- <FFormItem :label="$t('_.文件ID')" prop="file_id">
                     <FInput
                         v-model="tableStructure.file_id"
                         class="form-edit-input"
-                        placeholder="请输入文件ID"
+                        :placeholder="$t('_.请输入文件ID')"
                     />
                 </FFormItem>
-                <FFormItem label="哈希值" prop="file_hash_values">
+                <FFormItem :label="$t('_.哈希值')" prop="file_hash_values">
                     <FInput
                         v-model="tableStructure.file_hash_values"
                         class="form-edit-input"
-                        placeholder="请输入哈希值"
+                        :placeholder="$t('_.请输入哈希值')"
                     />
-                </FFormItem>
-                <FFormItem label="分隔符" prop="file_delimiter">
+                </FFormItem> -->
+                <FFormItem :label="$t('_.分隔符')" prop="file_delimiter">
                     <FSelect
                         v-model="tableStructure.file_delimiter"
                         class="form-edit-input"
-                        placeholder="请选择分隔符"
+                        :placeholder="$t('_.请选择分隔符')"
                     >
                         <FOption
                             v-for="item in separatorList"
@@ -38,17 +38,17 @@
                         ></FOption>
                     </FSelect>
                 </FFormItem>
-                <FFormItem label="首行类型" prop="file_header">
-                    <FCheckbox v-model="tableStructure.file_header" class="form-edit-input">首行为表头</FCheckbox>
+                <FFormItem :label="$t('_.首行类型')" prop="file_header">
+                    <FCheckbox v-model="tableStructure.file_header" class="form-edit-input">{{$t('_.首行为表头')}}</FCheckbox>
                 </FFormItem>
                 <div class="data-save">
-                    <FFormItem label="数据储存" prop="db_name" class="database">
+                    <FFormItem :label="$t('_.数据储存')" prop="db_name" class="database">
                         <FSelect
                             v-model="tableStructure.db_name"
                             filterable
                             clearable
                             class="form-edit-input"
-                            placeholder="请选择存储数据库"
+                            :placeholder="$t('_.请选择存储数据库')"
                             labelField="db_name"
                             valueField="db_name"
                             :options="databaseList" />
@@ -57,15 +57,15 @@
                         <FInput
                             v-model="tableStructure.table_name"
                             class="form-edit-input"
-                            placeholder="请为存储数据表命名"
+                            :placeholder="$t('_.请为存储数据表命名')"
                         />
                     </FFormItem>
                 </div>
-                <FFormItem label="文件类型" prop="file_type">
+                <FFormItem :label="$t('_.文件类型')" prop="file_type">
                     <FSelect
                         v-model="tableStructure.file_type"
                         class="form-edit-input"
-                        placeholder="请选择文件存储类型"
+                        :placeholder="$t('_.请选择文件存储类型')"
                     >
                         <FOption
                             v-for="(item, index) in fileTypeList"
@@ -75,15 +75,15 @@
                         ></FOption>
                     </FSelect>
                 </FFormItem>
-                <FFormItem label="表结构" prop="file_table_desc">
+                <FFormItem :label="$t('_.表结构')" prop="file_table_desc">
                     <div class="form-edit-input table-structure">
                         <div v-for="(char, index) in tableStructure.file_table_desc" :key="index" class="table-char-list">
-                            <FInput v-model="char.column_name" placeholder="请输入字段名称">
+                            <FInput v-model="char.column_name" :placeholder="$t('_.请输入字段名称')">
                                 <template #prepend>
                                     <FSelectCascader
                                         v-model="char.charType"
                                         :data="charTypeList"
-                                        placeholder="字段类型"
+                                        :placeholder="$t('_.字段类型')"
                                         style="width: 120px;"
                                         class="prepend-cas"
                                         @change="charTypeChange(index, char.charType)"
@@ -91,7 +91,7 @@
                                     </FSelectCascader>
                                 </template>
                             </FInput>
-                            <PlusCircleFilled v-if="index === tableStructure.file_table_desc.length - 1" class="add" @click="add(index)" />
+                            <PlusCircleOutlined v-if="index === tableStructure.file_table_desc.length - 1" class="add" @click="add(index)" />
                             <MinusCircleOutlined v-else-if="tableStructure.file_table_desc.length > 1" class="del" @click="del(index)" />
                         </div>
                     </div>
@@ -102,13 +102,14 @@
 </template>
 
 <script>
+
 /* eslint-disable camelcase */
 import { useI18n } from '@fesjs/fes';
 import {
     ref, computed, onMounted, inject,
 } from 'vue';
 import { FMessage } from '@fesjs/fes-design';
-import { PlusCircleFilled, MinusCircleOutlined } from '@fesjs/fes-design/es/icon';
+import { PlusCircleOutlined, MinusCircleOutlined } from '@fesjs/fes-design/es/icon';
 import eventbus from '@/common/useEvents';
 import { cloneDeep } from 'lodash-es';
 import { timeFormatList } from '../utils/index';
@@ -116,7 +117,7 @@ import { timeFormatList } from '../utils/index';
 // props: 数据源数据, 打开类型（新增、编辑、详情）
 export default {
     components: {
-        PlusCircleFilled, MinusCircleOutlined,
+        PlusCircleOutlined, MinusCircleOutlined,
     },
     props: {
         show: {
@@ -162,9 +163,9 @@ export default {
         const tableStructure = ref({});
         const databaseList = inject('dbs');
         const separatorList = ref([
-            { id: 1, label: '逗号(,)', value: ',' },
-            { id: 2, label: '竖杠(|)', value: '|' },
-            { id: 3, label: '空格( )', value: '*' },
+            { id: 1, label: $t('_.逗号(,)'), value: ',' },
+            { id: 2, label: $t('_.竖杠(|)'), value: '|' },
+            { id: 3, label: $t('_.空格( )'), value: '*' },
         ]);
         const fileTypeList = ref(['.csv', '.txt', '.xls', '.xlsx', '.gz']);
         const originCharTypeList = ['string', 'int', 'bigint', 'smallint', 'tinyint', 'double', 'float', 'boolean', 'decimal', 'timestamp', 'date', 'char', 'varchar'].map((type) => {
@@ -243,18 +244,18 @@ export default {
             } = tableStructure.value.file_table_desc[index];
             // 判断是否为空
             if (!column_name || !type) {
-                FMessage.warning('列名称和列类型不能为空！');
+                FMessage.warning($t('_.列名称和列类型不能为空！'));
                 return false;
             }
             // 判断是包含特殊字符和中文等
             if (!/^\w*$/.test(column_name) || !/^\w*$/.test(type)) {
-                FMessage.warning('不能包含空格，空，特殊符号，中文...');
+                FMessage.warning($t('_.不能包含空格，空，特殊符号，中文'));
                 return false;
             }
             // 判断是否重复
             const flag = tableStructure.value.file_table_desc.some((item, i) => (index !== i) && (item.column_name === column_name) && (item.data_type === data_type));
             if (flag) {
-                FMessage.warning('列名称和列类型不能重复！');
+                FMessage.warning($t('_.列名称和列类型不能重复！'));
                 return false;
             }
             if (returnflag) return true;
@@ -310,12 +311,13 @@ export default {
             del,
             rules,
             structRef,
-
+            $t,
             saveTableStructure,
             cancel,
         };
     },
 };
+
 </script>
 
 <style lang="less">

@@ -1,10 +1,13 @@
 <template>
     <div class="create-button">
-        <div class="content"><PlusOutlined /><span class="text">创建表结构</span></div>
+        <div class="content"><PlusOutlined /><span class="text">{{$t('_.创建表结构')}}</span></div>
     </div>
 </template>
 <script setup>
 import { PlusOutlined } from '@fesjs/fes-design/icon';
+import { useI18n } from '@fesjs/fes';
+
+const { t: $t } = useI18n();
 </script>
 
 <style scoped lang="less">

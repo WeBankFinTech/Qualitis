@@ -55,6 +55,13 @@ public interface StandardValueVersionRepository extends JpaRepository<StandardVa
     @Query(value = "select q.* from qualitis_standard_value_version q where q.is_available =1 and q.en_name=?1", nativeQuery = true)
     List<StandardValueVersion> selectStandardValueVersion(String enName);
 
+    /**
+     * get latest version
+     * @param enName
+     * @return
+     */
+    @Query(value = "select q.* from qualitis_standard_value_version q where q.is_available =1 and q.en_name=?1 order by q.version desc limit 1", nativeQuery = true)
+    List<StandardValueVersion> findLatestStandardValue(String enName);
 
     /**
      * Find by standardValueId

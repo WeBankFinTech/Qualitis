@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
@@ -288,8 +289,11 @@ public class RuleListExecutionRequest {
         }
     }
 
-    private static void handleArrayData(String abnormalInformation, Map<String, String> map, String pair, SpecCharEnum colon) throws UnExpectedRequestException {
-        String[] parts = pair.split(colon.getValue());
+    private static void handleArrayData(String abnormalInformation, Map<String, String> map, String pair, SpecCharEnum separator) throws UnExpectedRequestException {
+        String[] parts = pair.split(separator.getValue());
+        if (parts.length != QualitisConstants.LENGTH_TWO) {
+            return;
+        }
         if (!map.containsKey(parts[0])) {
             map.put(parts[0], parts[1]);
         } else {

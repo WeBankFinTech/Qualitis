@@ -2,8 +2,6 @@ package com.webank.wedatasphere.qualitis.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
-
 /**
  * @author allenzhou@webank.com
  * @date 2021/11/2 10:50
@@ -24,6 +22,7 @@ public class ConnectParams {
     private String dk;
     @JsonProperty(value = "timestamp")
     private String timeStamp;
+    private String userClientIp;
 
     public String getConnectParam() {
         return connectParam;
@@ -31,6 +30,14 @@ public class ConnectParams {
 
     public void setConnectParam(String connectParam) {
         this.connectParam = connectParam;
+    }
+
+    public String getUserClientIp() {
+        return userClientIp;
+    }
+
+    public void setUserClientIp(String userClientIp) {
+        this.userClientIp = userClientIp;
     }
 
     public String getHost() {

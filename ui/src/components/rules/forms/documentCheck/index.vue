@@ -42,15 +42,15 @@ const ele = ref({
 // 加载规则详情
 const configuredRuleMetric = ref({});
 provide('configuredRuleMetric', computed(() => configuredRuleMetric.value));
-const ruleMetricList = ref([]);
-provide('ruleMetricList', computed(() => ruleMetricList.value));
+// const ruleMetricList = ref([]);
+// provide('ruleMetricList', computed(() => ruleMetricList.value));
 const loadRuleDetail = async () => {
     try {
-        ruleMetricList.value = await getRuleMetricAll();
+        // ruleMetricList.value = await getRuleMetricAll();
         if (!unref(ruleData.value.currentRule.rule_id)) {
             return;
         }
-
+        if (ruleData.value.currentRule.rule_type !== 4) return;
         const currentRuleDetail = await request(`api/v1/projector/rule/file/${unref(ruleData.value.currentRule.rule_id)}`, {}, 'get');
         // 处理上游表逻辑
         currentRuleDetail.isUpStream = currentRuleDetail.context_service;
@@ -109,6 +109,7 @@ useListener(saveEvent, async (cb) => {
             rule_id,
             rule_name,
             cn_name,
+            reg_rule_code,
             rule_detail,
             rule_template_id,
             rule_template_name,
@@ -126,6 +127,7 @@ useListener(saveEvent, async (cb) => {
             rule_id,
             rule_name,
             cn_name,
+            reg_rule_code,
             rule_detail,
             rule_template_id,
             rule_template_name,
@@ -244,7 +246,7 @@ useListener(delEvent, async (cb) => {
 
 // 取消事件
 useListener(cancelEvent, () => {
-    loadRuleDetail();
+    setTimeout(loadRuleDetail, 0);
 });
 
 onMounted(() => {

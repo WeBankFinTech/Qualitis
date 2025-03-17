@@ -29,7 +29,7 @@ public class AlarmInfo {
     private String endTime;
     @Column(name = "alarm_time", length = 20)
     private String alarmTime;
-    @Column(length = 50)
+    @Column(length = 200)
     private String username;
     @Column(name = "alarm_type")
     private Integer alarmType;

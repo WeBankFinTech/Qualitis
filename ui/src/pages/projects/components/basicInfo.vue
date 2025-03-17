@@ -8,7 +8,7 @@
                 <li class="wd-body-menu-item">{{$t('common.moreAction')}}</li>
             </FDropdown>
         </ul>
-        <h6 class="wd-body-title">{{$t('myProject.basic')}}</h6>
+        <h6 class="wd-body-title base-info-title">{{$t('myProject.basic')}}</h6>
         <!-- 编辑基本信息 -->
         <FForm v-show="showBasicEdit" ref="projectBasicForm" class="wd-form form-rule" labelPosition="right" labelWidth="78px" :model="tempProject" :rules="rules" style="width: 400px;">
             <FFormItem :label="`${$t('label.projectId')}`" prop="project_id">
@@ -52,6 +52,7 @@
                     valueField="value"
                     labelField="label"
                     :options="subSystemList"
+                    :filter="upperCaseFilter"
                     @change="setSubSysName"
                 ></FSelect>
             </FFormItem>
@@ -65,41 +66,64 @@
         </FForm>
         <!-- 显示基本信息 -->
         <div v-show="!showBasicEdit" class="wd-table-list">
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('label.projectId')}}</div>
-                <div class="wd-table-detail">{{project.project_id || '--'}}</div>
+            <div class="grid">
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('label.projectId')}}</div>
+                    <div class="wd-table-detail">
+                        <FEllipsis :content="project.project_id || '--'"></FEllipsis>
+                        <!-- {{project.project_id || '--'}} -->
+                    </div>
+                </div>
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('common.projectEnName1')}}</div>
+                    <div class="wd-table-detail">
+                        <FEllipsis :content="project.project_name || '--'"></FEllipsis>
+                        <!-- {{project.project_name || '--'}} -->
+                    </div>
+                </div>
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('common.projectCnName1')}}</div>
+                    <div class="wd-table-detail">
+                        <FEllipsis :content="project.cn_name || '--'"></FEllipsis>
+                        <!-- {{project.cn_name || '--'}} -->
+                    </div>
+                </div>
             </div>
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('common.projectName')}}</div>
-                <div class="wd-table-detail">{{project.project_name || '--'}}</div>
-            </div>
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('common.cnName')}}</div>
-                <div class="wd-table-detail">{{project.cn_name || '--'}}</div>
-            </div>
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('label.projectIntro')}}</div>
-                <div class="wd-table-detail">{{project.description || '--'}}</div>
-            </div>
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('myProject.owningSubsystem')}}</div>
-                <div class="wd-table-detail">{{project.sub_system_name || '--'}}</div>
-            </div>
-            <div class="wd-table-row">
-                <div class="wd-table-header">{{$t('common.itemTag')}}</div>
-                <div class="wd-table-detail project-tags">
-                    <div v-for="(item, index) in project.project_label" :key="index" class="tags-item">{{item}}</div>
-                    <div v-if="project.project_label && project.project_label.length === 0">--</div>
+            <div class="grid">
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('myProject.owningSubsystem')}}</div>
+                    <div class="wd-table-detail">
+                        <FEllipsis :content="project.sub_system_name || '--'"></FEllipsis>
+                        <!-- {{project.sub_system_name || '--'}} -->
+                    </div>
+                </div>
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('label.projectDesc')}}</div>
+                    <div class="wd-table-detail">
+                        <FEllipsis :content="project.description || '--'"></FEllipsis>
+                        <!-- {{project.description || '--'}} -->
+                    </div>
+                </div>
+                <div class="wd-table-row grid-item-8">
+                    <div class="wd-table-header">{{$t('common.itemTag')}}</div>
+                    <div class="wd-table-detail project-tags">
+                        <FTooltip :content="project.project_label.toString()" :disabled="disableTooltip" placement="top">
+                            <div ref="projectTagRef" class="project-tag-list" @mouseover="onMouseOver" @mouseleave="onMouseLeave">
+                                <span v-for="(item, index) in project.project_label" :key="index" class="tags-item">{{item}}</span>
+                                <div v-if="project.project_label && project.project_label.length === 0">--</div>
+                            </div>
+                        </FTooltip>
+                    </div>
                 </div>
             </div>
         </div>
         <!-- 显示编辑历史 -->
         <FDrawer v-model:show="showHistory" :title="$t('myProject.history')" width="800px" @cancel="resetHistoryList">
             <f-table :data="history || []">
-                <f-table-column prop="operate_type" :label="$t('myProject.operationType')" :width="144" ellipsis></f-table-column>
-                <f-table-column prop="content" :label="$t('myProject.operationRemark')" :width="176" ellipsis></f-table-column>
-                <f-table-column prop="operate_user" :label="$t('myProject.operateUser')" :width="120" ellipsis></f-table-column>
-                <f-table-column prop="time" :label="$t('myProject.operationTime')" :width="180" ellipsis></f-table-column>
+                <f-table-column prop="operate_type" :label="$t('myProject.operationType')" min-:width="144" ellipsis></f-table-column>
+                <f-table-column prop="content" :label="$t('myProject.operationRemark')" :min-width="176" ellipsis></f-table-column>
+                <f-table-column prop="operate_user" :label="$t('myProject.operateUser')" :min-width="120" ellipsis></f-table-column>
+                <f-table-column prop="time" :label="$t('myProject.operationTime')" :min-width="180" ellipsis></f-table-column>
                 <template #empty>
                     <BPageLoading actionType="emptyInitResult" />
                 </template>
@@ -122,8 +146,8 @@
                 <h3 v-if="!isWorkflow" class="wd-add-user-title" :class="{ collapse: showAddUserForm }" @click="toggleAddUserForm">{{$t('personnelManagePage.addUser')}}<DownOutlined /></h3>
                 <FForm v-show="showAddUserForm" ref="addUserForm" class="wd-form" labelWidth="70px" style="width: 430px; padding-bottom: 16px;" :model="newUser" :rules="userRules">
                     <FFormItem :label="$t('personnelManagePage.selectUser')" prop="authorized_user">
-                        <FSelect v-model="newUser.authorized_user" filterable clearable>
-                            <FOption v-for="(item, index) in projectUserList" :key="index" :value="item" :disabled="isProjectUser(item)">{{initialState.userName === item ? `${item}(you)` : item}}</FOption>
+                        <FSelect v-model="newUser.authorized_user" filterable clearable :options="projectUserList">
+                            <!-- <FOption v-for="(item, index) in projectUserList" :key="index" :value="item" :disabled="isProjectUser(item)">{{initialState.userName === item ? `${item}(you)` : item}}</FOption> -->
                         </FSelect>
                     </FFormItem>
                     <FFormItem :label="$t('personnelManagePage.authConfig')" prop="permission">
@@ -170,6 +194,8 @@
                 </f-table-column>
             </f-table>
         </FDrawer>
+        <!-- 代码存储配置 -->
+        <CodeConfig v-if="showGitBase" v-model:show="showGitBase" :project="project" @updateGit="updateGit"></CodeConfig>
         <!-- 导入项目 -->
         <ImportProjectByDetail v-if="showImport" v-model:show="showImport" :project="project" type="detail" @uploadSucess="updateGit"></ImportProjectByDetail>
         <!-- 导出项目 -->
@@ -177,6 +203,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, defineProps, defineEmits, computed, watch,
 } from 'vue';
@@ -190,9 +217,11 @@ import useProjectHistory from '@/pages/projects/hooks/useProjectHistory';
 import useProjectAuth from '@/pages/projects/hooks/useProjectAuth';
 import useDataSource from '@/pages/projects/hooks/useDataSource';
 import { COMMON_REG } from '@/assets/js/const';
+import CodeConfig from '@/pages/projects/components/ImExport/codeConfig';
 import ImportProjectByDetail from '@/pages/projects/components/ImExport/importProjectByDetail';
 import EXportProjectByDetail from '@/pages/projects/components/ImExport/exportProjectByDetail';
 import { BPageLoading } from '@fesjs/traction-widget';
+import { upperCaseFilter } from '@/common/utils';
 
 const initialState = useModel('@@initialState');
 const { t: $t } = useI18n();
@@ -211,7 +240,7 @@ const {
     getProjectUserData,
     isProjectUser,
     projectUserList,
-    getProjectUserList,
+    getProjectAuthUserList,
     isPermissionCompute,
 } = useProjectAuth(props.project.project_id, initialState.userName);
 
@@ -219,22 +248,31 @@ const emit = defineEmits([
     'update:project', // 编辑表单提交更新
     'upateProject', // 向后端接口拉取最新project信息
 ]);
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
 
 // 更多操作
+const showGitBase = ref(false);
 const showImport = ref(false);
 const showExport = ref(false);
-const moreMenus = ref([
+const moreMenus = ref(overseasVersion === 'true' ? [
+    { label: $t('myProject.importProject'), value: 'import' },
+    { label: $t('myProject.downloadProject'), value: 'export' },
+] : [
+    { label: $t('myProject.codeAddress'), value: 'codeAddress' },
     { label: $t('myProject.importProject'), value: 'import' },
     { label: $t('myProject.downloadProject'), value: 'export' },
 ]);
 const loginUserName = sessionStorage.getItem('firstUserName');
 const toggleMoreAction = async (e) => {
+    if (e === 'codeAddress') {
+        showGitBase.value = true;
+    }
     if (e === 'import') {
         const isImport = await isPermissionCompute();
         if (isImport) {
             showImport.value = true;
         } else {
-            FMessage.warning('导入权限不足');
+            FMessage.warning($t('_.导入权限不足'));
         }
     }
     if (e === 'export') {
@@ -242,7 +280,7 @@ const toggleMoreAction = async (e) => {
         if (isExport) {
             showExport.value = true;
         } else {
-            FMessage.warning('导出权限不足');
+            FMessage.warning($t('_.导出权限不足'));
         }
     }
 };
@@ -349,7 +387,9 @@ const showProjectAuth = ref(false);
 const toggleProjectAuth = () => {
     showProjectAuth.value = !showProjectAuth.value;
     getProjectUserData();
-    getProjectUserList();
+    setTimeout(() => {
+        getProjectAuthUserList();
+    }, 600);
 };
 
 // 判断是否为项目的管理员
@@ -502,6 +542,20 @@ const permissionChange = (value) => {
     newUser.value.permission = transferAuths(value);
 };
 
+const projectTagRef = ref(null);
+const projectTagBoxRef = ref(null);
+const disableTooltip = ref(true); // 是否显示tooltip
+const onMouseOver = () => {
+    const target = projectTagRef.value;
+    const parentWidth = target.parentNode.offsetWidth;
+    const targettWidth = target.offsetWidth;
+    disableTooltip.value = parentWidth - 50 > targettWidth;
+};
+// 隐藏
+const onMouseLeave = () => {
+    disableTooltip.value = true;
+};
+
 const updateRowAuths = (row) => {
     console.log(row);
     const {
@@ -527,12 +581,12 @@ const updateRowAuths = (row) => {
     row.permission = permission;
 };
 
+
 </script>
 <style lang="less" scoped>
 @import '@/style/varible.less';
-
-.wd-table-detail{
-    margin-left: 16px;
+.history-table {
+    width: 100%!important;
 }
 .wd-add-user{
     margin-bottom: 16px;
@@ -569,5 +623,63 @@ const updateRowAuths = (row) => {
     .btns{
         padding-left: 16px;
     }
+}
+.grid {
+    position: relative;
+    display: flex;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+    .grid-item-8 {
+        position: relative;
+        display: block;
+        box-sizing: border-box;
+        flex: 0 0 33.33333333%;
+        max-width: 33.33333333%;
+        min-height: 1px;
+        padding-right: 16px;
+    }
+    &:last-child {
+        padding-right: 0;
+    }
+}
+.wd-content .wd-content-body .wd-table-list .wd-table-row {
+    margin-bottom: 0;
+}
+.wd-content .wd-content-body .wd-table-list .wd-table-row .wd-table-header {
+    min-width: 72px;
+    color: #646670;
+    align-items: center;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 22px;
+    justify-content: flex-start;
+}
+
+.wd-table-detail{
+    overflow: hidden;
+    margin-left: 16px;
+    align-items: center;
+    display: flex;
+    flex: 1;
+    min-height: 22px;
+    position: relative;
+}
+.project-tags .tags-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.project-tag-list {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 26px;
+}
+.wd-content .wd-content-body .wd-table-list .grid {
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+.wd-content .wd-content-body .base-info-title {
+    margin-bottom: 16px;
 }
 </style>

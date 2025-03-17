@@ -15,32 +15,32 @@
                     style="margin-right: 16px;"
                     @click="handleOk"
                 >
-                    确定
+                    {{$t('_.确定')}}
                 </FButton>
-                <FButton @click="handleClose">取消</FButton>
+                <FButton @click="handleClose">{{$t('_.取消')}}</FButton>
             </div>
             <div v-else>
-                <FButton type="info" style="margin-right: 16px;" @click="authorityEdit">编辑</FButton>
+                <FButton type="info" style="margin-right: 16px;" @click="authorityEdit">{{$t('_.编辑')}}</FButton>
                 <FTooltip
                     mode="confirm"
-                    :confirmOption="{ okText: '确认删除' }"
+                    :confirmOption="{ okText: $t('_.确认删除') }"
                     placement="top"
                     @ok="handleDelete"
                 >
                     <FButton type="danger">{{$t('common.delete')}}</FButton>
                     <template #title>
-                        <div style="width: 200px">确认删除此模板吗？</div>
+                        <div style="width: 200px">{{$t('_.确认删除此模板吗？')}}</div>
                     </template>
                 </FTooltip>
             </div>
         </template>
         <div :class="{ view: mode === 'view' }">
             <div class="selection">
-                <div class="header">基础信息</div>
+                <div class="header">{{$t('_.基础信息')}}</div>
                 <BaseInfo ref="baseInfo" v-model:templateData="templateData" :mode="mode" />
             </div>
             <div class="selection">
-                <div class="header">模板配置</div>
+                <div class="header">{{$t('_.模板配置')}}</div>
                 <TemplateConfig
                     ref="templateConfig"
                     v-model:templateData="templateData"
@@ -49,7 +49,7 @@
                 />
             </div>
             <div class="selection">
-                <div class="header">占位符</div>
+                <div class="header">{{$t('_.占位符')}}</div>
                 <InputMeta
                     v-for="(item,index) in templateData.template_mid_table_input_meta"
                     :ref="el => { if (el) inputMetaRefs[index] = el }"
@@ -63,14 +63,14 @@
                 />
                 <div v-if="mode !== 'view'" class="add-sign">
                     <span class="add-sign-btn" @click="addInputMeta">
-                        <PlusCircleOutlined style="padding-right: 4.58px;" />添加占位符
-                    </span>
+                        <PlusCircleOutlined style="padding-right: 4.58px;" />{{$t('_.添加占位符')}}</span>
                 </div>
             </div>
         </div>
     </FDrawer>
 </template>
 <script setup>
+
 import {
     ref, computed, defineProps, defineEmits, onUpdated, onMounted, watch,
 } from 'vue';
@@ -109,6 +109,17 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:mode', 'update:show', 'addTemplate', 'editTemplate', 'deleteTemplate']);
 
+const show = computed(
+    {
+        get() {
+            return props.show;
+        },
+        set(v) {
+            // eslint-disable-next-line no-use-before-define
+            emit('update:show', v);
+        },
+    },
+);
 const drawerTitle = computed(() => {
     const typeNameDict = {
         1: $t('ruleTemplatelist.singleTemplate'), // 单表模板
@@ -139,6 +150,7 @@ const templateData = ref({
     dev_department_name: [], // 开发科室
     ops_department_name: [], // 运维科室
     datasource_type: [],
+    udf_function_name: [],
     count_function_name: '',
     template_mid_table_input_meta: [{}],
 });
@@ -171,6 +183,7 @@ const resetTemplateData = () => {
         dev_department_name: [], // 开发科室
         ops_department_name: [], // 运维科室
         datasource_type: [],
+        udf_function_name: [],
         count_function_name: '',
         template_mid_table_input_meta: [{}],
     };
@@ -179,12 +192,12 @@ const resetTemplateData = () => {
 };
 // 有无权限删除编辑
 const authorityEdit = () => {
-    if (!templateData.value.is_editable) return FMessage.warn('没有权限编辑');
+    if (!templateData.value.is_editable) return FMessage.warn($t('_.没有权限编辑'));
     emit('update:mode', 'edit');
 };
 const handleDelete = async () => {
     try {
-        if (!templateData.value.is_editable) return FMessage.warn('没有权限删除');
+        if (!templateData.value.is_editable) return FMessage.warn($t('_.没有权限删除'));
         await deleteTemplate({ template_id: props.tid });
         FMessage.success($t('toastSuccess.deleteSuccess'));
         emit('deleteTemplate');
@@ -250,8 +263,8 @@ onUpdated(async () => {
             }
             templateData.value.visibility_department_list = result.visibility_department_list ? result.visibility_department_list : [];
             templateData.value.visibility_departments = templateData.value.visibility_department_list.map(item => item?.id);
-            templateData.value.dev_department_name = templateData.value.dev_department_name.split('/');
-            templateData.value.ops_department_name = templateData.value.ops_department_name.split('/');
+            templateData.value.dev_department_name = templateData.value.dev_department_name?.split('/');
+            templateData.value.ops_department_name = templateData.value.ops_department_name?.split('/');
             templateData.value.visibility_departments = templateData.value.visibility_department_list.map(item => item?.name.split('/'));
             templateData.value.template_mid_table_input_meta = templateData.value.template_mid_table_input_meta.map((item) => {
                 placeholders.value.forEach((placeholder) => {
@@ -299,6 +312,7 @@ watch(() => templateData.value.verification_level, () => {
     }
     // console.log(placeholders.value, templateData.value.template_mid_table_input_meta)
 });
+
 </script>
 <style lang='less' scoped>
 @import "@/style/varible";

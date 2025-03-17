@@ -147,7 +147,7 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
         this.contrastType = contrastType;
     }
 
-    public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot, Boolean cs, Boolean customConsistent,Boolean tableStructureConsistent) throws UnExpectedRequestException {
+    public static void checkRequest(AddMultiSourceRuleRequest request, Boolean modifyOrNot, Boolean cs, Boolean customConsistent, Boolean tableStructureConsistent) throws UnExpectedRequestException {
         CommonChecker.checkObject(request, "Request");
         CommonChecker.checkString(request.getRuleName(), "Rule name");
         CommonChecker.checkObject(request.getMultiSourceRuleTemplateId(), "Template ID");
@@ -164,7 +164,7 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
             }
         }
 
-        if (! modifyOrNot) {
+        if (!modifyOrNot) {
             CommonChecker.checkObject(request.getProjectId(), "Project ID");
         }
     }
@@ -174,8 +174,8 @@ public class AddMultiSourceRuleRequest extends AbstractCommonRequest {
         return "AddMultiSourceRuleRequest{" +
                 "clusterName='" + clusterName + '\'' +
                 ", multiSourceRuleTemplateId=" + multiSourceRuleTemplateId +
-                ", source=" + source +
-                ", target=" + target +
+                ", source=" + (source == null ? null : source.toString()) +
+                ", target=" + (target == null ? null : target.toString()) +
                 ", templateArgumentRequests=" + templateArgumentRequests +
                 ", contrastType=" + contrastType +
                 ", colNames=" + colNames +

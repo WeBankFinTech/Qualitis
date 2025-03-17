@@ -54,6 +54,11 @@ public class PermissionDaoImpl implements PermissionDao {
     }
 
     @Override
+    public Permission findByResCode(String resCode) {
+        return permissionRepository.findByResCode(resCode);
+    }
+
+    @Override
     public void deletePermission(Permission permission) {
         permissionRepository.delete(permission);
     }

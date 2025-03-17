@@ -34,17 +34,13 @@
                         ellipsis
                     ></f-table-column>
                     <f-table-column
-                        ellipsis
                         :visible="checkTColShow('project_name')"
                         prop="project_name"
                         :label="$t('common.projectName')"
                         :width="160"
                     >
                         <template #default="{ row = {}}">
-                            <span class="a-link"
-                                  href="javascript:void(0);"
-                                  @click="navigateToProjectDetail(row)"
-                            >{{row.project_name}}</span>
+                            <clipboard isLink :val="row.project_name" @clickLink="navigateToProjectDetail(row)" />
                         </template>
                     </f-table-column>
                     <f-table-column
@@ -150,6 +146,11 @@
             :originHeaders="originProjectHeaders"
             type="project_list"
         />
+        <!-- 运维报表订阅管理抽屉式列表 -->
+        <SubsManagementDrawer
+            v-model:show="showSubsManagementDrawer"
+        />
+
         <!-- 任务执行 -->
         <ExecRulePanel
             v-model:show="showExecutation"
@@ -161,10 +162,12 @@
 </template>
 <script setup>
 import {
-    ref, defineProps, onMounted, onUnmounted, watch,
+    ref, defineProps, onMounted, onUnmounted, watch, provide,
 } from 'vue';
 import { useI18n, useRouter } from '@fesjs/fes';
-import { FMessage } from '@fesjs/fes-design';
+import {
+    FMessage,
+} from '@fesjs/fes-design';
 import {
     PlusOutlined, UploadOutlined, DownloadOutlined, MoreCircleOutlined,
 } from '@fesjs/fes-design/es/icon';
@@ -176,8 +179,10 @@ import {
 import eventbus from '@/common/useEvents';
 import { formatterEmptyValue } from '@/common/utils';
 import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
+import clipboard from '@/components/clipboard';
 import ProjectActionBar from './projectActionBar';
 import ProjectFormModal from './projectFormModal';
+import SubsManagementDrawer from './subsManagementDrawer';
 import useProjects from '../hooks/useProject';
 import useImport from '../hooks/useImport';
 import useExport from '../hooks/useExport';
@@ -194,7 +199,10 @@ const props = defineProps({
 });
 const { t: $t } = useI18n();
 const router = useRouter();
-
+// 项目类型（1：普通项目 2：工作流项目）
+const projectType = 1;
+provide('projectType', projectType);
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
 const showLoading = ref(false);
 // 项目topbar操作配置
 const projectActions = [
@@ -233,10 +241,27 @@ const projectActions = [
         icon: MoreCircleOutlined,
         label: $t('myProject.more'),
         trigger: 'click',
-        options: [
+        options: overseasVersion === 'true' ? [
             {
                 label: $t('common.setTableHeaderConfig'),
+                value: '2',
+                handler: () => {
+                    // eslint-disable-next-line no-use-before-define
+                    toggleTColConfig();
+                },
+            },
+        ] : [
+            {
+                label: $t('common.operReportingSubsManagement'),
                 value: '1',
+                handler: () => {
+                    // eslint-disable-next-line no-use-before-define
+                    openSubsManagement();
+                },
+            },
+            {
+                label: $t('common.setTableHeaderConfig'),
+                value: '2',
                 handler: () => {
                     // eslint-disable-next-line no-use-before-define
                     toggleTColConfig();
@@ -274,8 +299,10 @@ const projectOperationBtnHandler = (btn, data) => {
 const {
     checkTColShow,
     toggleTColConfig,
+    openSubsManagement,
     tableHeaders: projectTableHeaders,
     showTableHeaderConfig: showProjectTableColConfig,
+    showSubsManagement: showSubsManagementDrawer,
 } = useTableHeaderConfig();
 
 // 项目表格相关

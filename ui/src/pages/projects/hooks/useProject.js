@@ -1,5 +1,5 @@
 import {
-    ref, reactive, onMounted, computed,
+    ref, reactive, onMounted, computed, watch,
 } from 'vue';
 import { useI18n, useRoute, useRouter } from '@fesjs/fes';
 import { FModal, FMessage } from '@fesjs/fes-design';
@@ -17,6 +17,14 @@ export default function useProject(fetchAction = () => {}, showLoading, workSpac
         current: urlQuery.value.page ? +urlQuery.value.page : 1,
         size: urlQuery.value.pageSize ? +urlQuery.value.pageSize : 10,
         total: 0,
+    });
+    watch(urlQuery, () => {
+        if (urlQuery.value.page) {
+            pagination.current = +urlQuery.value.page;
+        }
+        if (urlQuery.value.size) {
+            pagination.value = +pagination.pageSize;
+        }
     });
     const projects = ref([]);
     const projectSelection = ref([]);

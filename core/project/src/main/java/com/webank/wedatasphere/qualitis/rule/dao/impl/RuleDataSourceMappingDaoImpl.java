@@ -64,6 +64,11 @@ public class RuleDataSourceMappingDaoImpl implements RuleDataSourceMappingDao {
     }
 
     @Override
+    public void deleteAll(List<RuleDataSourceMapping> ruleDataSourceMappingList) {
+        ruleDataSourceMappingRepository.deleteAll(ruleDataSourceMappingList);
+    }
+
+    @Override
     public List<RuleDataSourceMapping> findByRuleList(List<Rule> ruleList) {
         return ruleDataSourceMappingRepository.findByRuleIn(ruleList);
     }

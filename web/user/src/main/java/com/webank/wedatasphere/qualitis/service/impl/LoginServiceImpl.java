@@ -17,8 +17,6 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.webank.wedatasphere.qualitis.client.config.DataMapConfig;
 import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
@@ -35,12 +33,12 @@ import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.management.relation.RoleNotFoundException;
@@ -58,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -74,6 +73,11 @@ public class LoginServiceImpl implements LoginService {
     @Autowired
     private RoleDao roleDao;
 
+    @Value("${dss.origin-urls}")
+    private String dssOriginUrls;
+
+    private static final String URL_REGEX = "^(https?|ftp|file)://.*$";
+
     @Autowired
     private DataMapConfig dataMapConfig;
 
@@ -85,12 +89,12 @@ public class LoginServiceImpl implements LoginService {
     @Context
     private HttpServletResponse httpResponse;
 
-    private static final SecureRandom secureRandom = new SecureRandom();
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginServiceImpl.class);
 
     public static final FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
-    private static final String URL_REGEX = "^(https?|ftp|file)://.*$";
 
     private static final String ENV_FLAG = "envFlag";
     private static final String ENV_FLAG_VALUE = "prod";
@@ -99,6 +103,7 @@ public class LoginServiceImpl implements LoginService {
     private static final String TGC_SF = "tgc_sf";
     private static final Integer TWO_HUNDRED = 200;
     private static final String USER_ID = "userId";
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     public LoginServiceImpl(@Context HttpServletRequest httpRequest, @Context HttpServletResponse httpResponse) {
         this.httpRequest = httpRequest;
@@ -111,7 +116,8 @@ public class LoginServiceImpl implements LoginService {
         checkRequest(request);
 
         String username = request.getUsername();
-        if (localLogin(username, request.getPassword())) {
+        String password = request.getPassword();
+        if (localLogin(username, password)) {
             addToSession(username, httpRequest);
             LOGGER.info("Succeed to login. user: {}, current_user: {}", username, username);
             return new GeneralResponse<>(ResponseStatusConstants.OK, "{&LOGIN_SUCCESS}", null);
@@ -121,27 +127,30 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public GeneralResponse<?> logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
+    public GeneralResponse logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
         String username = HttpUtils.getUserName(httpServletRequest);
-        HttpSession session = httpServletRequest.getSession();
-        session.removeAttribute("permissions");
-        session.removeAttribute("user");
-        session.removeAttribute("proxyUser");
+        if (overseasVersionEnabled){
+            LOGGER.info(" logout clean cookie.");
+            HttpSession session = httpServletRequest.getSession();
+            session.removeAttribute("permissions");
+            session.removeAttribute("user");
+            session.removeAttribute("proxyUser");
 
-        Cookie[] cookies = httpServletRequest.getCookies();
-        // Clear cookies.
-        for (Cookie cookie : cookies) {
-            String cookieName = cookie.getName ();
-            if ("JSESSIONID".equals(cookieName)) {
-                cookieName = cookieName.replace("\r", "").replace("\n", "");
-                Cookie newCookie = new Cookie (cookieName, null);
-                newCookie.setSecure(true);
-                newCookie.setMaxAge(0);
-                newCookie.setPath("/");
-                httpServletResponse.addCookie(newCookie);
+            Cookie[] cookies = httpServletRequest.getCookies();
+            // Clear cookies.
+            for (Cookie cookie : cookies) {
+                String cookieName = cookie.getName ();
+                if ("JSESSIONID".equals(cookieName)) {
+                    cookieName = cookieName.replace("\r", "").replace("\n", "");
+                    Cookie newCookie = new Cookie (cookieName, null);
+                    newCookie.setSecure(true);
+                    newCookie.setMaxAge(0);
+                    newCookie.setPath("/");
+                    httpServletResponse.addCookie(newCookie);
+                }
             }
+            return new GeneralResponse<>("200", "{&LOGOUT_SUCCESSFULLY}", null);
         }
-
         LOGGER.info("Succeed to logout, user: {}, current_user: {}", username, username);
         String logoutUrl = frontEndConfig.getDomainName().replace("{IP}", QualitisConstants.getPublicIp()) + "/#/home";
         boolean valid = isValid(logoutUrl);
@@ -164,77 +173,12 @@ public class LoginServiceImpl implements LoginService {
         // Find user by username
         User userInDb = userDao.findByUsername(username);
         addUserToSession(userInDb, httpServletRequest);
-        addPermissionsToSession(userInDb, httpServletRequest);
-        addRandomToSession(httpServletRequest);
     }
 
-    protected JsonObject processInfoResult4Datamap(String result) {
-        JsonObject resultJson;
-        try {
-            resultJson = str2JsonObject(result);
-        } catch (Exception e) {
-            LOGGER.error("Fail to processInfoResult4Datamap", e.getMessage(), e);
-            return null;
-        }
-        if (null != resultJson) {
-            int retCode = resultJson.get("code").getAsInt();
-            if (retCode == TWO_HUNDRED) {
-                return getJsonObject(resultJson, "data");
-            }
-            LOGGER.error("Fail to processInfoResult4Datamap, retCode: {}, msg: {}", retCode, resultJson.get("msg").getAsString());
-            return null;
-        }
-        return null;
-    }
-
-    public JsonObject getJsonObject(JsonObject jsono, String key){
-        JsonObject resultJson = null;
-        try {
-            if (null != jsono && jsono.keySet().contains(key)){
-                if (jsono.get(key).isJsonObject()){
-                    resultJson = jsono.get(key).getAsJsonObject();
-                }else if (jsono.get(key).isJsonPrimitive()){
-                    String resultStr = jsono.get(key).getAsString();
-                    resultJson = str2JsonObject(resultStr);
-                }
-            }
-        }catch (Exception e){
-            LOGGER.error(e.getMessage(), e);
-            resultJson = getJsonObjectWithUn(jsono, key);
-        }
-        return resultJson;
-    }
-
-    public JsonObject getJsonObjectWithUn(JsonObject jsono, String key){
-        JsonObject resultJson = null;
-        try {
-            if (null != jsono && jsono.keySet().contains(key)){
-                if (jsono.get(key).isJsonObject()){
-                    resultJson = jsono.get(key).getAsJsonObject();
-                }else if (jsono.get(key).isJsonPrimitive()){
-                    String resultStr = jsono.get(key).getAsString();
-                    String resultStr2 = StringEscapeUtils.unescapeJavaScript(resultStr);
-                    resultJson = str2JsonObject(resultStr2);
-                }
-            }
-        }catch (Exception e){
-            LOGGER.error(e.getMessage(), e);
-        }
-        return resultJson;
-    }
-
-    public JsonObject str2JsonObject(String str){
-        JsonObject jsonObject = null;
-        try {
-            if (StringUtils.isNotEmpty(str)){
-                JsonParser parser = new JsonParser();
-                jsonObject = parser.parse(str).getAsJsonObject();
-            }
-
-        }catch (Exception e){
-            LOGGER.error(e.getMessage(), e);
-        }
-        return jsonObject;
+    @Override
+    public void addDssUrlToSession(HttpServletRequest httpServletRequest) {
+        HttpSession session = httpServletRequest.getSession(false);
+        session.setAttribute("entrance_origin", dssOriginUrls);
     }
 
     private void addUserToSession(User userInDb, HttpServletRequest httpServletRequest) {
@@ -242,30 +186,30 @@ public class LoginServiceImpl implements LoginService {
         HttpSession session = httpServletRequest.getSession();
         Map<String, Object> userMap = ImmutableMap.of("userId", userInDb.getId(), "username", userInDb.getUsername());
         session.setAttribute("user", userMap);
-    }
 
-    private void addPermissionsToSession(User userInDb, HttpServletRequest httpServletRequest) {
         List<Permission> userAllPermission = new ArrayList<>();
         // Add roles's permissions of user
         for (Role role : userInDb.getRoles()) {
             for (Permission permission : role.getPermissions()) {
-                userAllPermission.add(permission);
+                if (! userAllPermission.contains(permission)) {
+                    userAllPermission.add(permission);
+                }
             }
         }
         // Add permissions of user
         for (Permission permission : userInDb.getSpecPermissions()) {
-            userAllPermission.add(permission);
+            if (! userAllPermission.contains(permission)) {
+                userAllPermission.add(permission);
+            }
         }
 
         // Put permissions into session
-        HttpSession session = httpServletRequest.getSession();
-        session.setAttribute("permissions", userAllPermission);
-    }
+        session.setAttribute("permissions", userAllPermission.stream().distinct().collect(Collectors.toList()));
 
-    private void addRandomToSession(HttpServletRequest httpServletRequest) {
-        // Put permissions into session
-        HttpSession session = httpServletRequest.getSession();
-        session.setAttribute("loginRandom", secureRandom.nextInt(10000));
+        if (overseasVersionEnabled){
+            LOGGER.info(" session set attribute loginRandom.");
+            session.setAttribute("loginRandom", secureRandom.nextInt(10000));
+        }
     }
 
     private boolean localLogin(String username, String password) {

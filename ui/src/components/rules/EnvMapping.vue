@@ -1,8 +1,8 @@
 <template>
     <div class="env-mapping">
         <div class="top">
-            <div class="mapping-name">映射{{props.no + 1}}</div>
-            <div v-if="deletable" class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">删除</span></div>
+            <div class="mapping-name">{{$t('_.映射')}}{{props.no + 1}}</div>
+            <div v-if="deletable" class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">{{$t('_.删除')}}</span></div>
         </div>
         <div class="env-map-form">
             <slot name="form"></slot>
@@ -12,7 +12,9 @@
 <script setup>
 import { defineProps, defineEmits } from 'vue';
 import { MinusCircleOutlined } from '@fesjs/fes-design/es/icon';
+import { useI18n } from '@fesjs/fes';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     no: {
         type: Number,

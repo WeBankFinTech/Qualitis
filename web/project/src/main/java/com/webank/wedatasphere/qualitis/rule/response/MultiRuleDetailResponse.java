@@ -89,6 +89,9 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
     @JsonProperty("right_linkis_udf_names")
     private List<String> rightLinkisUdfNames;
 
+    @JsonProperty("reg_rule_code")
+    private String regRuleCode;
+
     public MultiRuleDetailResponse() {
     }
 
@@ -113,6 +116,7 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
         this.contrastType = rule.getContrastType();
         this.source = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 0);
         this.target = new MultiDataSourceConfigRequest(rule.getRuleDataSources(), 1);
+        this.regRuleCode = rule.getRegRuleCode();
 
         Boolean isCustomConsistence = QualitisConstants.isCustomColumnConsistence(rule.getTemplate().getEnName());
         if (isCustomConsistence) {
@@ -240,6 +244,16 @@ public class MultiRuleDetailResponse extends AbstractCommonRequest {
                 super.setUploadRuleMetricValue(false);
             }
         }
+    }
+
+    @Override
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    @Override
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
     }
 
     public String getClusterName() {

@@ -1,7 +1,7 @@
 <template>
     <BPageLoading
         actionType="noPermissions"
-        loadingText="暂无权限"
+        :loadingtext="$t('_.暂无权限')"
         @logout="logout"
     ></BPageLoading>
 </template>

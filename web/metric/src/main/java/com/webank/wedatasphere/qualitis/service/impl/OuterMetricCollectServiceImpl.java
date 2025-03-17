@@ -17,18 +17,18 @@ package com.webank.wedatasphere.qualitis.service.impl;
 //import com.webank.wedatasphere.qualitis.rule.dao.RuleTemplateDao;
 //import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.service.OuterMetricCollectService;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+//import org.apache.commons.collections.CollectionUtils;
+//import org.apache.commons.lang3.StringUtils;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+//import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+//import java.util.ArrayList;
+//import java.util.List;
+//import java.util.Map;
+//import java.util.function.Function;
+//import java.util.stream.Collectors;
 
 /**
  * @author v_minminghe@webank.com
@@ -62,6 +62,7 @@ public class OuterMetricCollectServiceImpl implements OuterMetricCollectService 
 //        }
 //
 //        List<ImsMetricCollect> imsMetricCollectListByTable = new ArrayList<>();
+//        List<ImsMetricCollect> imsMetricCollectListByTableForSave = new ArrayList<>();
 //        Map<String, ColumnInfoDetail> columnInfoDetailMap = columnInfoDetailList.stream().collect(Collectors.toMap(ColumnInfoDetail::getFieldName, Function.identity(), (oldVal, newOld) -> oldVal));
 //        Map<String, Long> calcuUnitNameAndTemplateMap = getCalcuUnitNameAndTemplateIdMap();
 //        Long enumNumTemplate = calcuUnitNameAndTemplateMap.get(ImsRuleCalcTypeEnum.ENUM_NUM.getDescribe());
@@ -83,14 +84,13 @@ public class OuterMetricCollectServiceImpl implements OuterMetricCollectService 
 //
 //        List<ImsMetricCollect> imsMetricCollectListInDb = imsMetricCollectDao.findByDatasource(collectRequest.getClusterName(), collectRequest.getDatabase(), collectRequest.getTable(), null, StringUtils.isNotBlank(collectRequest.getPartition()) ? collectRequest.getPartition() : null);
 //        if (CollectionUtils.isNotEmpty(imsMetricCollectListInDb)) {
-//            LOGGER.info("Found records in database, ready to clear. request: {}", collectRequest.toString());
-//            List<Long> ids = imsMetricCollectListInDb.stream().filter(imsMetricCollect -> enumNumTemplate.equals(imsMetricCollect.getTemplateId()) || enumRateTemplate.equals(imsMetricCollect.getTemplateId())).map(ImsMetricCollect::getId).collect(Collectors.toList());
-//            if (CollectionUtils.isNotEmpty(ids)) {
-//                imsMetricCollectDao.deleteByIds(ids);
+//            List<String> existsEnumColumnNames = imsMetricCollectListInDb.stream().filter(imsMetricCollect -> enumNumTemplate.equals(imsMetricCollect.getTemplateId()) || enumRateTemplate.equals(imsMetricCollect.getTemplateId())).map(ImsMetricCollect::getColumnName).collect(Collectors.toList());
+//            if (CollectionUtils.isNotEmpty(existsEnumColumnNames)) {
+//                imsMetricCollectListByTableForSave = imsMetricCollectListByTable.stream().filter(imsMetricCollect -> ! existsEnumColumnNames.contains(imsMetricCollect.getColumnName())).collect(Collectors.toList());
 //            }
 //        }
-//        if (CollectionUtils.isNotEmpty(imsMetricCollectListByTable)) {
-//            imsMetricCollectDao.saveAll(imsMetricCollectListByTable);
+//        if (CollectionUtils.isNotEmpty(imsMetricCollectListByTableForSave)) {
+//            imsMetricCollectDao.saveAll(imsMetricCollectListByTableForSave);
 //        }
 //    }
 //
@@ -120,7 +120,7 @@ public class OuterMetricCollectServiceImpl implements OuterMetricCollectService 
 //        imsMetricCollect.setFilter(request.getPartition());
 //        imsMetricCollect.setColumnType(columnType);
 //        if (StringUtils.isBlank(imsMetricCollect.getFilter())) {
-//            imsMetricCollect.setFilter("ds='${run_today}'");
+//            imsMetricCollect.setFilter("ds='${run_date}'");
 //        }
 //        imsMetricCollect.setCollectAge(0);
 //        imsMetricCollect.setProxyUser(request.getProxyUser());

@@ -8,7 +8,7 @@ import java.util.List;
  * @author allenzhou@webank.com
  * @date 2021/2/24 16:33
  */
-public class ModifyRuleMetricRequest {
+public class ModifyRuleMetricRequest extends MetricExtInfoRequest {
     @JsonProperty("id")
     private Long id;
     private String name;

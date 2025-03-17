@@ -5,12 +5,12 @@
                 <BSearch :form="{}" :isReset="false" @search="search">
                     <template v-slot:form>
                         <div>
-                            <span class="condition-label">{{$t('system.clusterName')}}</span>
+                            <span class="condition-label">{{$t('_.集群名')}}</span>
                             <FInput
                                 v-model="clusterName"
                                 clearable
                                 :maxlength="50"
-                                :placeholder="$t('system.searchCluster')"
+                                :placeholder="$t('_.搜索集群名')"
                             />
                         </div>
                     </template>
@@ -27,7 +27,8 @@
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="cluster_name" :label="$t('configureParameterPage.clusterName')" :minWidth="192" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="cluster_type" :label="$t('configureParameterPage.clusterType')" :minWidth="102" />
                     <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_address" :label="$t('common.linkis')" :minWidth="200" />
-                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_token" :label="`${$t('common.token')}`" :minWidth="142" />
+                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="linkis_token" label="Linkis Token" :minWidth="142" />
+                    <f-table-column :formatter="formatterEmptyValue" ellipsis prop="hive_urn" label="URN" :minWidth="120" />
                     <f-table-column prop="create_user" :label="$t('optionManagePage.create_user')" :minWidth="120" ellipsis />
                     <f-table-column prop="create_time" :label="$t('optionManagePage.create_time')" :minWidth="180" ellipsis />
                     <f-table-column prop="modify_user" :label="$t('optionManagePage.modify_user')" :minWidth="120" ellipsis />
@@ -61,7 +62,7 @@
         @ok="save"
         @cancel="cancel"
     >
-        <FForm ref="formRef" labelWidth="80px" labelPosition="right" :model="form" :rules="rules" style="padding: 20px 0 0;" labelClass="form-label">
+        <FForm ref="formRef" labelWidth="81px" labelPosition="right" :model="form" :rules="rules" labelClass="form-label">
             <FFormItem :label="`${$t('configureParameterPage.clusterName')}`" prop="cluster_name">
                 <FInput v-model="form.cluster_name" :placeholder="$t('common.pleaseEnter')" />
             </FFormItem>
@@ -71,8 +72,19 @@
             <FFormItem :label="`${$t('common.linkis')}`" prop="linkis_address">
                 <FInput v-model="form.linkis_address" :placeholder="$t('common.pleaseEnter')" />
             </FFormItem>
-            <FFormItem :label="`${$t('common.token')}`" prop="linkis_token">
+            <FFormItem label="LinkisToken" prop="linkis_token">
                 <FInput v-model="form.linkis_token" :placeholder="$t('common.pleaseEnter')" />
+            </FFormItem>
+            <FFormItem label="URN" prop="hive_urn">
+                <FInput v-model="form.hive_urn" :placeholder="$t('common.pleaseEnter')" :maxlength="25" showWordLimit />
+            </FFormItem>
+            <!-- TODO: 新增表单项 -->
+            <FFormItem :label="$t('_.引擎切换上限')" prop="data_size_limit">
+                <FInput v-model="form.data_size_limit" :placeholder="$t('_.请输入数字，支持小数点')">
+                    <template #suffix>
+                        GB
+                    </template>
+                </FInput>
             </FFormItem>
             <FFormItem :label="`${$t('configureParameterPage.wtssConf')}`" prop="wtss_conf">
                 <FInput v-model="form.wtss_conf" type="textarea" :rows="4" :placeholder="$t('common.pleaseEnter')" />
@@ -84,6 +96,7 @@
     </FModal>
 </template>
 <script setup>
+
 import {
     ref, reactive, onMounted, defineEmits,
 } from 'vue';
@@ -139,8 +152,10 @@ function edit(row, e) {
     form.value.cluster_type = row.cluster_type;
     form.value.linkis_address = row.linkis_address;
     form.value.linkis_token = row.linkis_token;
+    form.value.hive_urn = row.hive_urn;
     form.value.wtss_conf = row.wtssJson;
     form.value.jobserver_conf = row.jobserverJson;
+    form.value.data_size_limit = row.data_size_limit;
     modelTitle.value = $t('configureParameterPage.modifyExecuteCluster');
     showModal.value = true;
 }
@@ -164,7 +179,7 @@ const actions = [
         actionType: 'btn',
         type: 'primary',
         icon: PlusOutlined,
-        label: $t('system.addCluster'),
+        label: $t('_.新增集群'),
         handler: () => {
             modelTitle.value = $t('configureParameterPage.addExecuteCluster');
             showModal.value = true;
@@ -194,11 +209,17 @@ const rules = {
     linkis_token: [
         { required: true, message: $t('common.notEmpty'), trigger: ['blur', 'input'] },
     ],
+    hive_urn: [
+        { required: true, message: $t('common.notEmpty'), trigger: ['blur', 'input'] },
+    ],
     wtss_conf: [
         { required: true, message: $t('common.notEmpty'), trigger: ['blur', 'input'] },
     ],
     jobserver_conf: [
         { required: true, message: $t('common.notEmpty'), trigger: ['blur', 'input'] },
+    ],
+    data_size_limit: [
+        { pattern: /^\d+(\.\d+)?$/, message: $t('_.请输入非负数，支持小数点'), trigger: ['blur', 'input'] },
     ],
 };
 async function valid() {
@@ -220,10 +241,12 @@ async function save() {
         const params = {
             linkis_address: form.value.linkis_address,
             linkis_token: form.value.linkis_token,
+            hive_urn: form.value.hive_urn,
             cluster_name: form.value.cluster_name,
             cluster_type: form.value.cluster_type,
             wtss_json: form.value.wtss_conf,
             jobserver_json: form.value.jobserver_conf,
+            data_size_limit: form.value.data_size_limit,
         };
         let msg = $t('toastSuccess.addSuccess');
         if (method.value === 'post') {
@@ -252,6 +275,7 @@ onMounted(async () => {
     await search();
     resultByInit.value = true;
 });
+
 
 </script>
 <style scoped lang="less">

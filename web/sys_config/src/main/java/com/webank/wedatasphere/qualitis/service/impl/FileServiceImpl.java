@@ -11,8 +11,8 @@ import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import java.io.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import jodd.util.StringUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public GeneralResponse<String> uploadFile(InputStream fileInputStream, FormDataContentDisposition fileDisposition, String loginUser)
         throws UnExpectedRequestException {
-        String userName = StringUtil.isNotEmpty(loginUser)? loginUser : HttpUtils.getUserName(httpServletRequest);
+        String userName = StringUtils.isNotEmpty(loginUser)? loginUser : HttpUtils.getUserName(httpServletRequest);
         // Upload file will be stored locally, return file path.
         StringBuilder filePath = new StringBuilder();
         String fileName = fileDisposition.getFileName();

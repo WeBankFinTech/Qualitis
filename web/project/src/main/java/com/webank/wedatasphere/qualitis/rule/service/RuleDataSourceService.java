@@ -25,8 +25,6 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvMappingRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceEnvRequest;
 import com.webank.wedatasphere.qualitis.rule.request.DataSourceRequest;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -90,7 +88,7 @@ public interface RuleDataSourceService {
      * @return
      * @throws UnExpectedRequestException
      */
-    @Transactional(rollbackFor = {RuntimeException.class, SemanticException.class, ParseException.class})
+    @Transactional(rollbackFor = {RuntimeException.class})
     List<RuleDataSource> checkAndSaveCustomRuleDataSource(String clusterName, String fileId, String fpsTableDesc, String fileDb,
         String fileTable, String fileDelimiter, String fileType, Boolean fileHeader, String proxyUser, String fileHashValues, String loginUser
         , Rule savedRule, boolean cs, boolean fps, boolean sqlCheck, Long linkisDataSourceId, Long linkisDataSourceVersionId,
@@ -144,5 +142,5 @@ public interface RuleDataSourceService {
      * @param userName
      * @return
      */
-    GeneralResponse<DataMapResultInfo<String>> syncMetadata(String userName);
+    GeneralResponse<Object> syncMetadata(String userName) throws UnExpectedRequestException;
 }

@@ -36,12 +36,12 @@ public class ExcelRuleListener extends AnalysisEventListener<Object> {
 
     @Override
     public void invoke(Object object, AnalysisContext context) {
-        if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.RULE_NAME)) {
+        if (context.readSheetHolder().getSheetName().equals(ExcelSheetName.RULE_NAME)) {
             ExcelRuleByProject excelRuleByProject = (ExcelRuleByProject) object;
             excelRuleContent.add(excelRuleByProject);
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.TABLE_GROUP)) {
+        } else if (context.readSheetHolder().getSheetName().equals(ExcelSheetName.TABLE_GROUP)) {
             excelGroupByProjects.add((ExcelGroupByProject) object);
-        } else if (context.getCurrentSheet().getSheetName().equals(ExcelSheetName.EXECUTION_PARAMETERS_NAME)) {
+        } else if (context.readSheetHolder().getSheetName().equals(ExcelSheetName.EXECUTION_PARAMETERS_NAME)) {
             excelExecutionParametersContent.add((ExcelExecutionParametersByProject) object);
         }
     }

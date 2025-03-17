@@ -1,6 +1,6 @@
 <template>
     <div class="preview">
-        <div class="title">基础信息</div>
+        <div class="title">{{$t('_.基础信息')}}</div>
         <div class="out-border">
             <FForm ref="baseRef" class="index-detail-form" labelWidth="70px" labelPosition="left" :model="data">
                 <FFormItem :label="$t('dataSourceManagement.dataSourceType')" prop="dataSourceType">{{data.dataSourceType}}</FFormItem>
@@ -13,7 +13,7 @@
                     <FEllipsis v-if="data.action_range?.length" :line="2">
                         {{actionRangeDetail(data.action_range)}}
                         <template #tooltip>
-                            <div style="text-align:center">可见范围</div>
+                            <div style="text-align:center">{{$t('_.可见范围')}}</div>
                             <div style="width:300px;word-wrap:break-word">
                                 {{actionRangeDetail(data.action_range)}}
                             </div>
@@ -28,14 +28,14 @@
                 </FFormItem>
             </FForm>
         </div>
-        <div class="title">连接配置</div>
+        <div class="title">{{$t('_.连接配置')}}</div>
         <div class="out-border">
             <FForm ref="connectRef" class="index-detail-form" labelWidth="70px" labelPosition="left" :model="data">
                 <FFormItem :label="$t('dataSourceManagement.inputType')" prop="inputType">{{getInputTypeName(data.inputType)}}</FFormItem>
                 <FFormItem :label="$t('dataSourceManagement.verifyType')" prop="verifyType">{{getVerifyTypeName(data.verifyType)}}</FFormItem>
             </FForm>
         </div>
-        <div class="title">环境配置</div>
+        <div class="title">{{$t('_.环境配置')}}</div>
         <div v-if="data.inputType === 1">
             <div v-for="(env, index) in data.dataSourceEnvs" :key="env.id" class="out-border">
                 <FForm
@@ -46,10 +46,10 @@
                     :labelWidth="70"
                 >
                     <div class="sub-title">
-                        <div class="left">环境{{index + 1}}</div>
+                        <div class="left">{{$t('_.环境')}}{{index + 1}}</div>
                     </div>
-                    <FFormItem label="环境名称" prop="envName">{{data.dataSourceEnvs[index].envName}}</FFormItem>
-                    <FFormItem label="环境描述" prop="envDesc">{{data.dataSourceEnvs[index].envDesc}}</FFormItem>
+                    <FFormItem :label="$t('_.环境名称')" prop="envName">{{data.dataSourceEnvs[index].envName}}</FFormItem>
+                    <FFormItem :label="$t('_.环境描述')" prop="envDesc">{{data.dataSourceEnvs[index].envDesc}}</FFormItem>
                     <div v-if="data.dataSourceEnvs[index].connectParams">
                         <FFormItem :label="$t('dataSourceManagement.host')" prop="host">{{data.dataSourceEnvs[index].connectParams.host}}</FFormItem>
                         <FFormItem :label="$t('dataSourceManagement.connectPort')" prop="port">{{data.dataSourceEnvs[index].connectParams.port}}</FFormItem>
@@ -78,12 +78,18 @@
         <div v-if="data.inputType === 2" class="out-border">
             <!-- 只要是自动导入，必是DCN展示，DCN放在dataSourceEnvs-envName字段中-->
             <FForm ref="dcnRef" class="index-detail-form" labelWidth="70px" labelPosition="left" :model="data">
-                <FFormItem label="DCN" prop="dcn">
+                <FFormItem :label="$t('_.数据源环境选择方式')">
+                    {{dcnTypeMap[data.dcn_range_type]}}
+                </FFormItem>
+                <FFormItem v-if="['dcn_num', 'logic_area'].includes(data.dcn_range_type)" :label="dcnMap[data.dcn_range_type]">
+                    {{data.dcn_range_values.join(',')}}
+                </FFormItem>
+                <FFormItem :label="$t('_.数据源环境')">
                     {{getDcnString(data.dataSourceEnvs)}}
                 </FFormItem>
             </FForm>
         </div>
-        <div v-if="!(data.inputType === 1 && data.verifyType === 2)" class="title">登录认证</div>
+        <div v-if="!(data.inputType === 1 && data.verifyType === 2)" class="title">{{$t('_.登录认证')}}</div>
         <div v-if="data.connectParams && !(data.inputType === 1 && data.verifyType === 2)" class="out-border">
             <FForm ref="loginRef" class="index-detail-form" labelWidth="70px" labelPosition="left" :model="data">
                 <FFormItem v-if="data.inputType === data.verifyType"
@@ -104,6 +110,7 @@
     </div>
 </template>
 <script setup>
+
 import { defineProps, onMounted } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { actionRangeDetail, departmentDetail } from '@/common/utils';
@@ -117,17 +124,26 @@ const props = defineProps({
         default: {},
     },
 });
+const dcnTypeMap = {
+    all: $t('_.直接选择'),
+    logic_area: $t('_.按逻辑区域选择'),
+    dcn_num: $t('_.按环境编号选择'),
+};
+const dcnMap = {
+    logic_area: $t('_.逻辑区域'),
+    dcn_num: $t('_.环境编号'),
+};
 const getInputTypeName = (value) => {
-    if (Number(value) === 1) return $t('dataSourceManagement.manualEntry');
-    if (Number(value) === 2) return '自动导入';
+    if (Number(value) === 1) return $t('_.手动录入');
+    if (Number(value) === 2) return $t('_.自动导入');
 };
 const getVerifyTypeName = (value) => {
-    if (Number(value) === 1) return $t('dataSourceManagement.sharedLogin');
-    if (Number(value) === 2) return $t('dataSourceManagement.unsharedLogin');
+    if (Number(value) === 1) return $t('_.共享登录认证');
+    if (Number(value) === 2) return $t('_.非共享登录认证');
 };
 const getAuthTypeName = (value) => {
-    if (value === 'accountPwd') return $t('dataSourceManagement.accountPassword');
-    // if (value === 'dpm') return $t('dataSourceManagement.passManage');
+    if (value === 'accountPwd') return $t('_.账户密码');
+    if (value === 'dpm') return $t('_.密码管家');
 };
 const getDcnString = (objArray) => {
     const dcnArray = objArray.map(({ envName }) => envName);
@@ -137,6 +153,7 @@ const detail = () => { console.log('详情', props.data); };
 onMounted(() => {
     console.log('详情', props.data);
 });
+
 </script>
 <style lang="less" scoped>
 .preview{

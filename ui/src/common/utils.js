@@ -1,6 +1,10 @@
 /* eslint-disable camelcase */
 
 import dayjs from 'dayjs';
+import { locale } from '@fesjs/fes';
+
+const $t = locale.t;
+
 
 // 放工具函数
 export function dateFormat(fmt, date = new Date()) {
@@ -93,22 +97,22 @@ export const NUMBER_TYPES = [
 export const ruleTypes = [{
     type: '1-1',
     value: 'newSingleTableRule',
-    label: '单表校验',
+    label: $t('_.单表校验'),
 }, {
     type: '3-1',
     value: 'newMultiTableRule',
     // label: '跨表校验',
-    label: '多表比对',
+    label: $t('_.多表比对'),
 }, {
     type: '4-1',
     value: 'documentVerification',
     // label: '文件校验',
-    label: '表文件校验',
+    label: $t('_.表文件校验'),
 }, {
     type: '3-2',
     value: 'crossDatabaseFullVerification',
     // label: '跨库校验',
-    label: '库一致性比对',
+    label: $t('_.库一致性比对'),
     // }, {
     //     type: '2-1',
     //     value: 'newCustomRule',
@@ -117,11 +121,20 @@ export const ruleTypes = [{
     type: '2-2',
     value: 'sqlVerification',
     // label: '多指标校验',
-    label: '自定义SQL校验',
+    label: $t('_.自定义SQL校验'),
 }, {
     type: '0-0',
     value: 'executionParams',
-    label: '执行参数',
+    label: $t('_.执行参数'),
+}, {
+    type: '3-3',
+    value: 'newMultiClusterRule',
+    // label: '跨库校验',
+    label: $t('_.跨集群多表比对'),
+    // }, {
+    //     type: '2-1',
+    //     value: 'newCustomRule',
+    //     label: '单指标校验',
 },
 ];
 function deepCopy(p, c) {
@@ -419,9 +432,9 @@ export const formatterEmptyValue = ({ cellValue }) => {
 // echart 生成tooltip函数
 export const genTooltipStr = (tempData) => {
     const showList = tempData.map(item => ({ value: item.value, name: item.seriesName }));
-    const dateStr = showList.length ? `时间：${tempData[0].name} <br />` : '';
+    const dateStr = showList.length ? `${$t('echarts.time')}：${tempData[0].name} <br />` : '';
     const total = showList.reduce((pre, cur) => pre + cur.value, 0);
-    const totalStr = showList.length ? `总计：${total} <br />` : '';
+    const totalStr = showList.length ? `${$t('echarts.total')}：${total} <br />` : '';
     const showListStr = showList.reduce((pre, cur) => `${pre}${cur.name}: ${cur.value}<br />`, '');
     return dateStr + totalStr + showListStr;
 };
@@ -502,3 +515,10 @@ export const formatDatetime = (time, format = 'YYYY-MM-DD HH:mm:ss') => {
     }
     return '';
 };
+
+// 告警相关枚举值
+export const wayList = [{ label: '企业微信', value: 1 }, { label: 'E-mail', value: 2 }, { label: '个人微信', value: 3 }];
+export const levelList = [{ label: 'CRITICAL', value: 1 }, { label: 'MAJOR', value: 2 }, { label: 'MINOR', value: 3 }, { label: 'WARNING', value: 4 }, { label: 'INFO', value: 5 }];
+
+// 大写转换过滤
+export const upperCaseFilter = (text, option) => option.label?.toUpperCase().includes(text?.toUpperCase());

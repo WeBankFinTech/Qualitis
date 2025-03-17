@@ -16,10 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.webank.wedatasphere.qualitis.constant.TemplateFunctionNameEnum;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
@@ -47,9 +45,8 @@ import com.webank.wedatasphere.qualitis.rule.response.MultiRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
-import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
@@ -102,8 +99,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
     private BdpClientHistoryDao bdpClientHistoryDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
     @Autowired
     private LinkisDataSourceEnvDao linkisDataSourceEnvDao;
 
@@ -112,6 +109,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
     @Autowired
     private RuleLockService ruleLockService;
+    @Autowired
+    private StandardValueVariablesDao standardValueVariablesDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiSourceRuleServiceImpl.class);
 
@@ -217,8 +216,11 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String rightUuid = UuidGenerator.generate();
         Rule savedRule = generateRule(request, projectInDb, false, null, cs, leftUuid, rightUuid, loginUser);
 
+        savedRule.setRegRuleCode(request.getRegRuleCode());
         savedRule.setRuleGroup(ruleGroup);
         savedRule = ruleDao.saveRule(savedRule);
+
+        saveStandardValueVariables(savedRule, request.getStandardValueVariables());
 
         saveRuleUdfs(request.getLeftLinkisUdfNames(), request.getRightLinkisUdfNames(), savedRule);
 
@@ -289,7 +291,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
 
-//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
 
@@ -380,7 +382,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
         // Delete rule config by rule
         alarmConfigService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all alarm_config. rule id: {}", ruleInDb.getId());
+        LOGGER.info("Succeed to delete all alarm_configs. rule id: {}", ruleInDb.getId());
         if (CollectionUtils.isNotEmpty(ruleInDb.getRuleUdfs())) {
             ruleUdfDao.deleteByRule(ruleInDb);
         }
@@ -389,11 +391,11 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         LOGGER.info("Succeed to delete all rule_dataSources. rule id: {}", ruleInDb.getId());
         // Delete rule datasource mapping by rule
         ruleDataSourceMappingService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all rule_dataSource_mapping. rule id: {}", ruleInDb.getId());
+        LOGGER.info("Succeed to delete all rule_dataSource_mappings. rule id: {}", ruleInDb.getId());
 
         // Delete rule variable by rule
         ruleVariableService.deleteByRule(ruleInDb);
-        LOGGER.info("Succeed to delete all rule_variable. rule id: {}", ruleInDb.getId());
+        LOGGER.info("Succeed to delete all rule_variables. rule id: {}", ruleInDb.getId());
         if (request.getRuleGroupId() != null) {
             RuleGroup ruleGroup = ruleGroupDao.findById(request.getRuleGroupId());
             if (ruleGroup != null) {
@@ -416,6 +418,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         String leftUuid = UuidGenerator.generate();
         String rightUuid = UuidGenerator.generate();
         Rule savedRule = generateRule(addMultiSourceRuleRequest, projectInDb, true, ruleInDb, cs, leftUuid, rightUuid, loginUser);
+
+        saveStandardValueVariables(savedRule, request.getStandardValueVariables());
 
         saveRuleUdfs(request.getLeftLinkisUdfNames(), request.getRightLinkisUdfNames(), savedRule);
 
@@ -444,6 +448,18 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         setUdfs(multiRuleDetailResponse, ruleInDb);
         setDcnRangeValues(multiRuleDetailResponse.getSource());
         setDcnRangeValues(multiRuleDetailResponse.getTarget());
+
+        List<StandardValueVariables> standardValueVariablesList = standardValueVariablesDao.findByRuleId(ruleId);
+        if (CollectionUtils.isNotEmpty(standardValueVariablesList)) {
+            List<StandardValueVariableRequest> standardValueVariableResponses = standardValueVariablesList.stream().map(standardValueVariables -> {
+                StandardValueVariableRequest standardValueVariableRequest = new StandardValueVariableRequest();
+                standardValueVariableRequest.setStandardValueVariablesId(standardValueVariables.getStandardValueVersionId());
+                standardValueVariableRequest.setStandardValueVersionVariablesName(standardValueVariables.getStandardValueVersionEnName());
+                return standardValueVariableRequest;
+            }).collect(Collectors.toList());
+            multiRuleDetailResponse.setStandardValueVariables(standardValueVariableResponses);
+        }
+
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_DETAIL_OF_MULTI_RULE}", multiRuleDetailResponse);
     }
 
@@ -565,7 +581,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
                         && CollectionUtils.isNotEmpty(request.getTarget().getDataSourceEnvRequests())
                         && request.getSource().getDataSourceEnvRequests().size() != request.getTarget().getDataSourceEnvRequests().size()) {
                     throw new UnExpectedRequestException("Source envs'size can not be different from target envs'size. Please check your union_way.");
-                }                
+                }
 
                 savedRule.setExecutionParametersName(request.getExecutionParametersName());
                 savedRule.setUnionWay(executionParameters.getUnionWay());
@@ -599,7 +615,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             savedRule.setContrastType(request.getContrastType());
         }
         // Generate rule_datasource, rule_variable, rule_alarm_config
-        LOGGER.info("Start to generate and save rule_variable.");
+        LOGGER.info("Start to generate and save rule_variables.");
         List<RuleVariable> ruleVariables = autoAdaptRequestAndGetRuleVariable(savedRule, templateInDb, request.getClusterName(), leftDataSourceConfig, rightDataSourceConfig, request.getTemplateArgumentRequests(), request.getColNames());
         List<RuleVariable> savedRuleVariables = ruleVariableService.saveRuleVariable(ruleVariables);
         LOGGER.info("Succeed to save rule_variables, rule_variables: {}", savedRuleVariables);
@@ -632,6 +648,8 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
         List<RuleDataSourceMapping> savedRuleDataSourceCompareCols = ruleDataSourceMappingService.checkAndSaveRuleDataSourceMapping(compareCols, savedRule, MappingTypeEnum.MATCHING_FIELDS.getCode());
         LOGGER.info("Succeed to save rule datasource compare columns, rule dataSource compare columns: {}", savedRuleDataSourceCompareCols);
+
+        savedRule.setRegRuleCode(request.getRegRuleCode());
 
         ruleDataSourceMappings.addAll(savedRuleDataSourceMappings);
         ruleDataSourceMappings.addAll(savedRuleDataSourceCompareCols);

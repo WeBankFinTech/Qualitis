@@ -21,11 +21,12 @@ import com.webank.wedatasphere.dss.standard.app.sso.origin.filter.spring.SpringO
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.SSOPluginFilter;
 import com.webank.wedatasphere.qualitis.filter.*;
 //import org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
+//import com.webank.wedatasphere.qualitis.sso.CustomAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
+//import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,8 +38,8 @@ import javax.servlet.Filter;
 @Configuration
 public class FilterOrderConfig {
 
-//    @Value("${facade.gov-core.ips}")
-//    private String facadeGovCoreIPs;
+    @Value("${facade.gov-core.ips}")
+    private String facadeGovCoreIPs;
 
     @Value("${dss.origin-urls}")
     private String dssOriginUrls;
@@ -123,6 +124,7 @@ public class FilterOrderConfig {
      * @return
      */
 //    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
 //    @Bean
 //    public FilterRegistrationBean casSingleSignOutFilter() {
 //        FilterRegistrationBean registration = new FilterRegistrationBean();
@@ -132,8 +134,9 @@ public class FilterOrderConfig {
 //        registration.setOrder(1);
 //        return registration;
 //    }
-
+//
 //    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
 //    @Bean
 //    public FilterRegistrationBean casFilter() {
 //        FilterRegistrationBean registration = new FilterRegistrationBean();
@@ -149,6 +152,7 @@ public class FilterOrderConfig {
 //    }
 //
 //    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
 //    @Bean
 //    public FilterRegistrationBean casValidationFilter() {
 //        FilterRegistrationBean registration = new FilterRegistrationBean();
@@ -159,8 +163,9 @@ public class FilterOrderConfig {
 //        registration.setOrder(3);
 //        return registration;
 //    }
-
+//
 //    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
 //    @Bean
 //    public FilterRegistrationBean casHttpServletRequestWrapperFilter() {
 //        FilterRegistrationBean registration = new FilterRegistrationBean();
@@ -173,6 +178,7 @@ public class FilterOrderConfig {
 //    }
 //
 //    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
 //    @Bean
 //    public FilterRegistrationBean casAssertionThreadLocalFilter() {
 //        FilterRegistrationBean registration = new FilterRegistrationBean();

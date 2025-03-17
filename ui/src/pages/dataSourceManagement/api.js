@@ -294,7 +294,7 @@ export function queryDataSourceList(body) {
 
 // 获取子系统列表
 export function fetchSubSystemInfo(params = {}) {
-    return Promise.resolve([]);
+    return FRequest('/api/v1/projector/meta_data/subSystemInfo', params);
 }
 
 export function getDcnData(params = {}) {

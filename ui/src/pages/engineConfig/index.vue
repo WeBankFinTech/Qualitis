@@ -327,6 +327,7 @@
     </div>
 </template>
 <script setup>
+
 import { ref } from 'vue';
 import { FMessage } from '@fesjs/fes-design';
 import { useI18n, useModel } from '@fesjs/fes';
@@ -389,7 +390,7 @@ function formatValidateRange(value, type) {
     }
     tmpList.forEach((item) => {
         formatValue.push({
-            name: item === 'BLANK' && type === 'pipeline.out.null.type' ? '空字符串' : item,
+            name: item === 'BLANK' && type === 'pipeline.out.null.type' ? $t('_.空字符串') : item,
             value: item,
         });
     });
@@ -420,11 +421,11 @@ async function getAppVariable(names) {
             console.log(item);
             // 队列资源改成Links资源配置 spark资源设置改成Spark引擎配置
             item.editName = item.name;
-            if (item.name === '队列资源') {
-                item.editName = 'Links设置';
+            if (item.name === $t('_.队列资源')) {
+                item.editName = $t('_.Links设置');
             }
-            if (item.name === 'Spark参数') {
-                item.editName = 'Spark设置';
+            if (item.name === $t('_.Spark参数')) {
+                item.editName = $t('_.Spark设置');
             }
             // item.settings = this.FesUtil._.orderBy(item.settings, ['level'], ['asc']);
             item.settings.sort((a, b) => {
@@ -439,7 +440,7 @@ async function getAppVariable(names) {
                         set.validateRangeList = formatValidateRange(set.validateRange, set.key);
                     }
                     if (set.key === 'spark.application.pyFiles' || set.key === 'python.application.pyFiles') {
-                        set.placeholder = '请输入工作空间python包路径（只支持zip）';
+                        set.placeholder = $t('_.请输入工作空间python包路径（只支持zip）');
                     }
                 });
             }
@@ -558,6 +559,7 @@ function variableCancel(variable, vIndex, treeIndex) {
     Object.assign(variable, cacheBox.value[key]);
     variable.operation = 'settings';
 }
+
 
 </script>
 <style lang="less" scoped>

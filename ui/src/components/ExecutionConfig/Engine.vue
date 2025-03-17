@@ -19,6 +19,7 @@
     </FForm>
 </template>
 <script setup>
+
 import {
     defineProps, onMounted, ref, watchEffect, defineEmits, watch, defineExpose,
 } from 'vue';
@@ -52,47 +53,47 @@ const clusterList = ref([]);
 const form = ref();
 const parameterNameList = ref([
     {
-        label: 'YARN队列名',
+        label: $t('_.YARN队列名'),
         value: 'wds.linkis.rm.yarnqueue',
         default: '',
     },
     {
-        label: 'YARN队列实例最大个数',
+        label: $t('_.YARN队列实例最大个数'),
         value: 'wds.linkis.rm.yarnqueue.instance.max',
         default: '30',
     },
     {
-        label: '队列CPU使用上限',
+        label: $t('_.队列CPU使用上限'),
         value: 'wds.linkis.rm.yarnqueue.cores.max',
         default: '150',
     },
     {
-        label: '队列内存使用上限',
+        label: $t('_.队列内存使用上限'),
         value: 'wds.linkis.rm.yarnqueue.memory.max',
         default: '300G',
     },
     {
-        label: 'Driver内存使用上限',
+        label: $t('_.Driver内存使用上限'),
         value: 'wds.linkis.rm.client.memory.max',
         default: '20G',
     },
     {
-        label: 'Driver核心个数上限',
+        label: $t('_.Driver核心个数上限'),
         value: 'wds.linkis.rm.client.core.max',
         default: '10',
     },
     {
-        label: '引擎最大并发数',
+        label: $t('_.引擎最大并发数'),
         value: 'wds.linkis.rm.instance',
         default: '10',
     },
     {
-        label: 'woker并发数',
+        label: $t('_.woker并发数'),
         value: 'spark.executor.instances',
         default: '2',
     },
     {
-        label: 'worker内存大小',
+        label: $t('_.worker内存大小'),
         value: 'spark.executor.memory',
         default: '3g',
     },
@@ -115,12 +116,13 @@ onMounted(async () => {
     }
 });
 const rules = {
-    param: [{ asyncValidator: (_, arr) => repeatValidator('动态引擎配置-执行参数', arr) }],
+    param: [{ asyncValidator: (_, arr) => repeatValidator($t('_.动态引擎配置-执行参数'), arr) }],
 };
 function valid() {
     return form.value.validate();
 }
 defineExpose({ valid });
+
 </script>
 <style lang="less" scoped>
 .item{
