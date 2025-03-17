@@ -13,7 +13,7 @@
             <FEllipsis v-if="templateForm.action_range.length" :line="2">
                 {{actionRangeDetail(templateForm.action_range)}}
                 <template #tooltip>
-                    <div style="text-align:center">可见范围</div>
+                    <div style="text-align:center">{{$t('_.可见范围')}}</div>
                     <div style="width:300px;word-wrap:break-word">
                         {{actionRangeDetail(templateForm.action_range)}}
                     </div>
@@ -24,7 +24,7 @@
         <FFormItem :label="`${$t('ruleTemplatelist.templateStatisticalFunctions')}`" prop="statisticalFunctions">{{statisticalFunctionsLabel}}</FFormItem>
         <FFormItem :label="`${$t('ruleTemplatelist.numberType')}`" prop="numberType">{{numberTypeLabel}}</FFormItem>
         <FFormItem :label="`${$t('ruleTemplatelist.templateStatisticsName')}`" prop="statisticsName">{{caculateForm.statisticsName}}</FFormItem>
-        <FFormItem :label="`中间表`" prop="statisticsName">{{tableForm.templateSql}}</FFormItem>
+        <FFormItem :label="$t('_.中间表')" prop="statisticsName">{{tableForm.templateSql}}</FFormItem>
     </FForm>
 </template>
 <script setup>

@@ -1,8 +1,8 @@
 <template>
     <div class="rule-detail-form" :class="{ edit: editMode !== 'display' }">
-        <h6 v-if="listType === 'commonList'" class="wd-body-title">校验规则</h6>
+        <h6 v-if="listType === 'commonList'" class="wd-body-title">{{$t('_.校验规则')}}</h6>
         <!-- 规则名称、规则描述 -->
-        <BasicInfo v-if="listType !== 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" prefixTitle="文件校验" />
+        <BasicInfo v-if="listType !== 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" :prefixtitle="$t('_.文件校验')" />
         <FForm
             ref="verifyObjectFormRef"
             :layout="layout"
@@ -18,7 +18,7 @@
                     v-model="verifyRuleData.rule_template_id"
                     class="form-edit-input"
                     filterable
-                    placeholder="请选择校验模板"
+                    :placeholder="$t('_.请选择校验模板')"
                     @change="onTemplateChange"
                 >
                     <FOption
@@ -30,7 +30,7 @@
                 </FSelect>
                 <div class="form-preview-label">{{getTemplateLabel}}</div>
             </FFormItem>
-            <BasicInfo v-if="listType === 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" prefixTitle="文件校验" />
+            <BasicInfo v-if="listType === 'listByTemplate'" ref="basicInfoRef" v-model:basicInfo="verifyRuleData" :lisType="lisType" :prefixtitle="$t('_.文件校验')" />
             <!-- 校验条件 -->
             <RuleConditionList
                 ref="ruleconditionlistRef"
@@ -38,7 +38,7 @@
                 :lisType="lisType"
                 :solidification="solidification"
             />
-            <FFormItem label="执行参数" prop="execution_parameters_name">
+            <FFormItem :label="$t('_.执行参数')" prop="execution_parameters_name">
                 <FInput
                     v-model="verifyRuleData.execution_parameters_name"
                     class="form-edit-input excution-parameters-name-input"
@@ -68,7 +68,9 @@ import {
     ref, computed, provide, nextTick, defineEmits, watch, onMounted,
 } from 'vue';
 import { useStore } from 'vuex';
-import { useI18n, request } from '@fesjs/fes';
+import {
+    useI18n, request, useRoute, useRouter,
+} from '@fesjs/fes';
 import { TEMPLATE_TYPES } from '@/common/constant.js';
 import { cloneDeep } from 'lodash-es';
 import eventbus from '@/common/useEvents';
@@ -219,6 +221,10 @@ const onTemplateChange = (id) => {
     currentTemplateId.value = id;
     handleTemplateChange(id);
     verifyRuleData.value.rule_template_name = checkTemplateList.value.find(v => v.template_id === id)?.template_name || '';
+    if (listType.value === 'listByTemplate') {
+        // 更新store，给save调用
+        store.commit('rule/updateCurrentRuleDetail', cloneDeep(verifyRuleData.value));
+    }
     // 清空校验参数
     ruleconditionlistRef.value.reset();
 };
@@ -275,6 +281,7 @@ const init = async (isInitStep = true) => {
     }
     handleTemplateChange(verifyRuleData.value.rule_template_id, isInitStep);
     await loadVerifyTpl();
+    eventbus.emit('INIT_FINISHED');
 };
 
 // 当数据库、数据表、过滤条件、字段等发生变化的时候，需要调用updateSqlDataSource进行预览SQL更新
@@ -282,11 +289,36 @@ useListener('SHOULD_UPDATE_NECESSARY_DATA', () => {
     if (listType.value === 'listByTemplate') return;
     init(false);
 });
-
+// 过滤条件单独更新
+useListener('ONLY_UPDATE_FILTER', () => {
+    const target = cloneDeep(currentRule.value);
+    verifyRuleData.value.datasource[0].filter = target.datasource[0].filter;
+});
 // 初始化数据
 useListener('IS_RULE_DETAIL_DATA_LOADED', () => {
     if (listType.value === 'groupList' || listType.value === 'listByTemplate') return;
     init();
+});
+const route = useRoute();
+const router = useRouter();
+// 切换复制模式，规则名称改成xxx_副本
+useListener('COPY_MODE', () => {
+    verifyRuleData.value.rule_name = `${verifyRuleData.value.rule_name}_copy`;
+    if (verifyRuleData.value.cn_name) verifyRuleData.value.cn_name = `${verifyRuleData.value.cn_name}_副本`;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_id;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_en_code;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_name;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_en_code;
+    delete verifyRuleData.value.alarm_variable[0].rule_metric_name;
+    // const tempQuery = { ...route.query };
+    // delete tempQuery.id;
+    // const queryString = Object.keys(tempQuery)
+    //     .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(tempQuery[key])}`)
+    //     .join('&');
+
+    // // 构建新的 URL
+    // const newUrl = `${route.path}?${queryString}`;
+    // router.replace(newUrl);
 });
 // eslint-disable-next-line no-undef
 defineExpose({ valid, init });

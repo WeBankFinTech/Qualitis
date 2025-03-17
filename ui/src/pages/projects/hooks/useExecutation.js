@@ -142,6 +142,7 @@ export default function useExecutation(showLoading) {
     };
     const executeTaskInTaskQuery = async () => {
         const ruleGroupList = payload.map(item => ({
+            application_id: item.application_id,
             group_id: item.group_id,
             cluster_name: item.cluster_name,
             execution_user: item.execute_user,

@@ -18,21 +18,16 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.webank.wedatasphere.qualitis.constant.ApplicationStatusEnum;
 import com.webank.wedatasphere.qualitis.constant.ImsLevelEnum;
-import com.webank.wedatasphere.qualitis.dao.AlarmInfoDao;
-import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
-import com.webank.wedatasphere.qualitis.dao.TaskDao;
-import com.webank.wedatasphere.qualitis.entity.AlarmInfo;
-import com.webank.wedatasphere.qualitis.entity.Application;
-import com.webank.wedatasphere.qualitis.entity.Task;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.entity.*;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmTodayResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
+import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.service.IndexService;
 import com.webank.wedatasphere.qualitis.util.DateUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -51,6 +46,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author v_wblwyan
@@ -62,12 +58,17 @@ public class IndexServiceImpl implements IndexService {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexServiceImpl.class);
 
   private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+
+//  @Autowired
+//  private ImsMetricAutoCollectRecordDao imsMetricAutoCollectRecordDao;
   @Autowired
   private ApplicationDao applicationDao;
   @Autowired
   private AlarmInfoDao alarmInfoDao;
   @Autowired
   private TaskDao taskDao;
+  @Autowired
+  private UserDao userDao;
 
   /**
    * 获取今日发送给当前登录用户的所有告警
@@ -366,5 +367,45 @@ public class IndexServiceImpl implements IndexService {
     //计算时间范围相差天数,但没包含开始日期,所以会少一天,调用getAlarmChartPerDay4recent时,stepSize要多加1天
     int stepSize = DateUtils.getDayDiffBetween(calendarStartDate, calendarEndDate);
     return getAlarmChartPerDayRecent(calendarEndDate, -(stepSize + 1), alarmInfos);
+  }
+
+  @Override
+  public List<IndexAutoCollectRecordChartResponse> getAutoCollectRecordChart(IndexRequest request) throws UnExpectedRequestException {
+    List<IndexAutoCollectRecordChartResponse> result = new ArrayList<>();
+
+    User loginUser = userDao.findByUsername(request.getUser());
+    if (loginUser == null) {
+      throw new UnExpectedRequestException("user[" + request.getUser() + "] is not exists.");
+    }
+    List<String> proxyUserNames = loginUser.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+    if (CollectionUtils.isEmpty(proxyUserNames)) {
+      return result;
+    }
+
+//    if (request.getStepSize() != null) {
+//      LOGGER.info("[Home overview]user:{},recent:{} days, find auto collect recordsby the user's proxy user with specified date.", request.getUser(), request.getStepSize());
+//      Calendar calendar = Calendar.getInstance();
+//      calendar.setTime(new Date());
+//      String endDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
+//      calendar.add(Calendar.MONTH, request.getStepSize());
+//      String startDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
+//      List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(startDate + " 00:00:00", endDate + " 23:59:59", proxyUserNames);
+//      findAndFill(imsMetricAutoCollectRecords, result);
+//
+//      return result;
+//    }
+//
+//    List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(request.getStartDate() + " 00:00:00", request.getEndDate() + " 23:59:59", proxyUserNames);
+//    findAndFill(imsMetricAutoCollectRecords, result);
+
+    return result;
+  }
+
+  private void findAndFill(List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords, List<IndexAutoCollectRecordChartResponse> result) {
+    Map<String, List<ImsMetricAutoCollectRecord>> groupByDate = imsMetricAutoCollectRecords.stream().collect(Collectors.groupingBy(imsMetricAutoCollectRecord -> imsMetricAutoCollectRecord.getCreateDate().substring(0, 7)));
+    for (String currentDate : groupByDate.keySet()) {
+      IndexAutoCollectRecordChartResponse indexAutoCollectRecordChartResponse = new IndexAutoCollectRecordChartResponse(currentDate, groupByDate.get(currentDate));
+      result.add(indexAutoCollectRecordChartResponse);
+    }
   }
 }

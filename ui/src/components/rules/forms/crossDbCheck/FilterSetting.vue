@@ -35,7 +35,7 @@
                     <FInput
                         v-model="filterSettingItem.source_filter"
                         class="form-edit-input"
-                        placeholder="请输入"
+                        :placeholder="$t('_.请输入')"
                     />
                     <div class="form-preview-label">{{filterSettingItem.source_filter}}</div>
                 </FFormItem>
@@ -93,7 +93,7 @@
                     <FInput
                         v-model="filterSettingItem.target_filter"
                         class="form-edit-input"
-                        placeholder="请输入"
+                        :placeholder="$t('_.请输入')"
                     />
                     <div class="form-preview-label">{{filterSettingItem.target_filter}}</div>
                 </FFormItem>
@@ -124,7 +124,7 @@
             <FButton class="filter-delete-btn" type="text" @click="deleteRow(index)">
                 <template #icon>
                     <MinusCircleOutlined />
-                </template>删除
+                </template>{{$t('_.删除')}}
             </FButton>
         </FForm>
         <!-- 新增 -->
@@ -141,6 +141,7 @@
 </template>
 
 <script setup>
+
 /* eslint-disable no-undefined */
 import { useI18n } from '@fesjs/fes';
 import {
@@ -236,7 +237,7 @@ function deleteRow(index) {
 
 function add() {
     if (!(sourceDatasource.value.db_name && targetDatasource.value.db_name)) {
-        FMessage.warn('请先选择来源或目标数据库');
+        FMessage.warn($t('_.请先选择来源或目标数据库'));
         return;
     }
     currentFilterSettingList.value.push({
@@ -336,6 +337,7 @@ const init = async () => {
 };
 
 defineExpose({ valid });
+
 </script>
 <style lang="less" scoped>
 

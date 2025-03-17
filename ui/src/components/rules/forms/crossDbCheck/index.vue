@@ -32,7 +32,6 @@ provide('groupType', 'crossDatabaseFullVerification');
 provide('ruleType', '3-2');
 const verifyObjectRef = ref(null);
 const verifyRuleRef = ref(null);
-
 // 加载规则详情
 const loadRuleDetail = async () => {
     try {
@@ -45,6 +44,7 @@ const loadRuleDetail = async () => {
         store.commit('rule/setCurrentRuleDetail', currentRuleDetail);
 
         // 发出初始化数据事件
+        console.log('排查6');
         eventbus.emit('IS_RULE_DETAIL_DATA_LOADED');
     } catch (err) {
         console.warn(err);
@@ -84,6 +84,7 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
             black_list,
             white_list,
             cluster_name,
@@ -115,6 +116,7 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
             source_db: source.db_name,
             source_linkis_datasource_type: source.type,
             target_db: target.db_name,
@@ -172,7 +174,7 @@ useListener(delEvent, async (cb) => {
 
 // 取消事件
 useListener(cancelEvent, () => {
-    loadRuleDetail();
+    setTimeout(loadRuleDetail, 0);
 });
 </script>
 <style lang='less' scoped>

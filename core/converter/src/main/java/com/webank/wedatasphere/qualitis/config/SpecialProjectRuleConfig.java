@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * @author allenzhou
- * @date 2023--1-5
+ * @date 2023-1-5
  */
 @Component
 @ConfigurationProperties(prefix = "specialcreateexecute")
@@ -36,6 +36,9 @@ public class SpecialProjectRuleConfig {
     @Value("ruleNames")
     private List<String> ruleNames = new ArrayList<>();
 
+    @Value("error_code_whitelist")
+    private List<String> errorCodeWhiteList = new ArrayList<>();
+
     public List<String> getProjectNames() {
         return projectNames;
     }
@@ -44,5 +47,8 @@ public class SpecialProjectRuleConfig {
         return ruleNames;
     }
 
+    public List<String> getErrorCodeWhiteList() {
+        return errorCodeWhiteList;
+    }
 }
 

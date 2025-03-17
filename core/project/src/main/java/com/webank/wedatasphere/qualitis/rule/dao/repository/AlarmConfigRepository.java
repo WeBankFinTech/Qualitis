@@ -54,6 +54,13 @@ public interface AlarmConfigRepository extends JpaRepository<AlarmConfig, Long> 
     List<AlarmConfig> findByRuleId(Long ruleId);
 
     /**
+     * get by rule ids
+     * @param ruleIds
+     * @return
+     */
+    List<AlarmConfig> findByRuleIdIn(List<Long> ruleIds);
+
+    /**
      * Get by rule metric
      * @param ruleMetric
      * @return

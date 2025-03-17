@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.checkalert.service.impl;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.checkalert.dao.CheckAlertDao;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
@@ -11,6 +12,7 @@ import com.webank.wedatasphere.qualitis.checkalert.service.CheckAlertService;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
@@ -38,13 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -120,18 +116,24 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         CheckAlert savedCheckalert = checkAlertDao.save(checkAlert);
 
         LOGGER.info("Created check alert successfully. Check alert info: [{}]", savedCheckalert.toString());
-        return new GeneralResponse<>("200", "{&ADD_RULE_SUCCESSFULLY}", new CheckAlertResponse(savedCheckalert));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&ADD_RULE_SUCCESSFULLY}", new CheckAlertResponse(savedCheckalert));
     }
 
     private void basicInfo(String loginUser, CheckAlertRequest request, CheckAlert checkAlert, boolean modify) {
         checkAlert.setTopic(request.getTopic());
-        checkAlert.setInfoReceiver(request.getInfoReceiver());
-        checkAlert.setMajorReceiver(request.getMajorReceiver());
+        checkAlert.setDefaultReceiver(request.getDefaultReceiver());
+        checkAlert.setDefaultAlertLevel(request.getDefaultAlertLevel());
+        checkAlert.setDefaultAlertWays(Joiner.on(SpecCharEnum.COMMA.getValue()).skipNulls().join(request.getDefaultAlertWays()));
+        checkAlert.setAdvancedAlertCol(request.getAdvancedAlertCol());
+        checkAlert.setAdvancedReceiver(request.getAdvancedReceiver());
+        checkAlert.setAdvancedAlertLevel(request.getAdvancedAlertLevel());
+        if (CollectionUtils.isNotEmpty(request.getAdvancedAlertWays())) {
+            checkAlert.setAdvancedAlertWays(Joiner.on(SpecCharEnum.COMMA.getValue()).skipNulls().join(request.getAdvancedAlertWays()));
+        }
         checkAlert.setAlertTable(request.getAlertTable());
         checkAlert.setFilter(request.getFilter());
 
         checkAlert.setAlertCol(request.getAlertCol());
-        checkAlert.setMajorAlertCol(request.getMajorAlertCol());
         checkAlert.setContentCols(request.getContentCols());
 
         if (modify) {
@@ -167,7 +169,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         projectService.checkProjectPermission(checkAlertInDb.getProject(), loginUser, permissions);
 
         checkAlertDao.delete(checkAlertInDb);
-        return new GeneralResponse<>("200", "{&DELETE_RULE_SUCCESSFULLY}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&DELETE_RULE_SUCCESSFULLY}", null);
     }
 
     @Override
@@ -209,7 +211,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         CheckAlert savedCheckalert = checkAlertDao.save(checkAlertInDb);
 
         LOGGER.info("Modified check alert successfully. Check alert info: [{}]", savedCheckalert.toString());
-        return new GeneralResponse<>("200", "{&MODIFY_RULE_SUCCESSFULLY}", new CheckAlertResponse(savedCheckalert));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_RULE_SUCCESSFULLY}", new CheckAlertResponse(savedCheckalert));
     }
 
     @Override
@@ -229,11 +231,11 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
         projectService.checkProjectPermission(checkAlertInDb.getProject(), loginUser, permissions);
 
-        return new GeneralResponse<>("200", "{&GET_RULE_DETAIL_SUCCESSFULLY}", new CheckAlertResponse(checkAlertInDb));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_RULE_DETAIL_SUCCESSFULLY}", new CheckAlertResponse(checkAlertInDb));
     }
 
     @Override
-    public GeneralResponse<Object> checkDatasource(String alertTable, String alertCol, String majorAlertCol, String contentCols) throws Exception {
+    public GeneralResponse<Object> checkDatasource(String alertTable, String alertCol, String advancedAlertCol, String contentCols) throws Exception {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
         String[] dbAndTable = alertTable.split(SpecCharEnum.PERIOD.getValue());
 
@@ -251,7 +253,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
             throw new MetaDataAcquireFailedException("Alert column does not exist.");
         }
 
-        if (StringUtils.isNotEmpty(majorAlertCol) && !columnNames.contains(majorAlertCol)) {
+        if (StringUtils.isNotEmpty(advancedAlertCol) && !columnNames.contains(advancedAlertCol)) {
             throw new MetaDataAcquireFailedException("Major alert column does not exist.");
         }
 
@@ -267,7 +269,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
             }
         }
 
-        return new GeneralResponse<>("200", "{&CHECK_ALERT_TABLE_IS_CORRECT}", null);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&CHECK_ALERT_TABLE_IS_CORRECT}", null);
     }
 
     @Override
@@ -286,7 +288,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
                 request.getEndCreateTime(), request.getStartModifyTime(), request.getEndModifyTime(), request.getProjectId(), request.getPage(), request.getSize());
 
         if (checkAlertPage.getSize() <= 0) {
-            return new GeneralResponse<>("200", "{&GET_CHECK_ALERT_QUERY_SUCCESSFULLY}", new CheckAlertResponse());
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CHECK_ALERT_QUERY_SUCCESSFULLY}", new CheckAlertResponse());
         }
 
         GetAllResponse<CheckAlertResponse> response = new GetAllResponse<>();
@@ -298,7 +300,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         response.setData(checkAlertResponse);
         response.setTotal(Long.valueOf(checkAlertPage.getTotalElements()).intValue());
         LOGGER.info("Succeed to get CheckAlert. response: {}", response);
-        return new GeneralResponse<>("200", "{&GET_CHECK_ALERT_QUERY_SUCCESSFULLY}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_CHECK_ALERT_QUERY_SUCCESSFULLY}", response);
     }
 
     @Override

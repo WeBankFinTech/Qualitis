@@ -39,7 +39,7 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleNodeService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import org.apache.commons.collections.CollectionUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,6 +196,9 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                                 AddRuleRequest addRuleRequest = SpringContextHolder.getBean(RuleNodeService.class)
                                     .constructSingleRequest(rule, targetRuleGroup, request.getWorkFlowName());
                                 ruleService.addRuleForOuter(addRuleRequest, request.getCreateUser());
+                            } else {
+                                marryRule.setRuleGroup(targetRuleGroup);
+                                ruleDao.saveRule(marryRule);
                             }
                             totalFinish++;
                             break;
@@ -204,6 +207,9 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                                 AddCustomRuleRequest addCustomRuleRequest = SpringContextHolder.getBean(RuleNodeService.class)
                                     .constructCustomRequest(rule, targetRuleGroup, request.getWorkFlowName());
                                 customRuleService.addRuleForOuter(addCustomRuleRequest, request.getCreateUser());
+                            } else {
+                                marryRule.setRuleGroup(targetRuleGroup);
+                                ruleDao.saveRule(marryRule);
                             }
                             totalFinish++;
                             break;
@@ -213,6 +219,9 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                                     .constructMultiRequest(rule, targetRuleGroup, request.getWorkFlowName());
                                 addMultiSourceRuleRequest.setLoginUser(request.getCreateUser());
                                 multiSourceRuleService.addRuleForOuter(addMultiSourceRuleRequest, false);
+                            } else {
+                                marryRule.setRuleGroup(targetRuleGroup);
+                                ruleDao.saveRule(marryRule);
                             }
                             totalFinish++;
                             break;
@@ -221,6 +230,9 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                                 AddFileRuleRequest addFileRuleRequest = SpringContextHolder.getBean(RuleNodeService.class)
                                     .constructFileRequest(rule, targetRuleGroup, request.getWorkFlowName());
                                 fileRuleService.addRuleForOuter(addFileRuleRequest, request.getCreateUser());
+                            } else {
+                                marryRule.setRuleGroup(targetRuleGroup);
+                                ruleDao.saveRule(marryRule);
                             }
                             totalFinish++;
                             break;

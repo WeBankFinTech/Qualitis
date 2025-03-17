@@ -105,10 +105,10 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
 
     @Override
     public List<RuleMetric> findNotUsed(Integer level, List<Department> departmentList,
-                                        User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size) {
+                                        User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleMetricRepository.findNotUsed(createUser, tableDataType, dataVisibilityDeptList, pageable).getContent();
+        return ruleMetricRepository.findNotUsed(createUser, tableDataType, dataVisibilityDeptList, name, pageable).getContent();
     }
 
     @Override
@@ -117,10 +117,10 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
     }
 
     @Override
-    public List<RuleMetric> findAllNotUsed(int page, int size) {
+    public List<RuleMetric> findAllNotUsed(String name, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleMetricRepository.findAllNotUsed(pageable).getContent();
+        return ruleMetricRepository.findAllNotUsed(name, pageable).getContent();
     }
 
     @Override
@@ -130,10 +130,10 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
 
     @Override
     public List<RuleMetric> findUsed(Integer level, List<Department> departmentList,
-                                     User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, int page, int size) {
+                                     User user, String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleMetricRepository.findUsed(createUser, tableDataType, dataVisibilityDeptList, pageable).getContent();
+        return ruleMetricRepository.findUsed(createUser, tableDataType, dataVisibilityDeptList, name, pageable);
     }
 
     @Override
@@ -142,10 +142,10 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
     }
 
     @Override
-    public List<RuleMetric> findAllUsed(int page, int size) {
+    public List<RuleMetric> findAllUsed(String name, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleMetricRepository.findAllUsed(pageable).getContent();
+        return ruleMetricRepository.findAllUsed(name, pageable).getContent();
     }
 
     @Override
@@ -166,6 +166,11 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
     @Override
     public void delete(RuleMetric ruleMetric) {
         ruleMetricRepository.delete(ruleMetric);
+    }
+
+    @Override
+    public void deleteAll(List<RuleMetric> ruleMetrics) {
+        ruleMetricRepository.deleteAll(ruleMetrics);
     }
 
     @Override
@@ -190,5 +195,15 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
     @Override
     public RuleMetric findByName(String name) {
         return ruleMetricRepository.findByName(name);
+    }
+
+    @Override
+    public List<String> findEnCodeWithPage(List<Department> departmentList, User user, String enCode, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        if (null == departmentList) {
+            return ruleMetricRepository.findAllEnCodes(enCode, pageable);
+        }
+        return ruleMetricRepository.findEnCodes(departmentList, user, enCode, pageable);
     }
 }

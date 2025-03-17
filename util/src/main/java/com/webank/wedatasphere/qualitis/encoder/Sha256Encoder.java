@@ -74,9 +74,12 @@ public class Sha256Encoder {
         final int l = data.length;
         final char[] out = new char[l << 1];
         // two characters form the hex value.
-        for (int i = 0, j = 0; i < l; i++) {
-            out[j++] = toDigits[(0xF0 & data[i]) >>> 4];
-            out[j++] = toDigits[0x0F & data[i]];
+        int j = 0;
+        for (int i = 0; i < l; i++) {
+            out[j] = toDigits[(0xF0 & data[i]) >>> 4];
+            j += 1;
+            out[j] = toDigits[0x0F & data[i]];
+            j += 1;
         }
         return new String(out);
     }

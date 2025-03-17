@@ -15,13 +15,13 @@
                     <FButton type="info" @click="editTemplate">{{$t('common.edit')}}</FButton>
                     <FTooltip
                         mode="confirm"
-                        :confirmOption="{ okText: '确认删除' }"
+                        :confirmOption="{ okText: $t('_.确认删除') }"
                         placement="top"
                         @ok="deleteTemplate"
                     >
                         <FButton type="danger">{{$t('common.delete')}}</FButton>
                         <template #title>
-                            <div style="width: 200px">确认删除此模板吗？</div>
+                            <div style="width: 200px">{{$t('_.确认删除此模板吗？')}}</div>
                         </template>
                     </FTooltip>
                 </div>
@@ -36,21 +36,21 @@
                 :standdard="standardForm">
             </Detail>
             <FForm v-else ref="standardFormRef" labelWidth="94px" labelPosition="right" :model="standardForm" :rules="standardFormRules">
-                <FFormItem :label="`中文名称`" prop="cn_name">
+                <FFormItem :label="$t(`_.中文名称`)" prop="cn_name">
                     <FInput v-model="standardForm.cn_name" :placeholder="$t('common.pleaseEnter')" />
                 </FFormItem>
-                <FFormItem :label="`英文名称`" prop="en_name">
+                <FFormItem :label="$t(`_.英文名称`)" prop="en_name">
                     <FInput v-model="standardForm.en_name" :placeholder="$t('common.pleaseEnter')" />
                 </FFormItem>
-                <FFormItem :label="'开发科室'" prop="dev_department_name">
+                <FFormItem :label="$t('_.开发科室')" prop="dev_department_name">
                     <FSelectCascader v-model="standardForm.dev_department_name" :data="devDivisions" :loadData="loadDevDivisions"
                                      clearable remote emitPath showPath checkStrictly="child" @change="handleDevId" />
                 </FFormItem>
-                <FFormItem :label="'运维科室'" prop="ops_department_name">
+                <FFormItem :label="$t('_.运维科室')" prop="ops_department_name">
                     <FSelectCascader v-model="standardForm.ops_department_name" :data="opsDivisions" :loadData="loadOpsDivisions"
                                      clearable remote emitPath showPath checkStrictly="child" @change="handleOpsId" />
                 </FFormItem>
-                <FFormItem :label="`可见范围`" prop="action_range">
+                <FFormItem :label="$t(`_.可见范围`)" prop="action_range">
                     <FSelectCascader
                         v-model="standardForm.action_range"
                         :data="visDivisions"
@@ -65,8 +65,8 @@
                         :collapseTagsLimit="3"
                         @change="visSelectChange" />
                 </FFormItem>
-                <FFormItem :label="`标准值内容`" prop="content">
-                    <FInput v-model="standardForm.content" :disabled="standardForm.source_value === 2" type="textarea" placeholder="默认英文逗号分隔，多字段请使用{}包含，比如：{id_1,name_1},{id_2,name_2}" />
+                <FFormItem :label="$t(`_.标准值内容`)" prop="content">
+                    <FInput v-model="standardForm.content" :disabled="standardForm.source_value === 2" type="textarea" :placeholder="`${`${$t('common.first')}{}${$t('common.second')}{${$t('common.third')}},{${$t('common.forth')}}`}`" />
                 </FFormItem>
                 <StdForm ref="subStdFormRef" v-model:form="standardForm" :mode="mode" @updateStdContent="updateStdContent"></StdForm>
                 <!-- <FFormItem :label="`审批系统`" prop="approve_system">
@@ -88,6 +88,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, defineProps, defineEmits, onUpdated, inject, watch, defineExpose,
 } from 'vue';
@@ -178,7 +179,6 @@ const tableForm = ref({
         placeholder_description: '',
     }],
 });
-
 const activeTab = ref('');
 
 // 无预览模式，只有编辑
@@ -186,12 +186,12 @@ const isPreviewMode = ref(false);
 
 const modalTitle = computed(() => {
     if (!isPreviewMode.value && props.mode === 'view') {
-        return `${$t('common.edit')}标准值`;
+        return `${$t('common.editStandard')}`;
     }
     if (props.mode === 'add') {
-        return `${$t('common.add')}标准值`;
+        return `${$t('common.addStandard')}`;
     }
-    return '标准值详情';
+    return $t('_.标准值详情');
 });
 
 const selectedTabs = ref(0);
@@ -247,7 +247,7 @@ const standardFormRules = {
     content: [
         {
             validator: validateContent,
-            message: '不能为空',
+            message: $t('_.不能为空'),
         },
     ],
     source: [
@@ -450,7 +450,7 @@ const getDetailByTable = async (id) => {
 const deleteTemplate = async () => {
     console.log('信息', standardForm.value);
     if (!standardForm.value.is_editable) {
-        return FMessage.error('没有删除权限');
+        return FMessage.error($t('_.没有删除权限'));
     }
 
     // 1标准值列表2版本管理列表
@@ -467,7 +467,7 @@ const deleteTemplate = async () => {
 const editTemplate = () => {
     console.log('权限', standardForm.value, !standardForm.value.is_editable);
     if (!standardForm.value.is_editable) {
-        return FMessage.error('没有权限编辑');
+        return FMessage.error($t('_.没有权限编辑'));
     }
     standardForm.value.action_range = standardForm.value.visibility_department_list?.map(item => item.name.split('/')) || [];
     standardForm.value.dev_department_name = Array.isArray(standardForm.value.dev_department_name) ? standardForm.value.dev_department_name : standardForm.value.dev_department_name?.split(' ') || [];
@@ -500,6 +500,7 @@ const updateStdContent = async (code) => {
     }
 };
 defineExpose({ getDetailByTable });
+
 </script>
 <style lang="less" scoped>
 .table-tabs-ctn{

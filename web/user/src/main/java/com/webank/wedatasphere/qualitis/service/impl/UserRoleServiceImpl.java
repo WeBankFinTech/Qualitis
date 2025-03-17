@@ -282,12 +282,7 @@ public class UserRoleServiceImpl implements UserRoleService {
             //4.删除该用户项目权限----->日志输出 log.info()    批量删除   ------>先批量删除 查看删除效率，再考虑用异步实现
             //4->a.查询ProjectUser表, 匹配的用户名、标识switch为自动的List<ProjectUser>
             // ->b.批量删除项目权限
-            List<ProjectUser> projectUserList = SpringContextHolder.getBean(ProjectUserDao.class).findUserNameAndAutomatic(userRoleInDb.getUser().getUsername(), SwitchTypeEnum.AUTO_MATIC.getCode());
-            if (CollectionUtils.isNotEmpty(projectUserList)) {
-                LOGGER.info(" >>>>>>>>>>find matching data to ProjectUser: <<<<<<<<<<" + projectUserList);
-                handleBatchObject(projectUserList, false);
-            }
-
+            projectUserDao.deleteByPermissionAndUsername(ProjectUserPermissionEnum.CREATOR.getCode().intValue(), userRoleInDb.getUser().getUsername());
         }
 
     }
@@ -311,69 +306,33 @@ public class UserRoleServiceImpl implements UserRoleService {
             return;
         }
 
-        handleStockProjectUser(user.getUsername());
-
         List<ProjectUser> list = Lists.newArrayList();
         for (Project project : projectList) {
             ProjectUser creatorProject = new ProjectUser(ProjectUserPermissionEnum.CREATOR.getCode(), project, user.getUsername(), user.getChineseName(), SwitchTypeEnum.AUTO_MATIC.getCode());
             list.add(creatorProject);
         }
 
-        handleBatchObject(list, true);
-
+        handleBatchObject(list);
     }
 
-    /**
-     * 过滤掉自己ProjectUser
-     *
-     * @param userName 用户对象
-     */
-    public void handleStockProjectUser(String userName) {
-        List<ProjectUser> projects = projectUserDao.findByUserName(userName);
-        batchDeleteObject(projects);
-    }
+    private void handleBatchObject(List<ProjectUser> list) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        //每100条数据插入开一个线程
 
-    private void handleBatchObject(List<ProjectUser> list, Boolean flag) {
-
-        if (flag && CollectionUtils.isNotEmpty(list)) {
-            //每100条数据插入开一个线程
-            List<List<ProjectUser>> lists = Lists.partition(list, 100);
-            CountDownLatch countDownLatch = new CountDownLatch(lists.size());
-            for (List<ProjectUser> listSub : lists) {
-                projectUserDao.batchInsert(listSub, countDownLatch);
-            }
-
-            try {
-                countDownLatch.await(); //保证之前的所有的线程都执行完成，才会走下面的；
-                // 这样就可以在下面拿到所有线程执行完的集合结果
-            } catch (Exception e) {
-                LOGGER.error("阻塞异常:" + e.getMessage());
-            }
-        } else {
-            batchDeleteObject(list);
+        List<List<ProjectUser>> lists = Lists.partition(list, 100);
+        CountDownLatch countDownLatch = new CountDownLatch(lists.size());
+        for (List<ProjectUser> listSub : lists) {
+            projectUserDao.batchInsert(listSub, countDownLatch);
         }
 
-    }
-
-    private void batchDeleteObject(List<ProjectUser> list) {
-        if (CollectionUtils.isNotEmpty(list)) {
-            //每100条数据插入开一个线程
-            List<List<ProjectUser>> lists = Lists.partition(list, 100);
-            CountDownLatch countDownLatch = new CountDownLatch(lists.size());
-            for (List<ProjectUser> listSub : lists) {
-                projectUserDao.deleteInBatch(listSub, countDownLatch);
-            }
-
-            try {
-                countDownLatch.await(); //保证之前的所有的线程都执行完成，才会走下面的；
-                // 这样就可以在下面拿到所有线程执行完的集合结果
-            } catch (Exception e) {
-                LOGGER.error("阻塞异常:" + e.getMessage());
-            }
+        try {
+            countDownLatch.await(); //保证之前的所有的线程都执行完成，才会走下面的；
+            // 这样就可以在下面拿到所有线程执行完的集合结果
+        } catch (Exception e) {
+            LOGGER.error("阻塞异常:" + e.getMessage());
         }
-
-
     }
-
 
 }

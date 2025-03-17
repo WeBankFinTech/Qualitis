@@ -74,7 +74,7 @@ public class PendingJobCheckerRunnable implements Runnable {
                 String ruleIdsStr = application.getRuleIds().replace("[", "").replace("]", "");
                 String[] ruleIdStrs = ruleIdsStr.split(SpecCharEnum.COMMA.getValue());
                 for (String ruleIdStr : ruleIdStrs) {
-                    ruleIds.add(Long.parseLong(ruleIdStr));
+                    ruleIds.add(Long.parseLong(ruleIdStr.trim()));
                 }
 
                 outerExecutionService.submitRulesAndUpdateRule(application.getJobId()

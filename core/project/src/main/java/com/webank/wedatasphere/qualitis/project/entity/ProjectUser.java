@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import javax.persistence.*;
@@ -24,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * @author howeye

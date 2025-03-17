@@ -2,29 +2,37 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.webank.wedatasphere.qualitis.checkalert.dao.repository.CheckAlertWhiteListRepository;
+import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlertWhiteList;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContextManager;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
+import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
+import com.webank.wedatasphere.qualitis.constants.WhiteListTypeEnum;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricTypeConfigDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
-import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.CreateAndSubmitResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.RuleMetricResponse;
 import com.webank.wedatasphere.qualitis.rule.builder.AddRuleRequestBuilder;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.*;
 import com.webank.wedatasphere.qualitis.rule.entity.BdpClientHistory;
 import com.webank.wedatasphere.qualitis.rule.entity.ExecutionParameters;
@@ -35,31 +43,34 @@ import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleReq
 import com.webank.wedatasphere.qualitis.rule.request.multi.ModifyMultiSourceRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.*;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.JexlUtil;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author allenzhou@webank.com
@@ -101,13 +112,10 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private SubDepartmentPermissionService subDepartmentPermissionService;
 
     @Autowired
-    private ProjectService projectService;
-
-    @Autowired
-    private MetaDataClient metaDataClient;
-
-    @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private LinkisUdfDao linkisUdfDao;
 
     @Autowired
     private RuleGroupDao ruleGroupDao;
@@ -120,6 +128,9 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     @Autowired
     private LinkisConfig linkisConfig;
+
+    @Autowired
+    private SpecialProjectRuleConfig specialProjectRuleConfig;
 
     @Autowired
     private RuleDao ruleDao;
@@ -137,6 +148,9 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private RuleMetricTypeConfigDao ruleMetricTypeConfigDao;
 
     @Autowired
+    private CheckAlertWhiteListRepository checkAlertWhiteListRepository;
+
+    @Autowired
     private BdpClientHistoryDao bdpClientHistoryDao;
 
     @Autowired
@@ -146,7 +160,10 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private TaskService taskService;
 
     @Value("${task.create_and_submit.limit_size:1000}")
-    private Long thresholdValue;
+    private Long createAndSubmitLimitSize;
+
+    @Value("${task.create_and_submit.random_length:2}")
+    private Integer createAndSubmitRandomLenth;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateAndExecutionServiceImpl.class);
 
@@ -156,6 +173,8 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     private static final Map<String, String> PARAMS_TYPE = new HashMap<>(4 * 4);
 
+    private static final String CREATE_BY_FUNC_REGEX = "createBy\\(\"(.*?)\"\\)";
+    private static final String SUBMIT_BY_FUNC_REGEX = "submitBy\\(\"(.*?)\"\\)";
     private static final String JUST_SAVE = "save()";
     private static final String ASYNC = "async()";
     private static final String STRING_TYPE = "string";
@@ -166,8 +185,6 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
     private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("^\\w+$");
     private static final String EXECUTION_PARAMETER = "execution_parameter";
 
-    @Autowired
-    @Qualifier("ruleExecutionThreadPool")
     private ThreadPoolExecutor ruleExecutionThreadPool;
 
     static {
@@ -202,6 +219,20 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         PARAMS_TYPE.put("uploadRuleMetricValue", "boolean");
         PARAMS_TYPE.put("uploadAbnormalValue", "boolean");
         PARAMS_TYPE.put("abortOnFailure", "boolean");
+    }
+
+    @Autowired
+    AbstractThreadPoolManager threadPoolManager;
+
+    private HttpServletRequest httpServletRequest;
+
+    public CreateAndExecutionServiceImpl(@Context HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
+    @PostConstruct
+    public void injectThreadPools() throws ThreadPoolNotFoundException {
+        this.ruleExecutionThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.RULE_EXECUTION);
     }
 
     @Override
@@ -356,7 +387,8 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             for (String ruleMetricName : ruleMetricNames) {
                 Map<String, Object> maps = ruleMetricCommonService.checkRuleMetricNameAndAddOrModify(ruleMetricName, null, multiEnv, createUser);
                 RuleMetric ruleMetricInDb = (RuleMetric) maps.get("rule_metric");
-                AddRuleMetricRequest ruleMetricRequest = (AddRuleMetricRequest) maps.get("rule_metric_request");
+                AddRuleMetricRequest ruleMetricRequest = new AddRuleMetricRequest();
+                BeanUtils.copyProperties(maps.get("rule_metric_request"), ruleMetricRequest);
                 if (ruleMetricInDb == null) {
                     RuleMetricResponse addResponse = ruleMetricService.addRuleMetricForOuter(ruleMetricRequest, createUser).getData();
                     reFreshRuleMetricName.add(addResponse.getName());
@@ -428,10 +460,50 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
     @Override
     public GeneralResponse createOrModifyAndSubmitRule(CreateAndSubmitRequest request) {
+
+        List<CheckAlertWhiteList> apiAppIdBlackList = checkAlertWhiteListRepository.findItem(WhiteListTypeEnum.BLACK_API_APPID.getCode());
+        List<CheckAlertWhiteList> apiProjectNameBlackList = checkAlertWhiteListRepository.findItem(WhiteListTypeEnum.BLACK_API_PROJECT.getCode());
+        List<CheckAlertWhiteList> apiUserNameBlackList = checkAlertWhiteListRepository.findItem(WhiteListTypeEnum.BLACK_API_USER.getCode());
+
+        if (CollectionUtils.isNotEmpty(apiAppIdBlackList) && httpServletRequest != null && StringUtils.isNotBlank(httpServletRequest.getParameter("app_id"))) {
+            boolean black = apiAppIdBlackList.stream().map(checkAlertWhiteList -> checkAlertWhiteList.getItem().replace(SpecCharEnum.NOT.getValue(), "")).collect(Collectors.toList()).contains(httpServletRequest.getParameter("app_id"));
+            if (black) {
+                LOGGER.error("Stop this app id to call api, app id: {}", httpServletRequest.getParameter("app_id"));
+                return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this app id to call api", null);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(apiProjectNameBlackList) && StringUtils.isNotBlank(request.getProjectName())) {
+            boolean black = apiProjectNameBlackList.stream().map(checkAlertWhiteList -> checkAlertWhiteList.getItem().replace(SpecCharEnum.NOT.getValue(), "")).collect(Collectors.toList()).contains(request.getProjectName());
+            if (black) {
+                LOGGER.error("Stop this project to call api, project name: {}", request.getProjectName());
+                return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this project to call api", null);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(apiUserNameBlackList)) {
+            if (StringUtils.isNotBlank(request.getExecutionUser())) {
+                boolean black = apiUserNameBlackList.stream().map(checkAlertWhiteList -> checkAlertWhiteList.getItem().replace(SpecCharEnum.NOT.getValue(), "")).collect(Collectors.toList()).contains(request.getExecutionUser());
+                if (black) {
+                    LOGGER.error("Stop this execute user to call api, project name: {}", request.getProjectName());
+                    return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this user to call api", null);
+                }
+            }
+            if (StringUtils.isNotBlank(request.getCreateUser())) {
+                boolean black = apiUserNameBlackList.stream().map(checkAlertWhiteList -> checkAlertWhiteList.getItem().replace(SpecCharEnum.NOT.getValue(), "")).collect(Collectors.toList()).contains(request.getCreateUser());
+                if (black) {
+                    LOGGER.error("Stop this create user to call api, project name: {}", request.getProjectName());
+                    return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this user to call api", null);
+                }
+            }
+        }
+
         LOGGER.info("bdp client request parameter: {}", request != null ? request.toString() : null);
-        Boolean exceedTaskSize = taskService.getExecutingTaskNumber(-24) >= thresholdValue;
+        Long executingTaskNumber = taskService.getExecutingTaskNumber(-24);
+        Boolean exceedTaskSize = executingTaskNumber >= createAndSubmitLimitSize;
         if (exceedTaskSize) {
-            return new GeneralResponse<>("5001", "Number of task exceeded limit", null);
+            LOGGER.error("Number of task exceeded limit, createAndSubmitLimitSize: [{}], executingTaskNumber: [{}]", createAndSubmitLimitSize, executingTaskNumber);
+            return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Number of task exceeded limit", null);
         }
 
         RuleContext ruleContext = null;
@@ -444,7 +516,14 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             Map<String, Object> map = Maps.newHashMapWithExpectedSize(1);
             map.put("addDirector", addDirector);
 
-            String templateFunction = judgeTemplateFunction(request);
+            String templateFunction = judgeTemplateFunction(request, apiUserNameBlackList);
+            if (StringUtils.isBlank(templateFunction)) {
+                return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this user to call api", null);
+            }
+
+//        checking actual createUser and executeUser
+            checkAndUpdateActualCreator(templateFunction, request, addDirector);
+
             CreateAndSubmitResponse response = new CreateAndSubmitResponse();
             RuleResponse ruleResponse = setProjectAndRuleInfo(addDirector, request, templateFunction);
             try {
@@ -497,6 +576,105 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             LOGGER.error(e.getMessage(), e);
             return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "Failed to create and submit, caused by: " + e.getMessage(), null);
         }
+    }
+
+    @Override
+    public GeneralResponse<String> addWhiteList(WhiteListRequest request) {
+        if (request == null) {
+            LOGGER.info("Add WhiteListRequest is null");
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add request is null", "");
+        }
+
+        LOGGER.info("Add WhiteListRequest: {}", request.toString());
+
+        if (StringUtils.isNotBlank(request.getAppId())) {
+            LOGGER.info("Add WhiteListRequest app id: {}", request.getAppId());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getAppId(), WhiteListTypeEnum.BLACK_API_APPID.getCode());
+
+            if (checkAlertWhiteListInDb != null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Add WhiteListRequest app id failed because existed", "");
+            }
+
+            CheckAlertWhiteList checkAlertWhiteList = new CheckAlertWhiteList(SpecCharEnum.NOT.getValue() + request.getAppId(), WhiteListTypeEnum.BLACK_API_APPID.getCode());
+            checkAlertWhiteListRepository.save(checkAlertWhiteList);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add WhiteListRequest app id successfully", "");
+        }
+
+        if (StringUtils.isNotBlank(request.getProjectName())) {
+            LOGGER.info("Add WhiteListRequest project name: {}", request.getProjectName());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getProjectName(), WhiteListTypeEnum.BLACK_API_PROJECT.getCode());
+
+            if (checkAlertWhiteListInDb != null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Add WhiteListRequest project name failed because existed", "");
+            }
+
+            CheckAlertWhiteList checkAlertWhiteList = new CheckAlertWhiteList(SpecCharEnum.NOT.getValue() + request.getProjectName(), WhiteListTypeEnum.BLACK_API_PROJECT.getCode());
+            checkAlertWhiteListRepository.save(checkAlertWhiteList);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add WhiteListRequest project name successfully", "");
+        }
+
+        if (StringUtils.isNotBlank(request.getUserName())) {
+            LOGGER.info("Add WhiteListRequest user name: {}", request.getUserName());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getUserName(), WhiteListTypeEnum.BLACK_API_USER.getCode());
+
+            if (checkAlertWhiteListInDb != null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Add WhiteListRequest user name failed because existed", "");
+            }
+
+            CheckAlertWhiteList checkAlertWhiteList = new CheckAlertWhiteList(SpecCharEnum.NOT.getValue() + request.getUserName(), WhiteListTypeEnum.BLACK_API_USER.getCode());
+            checkAlertWhiteListRepository.save(checkAlertWhiteList);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add WhiteListRequest user name successfully", "");
+        }
+
+        return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Add request type is not support", "");
+    }
+
+    @Override
+    public GeneralResponse<String> deleteWhiteList(WhiteListRequest request) {
+        if (request == null) {
+            LOGGER.info("Delete WhiteListRequest is null");
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Delete request is null", "");
+        }
+
+        LOGGER.info("Delete WhiteListRequest: {}", request.toString());
+
+        if (StringUtils.isNotBlank(request.getAppId())) {
+            LOGGER.info("Delete WhiteListRequest app id: {}", request.getAppId());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getAppId(), WhiteListTypeEnum.BLACK_API_APPID.getCode());
+
+            if (checkAlertWhiteListInDb == null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Delete WhiteListRequest app id failed because not existed", "");
+            }
+
+            checkAlertWhiteListRepository.delete(checkAlertWhiteListInDb);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Delete WhiteListRequest app id successfully", "");
+        }
+
+        if (StringUtils.isNotBlank(request.getProjectName())) {
+            LOGGER.info("Delete WhiteListRequest project name: {}", request.getProjectName());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getProjectName(), WhiteListTypeEnum.BLACK_API_PROJECT.getCode());
+
+            if (checkAlertWhiteListInDb == null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Delete WhiteListRequest project name failed because not existed", "");
+            }
+
+            checkAlertWhiteListRepository.delete(checkAlertWhiteListInDb);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Delete WhiteListRequest project name successfully", "");
+        }
+
+        if (StringUtils.isNotBlank(request.getUserName())) {
+            LOGGER.info("Delete WhiteListRequest user name: {}", request.getUserName());
+            CheckAlertWhiteList checkAlertWhiteListInDb = checkAlertWhiteListRepository.findItemAndType(SpecCharEnum.NOT.getValue() + request.getUserName(), WhiteListTypeEnum.BLACK_API_USER.getCode());
+
+            if (checkAlertWhiteListInDb == null) {
+                return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Delete WhiteListRequest user name failed because not existed", "");
+            }
+
+            checkAlertWhiteListRepository.delete(checkAlertWhiteListInDb);
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Delete WhiteListRequest user name successfully", "");
+        }
+
+        return new GeneralResponse<>(ResponseStatusConstants.BAD_REQUEST, "Delete request type is not support", "");
     }
 
     private ApplicationProjectResponse ruleListExecution(CreateAndSubmitRequest request, RuleResponse ruleResponse, RuleContext ruleContext, boolean async) throws UnExpectedRequestException, PermissionDeniedRequestException {
@@ -580,6 +758,47 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         }
     }
 
+    /**
+     * replace default user with actual execution user
+     *
+     * @param templateFunction
+     * @param request
+     */
+    private void checkAndUpdateActualCreator(String templateFunction, CreateAndSubmitRequest request, AddDirector addDirector) throws UnExpectedRequestException {
+        String actualCreateUser = extractValueFrom(templateFunction, CREATE_BY_FUNC_REGEX);
+        String actualExecutionUser = extractValueFrom(templateFunction, SUBMIT_BY_FUNC_REGEX);
+
+        if (StringUtils.isNotBlank(actualExecutionUser) && StringUtils.isBlank(actualCreateUser)) {
+            throw new UnExpectedRequestException("{createBy} must be not empty.");
+        }
+        if (StringUtils.isNotBlank(actualCreateUser)) {
+            String proxyUser = request.getCreateUser();
+            String executionUser = request.getExecutionUser();
+            User user = userDao.findByUsername(actualCreateUser);
+            if (user == null) {
+                throw new UnExpectedRequestException("{createBy} doesn't exists: " + actualCreateUser);
+            }
+            List<String> proxyUserNames = user.getUserProxyUsers().stream().map(userProxyUser -> userProxyUser.getProxyUser().getProxyUserName()).distinct().collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(proxyUserNames)) {
+                throw new UnExpectedRequestException("{createBy} has no proxy users: " + actualCreateUser);
+            }
+            if (!proxyUserNames.contains(proxyUser) || !proxyUserNames.contains(executionUser)) {
+                throw new UnExpectedRequestException("{createBy} has no execution permission: " + actualCreateUser);
+            }
+            if (StringUtils.isNotBlank(actualExecutionUser) && !proxyUserNames.contains(actualExecutionUser)) {
+                throw new UnExpectedRequestException("{submitBy} has no permission: " + actualExecutionUser);
+            }
+
+            addDirector.setUserName(actualCreateUser);
+            request.setCreateUser(actualCreateUser);
+            if (StringUtils.isNotBlank(actualExecutionUser)) {
+                addDirector.setProxyUser(actualExecutionUser);
+                request.setExecutionUser(actualExecutionUser);
+            }
+
+        }
+    }
+
     private RuleResponse addRuleAndGetRuleResponse(AbstractCommonRequest abstractCommonRequest
             , String templateFunction, CreateAndSubmitRequest request, AddDirector addDirector, Map<String, Object> maps) throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         RuleTypeEnum ruleTypeEnum = getRuleType(abstractCommonRequest);
@@ -596,7 +815,11 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 }
                 break;
             case MULTI_TEMPLATE_RULE:
-                ruleResponse = multiSourceRuleService.addRuleForOuter(abstractCommonRequest, true).getData();
+                AddMultiSourceRuleRequest addMultiSourceRuleRequest = (AddMultiSourceRuleRequest) abstractCommonRequest;
+                addMultiSourceRuleRequest.setLoginUser(request.getCreateUser());
+                addMultiSourceRuleRequest.getSource().setProxyUser(request.getExecutionUser());
+                addMultiSourceRuleRequest.getTarget().setProxyUser(request.getExecutionUser());
+                ruleResponse = multiSourceRuleService.addRuleForOuter(addMultiSourceRuleRequest, true).getData();
                 bdpClientHistory = addDirector.getBdpClientHistory();
                 if (bdpClientHistory != null) {
                     bdpClientHistory.setRuleId(ruleResponse.getRuleId());
@@ -648,6 +871,8 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 ModifyMultiSourceRequest modifyMultiSourceRequest = new ModifyMultiSourceRequest();
                 BeanUtils.copyProperties(abstractCommonRequest, modifyMultiSourceRequest);
                 modifyMultiSourceRequest.setRuleId(addDirector.getRule().getId());
+                modifyMultiSourceRequest.getSource().setProxyUser(request.getExecutionUser());
+                modifyMultiSourceRequest.getTarget().setProxyUser(request.getExecutionUser());
                 ruleResponse = multiSourceRuleService.modifyRuleDetailForOuter(modifyMultiSourceRequest, request.getCreateUser()).getData();
                 break;
             case CUSTOM_RULE:
@@ -765,6 +990,10 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
 
         if (StringUtils.isNotBlank(projectName) && StringUtils.isNotBlank(ruleName)) {
             addDirector.setProjectName(projectName);
+            if (specialProjectRuleConfig.getProjectNames().contains(projectName)) {
+                ruleName += DateUtils.generateRandomString(createAndSubmitRandomLenth);
+                LOGGER.info("Add random chars rule name is " + ruleName);
+            }
             addDirector.setRuleName(ruleName);
             Project project = projectDao.findByNameAndCreateUser(projectName, request.getCreateUser());
             if (project != null) {
@@ -803,8 +1032,33 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         return null;
     }
 
-    private String judgeTemplateFunction(CreateAndSubmitRequest request) throws UnExpectedRequestException {
+    private String judgeTemplateFunction(CreateAndSubmitRequest request, List<CheckAlertWhiteList> apiUserNameBlackList) throws UnExpectedRequestException {
         CreateAndSubmitRequest.checkRequest(request);
+        String templateFunction = request.getTemplateFunction();
+        if (CollectionUtils.isNotEmpty(apiUserNameBlackList)) {
+            String regex = "(?:createBy|submitBy)\\(\"([^\"]+)\"\\)";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(templateFunction);
+            List<String> values = new ArrayList<>();
+
+            while (matcher.find()) {
+                LOGGER.info("Found create by or submit by user");
+                values.add(matcher.group(1));
+            }
+
+            for (String value : values) {
+                if (StringUtils.isNotBlank(value)) {
+                    boolean black = apiUserNameBlackList.stream().map(checkAlertWhiteList -> checkAlertWhiteList.getItem().replace(SpecCharEnum.NOT.getValue(), "")).collect(Collectors.toList()).contains(value);
+                    if (black) {
+                        LOGGER.error("Stop this user to call api, project name: {}", request.getProjectName());
+                        return "";
+                    }
+                }
+            }
+
+        }
+
+
         // Check char, number, underscore
         Matcher matcher = PROJECT_NAME_PATTERN.matcher(request.getProjectName());
         boolean find = matcher.find();
@@ -816,7 +1070,6 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             }
         }
         // Check same rule in history.
-        String templateFunction = request.getTemplateFunction();
         boolean emptyParams = templateFunction.contains("expectColumnNotNull()")
                 || templateFunction.contains("expectColumnsPrimaryNotRepeat()")
                 || templateFunction.contains("expectTableRows()")
@@ -848,7 +1101,16 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 || templateFunction.contains("addRuleMetricWithCheck()")
                 || templateFunction.contains("expectTableStructureConsistent()");
 
-        if (emptyParams) {
+        boolean simpleFunction = templateFunction.contains("setDatasource")
+                || templateFunction.contains("setCluster")
+                || templateFunction.contains("setDb")
+                || templateFunction.contains("setTable")
+                || templateFunction.contains("setFilter")
+                || templateFunction.contains("setOriginCluster")
+                || templateFunction.contains("setTargetCluster")
+                || templateFunction.contains("setCustomSql");
+
+        if (emptyParams && (! simpleFunction)) {
             List<PropsRequest> propsRequestList = request.getPropsRequests();
             templateFunction = fillWithExistsProps(templateFunction, propsRequestList);
         }
@@ -932,6 +1194,17 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             }
         }
         return templateFunction;
+    }
+
+    private String extractValueFrom(String templateFunction, String regex) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(templateFunction);
+
+        if (matcher.find()) {
+            String result = matcher.group(1);
+            return result;
+        }
+        return "";
     }
 
 }

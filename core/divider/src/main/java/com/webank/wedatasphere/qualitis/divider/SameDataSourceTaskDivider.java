@@ -18,9 +18,7 @@ package com.webank.wedatasphere.qualitis.divider;
 
 import com.webank.wedatasphere.qualitis.bean.DataQualityTask;
 import com.webank.wedatasphere.qualitis.bean.RuleTaskDetail;
-import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.ArgumentException;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;

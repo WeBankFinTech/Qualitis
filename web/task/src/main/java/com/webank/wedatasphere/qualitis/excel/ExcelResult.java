@@ -1,13 +1,12 @@
 package com.webank.wedatasphere.qualitis.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author allenzhou@webank.com
  * @date 2021/5/6 16:00
  */
-public class ExcelResult extends BaseRowModel {
+public class ExcelResult {
     @ExcelProperty(value = "Project Name", index = 0)
     private String projectName;
     @ExcelProperty(value = "Rule Name", index = 1)

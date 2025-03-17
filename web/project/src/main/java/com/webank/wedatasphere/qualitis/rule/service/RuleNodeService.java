@@ -20,7 +20,7 @@ import com.webank.wedatasphere.qualitis.rule.request.multi.AddMultiSourceRuleReq
 import com.webank.wedatasphere.qualitis.rule.response.CopyRuleWithDatasourceResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleNodeResponses;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;

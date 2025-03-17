@@ -23,6 +23,8 @@ import java.util.List;
  * @author howeye
  */
 public class GroupListExecutionRequest {
+    @JsonProperty("application_id")
+    private String applicationId;
     @JsonProperty("rule_group_list")
     private List<GroupExecutionRequest> groupExecutionRequests;
     @JsonProperty("execution_param")
@@ -68,6 +70,14 @@ public class GroupListExecutionRequest {
     public void setGroupExecutionRequests(
             List<GroupExecutionRequest> groupExecutionRequests) {
         this.groupExecutionRequests = groupExecutionRequests;
+    }
+
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    public void setApplicationId(String applicationId) {
+        this.applicationId = applicationId;
     }
 
     public String getFpsFileId() {

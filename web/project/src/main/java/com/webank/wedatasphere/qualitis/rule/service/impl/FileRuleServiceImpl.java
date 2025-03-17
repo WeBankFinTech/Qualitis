@@ -24,7 +24,7 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
@@ -72,8 +72,8 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
 
     @Autowired
     private RuleLockService ruleLockService;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     @Autowired
     private RuleVariableService ruleVariableService;
@@ -172,6 +172,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
             newRule.setCsId(request.getCsId());
             cs = true;
         }
+        newRule.setRegRuleCode(request.getRegRuleCode());
 
         setExecutionParametersInfo(request, groupRules, projectInDb, newRule);
         Rule savedRule = ruleDao.saveRule(newRule);
@@ -290,7 +291,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
-//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
 
@@ -346,6 +347,11 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         if (ruleInDb == null) {
             throw new UnExpectedRequestException("rule_id [" + request.getRuleId() + "] {&DOES_NOT_EXIST}");
         }
+
+        if (Boolean.FALSE.equals(ruleInDb.getEnable())) {
+            request.setRuleEnable(false);
+        }
+
         Project projectInDb = checkProject(request, loginUser, ruleInDb);
         String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
         String csId = request.getCsId();
@@ -490,6 +496,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         ruleInDb.setWorkFlowVersion(request.getWorkFlowVersion());
         ruleInDb.setWorkFlowSpace(request.getWorkFlowSpace());
         ruleInDb.setNodeName(request.getNodeName());
+        ruleInDb.setRegRuleCode(request.getRegRuleCode());
     }
 
     @Override

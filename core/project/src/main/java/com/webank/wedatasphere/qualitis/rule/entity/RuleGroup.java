@@ -16,14 +16,13 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import java.util.Set;
-import java.util.stream.Stream;
-import javax.persistence.*;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.hibernate.annotations.NotFound;
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.annotations.NotFoundAction;
+
+import javax.persistence.*;
+import java.util.Set;
 
 /**
  * @author howeye

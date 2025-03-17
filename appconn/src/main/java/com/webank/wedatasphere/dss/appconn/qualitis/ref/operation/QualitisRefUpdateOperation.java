@@ -51,7 +51,7 @@ public class QualitisRefUpdateOperation extends QualitisDevelopmentOperation<Upd
     private final static Logger LOGGER = LoggerFactory.getLogger(QualitisRefUpdateOperation.class);
 
     private static String appId = "linkis_id";
-    private static String appToken = "a33693de51";
+    private static String appToken = "xxxx";
 
     @Override
     protected String getAppConnName() {

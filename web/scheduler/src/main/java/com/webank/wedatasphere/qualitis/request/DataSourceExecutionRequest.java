@@ -72,6 +72,17 @@ public class DataSourceExecutionRequest {
     @JsonProperty("engine_reuse")
     private Boolean engineReuse;
 
+    @JsonProperty("run_date")
+    private String runDate;
+
+    public String getRunDate() {
+        return runDate;
+    }
+
+    public void setRunDate(String runDate) {
+        this.runDate = runDate;
+    }
+
     public DataSourceExecutionRequest() {
         crossTable = false;
     }

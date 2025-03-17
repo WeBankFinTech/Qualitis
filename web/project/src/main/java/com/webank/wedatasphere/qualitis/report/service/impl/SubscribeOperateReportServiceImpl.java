@@ -3,8 +3,8 @@ package com.webank.wedatasphere.qualitis.report.service.impl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Sets;
-//import com.webank.wedatasphere.qualitis.client.MailClient;
-//import com.webank.wedatasphere.qualitis.config.EsbSdkConfig;
+import com.webank.wedatasphere.qualitis.client.MailClient;
+import com.webank.wedatasphere.qualitis.config.EsbSdkConfig;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
@@ -37,7 +37,7 @@ import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +48,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -79,14 +84,15 @@ public class SubscribeOperateReportServiceImpl implements SubscribeOperateReport
     private ProjectUserDao projectUserDao;
     @Autowired
     private ProjectEventService projectEventService;
-//    @Autowired
-//    private EsbSdkConfig esbSdkConfig;
-//    @Autowired
-//    private MailClient mailClient;
+    @Autowired
+    private EsbSdkConfig esbSdkConfig;
+    @Autowired
+    private MailClient mailClient;
     @Autowired
     private SubscriptionRecordDao subscriptionRecordDao;
-    @Value("${deploy.environment: open_source}")
-    private String deployEnvType;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String OPERATION_PREFIX = "hduser";
@@ -100,6 +106,10 @@ public class SubscribeOperateReportServiceImpl implements SubscribeOperateReport
     @Override
     @Transactional(rollbackFor = Exception.class)
     public GeneralResponse<SubscribeOperateReportResponse> add(SubscribeOperateReportRequest request) throws Exception {
+        if (overseasVersionEnabled){
+            LOGGER.info(" disable this feature.");
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&THIS_FEATURE_IS_TEMPORARILY_DISABLED}", new SubscribeOperateReportResponse());
+        }
         SubscribeOperateReportRequest.checkRequest(request, false);
         SubscribeOperateReport subscribeOperateReport = setBasicInfoAndCheckParameter(request, null);
 
@@ -112,24 +122,20 @@ public class SubscribeOperateReportServiceImpl implements SubscribeOperateReport
     }
 
     private List<Map<String, Object>> checkHrCacheExists() throws Exception {
-        //       仅限开源环境
-        if ("open_source".equals(deployEnvType)) {
-            return Collections.emptyList();
-        }
         List<Map<String, Object>> data = (List<Map<String, Object>>) hrInfoCache.getIfPresent("Data");
-//
-//        if (isObjectNotEmpty(data)) {
-//            LOGGER.debug("Getting hr message from local cache, key: {}", data);
-//        } else {
-//            String hrMessage = mailClient.getHrMessage();
-//            Map<String, Object> msgMap = objectMapper.readValue(hrMessage, Map.class);
-//            if (!msgMap.isEmpty() && Integer.parseInt(msgMap.get(RESPONSE_CODE).toString()) != 0) {
-//                throw new UnExpectedRequestException("Getting hr message Failure,Return Code: " + Integer.parseInt(msgMap.get("Code").toString()));
-//            }
-//            List<Map<String, Object>> content = (List<Map<String, Object>>) (msgMap.get("Data"));
-//            hrInfoCache.put("Data", content);
-//            return content;
-//        }
+
+        if (isObjectNotEmpty(data)) {
+            LOGGER.debug("Getting hr message from local cache, key: {}", data);
+        } else {
+            String hrMessage = mailClient.getHrMessage();
+            Map<String, Object> msgMap = objectMapper.readValue(hrMessage, Map.class);
+            if (!msgMap.isEmpty() && Integer.parseInt(msgMap.get(RESPONSE_CODE).toString()) != 0) {
+                throw new UnExpectedRequestException("Getting hr message Failure,Return Code: " + Integer.parseInt(msgMap.get("Code").toString()));
+            }
+            List<Map<String, Object>> content = (List<Map<String, Object>>) (msgMap.get("Data"));
+            hrInfoCache.put("Data", content);
+            return content;
+        }
         return data;
     }
 
@@ -267,13 +273,13 @@ public class SubscribeOperateReportServiceImpl implements SubscribeOperateReport
         } else if (user.getUsername().startsWith(OPERATION_PREFIX)) {
             throw new UnExpectedRequestException(String.format("%s {&NOT_A_REAL_NAME_USER}", accessUser));
         }
-//        if (flag && StringUtils.isNotBlank(esbSdkConfig.getEmailWhiteList())) {
-//            List<String> whiteList = Arrays.asList(esbSdkConfig.getEmailWhiteList().split(SpecCharEnum.COMMA.getValue()));
-//            boolean exist = whiteList.stream().anyMatch(item -> item.equals(accessUser));
-//            if (!exist) {
-//                throw new UnExpectedRequestException(String.format("%s {&NOT_ON_THE_CONFIGURED_LIST}", accessUser));
-//            }
-//        }
+        if (flag && StringUtils.isNotBlank(esbSdkConfig.getEmailWhiteList())) {
+            List<String> whiteList = Arrays.asList(esbSdkConfig.getEmailWhiteList().split(SpecCharEnum.COMMA.getValue()));
+            boolean exist = whiteList.stream().anyMatch(item -> item.equals(accessUser));
+            if (!exist) {
+                throw new UnExpectedRequestException(String.format("%s {&NOT_ON_THE_CONFIGURED_LIST}", accessUser));
+            }
+        }
     }
 
 
@@ -315,6 +321,10 @@ public class SubscribeOperateReportServiceImpl implements SubscribeOperateReport
     @Override
     @Transactional(rollbackFor = Exception.class)
     public GeneralResponse<SubscribeOperateReportResponse> modify(SubscribeOperateReportRequest request) throws Exception {
+        if (overseasVersionEnabled){
+            LOGGER.info(" disable this feature.");
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&THIS_FEATURE_IS_TEMPORARILY_DISABLED}", new SubscribeOperateReportResponse());
+        }
         SubscribeOperateReportRequest.checkRequest(request, true);
         SubscribeOperateReport subscribeOperateReport = subscribeOperateReportDao.findById(request.getId());
         if (subscribeOperateReport == null) {

@@ -189,6 +189,19 @@ public class RuleMetricController {
     }
   }
 
+  @GET
+  @Path("en_codes")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public GeneralResponse<List<String>> getRuleMetricEnCodes(@QueryParam("enCode") String enCode, @QueryParam("page") int page, @QueryParam("size") int size) {
+    try {
+      return new GeneralResponse<>(ResponseStatusConstants.OK, "{&INIT_RULE_METRIC_CONDITION_SUCCESS}", ruleMetricService.queryEnCodeWithPage(enCode, page, size));
+    } catch (Exception e) {
+      LOGGER.error("Failed to get rule metric condition, caused by system error: {}", e.getMessage());
+      return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_INIT_RULE_METRIC_CONDITION}", null);
+    }
+  }
+
   @POST
   @Path("query")
   @Produces(MediaType.APPLICATION_JSON)
@@ -200,7 +213,7 @@ public class RuleMetricController {
       LOGGER.error(e.getMessage(), e);
       throw e;
     }  catch (Exception e) {
-      LOGGER.error("Failed to get query rule metric, caused by system error: {}", e.getMessage());
+      LOGGER.error("Failed to get query rule metric, caused by system error " + e.getMessage(), e);
       return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_RULE_METRIC}", null);
     }
   }

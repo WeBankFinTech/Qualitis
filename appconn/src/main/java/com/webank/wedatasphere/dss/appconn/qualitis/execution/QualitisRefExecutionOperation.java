@@ -69,7 +69,7 @@ public class QualitisRefExecutionOperation extends LongTermRefExecutionOperation
 
 
     private String appId = "linkis_id";
-    private String appToken = "a33693de51";
+    private String appToken = "xxxx";
 
     @Override
     protected String getAppConnName() {

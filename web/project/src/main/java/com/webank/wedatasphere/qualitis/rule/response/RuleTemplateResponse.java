@@ -188,7 +188,7 @@ public class RuleTemplateResponse {
         }
 
         this.verificationCnName = template.getVerificationCnName();
-        this.verificationEnName = template.getVerificationEnName();
+//        this.verificationEnName = template.getVerificationEnName();
 
         this.createTime = template.getCreateTime();
         this.modifyTime = template.getModifyTime();

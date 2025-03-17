@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
  * @date 2024-03-12 17:15
  * @description
  */
-//@Component
-//@ConfigurationProperties(prefix = "itsm")
+@Component
+@ConfigurationProperties(prefix = "itsm")
 public class ItsmConfig {
 
     @Value("secret_key")

@@ -2,33 +2,19 @@
 
 项目使用基于`vue3`的框架[FesJs](https://winixt.gitee.io/fesjs/zh/)以及[FesUI](https://fes-design-4gvn317r3b6bfe17-1254145788.ap-shanghai.app.tcloudbase.com/)，搭配`hooks`思想组合功能
 
-## 环境要求
-
-node >= 16.15.0
-npm >= 6, npm >= 9时可能会出现依赖读取不到的问题
+`注：后台接口需要在开发网中访问`
 
 ## 本地开发：
 ```
-npm i
+wnpm i
 npm run dev
-```
-
-## 本地打包
-
-建议源码修改地址后本地编译
-后台接口地址在.fes.js中的BASE_URL中修改，编译步骤如下
-```
-npm i
-npm run build
 ```
 
 ## 跨域联调
 
 使用`whistle`代理
 
-在whistle规则中配置如下规则并启用，在浏览器访问`http://backendip:8090/web/`既可以将html代理到本地开发环境，localhost的端口需要根据实际情况替换
-```
-http://backendip:8090/web/		http://localhost:8000/
+在whistle规则中配置如下规则并启用
 ```
 
 或者跨域启动浏览器（chrome 84版本及以下版本推荐）
@@ -71,13 +57,14 @@ http://backendip:8090/web/		http://localhost:8000/
 |规则组|src/components/rules/groupList|单表校验、表文件校验|
 
 
+
 |规则类型|目录|表单项|数据项|
 |:---|:---|:---|:---|
-|单表校验|src/components/rules/singleTableCheck|![单表校验](./docs/dbjy.png)|![单表校验数据项](./docs/dbjysjx.png)|
-|多表比对|src/components/rules/crossTableCheck|![多表比对](./docs/dbbd.png)|![多表比对数据项](./docs/dbbdsjx.png)|
-|自定义SQL校验|src/components/rules/customCheck|![自定义SQL校验](./docs/zdysqljy.png)|![自定义SQL校验数据项](./docs/zdysqljysjx.png)|
-|表文件校验|src/components/rules/fileCheck|![表文件校验](./docs/bwjjy.png)|![表文件校验数据项](./docs/bwjjysjx.png)|
-|库一致性比对|src/components/rules/crossDbCheck|![库一致性对比](./docs/kyzxdb.png)|![库一致性对比数据项](./docs/kyzxdbsjx.png)|
+|单表校验|src/components/rules/singleTableCheck|![单表校验](/docs/dbjy.png)|![单表校验数据项](/docs/dbjysjx.png)|
+|多表比对|src/components/rules/crossTableCheck|![多表比对](/docs/dbbd.png)|![多表比对数据项](/docs/dbbdsjx.png)|
+|自定义SQL校验|src/components/rules/customCheck|![自定义SQL校验](/docs/zdysqljy.png)|![自定义SQL校验数据项](/docs/zdysqljysjx.png)|
+|表文件校验|src/components/rules/fileCheck|![表文件校验](/docs/bwjjy.png)|![表文件校验数据项](/docs/bwjjysjx.png)|
+|库一致性比对|src/components/rules/crossDbCheck|![库一致性对比](/docs/kyzxdb.png)|![库一致性对比数据项](/docs/kyzxdbsjx.png)|
 
 ## 表格数据为空的缺省页说明
 

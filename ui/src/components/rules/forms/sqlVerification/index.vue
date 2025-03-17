@@ -46,15 +46,16 @@ const ele = ref({
 // 加载规则详情
 const configuredRuleMetric = ref({});
 provide('configuredRuleMetric', computed(() => configuredRuleMetric.value));
-const ruleMetricList = ref([]);
-provide('ruleMetricList', computed(() => ruleMetricList.value));
+// const ruleMetricList = ref([]);
+// provide('ruleMetricList', computed(() => ruleMetricList.value));
 const loadRuleDetail = async () => {
     try {
-        ruleMetricList.value = await getRuleMetricAll();
+        // ruleMetricList.value = await getRuleMetricAll();
         if (!unref(ruleData.value.currentRule.rule_id)) {
             return;
         }
-
+        console.log('sql:', ruleData.value.currentRule);
+        if (ruleData.value.currentRule.rule_type !== 2) return;
         const currentRuleDetail = await request(`api/v1/projector/rule/custom/${unref(ruleData.value.currentRule.rule_id)}`, {}, 'get');
         // 处理上游表逻辑
         currentRuleDetail.isUpStream = currentRuleDetail.context_service;
@@ -86,7 +87,11 @@ const loadRuleDetail = async () => {
             linkis_datasource_name,
             linkis_datasource_type,
             linkis_datasource_envs_mappings,
+            dcn_range_type,
+            linkis_datasource_dcn_range_values,
+            standard_value_variables,
         } = currentRuleDetail;
+        currentRuleDetail.standard_params = standard_value_variables?.map(item => item.standard_value_variables_id) || [];
         currentRuleDetail.datasource = [{
             cluster_name,
             db_name: file_db,
@@ -101,12 +106,16 @@ const loadRuleDetail = async () => {
             table_name: file_table,
             isUpStream,
             type,
-            linkis_datasource_envs,
+            // eslint-disable-next-line camelcase
+            linkis_datasource_envs: linkis_datasource_envs || [],
             linkis_datasource_version_id,
             linkis_datasource_id,
             linkis_datasource_name,
             linkis_datasource_type,
             linkis_datasource_envs_mappings,
+            dcn_range_type,
+            // eslint-disable-next-line camelcase
+            linkis_datasource_dcn_range_values: linkis_datasource_dcn_range_values || [],
         }];
         // 更新store
         console.log('init currentRuleDetail', currentRuleDetail);
@@ -152,6 +161,8 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
+            standard_value_variables,
             datasource,
             alarm_variable,
             execution_parameters_name,
@@ -179,6 +190,8 @@ useListener(saveEvent, async (cb) => {
             linkis_datasource_name,
             linkis_datasource_version_id,
             linkis_datasource_envs_mappings,
+            dcn_range_type,
+            linkis_datasource_dcn_range_values,
         } = datasource[0];
         // delete dataSourceValue.fpsData;
         const body = {
@@ -191,6 +204,8 @@ useListener(saveEvent, async (cb) => {
             rule_name,
             cn_name,
             rule_detail,
+            reg_rule_code,
+            standard_value_variables,
             alarm: true,
             execution_parameters_name,
             cluster_name,
@@ -211,7 +226,11 @@ useListener(saveEvent, async (cb) => {
             linkis_datasource_name,
             linkis_datasource_version_id,
             linkis_datasource_envs_mappings,
-            sql_check_area,
+            dcn_range_type,
+            // eslint-disable-next-line camelcase
+            linkis_datasource_dcn_range_values: linkis_datasource_dcn_range_values || [],
+            // 需要去掉sql的换行符
+            sql_check_area: sql_check_area.replace(/\s+/g, ' '),
             linkis_udf_names,
             save_mid_table: false,
             alarm_variable: alarm_variable.map(v => ({
@@ -312,7 +331,7 @@ useListener(saveEvent, async (cb) => {
 
 // 取消事件
 useListener(cancelEvent, () => {
-    loadRuleDetail();
+    setTimeout(loadRuleDetail, 0);
 });
 // 删除规则
 let isDeleting = false;

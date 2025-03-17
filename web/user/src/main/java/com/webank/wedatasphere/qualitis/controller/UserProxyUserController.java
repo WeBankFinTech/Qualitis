@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 /**
  * @author howeye
@@ -51,7 +52,7 @@ public class UserProxyUserController {
     @PUT
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<List<AddUserProxyUserResponse>> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
         try {
             return userProxyUserService.addUserProxyUser(request);
         } catch (UnExpectedRequestException e) {

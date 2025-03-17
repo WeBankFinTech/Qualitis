@@ -53,6 +53,12 @@ public interface RuleDataSourceMappingDao {
     void deleteByRuleList(List<Rule> rules);
 
     /**
+     * delete all
+     * @param ruleDataSourceMappingList
+     */
+    void deleteAll(List<RuleDataSourceMapping> ruleDataSourceMappingList);
+
+    /**
      * find By Rule List
      * @param ruleList
      * @return

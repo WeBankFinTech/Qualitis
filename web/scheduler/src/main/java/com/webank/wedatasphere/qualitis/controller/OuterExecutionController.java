@@ -16,39 +16,37 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.response.ProjectDetailResponse;
 import com.webank.wedatasphere.qualitis.project.service.ProjectBatchService;
 import com.webank.wedatasphere.qualitis.project.service.ProjectService;
 import com.webank.wedatasphere.qualitis.request.*;
-import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
+import com.webank.wedatasphere.qualitis.rule.request.DeleteRuleMetricRequest;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
+import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
 import com.webank.wedatasphere.qualitis.timer.RuleLisingCallable;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author howeye
@@ -65,6 +63,11 @@ public class OuterExecutionController {
     private ProjectService projectService;
     @Autowired
     private ProjectBatchService projectBatchService;
+    @Autowired
+    private RuleMetricCommonService ruleMetricCommonService;
+    @Autowired
+    private AbstractThreadPoolManager poolManager;
+    private ThreadPoolExecutor outerRuleExecutionPool;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OuterExecutionController.class);
 
@@ -74,14 +77,10 @@ public class OuterExecutionController {
         this.httpServletRequest = httpServletRequest;
     }
 
-    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(50,
-            Integer.MAX_VALUE,
-            60,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1000),
-            Executors.defaultThreadFactory(),
-            new ThreadPoolExecutor.DiscardPolicy());
-
+    @PostConstruct
+    public void init() throws ThreadPoolNotFoundException {
+        this.outerRuleExecutionPool = poolManager.getThreadPool(ThreadPoolConstant.OUTER_RULE_EXECUTION);
+    }
 
     @POST
     @Path("/rule/add")
@@ -105,8 +104,8 @@ public class OuterExecutionController {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
         try {
             if (request.getAsync()) {
-                LOGGER.info("Start to axync run submit application.");
-                POOL.execute(new Runnable() {
+                LOGGER.info("Start to async run submit application.");
+                outerRuleExecutionPool.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
@@ -138,7 +137,7 @@ public class OuterExecutionController {
     @GET
     @Path("execution/application/kill/{applicationId}/{executionUser}")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
+    public GeneralResponse<Object> killApplication(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
         try {
             return outerExecutionService.killApplication(applicationId, executionUser);
         } catch (UnExpectedRequestException e) {
@@ -153,7 +152,7 @@ public class OuterExecutionController {
     @GET
     @Path("application/{applicationId}/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse getApplicationStatus(@PathParam("applicationId") String applicationId) {
+    public GeneralResponse<Object> getApplicationStatus(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationStatus(applicationId);
         } catch (UnExpectedRequestException e) {
@@ -168,7 +167,7 @@ public class OuterExecutionController {
     @GET
     @Path("application/dynamic/{applicationId}/status")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse getApplicationDynamicStatus(@PathParam("applicationId") String applicationId) {
+    public GeneralResponse<Object> getApplicationDynamicStatus(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationDynamicStatus(applicationId);
         } catch (UnExpectedRequestException e) {
@@ -183,7 +182,7 @@ public class OuterExecutionController {
     @GET
     @Path("application/{applicationId}/result")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse getApplicationSummary(@PathParam("applicationId") String applicationId) {
+    public GeneralResponse<Object> getApplicationSummary(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationSummary(applicationId);
         } catch (UnExpectedRequestException e) {
@@ -198,7 +197,7 @@ public class OuterExecutionController {
     @GET
     @Path("application/{applicationId}/{executionUser}/result_value")
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse getApplicationResultValue(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
+    public GeneralResponse<Object> getApplicationResultValue(@PathParam("applicationId") String applicationId, @PathParam("executionUser") String executionUser) {
         try {
             return outerExecutionService.getApplicationResultValue(applicationId, executionUser);
         } catch (UnExpectedRequestException e) {
@@ -214,7 +213,7 @@ public class OuterExecutionController {
     @Path("log")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse getTaskLog(GetTaskLogRequest request) {
+    public GeneralResponse<Object> getTaskLog(GetTaskLogRequest request) {
         try {
             return outerExecutionService.getTaskLog(request);
         } catch (UnExpectedRequestException e) {
@@ -230,7 +229,7 @@ public class OuterExecutionController {
     @Path("application/{applicationId}/log")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse getTaskLog(@PathParam("applicationId") String applicationId) {
+    public GeneralResponse<Object> getTaskLog(@PathParam("applicationId") String applicationId) {
         try {
             return outerExecutionService.getApplicationLog(applicationId);
         } catch (UnExpectedRequestException e) {
@@ -246,7 +245,7 @@ public class OuterExecutionController {
     @Path("query")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse queryJobInfo(ApplicationQueryRequest request) {
+    public GeneralResponse<Object> queryJobInfo(ApplicationQueryRequest request) {
         try {
             return outerExecutionService.queryJobInfo(request.getJobId());
         } catch (UnExpectedRequestException e) {
@@ -262,15 +261,15 @@ public class OuterExecutionController {
     @Path("query/application")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public GeneralResponse<ApplicationProjectResponse> queryApplications(ApplicationQueryRequest request) {
+    public GeneralResponse<Object> queryApplications(ApplicationQueryRequest request) {
         try {
             return outerExecutionService.queryApplications(request.getJobId());
         } catch (UnExpectedRequestException e) {
             LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), e);
         } catch (Exception e) {
             LOGGER.error("Failed to query application by job ID: {}", request.getJobId(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_TASK}: " + request.getJobId(), null);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_QUERY_TASK}: " + request.getJobId(), e);
         }
     }
 
@@ -278,9 +277,9 @@ public class OuterExecutionController {
     @Path("query/rule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse queryRule(GetRuleQueryRequest request) {
+    public GeneralResponse<Object> queryRule(GetRuleQueryRequest request) {
         try {
-            Future<ProjectDetailResponse> projectDetailResponse = POOL.submit(new RuleLisingCallable(request, ruleDao, projectDao, projectService));
+            Future<ProjectDetailResponse> projectDetailResponse = outerRuleExecutionPool.submit(new RuleLisingCallable(request, ruleDao, projectDao, projectService));
 
             return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_GET_RULE_QUERY}", projectDetailResponse.get());
         } catch (Exception e) {
@@ -293,7 +292,7 @@ public class OuterExecutionController {
     @Path("batch/delete/rule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse deleteRule(BatchDeleteRuleRequest request) {
+    public GeneralResponse<Object> deleteRule(BatchDeleteRuleRequest request) {
         try {
             outerExecutionService.deleteRule(request);
             return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCESS_DELETE_RULE_LIST}", null);
@@ -310,24 +309,11 @@ public class OuterExecutionController {
 
     }
 
-    @POST
-    @Path("execution/script")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse executionScript(OmnisScriptRequest request) {
-        try {
-            return outerExecutionService.executionScript(request);
-        } catch (Exception e) {
-            LOGGER.error("Failed to delete rule . caused by system error: {}", e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
-        }
-    }
-
 //    @POST
 //    @Path("query/identify")
 //    @Produces(MediaType.APPLICATION_JSON)
 //    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse queryIdentifyConfig(OmnisScriptRequest request) {
+//    public GeneralResponse<Object> queryIdentifyConfig(OmnisScriptRequest request) {
 //        try {
 //            return outerExecutionService.queryIdentify(request);
 //        } catch (Exception e) {
@@ -340,7 +326,7 @@ public class OuterExecutionController {
 //    @Path("query/ImsmetricData")
 //    @Produces(MediaType.APPLICATION_JSON)
 //    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) {
+//    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
 //        try {
 //            return outerExecutionService.queryImsmetricData(request);
 //        } catch (Exception e) {
@@ -353,7 +339,7 @@ public class OuterExecutionController {
     @Path("batch/enable/rule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse batchEnableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<Object> batchEnableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         try {
             return outerExecutionService.batchEnableOrDisableRule(request);
         } catch (UnExpectedRequestException e) {
@@ -372,7 +358,7 @@ public class OuterExecutionController {
     @Path("application/result")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public GeneralResponse getApplicationResult(ApplicationIdListQueryRequest request) {
+    public GeneralResponse<Object> getApplicationResult(ApplicationIdListQueryRequest request) {
         try {
             return outerExecutionService.getApplicationResult(request.getApplicationIdList());
         } catch (UnExpectedRequestException e) {
@@ -388,7 +374,7 @@ public class OuterExecutionController {
 //    @Path("fieldsAnalyse/result")
 //    @Produces(MediaType.APPLICATION_JSON)
 //    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+//    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
 //        try {
 //            return outerExecutionService.getFieldsAnalyseResult(request);
 //        } catch (UnExpectedRequestException e) {
@@ -399,5 +385,21 @@ public class OuterExecutionController {
 //            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
 //        }
 //    }
+
+    @POST
+    @Path("delete/rule_metrics")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<Object> deleteRuleMetrics(DeleteRuleMetricRequest deleteRuleMetricRequest) {
+        try {
+            CommonChecker.checkString(deleteRuleMetricRequest.getName(), "name");
+            CommonChecker.checkString(deleteRuleMetricRequest.getUsername(), "username");
+            ruleMetricCommonService.deleteRuleMetric(deleteRuleMetricRequest.getName(), deleteRuleMetricRequest.getUsername());
+        } catch (Exception e) {
+            LOGGER.error("Failed to delete rule metrics, caused by: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_DELETE_RULE_METRIC}", null);
+        }
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "success", null);
+    }
 
 }

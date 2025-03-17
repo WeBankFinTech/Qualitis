@@ -36,6 +36,7 @@ public interface RuleGroupRepository extends JpaRepository<RuleGroup, Long> {
      * @param projectId
      * @return
      */
+    @Query(value = "select q.* from qualitis_rule_group q where q.rule_group_name = ?1 and q.project_id = ?2 order by q.id asc limit 1", nativeQuery = true)
     RuleGroup findByRuleGroupNameAndProjectId(String ruleGroupName, Long projectId);
 
     /**

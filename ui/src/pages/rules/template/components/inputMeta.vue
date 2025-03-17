@@ -2,10 +2,9 @@
     <div class="wrap rule-detail-form"
          :class="{ edit: mode !== 'view', view: mode === 'view' }">
         <div v-if="mode !== 'view'" class="header">
-            占位符{{index}}
+            {{$t('_.占位符')}}{{index}}
             <span v-if="removable" class="delete-btn" @click="deleteInputMeta">
-                <MinusCircleOutlined style="margin-right: 4.67px;" />删除
-            </span>
+                <MinusCircleOutlined style="margin-right: 4.67px;" />{{$t('_.删除')}}</span>
         </div>
         <div v-else class="header">
             {{inputMetaData.input_meta_name || '--'}}
@@ -41,8 +40,8 @@
                     class="form-edit-input"
                     :cancelable="false"
                 >
-                    <FRadio :value="true">是</FRadio>
-                    <FRadio :value="false">否</FRadio>
+                    <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.否')}}</FRadio>
                 </FRadioGroup>
                 <span class="form-preview-label">{{inputMetaData.field_multiple_choice ? '是' : '否'}}</span>
             </FFormItem>
@@ -57,8 +56,8 @@
                     class="form-edit-input"
                     :cancelable="false"
                 >
-                    <FRadio :value="true">是</FRadio>
-                    <FRadio :value="false">否</FRadio>
+                    <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.否')}}</FRadio>
                 </FRadioGroup>
                 <span class="form-preview-label">{{inputMetaData.whether_new_value ? '是' : '否'}}</span>
             </FFormItem>
@@ -137,7 +136,7 @@
         </FForm>
         <div v-if="inputMetaData.input_type !== 29 && mode !== 'view'" class="more">
             <div @click="() => (expanded = !expanded)">
-                <span>{{expanded ? '收起' : '展开'}}</span>
+                <span>{{expanded ? $t('_.收起') : $t('_.展开')}}</span>
                 <UpOutlined v-if="expanded" />
                 <DownOutlined v-else />
             </div>
@@ -145,6 +144,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     useI18n,
 } from '@fesjs/fes';
@@ -235,7 +235,7 @@ const inputMetaRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择占位符名称',
+            message: $t('_.请选择占位符名称'),
         },
     ],
 };
@@ -251,6 +251,7 @@ const valid = async () => {
 };
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .wrap {

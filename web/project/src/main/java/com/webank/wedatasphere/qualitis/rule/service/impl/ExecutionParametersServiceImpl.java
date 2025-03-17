@@ -524,7 +524,9 @@ public class ExecutionParametersServiceImpl implements ExecutionParametersServic
             Map<String, String> map = new HashMap<>();
             for (String pair : executionParam.split(SpecCharEnum.DIVIDER.getValue())) {
                 String[] parts = pair.split(type);
-
+                if (parts.length != QualitisConstants.LENGTH_TWO) {
+                    continue;
+                }
                 if (!map.containsKey(parts[0])) {
                     map.put(parts[0], parts[1]);
                 } else {

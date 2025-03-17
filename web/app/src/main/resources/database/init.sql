@@ -5,12 +5,12 @@
 CREATE TABLE `qualitis_abnormal_data_record_info` (
   `rule_id` bigint(20) NOT NULL,
   `rule_name` varchar(600) NOT NULL,
-  `rule_detail` varchar(500) NOT NULL,
-  `datasource` varchar(20) NOT NULL,
+  `rule_detail` varchar(1000) NOT NULL,
+  `datasource` varchar(20) DEFAULT 'hive',
   `db_name` varchar(100) NOT NULL,
   `table_name` varchar(100) NOT NULL,
   `dept` varchar(255) NOT NULL,
-  `sub_system_id` int(20) NOT NULL,
+  `sub_system_id` varchar(25) NOT NULL,
   `execute_num` int(10) NOT NULL,
   `event_num` int(10) NOT NULL,
   `record_date` varchar(25) NOT NULL,
@@ -24,15 +24,15 @@ CREATE TABLE `qualitis_abnormal_data_record_info` (
 CREATE TABLE `qualitis_alarm_info` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `alarm_level` varchar(1) COLLATE utf8_bin DEFAULT NULL,
-  `alarm_reason` text COLLATE utf8_bin,
+  `alarm_reason` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `alarm_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
   `alarm_type` int(11) DEFAULT NULL,
   `application_id` varchar(40) COLLATE utf8_bin DEFAULT NULL,
   `begin_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
   `end_time` varchar(20) COLLATE utf8_bin DEFAULT NULL,
   `task_id` int(11) DEFAULT NULL,
-  `username` varchar(50) COLLATE utf8_bin DEFAULT NULL,
-  `project_name` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
+  `username` varchar(200) COLLATE utf8_bin DEFAULT NULL,
+  `project_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
@@ -42,12 +42,12 @@ CREATE TABLE `qualitis_alarm_info` (
 CREATE TABLE `qualitis_alert_config` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `topic` varchar(500) NOT NULL,
-  `info_receiver` varchar(500) NOT NULL,
-  `major_receiver` varchar(500) DEFAULT NULL,
+  `default_receiver` varchar(500) NOT NULL,
+  `advanced_receiver` varchar(500) DEFAULT NULL,
   `alert_table` varchar(500) NOT NULL,
   `filter` varchar(1000) DEFAULT NULL,
   `alert_col` varchar(50) NOT NULL,
-  `major_alert_col` varchar(50) DEFAULT NULL,
+  `advanced_alert_col` varchar(500) DEFAULT NULL,
   `content_cols` varchar(1000) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL,
   `create_time` varchar(25) DEFAULT NULL,
@@ -59,6 +59,10 @@ CREATE TABLE `qualitis_alert_config` (
   `work_flow_name` varchar(180) DEFAULT NULL,
   `node_name` varchar(180) DEFAULT NULL,
   `work_flow_space` varchar(500) DEFAULT NULL,
+  `default_alert_level` int(4) DEFAULT NULL COMMENT '默认告警级别',
+  `default_alert_ways` varchar(10) DEFAULT NULL COMMENT '默认告警方式(多个按逗号,分隔)',
+  `advanced_alert_level` int(4) DEFAULT NULL COMMENT '高等级告警级别',
+  `advanced_alert_ways` varchar(10) DEFAULT NULL COMMENT '高等级告警方式(多个按逗号,分隔)',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -105,7 +109,7 @@ CREATE TABLE `qualitis_application` (
   `set_flag` varchar(255) DEFAULT NULL,
   `startup_param` varchar(255) DEFAULT NULL,
   `application_comment` int(11) DEFAULT NULL,
-  `project_name` varchar(100) DEFAULT NULL,
+  `project_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `rule_group_name` varchar(100) DEFAULT NULL,
   `rule_datasource` varchar(3000) DEFAULT '',
   `job_id` varchar(50) DEFAULT NULL,
@@ -115,9 +119,12 @@ CREATE TABLE `qualitis_application` (
   `node_name` varchar(50) DEFAULT NULL,
   `execution_param_json` varchar(1000) DEFAULT NULL,
   `tenant_user_name` varchar(20) DEFAULT NULL,
-  `sub_system_id` bigint(20) DEFAULT NULL,
+  `sub_system_id` varchar(25) DEFAULT NULL,
   `rule_names` text,
   `engine_reuse` bit(1) DEFAULT b'1',
+  `env_names` varchar(1000) DEFAULT NULL COMMENT '指定执行的环境名称',
+  `run_today` varchar(25) DEFAULT NULL,
+  `collect_ids` text,
   PRIMARY KEY (`id`),
   KEY `index_status_for_check` (`status`),
   KEY `idx_qualitis_application_jobid_submit_time` (`job_id`,`submit_time`)
@@ -141,6 +148,7 @@ CREATE TABLE `qualitis_application_error_code_type` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
   `linkis_error_code` varchar(128) DEFAULT NULL COMMENT '异常code',
   `application_comment` int(11) DEFAULT NULL COMMENT 'Application comment',
+  `wtss_error_expression` varchar(128) DEFAULT NULL COMMENT 'WTSS侧返回的异常信息匹配表达式',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='linkis失败任务错误码映射';
 
@@ -162,8 +170,10 @@ CREATE TABLE `qualitis_application_task_result` (
   `env_name` varchar(255) DEFAULT '',
   `compare_value` varchar(255) DEFAULT NULL,
   `denoising_value` bit(1) DEFAULT b'0',
+  `task_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `application_id_rule_id` (`application_id`,`rule_id`)
+  KEY `application_id_rule_id` (`application_id`,`rule_id`),
+  KEY `rule_run_date_rule_metric_env_name` (`rule_id`,`run_date`,`rule_metric_id`,`env_name`,`save_result`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -173,7 +183,7 @@ CREATE TABLE `qualitis_auth_data_visibility` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `table_data_id` bigint(20) DEFAULT NULL COMMENT '表主键ID',
   `table_data_type` varchar(20) DEFAULT NULL COMMENT '表数据类型',
-  `department_sub_id` bigint(20) DEFAULT NULL COMMENT '科室ID',
+  `department_sub_id` bigint(20) DEFAULT NULL COMMENT '科室编码',
   `department_sub_name` varchar(30) DEFAULT NULL COMMENT '科室名称',
   PRIMARY KEY (`id`),
   KEY `idx_table_data_id_type` (`table_data_id`,`table_data_type`) USING BTREE,
@@ -188,16 +198,15 @@ CREATE TABLE `qualitis_auth_department` (
   `name` varchar(30) COLLATE utf8_bin DEFAULT NULL,
   `department_code` varchar(255) COLLATE utf8_bin DEFAULT NULL,
   `tenant_user_id` bigint(20) DEFAULT NULL,
-  `source_type` int(4) DEFAULT NULL COMMENT '',
-  `parent_id` bigint(20) DEFAULT NULL COMMENT '',
   `create_user` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '创建时间',
   `modify_user` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '修改用户',
   `modify_time` varchar(50) COLLATE utf8_bin DEFAULT NULL COMMENT '修改时间',
+  `source_type` int(4) DEFAULT NULL COMMENT '部门来源（0-HR系统，1-自定义）',
+  `parent_id` bigint(20) DEFAULT NULL COMMENT '父级部门ID。若该值存在，说明是科室；否则是部门',
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_tem0temhxj86cdqpep31q1iaa` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
 
 -- qualitis_auth_list definition
 
@@ -207,20 +216,32 @@ CREATE TABLE `qualitis_auth_list` (
   PRIMARY KEY (`app_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-
 -- qualitis_auth_permission definition
 
 CREATE TABLE `qualitis_auth_permission` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `method` varchar(6) DEFAULT NULL,
   `url` varchar(100) DEFAULT NULL,
+  `res_code` varchar(100) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) DEFAULT NULL COMMENT '创建时间',
   `modify_user` varchar(50) DEFAULT NULL COMMENT '修改用户',
   `modify_time` varchar(50) DEFAULT NULL COMMENT '修改时间',
+  `cn_name` varchar(180) DEFAULT NULL,
+  `en_name` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE `qualitis_linkis_datasource_env` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `linkis_data_source_id` bigint(20) NOT NULL,
+  `env_id` bigint(20) NOT NULL,
+  `env_name` varchar(100) DEFAULT NULL,
+  `dcn_num` varchar(100) DEFAULT NULL,
+  `logic_area` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uni_env_id` (`env_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4;
 
 -- qualitis_auth_tenant definition
 
@@ -272,7 +293,7 @@ CREATE TABLE `qualitis_config_cluster_info` (
 CREATE TABLE `qualitis_config_system` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `key_name` varchar(50) DEFAULT NULL,
-  `value` varchar(200) DEFAULT NULL,
+  `value` varchar(5000) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_665kcle6t77m5lbm48gohcyyg` (`key_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -322,6 +343,7 @@ CREATE TABLE `qualitis_linkis_datasource` (
   `input_type` int(4) DEFAULT NULL COMMENT '录入方式（1-手动，2-自动）',
   `verify_type` int(4) DEFAULT NULL COMMENT '认证方式（1-共享，2-非共享）',
   `version_id` bigint(5) DEFAULT NULL COMMENT '数据源版本号',
+  `dcn_range_type` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='linkis数据源映射表';
 
@@ -409,20 +431,21 @@ CREATE TABLE `qualitis_project` (
   `create_user` varchar(50) DEFAULT NULL,
   `create_user_full_name` varchar(50) DEFAULT NULL,
   `create_time` varchar(25) DEFAULT NULL,
-  `description` varchar(1700) DEFAULT NULL,
-  `name` varchar(170) DEFAULT NULL,
+  `description` varchar(1700) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(170) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `project_type` int(11) DEFAULT NULL,
   `department` varchar(50) DEFAULT NULL,
   `modify_user` varchar(50) DEFAULT NULL,
   `modify_time` varchar(25) DEFAULT NULL,
-  `cn_name` varchar(170) DEFAULT NULL,
-  `sub_system_id` bigint(20) DEFAULT NULL,
+  `cn_name` varchar(170) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sub_system_id` varchar(25) DEFAULT NULL,
   `sub_system_name` varchar(25) DEFAULT NULL,
   `git_type` int(5) DEFAULT NULL,
   `git_repo` varchar(500) DEFAULT NULL,
   `git_branch` varchar(100) DEFAULT NULL,
   `git_root_dir` varchar(500) DEFAULT NULL,
   `modify_user_full_name` varchar(50) DEFAULT NULL,
+  `run_status` int(11) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -483,7 +506,7 @@ CREATE TABLE `qualitis_rule_metric` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `name` varchar(512) NOT NULL,
   `metric_desc` varchar(500) DEFAULT NULL,
-  `sub_system_id` int(20) DEFAULT NULL,
+  `sub_system_id` varchar(25) DEFAULT NULL,
   `department_name` varchar(30) DEFAULT NULL,
   `metric_level` int(5) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL,
@@ -538,24 +561,9 @@ CREATE TABLE `qualitis_scheduled_operate_history` (
   `error_message` varchar(1000) DEFAULT NULL COMMENT '错误原因',
   `create_user` varchar(30) DEFAULT NULL COMMENT '发布人',
   `create_time` varchar(30) DEFAULT NULL COMMENT '发布时间',
+  `workflow_business_name` varchar(120) DEFAULT NULL COMMENT '应用信息模板name',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
--- qualitis_scheduled_project_history definition
-
-CREATE TABLE `qualitis_scheduled_project_history` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `scheduled_project_id` bigint(20) DEFAULT NULL,
-  `approve_number` varchar(100) DEFAULT NULL COMMENT '审批单号',
-  `release_user` varchar(30) DEFAULT NULL,
-  `create_time` varchar(30) DEFAULT NULL,
-  `create_user` varchar(30) DEFAULT NULL,
-  `scheduled_project_name` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `qualitis_scheduled_project_history_FK` (`scheduled_project_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='调度项目变更记录表';
-
 
 -- qualitis_service definition
 
@@ -565,6 +573,7 @@ CREATE TABLE `qualitis_service` (
   `updating_application_num` bigint(10) DEFAULT NULL,
   `status` int(10) NOT NULL DEFAULT '1',
   `tenant_user_id` bigint(20) DEFAULT NULL,
+  `collect_status` int(10) NOT NULL DEFAULT '1',
   `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
   `create_time` varchar(50) DEFAULT NULL COMMENT '创建时间',
   `modify_user` varchar(50) DEFAULT NULL COMMENT '修改用户',
@@ -573,6 +582,16 @@ CREATE TABLE `qualitis_service` (
   UNIQUE KEY `UNI_IP` (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE `qualitis_subscribe_operate_report_associated_projects` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `project_id` bigint(20) DEFAULT NULL,
+  `operate_report_id` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FKSubscribeOpeateReport` (`project_id`),
+  KEY `FKAssociatedProjectsId` (`operate_report_id`),
+  CONSTRAINT `FKSubscribeOpeateReport` FOREIGN KEY (`project_id`) REFERENCES `qualitis_project` (`id`),
+  CONSTRAINT `FKAssociatedProjectsId` FOREIGN KEY (`operate_report_id`) REFERENCES `qualitis_subscribe_operate_report` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='订阅运营报表关联项目表';
 
 -- qualitis_standard_value definition
 
@@ -622,7 +641,50 @@ CREATE TABLE `qualitis_standard_value_user_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
--- qualitis_task_new_value definition
+-- qualitis_gzpc_bdp_sit_01.qualitis_standard_value_variables definition
+
+CREATE TABLE `qualitis_standard_value_variables` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `rule_id` bigint(20) NOT NULL,
+  `standard_value_version_id` bigint(20) DEFAULT NULL,
+  `standard_value_version_en_name` varchar(128) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- qualitis_gzpc_bdp_sit_01.qualitis_subscribe_operate_report definition
+
+CREATE TABLE `qualitis_subscribe_operate_report` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `receiver` varchar(255) DEFAULT NULL,
+  `execution_frequency` int(11) DEFAULT NULL,
+  `create_user` varchar(50) DEFAULT NULL,
+  `create_time` varchar(25) DEFAULT NULL,
+  `modify_user` varchar(50) DEFAULT NULL,
+  `modify_time` varchar(25) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='订阅运营报表';
+
+
+-- qualitis_gzpc_bdp_sit_01.qualitis_subscription_record definition
+
+CREATE TABLE `qualitis_subscription_record` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+  `project_id` bigint(20) DEFAULT NULL COMMENT '项目id',
+  `execution_frequency` int(11) DEFAULT NULL COMMENT '执行频率',
+  `configured_rules_table_num` bigint(20) DEFAULT NULL COMMENT '已配置规则的表数量',
+  `configured_rules_num` bigint(20) DEFAULT NULL COMMENT '已配置规则数量',
+  `configured_rules_kpi_table_num` bigint(20) DEFAULT NULL COMMENT '已配置规则的KPI表数量',
+  `configured_rules_kpi_num` bigint(20) DEFAULT NULL COMMENT 'KPI表已配置规则数量',
+  `scheduling_rules` bigint(20) DEFAULT NULL COMMENT '在调度监控的规则数',
+  `pass_rules` bigint(20) DEFAULT NULL COMMENT '通过校验规则数',
+  `no_pass_rules` bigint(20) DEFAULT NULL COMMENT '未通过校验规则数 ',
+  `fail_rules` bigint(20) DEFAULT NULL COMMENT '失败规则数 ',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='运营推送记录表';
+
+
+-- qualitis_gzpc_bdp_sit_01.qualitis_task_new_value definition
 
 CREATE TABLE `qualitis_task_new_value` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -724,9 +786,13 @@ CREATE TABLE `qualitis_application_task` (
   `progress` double DEFAULT NULL,
   `task_comment` int(11) DEFAULT NULL,
   `running_time` bigint(20) DEFAULT NULL,
+  `collect_ids` text,
+  `data_size` varchar(100) DEFAULT NULL,
+  `retry` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK8vt8tfuq1jlqofdsl2bfx602d` (`application_id`),
   KEY `task_remote_id_cluster_id` (`task_remote_id`,`cluster_id`),
+  KEY `index_status_for_check` (`status`),
   CONSTRAINT `FK8vt8tfuq1jlqofdsl2bfx602d` FOREIGN KEY (`application_id`) REFERENCES `qualitis_application` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -736,7 +802,7 @@ CREATE TABLE `qualitis_application_task` (
 CREATE TABLE `qualitis_application_task_datasource` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(100) DEFAULT NULL,
-  `col_name` varchar(1000) DEFAULT NULL,
+  `col_name` varchar(20000) DEFAULT NULL,
   `create_user` varchar(150) DEFAULT NULL,
   `database_name` varchar(100) DEFAULT NULL,
   `datasource_index` int(11) DEFAULT NULL,
@@ -746,7 +812,8 @@ CREATE TABLE `qualitis_application_task_datasource` (
   `task_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `datasource_type` int(11) DEFAULT '1',
-  `sub_system_id` bigint(20) DEFAULT NULL,
+  `sub_system_id` varchar(25) DEFAULT NULL,
+  `filter` mediumtext,
   PRIMARY KEY (`id`),
   KEY `FKeru6qjd5gwkkm1a58g290g18o` (`task_id`),
   KEY `idx_cluster_name` (`cluster_name`) USING BTREE,
@@ -765,6 +832,7 @@ CREATE TABLE `qualitis_application_task_result_status` (
   `status` int(2) DEFAULT NULL COMMENT '1-通过校验，2-未通过校验，3-未校验',
   PRIMARY KEY (`id`),
   KEY `qualitis_application_task_result_status_FK` (`task_result_id`),
+  KEY `application_id_rule_id_status` (`application_id`,`rule_id`,`status`),
   CONSTRAINT `qualitis_application_task_result_status_FK` FOREIGN KEY (`task_result_id`) REFERENCES `qualitis_application_task_result` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -778,7 +846,7 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `mid_table_name` varchar(300) DEFAULT NULL,
   `project_creator` varchar(50) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
-  `project_name` varchar(170) DEFAULT NULL,
+  `project_name` varchar(170) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
   `rule_name` varchar(200) DEFAULT NULL,
   `rule_type` int(11) DEFAULT NULL,
@@ -786,12 +854,14 @@ CREATE TABLE `qualitis_application_task_rule_simple` (
   `task_id` bigint(20) DEFAULT NULL,
   `rule_group_name` varchar(255) DEFAULT NULL,
   `delete_fail_check_result` bit(1) DEFAULT b'1',
-  `rule_detail` varchar(340) DEFAULT NULL,
+  `rule_detail` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `template_name` varchar(200) DEFAULT NULL,
   `cn_name` varchar(128) DEFAULT NULL,
-  `project_cn_name` varchar(128) DEFAULT NULL,
+  `project_cn_name` varchar(170) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `alert_level` int(11) DEFAULT NULL,
   `alert_receiver` varchar(100) DEFAULT '',
+  `template_en_name` varchar(300) DEFAULT NULL,
+  `reg_rule_code` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK8nr2cvnqp4pg0q2ftp26v0wnw` (`task_id`),
   CONSTRAINT `FK8nr2cvnqp4pg0q2ftp26v0wnw` FOREIGN KEY (`task_id`) REFERENCES `qualitis_application_task` (`id`)
@@ -871,18 +941,18 @@ CREATE TABLE `qualitis_auth_role_permission` (
 
 CREATE TABLE `qualitis_auth_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `chinese_name` varchar(255) DEFAULT NULL,
-  `department` varchar(255) DEFAULT NULL,
-  `password` varchar(64) DEFAULT NULL,
-  `username` varchar(30) DEFAULT NULL,
+  `chinese_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department` varchar(255) CHARACTER SET utf8 DEFAULT NULL,
+  `password` varchar(64) CHARACTER SET utf8 DEFAULT NULL,
+  `username` varchar(30) CHARACTER SET utf8 DEFAULT NULL,
   `department_id` bigint(20) DEFAULT NULL,
-  `user_config_json` mediumtext COMMENT '用户配置',
   `sub_department_code` bigint(20) DEFAULT NULL,
-  `bdp_client_token` varchar(2000) DEFAULT NULL,
-  `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
-  `create_time` varchar(50) DEFAULT NULL COMMENT '创建时间',
-  `modify_user` varchar(50) DEFAULT NULL COMMENT '修改用户',
-  `modify_time` varchar(50) DEFAULT NULL COMMENT '修改时间',
+  `bdp_client_token` varchar(2000) CHARACTER SET utf8 DEFAULT NULL,
+  `create_user` varchar(50) CHARACTER SET utf8 DEFAULT NULL COMMENT '创建用户',
+  `create_time` varchar(50) CHARACTER SET utf8 DEFAULT NULL COMMENT '创建时间',
+  `modify_user` varchar(50) CHARACTER SET utf8 DEFAULT NULL COMMENT '修改用户',
+  `modify_time` varchar(50) CHARACTER SET utf8 DEFAULT NULL COMMENT '修改时间',
+  `user_config_json` mediumtext CHARACTER SET utf8 COMMENT '用户配置',
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_jsqqcjes14hjorfqihq8i10wr` (`username`),
   KEY `FKg2ayqqmqkqbbvvkehqj7fd6la` (`department_id`),
@@ -961,7 +1031,7 @@ CREATE TABLE `qualitis_auth_user_tenant_user` (
 
 CREATE TABLE `qualitis_execution_parameters` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) DEFAULT NULL,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `specify_static_startup_param` bit(1) DEFAULT b'0',
   `static_startup_param` varchar(2000) DEFAULT NULL,
   `abort_on_failure` bit(1) DEFAULT b'0',
@@ -993,6 +1063,7 @@ CREATE TABLE `qualitis_execution_parameters` (
   `concurrency_granularity` mediumtext,
   `engine_reuse` bit(1) DEFAULT b'0',
   `top_partition` varchar(2000) DEFAULT NULL,
+  `union_way` int(4) DEFAULT '0' COMMENT '聚合计算方式',
   PRIMARY KEY (`id`),
   UNIQUE KEY `qualitis_execution_parameters_name_IDX` (`name`,`project_id`) USING BTREE,
   KEY `qualitis_execution_parameters_FK` (`project_id`),
@@ -1058,8 +1129,8 @@ CREATE TABLE `qualitis_project_label` (
 CREATE TABLE `qualitis_project_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `permission` int(11) DEFAULT NULL,
-  `user_full_name` varchar(30) DEFAULT NULL,
-  `user_name` varchar(20) DEFAULT NULL,
+  `user_full_name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_name` varchar(20) CHARACTER SET utf8 DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `automatic_switch` bit(1) DEFAULT b'0',
   PRIMARY KEY (`id`),
@@ -1113,8 +1184,8 @@ CREATE TABLE `qualitis_scheduled_task` (
   `cluster_name` varchar(300) DEFAULT NULL,
   `dispatching_system_type` varchar(256) DEFAULT NULL,
   `wtss_project_name` varchar(100) DEFAULT NULL,
-  `wtss_work_flow_name` varchar(100) DEFAULT NULL,
-  `wtss_task_name` varchar(100) DEFAULT NULL,
+  `wtss_work_flow_name` varchar(300) DEFAULT NULL,
+  `wtss_task_name` varchar(300) DEFAULT NULL,
   `task_type` int(4) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `create_user` varchar(50) DEFAULT NULL,
@@ -1147,6 +1218,7 @@ CREATE TABLE `qualitis_scheduled_workflow` (
   `schedule_id` bigint(20) DEFAULT NULL COMMENT '第三方调度系统ID',
   `scheduled_type` varchar(10) DEFAULT NULL COMMENT 'interval-定时调度，signal-信号调度',
   `scheduled_signal_json` varchar(250) DEFAULT NULL COMMENT '调度信号',
+  `workflow_business_name` varchar(250) DEFAULT NULL COMMENT '应用信息模板name',
   PRIMARY KEY (`id`),
   KEY `qualitis_scheduled_workflow_FK` (`scheduled_project_id`),
   CONSTRAINT `qualitis_scheduled_workflow_FK` FOREIGN KEY (`scheduled_project_id`) REFERENCES `qualitis_scheduled_project` (`id`)
@@ -1264,10 +1336,12 @@ CREATE TABLE `qualitis_template` (
   `whether_solidification` bit(1) DEFAULT b'0',
   `template_number` varchar(128) DEFAULT NULL,
   `custom_zh_code` varchar(128) DEFAULT NULL,
+  `calcu_unit_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKampr04xxfhfqky18levn4svhb` (`create_user_id`),
   KEY `FKd8bp8wlgc9rslq4w3o4ha6w3m` (`modify_user_id`),
   KEY `qualitis_template_template_type_IDX` (`template_type`) USING BTREE,
+  KEY `template_en_name_index` (`en_name`),
   CONSTRAINT `FKampr04xxfhfqky18levn4svhb` FOREIGN KEY (`create_user_id`) REFERENCES `qualitis_auth_user` (`id`),
   CONSTRAINT `FKd8bp8wlgc9rslq4w3o4ha6w3m` FOREIGN KEY (`modify_user_id`) REFERENCES `qualitis_auth_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -1351,7 +1425,7 @@ CREATE TABLE `qualitis_template_statistic_input_meta` (
   `func_name` varchar(5) DEFAULT NULL,
   `name` varchar(200) DEFAULT NULL,
   `result_type` varchar(255) DEFAULT NULL,
-  `value` varchar(50) DEFAULT NULL,
+  `value` varchar(200) DEFAULT NULL,
   `value_type` int(11) DEFAULT NULL,
   `template_id` bigint(20) DEFAULT NULL,
   `pure_name` varchar(500) DEFAULT NULL,
@@ -1407,7 +1481,7 @@ CREATE TABLE `qualitis_alarm_arguments_execution_parameters` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `alarm_event` int(11) DEFAULT NULL,
   `alarm_level` int(11) DEFAULT NULL,
-  `alarm_receiver` varchar(2000) DEFAULT NULL,
+  `alarm_receiver` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `execution_parameters_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `qualitis_alarm_arguments_execution_parameters_FK` (`execution_parameters_id`),
@@ -1463,14 +1537,12 @@ CREATE TABLE `qualitis_rule` (
   `create_user` varchar(50) DEFAULT NULL,
   `modify_time` varchar(25) DEFAULT NULL,
   `modify_user` varchar(50) DEFAULT NULL,
-  `rule_metric_id` bigint(20) DEFAULT NULL,
-  `rule_metric_name` varchar(48) DEFAULT NULL,
   `delete_fail_check_result` bit(1) DEFAULT b'1',
   `specify_static_startup_param` bit(1) DEFAULT NULL,
   `static_startup_param` varchar(255) DEFAULT NULL,
-  `detail` varchar(1024) DEFAULT NULL,
+  `detail` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cn_name` varchar(128) DEFAULT NULL,
-  `bash_content` varchar(1000) DEFAULT NULL,
+  `bash_content` varchar(5000) DEFAULT NULL,
   `execution_parameters_name` varchar(128) DEFAULT NULL,
   `abnormal_database` varchar(100) DEFAULT NULL,
   `cluster` varchar(100) DEFAULT NULL,
@@ -1486,6 +1558,8 @@ CREATE TABLE `qualitis_rule` (
   `contrast_type` int(11) DEFAULT NULL,
   `work_flow_space` varchar(500) DEFAULT NULL,
   `node_name` varchar(180) DEFAULT NULL,
+  `union_way` int(4) DEFAULT '0' COMMENT '聚合计算方式',
+  `reg_rule_code` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FK7hv5yh1en46cfwxkqdmixyrn1` (`rule_group_id`),
   KEY `FKf769w3wjl2ywbue7hft6aq8c4` (`template_id`),
@@ -1528,10 +1602,10 @@ CREATE TABLE `qualitis_rule_datasource` (
   `cluster_name` varchar(100) DEFAULT '',
   `col_name` mediumtext,
   `datasource_index` int(11) DEFAULT NULL,
-  `db_name` varchar(100) DEFAULT NULL,
+  `db_name` varchar(200) DEFAULT '',
   `filter` varchar(3200) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
-  `table_name` varchar(100) DEFAULT NULL,
+  `table_name` varchar(200) DEFAULT '',
   `rule_id` bigint(20) DEFAULT NULL,
   `file_delimiter` varchar(255) DEFAULT NULL,
   `file_header` bit(1) DEFAULT NULL,
@@ -1548,13 +1622,15 @@ CREATE TABLE `qualitis_rule_datasource` (
   `datasource_type` int(11) DEFAULT '1',
   `black_col_name` bit(1) DEFAULT b'0',
   `rule_group_id` bigint(20) DEFAULT NULL,
-  `sub_system_id` bigint(20) DEFAULT NULL,
+  `sub_system_id` varchar(25) DEFAULT NULL,
   `department_name` varchar(100) DEFAULT NULL,
   `sub_system_name` varchar(25) DEFAULT NULL,
   `department_code` varchar(255) DEFAULT NULL,
   `dev_department_name` varchar(100) DEFAULT NULL,
   `tag_code` varchar(100) DEFAULT NULL,
   `tag_name` varchar(100) DEFAULT NULL,
+  `collect_sql` varchar(5000) DEFAULT NULL COMMENT '自定义字段一致性校验-指标采集SQL',
+  `dcn_range_type` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `FKcbr5lp3b6wuh669qglf3dnc6r` (`rule_id`),
   KEY `idx_cluster_db_table` (`cluster_name`,`db_name`,`table_name`),
@@ -1601,9 +1677,12 @@ CREATE TABLE `qualitis_rule_udf` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `udf_name` varchar(64) DEFAULT NULL,
   `rule_id` bigint(20) DEFAULT NULL,
+  `rule_datasource_id` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `qualitis_rule_udf_FK` (`rule_id`),
-  CONSTRAINT `qualitis_rule_udf_FK` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`)
+  KEY `qualitis_rule_udf_FK_1` (`rule_datasource_id`),
+  CONSTRAINT `qualitis_rule_udf_FK` FOREIGN KEY (`rule_id`) REFERENCES `qualitis_rule` (`id`),
+  CONSTRAINT `qualitis_rule_udf_FK_1` FOREIGN KEY (`rule_datasource_id`) REFERENCES `qualitis_rule_datasource` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -1612,7 +1691,7 @@ CREATE TABLE `qualitis_rule_udf` (
 CREATE TABLE `qualitis_rule_variable` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `cluster_name` varchar(50) DEFAULT NULL,
-  `db_name` varchar(50) DEFAULT NULL,
+  `db_name` varchar(200) DEFAULT NULL,
   `input_action_step` int(11) DEFAULT NULL,
   `origin_value` mediumtext,
   `table_name` varchar(200) DEFAULT NULL,
@@ -1659,6 +1738,29 @@ CREATE TABLE `qualitis_scheduled_signal` (
   CONSTRAINT `qualitis_scheduled_signal_FK` FOREIGN KEY (`scheduled_workflow_id`) REFERENCES `qualitis_scheduled_workflow` (`id`),
   CONSTRAINT `qualitis_scheduled_signal_FK_1` FOREIGN KEY (`scheduled_project_id`) REFERENCES `qualitis_scheduled_project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `qualitis_metric_ext` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `metric_id` bigint(20) NOT NULL COMMENT '指标id/采集配置id',
+  `metric_class` varchar(10) NOT NULL COMMENT '指标类别（ims-ims指标，rule-规则指标）',
+  `calculation_mode` varchar(10) DEFAULT NULL COMMENT 'offline-离线，realtime-实时',
+  `monitoring_capabilities` varchar(100) DEFAULT NULL COMMENT '完整性、准确性、一致性、及时性、可靠性和可用性',
+  `metric_definition` varchar(200) DEFAULT NULL COMMENT '指标口径（完整性的指标口径可以是记录的缺失率，准确性的指标口径可以是数据与已知预期值的偏差）',
+  `business_domain` varchar(200) DEFAULT NULL COMMENT '业务域',
+  `business_strategy` varchar(200) DEFAULT NULL COMMENT '业务策略',
+  `business_system` varchar(200) DEFAULT NULL COMMENT '业务系统',
+  `business_model` varchar(200) DEFAULT NULL COMMENT '业务模型',
+  `imsmetric_desc` varchar(200) DEFAULT NULL COMMENT '统计指标描述',
+  `create_user` varchar(50) DEFAULT NULL COMMENT '创建用户',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `modify_user` varchar(50) DEFAULT NULL COMMENT '修改用户',
+  `modify_time` datetime DEFAULT NULL COMMENT '修改时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_metric_id_and_class` (`metric_id`,`metric_class`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='指标信息拓展表'
+
+
+
 -- ddl end
 
 -- dml start

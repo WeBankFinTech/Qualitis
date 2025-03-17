@@ -8,18 +8,12 @@
             </template>
             <f-table-column :formatter="formatterEmptyValue" ellipsis prop="tenant_user_id" :label="$t('tenantManagePage.tenantUserId')" :width="102" />
             <f-table-column :formatter="formatterEmptyValue" ellipsis prop="tenant_user_name" :label="$t('tenantManagePage.tenantUserName')" :width="120" />
-            <f-table-column :formatter="formatterEmptyValue" ellipsis prop="tenant_user_members_num" label="成员数量" :width="88" />
+            <f-table-column :formatter="formatterEmptyValue" ellipsis prop="tenant_user_members_num" :label="$t('_.成员数量')" :width="88" />
             <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="176">
                 <ul class="btn-list">
-                    <li class="btn-item btn-link edit" @click="manage(row, $event)">
-                        成员管理
-                    </li>
-                    <li class="btn-item btn-link edit" @click="edit(row, $event)">
-                        编辑
-                    </li>
-                    <li class="btn-item btn-link del" @click="del(row, $event)">
-                        删除
-                    </li>
+                    <li class="btn-item btn-link edit" @click="manage(row, $event)">{{$t('_.成员管理')}}</li>
+                    <li class="btn-item btn-link edit" @click="edit(row, $event)">{{$t('_.编辑')}}</li>
+                    <li class="btn-item btn-link del" @click="del(row, $event)">{{$t('_.删除')}}</li>
                 </ul>
             </f-table-column>
         </f-table>
@@ -37,14 +31,14 @@
     </div>
     <FModal
         v-model:show="showModal"
-        title="新增租户"
+        :title="$t('_.新增租户')"
         displayDirective="if"
         :maskClosable="false"
         @ok="save"
         @cancel="cancel"
     >
         <FForm labelWidth="80px" labelPosition="right" style="padding: 20px 0 0;">
-            <FFormItem label="租户名" prop="tenant_user_name">
+            <FFormItem :label="$t('_.租户名')" prop="tenant_user_name">
                 <FInput v-model="tenantUserName" :placeholder="$t('common.pleaseEnter')" />
             </FFormItem>
         </FForm>
@@ -61,9 +55,7 @@
             <f-table-column :formatter="formatterEmptyValue" ellipsis prop="tenant_user_name" :label="$t('tenantManagePage.tenantUserName')" :width="192" />
             <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="132">
                 <ul class="btn-list">
-                    <li class="btn-item btn-link del" @click="delUser(row, $event)">
-                        删除
-                    </li>
+                    <li class="btn-item btn-link del" @click="delUser(row, $event)">{{$t('_.删除')}}</li>
                 </ul>
             </f-table-column>
         </f-table>

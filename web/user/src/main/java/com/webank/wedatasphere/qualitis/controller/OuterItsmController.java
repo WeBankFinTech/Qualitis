@@ -38,7 +38,7 @@ public class OuterItsmController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public RetResponse user(ItsmRequest request) {
-        LOGGER.info("Request body: {}", request.getData());
+        LOGGER.info("handle user action, request body: {}", request.getData());
 
         try {
             itsmService.handleUser(request);
@@ -53,11 +53,27 @@ public class OuterItsmController {
     }
 
     @POST
+    @Path("/role/action")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public RetResponse role(ItsmRequest request) {
+        LOGGER.info("handle role action, request body: {}", request.getData());
+        try {
+            itsmService.deleteUserRoles(request);
+        } catch (UnExpectedRequestException e) {
+            return new RetResponse(HttpServletResponse.SC_PRECONDITION_FAILED, e.getMessage(), null);
+        } catch (RoleNotFoundException e) {
+            return new RetResponse(HttpServletResponse.SC_FORBIDDEN, e.getMessage(), null);
+        }
+        return new RetResponse(null);
+    }
+
+    @POST
     @Path("/alert_whitelist/action")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public RetResponse alertWhitelist(ItsmRequest request) {
-        LOGGER.info("Request body: {}", request.getData());
+        LOGGER.info("handle alert_whitelist action, request body: {}", request.getData());
 
         try {
             itsmService.handleAlertWhitelist(request);

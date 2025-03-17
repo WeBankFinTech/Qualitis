@@ -54,9 +54,15 @@ public interface LoginService {
 
     /**
      * Add user and permission information into session
+     *
      * @param username
      * @param httpServletRequest
      */
     void addToSession(String username, HttpServletRequest httpServletRequest);
 
+    /**
+     * Add Dss Url To Session
+     * @param request
+     */
+    void addDssUrlToSession(HttpServletRequest request);
 }

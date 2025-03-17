@@ -29,12 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Month;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -67,7 +62,6 @@ public class PassUtil {
                 result = Double.parseDouble(taskResult.getValue());
             }
         } catch (NumberFormatException e) {
-            LOGGER.error("When value is not a number format, not pass it.");
             return false;
         }
         Date nowDate = new Date();
@@ -207,7 +201,8 @@ public class PassUtil {
             int year = localDateTime.getYear();
             Month month = localDateTime.getMonth();
             start = LocalDateTime.of(year, month.getValue(), 1, 0, 0, 0);
-            end = LocalDateTime.of(year, month.getValue(), month.maxLength(), 23, 59, 59);
+            YearMonth yearMonth = YearMonth.of(year, month);
+            end = LocalDateTime.of(year, month.getValue(), yearMonth.lengthOfMonth(), 23, 59, 59);
             startOfLast = LocalDateTime.of(year, 1, 1, 0, 0, 0);
             return specialTimeRingGrowth(start, end, startOfLast, taskResultDao, ruleId, ruleMetricId, applicationId, comparedValueMap);
         } else if (ringType.equals(CheckTemplateEnum.WEEK_RING_GROWTH.getCode())) {

@@ -64,12 +64,44 @@ public interface AddRequestBuilder {
     AddRequestBuilder updateDataSourceWithDcnNums(String dcnNums) throws Exception;
 
     /**
+     * Update source datasource with dcn nums
+     * @param dcnNums
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateSourceDataSourceWithDcnNums(String dcnNums) throws Exception;
+
+    /**
+     * Update target datasource with dcn nums
+     * @param dcnNums
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateTargetDataSourceWithDcnNums(String dcnNums) throws Exception;
+
+    /**
      * Update datasource with logic areas
      * @param logicAreas
      * @return
      * @throws Exception
      */
     AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception;
+
+    /**
+     * Update source datasource with logic areas
+     * @param logicAreas
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateSourceDataSourceWithLogicAreas(String logicAreas) throws Exception;
+
+    /**
+     * Update target datasource with logic areas
+     * @param logicAreas
+     * @return
+     * @throws Exception
+     */
+    AddRequestBuilder updateTargetDataSourceWithLogicAreas(String logicAreas) throws Exception;
 
     /**
      * Set basic info for param 8.
@@ -1094,4 +1126,129 @@ public interface AddRequestBuilder {
      * @throws UnExpectedRequestException
      */
     AddRequestBuilder envMapping(String envName, String dbAndTableName, String dbAliasName) throws UnExpectedRequestException;
+
+    /**
+     * Add creator
+     * @param createUser
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder createBy(String createUser);
+
+    /**
+     * add submit user
+     * @param executeUser
+     * @return
+     */
+    AddRequestBuilder submitBy(String executeUser);
+
+    /**
+     * add reg_rule_code for DGSM
+     * @param regRuleCode
+     * @return
+     */
+    AddRequestBuilder withRegRuleCode(String regRuleCode);
+
+    /**
+     * add en_name of standard value for replacing placeholder within rule description
+     * @param standardValueEnName
+     * @return
+     */
+    AddRequestBuilder withStandardValue(String standardValueEnName);
+
+    /**
+     * set datasource
+     * @param datasource
+     * @return
+     */
+    AddRequestBuilder setDatasource(String datasource) throws Exception;
+
+    AddRequestBuilder setSourceDatasource(String sourceDatasource) throws Exception;
+
+    AddRequestBuilder setTargetDatasource(String targetDatasource) throws Exception;
+
+    AddRequestBuilder setSourceDbAndTable(String sourceDbAndTable) throws Exception;
+
+    AddRequestBuilder setTargetDbAndTable(String targetDbAndTable) throws Exception;
+
+    AddRequestBuilder setSourceFilter(String sourceFilter) throws Exception;
+
+    AddRequestBuilder setTargetFilter(String targetFilter) throws Exception;
+
+    AddRequestBuilder setSourceSql(String sourceSql) throws Exception;
+
+    AddRequestBuilder setTargetSql(String targetSql) throws Exception;
+
+    /**
+     * set alertInfo
+     * @param alertInfo
+     * @return
+     */
+    AddRequestBuilder setAlert(String alertInfo) throws Exception;
+
+    /**
+     * set resource
+     * @param resource
+     * @return
+     */
+    AddRequestBuilder setResource(String resource);
+
+    /**
+     * set deleteFailCheckResult
+     * @param deleteFailCheckResult
+     * @return
+     */
+    AddRequestBuilder setDeleteFailCheckResult(boolean deleteFailCheckResult);
+
+    /**
+     * set uploadAbnormalValue
+     * @param uploadAbnormalValue
+     * @return
+     */
+    AddRequestBuilder setUploadAbnormalValue(boolean uploadAbnormalValue);
+
+    /**
+     * set mapping columns
+     * @param mappingCols
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder setMappingColumns(String mappingCols) throws UnExpectedRequestException;
+
+    /**
+     * set compare columns
+     * @param compareCols
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    AddRequestBuilder setCompareColumns(String compareCols) throws UnExpectedRequestException;
+
+    AddRequestBuilder setCustomMappingColumns(String mappingCols) throws UnExpectedRequestException;
+
+    AddRequestBuilder setCustomCompareColumns(String compareCols) throws UnExpectedRequestException;
+
+    /**
+     * set uploadRuleMetricValue
+     * @param uploadRuleMetricValue
+     * @return
+     */
+    AddRequestBuilder setUploadRuleMetricValue(boolean uploadRuleMetricValue);
+
+    /**
+     * set abortonFailure
+     * @param abortonFailure
+     * @return
+     */
+    AddRequestBuilder setAbortonFailure(boolean abortonFailure);
+
+    /**
+     * set cluster
+     * @param clusterName
+     * @return
+     */
+    AddRequestBuilder setCluster(String clusterName);
+
+    AddRequestBuilder setSourceCluster(String clusterName);
+
+    AddRequestBuilder setTargetCluster(String clusterName);
 }

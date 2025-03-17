@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 import java.util.Objects;
-import org.codehaus.jackson.annotate.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author howeye
@@ -152,5 +152,20 @@ public class RuleDataSourceMapping {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "RuleDataSourceMapping{" +
+                "leftStatement='" + leftStatement + '\'' +
+                ", operation=" + operation +
+                ", rightStatement='" + rightStatement + '\'' +
+                ", leftColumnNames='" + leftColumnNames + '\'' +
+                ", rightColumnNames='" + rightColumnNames + '\'' +
+                ", leftColumnTypes='" + leftColumnTypes + '\'' +
+                ", rightColumnTypes='" + rightColumnTypes + '\'' +
+                ", mappingType=" + mappingType +
+                ", rule=" + rule.getId() +
+                '}';
     }
 }

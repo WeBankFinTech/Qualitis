@@ -1,10 +1,9 @@
 <template>
     <div class="wrap">
         <div class="header">
-            信号{{index}}
+            {{$t('_.信号')}}{{index}}
             <span v-if="mode !== 'view'" class="delete-btn" @click="deleteSign">
-                <MinusCircleOutlined style="margin-right: 4.67px;" />删除
-            </span>
+                <MinusCircleOutlined style="margin-right: 4.67px;" />{{$t('_.删除')}}</span>
         </div>
         <FForm
             ref="signForm"
@@ -15,11 +14,11 @@
             :model="signData"
             :rules="mode !== 'view' ? signRules : []"
         >
-            <FFormItem label="信号名称" :labelWidth="80" prop="name">
-                <FInput v-model="signData.name" class="form-edit-input" placeholder="请输入" />
+            <FFormItem :label="$t('_.信号名称')" :labelWidth="80" prop="name">
+                <FInput v-model="signData.name" class="form-edit-input" :placeholder="$t('_.请输入')" />
                 <span class="form-preview-label">{{signData.name}}</span>
             </FFormItem>
-            <FFormItem label="信号类型" :labelWidth="80" prop="signType">
+            <FFormItem :label="$t('_.信号类型')" :labelWidth="80" prop="signType">
                 <FSelect
                     v-model="signData.signType"
                     class="form-edit-input"
@@ -45,7 +44,7 @@
                         <FInput
                             v-model="signData.rmbTargetDcn"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.rmbTargetDcn}}</span>
                     </FFormItem>
@@ -53,7 +52,7 @@
                         <FInput
                             v-model="signData.rmbServiceId"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.rmbServiceId}}</span>
                     </FFormItem>
@@ -61,7 +60,7 @@
                         <FInput
                             v-model="signData.rmbEnvironment"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.rmbEnvironment}}</span>
                     </FFormItem>
@@ -69,7 +68,7 @@
                         <FInput
                             v-model="signData.rmbMessage"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.rmbMessage}}</span>
                     </FFormItem>
@@ -77,7 +76,7 @@
                         <FInput
                             v-model="signData.rmbMessageType"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.rmbMessageType}}</span>
                     </FFormItem>
@@ -105,7 +104,7 @@
                         <FInput
                             v-model="signData.msgSender"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgSender}}</span>
                     </FFormItem>
@@ -117,7 +116,7 @@
                         <FInput
                             v-model="signData.msgReceiver"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgReceiver}}</span>
                     </FFormItem>
@@ -125,7 +124,7 @@
                         <FInput
                             v-model="signData.msgTopic"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgTopic}}</span>
                     </FFormItem>
@@ -133,7 +132,7 @@
                         <FInput
                             v-model="signData.msgName"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgName}}</span>
                     </FFormItem>
@@ -141,7 +140,7 @@
                         <FInput
                             v-model="signData.msgKey"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgKey}}</span>
                     </FFormItem>
@@ -149,7 +148,7 @@
                         <FInput
                             v-model="signData.msgBody"
                             class="form-edit-input"
-                            placeholder="请输入"
+                            :placeholder="$t('_.请输入')"
                         />
                         <span class="form-preview-label">{{signData.msgBody}}</span>
                     </FFormItem>
@@ -159,7 +158,7 @@
                         v-model="signData.streamTask"
                         class="form-edit-input"
                         :options="taskList"
-                        placeholder="请选择，如不选择则默认关联当前工作流下所有任务"
+                        :placeholder="$t('_.请选择，如不选择则默认关联当前工作流下所有任务')"
                         multiple
                         @change="onTaskChange"
                     ></FSelect>
@@ -177,9 +176,14 @@
     </div>
 </template>
 <script setup>
+import { useI18n } from '@fesjs/fes';
+
 import { computed, ref, watch } from 'vue';
 import { getLabelByValue } from '@/common/utils';
 import { MinusCircleOutlined } from '@fesjs/fes-design/es/icon';
+
+
+const { t: $t } = useI18n();
 
 
 // eslint-disable-next-line no-undef
@@ -220,9 +224,9 @@ const currentSignData = computed({
     },
 });
 const signTypeList = [
-    { label: '接收信号', value: 1 },
-    { label: '发送WTSS内部信号', value: 6 },
-    { label: '发送RMB信号', value: 7 },
+    { label: $t('_.接收信号'), value: 1 },
+    { label: $t('_.发送WTSS内部信号'), value: 6 },
+    { label: $t('_.发送RMB信号'), value: 7 },
 ];
 const signForm = ref(null);
 const signRules = {
@@ -231,14 +235,14 @@ const signRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择信号类型',
+            message: $t('_.请选择信号类型'),
         },
     ],
     name: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入信号名称',
+            message: $t('_.请输入信号名称'),
         },
     ],
 
@@ -314,6 +318,7 @@ const valid = async () => {
 
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .wrap {

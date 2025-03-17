@@ -14,13 +14,11 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.CompareTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.InputActionStepEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceDao;
 import com.webank.wedatasphere.qualitis.rule.dao.LinkisDataSourceEnvDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
-import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
-import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
-import com.webank.wedatasphere.qualitis.rule.entity.Template;
-import com.webank.wedatasphere.qualitis.rule.entity.TemplateMidTableInputMeta;
+import com.webank.wedatasphere.qualitis.rule.entity.*;
 import com.webank.wedatasphere.qualitis.rule.request.AbstractCommonRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.request.AlarmConfigRequest;
@@ -31,6 +29,7 @@ import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import com.webank.wedatasphere.qualitis.rule.service.LinkisDataSourceEnvService;
 import com.webank.wedatasphere.qualitis.rule.util.DatasourceEnvUtil;
 import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +57,13 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     private String userName;
 
     private String proxyUser;
+
+    private String regxOrRangeOrEnum;
+    private String condition1;
+    private String condition2;
+
+    private Long standardValueVersionId;
+    private List<TemplateArgumentRequest> templateArgumentRequests;
 
     private LinkisConfig linkisConfig;
 
@@ -167,6 +173,16 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
+    }
+
     private void resetDatasourceEnv(List<LinkisDataSourceEnv> linkisDataSourceEnvs, String rangeType) {
         List<DataSourceRequest> dataSourceRequests = this.addRuleRequest.getDatasource();
         List<DataSourceEnvRequest> dataSourceEnvRequests = new ArrayList<>(linkisDataSourceEnvs.size());
@@ -198,6 +214,16 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return this;
+    }
+
     private void initAlarm(List<AlarmConfigRequest> alarmVariable, boolean uploadRuleMetricValue, boolean uploadAbnormalValue) {
         addRuleRequest.setAlarm(true);
         AlarmConfigRequest alarmConfigRequest = new AlarmConfigRequest();
@@ -209,8 +235,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         alarmConfigRequest.setThreshold(0.0);
         alarmVariable.add(alarmConfigRequest);
 
-        setUploadRuleMetricValue(uploadRuleMetricValue);
-        setUploadAbnormalValue(uploadAbnormalValue);
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+        this.uploadAbnormalValue = uploadAbnormalValue;
         addRuleRequest.setAlarmVariable(alarmVariable);
         addRuleRequest.setUploadAbnormalValue(uploadAbnormalValue);
         addRuleRequest.setUploadRuleMetricValue(uploadRuleMetricValue);
@@ -258,10 +284,8 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         DataSourceRequest dataSourceRequest = new DataSourceRequest();
         String clusterName, database, table, col, filter;
 
-        String[] datasourceStrs = datasource.split(SpecCharEnum.COLON.getValue());
-        if (datasourceStrs.length > TWO) {
-            throw new UnExpectedRequestException("Datasource param is illegle");
-        }
+        String[] datasourceStrs = datasource.split(SpecCharEnum.COLON.getValue(), TWO);
+
         StringBuilder dbAndTable = new StringBuilder(datasourceStrs[0]);
 
         StringBuilder dataSourceId = new StringBuilder();
@@ -317,6 +341,9 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         dataSourceRequest.setDataSourceEnvRequests(dataSourceEnvRequests);
         dataSourceRequest.setLinkisDataSourceType(dataSourceType.toString());
         dataSourceRequest.setLinkisDataSourceName(dataSourceName.toString());
+        if (StringUtils.isBlank(dataSourceType.toString())) {
+            dataSourceRequest.setType(TemplateDataSourceTypeEnum.HIVE.getMessage());
+        }
         // For one or more fields
         if (StringUtils.isBlank(col)) {
             LOGGER.info("Table count check.");
@@ -455,7 +482,7 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
     public AddRequestBuilder basicInfoWithDataSource(String cluster, String datasource, String param1, String param2, boolean deleteFailCheckResult,
                                                      boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
-        return null;
+        return this;
     }
 
     @Override
@@ -1835,6 +1862,125 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder createBy(String createUser) {
+        addRuleRequest.setActualCreateUser(createUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder submitBy(String submitUser) {
+        addRuleRequest.setActualExecutionUser(submitUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withRegRuleCode(String regRuleCode) {
+        addRuleRequest.setRegRuleCode(regRuleCode);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withStandardValue(String standardValueEnName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDatasource(String datasource) throws Exception {
+        // Datasource
+        solveDatasource(datasource);
+
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+
+        if (CollectionUtils.isNotEmpty(templateArgumentRequests)) {
+            addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
+            if (standardValueVersionId != null) {
+                addRuleRequest.setStandardValueVersionId(standardValueVersionId);
+            }
+        } else {
+            List<TemplateArgumentRequest> templateArgumentRequests = new ArrayList<>();
+            if (StringUtils.isBlank(regxOrRangeOrEnum) && StringUtils.isBlank(condition1) && StringUtils.isBlank(condition2)) {
+                addRuleRequest.setTemplateArgumentRequests(templateArgumentRequests);
+            } else if (StringUtils.isNotBlank(regxOrRangeOrEnum)) {
+                templateArgumentSetting(templateArgumentRequests, regxOrRangeOrEnum);
+            } else if (StringUtils.isNotBlank(condition1) && StringUtils.isNotBlank(condition2)) {
+                templateArgumentSetting(templateArgumentRequests, condition1, condition2);
+            }
+        }
+
+        // Task running info.
+        taskSetting(false, false, null);
+
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+        initAlarm(alarmVariable, false, false);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDatasource(String sourceDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDatasource(String targetDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDbAndTable(String sourceDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDbAndTable(String targetDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceFilter(String sourceFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetFilter(String targetFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceSql(String sourceSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetSql(String targetSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAlert(String alertInfo) throws Exception {
+        alertSetting(alertInfo);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setResource(String resource) {
+        if (StringUtils.isNotBlank(resource)) {
+            addRuleRequest.setSpecifyStaticStartupParam(true);
+            addRuleRequest.setStaticStartupParam(resource);
+        } else {
+            addRuleRequest.setSpecifyStaticStartupParam(false);
+        }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDeleteFailCheckResult(boolean deleteFailCheckResult) {
+        addRuleRequest.setDeleteFailCheckResult(deleteFailCheckResult);
+        return this;
+    }
+
     public RuleMetricDao getRuleMetricDao() {
         return ruleMetricDao;
     }
@@ -1855,16 +2001,58 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
         return uploadRuleMetricValue;
     }
 
-    public void setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
+    public AddRequestBuilder setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
         this.uploadRuleMetricValue = uploadRuleMetricValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAbortonFailure(boolean abortonFailure) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCluster(String clusterName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceCluster(String clusterName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetCluster(String clusterName) {
+        return this;
     }
 
     public boolean getUploadAbnormalValue() {
         return uploadAbnormalValue;
     }
 
-    public void setUploadAbnormalValue(boolean uploadAbnormalValue) {
+    public AddRequestBuilder setUploadAbnormalValue(boolean uploadAbnormalValue) {
         this.uploadAbnormalValue = uploadAbnormalValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
     }
 
     public String getRuleMetricEnCode() {
@@ -1873,5 +2061,45 @@ public class AddRuleRequestBuilder implements AddRequestBuilder {
 
     public void setRuleMetricEnCode(String ruleMetricEnCode) {
         this.ruleMetricEnCode = ruleMetricEnCode;
+    }
+
+    public String getRegxOrRangeOrEnum() {
+        return regxOrRangeOrEnum;
+    }
+
+    public void setRegxOrRangeOrEnum(String regxOrRangeOrEnum) {
+        this.regxOrRangeOrEnum = regxOrRangeOrEnum;
+    }
+
+    public String getCondition1() {
+        return condition1;
+    }
+
+    public void setCondition1(String condition1) {
+        this.condition1 = condition1;
+    }
+
+    public String getCondition2() {
+        return condition2;
+    }
+
+    public void setCondition2(String condition2) {
+        this.condition2 = condition2;
+    }
+
+    public Long getStandardValueVersionId() {
+        return standardValueVersionId;
+    }
+
+    public void setStandardValueVersionId(Long standardValueVersionId) {
+        this.standardValueVersionId = standardValueVersionId;
+    }
+
+    public List<TemplateArgumentRequest> getTemplateArgumentRequests() {
+        return templateArgumentRequests;
+    }
+
+    public void setTemplateArgumentRequests(List<TemplateArgumentRequest> templateArgumentRequests) {
+        this.templateArgumentRequests = templateArgumentRequests;
     }
 }

@@ -12,8 +12,11 @@ import {
 import { getEnvListBySourceID } from '@/components/rules/api';
 import eventbus from '@/common/useEvents';
 import { cloneDeep } from 'lodash-es';
+import { useI18n } from '@fesjs/fes';
+
 
 export default function useDataSource(upstream = {}) {
+    const { t: $t } = useI18n();
     const connections = ref([]);
     const dbs = ref([]);
     // 二维数组，维护的是环境库表映射中数据库下拉框的数据列表
@@ -21,12 +24,17 @@ export default function useDataSource(upstream = {}) {
     const tables = ref([]);
     const columns = ref([]);
     const envs = ref([]);
+    const dcnValueOptions = ref([]);
     let dataSource = {};
     const upstreamParams = upstream;
     const store = useStore();
     // 为了区别target，source
     const updateDataSource = (data, type = 'single', module = 'verfiyObject') => {
         if (module === 'advanceSetting') {
+            dataSource = data;
+            return;
+        }
+        if (module === 'listByTemplate') {
             dataSource = data;
             return;
         }
@@ -55,7 +63,7 @@ export default function useDataSource(upstream = {}) {
         if (cs_id) upstreamParams.contextID = cs_id;
         upstreamParams.isUpStream = isUpStream;
     };
-    const handleDataSourcesDependenciesChange = async (map) => {
+    const handleDataSourcesDependenciesChange = async () => {
         const {
             cluster_name: clusterName, type: dataSourceType, proxy_user: proxyUser,
         } = dataSource;
@@ -77,7 +85,7 @@ export default function useDataSource(upstream = {}) {
         console.log('重新获取数据源列表数据');
         console.groupEnd();
         try {
-            connections.value = await getDataSources({ clusterName, dataSourceType, proxyUser: '' }, map);
+            connections.value = await getDataSources({ clusterName, dataSourceType, proxyUser: '' });
         } catch (e) {
             console.warn('获取数据源列表数据接口异常: ', e.message);
         }
@@ -143,7 +151,7 @@ export default function useDataSource(upstream = {}) {
         } catch (e) {
             console.warn('获取数据库列表数据接口异常: ', e.message);
         }
-        console.log('新数据库列表数据: ', dbs.value);
+        // console.log('新数据库列表数据: ', dbs.value);
     };
 
     const handleDbChange = async (index = -1) => {
@@ -220,22 +228,61 @@ export default function useDataSource(upstream = {}) {
         try {
             console.log('CommonDataSource: ruleForms-数据源环境列表数据依赖项改变');
             const urlParams = {
-                clusterName: dataSource.cluster_name, // 必须有值
-                proxyUser: dataSource.proxy_user || '', // 可以为空，但不要传undefine null值
+                // clusterName: dataSource.cluster_name, // 必须有值
+                // proxyUser: dataSource.proxy_user || '', // 可以为空，但不要传undefine null值
                 dataSourceId: dataSource.linkis_datasource_id, // 必须有值
+                dcnRangeType: dataSource.dcn_range_type,
             };
-            const url = `/api/v1/projector/meta_data/data_source/env/list?clusterName=${urlParams.clusterName}&proxyUser=${urlParams.proxyUser}&dataSourceId=${urlParams.dataSourceId}`;
+            let url;
+            if (urlParams.dcnRangeType === 'all') {
+                url = `/api/v1/projector/meta_data/data_source/env/list?dataSourceId=${urlParams.dataSourceId}`;
+            } else {
+                url = `/api/v1/projector/meta_data/data_source/env/list?dataSourceId=${urlParams.dataSourceId}&dcnRangeType=${urlParams.dcnRangeType}`;
+            }
             const res = await getEnvListBySourceID(url);
-            envs.value = res;
-            envs.value.forEach((item) => {
-                // 接口给的name id字段名未统一
-                item.env_id = item.id;
-                item.env_name = item.envName;
-                item.value = {
+            if (urlParams.dcnRangeType === 'all' || !urlParams.dcnRangeType) {
+                envs.value = res.map(item => ({
                     env_id: item.id,
                     env_name: item.envName,
-                };
-            });
+                    value: {
+                        env_id: item.id,
+                        env_name: item.envName,
+                        dcn_num: item.dcnNum,
+                        logic_area: item.logicArea,
+                    },
+                }));
+            } else {
+                const keys = Object.keys(res);
+                const dcnOptions = [];
+                envs.value = [];
+                for (let i = 0; i < keys.length; i++) {
+                    const dcnEnvs = res[keys[i]].map(item => ({
+                        env_id: item.id,
+                        env_name: item.envName,
+                        value: {
+                            env_id: item.id,
+                            env_name: item.envName,
+                            dcn_num: item.dcnNum,
+                            logic_area: item.logicArea,
+                        },
+                    }));
+                    dcnOptions.push({ label: keys[i], value: keys[i], envs: dcnEnvs });
+                }
+                dcnValueOptions.value = dcnOptions;
+                dcnOptions.forEach((item) => {
+                    envs.value.push(...item.envs);
+                });
+            }
+            // envs.value = res;
+            // envs.value.forEach((item) => {
+            //     // 接口给的name id字段名未统一
+            //     item.env_id = item.id;
+            //     item.env_name = item.envName;
+            //     item.value = {
+            //         env_id: item.id,
+            //         env_name: item.envName,
+            //     };
+            // });
             console.log('handleEnvChange-envs', envs);
             // 数据源详情的环境数据反写到编辑框中，value值为对象，必须与option-value为同一引用地址，才能反显label。
             if (dataSource.linkis_datasource_envs) {
@@ -256,6 +303,7 @@ export default function useDataSource(upstream = {}) {
         tables,
         columns,
         envs,
+        dcnValueOptions,
         dbsList,
         handleDbChange,
         handleTableChange,

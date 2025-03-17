@@ -1,16 +1,14 @@
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.entity.Application;
+import com.webank.wedatasphere.qualitis.entity.Task;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.response.ProjectResponse;
-import com.webank.wedatasphere.qualitis.request.AddMetricCollectRequest;
-import com.webank.wedatasphere.qualitis.request.AddMetricSchedulerRequest;
-import com.webank.wedatasphere.qualitis.request.MetricCollectQueryRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyMetricCollectRequest;
+import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.MetricCollectQueryResponse;
 import com.webank.wedatasphere.qualitis.response.MetricSchedulerDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.ExecutionParametersResponse;
-import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -23,15 +21,15 @@ import java.util.List;
  */
 @Service
 public interface ImsRuleMetricCollectService {
-//
-//    /**
-//     * get partitions in table
-//     *
-//     * @param clusterName
-//     * @param db
-//     * @param table
-//     * @return
-//     */
+
+    /**
+     * get partitions in table
+     *
+     * @param clusterName
+     * @param db
+     * @param table
+     * @return
+     */
 //    List<String> getPartitionList(String clusterName, String db, String table);
 //
 //    /**
@@ -109,4 +107,16 @@ public interface ImsRuleMetricCollectService {
 //     * @throws UnExpectedRequestException
 //     */
 //    void checkCreateRequest(AddMetricCollectRequest request) throws UnExpectedRequestException;
+//
+//    /**
+//     * add collect config
+//     */
+//    void addCollectConfigWithAnalysis();
+//
+//    /**
+//     * get status of collect task
+//     * @param queryRequest
+//     * @return
+//     */
+//    Task getCollectTaskStatus(ImsMetricTaskStatusQueryRequest queryRequest) throws UnExpectedRequestException;
 }

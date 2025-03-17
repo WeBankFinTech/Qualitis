@@ -2,7 +2,7 @@
     <!-- 版本列表 -->
     <FDrawer
         v-model:show="show"
-        title="版本记录"
+        :title="$t('_.版本记录')"
         displayDirective="if"
         :width="940"
         @cancel="closeVersionList"

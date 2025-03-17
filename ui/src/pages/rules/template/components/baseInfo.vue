@@ -18,7 +18,7 @@
                     :disabled="mode === 'edit'"
                     @change="onNamingMethodChange"
                 ></FSelect>
-                <span class="form-preview-label">{{templateData.naming_method === 2 ? '自定义命名' : '规范命名'}}</span>
+                <span class="form-preview-label">{{templateData.naming_method === 2 ? $t('_.自定义命名') : $t('_.规范命名')}}</span>
             </FFormItem>
             <!-- 模板中文名 -->
             <FFormItem v-if="templateData.naming_method === 2 || mode === 'view'" :label="$t('ruleTemplatelist.templateCNName')" prop="template_name">
@@ -28,7 +28,7 @@
                     :maxlength="16"
                     showWordLimit
                     :disabled="mode === 'edit'"
-                    placeholder="请输入"
+                    :placeholder="$t('_.请输入')"
                 />
                 <span class="form-preview-label">{{templateData.template_name || '--'}}</span>
             </FFormItem>
@@ -39,7 +39,7 @@
                     class="form-edit-input"
                     :maxlength="64"
                     showWordLimit
-                    placeholder="请输入"
+                    :placeholder="$t('_.请输入')"
                 />
                 <span class="form-preview-label">{{templateData.en_name || '--'}}</span>
             </FFormItem>
@@ -52,7 +52,7 @@
                     emitPath
                     showPath
                     checkStrictly="child"
-                    placeholder="请选择模板大类与类别"
+                    :placeholder="$t('_.请选择模板大类与类别')"
                     :disabled="mode === 'edit'"
                     @change="generatePreview"
                 ></FSelectCascader>
@@ -70,7 +70,7 @@
                             v-model="templateData.custom_zh_code"
                             class="form-edit-input"
                             :maxlength="16"
-                            placeholder="请输入自定义中文码（示例：空值校验）"
+                            :placeholder="$t('_.请输入自定义中文码（示例：空值校验）')"
                             :disabled="mode === 'edit'"
                             @change="generatePreview"
                         />
@@ -80,7 +80,7 @@
                             v-model="templateData.template_number"
                             class="form-edit-input"
                             :maxlength="64"
-                            placeholder="请输入模板编号（示例：日期_编号）"
+                            :placeholder="$t('_.请输入模板编号（示例：日期_编号）')"
                             :disabled="mode === 'edit'"
                             @change="generatePreview"
                         />
@@ -93,14 +93,14 @@
                     v-model="templateData.template_name"
                     class="form-edit-input"
                     disabled
-                    placeholder="中文名：大类_类别_自定义中文码"
+                    :placeholder="$t('_.中文名：大类_类别_自定义中文码')"
                     style="margin-right:8px"
                 />
                 <FInput
                     v-model="templateData.en_name"
                     class="form-edit-input"
                     disabled
-                    placeholder="英文名：大类简写_类别简写_YYYYMMDD_XXX"
+                    :placeholder="$t('_.英文名：大类简写_类别简写_YYYYMMDD_XXX')"
                 />
             </FFormItem>
             <!-- 模板描述 -->
@@ -112,7 +112,7 @@
                     :maxlength="256"
                     showWordLimit
                     :autosize="{ minRows: 2, maxRows: 5 }"
-                    placeholder="请输入"
+                    :placeholder="$t('_.请输入')"
                 />
                 <span class="form-preview-label">{{templateData.description || '--'}}</span>
             </FFormItem>
@@ -130,7 +130,7 @@
                     checkStrictly="child"
                     @change="handleDevId"
                 ></FSelectCascader>
-                <span class="form-preview-label">{{templateData.dev_department_name.join('/') || '--'}}</span>
+                <span class="form-preview-label">{{templateData.dev_department_name?.join('/') || '--'}}</span>
             </FFormItem>
             <!-- 运维科室 -->
             <FFormItem :label="$t('indexManagement.maintainDepartment')" prop="ops_department_name">
@@ -146,7 +146,7 @@
                     checkStrictly="child"
                     @change="handleOpsId"
                 ></FSelectCascader>
-                <span class="form-preview-label">{{templateData.ops_department_name.join('/') || '--'}}</span>
+                <span class="form-preview-label">{{templateData.ops_department_name?.join('/') || '--'}}</span>
             </FFormItem>
             <!-- 可见范围 -->
             <FFormItem :label="$t('indexManagement.visibleRange')" prop="visibility_departments">
@@ -173,6 +173,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     useI18n,
 } from '@fesjs/fes';
@@ -275,51 +276,51 @@ const templateRules = {
             type: 'number',
             required: true,
             trigger: ['blur', 'change'],
-            message: '请选择命名方式',
+            message: $t('_.请选择命名方式'),
         },
     ],
     template_name: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入模板中文名',
+            message: $t('_.请输入模板中文名'),
         },
     ],
     en_name: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入模板英文名',
+            message: $t('_.请输入模板英文名'),
         },
-        { pattern: COMMON_REG.EN_NAME_64, message: '请输入英文、数字、下划线' },
+        { pattern: COMMON_REG.EN_NAME_64_SPACE, message: $t('_.请输入英文、数字、下划线、空格') },
     ],
     major_type: [
         {
             required: true,
             type: 'array',
             trigger: ['blur', 'change'],
-            message: '请选择模板大类与类别',
+            message: $t('_.请选择模板大类与类别'),
         },
     ],
     custom_zh_code: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入自定义中文码',
+            message: $t('_.请输入自定义中文码'),
         },
     ],
     template_number: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入模板编号',
+            message: $t('_.请输入模板编号'),
         },
     ],
     description: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入模板描述',
+            message: $t('_.请输入模板描述'),
         },
     ],
     dev_department_name: [
@@ -327,7 +328,7 @@ const templateRules = {
             required: true,
             type: 'array',
             trigger: ['blur', 'change'],
-            message: '请选择开发科室',
+            message: $t('_.请选择开发科室'),
         },
     ],
     ops_department_name: [
@@ -335,7 +336,7 @@ const templateRules = {
             required: true,
             type: 'array',
             trigger: ['blur', 'change'],
-            message: '请选择运维科室',
+            message: $t('_.请选择运维科室'),
         },
     ],
     visibility_departments: [
@@ -343,7 +344,7 @@ const templateRules = {
             required: true,
             type: 'array',
             trigger: ['blur', 'change'],
-            message: '请选择可见范围',
+            message: $t('_.请选择可见范围'),
         },
     ],
 };
@@ -385,7 +386,7 @@ const generatePreview = () => {
     console.log('currentTemplateData.major_type', currentTemplateData.value.major_type);
     const templateMajor = templateTypeList.value.find(item => item.value === currentTemplateData.value.major_type[0]);
     const templateKind = templateMajor?.children.find(item => item.value === currentTemplateData.value.major_type[1]);
-    currentTemplateData.value.template_name = `${templateMajor?.zh_name}_${templateKind?.zh_name}_${currentTemplateData.value.custom_zh_code || '自定义中文码'}`;
+    currentTemplateData.value.template_name = `${templateMajor?.zh_name}_${templateKind?.zh_name}_${currentTemplateData.value.custom_zh_code || $t('_.自定义中文码')}`;
     currentTemplateData.value.en_name = `${templateMajor?.abbreviation}_${templateKind?.abbreviation}_${currentTemplateData.value.template_number || 'YYYYMMDD_XXX'}`;
 };
 onMounted(() => {
@@ -394,6 +395,7 @@ onMounted(() => {
 });
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .pure-form {

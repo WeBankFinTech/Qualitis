@@ -20,13 +20,13 @@
                     clearable
                     :placehodler="$t('common.pleaseEnter')" />
             </FFormItem>
-            <FFormItem prop="zn_name" label="中文名">
+            <FFormItem prop="zn_name" :label="$t('_.中文名')">
                 <FInput
                     v-model="formModel.zn_name"
                     clearable
                     :placehodler="$t('common.pleaseEnter')" />
             </FFormItem>
-            <FFormItem prop="role_type" label="角色类型">
+            <FFormItem prop="role_type" :label="$t('_.角色类型')">
                 <FSelect
                     v-model="formModel.role_type"
                     clearable
@@ -41,7 +41,7 @@
                 </FSelect>
             </FFormItem>
             <!-- 角色类型为职位角色的时候，禁用所属部门下拉选择 -->
-            <FFormItem prop="department_name" label="所属部门">
+            <FFormItem prop="department_name" :label="$t('_.所属部门')">
                 <FSelect
                     v-model="formModel.department_name"
                     clearable

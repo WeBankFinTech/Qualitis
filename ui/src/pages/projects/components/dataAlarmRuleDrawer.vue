@@ -149,7 +149,7 @@
             :title="$t('myProject.alarmDetail')"
             width="484px"
             :maskClosable="false"
-            okText="知道了"
+            :oktext="$t('_.知道了')"
             @ok="() => alarmDetailShow = false"
             @cancel="() => alarmDetailShow = false"
         >
@@ -168,7 +168,7 @@
                     type="primary"
                     @click="() => alarmDetailShow = false"
                 >
-                    知道了
+                    {{$t('_.知道了')}}
                 </FButton>
             </template>
         </FModal>
@@ -281,7 +281,7 @@
                         v-model="advanceSearchForm.createTime"
                         type="daterange"
                         clearable
-                        placeholder="请选择"
+                        :placeholder="$t('_.请选择')"
                     >
                     </FDatePicker>
                 </FFormItem>
@@ -306,7 +306,7 @@
                         v-model="advanceSearchForm.modifyTime"
                         type="daterange"
                         clearable
-                        placeholder="请选择"
+                        :placeholder="$t('_.请选择')"
                     >
                     </FDatePicker>
                 </FFormItem>
@@ -321,7 +321,7 @@ import {
 import { BTablePage, BSearch, formatterEmptyValue } from '@fesjs/traction-widget';
 import { useI18n, useRoute } from '@fesjs/fes';
 import { cloneDeep } from 'lodash-es';
-import { formatDatetime } from '@/common/utils';
+import { formatDatetime, wayList, levelList } from '@/common/utils';
 import useProjectAuth from '../hooks/useProjectAuth';
 import useWorkflowRelList from '../hooks/useWorkflowRelList';
 import { fetchAlarmRuleTableData } from '../api.js';
@@ -420,16 +420,28 @@ const handleReset = () => {
 
 const alarmDetailShow = ref(false);
 const alarmDetail = ref([]);
+const alertWayFormatter = (ways, list) => {
+    if (ways.length === 0) return '- -';
+    const getLabel = way => list.find(item => item.value === way)?.label || '';
+    const labelList = ways.map(way => getLabel(way));
+    if (labelList.length === 0) return '- -';
+    return labelList.join(', ');
+};
+const getAlertLevel = (level = '', list) => list.find(item => item.value === level)?.label || '- -';
 const showAlarmDetail = (row) => {
     alarmDetailShow.value = true;
     alarmDetail.value = [
         { value: row.topic || '- -', label: $t('myProject.alarmSubject') },
-        { value: row.info_receiver || '- -', label: $t('myProject.defaultAlarmMan') },
-        { value: row.major_receiver || '- -', label: $t('myProject.advanceAlarmMan') },
+        { value: row.default_receiver || '- -', label: $t('myProject.defaultAlarmMan') },
+        { value: getAlertLevel(row.default_alert_level, levelList), label: $t('myProject.defaultAlarmLevel') },
+        { value: alertWayFormatter(row.default_alert_ways || [], wayList), label: $t('myProject.defaultAlarmWay') },
+        { value: row.advanced_receiver || '- -', label: $t('myProject.advanceAlarmMan') },
+        { value: getAlertLevel(row.advanced_alert_level, levelList), label: $t('myProject.advanceAlarmLevel') },
+        { value: alertWayFormatter(row.advanced_alert_ways || [], wayList), label: $t('myProject.advanceAlarmWay') },
         { value: row.alert_table || '- -', label: $t('myProject.alarmTable') },
         { value: row.filter || '- -', label: $t('myProject.alarmFilterCondition') },
         { value: row.alert_col || '- -', label: $t('myProject.defaultAlarmFilterCol') },
-        { value: row.major_alert_col || '- -', label: $t('myProject.advanceAlarmFilterCol') },
+        { value: row.advanced_alert_col || '- -', label: $t('myProject.advanceAlarmFilterCol') },
         { value: row.content_cols || '- -', label: $t('myProject.contentShowCol') },
     ];
 };

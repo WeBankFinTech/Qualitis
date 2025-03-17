@@ -5,10 +5,13 @@ import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -18,6 +21,7 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.rule.config.RuleConfig;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleLockRangeEnum;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.ExecutionParametersDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleGroupDao;
@@ -28,8 +32,6 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleGroupResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.timer.RuleUpdaterCallable;
-import com.webank.wedatasphere.qualitis.rule.timer.RuleUpdaterThreadFactory;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
@@ -44,11 +46,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 /**
@@ -106,13 +112,14 @@ public class RuleGroupServiceImpl implements RuleGroupService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleGroupServiceImpl.class);
 
-    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(50,
-        Integer.MAX_VALUE,
-        60,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(1000),
-        new RuleUpdaterThreadFactory(),
-        new ThreadPoolExecutor.DiscardPolicy());
+    @Autowired
+    private AbstractThreadPoolManager threadPoolManager;
+    private ThreadPoolExecutor ruleUpdatePool;
+
+    @PostConstruct
+    public void init() throws ThreadPoolNotFoundException {
+        this.ruleUpdatePool = threadPoolManager.getThreadPool(ThreadPoolConstant.RULE_UPDATE);
+    }
 
     public RuleGroupServiceImpl(@Context HttpServletRequest httpServletRequest) {
         this.httpServletRequest = httpServletRequest;
@@ -275,7 +282,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             setByExecutionParam(map, addGroupRuleRequest);
             updateAddGroupRuleRequestList.add(addGroupRuleRequest);
         }
-        List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+        List<Future<List<String>>> exceptionList = new ArrayList<>();
         request.setAddGroupRuleRequestList(updateAddGroupRuleRequestList);
         addRuleConcurrent(updateAddGroupRuleRequestList, loginUser, exceptionList);
 
@@ -287,9 +294,9 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         return new RuleGroupResponse(ResponseStatusConstants.BAD_REQUEST, ruleGroupInDb, "Some rules failed to add, detail message: " + exceptionMessage.toString());
     }
 
-    private boolean judgeExistsException(List<Future<List<Exception>>> exceptionList, StringBuilder exceptionMessage) throws InterruptedException, ExecutionException {
-        List<Exception> exceptions = new ArrayList<>();
-        for (Future<List<Exception>> future : exceptionList) {
+    private boolean judgeExistsException(List<Future<List<String>>> exceptionList, StringBuilder exceptionMessage) throws InterruptedException, ExecutionException {
+        List<String> exceptions = new ArrayList<>();
+        for (Future<List<String>> future : exceptionList) {
             if (CollectionUtils.isNotEmpty(future.get())) {
                 exceptions.addAll(future.get());
             }
@@ -297,14 +304,14 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         if (CollectionUtils.isEmpty(exceptions)) {
             return true;
         } else {
-            for (Exception e : exceptions) {
-                exceptionMessage.append(e.getMessage()).append("\n");
+            for (String e : exceptions) {
+                exceptionMessage.append(e).append("\n");
             }
         }
         return false;
     }
 
-    private void addRuleConcurrent(List<AddGroupRuleRequest> updateAddGroupRuleRequestList, String loginUser, List<Future<List<Exception>>> exceptionList) throws InterruptedException {
+    private void addRuleConcurrent(List<AddGroupRuleRequest> updateAddGroupRuleRequestList, String loginUser, List<Future<List<String>>> exceptionList) throws InterruptedException {
         int total = updateAddGroupRuleRequestList.size();
         int updateThreadSize = total / ruleConfig.getRuleUpdateSize() + 1;
         if (total % ruleConfig.getRuleUpdateSize() == 0) {
@@ -313,11 +320,11 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         CountDownLatch latch = new CountDownLatch(updateThreadSize);
         for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
             if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleUpdaterCallable(ruleService, fileRuleService
+                Future<List<String>> exceptionFuture = ruleUpdatePool.submit(new RuleUpdaterCallable(ruleService, fileRuleService
                     , updateAddGroupRuleRequestList.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), loginUser, latch));
                 exceptionList.add(exceptionFuture);
             } else {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleUpdaterCallable(ruleService, fileRuleService
+                Future<List<String>> exceptionFuture = ruleUpdatePool.submit(new RuleUpdaterCallable(ruleService, fileRuleService
                     , updateAddGroupRuleRequestList.subList(indexThread, total), loginUser, latch));
                 exceptionList.add(exceptionFuture);
             }
@@ -414,7 +421,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             updateModifyGroupRuleRequestList.add(modifyGroupRuleRequest);
         }
 
-        List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+        List<Future<List<String>>> exceptionList = new ArrayList<>();
         request.setModifyGroupRuleRequestList(updateModifyGroupRuleRequestList);
         modifyRulesConcurrent(updateModifyGroupRuleRequestList, loginUser, exceptionList);
 
@@ -425,7 +432,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         return new RuleGroupResponse(ResponseStatusConstants.BAD_REQUEST, ruleGroupInDb, "Some rules failed to modify, detail message:" + exceptionMessage.toString());
     }
 
-    private void modifyRulesConcurrent(List<ModifyGroupRuleRequest> updateModifyGroupRuleRequestList, String loginUser, List<Future<List<Exception>>> exceptionList) throws InterruptedException {
+    private void modifyRulesConcurrent(List<ModifyGroupRuleRequest> updateModifyGroupRuleRequestList, String loginUser, List<Future<List<String>>> exceptionList) throws InterruptedException {
         int total = updateModifyGroupRuleRequestList.size();
         int updateThreadSize = total / ruleConfig.getRuleUpdateSize() + 1;
         if (total % ruleConfig.getRuleUpdateSize() == 0) {
@@ -434,11 +441,11 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         CountDownLatch latch = new CountDownLatch(updateThreadSize);
         for (int indexThread = 0; total > 0 && indexThread < total; indexThread += ruleConfig.getRuleUpdateSize()) {
             if (indexThread + ruleConfig.getRuleUpdateSize() < total) {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleUpdaterCallable(ruleService, fileRuleService
+                Future<List<String>> exceptionFuture = ruleUpdatePool.submit(new RuleUpdaterCallable(ruleService, fileRuleService
                     , updateModifyGroupRuleRequestList.subList(indexThread, indexThread + ruleConfig.getRuleUpdateSize()), loginUser, latch, "modify"));
                 exceptionList.add(exceptionFuture);
             } else {
-                Future<List<Exception>> exceptionFuture = POOL.submit(new RuleUpdaterCallable(ruleService, fileRuleService
+                Future<List<String>> exceptionFuture = ruleUpdatePool.submit(new RuleUpdaterCallable(ruleService, fileRuleService
                     , updateModifyGroupRuleRequestList.subList(indexThread, total), loginUser, latch, "modify"));
                 exceptionList.add(exceptionFuture);
             }
@@ -461,11 +468,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             throws UnExpectedRequestException, PermissionDeniedRequestException {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
         // Check existence of project
-        Project projectInDb = projectService.checkProjectExistence(request.getProjectId(), loginUser);
-        // Check permissions of project
-        List<Integer> permissions = new ArrayList<>();
-        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
-        projectService.checkProjectPermission(projectInDb, loginUser, permissions);
+        projectService.checkProjectExistence(request.getProjectId(), loginUser);
 
         List<Rule> rules;
         long total = 0;
@@ -530,7 +533,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
     }
 
     @Override
-    public GeneralResponse addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, InterruptedException, ExecutionException, PermissionDeniedRequestException, IOException {
+    public GeneralResponse<RuleGroupResponse> addBatchRule(AddBatchRuleRequest request) throws UnExpectedRequestException, InterruptedException, ExecutionException, PermissionDeniedRequestException, IOException {
         checkAddBatchRuleRequest(request);
         Project project = projectDao.findById(request.getProjectId());
         if (project == null) {
@@ -538,14 +541,33 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         }
 
         String loginUser = HttpUtils.getUserName(httpServletRequest);
-        String ruleGroupName = "Template_Group_" + UuidGenerator.generate();
+
+        String ruleGroupName = "";
+        if (CollectionUtils.isNotEmpty(request.getCheckObjectList())) {
+
+            Set<String> dbNames = new HashSet<>();
+            Set<String> tableNames = new HashSet<>();
+
+            for (AddBatchRuleRequest.AddBatchCheckObjectRequest addBatchCheckObjectRequest : request.getCheckObjectList()) {
+                dbNames.add(addBatchCheckObjectRequest.getDbName());
+                tableNames.add(addBatchCheckObjectRequest.getTableName());
+            }
+
+            ruleGroupName = StringUtils.join(dbNames, SpecCharEnum.BOTTOM_BAR.getValue()) + SpecCharEnum.BOTTOM_BAR.getValue() + StringUtils.join(tableNames, SpecCharEnum.BOTTOM_BAR.getValue());
+        }
+        ruleGroupName = ruleGroupName + SpecCharEnum.BOTTOM_BAR.getValue() + request.getRuleName().replace(" ", "") + "_group_" + UuidGenerator.generate();
+
+        if (ruleGroupName.length() > 300) {
+            ruleGroupName = ruleGroupName.substring(Math.max(ruleGroupName.length() - 300, 0));
+        }
+
         RuleGroup ruleGroup = new RuleGroup(ruleGroupName, request.getProjectId());
         ruleGroupDao.saveRuleGroup(ruleGroup);
 
         setRuleMetricIfNotExists(request.getCheckObjectList(), loginUser);
         List<ModifyGroupRuleRequest> groupRuleRequestList = convert2ModifyGroupRuleRequest(project, ruleGroup, request);
 
-        List<Future<List<Exception>>> exceptionList = new ArrayList<>();
+        List<Future<List<String>>> exceptionList = new ArrayList<>();
         modifyRulesConcurrent(groupRuleRequestList, loginUser, exceptionList);
 
         StringBuilder exceptionMessage = new StringBuilder();
@@ -596,7 +618,7 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             return dataSourceInfo.toString();
         }).distinct().count();
         if (datasourceCount < checkObjectList.size()) {
-            throw new UnExpectedRequestException("校验对象的数据源信息不能相同!");
+            throw new UnExpectedRequestException("校验对象不能相同!");
         }
     }
 
@@ -621,23 +643,25 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         Map<String, ExecutionParameters> executionParametersMap = new HashMap<>();
         executionParametersMap.put(request.getExecutionParametersName(), executionParameters);
 
-        int ruleSeq = 1;
         for (AddBatchRuleRequest.AddBatchCheckObjectRequest checkObject: checkObjectList) {
             ModifyGroupRuleRequest groupRuleRequest = new ModifyGroupRuleRequest();
-            String ruleName = request.getRuleName() + SpecCharEnum.BOTTOM_BAR.getValue() + ruleSeq;
-            ruleName = ruleName.replace(" ", "");
-            String ruleCnName = request.getRuleCnName() + SpecCharEnum.BOTTOM_BAR.getValue() + ruleSeq;
-            ruleCnName = ruleCnName.replace(" ", "");
+            String colsName = SpecCharEnum.BOTTOM_BAR.getValue();
+            if (CollectionUtils.isNotEmpty(checkObject.getColNames())) {
+                colsName = checkObject.getColNames().stream().map(dataSourceColumnRequest -> dataSourceColumnRequest.getColumnName()).collect(Collectors.joining(SpecCharEnum.BOTTOM_BAR.getValue())) + colsName;
+            }
+            String ruleName = checkObject.getDbName() + SpecCharEnum.BOTTOM_BAR.getValue() + checkObject.getTableName() + SpecCharEnum.BOTTOM_BAR.getValue() + colsName + request.getRuleName();
+
+            ruleName = ruleName.replace(" ", "").substring(Math.max(ruleName.length() - 128, 0));
 
             groupRuleRequest.setProjectId(project.getId());
             groupRuleRequest.setRuleGroupId(ruleGroup.getId());
             groupRuleRequest.setRuleGroupName(ruleGroup.getRuleGroupName());
             groupRuleRequest.setRuleName(ruleName);
-            groupRuleRequest.setRuleCnName(ruleCnName);
             groupRuleRequest.setRuleType(request.getRuleType());
             groupRuleRequest.setRuleTemplateId(request.getRuleTemplateId());
             groupRuleRequest.setRuleDetail(request.getRuleDetail());
             groupRuleRequest.setExecutionParametersName(request.getExecutionParametersName());
+            groupRuleRequest.setRegRuleCode(request.getRegRuleCode());
 
             Rule rule = ruleDao.findByProjectAndRuleName(project, ruleName);
             if (rule != null) {
@@ -657,8 +681,6 @@ public class RuleGroupServiceImpl implements RuleGroupService {
             setByExecutionParam(executionParametersMap, groupRuleRequest);
 
             groupRuleRequestList.add(groupRuleRequest);
-
-            ++ruleSeq;
         }
 
         return groupRuleRequestList;

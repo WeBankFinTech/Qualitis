@@ -16,19 +16,18 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
+import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
+import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.dao.ApplicationDao;
 import com.webank.wedatasphere.qualitis.exception.ClusterInfoNotConfigException;
 import com.webank.wedatasphere.qualitis.exception.JobKillException;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.parser.LocaleParser;
-import com.webank.wedatasphere.qualitis.request.GroupExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.GroupListExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.KillApplicationsRequest;
-import com.webank.wedatasphere.qualitis.request.ProjectExecutionRequest;
-import com.webank.wedatasphere.qualitis.request.RuleListExecutionRequest;
+import com.webank.wedatasphere.qualitis.request.*;
 import com.webank.wedatasphere.qualitis.response.ApplicationProjectResponse;
 import com.webank.wedatasphere.qualitis.response.ApplicationTaskSimpleResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
@@ -42,14 +41,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author howeye
@@ -71,9 +72,6 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Autowired
     private ApplicationDao applicationDao;
 
-    @Autowired
-    private LocaleParser localeParser;
-
     @Context
     private HttpServletRequest httpRequest;
 
@@ -83,13 +81,23 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Value("${execution.controller.async:false}")
     private Boolean enableAsyncRequest;
 
+    private ThreadPoolExecutor ruleExecutionThreadPool;
+
+    @Autowired
+    AbstractThreadPoolManager threadPoolManager;
+
+    @PostConstruct
+    public void injectThreadPools() throws ThreadPoolNotFoundException {
+        this.ruleExecutionThreadPool = threadPoolManager.getThreadPool(ThreadPoolConstant.RULE_EXECUTION);
+    }
+
+    public ExecutionServiceImpl() {
+//        doing nothing
+    }
+
     public ExecutionServiceImpl(@Context HttpServletRequest httpRequest) {
         this.httpRequest = httpRequest;
     }
-
-    @Autowired
-    @Qualifier("ruleExecutionThreadPool")
-    private ThreadPoolExecutor ruleExecutionThreadPool;
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
@@ -136,8 +144,16 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
         for (GroupExecutionRequest groupExecutionRequest : request.getGroupExecutionRequests()) {
             try {
+                if (StringUtils.isNotBlank(request.getApplicationId())) {
+                    groupExecutionRequest.setApplicationId(request.getApplicationId());
+                }
                 if (StringUtils.isNotBlank(request.getClusterName())) {
-                    groupExecutionRequest.setClusterName(request.getClusterName());
+                    if (! request.getClusterName().contains(SpecCharEnum.COMMA.getValue())) {
+                        groupExecutionRequest.setClusterName(request.getClusterName());
+                    }
+                }
+                if (groupExecutionRequest.getClusterName().contains(SpecCharEnum.COMMA.getValue())) {
+                    groupExecutionRequest.setClusterName("");
                 }
                 if (StringUtils.isNotBlank(request.getExecutionParam())) {
                     groupExecutionRequest.setExecutionParam(request.getExecutionParam());
@@ -180,7 +196,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
 
     @Override
-    public GeneralResponse killApplication(String applicationId)
+    public GeneralResponse<Object> killApplication(String applicationId)
             throws JobKillException, ClusterInfoNotConfigException, UnExpectedRequestException, PermissionDeniedRequestException {
         String userName = HttpUtils.getUserName(httpRequest);
         LOGGER.info("Qualitis user {} to kill.", userName);

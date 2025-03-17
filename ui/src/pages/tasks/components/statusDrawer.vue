@@ -2,7 +2,7 @@
     <!-- 状态详情 -->
     <FDrawer
         v-model:show="showStatusDetailDrawer"
-        title="状态详情"
+        :title="$t('_.状态详情')"
         displayDirective="if"
         :width="940"
         contentClass="task-drawer"
@@ -12,7 +12,7 @@
             <div class="task-id">
                 <div>{{$t('common.number')}}: {{taskId}}</div>
                 <div>
-                    <span>校验状态：</span>
+                    <span>{{$t('_.校验状态：')}}</span>
                     <FSelect
                         v-model="filter_status"
                         filterable
@@ -20,7 +20,7 @@
                         labelField="name"
                         style="width: 200px"
                         :options="optionList"
-                        @change="handleChange"
+                        @change="handleChange(1)"
                     >
                     </FSelect>
                 </div>
@@ -112,7 +112,7 @@
                         <div class="status-rules">
                             <div v-for="(item2, i2) in item.check_table" :key="i2" class="rule-item">
                                 <div v-if="item2.rule_name" class="item">{{$t('taskDetail.taskRule')}}: <span class="rule-content rule_name" @click="toDetail(item)">{{item2.rule_name}}</span></div>
-                                <div class="item">{{$t('verifyFailData.ruleType')}}: <span class="rule-content">{{$t('verifyFailData.acrossCheck')}}</span></div>
+                                <div class="item">{{$t('verifyFailData.ruleType')}}: <span class="rule-content">{{item.cross_cluster ? $t('verifyFailData.acrossCluster') : $t('verifyFailData.acrossCheck')}}</span></div>
                                 <div v-if="item2.columns && item2.columns[0]" class="item">{{$t('common.parityField')}}: <span class="rule-content">{{item2.columns.join(',')}}</span></div>
                                 <div v-if="item.table" class="item">{{$t('verifyFailData.databaseAndDataTable')}}: <span class="rule-content">{{`${item.database} ${item.table}`}}</span></div>
                                 <div v-if="item2.save_table" class="item">{{$t('verifyFailData.notPassBase')}}: <span class="rule-content">{{item2.save_table}}</span></div>
@@ -173,6 +173,7 @@
     </FDrawer>
 </template>
 <script setup>
+
 import {
     defineProps, ref, defineExpose, reactive,
 } from 'vue';
@@ -234,7 +235,7 @@ const optionList = [
     //     key: 0,
     // },
     {
-        name: '筛除通过校验状态',
+        name: $t('_.筛除通过校验状态'),
         key: 1,
     },
 ];
@@ -291,13 +292,13 @@ const statusList = ref([]);
 
 // 获取状态详情里每个大任务的状态
 const getItemStatus = (item) => {
-    let status = '通过校验';
+    let status = $t('_.通过校验');
     item.check_table.forEach((item2) => {
         item2.alarm_variable.forEach((item3) => {
             // 只要有一个不是pass就是fail
-            if (item3.status !== 1) status = '未通过校验';
+            if (item3.status !== 1) status = $t('_.未通过校验');
             // 只要有一个是未校验，那就整体返回未校验
-            if (item3.status === 3) status = '未校验';
+            if (item3.status === 3) status = $t('_.未校验');
         });
     });
     return status;
@@ -330,6 +331,7 @@ const statusDetailDrawerInit = async () => {
                         item.start_time = itemOut.start_time;
                         item.end_time = itemOut.end_time;
                         item.cluster_name = tempRes.cluster_name;
+                        item.cross_cluster = tempRes.cross_cluster;
                         // eslint-disable-next-line camelcase
                         if (Array.isArray(item.check_table)) {
                             // eslint-disable-next-line camelcase
@@ -472,15 +474,15 @@ const getValidateStatus = (row) => {
 
     switch (status) {
         case 1:
-            tem.content = '通过校验';
+            tem.content = $t('_.通过校验');
             tem.color = '#00CB91';
             break;
         case 2:
-            tem.content = '未通过校验';
+            tem.content = $t('_.未通过校验');
             tem.color = '#FF9540';
             break;
         case 3:
-            tem.content = '未校验';
+            tem.content = $t('_.未校验');
             tem.color = '#FF9540';
             break;
         default:

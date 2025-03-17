@@ -127,7 +127,7 @@ export const buildColumnData = (columnsDescString = '', spliter = ',') => {
 };
 
 export const columnData2Str = (columns) => {
-    if (!Array.isArray(columns)) return '';
+    if (!Array.isArray(columns)) return columns;
     return columns.reduce((t, c, i) => {
         if (i === 0) {
             return `${c.column_name}:${c.data_type}`;
@@ -374,19 +374,56 @@ export const replaceRouter = function (resp, isWorkflowProject, route, router) {
 };
 
 // 获取校验指标list
-export const getRuleMetricAll = async () => {
+export const getRuleMetricAll = async (val = '') => {
     console.log('getRuleMetricAll');
     try {
         const result = await request('api/v1/projector/rule_metric/all', {
             page: 0,
-            size: MAX_PAGE_SIZE,
+            size: 50,
             t: new Date(),
+            rule_metric_name: val,
         }, {
             method: 'post',
+            cache: true,
         });
         return result?.data;
     } catch (e) {
         console.log('getRuleMetricAll error', e);
         return [];
     }
+};
+export const buildCustomSqlTemp = (leftArguments, rightArguments, ruleArgumentList = []) => {
+    const connect = JSON.stringify([{ left: leftArguments.connect_col.split(',')?.map(item => ({ column_name: item })) || [], right: rightArguments.connect_col.split(',')?.map(item => ({ column_name: item })) || [] }]);
+    const compare = JSON.stringify([{ left: leftArguments.compare_col.split(',')?.map(item => ({ column_name: item })) || [], right: rightArguments.compare_col.split(',')?.map(item => ({ column_name: item })) || [] }]);
+    const leftSql = leftArguments?.sql || '';
+    const rightSql = rightArguments?.sql || '';
+    const tempArgumentList = cloneDeep(ruleArgumentList);
+    const variableRuleArgumentList = tempArgumentList.map((temp) => {
+        switch (temp.argument_type) {
+            case TEMPLATE_ARGUMENT_INPUT_TYPE.CONNECT_FIELDS:
+                temp.argument_value = connect;
+                break;
+            case TEMPLATE_ARGUMENT_INPUT_TYPE.COMPARISON_FIELD:
+                temp.argument_value = compare;
+                break;
+            case TEMPLATE_ARGUMENT_INPUT_TYPE.LEFT_SAMPLE_SQL:
+                temp.argument_value = leftSql;
+                break;
+            case TEMPLATE_ARGUMENT_INPUT_TYPE.RIGHT_SAMPLE_SQL:
+                temp.argument_value = rightSql;
+                break;
+            default:
+                break;
+        }
+        const {
+            argument_type, argument_step, argument_id, argument_value,
+        } = temp;
+        return {
+            argument_type,
+            argument_step,
+            argument_id,
+            argument_value,
+        };
+    });
+    return variableRuleArgumentList;
 };

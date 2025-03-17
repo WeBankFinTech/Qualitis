@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.service;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.CreateAndSubmitRequest;
+import com.webank.wedatasphere.qualitis.request.WhiteListRequest;
 import com.webank.wedatasphere.qualitis.response.CreateAndSubmitResponse;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
@@ -69,4 +70,17 @@ public interface CreateAndExecutionService {
      */
     GeneralResponse createOrModifyAndSubmitRule(CreateAndSubmitRequest request);
 
+    /**
+     * add white list
+     * @param request
+     * @return
+     */
+    GeneralResponse<String> addWhiteList(WhiteListRequest request);
+
+    /**
+     * delete white list
+     * @param request
+     * @return
+     */
+    GeneralResponse<String> deleteWhiteList(WhiteListRequest request);
 }

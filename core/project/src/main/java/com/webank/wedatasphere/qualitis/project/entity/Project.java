@@ -17,9 +17,9 @@
 package com.webank.wedatasphere.qualitis.project.entity;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;

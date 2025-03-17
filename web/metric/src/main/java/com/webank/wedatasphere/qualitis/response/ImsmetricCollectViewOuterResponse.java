@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
+import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
 
 /**
  * @author v_minminghe@webank.com
@@ -26,17 +26,17 @@ public class ImsmetricCollectViewOuterResponse {
     @JsonProperty("identify_value")
     private String identifyValue;
 
-//    public ImsmetricCollectViewOuterResponse (ImsMetricCollectDto imsMetricCollectDto) {
-//        this.metricId = imsMetricCollectDto.getMetricId();
-//        this.clusterName = imsMetricCollectDto.getClusterName();
-//        this.database = imsMetricCollectDto.getDbName();
-//        this.table = imsMetricCollectDto.getTableName();
-//        this.column = imsMetricCollectDto.getColumnName();
-//        this.calcuUnitName = imsMetricCollectDto.getCalcuUnitName();
-//        this.columnName = imsMetricCollectDto.getColumnType();
-//        this.proxyUser = imsMetricCollectDto.getProxyUser();
-//        this.identifyValue = imsMetricCollectDto.getIdentifyValue();
-//    }
+    public ImsmetricCollectViewOuterResponse (ImsMetricCollectDto imsMetricCollectDto) {
+        this.metricId = imsMetricCollectDto.getMetricId();
+        this.clusterName = imsMetricCollectDto.getClusterName();
+        this.database = imsMetricCollectDto.getDbName();
+        this.table = imsMetricCollectDto.getTableName();
+        this.column = imsMetricCollectDto.getColumnName();
+        this.calcuUnitName = imsMetricCollectDto.getCalcuUnitName();
+        this.columnName = imsMetricCollectDto.getColumnType();
+        this.proxyUser = imsMetricCollectDto.getProxyUser();
+        this.identifyValue = imsMetricCollectDto.getIdentifyValue();
+    }
 
     public String getIdentifyValue() {
         return identifyValue;

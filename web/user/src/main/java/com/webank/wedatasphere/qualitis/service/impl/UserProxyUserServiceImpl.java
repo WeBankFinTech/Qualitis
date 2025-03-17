@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -32,7 +33,11 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -59,33 +64,38 @@ public class UserProxyUserServiceImpl implements UserProxyUserService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse<AddUserProxyUserResponse> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
+    public GeneralResponse<List<AddUserProxyUserResponse>> addUserProxyUser(AddUserProxyUserRequest request) throws UnExpectedRequestException {
         // Check Arguments
         AddUserProxyUserRequest.checkRequest(request);
 
-        // Find user and proxy user by username
-        User userInDb = userDao.findByUsername(request.getUsername());
-        if (userInDb == null) {
-            throw new UnExpectedRequestException("Username {&DOES_NOT_EXIST}, request: " + request);
-        }
-        ProxyUser proxyUserInDb = proxyUserRepository.findByProxyUserName(request.getProxyUserName());
-        if (proxyUserInDb == null) {
-            throw new UnExpectedRequestException("ProxyUser {&DOES_NOT_EXIST}, request: " + request);
+        List<AddUserProxyUserResponse> savedUserProxyUsers = new ArrayList<>();
+        List<String> usernames = Arrays.stream(StringUtils.split(request.getUsername(), SpecCharEnum.COMMA.getValue())).distinct().collect(Collectors.toList());
+        for(String username: usernames) {
+            // Find user and proxy user by username
+            User userInDb = userDao.findByUsername(username);
+            if (userInDb == null) {
+                throw new UnExpectedRequestException("Username {&DOES_NOT_EXIST}: " + username);
+            }
+            ProxyUser proxyUserInDb = proxyUserRepository.findByProxyUserName(request.getProxyUserName());
+            if (proxyUserInDb == null) {
+                throw new UnExpectedRequestException("ProxyUser {&DOES_NOT_EXIST}, request: " + request);
+            }
+
+            UserProxyUser userProxyUserInDb = userProxyUserRepository.findByUserAndProxyUser(userInDb, proxyUserInDb);
+            if (userProxyUserInDb != null) {
+                continue;
+            }
+
+            UserProxyUser newUserProxyUser = new UserProxyUser();
+            newUserProxyUser.setProxyUser(proxyUserInDb);
+            newUserProxyUser.setUser(userInDb);
+            UserProxyUser savedUserProxyUser = userProxyUserRepository.save(newUserProxyUser);
+            LOGGER.info("Succeed to save user proxy user. user_proxy_user_id: {}", savedUserProxyUser.getId());
+
+            savedUserProxyUsers.add(new AddUserProxyUserResponse(savedUserProxyUser));
         }
 
-        UserProxyUser userProxyUserInDb = userProxyUserRepository.findByUserAndProxyUser(userInDb, proxyUserInDb);
-        if (userProxyUserInDb != null) {
-            throw new UnExpectedRequestException("User proxy user {&ALREADY_EXIST}, request: " + request);
-        }
-
-        UserProxyUser newUserProxyUser = new UserProxyUser();
-        newUserProxyUser.setProxyUser(proxyUserInDb);
-        newUserProxyUser.setUser(userInDb);
-        UserProxyUser savedUserProxyUser = userProxyUserRepository.save(newUserProxyUser);
-        LOGGER.info("Succeed to save user proxy user. user_proxy_user_id: {}", savedUserProxyUser.getId());
-
-        AddUserProxyUserResponse response = new AddUserProxyUserResponse(savedUserProxyUser);
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_SAVE_USER_PROXY_USER}", response);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_SAVE_USER_PROXY_USER}", savedUserProxyUsers);
     }
 
     @Override

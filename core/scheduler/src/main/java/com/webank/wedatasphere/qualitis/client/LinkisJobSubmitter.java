@@ -536,14 +536,15 @@ public class LinkisJobSubmitter extends AbstractJobSubmitter {
             }
             log = log.replace(envValue, "******");
         }
-        String realPassword = taskDataSourceConfig.getPassword();
+        String realPassword = "";
 //        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
-//        String password = taskDataSourceConfig.getPassword();
+        String password = taskDataSourceConfig.getPassword();
 //        try {
 //            realPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
 //        } catch (Exception e) {
 //            LOGGER.error("Decrypt mysqlsec password exception.", e);
 //        }
+        realPassword = password;
         if (realPassword.length() > 0 && realPassword.length() < PASS_LEN) {
             log = log.replace(realPassword, "******");
         }

@@ -80,9 +80,13 @@ const actions = {
     },
     addDataToGroupDetailList({
         commit, state: cstate,
-    }, data) {
+    }, { data, index }) {
         const currentRuleList = cstate.ruleList.slice(0);
-        currentRuleList.push(data);
+        if (!index) {
+            currentRuleList.push(data);
+        } else {
+            currentRuleList.splice(index, 0, data);
+        }
         commit('setRuleList', currentRuleList);
     },
     deleteDataFromGroupDetailList({

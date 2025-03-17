@@ -68,6 +68,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     int countByApplication(Application application);
 
     /**
+     * Count with non pass status
+     * @param application
+     * @return
+     */
+    @Query(value = "SELECT COUNT(t.id) FROM Task t WHERE t.application = ?1 AND t.status != 5")
+    int countByApplicationWithNonPassStatus(Application application);
+
+    /**
      * findByApplicationIn
      * @param applicationList
      * @return
@@ -102,4 +110,21 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      */
     @Query(value = "SELECT t FROM Task t INNER JOIN TaskDataSource tds ON (t = tds.task) WHERE t.beginTime BETWEEN ?1 AND ?2 and (tds.clusterName = ?3 and tds.databaseName = ?4 and (LENGTH(?5) = 0 or tds.tableName = ?5))")
     List<Task> findWithSubmitTimeAndDatasource(String start, String end, String clusterName, String startTime, String endTime);
+
+    /**
+     * Find collect task status
+     * @param applicationId
+     * @param collectId
+     * @return
+     */
+    @Query(value = "SELECT * FROM qualitis_application_task WHERE application_id = ?1 AND collect_ids LIKE CONCAT('%', CONCAT(?2, '%')) ORDER BY end_time DESC LIMIT 1", nativeQuery = true)
+    Task findCollectTaskStatus(String applicationId, String collectId);
+
+    /**
+     * Find by rule gorup id
+     * @param ruleGroupId
+     * @return
+     */
+    @Query(value = "SELECT * FROM qualitis_application_task WHERE application_id in (select id from qualitis_application where rule_group_id = ?1)", nativeQuery = true)
+    List<Task> findByRulGroupId(Long ruleGroupId);
 }

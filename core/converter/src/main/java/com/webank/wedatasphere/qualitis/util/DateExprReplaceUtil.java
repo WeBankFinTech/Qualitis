@@ -18,14 +18,16 @@ package com.webank.wedatasphere.qualitis.util;
 
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVariables;
+import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVersion;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +53,7 @@ public class DateExprReplaceUtil {
     static {
         RUN_DATE_FORMAT.put("run_date", "yyyyMMdd");
         RUN_DATE_FORMAT.put("run_date_std", "yyyy-MM-dd");
+        RUN_DATE_FORMAT.put("run_today_h", "yyyyMMddHH");
         RUN_DATE_FORMAT.put("run_today_h_std", "yyyy-MM-dd HH");
         RUN_DATE_FORMAT.put("run_today", "yyyyMMdd");
         RUN_DATE_FORMAT.put("run_today_std", "yyyy-MM-dd");
@@ -109,6 +112,21 @@ public class DateExprReplaceUtil {
         }
     }
 
+    public static String replaceStandardValueWithinCustomSql(List<StandardValueVariables> standardValueVariablesList, Map<Long, StandardValueVersion> idAndStandardValueMap, String sql) {
+        if (CollectionUtils.isEmpty(standardValueVariablesList) || MapUtils.isEmpty(idAndStandardValueMap) || StringUtils.isBlank(sql)) {
+            return sql;
+        }
+        String customSql = sql;
+        for(StandardValueVariables standardValueVariables: standardValueVariablesList) {
+            if (!idAndStandardValueMap.containsKey(standardValueVariables.getStandardValueVersionId())) {
+                continue;
+            }
+            StandardValueVersion standardValueVersion = idAndStandardValueMap.get(standardValueVariables.getStandardValueVersionId());
+            customSql = customSql.replace(String.format("${%s}", standardValueVariables.getStandardValueVersionEnName()), standardValueVersion.getContent());
+        }
+        return customSql;
+    }
+
     public static String replaceRunDate(Date date, String midTableAction) throws UnExpectedRequestException {
         Matcher matcher = CUSTOM_PLACEHOLODER_PATTERN.matcher(midTableAction);
         while (matcher.find()) {
@@ -125,9 +143,13 @@ public class DateExprReplaceUtil {
                 String[] keys = currentParam.split(SpecCharEnum.MINUS.getValue());
                 int forwayDay = Integer.parseInt(keys[1]);
                 calendar.setTime(date);
-                calendar.add(Calendar.DATE, 0 - forwayDay - 1);
+                if ("run_today_h".equals(keys[0]) || "run_today_h_std".equals(keys[0])) {
+                    calendar.add(Calendar.HOUR_OF_DAY, 0 - forwayDay);
+                } else {
+                    calendar.add(Calendar.DATE, 0 - forwayDay - 1);
+                }
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
-            } else if ("run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
+            } else if ("run_today_h".equals(currentParam) || "run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
                 calendar.setTime(date);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {
@@ -158,9 +180,13 @@ public class DateExprReplaceUtil {
                 String[] keys = currentParam.split(SpecCharEnum.MINUS.getValue());
                 int forwayDay = Integer.parseInt(keys[1]);
                 calendar.setTime(date);
-                calendar.add(Calendar.DATE, 0 - forwayDay - 1);
+                if ("run_today_h".equals(keys[0]) || "run_today_h_std".equals(keys[0])) {
+                    calendar.add(Calendar.HOUR_OF_DAY, 0 - forwayDay);
+                } else {
+                    calendar.add(Calendar.DATE, 0 - forwayDay - 1);
+                }
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(keys[0])).format(calendar.getTime());
-            } else if ("run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
+            } else if ("run_today_h".equals(currentParam) || "run_today_h_std".equals(currentParam) || "run_today".equals(currentParam) || "run_today_std".equals(currentParam)) {
                 calendar.setTime(date);
                 dateStr = new SimpleDateFormat(RUN_DATE_FORMAT.get(currentParam)).format(calendar.getTime());
             } else {

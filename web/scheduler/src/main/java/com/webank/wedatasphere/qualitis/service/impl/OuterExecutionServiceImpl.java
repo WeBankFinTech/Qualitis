@@ -23,7 +23,6 @@ import com.alibaba.druid.sql.dialect.hive.visitor.HiveSchemaStatVisitor;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.stat.TableStat.Name;
-import com.alibaba.druid.support.json.JSONUtils;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -47,11 +46,12 @@ import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.constants.WhiteListTypeEnum;
 import com.webank.wedatasphere.qualitis.dao.*;
+import com.webank.wedatasphere.qualitis.dao.repository.AuthListRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.TaskDataSourceRepository;
 import com.webank.wedatasphere.qualitis.dto.SubmitRuleBaseInfo;
 import com.webank.wedatasphere.qualitis.entity.*;
 import com.webank.wedatasphere.qualitis.exception.*;
-//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
 import com.webank.wedatasphere.qualitis.job.MonitorManager;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
@@ -88,21 +88,17 @@ import com.webank.wedatasphere.qualitis.rule.service.RuleService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
 import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.service.OuterExecutionService;
 import com.webank.wedatasphere.qualitis.service.TaskService;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-//import org.apache.commons.httpclient.util.DateParseException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
-import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.logging.log4j.util.Strings;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -112,16 +108,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -141,6 +137,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private CheckAlertDao checkAlertDao;
     @Autowired
     private TaskResultDao taskResultDao;
+    @Autowired
+    private AuthListRepository authListRepository;
     @Autowired
     private TaskDao taskDao;
     @Autowired
@@ -167,8 +165,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private GatewayJobInfoDao gatewayJobInfoDao;
     @Autowired
     private ExecutionParametersDao executionParametersDao;
-//    @Autowired
-//    private LinkisUdfDao linkisUdfDao;
+    @Autowired
+    private TaskRuleAlarmConfigDao taskRuleAlarmConfigDao;
+    @Autowired
+    private LinkisUdfDao linkisUdfDao;
     @Autowired
     private AbnormalDataRecordInfoDao abnormalDataRecordInfoDao;
     @Autowired
@@ -181,11 +181,15 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private RuleMetricDao ruleMetricDao;
     @Autowired
     private RuleService ruleService;
+    @Autowired
+    private StandardValueVersionDao standardValueVersionDao;
+    @Autowired
+    private StandardValueVariablesDao standardValueVariablesDao;
 
 //    @Autowired
 //    private ImsmetricIdentifyDao imsmetricIdentifyDao;
-//    @Autowired
-//    private ImsmetricDataDao imsmetricDataDao;
+    @Autowired
+    private ImsmetricDataDao imsmetricDataDao;
 
     @Autowired
     private MonitorManager monitorManager;
@@ -209,8 +213,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private LocaleParser localeParser;
     @Autowired
     private RuleDataSourceService ruleDataSourceService;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
     @Autowired
     private RuleTemplateService ruleTemplateService;
     @Autowired
@@ -220,14 +224,23 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private TaskService taskService;
     @Autowired
     private ProjectEventService projectEventService;
-//    @Autowired
-//    private FieldsAnalyseDao fieldsAnalyseDao;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Value("${task.create_and_submit.limit_size:1000}")
     private Long thresholdValue;
 
-//    @Autowired
-//    private ApplicationCommentDao applicationCommentDao;
+    @Value("${metric.collector.host}")
+    private String collectorServerHost;
+
+    @Value("${metric.collector.path.collect_submit:/qualitis/outer/api/v1/imsmetric/collect}")
+    private String collectorCollectSubmitPath;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
+    @Value("${rule.delete_metric.enable:false}")
+    private Boolean deleteMetricEnable;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -294,9 +307,12 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse generalExecution(GeneralExecutionRequest request, String loginUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
-        Boolean exceedTaskSize = taskService.getExecutingTaskNumber(-24) >= thresholdValue;
+        LOGGER.info("Start to execution in different ways");
+        Long executingTaskNumber = taskService.getExecutingTaskNumber(-24);
+        Boolean exceedTaskSize = executingTaskNumber >= thresholdValue;
         if (exceedTaskSize) {
-            return new GeneralResponse<>("5001", "Number of task exceeded limit", null);
+            LOGGER.error("Number of task exceeded limit, thresholdValue: [{}], executingTaskNumber: [{}]", thresholdValue, executingTaskNumber);
+            return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Number of task exceeded limit", null);
         }
         // Generator application information
         GeneralExecutionRequest.checkRequest(request);
@@ -747,6 +763,53 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     @Override
     public GeneralResponse groupExecution(GroupExecutionRequest request, Integer invokeCode, String landUser) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        if (null == request.getGroupId()) {
+            // May be collect rerun
+            String createUser = request.getCreateUser();
+            String executeUser = request.getExecutionUser();
+
+            Application applicationInDb = applicationDao.findById(request.getApplicationId());
+            if (applicationInDb == null) {
+                throw new UnExpectedRequestException("Application not exists.");
+            }
+
+            String collectIds = applicationInDb.getCollectIds();
+            if (StringUtils.isBlank(collectIds)) {
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "No collect to submit", null);
+            }
+
+            List<Long> realCollectIds = Arrays.asList(collectIds.split(SpecCharEnum.COMMA.getValue())).stream().map(collectId -> Long.parseLong(collectId)).collect(Collectors.toList());
+
+            Map<String, Object> paramMap = new HashMap<>();
+            paramMap.put("create_user", createUser);
+            paramMap.put("execution_user", executeUser);
+            paramMap.put("imsmetric_collect_id_list", realCollectIds);
+            paramMap.put("execution_parameters", applicationInDb.getExecutionParam());
+            paramMap.put("engine_param", applicationInDb.getStartupParam());
+
+            String appId = QualitisConstants.DEFAULT_AUTH_APP_ID;
+            String nonce = "16895";
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            AuthList authList = authListRepository.findByAppId(appId);
+            String signature = SignUtil.generateSignature(appId, authList.getAppToken(), nonce, timestamp);
+            String collectorServerUri = collectorServerHost + collectorCollectSubmitPath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;;
+
+            try {
+                LOGGER.info("Start to submit collect to collector server, url: {}, data: {}", collectorServerUri, GSON.toJson(paramMap));
+                GeneralResponse generalResponse = restTemplate.postForObject(collectorServerUri, paramMap, GeneralResponse.class);
+                LOGGER.info("Finish to submit collect to collector server");
+                if (! ResponseStatusConstants.OK.equals(generalResponse.getCode())) {
+                    LOGGER.error("Failed to submit collect from collector server.");
+                    throw new UnExpectedRequestException("Failed to submit collect from collector server.");
+                }
+                return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
+            } catch (Exception e) {
+                String errMsg = String.format("Failed to submit collect. collect IDs: [%s]", collectIds);
+                LOGGER.error("Failed to submit collect. exception: {}", e.getMessage());
+                throw new UnExpectedRequestException(errMsg);
+            }
+        }
+
         GroupExecutionRequest.checkRequest(request);
         LOGGER.info("Group execution request: {}", request.toString());
         String loginUser = getLoginUser(landUser, request.getCreateUser(), request.getAsync());
@@ -1003,85 +1066,84 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             throw new UnExpectedRequestException("Check alert in group[" + ruleGroupInDb.getRuleGroupName() + "] {&DOES_NOT_EXIST}");
         }
 
-//        String cluster = linkisConfig.getBdapCheckAlertCluster();
-//        CheckAlert currentCheckAlert = checkAlertsInDb.iterator().next();
-//        LOGGER.info("{} start to submit check alert rule[{}]", executionUser, currentCheckAlert.toString());
-//
-//        // Use a white list to check the user and table
-//        CheckAlertWhiteList checkAlertWhiteList = checkAlertWhiteListRepository.checkWhiteList(cluster + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + currentCheckAlert.getAlertTable(), WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode(), executionUser);
-//
-//        if (checkAlertWhiteList == null) {
-//            throw new PermissionDeniedRequestException("Check alert execution denied because incompatible white list");
-//        }
-//
-//        Map<String, String> execParamMap = new HashMap<>(checkAlertsInDb.size());
-//        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
-//
-//        String startupParam = "";
-//        Boolean engineReuse = Boolean.TRUE;
-//        if (CollectionUtils.isNotEmpty(execParamMap.keySet())) {
-//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_CLUSTER_NAME)) {
-//                cluster = execParamMap.get(QualitisConstants.QUALITIS_CLUSTER_NAME);
-//            }
-//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_STARTUP_PARAM)) {
-//                startupParam = execParamMap.get(QualitisConstants.QUALITIS_STARTUP_PARAM).replace(SpecCharEnum.COMMA.getValue(), SpecCharEnum.DIVIDER.getValue());
-//            }
-//            if (execParamMap.containsKey(QualitisConstants.QUALITIS_ENGINE_REUSE)) {
-//                engineReuse = Boolean.parseBoolean(execParamMap.get(QualitisConstants.QUALITIS_ENGINE_REUSE).toLowerCase());
-//            }
-//        }
-//
-//        Application newApplication = generateApplicationInfo(currentCheckAlert.getCreateUser(), executionUser, new Date(), InvokeTypeEnum.FLOW_API_INVOKE.getCode(), "");
-//        newApplication.setRuleSize(checkAlertsInDb.size());
-//        newApplication.setClusterName(cluster);
-//        newApplication.setEngineReuse(engineReuse);
-//        newApplication.setProjectId(projectInDb.getId());
-//        newApplication.setExecutionParam(executionParam);
-//        newApplication.setProjectName(projectInDb.getName());
-//        newApplication.setRuleGroupId(ruleGroupInDb.getId());
-//        newApplication.setNodeName(currentCheckAlert.getNodeName());
-//
-//        Application saveApplication = applicationDao.saveApplication(newApplication);
-//        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(saveApplication.getClusterName());
-//        if (clusterInfo == null) {
-//            throw new UnExpectedRequestException("Cluster : [" + saveApplication.getClusterName() + "] {&DOES_NOT_EXIST}");
-//        }
-//
-//        boolean accept = checkLinkisAccept(newApplication, clusterInfo.getClusterName(), executionUser);
-//        if (!accept) {
-//            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
-//                    new ApplicationTaskSimpleResponse(newApplication.getId()));
-//        }
-//        String[] dbAndTables = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
-//        List<String> columns;
-//        try {
-//            List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(clusterInfo.getClusterName(), dbAndTables[0], dbAndTables[1], executionUser);
-//            columns = columnInfoDetails.stream().map(columnInfoDetail -> columnInfoDetail.getFieldName()).collect(Collectors.toList());
-//        } catch (Exception e) {
-//            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
-//        }
-//        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol()) && !columns.contains(currentCheckAlert.getAdvancedAlertCol()))) {
-//            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
-//        }
-//
-//        List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
-//        try {
-//            taskSubmitResults.add(executionManager.executeCheckAlert(clusterInfo, dbAndTables, columns, currentCheckAlert, saveApplication, startupParam, engineReuse, EngineTypeEnum.SPARK_ENGINE.getMessage()));
-//        } catch (Exception e) {
-//            List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
-//            Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
-//
-//            // Print and save abnormal application.
-//            catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), currentCheckAlert, newApplication);
-//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
-//        }
-//
-//        saveApplication.setTotalTaskNum(taskSubmitResults.size());
-//        LOGGER.info("Succeed to submit application. Result: {}", taskSubmitResults);
-//        Application applicationInDb = applicationDao.saveApplication(saveApplication);
-//        LOGGER.info("Succeed to save application. Application: {}", applicationInDb);
-//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", null);
+        String cluster = linkisConfig.getBdapCheckAlertCluster();
+        CheckAlert currentCheckAlert = checkAlertsInDb.iterator().next();
+        LOGGER.info("{} start to submit check alert rule[{}]", executionUser, currentCheckAlert.toString());
+
+        // Use a white list to check the user and table
+        CheckAlertWhiteList checkAlertWhiteList = checkAlertWhiteListRepository.checkWhiteList(cluster + SpecCharEnum.PERIOD_NO_ESCAPE.getValue() + currentCheckAlert.getAlertTable(), WhiteListTypeEnum.CHECK_ALERT_TABLE.getCode(), executionUser);
+
+        if (checkAlertWhiteList == null) {
+            throw new PermissionDeniedRequestException("Check alert execution denied because incompatible white list");
+        }
+
+        Map<String, String> execParamMap = new HashMap<>(checkAlertsInDb.size());
+        parseExecParams(new StringBuilder(), new StringBuilder(), new StringBuilder(), new StringBuilder(), executionParam, execParamMap);
+
+        String startupParam = "";
+        Boolean engineReuse = Boolean.TRUE;
+        if (CollectionUtils.isNotEmpty(execParamMap.keySet())) {
+            if (execParamMap.containsKey(QualitisConstants.QUALITIS_CLUSTER_NAME)) {
+                cluster = execParamMap.get(QualitisConstants.QUALITIS_CLUSTER_NAME);
+            }
+            if (execParamMap.containsKey(QualitisConstants.QUALITIS_STARTUP_PARAM)) {
+                startupParam = execParamMap.get(QualitisConstants.QUALITIS_STARTUP_PARAM).replace(SpecCharEnum.COMMA.getValue(), SpecCharEnum.DIVIDER.getValue());
+            }
+            if (execParamMap.containsKey(QualitisConstants.QUALITIS_ENGINE_REUSE)) {
+                engineReuse = Boolean.parseBoolean(execParamMap.get(QualitisConstants.QUALITIS_ENGINE_REUSE).toLowerCase());
+            }
+        }
+
+        Application newApplication = generateApplicationInfo(currentCheckAlert.getCreateUser(), executionUser, new Date(), InvokeTypeEnum.FLOW_API_INVOKE.getCode(), "");
+        newApplication.setRuleSize(checkAlertsInDb.size());
+        newApplication.setClusterName(cluster);
+        newApplication.setEngineReuse(engineReuse);
+        newApplication.setProjectId(projectInDb.getId());
+        newApplication.setExecutionParam(executionParam);
+        newApplication.setProjectName(projectInDb.getName());
+        newApplication.setRuleGroupId(ruleGroupInDb.getId());
+        newApplication.setNodeName(currentCheckAlert.getNodeName());
+
+        Application saveApplication = applicationDao.saveApplication(newApplication);
+        ClusterInfo clusterInfo = clusterInfoDao.findByClusterName(saveApplication.getClusterName());
+        if (clusterInfo == null) {
+            throw new UnExpectedRequestException("Cluster : [" + saveApplication.getClusterName() + "] {&DOES_NOT_EXIST}");
+        }
+
+        boolean accept = checkLinkisAccept(newApplication, clusterInfo.getClusterName(), executionUser);
+        if (!accept) {
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "Add pending application successfully.",
+                    new ApplicationTaskSimpleResponse(newApplication.getId()));
+        }
+        String[] dbAndTables = currentCheckAlert.getAlertTable().split(SpecCharEnum.PERIOD.getValue());
+        List<String> columns;
+        try {
+            List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(clusterInfo.getClusterName(), dbAndTables[0], dbAndTables[1], executionUser);
+            columns = columnInfoDetails.stream().map(columnInfoDetail -> columnInfoDetail.getFieldName()).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
+        }
+        if (!columns.contains(currentCheckAlert.getAlertCol()) || (StringUtils.isNotEmpty(currentCheckAlert.getAdvancedAlertCol()) && !columns.contains(currentCheckAlert.getAdvancedAlertCol()))) {
+            throw new UnExpectedRequestException("{&RULE_DATASOURCE_BE_MOVED}");
+        }
+
+        List<TaskSubmitResult> taskSubmitResults = new ArrayList<>();
+        try {
+            taskSubmitResults.add(executionManager.executeCheckAlert(clusterInfo, dbAndTables, columns, currentCheckAlert, saveApplication, startupParam, engineReuse, EngineTypeEnum.SPARK_ENGINE.getMessage()));
+        } catch (Exception e) {
+            List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
+            Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
+
+            // Print and save abnormal application.
+            catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), currentCheckAlert, newApplication);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
+        }
+
+        saveApplication.setTotalTaskNum(taskSubmitResults.size());
+        LOGGER.info("Succeed to submit application. Result: {}", taskSubmitResults);
+        Application applicationInDb = applicationDao.saveApplication(saveApplication);
+        LOGGER.info("Succeed to save application. Application: {}", applicationInDb);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_DISPATCH_TASK}", new ApplicationTaskSimpleResponse(taskSubmitResults));
     }
 
     private void parseExecParams(StringBuilder partition, StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String execParams, Map<String, String> execParamMap) {
@@ -1089,6 +1151,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             String[] execParamStrs = execParams.split(SpecCharEnum.DIVIDER.getValue());
             for (String str : execParamStrs) {
                 String[] strs = str.split(SpecCharEnum.COLON.getValue());
+                if (strs.length != QualitisConstants.LENGTH_TWO) {
+                    continue;
+                }
                 String execParamKey = strs[0];
                 String execParamValue = strs[1];
 
@@ -1124,6 +1189,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     private void parseExecParams(String exectionParam, Map<String, String> execParamMap) {
         if (StringUtils.isNotBlank(exectionParam)) {
             String[] execParamStrs = exectionParam.split(SpecCharEnum.DIVIDER.getValue());
+            if (execParamStrs.length != QualitisConstants.LENGTH_TWO) {
+                return;
+            }
             for (String str : execParamStrs) {
                 execParamMap.put(str.split(SpecCharEnum.COLON.getValue())[0], str.split(SpecCharEnum.COLON.getValue())[1]);
             }
@@ -1446,6 +1514,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         if (specialEngineReuse != null && specialEngineReuse.length() > 0) {
             lastExecutionParam.append(StringUtils.isNotBlank(lastExecutionParam.toString()) ? SpecCharEnum.DIVIDER.getValue() + specialEngineReuse.toString() : specialEngineReuse.toString());
         }
+        if (StringUtils.isNotBlank(request.getRunDate())) {
+            runDate.append(request.getRunDate());
+        }
 
         parseExecParams(partition, runDate, runToday, splitBy, lastExecutionParam != null && lastExecutionParam.length() > 0 ? lastExecutionParam.toString() : "", execParamMap);
         List<Project> projects = rules.stream().map(Rule::getProject).distinct().collect(Collectors.toList());
@@ -1551,7 +1622,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<ApplicationTaskResponse> getApplicationStatus(String applicationId) throws UnExpectedRequestException {
+    public GeneralResponse<Object> getApplicationStatus(String applicationId) throws UnExpectedRequestException {
         // Find application by applicationId
         Application application = applicationDao.findById(applicationId);
         if (application == null) {
@@ -1567,7 +1638,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<ApplicationTaskResponse> getApplicationDynamicStatus(String applicationId) throws UnExpectedRequestException {
+    public GeneralResponse<Object> getApplicationDynamicStatus(String applicationId) throws UnExpectedRequestException {
         // Find application by applicationId
         Application application = applicationDao.findById(applicationId);
         if (application == null) {
@@ -1579,7 +1650,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<ApplicationResultResponse> getApplicationSummary(String applicationId) throws UnExpectedRequestException {
+    public GeneralResponse<Object> getApplicationSummary(String applicationId) throws UnExpectedRequestException {
         // Find application by applicationId
         Application applicationInDb = applicationDao.findById(applicationId);
         if (applicationInDb == null) {
@@ -1643,7 +1714,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<List<ApplicationResultValueResponse>> getApplicationResultValue(String applicationId, String executionUser) throws UnExpectedRequestException {
+    public GeneralResponse<Object> getApplicationResultValue(String applicationId, String executionUser) throws UnExpectedRequestException {
         if (StringUtils.isEmpty(applicationId) || StringUtils.isEmpty(executionUser)) {
             LOGGER.warn("Get application result value with empty string from outer.");
             throw new UnExpectedRequestException("Application ID or execution user {&CAN_NOT_BE_NULL_OR_EMPTY}");
@@ -1686,7 +1757,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<String> getTaskLog(GetTaskLogRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<Object> getTaskLog(GetTaskLogRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         GetTaskLogRequest.checkRequest(request);
 
@@ -1723,7 +1794,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<String> getApplicationLog(String applicationId) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<Object> getApplicationLog(String applicationId) throws UnExpectedRequestException, PermissionDeniedRequestException {
         // Check Arguments
         Application applicationInDb = applicationDao.findById(applicationId);
         if (applicationInDb == null) {
@@ -1766,7 +1837,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<Integer> killApplication(String applicationId, String loginUser)
+    public GeneralResponse<Object> killApplication(String applicationId, String loginUser)
             throws JobKillException, UnExpectedRequestException, ClusterInfoNotConfigException, PermissionDeniedRequestException {
         LOGGER.info("{} to kill {}", loginUser, applicationId);
         Application applicationInDb = applicationDao.findById(applicationId);
@@ -1934,13 +2005,6 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
             catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
             return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, e.getMessage(), null);
-        } catch (ParseException e) {
-            List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.GRAMMAR_ISSUES.getCode().toString())).collect(Collectors.toList());
-            Integer code = CollectionUtils.isNotEmpty(collect) ? collect.get(0).getCode() : null;
-
-            catchAndSolve(e, code, ApplicationStatusEnum.TASK_SUBMIT_FAILED.getCode(), rules, newApplication);
-            LOGGER.error(e.getMessage(), e);
-            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&PARSE_SQL_FAILED_PLEASE_CHECKOUT_YOUR_CUSTOM_SQL}", null);
         } catch (JobSubmitException e) {
             Integer commentCode = ERR_CODE_TYPE.get(e.getErrCode());
             List<ApplicationComment> collect = APPLICATION_COMMENT_LIST.stream().filter(item -> item.getCode().toString().equals(ApplicationCommentEnum.UNKNOWN_ERROR_ISSUES.getCode().toString())).collect(Collectors.toList());
@@ -2015,7 +2079,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         newApplication.setSubSystemId(subSystemId);
         newApplication.setSplitBy(splitBy.toString());
         newApplication.setExecutionParamJson(GSON.toJson(execParams));
-        newApplication.setRuleIds(Arrays.toString(ruleIds.toArray()));
+        newApplication.setRuleIds(StringUtils.replace(Arrays.toString(ruleIds.toArray()), " ", ""));
     }
 
     private boolean checkLinkisAccept(Application newApplication, String clusterName, String executionUser) {
@@ -2101,7 +2165,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                     String standardRuleDetail = rule.getProject().getName() + "-" + rule.getName() + "-" + rule.getTemplate().getName();
                     if (abnormalDataRecordInfoExists == null) {
                         AbnormalDataRecordInfo abnormalDataRecordInfo = new AbnormalDataRecordInfo(rule.getId(), standardRuleName, datasourceType
-                                , ruleDataSource.getDbName(), ruleDataSource.getTableName(), departmentName, Integer.valueOf(subSystemId), execNum, alarmNum);
+                                , ruleDataSource.getDbName(), ruleDataSource.getTableName(), departmentName, subSystemId, execNum, alarmNum);
                         abnormalDataRecordInfo.setRuleDetail(StringUtils.isEmpty(rule.getDetail()) ? standardRuleDetail : rule.getDetail());
 
                         abnormalDataRecordInfo.setRecordDate(nowDate);
@@ -2116,7 +2180,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                         abnormalDataRecordInfoExists.setEventNum(abnormalDataRecordInfoExists.getEventNum() + alarmNum);
                         abnormalDataRecordInfoExists.setDepartmentName(departmentName);
                         abnormalDataRecordInfoExists.setDatasource(datasourceType);
-                        abnormalDataRecordInfoExists.setSubSystemId(Integer.valueOf(subSystemId));
+                        abnormalDataRecordInfoExists.setSubSystemId(subSystemId);
                         abnormalDataRecordInfoDao.save(abnormalDataRecordInfoExists);
                     }
                 }
@@ -2238,7 +2302,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 //      env_names in exec_param
         StringBuilder execParamEnvs = new StringBuilder(StringUtils.trimToEmpty(envNames));
         // Generate database name.
-        Map<Long, Map<String, Object>> ruleReplaceInfo = ruleReplaceInfo(userName, execParams, rules, runDate, runToday, execParamEnvs);
+        Map<Long, Map<String, Object>> ruleReplaceInfo = ruleReplaceInfo(execParams, rules, runDate, runToday, execParamEnvs);
 
         // Save application
         newApplication.setRuleSize(rules.size());
@@ -2372,7 +2436,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<GatewayJobInfoResponse> queryJobInfo(String jobId) throws UnExpectedRequestException {
+    public GeneralResponse<Object> queryJobInfo(String jobId) throws UnExpectedRequestException {
         if (StringUtils.isEmpty(jobId)) {
             throw new UnExpectedRequestException("Job ID " + "{&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
@@ -2385,7 +2449,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<ApplicationProjectResponse> queryApplications(String jobId) throws UnExpectedRequestException, java.text.ParseException {
+    public GeneralResponse<Object> queryApplications(String jobId) throws UnExpectedRequestException, java.text.ParseException {
         if (StringUtils.isEmpty(jobId)) {
             throw new UnExpectedRequestException("Job ID " + "{&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
@@ -2429,6 +2493,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (null == ruleInDb) {
                 throw new UnExpectedRequestException("rule_name [" + str + "] {&DOES_NOT_EXIST}");
             }
+            List<RuleMetric> ruleMetricList = ruleInDb.getAlarmConfigs().stream().map(alarmConfig -> alarmConfig.getRuleMetric()).collect(Collectors.toList());
             stringBuilder.append(String.format(CONTENT_FORMAT, ruleInDb.getName(), ruleInDb.getId()));
 
             // Delete bdp-client history
@@ -2436,7 +2501,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (bdpClientHistory != null) {
                 SpringContextHolder.getBean(BdpClientHistoryDao.class).delete(bdpClientHistory);
             }
-//            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule. rule id: {}", ruleInDb.getId());
@@ -2444,6 +2509,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             if (ruleInDb.getRuleType().equals(RuleTypeEnum.CUSTOM_RULE.getCode())) {
                 // Delete template of custom rule
                 ruleTemplateService.deleteCustomTemplate(ruleInDb.getTemplate());
+
+                // Delete rule metric
+                if (deleteMetricEnable && CollectionUtils.isNotEmpty(ruleMetricList)) {
+                    ruleMetricDao.deleteAll(ruleMetricList);
+                }
             }
 
         }
@@ -2456,43 +2526,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         handleCheckAlert(executeUser, ruleGroupDao.findById(ruleGroupId), projectDao.findById(projectId), executionParam);
     }
 
-    @Override
-    public GeneralResponse executionScript(OmnisScriptRequest request) throws JSONException {
-        Integer runModel = request.getRunModel();
-        if (null == runModel){
-            return new GeneralResponse<>("5001", "runModel not null", null);
-        }
-        LOGGER.info("executionScript request={}",request.toString());
-        if (StringUtils.isBlank(request.getUploadPath())){
-            return new GeneralResponse<>("5001", "uploadPath not null check param", null);
-        }
-        String uploadPath = request.getUploadPath();
-        String command = combineCommand(request,uploadPath);
-        LOGGER.info("executionScript command={}", command);
-        if (null == command){
-            return new GeneralResponse<>("5001", "envPath not null", null);
-        }
-        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-        try {
-            Process process = processBuilder.start();
-            // 获取脚本执行结果
-            BufferedReader bufferedReader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                LOGGER.info("executionScript print={}",line);
-            }
-            // 等待脚本执行完成
-            int exitCode = process.waitFor();
-            LOGGER.info("executionScript exitCode={}",exitCode);
-        } catch (Exception e) {
-            LOGGER.error("Failed run processBuilder", e);
-        }
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "executionScript succeed", null);
-    }
-
 //    @Override
-//    public GeneralResponse<List<ImsmetricIdentify>> queryIdentify(OmnisScriptRequest request) {
+//    public GeneralResponse<Object> queryIdentify(OmnisScriptRequest request) {
 //        String metricIds = request.getMetricIds();
 //        List<ImsmetricIdentify> imsmetricIdentifyList;
 //        if (StringUtils.isBlank(metricIds)){
@@ -2505,14 +2540,14 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 //    }
 
 //    @Override
-//    public GeneralResponse queryImsmetricData(OmnisScriptRequest request) throws DateParseException {
+//    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
 //        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
 //        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
 //    }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-    public GeneralResponse batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+    public GeneralResponse<Object> batchEnableOrDisableRule(EnableOrDisableRule request) throws UnExpectedRequestException, PermissionDeniedRequestException {
         CommonChecker.checkString(request.getOperateUser(), "operate_user");
         User userInDb = userDao.findByUsername(request.getOperateUser());
         if (null == userInDb) {
@@ -2728,48 +2763,6 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         return rules;
     }
 
-    private String combineCommand(OmnisScriptRequest request,String scriptUploadPath) throws JSONException {
-        String command = null;
-        String anacondaEnvPath = request.getEnvPath();
-        if (StringUtils.isBlank(anacondaEnvPath)){
-            return command;
-        }
-        if (request.getRunModel() ==1){
-            command = anacondaEnvPath + " " + scriptUploadPath +" predict ";
-        }else if (request.getRunModel() ==2){
-            command = anacondaEnvPath +" "+ scriptUploadPath +" backtest " ;
-        }else {
-            command = anacondaEnvPath +" "+ scriptUploadPath + " train " ;
-        }
-
-        Map reqMap = new HashMap();
-        if (StringUtils.isNotBlank(request.getStartDate())){
-            reqMap.put("start_date",request.getStartDate());
-        }
-        if (StringUtils.isNotBlank(request.getEndDate())){
-            reqMap.put("end_date",request.getEndDate());
-        }
-        if (StringUtils.isNotBlank(request.getQueryDate())){
-            reqMap.put("query_date",request.getQueryDate());
-        }
-        if (StringUtils.isNotBlank(request.getMetricIds())){
-            reqMap.put("metric_ids",request.getMetricIds());
-        }
-        String param = request.getParam();
-        if (StringUtils.isNotEmpty(param)){
-            JSONObject jsonObject = new JSONObject(param);
-            Iterator keys = jsonObject.keys();
-            while (keys.hasNext()){
-                String next = (String) keys.next();
-                reqMap.put(next,jsonObject.get(next));
-            }
-        }
-        String reqJsonString = JSONUtils.toJSONString(reqMap);
-        reqJsonString = reqJsonString.replace("\"","\'");
-        command = command +reqJsonString;
-        return command;
-    }
-
     private void customReSaveDateSource(Rule currentRule, Map<String, String> execParams, String clusterName, Date date, String runDate, String runToday) throws UnExpectedRequestException {
         String midTableAction = currentRule.getTemplate().getMidTableAction();
         if (StringUtils.isNotBlank(currentRule.getWhereContent())) {
@@ -2790,6 +2783,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 //            midTableAction = midTableAction.replace("${run_today_std}", runToday);
         }
 
+        midTableAction = replaceStandardValueWithinCustomSql(currentRule, midTableAction);
         midTableAction = DateExprReplaceUtil.replaceRunDate(date, midTableAction);
         // Save datasource in first execution(Only possible data sources related to fps).
         boolean firstExecution = CollectionUtils.isEmpty(currentRule.getRuleDataSources().stream().filter(ruleDataSource -> !ORIGINAL_INDEX.equals(ruleDataSource.getDatasourceIndex())).collect(
@@ -2865,6 +2859,24 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             currentRule.setRuleDataSources(ruleDataSourcesExist);
             ruleDao.saveRule(currentRule);
         }
+    }
+
+    /**
+     * @param rule
+     * @param sql
+     * @return
+     */
+    public String replaceStandardValueWithinCustomSql(Rule rule, String sql) {
+        List<StandardValueVariables> standardValueVariablesList = standardValueVariablesDao.findByRuleId(rule.getId());
+        if (CollectionUtils.isEmpty(standardValueVariablesList)) {
+            return sql;
+        }
+        List<StandardValueVersion> standardValueVersionList = standardValueVersionDao.findByIds(standardValueVariablesList.stream().map(StandardValueVariables::getStandardValueVersionId).collect(Collectors.toList()));
+        if (CollectionUtils.isEmpty(standardValueVersionList)) {
+            return sql;
+        }
+        Map<Long, StandardValueVersion> idAndStandardValueMap = standardValueVersionList.stream().collect(Collectors.toMap(StandardValueVersion::getId, Function.identity(), (oldVal, newVal) -> oldVal));
+        return DateExprReplaceUtil.replaceStandardValueWithinCustomSql(standardValueVariablesList, idAndStandardValueMap, sql);
     }
 
     private Map<String, List<String>> toDbAndTables(Map<String, List<String>> dbAndTableMap, Map<Name, TableStat> tableStatMap)
@@ -3030,6 +3042,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                     connectParams.put("timestamp", shareConnectParams.get("timestamp"));
                 }
             }
+            if (shareConnectParams.containsKey("userClientIp")) {
+                connectParams.put("userClientIp", shareConnectParams.get("userClientIp"));
+            }
             connectParamMaps.add(connectParams);
         }
     }
@@ -3145,11 +3160,11 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     //                 1. 表/分区大小超过阈值 -》执行参数中指定了引擎类型 -》引擎类型类型是spark && 规则类型是行数据一致性 -》 替换引擎类型为shell
                     if (exceededThreshold) {
+                        LOGGER.info("The data size has exceeded threshold. cluster: {}, partition: {}, table: {}", clusterInfo.getClusterName(), partition, ruleDataSource.getTableName());
                         execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.DEFAULT_ENGINE.getMessage());
-                    } else {
-                        if (ruleDataSource.getProjectId() != null && specialProjectRuleConfig.getProjectNames().contains(ruleDataSource.getProjectId().toString())) {
-                            execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.TRINO_ENGINE.getMessage());
-                        }
+                    } else if (ruleDataSource.getProjectId() != null && specialProjectRuleConfig.getProjectNames().contains(ruleDataSource.getProjectId().toString())) {
+                        LOGGER.info("The data size does not exceeded threshold, but is a special project. project_id: {}", ruleDataSource.getProjectId());
+                        execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.TRINO_ENGINE.getMessage());
                     }
                 }
             }
@@ -3378,7 +3393,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         mappingCols.add(rightCols);
     }
 
-    private Map<Long, Map<String, Object>> ruleReplaceInfo(String username, Map<String, String> executionParamOuter, List<Rule> rules, StringBuilder runDate, StringBuilder runToday, StringBuilder execParamEnvs) {
+    private Map<Long, Map<String, Object>> ruleReplaceInfo(Map<String, String> executionParamOuter, List<Rule> rules, StringBuilder runDate, StringBuilder runToday, StringBuilder execParamEnvs) {
         Map<Long, Map<String, Object>> ruleReplaceInfo = new HashMap<>(8);
         for (Rule rule : rules) {
             Map<String, Object> ruleRealExecParams = new HashMap<>(8);
@@ -3512,7 +3527,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse< ApplicationListResultResponse > getApplicationResult(List< String> applicationIdList)  {
+    public GeneralResponse<Object> getApplicationResult(List< String> applicationIdList)  {
         Map<String, String> result = new HashMap<>();
         for (String applicationId : applicationIdList) {
             result.put(applicationId, null);
@@ -3526,10 +3541,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
 //    @Override
-//    public GeneralResponse<FieldsAnalyseResultResponse> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+//    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
 //        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
-//        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}",
-//                new FieldsAnalyseResultResponse(taskResultList));
+//        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}", new FieldsAnalyseResultResponse(taskResultList));
 //    }
 
 }

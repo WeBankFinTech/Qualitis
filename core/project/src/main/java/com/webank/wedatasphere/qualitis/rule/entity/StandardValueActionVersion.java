@@ -1,6 +1,6 @@
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

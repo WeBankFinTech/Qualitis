@@ -37,4 +37,10 @@ public interface StaticExecutionParametersDao {
      * @param executionParametersInDb
      */
     void deleteByExecutionParameters(ExecutionParameters executionParametersInDb);
+
+    /**
+     * delete by ExecutionParametersId
+     * @param id
+     */
+    void deleteByExecutionParametersId(Long id);
 }

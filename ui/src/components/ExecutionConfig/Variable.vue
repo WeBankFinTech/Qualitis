@@ -1,8 +1,8 @@
 <template>
     <div class="engine-param">
         <div class="top">
-            <div class="param-name">变量{{props.index + 1}}</div>
-            <div class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">删除</span></div>
+            <div class="param-name">{{$t('_.变量')}}{{props.index + 1}}</div>
+            <div class="del-btn" @click="del"><MinusCircleOutlined /><span class="del-text">{{$t('_.删除')}}</span></div>
         </div>
         <div class="param-form">
             <FForm ref="variableFormRef"
@@ -10,7 +10,7 @@
                    :rules="variableFormRules"
                    labelPosition="right"
                    labelWidth="66px">
-                <FFormItem label="变量类型" prop="var_type">
+                <FFormItem :label="$t('_.变量类型')" prop="var_type">
                     <FSelect
                         v-model="variable.var_type"
                         :options="props.variableTypeList"
@@ -21,25 +21,25 @@
                     ></FSelect>
                 </FFormItem>
                 <template v-if="isCustom">
-                    <FFormItem label="变量名称" prop="var_name">
+                    <FFormItem :label="$t('_.变量名称')" prop="var_name">
                         <FInput
                             v-model="variable.var_name"
                             class="form-edit-input"
-                            placeholder="请输入自定义变量名称"
+                            :placeholder="$t('_.请输入自定义变量名称')"
                             clearable
                         />
                     </FFormItem>
-                    <FFormItem label="变量值" prop="var_value">
+                    <FFormItem :label="$t('_.变量值')" prop="var_value">
                         <FInput
                             v-model="variable.var_value"
                             class="form-edit-input"
-                            placeholder="请输入变量值"
+                            :placeholder="$t('_.请输入变量值')"
                             clearable
                         />
                     </FFormItem>
                 </template>
                 <template v-else>
-                    <FFormItem label="变量名称" prop="var_name">
+                    <FFormItem :label="$t('_.变量名称')" prop="var_name">
                         <FSelect
                             v-model="variable.var_name"
                             :options="variableNameList"
@@ -49,11 +49,11 @@
                             @change="onNameChange"
                         ></FSelect>
                     </FFormItem>
-                    <FFormItem label="变量值" prop="var_value">
+                    <FFormItem :label="$t('_.变量值')" prop="var_value" :rules="getDateRule()">
                         <FInput
                             v-model="variable.var_value"
                             class="form-edit-input"
-                            placeholder="请输入变量值"
+                            :placeholder="$t('_.请输入变量值')"
                             clearable
                         />
                     </FFormItem>
@@ -63,6 +63,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     defineProps, computed, ref, defineEmits, defineExpose, watch,
 } from 'vue';
@@ -125,7 +126,7 @@ const variableFormRules = {
                 reject($t('common.notEmpty'));
             }
             if (props.variables.findIndex(item => item === value) !== props.index) {
-                reject('该参数已存在');
+                reject($t('_.该参数已存在'));
             }
 
             resolve();
@@ -139,12 +140,23 @@ const variableFormRules = {
                 reject($t('common.notEmpty'));
             }
             if (props.variables.findIndex(item => item === variable.value.var_name) !== props.index) {
-                reject('该参数已存在');
+                reject($t('_.该参数已存在'));
             }
 
             resolve();
         }),
     },
+};
+// 当变量名称为run_date或run_today时，对变量值添加格式校验
+const getDateRule = () => {
+    if (variable.value.var_name === 'run_date' || variable.value.var_name === 'run_today') {
+        return [{
+            pattern: /^(?:\d{4}-\d{2}-\d{2}|\d{8})$/,
+            message: $t('_.请输入格式为 yyyyMMdd 或 yyyy-MM-dd 的变量值'),
+            trigger: ['change', 'blur'],
+        }];
+    }
+    return [];
 };
 function valid() {
     return variableFormRef.value.validate();
@@ -182,6 +194,7 @@ const onNameChange = () => {
     variable.value.var_value = '';
 };
 defineExpose({ valid });
+
 </script>
 
 <style scoped lang="less">

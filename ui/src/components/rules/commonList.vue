@@ -21,9 +21,9 @@
                 工作流：预览、编辑、复制
                 普通项目：预览、编辑 -->
                 <template v-slot:suffix>
-                    <FSpace v-if="!(ruleData.currentProject.isWorkflowProject && !ruleData.currentProject.isEmbedInFrame)" style="position:absolute; right:5px">
+                    <FSpace v-if="!(ruleData.currentProject.isWorkflowProject && !ruleData.currentProject.isEmbedInFrame)" style="position:absolute; right:5px; margin-right:19px">
                         <FDropdown :options="options" @click="select">
-                            <FButton type="primary"><PlusCircleOutlined />添加规则</FButton>
+                            <FButton type="primary"><PlusCircleOutlined />{{$t('_.添加规则')}}</FButton>
                         </FDropdown>
                         <!-- <FButton v-if="ruleData.currentProject.isWorkflowProject" type="info" @click="toggleCopyPanel"><fes-icon type="copy" />复制规则</FButton> -->
                     </FSpace>
@@ -32,10 +32,10 @@
             <!-- 规则列表 -->
             <div v-if="ruleData.ruleList.length > 0" class="wd-content-body tab-content">
                 <ul v-if="!(ruleData.currentProject.isWorkflowProject && !ruleData.currentProject.isEmbedInFrame)" class="wd-body-menus">
-                    <li v-if="ruleData.currentProject.editMode === 'display' && !ruleData.currentProject.isEmbedInFrame" class="wd-body-menu-item" @click="runRule">执行规则</li>
-                    <li v-if="ruleData.currentProject.editMode === 'display' && ruleData.currentProject.isEmbedInFrame" class="wd-body-menu-item" @click="toggleCopyPanel">复制规则</li>
-                    <li v-if="ruleData.currentProject.editMode === 'display'" class="wd-body-menu-item" @click="editRule">编辑</li>
-                    <li v-if="ruleData.currentProject.editMode !== 'create'" class="wd-body-menu-item" @click="delRule">删除</li>
+                    <li v-if="ruleData.currentProject.editMode === 'display' && !ruleData.currentProject.isEmbedInFrame" class="wd-body-menu-item" @click="runRule">{{$t('_.执行规则')}}</li>
+                    <li v-if="ruleData.currentProject.editMode === 'display' && !ruleData.currentProject.isEmbedInFrame" class="wd-body-menu-item" @click="toggleCopyPanel">{{$t('_.复制规则')}}</li>
+                    <li v-if="ruleData.currentProject.editMode === 'display'" class="wd-body-menu-item" @click="editRule">{{$t('_.编辑')}}</li>
+                    <li v-if="ruleData.currentProject.editMode !== 'create'" class="wd-body-menu-item" @click="delRule">{{$t('_.删除')}}</li>
                 </ul>
                 <!-- 单表对比 -->
                 <SingleTableCheck v-if="currentRuleType === '1-1'" :key="ruleData.currentRule.rule_id + '1'" />
@@ -47,10 +47,12 @@
                 <SqlVerification v-else-if="currentRuleType === '2-2'" :key="ruleData.currentRule.rule_id + '5'" />
                 <!-- 文件校验 -->
                 <DocumentCheck v-else-if="currentRuleType === '4-1'" :key="ruleData.currentRule.rule_id + '6'" />
+                <!-- 跨集群多表校验 -->
+                <CrossClusterCheck v-else-if="currentRuleType === '3-3'" :key="ruleData.currentRule.rule_id + '7'" />
             </div>
             <FSpace v-if="ruleData.currentProject.editMode !== 'display'">
-                <FButton size="large" :disabled="ruleData.isSaving" :loading="ruleData.isSaving" class="save" type="primary" @click="saveRule">保存</FButton>
-                <FButton size="large" :disabled="ruleData.isSaving" class="cancel" @click="cancel">取消</FButton>
+                <FButton size="large" :disabled="ruleData.isSaving" :loading="ruleData.isSaving" class="save" type="primary" @click="saveRule">{{$t('_.保存')}}</FButton>
+                <FButton size="large" :disabled="ruleData.isSaving" class="cancel" @click="cancel">{{$t('_.取消')}}</FButton>
             </FSpace>
         </div>
 
@@ -67,13 +69,16 @@
     </div>
 </template>
 <script setup>
+
 import {
     ref, computed, onMounted, provide, watch, unref, onUnmounted,
 } from 'vue';
 import { FMessage, FModal } from '@fesjs/fes-design';
 import { PlusCircleOutlined } from '@fesjs/fes-design/es/icon';
 import { useStore } from 'vuex';
-import { useRouter, useRoute, request as FRequest } from '@fesjs/fes';
+import {
+    useRouter, useRoute, request as FRequest, useI18n,
+} from '@fesjs/fes';
 import {
     ruleTypes, DWSMessage, getURLQueryParams,
 } from '@/common/utils';
@@ -96,6 +101,10 @@ import CrossDbCheck from './forms/crossDbCheck/index.vue';
 import DocumentCheck from './forms/documentCheck/index.vue';
 import SingleTableCheck from './forms/singleTableCheck/index.vue';
 import SqlVerification from './forms/sqlVerification/index.vue';
+import CrossClusterCheck from './forms/crossClusterCheck/index.vue';
+
+
+const { t: $t } = useI18n();
 
 const route = useRoute();
 const query = computed(() => route.query);
@@ -127,21 +136,24 @@ const currentRuleIndex = ref(-1);
 // 可选规则类型
 const options = ref([{
     value: 'newSingleTableRule',
-    label: '单表校验',
+    label: $t('_.单表校验'),
 }, {
     value: 'newMultiTableRule',
-    label: '多表比对',
+    label: $t('_.多表比对'),
 }, {
     value: 'documentVerification',
-    label: '表文件校验',
+    label: $t('_.表文件校验'),
 }, {
     value: 'sqlVerification',
-    label: '自定义SQL校验',
+    label: $t('_.自定义SQL校验'),
+}, {
+    value: 'newMultiClusterRule',
+    label: $t('_.跨集群多表比对'),
 }]);
 
 async function saveRule() {
     console.log('普通保存', (ruleData.value.currentRule.rule_type === 1 || ruleData.value.currentRule.rule_type === 2) && ruleData.value.currentRuleDetail?.whetherVerify);
-    if (ruleData.value.currentRuleDetail?.whetherVerify) return FMessage.error('指标未配置，上报开关无效');
+    if (ruleData.value.currentRuleDetail?.whetherVerify) return FMessage.error($t('_.指标未配置，上报开关无效'));
 
     if (ruleData.value.isSaving) {
         return;
@@ -160,9 +172,24 @@ async function saveRule() {
     });
 }
 
-function reset() {
+async function reset() {
     // 当没有规则的时候需要增加兜底，不然会报错
     const targetRule = cloneDeep(unref(ruleData.value.ruleList[currentRuleIndex.value])) || {};
+    // TODO: 根据模板cluster_num区分 跨集群 单集群
+    const tmpid = targetRule.rule_template_id;
+    if (tmpid) {
+        try {
+            const result = await FRequest(`api/v1/projector/rule_template/meta_input/${tmpid}`, {}, 'get');
+            console.log(result);
+            if (result?.cluster_num >= 2) {
+                // 此时为跨集群，ruleType为3-3需要默认补充table_type为3
+                targetRule.table_type = 3;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
     store.commit('rule/setCurrentRule', targetRule);
 }
 
@@ -184,9 +211,9 @@ const delRule = () => {
         isEmbedInFrame,
     } = ruleData.value.currentProject;
     FModal.confirm({
-        title: '警告',
+        title: $t('_.警告'),
         content: `确认删除规则${ruleData.value.currentRule.rule_name}?`,
-        okText: '确认',
+        okText: $t('_.确认'),
         onOk() {
             console.log('modal ok');
             eventbus.emit(delEvent, () => {
@@ -209,10 +236,10 @@ const cancel = (leaveFlag) => {
     console.log('取消');
     return new Promise((resolve, reject) => {
         FModal.confirm({
-            title: '警告',
-            content: leaveFlag === 'leave' ? '即将退出正在编辑的规则，是否保存规则' : '您处于编辑状态，离开后数据将不会被保存',
-            okText: leaveFlag === 'leave' ? '保存' : '确认离开',
-            cancelText: leaveFlag === 'leave' ? '不保存' : '取消',
+            title: $t('_.警告'),
+            content: leaveFlag === 'leave' ? $t('_.即将退出正在编辑的规则，是否保存规则') : $t('_.您处于编辑状态，离开后数据将不会被保存'),
+            okText: leaveFlag === 'leave' ? $t('_.保存') : $t('_.确认离开'),
+            cancelText: leaveFlag === 'leave' ? $t('_.不保存') : $t('_.取消'),
             closable: true,
             async onOk() {
                 try {
@@ -238,7 +265,7 @@ const cancel = (leaveFlag) => {
                     router.back();
                 }
                 eventbus.emit(cancelEvent);
-                reset();
+                await reset();
                 return resolve();
             },
             onCancel() {
@@ -249,6 +276,7 @@ const cancel = (leaveFlag) => {
                     store.commit('rule/setCurrentProject', {
                         editMode: 'display',
                     });
+                    eventbus.emit(cancelEvent);
                     return resolve();
                 }
                 return reject();
@@ -270,7 +298,9 @@ async function select(type, skip = false) {
     }
     const [rule, table] = t.split('-');
     store.dispatch('rule/addDataToGroupDetailList', {
-        rule_type: rule, table_type: table, rule_name: '新建规则', label: '规则名称_未命名', value: ruleData.value.ruleList.length,
+        data: {
+            rule_type: rule, table_type: table, rule_name: $t('_.新建规则'), label: $t('_.规则名称_未命名'), value: ruleData.value.ruleList.length,
+        },
     });
     store.dispatch('rule/updateCurrentRule', {
         rule_type: rule,
@@ -369,11 +399,6 @@ const {
 provide('proxyUserList', computed(() => proxyUserList.value || []));
 provide('clusterList', computed(() => clusterList.value || []));
 
-onMounted(() => {
-    init();
-    updateProxyUserList();
-    loadClusterList();
-});
 
 onUnmounted(() => {
     // 清空store
@@ -408,10 +433,54 @@ function runRule() {
         disabled: true,
     });
 }
+
 const showCopyPanel = ref(false);
-const toggleCopyPanel = () => {
-    showCopyPanel.value = !showCopyPanel.value;
+const copyRule = async () => {
+    // store.commit('rule/setCurrentRuleDetail', {});
+    const copyOfCurRule = ruleData.value.currentRule;
+    const copyOfCurRuleListItemIndex = ruleData.value.ruleList.findIndex(item => item.rule_id === copyOfCurRule.rule_id);
+    const copyOfCurRuleListItem = cloneDeep(ruleData.value.ruleList[copyOfCurRuleListItemIndex]);
+    if (!copyOfCurRuleListItem) return;
+    copyOfCurRuleListItem.value = ruleData.value.ruleList.length;
+    copyOfCurRuleListItem.label = `${copyOfCurRuleListItem.label}_copy`;
+    copyOfCurRuleListItem.rule_name = `${copyOfCurRuleListItem.rule_name}_copy`;
+    currentRuleIndex.value = copyOfCurRuleListItem.value;
+    // store.commit('rule/updateCurrentRuleDetail', targetTempData);
+    store.dispatch('rule/addDataToGroupDetailList', { data: copyOfCurRuleListItem, index: copyOfCurRuleListItem.value });
+    await store.dispatch('rule/updateCurrentRule', { label: `${copyOfCurRuleListItem.label}_copy}`, rule_name: `${copyOfCurRuleListItem.rule_name}_copy}` });
+    eventbus.emit('COPY_MODE');
+    store.commit('rule/setCurrentProject', {
+        editMode: 'create',
+    });
 };
+const toggleCopyPanel = () => {
+    if (ruleData.value.currentProject.isEmbedInFrame) {
+        showCopyPanel.value = !showCopyPanel.value;
+    } else {
+        // 普通规则复制
+        copyRule();
+    }
+};
+onMounted(async () => {
+    await init();
+    updateProxyUserList();
+    await loadClusterList();
+});
+useListener('INIT_FINISHED', () => {
+    if (route.query.copy) {
+        const tempQuery = { ...route.query };
+        delete tempQuery.copy;
+        const queryString = Object.keys(tempQuery)
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(tempQuery[key])}`)
+            .join('&');
+
+        // 构建新的 URL
+        const newUrl = `${route.path}?${queryString}`;
+        router.replace(newUrl);
+        copyRule();
+    }
+});
+
 </script>
 <style lang="less" scoped>
 .wd-content {
@@ -422,9 +491,6 @@ const toggleCopyPanel = () => {
     }
     :deep(.fes-form-item-label) {
         height: 22px;
-    }
-    :deep(.fes-form-item-content){
-        min-height: 22px;
     }
 }
 </style>

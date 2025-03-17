@@ -28,6 +28,7 @@ public enum SpecCharEnum {
     PERCENT("%"),
     SLASH("/"),
     EQUAL("="),
+    NOT("~"),
     DOLLAR("$");
 
     private String value;

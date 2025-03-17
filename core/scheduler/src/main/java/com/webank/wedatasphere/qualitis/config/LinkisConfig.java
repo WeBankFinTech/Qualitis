@@ -243,8 +243,8 @@ public class LinkisConfig {
     @Value("${linkis.git.private-key}")
     private String gitPrivateKey;
 
-//    @Value("${linkis.collect.template}")
-//    private String collectTemplate;
+    @Value("${linkis.collect.template}")
+    private String collectTemplate;
 
     public String getEnvDelete() {
         return envDelete;
@@ -1014,11 +1014,11 @@ public class LinkisConfig {
         this.engineLimit = engineLimit;
     }
 
-//    public String getCollectTemplate() {
-//        return collectTemplate;
-//    }
-//
-//    public void setCollectTemplate(String collectTemplate) {
-//        this.collectTemplate = collectTemplate;
-//    }
+    public String getCollectTemplate() {
+        return collectTemplate;
+    }
+
+    public void setCollectTemplate(String collectTemplate) {
+        this.collectTemplate = collectTemplate;
+    }
 }

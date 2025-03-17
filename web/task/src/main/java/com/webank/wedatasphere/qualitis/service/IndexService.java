@@ -16,11 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexAlarmTodayResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationChartResponse;
-import com.webank.wedatasphere.qualitis.response.IndexApplicationTodayResponse;
+import com.webank.wedatasphere.qualitis.response.*;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
 import com.webank.wedatasphere.qualitis.request.IndexRequest;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -69,4 +67,11 @@ public interface IndexService {
    * @throws ParseException 日期格式错误异常
    */
   List<IndexAlarmChartResponse> getAlarmChart(IndexRequest param) throws ParseException;
+
+  /**
+   * Get auto collect record status information in the limitation of time
+   * @param request
+   * @return
+   */
+  List<IndexAutoCollectRecordChartResponse> getAutoCollectRecordChart(IndexRequest request) throws UnExpectedRequestException;
 }
