@@ -29,6 +29,9 @@ public class LinksErrorCode {
     @Column(name = "application_comment")
     private Integer applicationComment;
 
+    @Column(name = "wtss_error_expression")
+    private String wtssErrorExpression;
+
     public Long getId() {
         return id;
     }
@@ -43,6 +46,14 @@ public class LinksErrorCode {
 
     public void setLinkisErrorCode(String linkisErrorCode) {
         this.linkisErrorCode = linkisErrorCode;
+    }
+
+    public String getWtssErrorExpression() {
+        return wtssErrorExpression;
+    }
+
+    public void setWtssErrorExpression(String wtssErrorExpression) {
+        this.wtssErrorExpression = wtssErrorExpression;
     }
 
     public Integer getApplicationComment() {

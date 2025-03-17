@@ -6,7 +6,6 @@ import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceEnvRequ
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisDataSourceRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.ModifyDataSourceParameterRequest;
 import com.webank.wedatasphere.qualitis.metadata.response.datasource.LinkisDataSourceParamsResponse;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -100,14 +99,4 @@ public interface LinkisMetaDataManager {
      */
     Map<String, Long> getDataSourceTypeNameAndIdMap();
 
-    /**
-     * connect
-     *
-     * @param linkisDataSourceId
-     * @param versionId
-     * @return
-     * @throws Exception
-     * @throws MetaDataAcquireFailedException
-     */
-    GeneralResponse connect(Long linkisDataSourceId, Long versionId) throws Exception;
 }

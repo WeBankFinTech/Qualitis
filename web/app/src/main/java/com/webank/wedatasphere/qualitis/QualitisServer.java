@@ -26,7 +26,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * @author howeye
  */
-@SpringBootApplication(scanBasePackages = {"com.webank.wedatasphere.qualitis", "cn.webank.bdp.wedatasphere.components.servicis"})
+@SpringBootApplication(scanBasePackages = {"com.webank.wedatasphere.qualitis", "cn.webank.bdp.wedatasphere", "com.webank.bdp.metrics"})
 @ServletComponentScan(basePackages = "com.webank.wedatasphere.qualitis")
 @EnableScheduling
 @EnableRetry

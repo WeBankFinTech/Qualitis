@@ -188,7 +188,7 @@ public interface RuleDataSourceDao {
      * @param size
      * @return
      */
-    Page<RuleDataSource> findAllWithPage(int page, int size);
+    Page<RuleDataSource> findDmsTable(List<String> proxyUsers, int page, int size);
 
     /**
      * find all tagCode and tagName in Table
@@ -198,11 +198,18 @@ public interface RuleDataSourceDao {
     List<RuleDataSource> findAllTagByUser(String loginUser);
 
     /**
-     * find By Rule Id
+     * find By Rule Ids
      * @param ruleIds
      * @return
      */
-    List<RuleDataSource> findByRuleId(List<Long> ruleIds);
+    List<RuleDataSource> findByRuleIds(List<Long> ruleIds);
+
+    /**
+     * find By Rule Id
+     * @param ruleId
+     * @return
+     */
+    List<RuleDataSource> findByRuleId(Long ruleId);
 
     /**
      * findRuleGroupIds
@@ -256,4 +263,11 @@ public interface RuleDataSourceDao {
      * @param tagName
      */
     void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName);
+
+    /**
+     * find By Rule Id and non null linkis datasource ID
+     * @param ruleIds
+     * @return
+     */
+    List<RuleDataSource> findByRuleIdAndNonNullLinkisDataSourceId(List<Long> ruleIds);
 }

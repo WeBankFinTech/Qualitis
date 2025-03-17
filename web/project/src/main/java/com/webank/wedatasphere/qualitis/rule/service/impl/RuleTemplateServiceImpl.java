@@ -719,7 +719,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         newTemplate.setFilterFields(request.getFilterFields() != null ? request.getFilterFields() : false);
         newTemplate.setWhetherUsingFunctions(request.getWhetherUsingFunctions() != null ? request.getWhetherUsingFunctions() : false);
         newTemplate.setVerificationCnName(request.getVerificationCnName());
-        newTemplate.setVerificationEnName(request.getVerificationEnName());
+//        newTemplate.setVerificationEnName(request.getVerificationEnName());
         newTemplate.setNamingMethod(request.getNamingMethod());
         newTemplate.setWhetherSolidification(request.getWhetherSolidification() != null ? request.getWhetherSolidification() : false);
         newTemplate.setCheckTemplate(request.getCheckTemplate());
@@ -751,7 +751,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         if (StringUtils.isNotBlank(request.getCountFunctionName())) {
             Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>();
 
-            templateOutputMetas.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(QualitisConstants.DISSATISFACTION + request.getTemplateName() + QualitisConstants.NUMS,
+            templateOutputMetas.addAll(templateOutputMetaService.getAndSaveTemplateOutputMeta(savedTemplate.getVerificationCnName(),
                     FunctionTypeEnum.getFunctionTypeByName(request.getCountFunctionName()),
                     request.getSaveMidTable(), savedTemplate, request.getSamplingContent()));
             savedTemplate.setTemplateOutputMetas(templateOutputMetas);
@@ -977,7 +977,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
         templateInDb.setFilterFields(request.getFilterFields() != null ? request.getFilterFields() : false);
         templateInDb.setWhetherUsingFunctions(request.getWhetherUsingFunctions() != null ? request.getWhetherUsingFunctions() : false);
         templateInDb.setVerificationCnName(request.getVerificationCnName());
-        templateInDb.setVerificationEnName(request.getVerificationEnName());
+//        templateInDb.setVerificationEnName(request.getVerificationEnName());
         templateInDb.setNamingMethod(request.getNamingMethod());
         templateInDb.setWhetherSolidification(request.getWhetherSolidification() != null ? request.getWhetherSolidification() : false);
         templateInDb.setCheckTemplate(request.getCheckTemplate());

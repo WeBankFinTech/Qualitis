@@ -16,26 +16,22 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
-//import cn.hutool.crypto.digest.DigestUtil;
-//import cn.webank.bdp.wedatasphere.components.servicis.ServicisApi;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.webank.wedatasphere.qualitis.config.ItsmConfig;
+import com.webank.wedatasphere.qualitis.config.ItsmConfig;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.RetResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author howeye
@@ -44,10 +40,10 @@ public class Filter2TokenFilter implements Filter {
 
 //    @Autowired
 //    private ServicisApi servicisApi;
-//    @Value("${itsm.path}")
-//    private String itsmPath;
-//    @Autowired
-//    private ItsmConfig itsmConfig;
+    @Value("${itsm.path}")
+    private String itsmPath;
+    @Autowired
+    private ItsmConfig itsmConfig;
     /**
      * 5min
      */
@@ -55,7 +51,10 @@ public class Filter2TokenFilter implements Filter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Filter2TokenFilter.class);
 
+    private AtomicInteger counter = new AtomicInteger(0);
+
     private ObjectMapper objectMapper = new ObjectMapper();
+
     private Long invalidInterval;
 
     @Override
@@ -69,18 +68,18 @@ public class Filter2TokenFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-//        if (request.getRequestURI().startsWith(itsmPath)) {
-//            LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
-//            RetResponse retResponse = verifyRequestFromITSM(request);
-//            if (retResponse.getRetCode() != 0) {
-//                ServletOutputStream out = response.getOutputStream();
-//                out.write(objectMapper.writeValueAsBytes(retResponse));
-//                out.flush();
-//                return;
-//            }
-//            filterChain.doFilter(request, response);
-//            return;
-//        }
+        if (request.getRequestURI().startsWith(itsmPath)) {
+            LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+            RetResponse retResponse = verifyRequestFromITSM(request);
+            if (retResponse.getRetCode() != 0) {
+                ServletOutputStream out = response.getOutputStream();
+                out.write(objectMapper.writeValueAsBytes(retResponse));
+                out.flush();
+                return;
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String appId = request.getParameter("app_id");
         String nonce = request.getParameter("nonce");
@@ -99,23 +98,34 @@ public class Filter2TokenFilter implements Filter {
             return;
         }
 
-//        if (appId != null) {
-//            boolean passed;
+        if (appId != null) {
+            boolean passed = false;
 //            try {
 //                passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
 //            } catch (Exception e) {
 //                LOGGER.error("Validate signature via Servicis failed with error: ", e);
 //                throw new ServletException(e);
 //            }
-//
-//            if (passed) {
-//                LOGGER.info(
-//                        "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
-//                        appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
-//                filterChain.doFilter(request, response);
-//                return;
-//            }
-//        }
+
+            if (passed) {
+                if (request.getRequestURI().contains("create_and_submit")) {
+                    counter.incrementAndGet();
+                    LOGGER.info("Add----------" + counter.get());
+                }
+                LOGGER.info(
+                        "Request accepted, appId='{}', nonce='{}', timestamp='{}', signature='{}', url='{}', remote url='{}'",
+                        appId, nonce, timestamp, signature, request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
+                try {
+                    filterChain.doFilter(request, response);
+                } finally {
+                    if (request.getRequestURI().contains("create_and_submit")) {
+                        counter.decrementAndGet();
+                        LOGGER.info("Decrement----------" + counter.get());
+                    }
+                }
+                return;
+            }
+        }
 
         LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
                 appId, nonce, timestamp, signature);
@@ -136,10 +146,10 @@ public class Filter2TokenFilter implements Filter {
             if ((timeStamp - Long.valueOf(requestTimestamp)) > SIGN_VALIDITY_PERIOD) {
                 throw new IllegalAccessException("The request has expired.");
             }
-//            String sign = DigestUtil.sha256Hex(itsmConfig.getSecretKey() + requestTimestamp);
-//            if (!sign.equals(requestSign)) {
-//                throw new IllegalAccessException("Forbidden!please check your sign.");
-//            }
+            String sign = DigestUtil.sha256Hex(itsmConfig.getSecretKey() + requestTimestamp);
+            if (!sign.equals(requestSign)) {
+                throw new IllegalAccessException("Forbidden!please check your sign.");
+            }
         } catch (IllegalAccessException e) {
             return new RetResponse(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage(), null);
         } catch (Exception e) {
@@ -161,47 +171,4 @@ public class Filter2TokenFilter implements Filter {
         // Destroy operation
     }
 
-    public static void main(String[] args) throws UnsupportedEncodingException {
-        String result = hashEncrypt(hashEncrypt("linkis_id" + "98032" + "1718424156436",
-                "SHA-256", true, true, 32, '0') + "xxxx", "SHA-256",
-                true, true, 32, '0');
-        System.out.println("Result: " + result);
-    }
-
-    public static String hashEncrypt(String input, String hashAlg, boolean strippedLeadingZeroBytesAlg,
-                                     boolean leftPad, int padSize, char padChar) throws UnsupportedEncodingException {
-        MessageDigest messageDigest;
-        String encrypted = StringUtils.EMPTY;
-        byte[] bytes = input.getBytes("UTF-8");
-        try {
-            if (StringUtils.isBlank(hashAlg)) {
-                hashAlg = "SHA-256";
-            }
-            messageDigest = MessageDigest.getInstance(hashAlg);
-            messageDigest.update(bytes);
-            encrypted = bytes2Hex(messageDigest.digest(), strippedLeadingZeroBytesAlg);
-            if (leftPad) {
-                encrypted = StringUtils.leftPad(encrypted, padSize, padChar);
-            }
-        } catch (NoSuchAlgorithmException ignored) {
-            ignored.printStackTrace();
-        }
-        return encrypted;
-    }
-
-    public static String bytes2Hex(byte[] bytes, boolean strippedLeadingZeroBytesAlg) {
-        String hex = StringUtils.EMPTY;
-        if (strippedLeadingZeroBytesAlg) {
-            hex = new BigInteger(1, bytes).toString(16);
-        } else {
-            for (int i = 0; i < bytes.length; i++) {
-                String tmp = Integer.toHexString(bytes[i] & 0xFF);
-                if (tmp.length() == 1) {
-                    hex += "0";
-                }
-                hex += tmp;
-            }
-        }
-        return hex;
-    }
 }

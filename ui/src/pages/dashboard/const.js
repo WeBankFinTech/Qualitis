@@ -1,3 +1,6 @@
+import { locale } from '@fesjs/fes';
+
+const $t = locale.t;
 // 告警等级列表
 export const ALARM_LEVELS = [
     { label: 'Critical', value: '1', classNames: ['red'] },
@@ -27,6 +30,21 @@ export const APPLICATION_STATUSES = [
     { label: '任务初始化成功', value: 10 },
     { label: '参数错误', value: 11 },
 ];
+export function getApplicationStatuses() {
+    // const { t: $t } = useI18n();
+
+    // 应用状态列表
+    return [
+        { label: $t('applicationStatuses.submited'), value: 1 },
+        { label: $t('applicationStatuses.running'), value: 3 },
+        { label: $t('applicationStatuses.verified'), value: 4, classNames: ['green'] },
+        { label: $t('applicationStatuses.failure'), value: 7, classNames: ['red'] },
+        { label: $t('applicationStatuses.unverify'), value: 8, classNames: ['orange'] },
+        { label: $t('applicationStatuses.initfailed'), value: 9, classNames: ['red'] },
+        { label: $t('applicationStatuses.initsucceed'), value: 10 },
+        { label: $t('applicationStatuses.paramerror'), value: 11 },
+    ];
+}
 
 // 接口返回的 各种应用状态统计数量的字段，通过status字段 可以关联 该统计数量 所属的 应用状态
 export const APPLICATION_STATUS_FIELD_NAMES = [

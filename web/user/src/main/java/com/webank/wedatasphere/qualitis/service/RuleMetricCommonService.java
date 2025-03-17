@@ -3,8 +3,8 @@ package com.webank.wedatasphere.qualitis.service;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.request.AddRuleMetricRequest;
-import com.webank.wedatasphere.qualitis.request.ModifyRuleMetricRequest;
+import com.webank.wedatasphere.qualitis.request.AddCommonRuleMetricRequest;
+import com.webank.wedatasphere.qualitis.request.ModifyCommonRuleMetricRequest;
 
 import java.io.IOException;
 import java.util.Map;
@@ -36,7 +36,7 @@ public interface RuleMetricCommonService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    RuleMetric addRuleMetricForObject(AddRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    RuleMetric addRuleMetricForObject(AddCommonRuleMetricRequest request, String userName) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * 检查根据指标名称判断新增或修改
@@ -63,6 +63,12 @@ public interface RuleMetricCommonService {
      * @throws IOException
      * @throws PermissionDeniedRequestException
      */
-    RuleMetric modifyRuleMetricReal(ModifyRuleMetricRequest request, String userName)
+    RuleMetric modifyRuleMetricReal(ModifyCommonRuleMetricRequest request, String userName)
             throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * delete rule metrics by rule id or rule group id
+     * @param name
+     */
+    void deleteRuleMetric(String name, String userName) throws UnExpectedRequestException;
 }

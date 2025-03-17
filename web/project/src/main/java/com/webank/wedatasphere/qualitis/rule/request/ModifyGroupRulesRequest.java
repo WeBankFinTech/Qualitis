@@ -20,7 +20,6 @@ public class ModifyGroupRulesRequest {
     private Long projectId;
     @JsonProperty("rule_group_id")
     private Long ruleGroupId;
-
     @JsonProperty("rule_list")
     private List<ModifyGroupRuleRequest> modifyGroupRuleRequestList;
 

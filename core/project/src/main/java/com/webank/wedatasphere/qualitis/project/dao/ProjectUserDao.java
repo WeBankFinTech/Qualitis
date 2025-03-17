@@ -168,11 +168,11 @@ public interface ProjectUserDao {
     List<ProjectUser> findByUserName(String userName);
 
     /**
-     * Delete all
-     * @param projectUserList
-     * @param countDownLatch
+     * Delete project user by permission and user name
+     * @param permission
+     * @param userName
      */
-    void deleteInBatch(List<ProjectUser> projectUserList,CountDownLatch countDownLatch);
+    void deleteByPermissionAndUsername(int permission, String userName);
 
     /**
      * batchInsert

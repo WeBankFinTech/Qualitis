@@ -22,7 +22,7 @@ export function fetchColumnsOfTableDetail(params = {}) {
 
 // 获取子系统列表
 export function fetchSubSystemInfo(params = {}) {
-    return Promise.resolve([]);
+    return FRequest('/api/v1/projector/meta_data/subSystemInfo', params);
 }
 
 // 获取关联规则
@@ -33,7 +33,7 @@ export function fetctRelatedRulesOfTableDetail(params = {}) {
 
 // 批量导出规则
 export function downloadRelatedRulesOfTableDetail(params = {}) {
-    return FRequest('/api/v1/projector/rule/batch/download', params, {
+    return FRequest('/api/v1/projector/project/batch/download', params, {
         useResponse: true,
         responseType: 'blob',
         headers: {
@@ -43,8 +43,8 @@ export function downloadRelatedRulesOfTableDetail(params = {}) {
 }
 
 // 获取校验模板数据
-export function fetctRuleTemplateList() {
-    return FRequest('/api/v1/projector/rule_template/option/list', {}, 'get');
+export function fetctRuleTemplateList(params = { project_id: null }) {
+    return FRequest('/api/v1/projector/rule_template/option/list', params, 'post');
 }
 
 // 获取数据标签数据

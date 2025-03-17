@@ -38,7 +38,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * @author allenzhou
  */
-public class RuleUpdaterCallable implements Callable<List<Exception>> {
+public class RuleUpdaterCallable implements Callable<List<String>> {
     private RuleService ruleService;
     private FileRuleService fileRuleService;
 
@@ -70,8 +70,8 @@ public class RuleUpdaterCallable implements Callable<List<Exception>> {
     }
 
     @Override
-    public List<Exception> call() {
-        List<Exception> returnExceptions = new ArrayList<>();
+    public List<String> call() {
+        List<String> returnExceptions = new ArrayList<>();
         try {
             LOGGER.info(Thread.currentThread().getName() + " start to update rules.");
             if (CollectionUtils.isNotEmpty(this.addGroupRuleRequestList)) {
@@ -91,7 +91,8 @@ public class RuleUpdaterCallable implements Callable<List<Exception>> {
                         }
                     } catch (Exception e) {
                         LOGGER.error("Failed to update, rule name: {}", request.getRuleName(), e);
-                        returnExceptions.add(e);
+                        String msg = "%s: [%s];";
+                        returnExceptions.add(String.format(msg, e.getMessage(), request.getRuleName()));
                     }
                 }
             } else if (CollectionUtils.isNotEmpty(this.modifyGroupRuleRequestList)) {
@@ -123,7 +124,8 @@ public class RuleUpdaterCallable implements Callable<List<Exception>> {
                         }
                     } catch (Exception e) {
                         LOGGER.error("Failed to update, rule name: {}", request.getRuleName(), e);
-                        returnExceptions.add(e);
+                        String msg = "%s: [%s]; ";
+                        returnExceptions.add(String.format(msg, e.getMessage(), request.getRuleName()));
                     }
                 }
             }

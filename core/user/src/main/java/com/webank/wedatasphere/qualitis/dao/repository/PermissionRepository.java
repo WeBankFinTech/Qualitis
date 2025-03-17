@@ -33,4 +33,10 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
      */
     Permission findByMethodAndUrl(String method, String url);
 
+    /**
+     * find by resCode
+     * @param resCode
+     * @return
+     */
+    Permission findByResCode(String resCode);
 }

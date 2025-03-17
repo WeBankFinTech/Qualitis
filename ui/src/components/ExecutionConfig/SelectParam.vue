@@ -3,7 +3,7 @@
         <div v-for="(value, i) in paramList" :key="value.name" class="row">
             <FSelect
                 v-model="value.name"
-                placeholder="请选择参数名称"
+                :placeholder="$t('_.请选择参数名称')"
                 class="max-w-40"
                 clearable
                 @change="onSelectChange(i)"
@@ -18,7 +18,7 @@
             <FInput
                 class="value"
                 :modelValue="value.value"
-                placeholder="请输入参数值"
+                :placeholder="$t('_.请输入参数值')"
                 clearable
                 @input="
                     (e) => {
@@ -40,7 +40,9 @@ import {
     defineProps, watchEffect, ref, defineEmits, watch,
 } from 'vue';
 import { PlusCircleFilled, MinusCircleOutlined } from '@fesjs/fes-design/icon';
+import { useI18n } from '@fesjs/fes';
 
+const { t: $t } = useI18n();
 const props = defineProps({
     modelValue: Array,
     nameList: Array,

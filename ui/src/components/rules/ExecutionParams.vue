@@ -31,10 +31,10 @@
                 <div class="form-preview-label"><span class="input-preview-label">{{$t('myProject.isDisconnect')}}</span> {{executionParams.abort_on_failure ? $t('common.yes') : $t('common.no')}}</div>
             </FFormItem>
             <!-- 是否聚合多环境计算 -->
-            <FFormItem prop="union_all">
+            <!-- <FFormItem prop="union_all">
                 <FCheckbox v-model="executionParams.union_all" class="form-edit-input">{{$t('myProject.unionSwitch')}}</FCheckbox>
                 <div class="form-preview-label"><span class="input-preview-label">{{$t('myProject.unionSwitch')}}</span> {{executionParams.union_all ? $t('common.yes') : $t('common.no')}}</div>
-            </FFormItem>
+            </FFormItem> -->
             <!-- 是否开启异常数据定向存储 -->
             <FFormItem prop="abnormal_data_storage">
                 <FCheckbox v-model="executionParams.abnormal_data_storage" class="form-edit-input" @change="clearSubData($event, 'dataStorage')">{{$t('myProject.abnormalDataStorage')}}</FCheckbox>
@@ -240,7 +240,7 @@
                             </div>
                         </FFormItem>
                         <!-- 变量值 -->
-                        <FFormItem :label="$t('myProject.variableValue')" prop="variable_value">
+                        <FFormItem :label="$t('myProject.variableValue')" prop="variable_value" :rules="getDateRule(index)">
                             <FInput v-model="executionParams.execution_management[index].variable_value" class="form-edit-input" :placeholder="$t('myProject.pleaseEnterVariableValue')" />
                             <div class="form-preview-label">{{executionParams.execution_management[index].variable_value}}</div>
                         </FFormItem>
@@ -284,6 +284,14 @@
                     <FInput v-model="executionParams.top_partition" class="form-edit-input"
                             :placeholder="$t('common.pleaseEnterTopPartition')" />
                     <div class="form-preview-label">{{executionParams.top_partition}}</div>
+                </FFormItem>
+                <FFormItem prop="union_way" :label="$t('myProject.unionSwitch')">
+                    <FRadioGroup v-model="executionParams.union_way" class="form-edit-input" :cancelable="false">
+                        <FRadio :value="2">{{$t('_.先聚合再计算')}}</FRadio>
+                        <FRadio :value="1">{{$t('_.先计算再聚合')}}</FRadio>
+                        <FRadio :value="0">{{$t('_.无聚合处理')}}</FRadio>
+                    </FRadioGroup>
+                    <div class="form-preview-label">{{getUnionLabel[executionParams.union_way]}}</div>
                 </FFormItem>
             </div>
             <div class="form-title">{{$t('myProject.indicatorParameters')}}</div>
@@ -371,11 +379,128 @@
                     </FButton>
                 </div>
             </div>
+            <div class="form-title">{{$t('myProject.noiseEliminationParams')}}</div>
+            <!-- 是否去噪 -->
+            <FFormItem prop="whether_noise">
+                <FCheckbox v-model="executionParams.whether_noise" class="form-edit-input" @change="clearSubData($event, 'noise')">{{$t('myProject.isNoise')}}</FCheckbox>
+                <div class="form-preview-label"><span class="input-preview-label">{{$t('myProject.isNoise')}}</span> {{executionParams.whether_noise ? $t('common.yes') : $t('common.no')}}</div>
+            </FFormItem>
+            <div v-if="executionParams.whether_noise" :class="{ isEmbed: isEmbed }" class="rule-detail-sub-form inline">
+                <div v-for="(noiseEliminationData, index) in executionParams.noise_elimination_management" :key="index" class="sub-form-item">
+                    <FForm
+                        :ref="el => { if (el) noiseListRef[index] = el; }"
+                        label-width="120px"
+                        :model="executionParams.noise_elimination_management[index]"
+                        class="inline-forms"
+                        :class="{ isEmbed: isEmbed , editInlineForm: computeInlineFormStyle(mode), previewInlineForm: !computeInlineFormStyle(mode) }"
+                        :labelPosition="mode === 'edit' ? 'right' : 'left'"
+                        :labelWidth="98"
+                        :rules="noiseRuleValidate"
+                    >
+                        <div class="sub-title">
+                            <div class="left">{{$t('myProject.noiseEliminationRule')}}{{index + 1}}</div>
+                            <div v-if="executionParams.noise_elimination_management.length > 1 && mode === 'edit'" class="right">
+                                <FButton type="text" class="del-button" @click="deleteNoise(executionParams.noise_elimination_management[index])">
+                                    <template #icon><MinusCircleOutlined /></template>{{$t('common.delete')}}
+                                </FButton>
+                            </div>
+                        </div>
+                        <!-- {{executionParams.noise_elimination_management[index]}} -->
+                        <!-- 规则应用范围 -->
+                        <FFormItem v-if="mode === 'edit'" :label="$t('myProject.ruleUsedRange')" prop="rule_used_range">
+                            <FDatePicker
+                                v-model="executionParams.noise_elimination_management[index].rule_used_range"
+                                type="datemonthrange"
+                                format="yyyy-MM"
+                                class="form-edit-input"
+                                clearable
+                                :control="true"
+                                @change="handleRangeChange($event, index)"
+                            >
+                            </FDatePicker>
+                        </FFormItem>
+                        <!-- 日期选择方式-->
+                        <FFormItem :label="$t('myProject.dateSelectMethod')" prop="date_selection_method">
+                            <FSelect
+                                v-model="executionParams.noise_elimination_management[index].date_selection_method"
+                                class="form-edit-input"
+                                filterable
+                                :placeholder="$t('common.pleaseSelect')"
+                                :options="dateSelectionMethodList"
+                                valueField="code"
+                                labelField="message"
+                                @change="handleSelectMethodChange($event, index)"
+                            >
+                            </FSelect>
+                            <div class="form-preview-label"> {{dateSelectionMethodList?.find(v => v.code === executionParams.noise_elimination_management[index].date_selection_method)?.message || ''}}</div>
+                        </FFormItem>
+                        <!-- 业务日期 -->
+                        <FFormItem :label="$t('myProject.businessDate')" prop="business_date">
+                            <FInput v-model="executionParams.noise_elimination_management[index].business_date" class="form-edit-input" type="textarea" resize="vertical" />
+                            <div class="form-preview-label">{{executionParams.noise_elimination_management[index].business_date}}</div>
+                        </FFormItem>
+                        <!-- 校验模板 -->
+                        <FFormItem :label="$t('common.verificationTemplate')" prop="template_id" style="margin-bottom: 22px;">
+                            <FSelect
+                                v-model="executionParams.noise_elimination_management[index].template_id"
+                                class="form-edit-input"
+                                filterable
+                                :placeholder="$t('_.请选择校验模板')"
+                                @change="handleTemplateChange(index,$event)"
+                            >
+                                <FOption
+                                    v-for="item in verifyTemplateList"
+                                    :key="item.template_id"
+                                    :value="item.template_id"
+                                    :label="item.template_name"
+                                ></FOption>
+                            </FSelect>
+                            <div class="form-preview-label">{{getTemplateLabel(executionParams.noise_elimination_management[index].template_id)}}</div>
+                        </FFormItem>
+                        <!-- 校验值噪声范围类型 -->
+                        <RuleConditionList :ref="el => { if (el) ruleconditionlistRef[index] = el; }" v-model:ruleConditions="executionParams.noise_elimination_management[index].noise_norm_ratio"
+                                           v-model:templateId="executionParams.noise_elimination_management[index].template_id"
+                                           :mode="mode"
+                                           class="rule-condition-execution"
+                                           :class="{ edit: mode === 'edit' || (editOrDisplay === 'edit' && !mode) } "
+                                           :solidification="executionParams.noise_elimination_management[index].curing_conditions"
+                                           title="myProject.checkNoiseRangeType" lisType="commonList" />
+                        <!-- 去噪策略-->
+                        <FFormItem :label="$t('myProject.eliminateStrategy')" prop="eliminate_strategy">
+                            <FSelect
+                                v-model="executionParams.noise_elimination_management[index].eliminate_strategy"
+                                class="form-edit-input"
+                                filterable
+                                :placeholder="$t('common.pleaseSelect')"
+                                :options="eliminateStrategyList"
+                                valueField="code"
+                                labelField="message"
+                            >
+                            </FSelect>
+                            <div class="form-preview-label"> {{eliminateStrategyList?.find(v => v.code === executionParams.noise_elimination_management[index].eliminate_strategy)?.message || ''}}</div>
+                        </FFormItem>
+                        <!-- 是否启用去噪 -->
+                        <FFormItem :label="$t('myProject.isNoiseEnabled')" prop="available">
+                            <FRadioGroup v-model="executionParams.noise_elimination_management[index].available" :cancelable="false" class="form-edit-input">
+                                <FRadio :value="true">{{$t('common.yes')}}</FRadio>
+                                <FRadio :value="false">{{$t('common.no')}}</FRadio>
+                            </FRadioGroup>
+                            <div class="form-preview-label">{{executionParams.noise_elimination_management[index].available ? $t('common.yes') : $t('common.no')}}</div>
+                        </FFormItem>
+                    </FForm>
+                </div>
+                <div v-show="mode === 'edit'" class="add-item">
+                    <FButton type="link" class="link-button" @click="addNoise">
+                        <template #icon><PlusCircleOutlined /></template>{{$t('myProject.addNoiseEliminationRule')}}
+                    </FButton>
+                </div>
+            </div>
         </FForm>
     </div>
 </template>
 
 <script setup>
+
 import {
     computed, ref, inject, defineProps, defineExpose, defineEmits, onMounted, watch, provide,
 } from 'vue';
@@ -393,12 +518,13 @@ import useExecutionParamsData from '@/components/rules/hook/useExecutionParamsDa
 import { adaptDataToTreeSelect } from '@/common/utils';
 import RuleConditionList from '@/components/rules/forms/RuleConditionList';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { fetchTemplateDetail } from '@/pages/rules/template/api';
 import {
     fetchDB,
 } from '../../pages/projects/api';
 
-
+dayjs.extend(customParseFormat);
 // props: 数据源数据, 打开类型（新增、编辑、详情）
 const props = defineProps({
     // 是否被嵌套
@@ -436,7 +562,11 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:info']);
 const { t: $t } = useI18n();
-
+const getUnionLabel = {
+    0: $t('_.无聚合处理'),
+    1: $t('_.先计算再聚合'),
+    2: $t('_.先聚合在计算'),
+};
 const granularityMap = {
     'split_by:table': $t('executationConfig.tableGranularity'),
     'split_by:db': $t('executationConfig.dbGranularity'),
@@ -494,7 +624,7 @@ const {
     loadExecutionVariableType,
     loadExecutionVariableName,
 } = useExecutionParamsData();
-
+const shortcuts = ref({});
 const engineParamsTypeListArray = ref({});
 
 const staticParameterTypeChange = async (data, id) => {
@@ -543,8 +673,91 @@ const alarmLevelList = ref([
 ]);
 
 const excutionParamsFormRef = ref(null);
+// 去噪管理动态表单
+const getInitNoiseItem = () => {
+    const item = {
+        timestamp: Date.now(),
+        date_selection_method: 1,
+        business_date: '',
+        template_id: '',
+        curing_conditions: false,
+        noise_norm_ratio: [{}],
+        eliminate_strategy: '',
+        available: true,
+    };
+    return item;
+};
 
+const noiseListRef = ref([]);
+
+const deleteNoise = (data) => {
+    const index = executionParams.value.noise_elimination_management.findIndex(item => item.timestamp === data.timestamp);
+    executionParams.value.noise_elimination_management.splice(index, 1);
+};
 const ruleconditionlistRef = ref([]);
+const addNoise = () => {
+    executionParams.value.noise_elimination_management.push(getInitNoiseItem());
+};
+function findDuplicates(arr) {
+    const duplicates = [];
+    const frequency = {};
+
+    for (let i = 0; i < arr.length; i++) {
+        const element = arr[i];
+        if (frequency[element]) {
+            if (frequency[element] === 1) {
+                duplicates.push(element);
+            }
+            frequency[element]++;
+        } else {
+            frequency[element] = 1;
+        }
+    }
+
+    return duplicates;
+}
+const dateValidator = (rule, value) => new Promise((resolve, reject) => {
+    // 这个字段可能多个类型，只能自定义
+    if (!value) {
+        reject($t('common.notEmpty'));
+    }
+    if (!/^\d{8}(,\d{8})*$/.test(value)) {
+        reject($t('_.请按照yyyyMMdd,yyyyMMdd,,yyyyMMdd格式输入日期'));
+    }
+    const dateList = value.split(',');
+    for (let i = 0; i < dateList.length; i++) {
+        if (!dayjs(dateList[i], 'YYYYMMDD', true).isValid()) {
+            reject(`存在非法日期${dateList[i]}`);
+        }
+    }
+    const duplicates = findDuplicates(dateList);
+    if (duplicates.length > 0) {
+        reject(`存在重复日期${duplicates.join(',')}`);
+    }
+    resolve();
+});
+const noiseRuleValidate = ref({
+    date_selection_method: [
+        { type: 'number', required: true, message: $t('common.notEmpty') },
+    ],
+    business_date: [
+        { type: 'string', required: true, message: $t('common.notEmpty') },
+        { validator: dateValidator, trigger: 'blur' },
+    ],
+    template_id: [
+        {
+            type: 'number', trigger: ['change', 'blur'], required: true, message: $t('common.notEmpty'),
+        },
+    ],
+    eliminate_strategy: [
+        {
+            type: 'number', trigger: ['change', 'blur'], required: true, message: $t('common.notEmpty'),
+        },
+    ],
+    available: [
+        { type: 'boolean', required: true, message: $t('common.notEmpty') },
+    ],
+});
 // 校验模板相关
 const getTemplateLabel = (v) => {
     const result = verifyTemplateList.value.filter(item => item.template_id === v);
@@ -552,6 +765,69 @@ const getTemplateLabel = (v) => {
         return result[0]?.template_name;
     }
     return '';
+};
+const handleTemplateChange = async (index, id) => {
+    try {
+        if (!id) {
+            return;
+        }
+        // 是否固化校验条件相关逻辑
+        const template = await fetchTemplateDetail({ template_id: id });
+        executionParams.value.noise_elimination_management[index].curing_conditions = template.whether_solidification;
+        if (template.whether_solidification) {
+            executionParams.value.noise_elimination_management[index].noise_norm_ratio[0].check_template = template.check_template;
+        }
+    } catch (error) {
+        console.warn(error);
+    }
+};
+const getDates = async (type, range) => {
+    // eslint-disable-next-line camelcase
+    const start_time = dayjs(range[0]).format('YYYYMMDD');
+    // eslint-disable-next-line camelcase
+    const end_time = dayjs(range[1]).format('YYYYMMDD');
+    // 按天选择:1
+    // 按银行交易日选择:2
+    // 按证券交易日选择:3
+    // 按节假日选择:4
+    // 按周六日选择:5
+    try {
+        let dateList = [];
+        switch (type) {
+            case 1:
+                dateList = [];
+                break;
+            case 2:
+                dateList = await request('/api/v1/projector/execution_parameters/current/bankworkdays', { start_time, end_time }, { method: 'get', cache: true });
+                break;
+            case 3:
+                dateList = await request('/api/v1/projector/execution_parameters/current/securitesworkdays', { start_time, end_time }, { method: 'get', cache: true });
+                break;
+            case 4:
+                dateList = await request('/api/v1/projector/execution_parameters/current/holidays', { start_time, end_time }, { method: 'get', cache: true });
+                break;
+            case 5:
+                dateList = await request('/api/v1/projector/execution_parameters/current/weeks', { start_time, end_time }, { method: 'get', cache: true });
+                break;
+            default:
+                break;
+        }
+        return dateList.join(',');
+    } catch (err) {
+        console.warn(err);
+    }
+};
+const handleRangeChange = async (val, index) => {
+    if (!executionParams.value.noise_elimination_management[index].date_selection_method || !val) {
+        return;
+    }
+    executionParams.value.noise_elimination_management[index].business_date = await getDates(executionParams.value.noise_elimination_management[index].date_selection_method, val);
+};
+const handleSelectMethodChange = async (val, index) => {
+    if (!executionParams.value.noise_elimination_management[index].rule_used_range || !val) {
+        return;
+    }
+    executionParams.value.noise_elimination_management[index].business_date = await getDates(val, executionParams.value.noise_elimination_management[index].rule_used_range);
 };
 
 // 告警参数动态表单
@@ -631,13 +907,26 @@ const staticParamsRuleValidate = ref({
         { required: true, message: $t('common.notEmpty'), trigger: ['change', 'blur'] },
         {
             validator: validateParameterNameRepeat,
-            message: '参数名称不可重复设置',
+            message: $t('_.参数名称不可重复设置'),
         },
     ],
     parameter_value: [
         { required: true, message: $t('common.notEmpty') },
     ],
 });
+
+// 当变量名称为run_date或run_today时，对变量值添加格式校验
+const getDateRule = (index) => {
+    if (executionParams.value.execution_management[index].variable_name === 'run_date' || executionParams.value.execution_management[index].variable_name === 'run_today') {
+        return [{
+            pattern: /^(?:\d{4}-\d{2}-\d{2}|\d{8})$/,
+            message: $t('_.请输入格式为 yyyyMMdd 或 yyyy-MM-dd 的变量值'),
+            trigger: ['change', 'blur'],
+        }];
+    }
+    return [];
+};
+
 // 执行变量配置动态表单
 const getInitVariableConfig = () => {
     const item = {
@@ -687,7 +976,7 @@ const variableConfigRuleValidate = ref({
         { required: true, trigger: ['change', 'blur'], message: $t('common.notEmpty') },
         {
             validator: validateVariableNameRepeat,
-            message: '变量名称不可重复设置',
+            message: $t('_.变量名称不可重复设置'),
         },
     ],
     variable_value: [
@@ -730,11 +1019,16 @@ const excutionParamsRules = computed(() => ({
         message: $t('common.notEmpty'),
         type: 'boolean',
     }],
+    union_way: [{
+        required: executionParams.value.advanced_execution,
+        message: $t('common.notEmpty'),
+        type: 'number',
+    }],
 }));
 
 const valid = async () => {
     try {
-        const formValidArray = [...ruleconditionlistRef.value.map(item => item.valid()), ...variableConfigListRef.value.map(item => item.validate()), excutionParamsFormRef.value.validate()];
+        const formValidArray = [...ruleconditionlistRef.value.map(item => item.valid()), ...noiseListRef.value.map(item => item.validate()), ...staticParamsListRef.value.map(item => item.validate()), ...alarmListRef.value.map(item => item.validate()), ...variableConfigListRef.value.map(item => item.validate()), excutionParamsFormRef.value.validate()];
         const result = await Promise.all(formValidArray);
         console.log('excutionParams表单验证成功: ', result);
         return true;
@@ -802,6 +1096,13 @@ watch(
     },
 );
 watch(
+    () => executionParams.value.whether_noise, (newValue) => {
+        if (newValue && executionParams.value.noise_elimination_management.length === 0) {
+            executionParams.value.noise_elimination_management.push(getInitNoiseItem());
+        }
+    },
+);
+watch(
     () => executionParams.value.execution_variable, (newValue) => {
         if (newValue && executionParams.value.execution_management.length === 0) {
             executionParams.value.execution_management.push(getInitVariableConfig());
@@ -814,6 +1115,7 @@ const initAdvanceForm = () => {
     executionParams.value.concurrency_granularity = 'split_by:merge';
     executionParams.value.dynamic_partitioning = false;
     executionParams.value.top_partition = '';
+    executionParams.value.union_way = 0;
 };
 // 监控清空子级数据
 let initAdvanceConfig = true;
@@ -831,6 +1133,8 @@ const clearSubData = (v, type) => {
             executionParams.value.static_execution_parameters = [];
         } else if (type === 'alert') {
             executionParams.value.alarm_arguments_execution_parameters = [];
+        } else if (type === 'noise') {
+            executionParams.value.noise_elimination_management = [];
         } else if (type === 'variableConfig') {
             executionParams.value.execution_management = [];
         } else if (type === 'advanceConfig') {
@@ -838,13 +1142,6 @@ const clearSubData = (v, type) => {
             initAdvanceConfig = false;
         }
     }
-};
-const handleConvertTimeArray = (array) => {
-    const timeStrArray = [];
-    array.forEach((e) => {
-        timeStrArray.push(dayjs(e).format('YYYYMMDD'));
-    });
-    return timeStrArray.join(';');
 };
 const initEngineParamsNameArray = async () => {
     // eslint-disable-next-line no-restricted-syntax
@@ -867,7 +1164,13 @@ onMounted(() => {
         loadClusterList();
         updateProxyUserList();
     }
+    if (executionParams.value.noise_elimination_management) {
+        for (let i = 0; i < executionParams.value.noise_elimination_management.length; i++) {
+            handleSelectMethodChange(executionParams.value.noise_elimination_management[i].date_selection_method, i);
+        }
+    }
 });
+
 
 </script>
 <style lang="less" scoped>
@@ -881,9 +1184,7 @@ onMounted(() => {
     &.edit {
         .fes-form-item {
             margin-bottom: 16px;
-            :deep(.fes-form-item-content){
-                min-height: 22px;
-            }
+
         }
     }
     &.isEmbed{

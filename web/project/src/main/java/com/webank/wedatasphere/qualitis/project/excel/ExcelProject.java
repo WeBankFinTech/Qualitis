@@ -17,12 +17,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author howeye
  */
-public class ExcelProject extends BaseRowModel {
+public class ExcelProject {
 
     @ExcelProperty(value = "Project Object", index = 0)
     private String projectObject;

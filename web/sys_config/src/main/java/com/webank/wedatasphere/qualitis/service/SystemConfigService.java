@@ -5,6 +5,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.ModifySystemConfigRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import javax.ws.rs.PathParam;
+import java.util.List;
 
 /**
  * @author howeye
@@ -27,4 +28,9 @@ public interface SystemConfigService {
      */
     GeneralResponse<SystemConfig> findByKeyName(String keyName) throws UnExpectedRequestException;
 
+    /**
+     *
+     * @param capabilitiesInReq
+     */
+    void addMonitoringCapabilities(List<String> capabilitiesInReq);
 }

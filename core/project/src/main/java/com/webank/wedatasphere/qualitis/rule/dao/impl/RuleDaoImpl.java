@@ -252,4 +252,18 @@ public class RuleDaoImpl implements RuleDao {
         return ruleRepository.findByIdsAndProject(ruleIds, projectId);
     }
 
+    @Override
+    public List<Rule> findByNamesAndProject(List<String> ruleNames, Long projectId) {
+        return ruleRepository.findByNamesAndProject(ruleNames, projectId);
+    }
+
+    @Override
+    public List<Rule> findByRuleGroupId(Long ruleGroupId) {
+        return ruleRepository.findByRuleGroupId(ruleGroupId);
+    }
+    @Override
+    public void updateEnableStatus(Boolean enableStatus, List<Long> ruleIds) {
+        ruleRepository.updateEnableStatus(enableStatus, ruleIds);
+    }
+
 }

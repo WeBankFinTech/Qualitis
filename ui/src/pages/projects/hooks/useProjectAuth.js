@@ -52,6 +52,37 @@ export default function useProjectAuth(projectId, userName) {
         }
     };
 
+    // 用于判断是否包含已添加的账号
+    const isProjectUser = (name) => {
+        // 取出已经授权的用户名
+        const list = permissionDataAll.map(item => item.authorized_user);
+        return list.includes(name);
+    };
+
+    // 在项目详情项目权限管理  授权的用户列表  没有权限disabled
+    const getProjectAuthUserList = async () => {
+        try {
+            const res = await fetchProjectUserList();
+            const userOptions = [];
+            if (Array.isArray(res)) {
+                res.forEach((val) => {
+                    if (val) {
+                        const disabled = isProjectUser(val);
+                        console.log('disabled', disabled);
+                        userOptions.push({
+                            label: userName === val ? `${val}(you)` : val,
+                            value: val,
+                            disabled,
+                        });
+                    }
+                });
+            }
+            projectUserList.value = userOptions;
+        } catch (err) {
+            console.warn(err);
+        }
+    };
+
     // 在项目详情获取项目已经授权的用户信息列表
     const getProjectUserData = async () => {
         const res = await fetchProjectUserData(projectId, {});
@@ -60,13 +91,6 @@ export default function useProjectAuth(projectId, userName) {
         permissionData.value = factorData.list
             .filter(item => !item.hidden);
         roleList.value = factorData.role;
-    };
-
-    // 用于判断是否包含已添加的账号
-    const isProjectUser = (name) => {
-        // 取出已经授权的用户名
-        const list = permissionDataAll.map(item => item.authorized_user);
-        return list.includes(name);
     };
 
     // 用于判断登录用户是否有导入导出该项目的权限
@@ -89,6 +113,7 @@ export default function useProjectAuth(projectId, userName) {
         projectUserList,
         isProjectUser,
         getProjectUserList,
+        getProjectAuthUserList,
         getProjectUserData,
         isPermissionCompute,
     };

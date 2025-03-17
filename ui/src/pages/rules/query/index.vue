@@ -73,6 +73,7 @@
             </template>
         </BTablePage>
         <RelatedRuleDrawer
+            v-if="showTableRuleDrawer"
             v-model:show="showTableRuleDrawer"
             :title="$t('ruleQuery.verifyRule')"
             :cluster="tableRuleDrawerParams.cluster"
@@ -92,9 +93,11 @@
 </template>
 <script setup>
 import {
-    ref, reactive, onMounted, watch,
+    ref, reactive, onMounted,
 } from 'vue';
-import { useRouter, useRoute, useI18n } from '@fesjs/fes';
+import {
+    useRouter, useRoute, useI18n, onBeforeRouteLeave,
+} from '@fesjs/fes';
 import { getURLQueryParams, formatterEmptyValue } from '@/common/utils';
 import { CONDITIONBUTTONSPACE } from '@/assets/js/const';
 
@@ -350,23 +353,18 @@ const changePage = () => {
 };
 const metadataUpdate = async () => {
     try {
-        const res = await fetctmetadataSync();
-        if (res && res.msg) {
-            if (res.data && res.data.type === 1) {
-                FMessage.success(res.msg);
-            }
-            if (res.data && res.data.type === 2) {
-                FMessage.info(res.msg);
-            }
-        }
+        await fetctmetadataSync();
+        FMessage.success($t('metadataManagement.syncSuccess'));
     } catch (e) {}
 };
 const handleCancelAdvanceSearch = () => {
     Object.assign(advanceQueryData, advanceQueryDataCopy.value);
     searchModal.value.closeAdvanceModal();
 };
-
-const moreMenus = ref([
+const overseasVersion = sessionStorage.getItem('overseas_external_version');
+const moreMenus = ref(overseasVersion === 'true' ? [
+    { label: $t('common.setTableHeaderConfig'), value: '2' },
+] : [
     { label: $t('metadataManagement.metadataUpdate'), value: '1' },
     { label: $t('common.setTableHeaderConfig'), value: '2' },
 ]);
@@ -482,22 +480,91 @@ const dataAppLineageJumpBlood = async (row) => {
         }
     } catch (e) {}
 };
-
-const tableOperations = ref([
+const handleTaskQuery = (row) => {
+    console.log(row);
+    const query = {};
+    if (row.cluster_name) {
+        query.dataSource = row.cluster_name;
+    }
+    if (row.db_name) {
+        query.dataBase = row.db_name;
+    }
+    if (row.table_name) {
+        query.dataTable = row.table_name;
+    }
+    router.push({
+        path: '/tasks',
+        query,
+    });
+};
+const tableOperations = ref(overseasVersion === 'true' ? [
     { label: $t('ruleQuery.verifyRule'), value: '3' },
+    { label: $t('ruleQuery.taskQuery'), value: '4' },
+] : [
+    { label: $t('ruleQuery.associatedApp'), value: '1' },
+    { label: $t('ruleQuery.dataBlood'), value: '2' },
+    { label: $t('ruleQuery.verifyRule'), value: '3' },
+    { label: $t('ruleQuery.taskQuery'), value: '4' },
 ]);
 const handleTableOperation = (value, row) => {
     switch (value) {
+        case '1':
+            dataAppLineageJumpBlood(row);
+            break;
+        case '2':
+            dataLineageJumpBlood(row);
+            break;
         case '3':
             handleTableRule(row);
+            break;
+        case '4':
+            handleTaskQuery(row);
             break;
         default:
             break;
     }
 };
 onMounted(async () => {
-    await search();
+    const storage = sessionStorage.getItem('storage');
+    if (storage) {
+        const parsedStorage = JSON.parse(storage);
+        const {
+            _queryFormModel, _advanceQueryData, _pageSize, _pageNum, _searchType,
+        } = parsedStorage;
+        pagination.current = _pageNum;
+        pagination.size = _pageSize;
+        if (_searchType === '1') {
+            // common search
+            Object.keys(_queryFormModel).forEach((key) => {
+                queryFormModel[key] = _queryFormModel[key];
+            });
+            await search();
+        } else {
+            // advanced search
+            Object.keys(_advanceQueryData).forEach((key) => {
+                advanceQueryData[key] = _advanceQueryData[key];
+            });
+            await advanceSearch();
+        }
+        sessionStorage.removeItem('storage');
+    } else {
+        await search();
+    }
     resultByInit.value = true;
+});
+// 缓存查询条件
+onBeforeRouteLeave(async (to, from, next) => {
+    if (['/rules/query/detail', '/rules/query/appDataLineage', '/rules/query/dataLineage'].includes(to.path)) {
+        const storage = {
+            _queryFormModel: queryFormModel,
+            _advanceQueryData: advanceQueryDataCopy.value,
+            _pageSize: pagination.size,
+            _pageNum: pagination.current,
+            _searchType: searchType,
+        };
+        sessionStorage.setItem('storage', JSON.stringify(storage));
+    }
+    next();
 });
 </script>
 <style lang="less" scoped>

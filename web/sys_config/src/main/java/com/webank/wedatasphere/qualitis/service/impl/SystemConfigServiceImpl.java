@@ -2,6 +2,8 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.google.common.collect.Sets;
 import com.webank.wedatasphere.qualitis.config.SystemKeyConfig;
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.SystemConfigDao;
 import com.webank.wedatasphere.qualitis.entity.SystemConfig;
@@ -9,13 +11,19 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.ModifySystemConfigRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.SystemConfigService;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -75,6 +83,30 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
         LOGGER.info("{&SUCCEED_TO_FIND_SYSTEM_CONFIG}. key:{}, value: {}", systemConfigInDb.getKeyName(), systemConfigInDb.getValue());
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_FIND_SYSTEM_CONFIG}", systemConfigInDb);
+    }
+
+    @Override
+    public void addMonitoringCapabilities(List<String> capabilitiesInReq) {
+        if (CollectionUtils.isEmpty(capabilitiesInReq)) {
+            return;
+        }
+        SystemConfig systemConfig = systemConfigDao.findByKeyName(QualitisConstants.SYSTEM_CONFIG_MONITORING_CAPABILITY);
+        if (systemConfig == null) {
+            systemConfig = new SystemConfig();
+        }
+        if (StringUtils.isBlank(systemConfig.getValue())) {
+            systemConfig.setValue(StringUtils.join(capabilitiesInReq, SpecCharEnum.COMMA.getValue()));
+        } else {
+            List<String> monitorCapabilitiesInDb = Arrays.asList(StringUtils.split(systemConfig.getValue(), SpecCharEnum.COMMA.getValue()));
+            List<String> newMonitorCapabilities = capabilitiesInReq.stream().filter(monitorCapability -> !monitorCapabilitiesInDb.contains(monitorCapability)).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(newMonitorCapabilities)) {
+                List<String> allMonitorCapabilities = new ArrayList<>();
+                allMonitorCapabilities.addAll(newMonitorCapabilities);
+                allMonitorCapabilities.addAll(monitorCapabilitiesInDb);
+                systemConfig.setValue(StringUtils.join(allMonitorCapabilities, SpecCharEnum.COMMA.getValue()));
+            }
+        }
+        systemConfigDao.saveSystemConfig(systemConfig);
     }
 
     private void checkKeyName(String keyName) throws UnExpectedRequestException {

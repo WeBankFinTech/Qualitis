@@ -2,11 +2,11 @@
     <div class="query-container">
         <div class="query-item">
             <span class="query-item-label">{{$t('ruleTemplatelist.templateCNName')}}</span>
-            <FInput v-model="queryData.cn_name" class="query-input" clearable :placeholder="$t('common.pleaseInput')" @change="handleCommonChange" />
+            <FInput v-model="queryData.cn_name" class="query-input" clearable :placeholder="$t('_.请输入')" @change="handleCommonChange" />
         </div>
         <div class="query-item">
             <span class="query-item-label">{{$t('ruleTemplatelist.templateENName')}}</span>
-            <FInput v-model="queryData.en_name" class="query-input" clearable :placeholder="$t('common.pleaseInput')" @change="handleCommonChange" />
+            <FInput v-model="queryData.en_name" class="query-input" clearable :placeholder="$t('_.请输入')" @change="handleCommonChange" />
         </div>
         <FButton
             type="primary"
@@ -19,7 +19,7 @@
             :class="advanceQuerySelectedCount > 0 ? 'operation-item selected-count' : 'operation-item'"
             @click="clickAdvanceQuery"
         >
-            {{$t('common.advanceSearch')}}{{advanceQuerySelectedCount > 0 ? `（${$t('common.hasSelect', { count: advanceQuerySelectedCount })}）` : ''}}
+            {{$t('common.advanceSearch')}}{{advanceQuerySelectedCount > 0 ? `（已选${advanceQuerySelectedCount}项）` : ''}}
         </FButton>
         <FButton class="operation-item" @click="handleReset">{{$t('common.reset')}}</FButton>
 
@@ -45,7 +45,7 @@
                         v-model="advanceQueryData.cn_name"
                         class="query-input"
                         clearable
-                        :placeholder="$t('common.pleaseInput')"
+                        :placeholder="$t('_.请输入')"
                     />
                 </FFormItem>
                 <FFormItem :label="$t('ruleTemplatelist.templateENName')">
@@ -53,39 +53,39 @@
                         v-model="advanceQueryData.en_name"
                         class="query-input"
                         clearable
-                        :placeholder="$t('common.pleaseInput')"
+                        :placeholder="$t('_.请输入')"
                     />
                 </FFormItem>
                 <!-- 数据源类型 -->
                 <FFormItem :label="$t('ruleTemplatelist.dataSourceType')">
-                    <FSelect v-model="advanceQueryData.data_source_type"
-                             :placeholder="$t('common.pleaseSelect')"
-                             class="query-input"
-                             :options="datasourceTypeList"
-                             clearable
-                             filterable
-                             valueField="label"
-                             labelField="label"
+                    <FSelect
+                        v-model="advanceQueryData.data_source_type"
+                        class="query-input"
+                        :options="datasourceTypeList"
+                        clearable
+                        filterable
+                        valueField="label"
+                        labelField="label"
                     ></FSelect>
                 </FFormItem>
                 <!-- 校验类型 -->
                 <FFormItem :label="$t('ruleTemplatelist.verificationType')">
-                    <FSelect v-model="advanceQueryData.verification_type"
-                             :placeholder="$t('common.pleaseSelect')"
-                             class="query-input"
-                             :options="verificationTypeList"
-                             clearable
-                             filterable
+                    <FSelect
+                        v-model="advanceQueryData.verification_type"
+                        class="query-input"
+                        :options="verificationTypeList"
+                        clearable
+                        filterable
                     ></FSelect>
                 </FFormItem>
                 <!-- 校验级别 -->
                 <FFormItem :label="$t('ruleTemplatelist.verificationLevel')">
-                    <FSelect v-model="advanceQueryData.verification_level"
-                             :placeholder="$t('common.pleaseSelect')"
-                             class="query-input"
-                             :options="verificationLevelList"
-                             clearable
-                             filterable
+                    <FSelect
+                        v-model="advanceQueryData.verification_level"
+                        class="query-input"
+                        :options="verificationLevelList"
+                        clearable
+                        filterable
                     ></FSelect>
                 </FFormItem>
                 <!-- 开发科室 -->
@@ -99,7 +99,6 @@
                         remote
                         showPath
                         checkStrictly="child"
-                        :placeholder="$t('common.pleaseSelect')"
                     ></FSelectCascader>
                 </FFormItem>
                 <!-- 运维科室 -->
@@ -113,10 +112,9 @@
                         remote
                         showPath
                         checkStrictly="child"
-                        :placeholder="$t('common.pleaseSelect')"
                     ></FSelectCascader>
                 </FFormItem>
-                <FFormItem :label="$t('ruleTemplatelist.visibleRange')" prop="action_range">
+                <FFormItem :label="$t('_.可见范围')" prop="action_range">
                     <FSelectCascader
                         v-model="advanceQueryData.action_range"
                         :data="visDivisions"
@@ -129,15 +127,14 @@
                         checkStrictly="all"
                         collapseTags
                         :collapseTagsLimit="3"
-                        :placeholder="$t('common.pleaseSelect')"
                         @change="visSelectChange" />
                 </FFormItem>
-                <FFormItem :label="$t('ruleTemplatelist.creator')" prop="create_name">
-                    <FSelect v-model="advanceQueryData.create_name" :placeholder="$t('common.pleaseSelect')" :options="formatProjectUserList" clearable filterable>
+                <FFormItem :label="$t('_.创建人')" prop="create_name">
+                    <FSelect v-model="advanceQueryData.create_name" :options="formatProjectUserList" clearable filterable>
                     </FSelect>
                 </FFormItem>
-                <FFormItem :label="$t('ruleTemplatelist.modifyName')" prop="modify_name">
-                    <FSelect v-model="advanceQueryData.modify_name" :placeholder="$t('common.pleaseSelect')" :options="formatProjectUserList" clearable filterable>
+                <FFormItem :label="$t('_.修改人')" prop="modify_name">
+                    <FSelect v-model="advanceQueryData.modify_name" :options="formatProjectUserList" clearable filterable>
                     </FSelect>
                 </FFormItem>
             </FForm>

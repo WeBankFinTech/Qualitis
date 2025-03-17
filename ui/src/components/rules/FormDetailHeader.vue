@@ -2,14 +2,16 @@
     <div class="wd-project-header">
         <LeftOutlined v-if="!currentProject.isEmbedInFrame" class="back" @click="backToPreviousPage" />
         <div class="name-ctn">
-            <FInput
-                v-if="showEdit"
-                ref="nameInput"
-                v-model="groupName"
-                class="name"
-                placeholder="请输入规则组名称"
-                @blur="updateGroupNameOnBlur"
-            />
+            <div v-if="showEdit">
+                <FInput
+                    ref="nameInput"
+                    v-model="formGroupName"
+                    class="name edit-group-name"
+                    :placeholder="$t('_.请输入规则组名称')"
+                />
+                <FButton type="primary" class="margin-r22" @click="saveGroup">{{$t('_.保存')}}</FButton>
+                <FButton @click="cancelGroup">{{$t('common.cancel')}}</FButton>
+            </div>
             <FEllipsis v-else class="name">{{currentProject.groupName || (currentRuleType === '3-2' ? '库一致性比对配置' : '规则组名称_未命名')}}</FEllipsis>
         </div>
         <EditOutlined v-if="!showEdit && (!currentProject.isWorkflowProject || currentProject.isEmbedInFrame)" class="edit" @click="editGroupName" />
@@ -19,11 +21,12 @@
             displayDirective="if"
             @ok="confirmBackToPreviousPage"
         >
-            <div>规则组未创建完成，退出后将不保存当前信息，是否确认退出？</div>
+            <div>{{$t('_.规则组未创建完成，退出后将不保存当前信息，是否确认退出？')}}</div>
         </FModal>
     </div>
 </template>
 <script setup>
+
 import {
     ref, inject, nextTick, computed, watch,
 } from 'vue';
@@ -44,11 +47,13 @@ const showBackConfirmModal = ref(false);
 const currentProject = computed(() => store.state.rule.currentProject);
 const currentRuleType = inject('currentRuleType');
 const groupName = ref('');
+const formGroupName = ref('');
 
 watch(currentProject, (cur) => {
     console.log('++++', cur.groupName);
     if (cur.groupName) {
         groupName.value = cur.groupName;
+        formGroupName.value = cur.groupName;
     }
 });
 
@@ -78,11 +83,10 @@ const backToPreviousPage = () => {
 
 const nameInput = ref(null);
 const showEdit = ref(false);
+
 const editGroupName = async () => {
     // if (!currentProject.value.groupId) return;
     showEdit.value = true;
-    await nextTick();
-    nameInput.value.focus();
 };
 
 const updateGroupNameOnBlur = async () => {
@@ -101,7 +105,7 @@ const updateGroupNameOnBlur = async () => {
             rule_group_name: groupName.value,
             datasource: result.datasource,
         }, 'post');
-        FMessage.success('修改成功');
+        FMessage.success($t('_.修改成功'));
         showEdit.value = false;
         store.commit('rule/setCurrentProject', {
             groupName: groupName.value,
@@ -110,4 +114,15 @@ const updateGroupNameOnBlur = async () => {
         console.warn(error);
     }
 };
+
+const saveGroup = () => {
+    groupName.value = formGroupName.value;
+    updateGroupNameOnBlur();
+};
+
+const cancelGroup = () => {
+    showEdit.value = false;
+    formGroupName.value = groupName.value;
+};
+
 </script>

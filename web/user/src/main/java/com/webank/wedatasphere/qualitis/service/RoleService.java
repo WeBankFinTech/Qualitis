@@ -16,7 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.service;
 
-import com.webank.wedatasphere.qualitis.entity.Role;
+import com.webank.wedatasphere.qualitis.dto.RoleDepartmentDto;
+import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.entity.UserRole;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
@@ -26,8 +27,8 @@ import com.webank.wedatasphere.qualitis.request.role.RoleRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import com.webank.wedatasphere.qualitis.response.RoleResponse;
-
 import com.webank.wedatasphere.qualitis.response.UserAndRoleResponse;
+
 import java.util.List;
 import java.util.Map;
 
@@ -97,10 +98,10 @@ public interface RoleService {
     List<Map<String, Object>> getAllRoleTypeEnum();
 
     /**
-     * get role list by id
-     * @param ids
+     * get departments by role
+     * @param loginUser
      * @return
      */
-    List<Role> getAllById(List<Long> ids);
+    RoleDepartmentDto getRoleAndDepartments(User loginUser);
 
 }

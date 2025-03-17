@@ -22,7 +22,7 @@ import com.webank.wedatasphere.qualitis.entity.ProxyUser;
 import com.webank.wedatasphere.qualitis.entity.ProxyUserDepartment;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;

@@ -40,13 +40,11 @@ import com.webank.wedatasphere.qualitis.rule.response.CustomRuleDetailResponse;
 import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import com.webank.wedatasphere.qualitis.rule.service.*;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -100,9 +98,10 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
     @Autowired
     private RuleLockService ruleLockService;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
-
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private StandardValueVariablesDao standardValueVariablesDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomRuleServiceImpl.class);
 
@@ -113,7 +112,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class, SemanticException.class, ParseException.class})
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<RuleResponse> addCustomRule(AddCustomRuleRequest request)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
@@ -205,6 +204,8 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         handleRelatedObject(request, projectInDb, newRule);
         Rule savedRule = ruleDao.saveRule(newRule);
 
+        saveStandardValueVariables(savedRule, request.getStandardValueVariables());
+
         saveRuleUdf(request.getLinkisUdfNames(), savedRule);
         LOGGER.info("Succeed to save custom rule, rule id: {}", savedRule.getId());
 
@@ -282,6 +283,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
 
     private void setBasicInfo(Rule newRule, Project projectInDb, RuleGroup ruleGroup, Template template, String loginUser, String nowDate
             , AddCustomRuleRequest request) {
+        newRule.setRegRuleCode(request.getRegRuleCode());
         newRule.setRuleType(RuleTypeEnum.CUSTOM_RULE.getCode());
         newRule.setTemplate(template);
         newRule.setName(request.getRuleName());
@@ -327,6 +329,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         ruleInDb.setWorkFlowVersion(request.getWorkFlowVersion());
         ruleInDb.setWorkFlowSpace(request.getWorkFlowSpace());
         ruleInDb.setNodeName(request.getNodeName());
+        ruleInDb.setRegRuleCode(request.getRegRuleCode());
     }
 
     private void saveRuleUdf(List<String> linkisUdfNames, Rule ruleInDb) {
@@ -380,7 +383,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         if (bdpClientHistory != null) {
             bdpClientHistoryDao.delete(bdpClientHistory);
         }
-//        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
+        scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());
         // Delete rule
         ruleDao.deleteRule(rule);
         // Delete template of custom rule
@@ -411,6 +414,18 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         LOGGER.info("Succeed to find rule, rule id: {}", ruleInDb.getId());
 
         CustomRuleDetailResponse response = new CustomRuleDetailResponse(ruleInDb);
+
+        List<StandardValueVariables> standardValueVariablesList = standardValueVariablesDao.findByRuleId(ruleId);
+        if (CollectionUtils.isNotEmpty(standardValueVariablesList)) {
+            List<StandardValueVariableRequest> standardValueVariableResponses = standardValueVariablesList.stream().map(standardValueVariables -> {
+                StandardValueVariableRequest standardValueVariableRequest = new StandardValueVariableRequest();
+                standardValueVariableRequest.setStandardValueVariablesId(standardValueVariables.getStandardValueVersionId());
+                standardValueVariableRequest.setStandardValueVersionVariablesName(standardValueVariables.getStandardValueVersionEnName());
+                return standardValueVariableRequest;
+            }).collect(Collectors.toList());
+            response.setStandardValueVariables(standardValueVariableResponses);
+        }
+
         LOGGER.info("Succeed to get custom rule detail. response: {}", response);
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&SUCCEED_TO_GET_CUSTOM_RULE_DETAIL}", response);
     }
@@ -431,14 +446,14 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
      * @throws UnExpectedRequestException
      */
     @Override
-    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class, SemanticException.class, ParseException.class})
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<RuleResponse> modifyCustomRule(ModifyCustomRuleRequest request)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
         return modifyCustomRuleReal(request, loginUser);
     }
 
-    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class, SemanticException.class, ParseException.class})
+    @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     @Override
     public GeneralResponse<RuleResponse> modifyCustomRuleWithLock(ModifyCustomRuleRequest request) throws UnExpectedRequestException, ClusterInfoNotConfigException, TaskNotExistException, MetaDataAcquireFailedException, PermissionDeniedRequestException, IOException, RuleLockException {
         String loginUser = HttpUtils.getUserName(httpServletRequest);
@@ -454,7 +469,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class, SemanticException.class, ParseException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<RuleResponse> modifyRuleDetailForOuter(ModifyCustomRuleRequest modifyRuleRequest, String userName)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         return modifyCustomRuleReal(modifyRuleRequest, userName);
@@ -536,6 +551,8 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         handleExecutionParametersInfo(request, ruleInDb, projectInDb);
         Rule savedRule = ruleDao.saveRule(ruleInDb);
 
+        saveStandardValueVariables(savedRule, request.getStandardValueVariables());
+
         super.recordEvent(loginUser, savedRule, OperateTypeEnum.MODIFY_RULES);
 
         // Save alarm config and rule datasource
@@ -604,7 +621,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class, SemanticException.class, ParseException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
     public GeneralResponse<RuleResponse> addCustomRuleForUpload(AddCustomRuleRequest request)
             throws UnExpectedRequestException, MetaDataAcquireFailedException, PermissionDeniedRequestException, IOException {
         String loginUser = HttpUtils.getUserName(httpServletRequest);

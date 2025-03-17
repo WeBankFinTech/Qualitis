@@ -57,7 +57,15 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     private String proxyUser;
 
+    private String clusterName;
+    private String sourceClusterName;
+    private String targetClusterName;
+
+    private Boolean init;
+
     private LinkisConfig linkisConfig;
+
+    private Map<String, List<ColumnInfoDetail>> colsMap;
 
     private static final Map<String, Integer> ALERT_LEVEL_CODE = new HashMap<>();
     private static final Map<String, Integer> OPERATION_CODE = new LinkedHashMap<>();
@@ -178,6 +186,52 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
+    public AddRequestBuilder updateSourceDataSourceWithDcnNums(String dcnNums) throws Exception {
+        String sourceDcnNum = dcnNums;
+        if (Objects.isNull(addMultiSourceRuleRequest.getSource())) {
+            LOGGER.warn("Source datasource is null.");
+            return this;
+        }
+        Long sourceDataSourceId = this.addMultiSourceRuleRequest.getSource().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(sourceDataSourceId);
+        request.setDcnNums(Arrays.asList(StringUtils.split(sourceDcnNum, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> sourceLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+
+        if (CollectionUtils.isNotEmpty(this.addMultiSourceRuleRequest.getTarget().getDataSourceEnvRequests()) && this.addMultiSourceRuleRequest.getTarget().getDataSourceEnvRequests().size() != sourceLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> sourceDataSourceEnvRequest = sourceLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getSource().setDataSourceEnvRequests(sourceDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getSource().setDcnRangeType(QualitisConstants.CMDB_KEY_DCN_NUM);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithDcnNums(String dcnNums) throws Exception {
+        String targetDcnNum = dcnNums;
+        if (Objects.isNull(addMultiSourceRuleRequest.getTarget())) {
+            LOGGER.warn("Target datasource is null.");
+            return this;
+        }
+        Long targetDataSourceId = this.addMultiSourceRuleRequest.getTarget().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(targetDataSourceId);
+        request.setDcnNums(Arrays.asList(StringUtils.split(targetDcnNum, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> targetLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+
+        if (CollectionUtils.isNotEmpty(this.addMultiSourceRuleRequest.getSource().getDataSourceEnvRequests()) && this.addMultiSourceRuleRequest.getSource().getDataSourceEnvRequests().size() != targetLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> targetDataSourceEnvRequest = targetLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getTarget().setDataSourceEnvRequests(targetDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getTarget().setDcnRangeType(QualitisConstants.CMDB_KEY_DCN_NUM);
+        return this;
+    }
+
+    @Override
     public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
         String[] logicAreaArr = logicAreas.split(SpecCharEnum.VERTICAL_BAR.getValue());
         if (logicAreaArr.length != 2) {
@@ -212,6 +266,53 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        String sourceLogicArea = logicAreas;
+        if (Objects.isNull(addMultiSourceRuleRequest.getSource())) {
+            LOGGER.warn("Source datasource is null.");
+            return this;
+        }
+        Long sourceDataSourceId = this.addMultiSourceRuleRequest.getSource().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(sourceDataSourceId);
+        request.setLogicAreas(Arrays.asList(StringUtils.split(sourceLogicArea, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> sourceLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+
+        if (CollectionUtils.isNotEmpty(this.addMultiSourceRuleRequest.getTarget().getDataSourceEnvRequests()) && this.addMultiSourceRuleRequest.getTarget().getDataSourceEnvRequests().size() != sourceLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> sourceDataSourceEnvRequest = sourceLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getSource().setDataSourceEnvRequests(sourceDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getSource().setDcnRangeType(QualitisConstants.CMDB_KEY_LOGIC_AREA);
+
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        String targetLogicArea = logicAreas;
+        if (Objects.isNull(addMultiSourceRuleRequest.getTarget())) {
+            LOGGER.warn("Target datasource is null.");
+            return this;
+        }
+        Long targetDataSourceId = this.addMultiSourceRuleRequest.getTarget().getLinkisDataSourceId();
+        GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
+        request.setLinkisDataSourceId(targetDataSourceId);
+        request.setLogicAreas(Arrays.asList(StringUtils.split(targetLogicArea, SpecCharEnum.COMMA.getValue())));
+        List<LinkisDataSourceEnv> targetLinkisDataSourceEnvs = linkisDataSourceEnvService.queryEnvsInAdvance(request);
+
+        if (CollectionUtils.isNotEmpty(this.addMultiSourceRuleRequest.getSource().getDataSourceEnvRequests()) && this.addMultiSourceRuleRequest.getSource().getDataSourceEnvRequests().size() != targetLinkisDataSourceEnvs.size()) {
+            throw new UnExpectedRequestException("The quantities of environment on both sides are inconsistent!");
+        }
+
+        List<DataSourceEnvRequest> targetDataSourceEnvRequest = targetLinkisDataSourceEnvs.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
+        this.addMultiSourceRuleRequest.getTarget().setDataSourceEnvRequests(targetDataSourceEnvRequest);
+        this.addMultiSourceRuleRequest.getTarget().setDcnRangeType(QualitisConstants.CMDB_KEY_LOGIC_AREA);
+        return this;
+    }
+
     private void solveDatasource(String datasource) throws UnExpectedRequestException {
         MultiDataSourceConfigRequest source;
         MultiDataSourceConfigRequest target;
@@ -227,6 +328,10 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         source = toRequest(sourcStr);
         addMultiSourceRuleRequest.setTarget(target);
         addMultiSourceRuleRequest.setSource(source);
+
+        if (target.getClusterName().equals(source.getClusterName())) {
+            addMultiSourceRuleRequest.setClusterName(source.getClusterName());
+        }
     }
 
     private MultiDataSourceConfigRequest toRequest(String dataSourcStr) throws UnExpectedRequestException {
@@ -251,10 +356,10 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         // Init template argument.
         templateArgumentSettingInit();
         // Datasource
-        StringBuilder clusterStringBuffer = new StringBuilder(cluster);
-        solveDatasource(clusterStringBuffer, datasource);
+        StringBuilder clusterBuffer = new StringBuilder(cluster);
+        solveDatasource(clusterBuffer, datasource);
 
-        addMultiSourceRuleRequest.setClusterName(clusterStringBuffer.toString());
+        addMultiSourceRuleRequest.setClusterName(clusterBuffer.toString());
         addMultiSourceRuleRequest.setLoginUser(userName);
         // Use automatic generate rule name and project.
         automaticProjectRuleSetting();
@@ -344,19 +449,18 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         addMultiSourceRuleRequest.setMultiSourceRuleTemplateId(template.getId());
     }
 
-    private Map<String, List<ColumnInfoDetail>> solveDatasource(StringBuilder cluster, String datasource) throws Exception {
+    private Map<String, List<ColumnInfoDetail>> solveDatasource(StringBuilder clusterBuilder, String datasource) throws Exception {
         MultiDataSourceConfigRequest source;
         MultiDataSourceConfigRequest target;
 
         String[] datasourceStrs = datasource.split(SpecCharEnum.VERTICAL_BAR.getValue());
         String sourcStr = datasourceStrs[0];
         String targetStr = datasourceStrs[1];
-        StringBuilder clusterBuffer = new StringBuilder(cluster);
 
         StringBuilder dataSourceId = new StringBuilder();
         StringBuilder dataSourceName = new StringBuilder();
         StringBuilder envsStringBuffer = new StringBuilder();
-        DatasourceEnvUtil.getDatasourceIdOrName(dataSourceId, dataSourceName, envsStringBuffer, clusterBuffer);
+        DatasourceEnvUtil.getDatasourceIdOrName(dataSourceId, dataSourceName, envsStringBuffer, clusterBuilder);
         target = toRequest(targetStr, dataSourceId, dataSourceName);
         source = toRequest(sourcStr, dataSourceId, dataSourceName);
         addMultiSourceRuleRequest.setTarget(target);
@@ -369,8 +473,8 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         List<ColumnInfoDetail> leftCols;
         List<ColumnInfoDetail> rightCols;
         try {
-            leftCols = metaDataClient.getColumnInfo(cluster.toString(), source.getDbName(), source.getTableName(), StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
-            rightCols = metaDataClient.getColumnInfo(cluster.toString(), target.getDbName(), target.getTableName(), StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            leftCols = metaDataClient.getColumnInfo(clusterBuilder.toString(), source.getDbName(), source.getTableName(), StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            rightCols = metaDataClient.getColumnInfo(clusterBuilder.toString(), target.getDbName(), target.getTableName(), StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
         } catch (Exception e) {
             throw new UnExpectedRequestException("Datasource metadata api is invalid.", 500);
         }
@@ -382,12 +486,11 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return colsMap;
     }
 
-    private void solveMultiClusterDatasource(Boolean isMultiCluster, String[] clusterArr, String datasources) throws Exception {
-
+    private void solveClusterDatasource(String cluster, String datasources) throws Exception {
         if (StringUtils.isBlank(datasources)) {
             String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
-            MultiDataSourceConfigRequest source = new MultiDataSourceConfigRequest(clusterArr[0], "", "", "", realUserName);
-            MultiDataSourceConfigRequest target = new MultiDataSourceConfigRequest(isMultiCluster?clusterArr[1]: clusterArr[0], "", "", "", realUserName);
+            MultiDataSourceConfigRequest source = new MultiDataSourceConfigRequest(cluster, "", "", "", realUserName);
+            MultiDataSourceConfigRequest target = new MultiDataSourceConfigRequest(cluster, "", "", "", realUserName);
             addMultiSourceRuleRequest.setTarget(target);
             addMultiSourceRuleRequest.setSource(source);
             return;
@@ -401,19 +504,22 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         StringBuilder dataSourceName = new StringBuilder();
         StringBuilder envsStringBuffer = new StringBuilder();
         DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[0]);
-        MultiDataSourceConfigRequest source = toRequestWithoutTable(clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer,"","");
+        MultiDataSourceConfigRequest source = toRequestWithDbAndTable(cluster, dataSourceId, dataSourceName, envsStringBuffer,"","");
         addMultiSourceRuleRequest.setSource(source);
 
         dataSourceId = new StringBuilder();
         dataSourceName = new StringBuilder();
         envsStringBuffer = new StringBuilder();
         DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[1]);
-        MultiDataSourceConfigRequest target = toRequestWithoutTable(isMultiCluster?clusterArr[1]:clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer,"","");
+        MultiDataSourceConfigRequest target = toRequestWithDbAndTable(cluster, dataSourceId, dataSourceName, envsStringBuffer,"","");
         addMultiSourceRuleRequest.setTarget(target);
 
     }
 
     private void handleMultiClusterDataSource(Boolean isMultiCluster, String[] clusterArr, String datasources, String dbAndTable) throws Exception {
+        if (StringUtils.isBlank(datasources) || StringUtils.isBlank(dbAndTable)) {
+            return;
+        }
         String[] datasourceStrs = datasources.split(SpecCharEnum.VERTICAL_BAR.getValue());
         if (datasourceStrs.length > QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegal");
@@ -429,14 +535,14 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         }
         String[] sourceDbAndTable = dbAndTableStrs[0].split(SpecCharEnum.PERIOD.getValue());
         String[] targetDbAndTable = dbAndTableStrs[1].split(SpecCharEnum.PERIOD.getValue());
-        MultiDataSourceConfigRequest source = toRequestWithoutTable(clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer, sourceDbAndTable[0], sourceDbAndTable[1]);
+        MultiDataSourceConfigRequest source = toRequestWithDbAndTable(isMultiCluster ? clusterArr[0] : clusterArr[1], dataSourceId, dataSourceName, envsStringBuffer, sourceDbAndTable[0], sourceDbAndTable[1]);
         addMultiSourceRuleRequest.setSource(source);
 
         dataSourceId = new StringBuilder();
         dataSourceName = new StringBuilder();
         envsStringBuffer = new StringBuilder();
         DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, datasourceStrs[1]);
-        MultiDataSourceConfigRequest target = toRequestWithoutTable(isMultiCluster ? clusterArr[1] : clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer, targetDbAndTable[0], targetDbAndTable[1]);
+        MultiDataSourceConfigRequest target = toRequestWithDbAndTable(isMultiCluster ? clusterArr[1] : clusterArr[0], dataSourceId, dataSourceName, envsStringBuffer, targetDbAndTable[0], targetDbAndTable[1]);
         addMultiSourceRuleRequest.setTarget(target);
     }
 
@@ -468,7 +574,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return new MultiDataSourceConfigRequest(database, table, filter, realUserName);
     }
 
-    private MultiDataSourceConfigRequest toRequestWithoutTable(String cluster, StringBuilder dataSourceId, StringBuilder dataSourceName, StringBuilder envsStringBuffer, String db, String table) throws Exception {
+    private MultiDataSourceConfigRequest toRequestWithDbAndTable(String cluster, StringBuilder dataSourceId, StringBuilder dataSourceName, StringBuilder envsStringBuffer, String db, String table) throws Exception {
         String realClusterName = this.linkisConfig.getDatasourceCluster();
 
         StringBuilder dataSourceType = new StringBuilder();
@@ -480,6 +586,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
             multiDataSourceConfigRequest = new MultiDataSourceConfigRequest(db, table, "", Long.parseLong(dataSourceId.toString()), dataSourceName.toString(), dataSourceType.toString());
         } else {
             multiDataSourceConfigRequest = new MultiDataSourceConfigRequest(db, table, "", null, dataSourceName.toString(), dataSourceType.toString());
+            multiDataSourceConfigRequest.setType(TemplateDataSourceTypeEnum.HIVE.getMessage());
         }
 
 //        If the user haven't to specific envs, execute all envs inside the dataSource by default.
@@ -526,9 +633,9 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
-    public AddRequestBuilder basicInfoWithDataSourceAndCluster(String cluster, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
-        String[] clusterArr = cluster.split(SpecCharEnum.VERTICAL_BAR.getValue());
-        boolean isMultiCluster = clusterArr.length == 2;
+    public AddRequestBuilder basicInfoWithDataSourceAndCluster(String clusters, String datasource, String dbAndTable, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+        String[] clusterArr = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue());
+        boolean isMultiCluster = clusterArr.length == QualitisConstants.LENGTH_TWO;
         handleMultiClusterDataSource(isMultiCluster, clusterArr, datasource, dbAndTable);
 
         addMultiSourceRuleRequest.setLoginUser(userName);
@@ -556,8 +663,8 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
             MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
 
-            multiDataSourceJoinConfigRequest.setOperation(1);
-            String[] statements = currentMappingCol.split("=");
+            multiDataSourceJoinConfigRequest.setOperation(MappingOperationEnum.EQUAL.getCode());
+            String[] statements = currentMappingCol.split(MappingOperationEnum.EQUAL.getSymbol());
 
             String leftCol = statements[0];
             String rightCol = statements[1];
@@ -600,9 +707,9 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
             MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
 
             for (Map.Entry<String, Integer> entry : OPERATION_CODE.entrySet()) {
-                if (currentMapping.contains(entry.getKey().toString())) {
-                    multiDataSourceJoinConfigRequest.setOperation((Integer) entry.getValue());
-                    String[] statements = currentMapping.split(entry.getKey().toString());
+                if (currentMapping.contains(entry.getKey())) {
+                    multiDataSourceJoinConfigRequest.setOperation(entry.getValue());
+                    String[] statements = currentMapping.split(entry.getKey());
                     String leftStatement = statements[0];
                     String rightStatement = statements[1];
                     multiDataSourceJoinConfigRequest.setLeftStatement(leftStatement);
@@ -678,7 +785,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     /**
      *
-     * @param clusters   Multi-Cluster rule: HDP-GZPC-BDAP-UAT|HDP-GZPC-BDAP-SIT ; Single-CLuster rule: HDP-GZPC-BDAP-UAT
+     * @param cluster
      * @param datasources HDP-GZPC-BDAP-UAT.(NAME=qualitis_dev_63{dev_env})|HDP-GZPC-BDAP-SIT.(NAME=qualitis_sit_db{sit_env})
      * @param mappings  left_field|right_field
      * @param compareCols   left_field|right_field
@@ -693,7 +800,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
      * @throws Exception
      */
     @Override
-    public AddRequestBuilder basicInfoWithoutDataSource(String clusters, String datasources, String mappings, String compareCols, String metricSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
+    public AddRequestBuilder basicInfoWithoutDataSource(String cluster, String datasources, String mappings, String compareCols, String metricSqls, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue, String alertInfo, boolean abortOnFailure, String execParams) throws Exception {
         // Init template argument.
         templateArgumentSettingInit();
         String[] metricSqlStrs = metricSqls.split(SpecCharEnum.VERTICAL_BAR.getValue());
@@ -701,12 +808,10 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
             throw new UnExpectedRequestException("Sql params is illegal");
         }
 
-        String[] clusterArr = clusters.split(SpecCharEnum.VERTICAL_BAR.getValue());
-        boolean isMultiCluster = clusterArr.length == 2;
-
-        solveMultiClusterDatasource(isMultiCluster, clusterArr, datasources);
+        solveClusterDatasource(cluster, datasources);
 
         solveMetricSql(metricSqlStrs[0], metricSqlStrs[1]);
+
         // Mapping to join columns
         solveCustomMapping(mappings, MappingTypeEnum.CONNECT_FIELDS.getCode());
         solveCustomMapping(compareCols, MappingTypeEnum.MATCHING_FIELDS.getCode());
@@ -727,7 +832,7 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
     }
 
     private void solveMetricSql(String leftmetricSqlStr, String rightmetricSqlStr) {
-        List<TemplateArgumentRequest> templateArgumentRequests=  addMultiSourceRuleRequest.getTemplateArgumentRequests();
+        List<TemplateArgumentRequest> templateArgumentRequests =  addMultiSourceRuleRequest.getTemplateArgumentRequests();
         TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
         templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.LEFT_COLLECT_SQL.getCode());
         templateArgumentRequest.setArgumentValue(leftmetricSqlStr);
@@ -2100,6 +2205,230 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder createBy(String createUser) {
+        addMultiSourceRuleRequest.setActualCreateUser(createUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder submitBy(String submitUser) {
+        addMultiSourceRuleRequest.setActualExecutionUser(submitUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withRegRuleCode(String regRuleCode) {
+        addMultiSourceRuleRequest.setRegRuleCode(regRuleCode);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withStandardValue(String standardValueEnNames) {
+        if (StringUtils.isBlank(standardValueEnNames)) {
+            return this;
+        }
+        String[] standardValueEnNameArray = StringUtils.split(standardValueEnNames, SpecCharEnum.COMMA.getValue());
+        List<StandardValueVariableRequest> standardValueVariableRequests = Arrays.stream(standardValueEnNameArray).map(name -> {
+            StandardValueVariableRequest standardValueVariableRequest = new StandardValueVariableRequest();
+            standardValueVariableRequest.setStandardValueVersionVariablesName(name);
+            return standardValueVariableRequest;
+        }).collect(Collectors.toList());
+        addMultiSourceRuleRequest.setStandardValueVariables(standardValueVariableRequests);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDatasource(String datasource) throws Exception {
+        if (StringUtils.isBlank(this.clusterName)) {
+            throw new UnExpectedRequestException("Cluster name can not be null or empty, use setCluster(String clusterName) befor this function.");
+        }
+
+        // Datasource
+        StringBuilder clusterBuffer = new StringBuilder(this.clusterName);
+        Map<String, List<ColumnInfoDetail>> colsMap = solveDatasource(clusterBuffer, datasource);
+
+        if (colsMap != null && ! colsMap.isEmpty()) {
+            this.colsMap = colsMap;
+        }
+
+        addMultiSourceRuleRequest.setClusterName(clusterBuffer.toString());
+        addMultiSourceRuleRequest.setLoginUser(userName);
+
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDatasource(String sourceDatasource) throws Exception {
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, sourceDatasource);
+        MultiDataSourceConfigRequest source = toRequestWithDbAndTable(this.clusterName, dataSourceId, dataSourceName, envsStringBuffer,"","");
+        addMultiSourceRuleRequest.setSource(source);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDatasource(String targetDatasource) throws Exception {
+        StringBuilder dataSourceId = new StringBuilder();
+        StringBuilder dataSourceName = new StringBuilder();
+        StringBuilder envsStringBuffer = new StringBuilder();
+        DatasourceEnvUtil.getDataSourceAndEnv(dataSourceId, dataSourceName, envsStringBuffer, targetDatasource);
+        MultiDataSourceConfigRequest target = toRequestWithDbAndTable(this.clusterName, dataSourceId, dataSourceName, envsStringBuffer,"","");
+        addMultiSourceRuleRequest.setTarget(target);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDbAndTable(String sourceDbAndTable) throws Exception {
+        MultiDataSourceConfigRequest source = addMultiSourceRuleRequest.getSource();
+        String[] dbAndTable = sourceDbAndTable.split(SpecCharEnum.PERIOD.getValue());
+        if (source != null) {
+            source.setDbName(dbAndTable[0]);
+            source.setTableName(dbAndTable[1]);
+        } else {
+            source = new MultiDataSourceConfigRequest(dbAndTable[0], dbAndTable[1], "", null, "", "");
+            source.setType(TemplateDataSourceTypeEnum.HIVE.getMessage());
+        }
+        if (StringUtils.isNotBlank(this.sourceClusterName)) {
+            source.setClusterName(this.sourceClusterName);
+        }
+        source.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+        addMultiSourceRuleRequest.setSource(source);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDbAndTable(String targetDbAndTable) throws Exception {
+        MultiDataSourceConfigRequest target = addMultiSourceRuleRequest.getTarget();
+        String[] dbAndTable = targetDbAndTable.split(SpecCharEnum.PERIOD.getValue());
+        if (target != null) {
+            target.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            target.setDbName(dbAndTable[0]);
+            target.setTableName(dbAndTable[1]);
+        } else {
+            target = new MultiDataSourceConfigRequest(dbAndTable[0], dbAndTable[1], "", null, "", "");
+            target.setType(TemplateDataSourceTypeEnum.HIVE.getMessage());
+        }
+        if (StringUtils.isNotBlank(this.targetClusterName)) {
+            target.setClusterName(this.targetClusterName);
+        }
+        target.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+        addMultiSourceRuleRequest.setTarget(target);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceFilter(String sourceFilter) throws Exception {
+        MultiDataSourceConfigRequest source = addMultiSourceRuleRequest.getSource();
+        if (source != null) {
+            source.setFilter(sourceFilter);
+        } else {
+
+        }
+        addMultiSourceRuleRequest.setSource(source);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetFilter(String targetFilter) throws Exception {
+        MultiDataSourceConfigRequest target = addMultiSourceRuleRequest.getTarget();
+        if (target != null) {
+            target.setFilter(targetFilter);
+        } else {
+
+        }
+        addMultiSourceRuleRequest.setTarget(target);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceSql(String sourceSql) throws Exception {
+        if (addMultiSourceRuleRequest.getSource() == null) {
+            String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+            MultiDataSourceConfigRequest source = new MultiDataSourceConfigRequest(clusterName, "", "", "", realUserName);
+            source.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            addMultiSourceRuleRequest.setSource(source);
+        }
+        List<TemplateArgumentRequest> templateArgumentRequests =  addMultiSourceRuleRequest.getTemplateArgumentRequests();
+        TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+        templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.LEFT_COLLECT_SQL.getCode());
+        templateArgumentRequest.setArgumentValue(sourceSql);
+        templateArgumentRequests.add(templateArgumentRequest);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetSql(String targetSql) throws Exception {
+        if (addMultiSourceRuleRequest.getTarget() == null) {
+            String realUserName = StringUtils.isNotBlank(proxyUser) ? proxyUser : userName;
+            MultiDataSourceConfigRequest target = new MultiDataSourceConfigRequest(clusterName, "", "", "", realUserName);
+            target.setProxyUser(StringUtils.isNotBlank(proxyUser) ? proxyUser : userName);
+            addMultiSourceRuleRequest.setTarget(target);
+        }
+        List<TemplateArgumentRequest> templateArgumentRequests =  addMultiSourceRuleRequest.getTemplateArgumentRequests();
+        TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+        templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.RIGHT_COLLECT_SQL.getCode());
+        templateArgumentRequest.setArgumentValue(targetSql);
+        templateArgumentRequests.add(templateArgumentRequest);
+        return this;
+    }
+
+
+    @Override
+    public AddRequestBuilder setAlert(String alertInfo) throws Exception {
+        alertSetting(alertInfo);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setResource(String resource) {
+        if (StringUtils.isNotBlank(resource)) {
+            addMultiSourceRuleRequest.setSpecifyStaticStartupParam(true);
+            addMultiSourceRuleRequest.setStaticStartupParam(resource);
+        } else {
+            addMultiSourceRuleRequest.setSpecifyStaticStartupParam(false);
+        }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDeleteFailCheckResult(boolean deleteFailCheckResult) {
+        addMultiSourceRuleRequest.setDeleteFailCheckResult(deleteFailCheckResult);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        if (this.colsMap == null || this.colsMap.isEmpty()) {
+            throw new UnExpectedRequestException("Column map can not be null or empty");
+        }
+        solveMapping(mappingCols, colsMap, MappingTypeEnum.CONNECT_FIELDS.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCompareColumns(String compareCols) throws UnExpectedRequestException {
+        if (this.colsMap == null || this.colsMap.isEmpty()) {
+            throw new UnExpectedRequestException("Column map can not be null or empty");
+        }
+        solveMapping(compareCols, colsMap, MappingTypeEnum.MATCHING_FIELDS.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        solveCustomMapping(mappingCols, MappingTypeEnum.CONNECT_FIELDS.getCode());
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomCompareColumns(String compareCols) throws UnExpectedRequestException {
+        solveCustomMapping(compareCols, MappingTypeEnum.MATCHING_FIELDS.getCode());
+        return this;
+    }
+
     public RuleMetricDao getRuleMetricDao() {
         return ruleMetricDao;
     }
@@ -2120,16 +2449,84 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
         return uploadRuleMetricValue;
     }
 
-    public void setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
+    public AddRequestBuilder setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
         this.uploadRuleMetricValue = uploadRuleMetricValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAbortonFailure(boolean abortonFailure) {
+        return this;
     }
 
     public boolean getUploadAbnormalValue() {
         return uploadAbnormalValue;
     }
 
-    public void setUploadAbnormalValue(boolean uploadAbnormalValue) {
+    public AddRequestBuilder setUploadAbnormalValue(boolean uploadAbnormalValue) {
         this.uploadAbnormalValue = uploadAbnormalValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCluster(String clusterName) {
+        templateArgumentSettingInit();
+        // Use automatic generate rule name and project.
+        automaticProjectRuleSetting();
+
+        // Task running info.
+        taskSetting(false, false, "");
+        // Init alarm properties.
+        List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+        initAlarm(alarmVariable, false, false);
+        addMultiSourceRuleRequest.setClusterName(clusterName);
+        this.clusterName = clusterName;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceCluster(String clusterName) {
+        if (Boolean.TRUE.equals(this.init)) {
+            // do nothing
+        } else {
+            templateArgumentSettingInit();
+            // Use automatic generate rule name and project.
+            automaticProjectRuleSetting();
+
+            // Task running info.
+            taskSetting(false, false, "");
+            // Init alarm properties.
+            List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+            initAlarm(alarmVariable, false, false);
+
+            this.init = Boolean.TRUE;
+        }
+        this.sourceClusterName = clusterName;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetCluster(String clusterName) {
+        if (Boolean.TRUE.equals(this.init)) {
+            // do nothing
+        } else {
+            templateArgumentSettingInit();
+            // Use automatic generate rule name and project.
+            automaticProjectRuleSetting();
+
+            // Task running info.
+            taskSetting(false, false, "");
+            // Init alarm properties.
+            List<AlarmConfigRequest> alarmVariable = new ArrayList<>(1);
+
+            initAlarm(alarmVariable, false, false);
+
+            this.init = Boolean.TRUE;
+        }
+        this.targetClusterName = clusterName;
+        return this;
     }
 
     public String getRuleMetricEnCode() {

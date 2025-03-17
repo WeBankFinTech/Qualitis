@@ -1,9 +1,9 @@
 package com.webank.wedatasphere.qualitis.response;
 
-//import cn.hutool.core.date.DatePattern;
-//import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import com.fasterxml.jackson.annotation.JsonProperty;
-//import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
+import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -13,7 +13,7 @@ import java.util.Date;
  * @date 2024-04-17 15:11
  * @description
  */
-public class ImsmetricCollectViewResponse {
+public class ImsmetricCollectViewResponse extends MetricExtInfoResponse {
 
     @JsonProperty("metric_id")
     private Long metricId;
@@ -21,6 +21,8 @@ public class ImsmetricCollectViewResponse {
     private BigDecimal metricValue;
     @JsonProperty("metric_name")
     private String metricName;
+    @JsonProperty("identify_value")
+    private String identifyValue;
     @JsonProperty("cluster_name")
     private String clusterName;
     private String database;
@@ -37,20 +39,21 @@ public class ImsmetricCollectViewResponse {
     @JsonProperty("datasource_type")
     private Integer datasourceType;
 
-//    public ImsmetricCollectViewResponse(ImsMetricCollectDto imsMetricCollectDto, String templateName) {
-//        this.metricId = imsMetricCollectDto.getMetricId();
-//        this.metricValue = imsMetricCollectDto.getMetricValue();
-//        this.metricName = imsMetricCollectDto.getMetricName();
-//        this.dataUser = imsMetricCollectDto.getDatasourceUser();
-//        this.updateTime = DateUtil.format(imsMetricCollectDto.getUpdateTime(), DatePattern.NORM_DATETIME_FORMATTER);
-//        this.dataDate = DateUtil.formatDate(new Date(imsMetricCollectDto.getDataDate() * 1000));
-//        this.clusterName = imsMetricCollectDto.getClusterName();
-//        this.database = imsMetricCollectDto.getDbName();
-//        this.table = imsMetricCollectDto.getTableName();
-//        this.column = imsMetricCollectDto.getColumnName();
-//        this.datasourceType = imsMetricCollectDto.getDatasourceType();
-//        this.templateName = templateName;
-//    }
+    public ImsmetricCollectViewResponse(ImsMetricCollectDto imsMetricCollectDto, String templateName) {
+        this.metricId = imsMetricCollectDto.getMetricId();
+        this.metricValue = imsMetricCollectDto.getMetricValue();
+        this.metricName = imsMetricCollectDto.getMetricName();
+        this.identifyValue = imsMetricCollectDto.getIdentifyValue();
+        this.dataUser = imsMetricCollectDto.getDatasourceUser();
+        this.updateTime = DateUtil.format(imsMetricCollectDto.getUpdateTime(), DatePattern.NORM_DATETIME_FORMATTER);
+        this.dataDate = DateUtil.formatDate(new Date(imsMetricCollectDto.getDataDate() * 1000));
+        this.clusterName = imsMetricCollectDto.getClusterName();
+        this.database = imsMetricCollectDto.getDbName();
+        this.table = imsMetricCollectDto.getTableName();
+        this.column = imsMetricCollectDto.getColumnName();
+        this.datasourceType = imsMetricCollectDto.getDatasourceType();
+        this.templateName = templateName;
+    }
 
     public String getMetricName() {
         return metricName;
@@ -58,6 +61,14 @@ public class ImsmetricCollectViewResponse {
 
     public void setMetricName(String metricName) {
         this.metricName = metricName;
+    }
+
+    public String getIdentifyValue() {
+        return identifyValue;
+    }
+
+    public void setIdentifyValue(String identifyValue) {
+        this.identifyValue = identifyValue;
     }
 
     public Integer getDatasourceType() {

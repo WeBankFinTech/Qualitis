@@ -3,7 +3,7 @@
         <main>
             <section class="section">
                 <h3 class="wd-content-title">{{$t('dashboard.todaySummary')}}</h3>
-                <div class="wd-content-body">
+                <div v-if="overseas_external_version === 'false'" class="wd-content-body">
                     <div class="summary-container">
                         <DashboardSummary v-bind="alarmsSummary" />
                     </div>
@@ -15,7 +15,7 @@
                             <f-table-column ellipsis prop="application_begin_time" :label="$t('dashboard.startTime')" :width="184"></f-table-column>
                             <f-table-column ellipsis prop="application_end_time" :label="$t('dashboard.endTime')" :width="184"></f-table-column>
                             <template #empty>
-                                <BPageLoading actionType="emptyInitResult" :loadingText="loadingText" />
+                                <BPageLoading actionType="emptyInitResult" />
                             </template>
                         </f-table>
                     </div>
@@ -46,7 +46,7 @@
                                 </template>
                             </f-table-column>
                             <template #empty>
-                                <BPageLoading actionType="emptyInitResult" :loadingText="loadingText" />
+                                <BPageLoading actionType="emptyInitResult" />
                             </template>
                         </f-table>
                     </div>
@@ -65,7 +65,7 @@
             </section>
             <section class="section">
                 <h3 class="wd-content-title">{{$t('dashboard.summaryAnalysis')}}</h3>
-                <div class="wd-content-body">
+                <div v-if="overseas_external_version === 'false'" class="wd-content-body">
                     <h4 class="chart-title">{{$t('dashboard.alarmLevelSummaryAnalysis')}}</h4>
                     <div class="date-range-container">
                         <DateRange
@@ -105,9 +105,12 @@ import { fetchAlarmData, fetchApplicationData } from './api';
 import { getLabelFromList } from '../../assets/js/utils';
 import {
     ALARM_LEVELS,
-    APPLICATION_STATUSES,
+    getApplicationStatuses,
 } from './const';
 
+// eslint-disable-next-line camelcase
+const overseas_external_version = sessionStorage.getItem('overseas_external_version');
+const APPLICATION_STATUSES = getApplicationStatuses();
 // 今日告警数据处理器(处理后端返回数据，防止异常数据导致页面报错)
 const alarmsResHandler = (res) => {
     if (!res) {
@@ -165,11 +168,6 @@ const applicationsResHandler = (res) => {
 };
 
 const { t: $t } = useI18n();
-
-const loadingText = {
-    emptyInitResult: $t('common.emptyInitResult'),
-};
-
 const {
     pagination: alarmsPagination,
     tableData: alarms,

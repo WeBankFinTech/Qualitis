@@ -13,6 +13,7 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -28,7 +29,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author allenzhou@webank.com
@@ -43,15 +44,23 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Autowired
     private ClusterInfoDao clusterInfoDao;
 
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DataStandardClientImpl.class);
 
     @Override
     public Map<String, Object> getDatabase(String searchKey, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get database return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDatabasePath())
                 .queryParam("searchKey", searchKey)
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag());
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("isAuth", String.valueOf(false));
@@ -72,12 +81,17 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataset(String dbId, String datasetName, int page, int size, String loginUser)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get dataset return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getTablePath())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
                 .queryParam("dbId", dbId).queryParam("datasetName", datasetName)
                 .queryParam("pageNum", page).queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("isAuth", String.valueOf(false));
@@ -97,6 +111,10 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getColumnStandard(Long datasetId, String fieldName, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get column standard return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getColumnPath())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
@@ -107,7 +125,8 @@ public class DataStandardClientImpl implements DataStandardClient {
                 .queryParam("comment", "")
                 .queryParam("contentName", "")
                 .queryParam("scLevel", "");
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("isAuth", String.valueOf(false));
@@ -127,12 +146,17 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getDataStandardDetail(String stdCode, String source, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get data standard detail return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getStandardPath())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
                 .queryParam("stdCode", stdCode)
                 .queryParam("source", source);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("isAuth", String.valueOf(false));
@@ -152,13 +176,18 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getDataStandardCategory(int page, int size, String loginUser, String stdSubName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get data standard category return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardCategory())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
                 .queryParam("stdSubName", StringUtils.isNotBlank(stdSubName) ? stdSubName : "")
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         try {
             url = URLDecoder.decode(url, "UTF-8");
@@ -185,6 +214,10 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getDataStandardBigCategory(int page, int size, String loginUser, String stdSubName, String stdBigCategoryName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get data standard big category return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardBigCategory())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
@@ -192,7 +225,8 @@ public class DataStandardClientImpl implements DataStandardClient {
                 .queryParam("stdBigCategoryName", StringUtils.isNotBlank(stdBigCategoryName) ? stdBigCategoryName : "")
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         try {
             url = URLDecoder.decode(url, "UTF-8");
@@ -219,6 +253,10 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getDataStandardSmallCategory(int page, int size, String loginUser, String stdSubName, String stdBigCategoryName, String smallCategoryName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get data standard small category return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardSmallCategory())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
@@ -227,7 +265,8 @@ public class DataStandardClientImpl implements DataStandardClient {
                 .queryParam("smallCategoryName", StringUtils.isNotBlank(smallCategoryName) ? smallCategoryName : "")
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         try {
             url = URLDecoder.decode(url, "UTF-8");
@@ -254,6 +293,10 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getDataStandard(int page, int size, String loginUser, String stdSmallCategoryUrn, String stdCnName) throws MetaDataAcquireFailedException, UnExpectedRequestException, URISyntaxException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get data standard return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardUrnPath())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
@@ -261,7 +304,8 @@ public class DataStandardClientImpl implements DataStandardClient {
                 .queryParam("stdCnName", StringUtils.isNotBlank(stdCnName) ? stdCnName : "")
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         String replaceUrl = url.replace("\"", "%22");
 
@@ -292,13 +336,18 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getStandardCode(int page, int size, String loginUser, String stdUrn) throws MetaDataAcquireFailedException, UnExpectedRequestException, URISyntaxException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get standard code return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardCodePath())
                 .queryParam("isolateEnvFlag", dataMapConfig.getIsolateEnvFlag())
                 .queryParam("stdUrn", stdUrn)
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
         String replaceUrl = url.replace("\"", "%22");
         URI uri = new URI(replaceUrl);
 
@@ -320,12 +369,17 @@ public class DataStandardClientImpl implements DataStandardClient {
 
     @Override
     public Map<String, Object> getStandardCodeTable(int page, int size, String loginUser, String stdCode) throws MetaDataAcquireFailedException, UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get standard code table return empty map.");
+            return new HashMap<>();
+        }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
                 .path(dataMapConfig.getDataStandardCodeTable())
                 .queryParam("stdCode", StringUtils.isNotBlank(stdCode) ? stdCode : "")
                 .queryParam("pageNum", page)
                 .queryParam("pageSize", size);
-        String url = constructUrlWithSignature(uriBuilder, loginUser);
+        String authUser = getAuthUser(loginUser);
+        String url = constructUrlWithSignature(uriBuilder, authUser);
 
         try {
             url = URLDecoder.decode(url, "UTF-8");
@@ -354,9 +408,17 @@ public class DataStandardClientImpl implements DataStandardClient {
         String nonce = UuidGenerator.generateRandom(5);
         String timestamp = String.valueOf(System.currentTimeMillis());
 
-        String signature = hashWithDataMap(hashWithDataMap(dataMapConfig.getAppId() + nonce + loginUser + timestamp) + dataMapConfig.getAppToken());
+        String appId = dataMapConfig.getAppId();
+        String appToken = dataMapConfig.getAppToken();
 
-        return url.queryParam("appid", dataMapConfig.getAppId()).queryParam("nonce", nonce).queryParam("timestamp", timestamp)
+        if (loginUser.equals(dataMapConfig.getSpecialProxyUser())) {
+            appId = dataMapConfig.getSpecialAppId();
+            appToken = dataMapConfig.getSpecialAppToken();
+        }
+
+        String signature = hashWithDataMap(hashWithDataMap(appId + nonce + loginUser + timestamp) + appToken);
+
+        return url.queryParam("appid", appId).queryParam("nonce", nonce).queryParam("timestamp", timestamp)
                 .queryParam("loginUser", loginUser).queryParam("signature", signature).toString();
     }
 
@@ -372,6 +434,17 @@ public class DataStandardClientImpl implements DataStandardClient {
         byte[] digest = md.digest();
         String hashStr = DatatypeConverter.printHexBinary(digest).toLowerCase();
         return hashStr;
+    }
+
+    private String getAuthUser(String loginUser) {
+        boolean systemUser = false;
+        if (loginUser.equals("hadoop") || loginUser.startsWith("hduser")) {
+            systemUser = true;
+        }
+        if (systemUser) {
+            return StringUtils.isNotBlank(dataMapConfig.getSpecialProxyUser()) ? dataMapConfig.getSpecialProxyUser() : loginUser;
+        }
+        return loginUser;
     }
 
 }

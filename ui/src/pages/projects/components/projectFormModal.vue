@@ -33,13 +33,17 @@
                     :placehodler="$t('common.pleaseEnter')"
                 />
             </FFormItem>
-            <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="sub_system_name">
-                <FInput
-                    v-model="formModel.sub_system_name"
+            <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="sub_system_id">
+                <FSelect
+                    v-model="formModel.sub_system_id"
                     clearable
-                    :maxlength="128"
-                    :placehodler="$t('common.pleaseEnter')"
-                />
+                    filterable
+                    valueField="value"
+                    labelField="label"
+                    :filter="upperCaseFilter"
+                    :options="subSystemList"
+                    @change="setSubSystemName"
+                ></FSelect>
             </FFormItem>
             <FFormItem prop="description" :label="$t('label.projectIntro')">
                 <FInput
@@ -63,6 +67,7 @@ import {
 import { useI18n } from '@fesjs/fes';
 import { FMessage } from '@fesjs/fes-design';
 import { COMMON_REG, FORM_MODE, FORM_MODES } from '@/assets/js/const';
+import { upperCaseFilter } from '@/common/utils';
 import TagEditor from './TagEditor';
 import { addProject } from '../api';
 import useDataSource from '../hooks/useDataSource';
@@ -116,8 +121,11 @@ const handleCancel = () => {
 };
 
 const handleSubmit = async () => {
-    const validation = await formRef.value.validate();
-    if (validation && !validation.valid) return;
+    try {
+        await formRef.value.validate();
+    } catch (err) {
+        return;
+    }
     let message;
     if (props.mode === FORM_MODE.ADD) {
         message = $t('toastSuccess.addSuccess');

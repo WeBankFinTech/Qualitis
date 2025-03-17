@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.dao.impl;
 import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.StandardValueVersionRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVersion;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,15 +37,23 @@ public class StandardValueVersionDaoImpl implements StandardValueVersionDao {
     public StandardValueVersion findById(Long id) {
         return standardValueVersionRepository.findById(id).orElse(null);
     }
-
-    @Override
-    public List<StandardValueVersion> findByStandardValueVersion(Long id) {
-        return standardValueVersionRepository.findByStandardValueVersion(id);
-    }
-
     @Override
     public List<StandardValueVersion> findAllData(String enName) {
         return standardValueVersionRepository.selectStandardValueVersion(enName);
+    }
+
+    @Override
+    public StandardValueVersion findLatestVersion(String enName) {
+        List<StandardValueVersion> standardValueVersions = standardValueVersionRepository.findLatestStandardValue(enName);
+        if (CollectionUtils.isNotEmpty(standardValueVersions)) {
+            return standardValueVersions.get(0);
+        }
+        return null;
+    }
+
+    @Override
+    public List<StandardValueVersion> findByIds(List<Long> ids) {
+        return standardValueVersionRepository.findAllById(ids);
     }
 
     @Override

@@ -27,7 +27,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Id;
-import org.codehaus.jackson.annotate.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author howeye
@@ -188,11 +188,10 @@ public class RuleVariable {
     @Override
     public String toString() {
         return "RuleVariable{" +
-                "id=" + id +
-                ", rule=" + rule +
+                "rule=" + (Objects.nonNull(rule) ? rule.getId() : "") +
                 ", inputActionStep=" + inputActionStep +
-                ", templateStatisticsInputMeta=" + templateStatisticsInputMeta +
-                ", templateMidTableInputMeta=" + templateMidTableInputMeta +
+                ", templateStatisticsInputMeta=" + (Objects.nonNull(templateStatisticsInputMeta) ? templateStatisticsInputMeta.getId() : "") +
+                ", templateMidTableInputMeta=" + (Objects.nonNull(templateMidTableInputMeta) ? templateMidTableInputMeta.getId() : "") +
                 ", value='" + value + '\'' +
                 ", clusterName='" + clusterName + '\'' +
                 ", dbName='" + dbName + '\'' +

@@ -25,7 +25,7 @@ cd $SPARK_HOME/jars
 
 最后，重启Linkis
 
-## Qualitis 集群配置
-系统配置--集群配置，在Linkis令牌中填入'QUALITIS-AUTH'  
+## Qualitis配置
+在Linkis Token中填入'QUALITIS-AUTH'  
 如下图所示：  
 ![](../../../images/zh_CN/ch1/规则配置样例.png)

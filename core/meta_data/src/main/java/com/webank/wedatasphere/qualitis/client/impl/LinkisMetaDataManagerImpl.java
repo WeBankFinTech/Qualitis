@@ -19,7 +19,7 @@ import com.webank.wedatasphere.qualitis.util.CryptoUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,12 +205,13 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
                 } else if (QualitisConstants.AUTH_TYPE_DPM.equals(authType)) {
                     connectParamMap.put("appid", connectParamsRequest.getAppId());
                     connectParamMap.put("objectid", connectParamsRequest.getObjectId());
-                    connectParamMap.put("dk", connectParamsRequest.getDk());
+                    connectParamMap.put("mkPrivate", connectParamsRequest.getMkPrivate());
                 }
             }
             connectParamMap.put("host", connectParamsRequest.getHost());
             connectParamMap.put("port", connectParamsRequest.getPort());
             connectParamMap.put("params", connectParamsRequest.getConnectParam());
+            connectParamMap.put("userClientIp", QualitisConstants.getLocalIp(""));
             dataSourceEnv.setConnectParams(connectParamMap);
         }
         try {
@@ -241,6 +242,7 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
             connectParams.put("share", isShared);
             connectParams.put("dcn", isAutoInput(linkisDataSourceRequest.getInputType()));
             connectParams.put("multi_env", true);
+            connectParams.put("userClientIp", QualitisConstants.getLocalIp(""));
 
             linkisDataSourceRequest.setConnectParams(connectParams);
         }
@@ -273,23 +275,6 @@ public class LinkisMetaDataManagerImpl implements LinkisMetaDataManager {
             LOGGER.error("Failed to query all dataSource types. ", e);
         }
         return typeNameAndIdMap;
-    }
-
-    @Override
-    public GeneralResponse connect(Long linkisDataSourceId, Long versionId) throws Exception {
-        LinkisDataSourceInfoDetail linkisDataSourceInfoDetail = metaDataClient.getDataSourceInfoById(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), linkisDataSourceId, versionId);
-        String dataSourceJson = objectMapper.writeValueAsString(linkisDataSourceInfoDetail);
-
-        try {
-            GeneralResponse<Map<String, Object>> resultMap = metaDataClient.connectDataSource(linkisConfig.getDatasourceCluster(), linkisConfig.getDatasourceAdmin(), dataSourceJson);
-            if (!resultMap.getData().containsKey("ok")) {
-                return resultMap;
-            }
-        } catch (MetaDataAcquireFailedException e) {
-            String errorMsg = "环境连接失败";
-            throw new MetaDataAcquireFailedException(errorMsg, 500);
-        }
-        return new GeneralResponse(ResponseStatusConstants.OK, "Connected!", null);
     }
 
     private void validateConnectParams(Map<String, Object> connectParams) throws UnExpectedRequestException {

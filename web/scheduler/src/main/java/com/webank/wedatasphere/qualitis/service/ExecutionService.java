@@ -69,7 +69,7 @@ public interface ExecutionService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-    GeneralResponse killApplication(String applicationId)
+    GeneralResponse<Object> killApplication(String applicationId)
             throws JobKillException, ClusterInfoNotConfigException, UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**

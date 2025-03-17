@@ -125,8 +125,8 @@ import {
     BTableHeaderConfig, BPageLoading, BTablePage, BSearch,
 } from '@fesjs/traction-widget';
 import { getActionRangeString } from './utils';
-import { instanceConfigData } from '../instance/api';
-import { getDepartments } from '../person/departmentManagement/api';
+import { getAssociateInstance } from '../instance/api';
+import { getAssociateDepartments } from '../person/departmentManagement/api';
 
 const tenantDeptList = ref([]);
 const tenantServiceList = ref([]);
@@ -165,9 +165,10 @@ async function getTenantDeptList() {
             page: 0,
             size: INTMAXVALUE,
         };
-        const res = await getDepartments(params);
-        console.log('getDepartmentsRes', res);
+        const res = await getAssociateDepartments(params);
+        console.log('getAssociateDepartments', res);
         tenantServiceList.value = [];
+        tenantDeptList.value = [];
         res.data.forEach((item) => {
             tenantDeptList.value.push({ value: item.department_id, label: item.department_name });
         });
@@ -183,7 +184,7 @@ async function getTenantServiceList() {
             page: 0,
             size: INTMAXVALUE,
         };
-        const res = await instanceConfigData(params);
+        const res = await getAssociateInstance(params);
         console.log('instanceConfigDataRes', res);
         tenantServiceList.value = [];
         res.data.forEach((item) => {
@@ -213,7 +214,22 @@ function resetAddOrEditTenantForm() {
     });
     Object.assign(addOrEditTenantForm, obj);
 }
-
+async function fetchSelectorOptions(type, form = {}) {
+    await getTenantDeptList();
+    await getTenantServiceList();
+    if (type === 'edit') {
+        if (Array.isArray(form.tenantDeptName) && Array.isArray(form.tenantDept)) {
+            form.tenantDeptName.forEach((element, index) => {
+                tenantDeptList.value.push({ label: element, value: form.tenantDept[index] });
+            });
+        }
+        if (Array.isArray(form.tenantServiceName) && Array.isArray(form.tenantService)) {
+            form.tenantServiceName.forEach((element, index) => {
+                tenantServiceList.value.push({ label: element, value: form.tenantService[index] });
+            });
+        }
+    }
+}
 const addOrEditTenantFormRules = {
     tenantUserName: [{
         required: true,
@@ -239,14 +255,17 @@ const userId = ref('');
 const method = ref('put');
 const addOrEditModalTitle = ref('tenantManagePage.addTenantUser');
 
-function edit(row, e) {
+async function edit(row, e) {
     console.log('edit', row, e);
     userId.value = row.tenant_user_id;
     addOrEditTenantForm.tenantUserName = row.tenant_user_name;
     addOrEditTenantForm.tenantDept = row.tenant_user_depts;
     addOrEditTenantForm.tenantService = row.tenant_user_services;
+    addOrEditTenantForm.tenantDeptName = row.tenant_user_depts_name;
+    addOrEditTenantForm.tenantServiceName = row.tenant_user_services_name;
     method.value = 'post';
     addOrEditModalTitle.value = 'tenantManagePage.editTenantUser';
+    await fetchSelectorOptions('edit', addOrEditTenantForm);
     showModal.value = true;
 }
 
@@ -270,7 +289,8 @@ const actions = [
         type: 'primary',
         icon: PlusOutlined,
         label: $t('tenantManagePage.addTenantUser'),
-        handler: () => {
+        handler: async () => {
+            await fetchSelectorOptions('create');
             showModal.value = true;
             method.value = 'put';
         },
@@ -329,10 +349,9 @@ function searchTenant() {
     resultByInit.value = false;
 }
 
-
 onMounted(() => {
-    getTenantDeptList();
-    getTenantServiceList();
+    // getTenantDeptList();
+    // getTenantServiceList();
     fetch();
     resultByInit.value = true;
 });

@@ -16,27 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.rule.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
 import com.webank.wedatasphere.qualitis.rule.util.LazyGetUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.hibernate.annotations.NotFoundAction;
-import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.CascadeType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 import java.util.Objects;
 import java.util.Set;
 
@@ -63,7 +52,7 @@ public class Rule {
     @Column(name = "cn_name", length = 128)
     private String cnName;
 
-    @Column(length = 350)
+    @Column(name = "detail")
     private String detail;
 
     @Column(name = "alert")
@@ -185,6 +174,8 @@ public class Rule {
     @Column(name = "node_name")
     private String nodeName;
 
+    @Column(name = "reg_rule_code")
+    private String regRuleCode;
 
     @OneToMany(mappedBy = "rule", fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @NotFound(action = NotFoundAction.IGNORE)
@@ -192,6 +183,14 @@ public class Rule {
 
     public Rule() {
         // Default Constructor
+    }
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
     }
 
     public Integer getUnionWay() {

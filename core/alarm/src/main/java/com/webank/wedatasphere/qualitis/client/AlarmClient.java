@@ -12,12 +12,13 @@ public interface AlarmClient {
     /**
      * 发送告警
      * @param receiver
+     * @param alertTitle
      * @param alertInfo
      * @param alertLevel
-     * @param alertTitle
+     * @param subSystemId
      * @return
      */
-    void sendAlarm(String receiver, String alertTitle, String alertInfo, String alertLevel);
+    void sendAlarm(String receiver, String alertTitle, String alertInfo, String alertLevel, String subSystemId);
 
     /**
      * Send new alarm.

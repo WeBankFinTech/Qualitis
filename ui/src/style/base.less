@@ -2,6 +2,13 @@
 *{
     box-sizing: border-box;
 }
+.monaco-editor {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "HelveticaNeue-Light", "Ubuntu", "Droid Sans", sans-serif, "JinbiaoSong", "JinbiaoSongExt";
+    .view-line {
+        font-family: Consolas, "Courier New", monospace, "JinbiaoSong", "JinbiaoSongExt";
+    }
+}
+
 html{
     height: 100%;
 }
@@ -56,8 +63,14 @@ ul{
         margin-right: 8px;
     }
 }
-
+.fes-input-inner-el {
+    font-family: apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "HelveticaNeue-Light", "Ubuntu", "Droid Sans", sans-serif, "JinbiaoSong", "JinbiaoSongExt" !important;
+}
+.fes-textarea-inner {
+    font-family: monospace, "JinbiaoSong", "JinbiaoSongExt" !important;
+}
 .wd-page{
+    font-family: apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "HelveticaNeue-Light", "Ubuntu", "Droid Sans", sans-serif, "JinbiaoSong", "JinbiaoSongExt";
     height: 100%;
     background: #f7f8fa;
     .wd-side-menus {
@@ -180,6 +193,13 @@ ul{
             margin: 0 12px;
             // width: 600px;
         }
+        .edit-group-name {
+            width: 450px;
+            margin-right: 22px;
+        }
+        .margin-r22 {
+            margin-right: 22px;
+        }
     }
 }
 
@@ -193,7 +213,7 @@ ul{
     .fes-textarea{
         max-width: 290px;
     }
-    .fes-form .fes-form-item.is-required .fes-form-item-label::before{
+    .fes-form .fes-form-item .fes-form-item-label.is-required::before{
         display: none;
     }
     .fes-tabs {
@@ -307,6 +327,8 @@ ul{
     .fes-form-item-label,
     .input-preview-label{
         color: #646670;
+        overflow-wrap: normal;
+        word-break: nomal;
     }
     // 预览的时候不能显示错误信息
     .fes-form-item-error{
@@ -329,8 +351,8 @@ ul{
                 width: 100%;
             }
         }
-        .fes-form .fes-form-item.is-required .fes-form-item-label::before{
-            display: inline-block;
+        .fes-form .fes-form-item .fes-form-item-label.is-required::before{
+            display: inline-block !important;
         }
         .fes-form .fes-form-item{
             margin-bottom: 22px;
@@ -498,37 +520,37 @@ ul{
     }
 }
 
-// .loading-block{
-//     width: 100%;
-//     height: 400px;
-//     background: url('@/assets/images/icons/loading.gif') center no-repeat;
-// }
+.loading-block{
+    width: 100%;
+    height: 400px;
+    background: url('@/assets/images/icons/loading.png') center no-repeat;
+}
 
 
-// .empty-block{
-//     .empty-data{
-//         width: 100%;
-//         height: 200px;
-//         margin-top: 150px;
-//         background: url('@/assets/images/emptyData.svg') center no-repeat;
-//     }
-//     .table-empty-tips{
-//         margin-top: 23px;
-//         margin-bottom: 155px;
-//         height: 26px;
-//         font-size: 18px;
-//         color: #93949B;
-//         text-align: center;
-//         line-height: 26px;
-//     }
+.empty-block{
+    .empty-data{
+        width: 100%;
+        height: 200px;
+        margin-top: 150px;
+        background: url('@/assets/images/emptyData.svg') center no-repeat;
+    }
+    .table-empty-tips{
+        margin-top: 23px;
+        margin-bottom: 155px;
+        height: 26px;
+        font-size: 18px;
+        color: #93949B;
+        text-align: center;
+        line-height: 26px;
+    }
     
-//     .empty-query-result{
-//         width: 100%;
-//         height: 200px;
-//         margin-top: 150px;
-//         background: url('@/assets/images/emptyQueryResult.svg') center no-repeat;
-//     }
-// }
+    .empty-query-result{
+        width: 100%;
+        height: 200px;
+        margin-top: 150px;
+        background: url('@/assets/images/emptyQueryResult.svg') center no-repeat;
+    }
+}
 
 .long-string-label {
     display: -webkit-box;

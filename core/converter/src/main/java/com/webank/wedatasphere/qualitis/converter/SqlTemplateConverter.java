@@ -18,7 +18,6 @@ package com.webank.wedatasphere.qualitis.converter;
 
 //import com.webank.bsp.dpc.entity.AccountInfoSys;
 //import com.webank.bsp.dpc.util.AccountInfoObtainer;
-
 import com.webank.wedatasphere.qualitis.EngineTypeEnum;
 import com.webank.wedatasphere.qualitis.LocalConfig;
 import com.webank.wedatasphere.qualitis.bean.DataQualityJob;
@@ -35,11 +34,18 @@ import com.webank.wedatasphere.qualitis.exception.*;
 import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.constant.RuleConstraintEnum;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
+import com.webank.wedatasphere.qualitis.net.LocalNetwork;
 import com.webank.wedatasphere.qualitis.rule.constant.*;
+import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVariablesDao;
 import com.webank.wedatasphere.qualitis.rule.dao.StandardValueVersionDao;
 import com.webank.wedatasphere.qualitis.rule.entity.*;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.translator.AbstractTranslator;
-import com.webank.wedatasphere.qualitis.util.*;
+import com.webank.wedatasphere.qualitis.util.CryptoUtils;
+import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
+import com.webank.wedatasphere.qualitis.util.MyStringEscaper;
+import com.webank.wedatasphere.qualitis.util.QualitisCollectionUtils;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -62,6 +68,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,6 +104,8 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     @Autowired
     private StandardValueVersionDao standardValueVersionDao;
     @Autowired
+    private StandardValueVariablesDao standardValueVariablesDao;
+    @Autowired
     private DataStandardClient dataStandardClient;
     @Value("${linkis.sql.communalTableName:common_table}")
     private String commonTableName;
@@ -122,11 +131,14 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     @Value("${task.execute.trino_column_size:100}")
     private Integer trinoColumnSize;
 
+    @Value("${linkis.spark.sql.default:spark.sql.hive.convertMetastoreOrc=false}")
+    private String sqlDefault;
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(".*\\$\\{(.*)}.*");
     private static final Pattern AGGREGATE_FUNC_PATTERN = Pattern.compile("[a-zA-Z]+\\([0-9a-zA-Z_]+\\)");
-    private static final String FRONT_HALF = "[ `~!@#$%^&*()+=|{}':;',\\[\\]";
-    private static final String POSTERIOR_HALF = "<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]|\n|\r|\t";
-    private static final Pattern MID_TABLE_NAME_PATTERN = Pattern.compile(FRONT_HALF + POSTERIOR_HALF);
 
     private static final String SAVE_MID_TABLE_NAME_PLACEHOLDER = "${TABLE_NAME}";
     private static final String SPARK_SQL_TEMPLATE_PLACEHOLDER = "${SQL}";
@@ -245,7 +257,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     public DataQualityJob convert(DataQualityTask dataQualityTask, Date date, String setFlag, Map<String, String> execParams, String runDate
             , String runToday, String clusterType, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect, String user, List<String> leftCols, List<String> rightCols, List<String> complexCols, String createUser, Long projectId) throws Exception {
 
-        boolean withSpark = Boolean.FALSE.equals(taskDataSourceConfig.getHiveSortUdfOpen());
         LOGGER.info("Start to convert template to actual code, task: " + dataQualityTask);
         if (null == dataQualityTask || dataQualityTask.getRuleTaskDetails().isEmpty()) {
             throw new DataQualityTaskException("Task can not be null or empty");
@@ -327,16 +338,19 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             engineType = execParams.get(QualitisConstants.QUALITIS_ENGINE_TYPE);
         }
         List<String> initSentence = abstractTranslator.getInitSentence();
-        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || withSpark) {
+        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || CollectionUtils.isNotEmpty(complexCols)) {
             job.getJobCode().addAll(initSentence);
-            job.getJobCode().add("spark.sql(\"SET spark.sql.hive.convertMetastoreOrc=false\")");
+            String[] setStrs = sqlDefault.split(SpecCharEnum.DIVIDER.getValue());
+            for (String str : setStrs) {
+                job.getJobCode().add("spark.sql(\"SET " + str + "\")");
+            }
         }
 
         List<String> envNames = new ArrayList<>();
         boolean shareConnect = CollectionUtils.isNotEmpty(dataQualityTask.getConnectShare());
         List<String> communalSentence = new ArrayList<>();
-        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || withSpark) {
-            communalSentence = getCommunalSentence(dataQualityTask, envNames, runDate, runToday, engineType);
+        if (! EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) || CollectionUtils.isNotEmpty(complexCols)) {
+            communalSentence = getCommunalSentence(dataQualityTask, envNames, runDate, runToday);
             job.getJobCode().addAll(communalSentence);
         }
 
@@ -360,20 +374,20 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
             job.getJobCode().addAll(fpsCodes);
             // Handle hive engine task depend on startup param(qualitis.linkis.engineType=shell,spark(default))
-            if (CollectionUtils.isEmpty(complexCols) && CollectionUtils.isEmpty(fpsCodes) && !withSpark && taskDataSourceConfig.getMysqlsecOpen()) {
+            if (CollectionUtils.isEmpty(complexCols) && CollectionUtils.isEmpty(fpsCodes)) {
                 boolean generated = false;
                 if (EngineTypeEnum.DEFAULT_ENGINE.getMessage().equals(engineType) && QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(ruleTaskDetail.getRule().getTemplate().getEnName())
                         && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(ruleTaskDetail.getRule().getTemplate().getTemplateType())
-                        && CollectionUtils.isEmpty(dataSourceMysqlConnect.keySet())) {
+                        && CollectionUtils.isEmpty(dataSourceMysqlConnect.keySet()) && taskDataSourceConfig.getMysqlsecOpen()) {
                     job.getJobCode().clear();
                     // Hql
-                    List<String> codes = generateShellSqlByTask(ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), count, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
+                    List<String> codes = generateShellSqlByTask(ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getTaskId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), count, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
                     job.setEngineType(EngineTypeEnum.DEFAULT_ENGINE.getMessage());
                     job.getJobCode().addAll(codes);
                     generated = true;
                 } else if (EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && ! QualitisConstants.isAcrossCluster(ruleTaskDetail.getRule().getTemplate().getEnName())) {
                     // Tsql
-                    List<String> codes = generateTrinoSqlByTask(job, ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), execParams, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, queueName, createUser);
+                    List<String> codes = generateTrinoSqlByTask(job, ruleTaskDetail.getRule(), date, dataQualityTask.getApplicationId(), dataQualityTask.getCreateTime(), new StringBuilder(dataQualityTask.getPartition()), execParams, runDate, runToday, currentRuleLeftCols, currentRuleRightCols, complexCols, createUser);
                     job.setEngineType(EngineTypeEnum.TRINO_ENGINE.getMessage());
                     job.getJobCode().addAll(codes);
                     generated = true;
@@ -413,7 +427,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return job;
     }
 
-    private List<String> getCommunalSentence(DataQualityTask dataQualityTask, List<String> envNames, String runDate, String runToday, String engineType) throws UnExpectedRequestException {
+    private List<String> getCommunalSentence(DataQualityTask dataQualityTask, List<String> envNames, String runDate, String runToday) throws UnExpectedRequestException {
         List<String> sqlList = new ArrayList<>();
         if (StringUtils.isEmpty(dataQualityTask.getDbShare()) || StringUtils.isEmpty(dataQualityTask.getTableShare())) {
             return sqlList;
@@ -495,7 +509,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         return sqlList;
     }
 
-    private List<String> generateShellSqlByTask(Rule rule, Date date, String applicationId, String createTime, StringBuilder partition, int count
+    private List<String> generateShellSqlByTask(Rule rule, Date date, String applicationId, Long taskId, String createTime, StringBuilder partition, int count
             , String runDate, String runToday, List<String> leftCols, List<String> rightCols, List<String> complexCols, String queueName, String createUser) throws Exception {
 
         List<String> sqlList = new ArrayList<>();
@@ -569,16 +583,16 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 runDate = "-1";
             }
         }
-        String insertSql = "sql_" + count + "=\"INSERT INTO qualitis_application_task_result (application_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) VALUES('" + applicationId + "', '" + createTime + "', 'Long', " + rule.getId() + ", $count_value_" + count + ", -1, " + runDate + ", '" + ruleVersion + "');\"";
+        String insertSql = "sql_" + count + "=\"INSERT INTO qualitis_application_task_result (application_id, task_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) VALUES('" + applicationId + "', '" + taskId + "', '" + createTime + "', 'Long', " + rule.getId() + ", $count_value_" + count + ", -1, " + runDate + ", '" + ruleVersion + "');\"";
         if (CollectionUtils.isNotEmpty(ruleMetricMap.values())) {
-            insertSql = "sql_" + count + "=\"INSERT INTO qualitis_application_task_result (application_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) VALUES('" + applicationId + "', '" + createTime + "', 'Long', " + rule.getId() + ", $count_value_" + count + ", " + ruleMetricMap.values().iterator().next() + ", " + runDate + ", '" + ruleVersion + "');\"";
+            insertSql = "sql_" + count + "=\"INSERT INTO qualitis_application_task_result (application_id, task_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) VALUES('" + applicationId + "', '" + taskId + "', '" + createTime + "', 'Long', " + rule.getId() + ", $count_value_" + count + ", " + ruleMetricMap.values().iterator().next() + ", " + runDate + ", '" + ruleVersion + "');\"";
         }
         sqlList.add(insertSql);
         sqlList.add("result=\"$($MYSQL -e\"$sql_" + count + "\")\"");
         return sqlList;
     }
 
-    private List<String> generateTrinoSqlByTask(DataQualityJob job, Rule rule, Date date, String applicationId, String createTime, StringBuilder partition, Map<String, String> execParams, String runDate, String runToday, List<String> leftCols, List<String> rightCols, List<String> complexCols, String queueName, String createUser) throws UnExpectedRequestException, ConvertException, MetaDataAcquireFailedException {
+    private List<String> generateTrinoSqlByTask(DataQualityJob job, Rule rule, Date date, String applicationId, String createTime, StringBuilder partition, Map<String, String> execParams, String runDate, String runToday, List<String> leftCols, List<String> rightCols, List<String> complexCols, String createUser) throws UnExpectedRequestException, ConvertException, MetaDataAcquireFailedException {
         List<String> sqlList = new ArrayList<>();
         Map<String, String> filters = new HashMap<>(2);
 
@@ -651,7 +665,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
         StringBuilder trinoSql = new StringBuilder();
         trinoSql.append("insert into mysql").append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(resultDbName).append(SpecCharEnum.PERIOD_NO_ESCAPE.getValue()).append(resultTableName);
-        trinoSql.append(" (application_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) ");
+        trinoSql.append(" (application_id, task_id, create_time, result_type, rule_id, value, rule_metric_id, run_date, version) ");
 
         String ruleVersion = rule.getWorkFlowVersion() == null ? "" : rule.getWorkFlowVersion();
 
@@ -665,7 +679,9 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         Long ruleMetricId = -1L;
 
         if (ruleMetricMap != null && ruleMetricMap.size() > 0) {
-            for (String key : ruleMetricMap.keySet()) {
+            for (Map.Entry<String, Long> entry : ruleMetricMap.entrySet()) {
+                String key = entry.getKey();
+
                 if (null != ruleMetricMap.get(key)) {
                     ruleMetricId = ruleMetricMap.get(key);
                 }
@@ -675,6 +691,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     StringBuilder customTrinoSql = new StringBuilder(trinoSql.toString());
                     customTrinoSql.append("select ")
                             .append("'").append(applicationId).append("', ")
+                            .append(job.getTaskId()).append(", ")
                             .append("'").append(createTime).append("', ")
                             .append("'").append("Long").append("', ")
                             .append(rule.getId()).append(", ")
@@ -695,6 +712,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
         trinoSql.append("select ")
                 .append("'").append(applicationId).append("', ")
+                .append(job.getTaskId()).append(", ")
                 .append("'").append(createTime).append("', ")
                 .append("'").append("Long").append("', ")
                 .append(rule.getId()).append(", ")
@@ -994,24 +1012,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         // Get SQL from template after remove '\n'
         String templateMidTableAction = rule.getTemplate().getMidTableAction().replace("\n", " ");
         // Replace execution variable parameters
-        if(compareProjectName(rule) || intellectCheckFieldsProjectName.equals(rule.getProject().getName())) {
-            if (!MapUtils.isEmpty(execParams)) {
-                for (Map.Entry< String, String > entry : execParams.entrySet()) {
-                    String expressKey = entry.getKey();
-                    String expressValue = entry.getValue();
-                    templateMidTableAction = templateMidTableAction.replace("${" + expressKey + "}", expressValue);
-                }
-                if (execParams.containsKey("partition_attr") && execParams.containsKey("partition_day")) {
-                    String filter = "";
-                    if (execParams.get("partition_day").contains(",")) {
-                        filter = execParams.get("partition_attr") + " in (" + execParams.get("partition_day") + ")";
-                    } else {
-                        filter = execParams.get("partition_attr") + " = " + execParams.get("partition_day");
-                    }
-                    templateMidTableAction = templateMidTableAction.replace("${partition_filter}", filter);
-                }
-            }
-        }
         String templateEnName = StringUtils.isNotEmpty(rule.getTemplate().getEnName()) ? rule.getTemplate().getEnName() : "defaultCheckDF";
 
         if (MUL_SOURCE_RULE.intValue() == rule.getRuleType()) {
@@ -1052,7 +1052,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         formatEnvNameForSpark(sourceConnect);
         formatEnvNameForSpark(targetConnect);
 
-        handleRuleSelectSql(rule, midTableName, partition, partOfVariableName, runDate, runToday, dataSourceMysqlConnect, sqlList, filters, dbTableMap, midTableAction, sourceConnect, targetConnect, selectResult, midTableReUse, unionWay, leftCols, rightCols, complexCols, shareConnect, shareFromPart, execParams, job.getIndex(), job.getEngineType());
+        handleRuleSelectSql(rule, midTableName, partition, partOfVariableName, runDate, runToday, dataSourceMysqlConnect, sqlList, filters, dbTableMap, midTableAction, sourceConnect, targetConnect, selectResult, midTableReUse, unionWay, leftCols, rightCols, complexCols, shareConnect, shareFromPart, execParams, job.getIndex());
 
         Set<TemplateMidTableInputMeta> templateMidTableInputMetas = rule.getTemplate().getTemplateMidTableInputMetas();
         boolean saveNewValue = templateMidTableInputMetas.stream().anyMatch(templateMidTableInputMeta -> Boolean.TRUE.equals(templateMidTableInputMeta.getWhetherNewValue()));
@@ -1112,7 +1112,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     /**
-     * before: UR1-10.108.192.127-15202(epccmaindb_G-DCN_9F1_set_2)
      * after: UR11010819212715202
      * @param envName
      * @return
@@ -1133,14 +1132,11 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     private void handleRuleSelectSql(Rule rule, String midTableName, StringBuilder partition, String partOfVariableName, String runDate, String runToday, Map<Long, List<Map<String, Object>>> dataSourceMysqlConnect
             , List<String> sqlList, Map<String, String> filters, Map<String, String> dbTableMap, String midTableAction, List<Map<String, Object>> sourceConnect, List<Map<String, Object>> targetConnect
             , Map<String, String> selectResult, boolean midTableReUse, int unionWay, List<String> leftCols, List<String> rightCols, List<String> complexCols, boolean shareConnect, String shareFromPart
-            , Map<String, String> execParams, Integer dataSourceIndex, String engineType) throws UnExpectedRequestException {
+            , Map<String, String> execParams, Integer dataSourceIndex) throws UnExpectedRequestException {
         String templateEnName = rule.getTemplate().getEnName();
-        boolean systemCompareTemplate = (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType())) || (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
-                || (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
-                || (QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
-                || (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()))
-                || (QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName) && RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()));
-
+        boolean systemCompareTemplate = RuleTemplateTypeEnum.MULTI_SOURCE_TEMPLATE.getCode().equals(rule.getTemplate().getTemplateType()) && (
+                (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(templateEnName)) || (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(templateEnName)) || (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName)) || (QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(templateEnName)) || (QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName)) || (QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(templateEnName))
+        );
 
         if ((UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay) || UnionWayEnum.NO_COLLECT_CALCULATE.getCode().equals(unionWay))
                 && CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect) && sourceConnect.size() != targetConnect.size()) {
@@ -1150,79 +1146,13 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         boolean unionAllForSaveResult = UnionWayEnum.COLLECT_AFTER_CALCULATE.getCode().equals(unionWay);
         if (systemCompareTemplate && dbTableMap.size() > 0) {
             if (QualitisConstants.MULTI_SOURCE_ACCURACY_TEMPLATE_NAME.equals(templateEnName)) {
-                if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
-                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
-                                , sourceConnect, targetConnect, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
-                            Map<String, Object> sourceConnectMap = sourceIterator.next();
-                            Map<String, Object> targetConnectMap = targetIterator.next();
-                            String sourceEnvName = (String) sourceConnectMap.get("envName");
-                            String targetEnvName = (String) targetConnectMap.get("envName");
-                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
-                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
-                                , sourceConnect, targetConnect, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
-                            Map<String, Object> sourceConnectMap = sourceIterator.next();
-                            String sourceEnvName = (String) sourceConnectMap.get("envName");
-                            if (StringUtils.isEmpty(sourceEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, sourceIterator.next(), null, selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else if (CollectionUtils.isNotEmpty(targetConnect) && CollectionUtils.isEmpty(sourceConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
-                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
-                                , sourceConnect, targetConnect, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
-                            Map<String, Object> targetConnectMap = targetIterator.next();
-                            String targetEnvName = (String) targetConnectMap.get("envName");
-                            if (StringUtils.isEmpty(targetEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, null, targetIterator.next(), selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
-                                , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
-                                , sourceConnect, targetConnect, selectResult));
-                    } else {
-                        sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
-                    }
-                    if ((StringUtils.isNotEmpty(rule.getAbnormalDatabase())) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
-                        sqlList.addAll(getSaveMidTableSentenceSettings());
-                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
-                    }
-                }
+                handleWithUnionWay(sqlList, partOfVariableName, unionWay, midTableAction, dbTableMap, filters, sourceConnect, targetConnect, selectResult, unionAllForSaveResult, rule, midTableName, runDate, runToday, midTableReUse);
             } else if (QualitisConstants.MULTI_SOURCE_FULL_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
                 sqlList.add("val UUID = java.util.UUID.randomUUID.toString");
                 // Import sql function.
                 sqlList.addAll(getImportSql());
                 List<String> columns = new ArrayList<>();
                 String columnsInfo = rule.getRuleDataSources().stream().filter(ruleDataSource -> QualitisConstants.LEFT_INDEX.equals(ruleDataSource.getDatasourceIndex())).iterator().next().getColName();
-
                 if (StringUtils.isNotEmpty(columnsInfo)) {
                     String[] realColumns = columnsInfo.split(SpecCharEnum.VERTICAL_BAR.getValue());
                     for (String column : realColumns) {
@@ -1239,68 +1169,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                         }
                     }
                 }
-                if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
-                                , sourceConnect, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
-                            Map<String, Object> sourceConnectMap = sourceIterator.next();
-                            Map<String, Object> targetConnectMap = targetIterator.next();
-                            String sourceEnvName = (String) sourceConnectMap.get("envName");
-                            String targetEnvName = (String) targetConnectMap.get("envName");
-                            if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                    , sourceConnectMap, targetConnectMap, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
-                                , sourceConnect, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
-                            Map<String, Object> sourceConnectMap = sourceIterator.next();
-                            String sourceEnvName = (String) sourceConnectMap.get("envName");
-                            if (StringUtils.isEmpty(sourceEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                    , sourceIterator.next(), null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else if (CollectionUtils.isEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
-                    if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
-                        sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
-                                , null, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                    } else {
-                        for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
-                            Map<String, Object> targetConnectMap = targetIterator.next();
-                            String targetEnvName = (String) targetConnectMap.get("envName");
-                            if (StringUtils.isEmpty(targetEnvName)) {
-                                continue;
-                            }
-                            sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
-                                    , null, targetIterator.next(), rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-                        }
-                    }
-                    String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
-                    unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
-                } else {
-                    sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
-                                , null, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
-
-                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
-                        sqlList.addAll(getSaveMidTableSentenceSettings());
-                        sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
-                    }
-                }
+                handleWithUnionWay(sqlList, unionWay, dbTableMap, partOfVariableName, partition, filters, columns, sourceConnect, targetConnect, rule, leftCols, rightCols, complexCols, selectResult, unionAllForSaveResult, midTableName, runDate, runToday, midTableReUse);
             } else if (QualitisConstants.MULTI_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(rule.getTemplate().getEnName()) || QualitisConstants.SINGLE_CLUSTER_CUSTOM_TEMPLATE_NAME.equals(rule.getTemplate().getEnName())) {
                 if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
                     if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
@@ -1360,7 +1229,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     } else {
                         sqlList.addAll(getMultiSourceCustomFromSql(midTableAction, dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
                     }
-                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
+                    if (StringUtils.isNotEmpty(midTableName) && midTableName.matches("[a-zA-Z0-9_]+")) {
                         sqlList.addAll(getSaveMidTableSentenceSettings());
                         sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     }
@@ -1405,7 +1274,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     } else {
                         sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
                     }
-                    if (StringUtils.isNotEmpty(midTableName) && ! MID_TABLE_NAME_PATTERN.matcher(midTableName).find()) {
+                    if (StringUtils.isNotEmpty(midTableName) && midTableName.matches("[a-zA-Z0-9_]+")) {
                         sqlList.addAll(getSaveMidTableSentenceSettings());
                         sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     }
@@ -1448,6 +1317,118 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
             }
             sqlList.addAll(generateSparkSqlAndSaveSentence(midTableAction, midTableName, rule, partOfVariableName, decryptedMysqlInfo, runDate, runToday, selectResult, midTableReUse, unionAllForSaveResult, filterFields.toString(), tableEnvs, shareConnect, shareFromPart, execParams));
         }
+    }
+
+    private void handleWithUnionWay(List<String> sqlList, String partOfVariableName, int unionWay, String midTableAction, Map<String, String> dbTableMap, Map<String, String> filters, List<Map<String, Object>> sourceConnect, List<Map<String, Object>> targetConnect, Map<String, String> selectResult, boolean unionAllForSaveResult, Rule rule, String midTableName, String runDate, String runToday, boolean midTableReUse) {
+        if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+            sqlList.addAll(getMultiSourceAccuracyFromSqlList(midTableAction, dbTableMap, filters
+                    , partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]
+                    , sourceConnect, targetConnect, selectResult));
+        } else {
+            if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
+                for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                    Map<String, Object> sourceConnectMap = sourceIterator.next();
+                    Map<String, Object> targetConnectMap = targetIterator.next();
+                    String sourceEnvName = (String) sourceConnectMap.get("envName");
+                    String targetEnvName = (String) targetConnectMap.get("envName");
+                    if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                        continue;
+                    }
+                    sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, sourceConnectMap, targetConnectMap, selectResult));
+                }
+            } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
+                for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
+                    Map<String, Object> sourceConnectMap = sourceIterator.next();
+                    String sourceEnvName = (String) sourceConnectMap.get("envName");
+                    if (StringUtils.isEmpty(sourceEnvName)) {
+                        continue;
+                    }
+                    sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, sourceIterator.next(), null, selectResult));
+                }
+            } else if (CollectionUtils.isNotEmpty(targetConnect) && CollectionUtils.isEmpty(sourceConnect)) {
+                for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
+                    Map<String, Object> targetConnectMap = targetIterator.next();
+                    String targetEnvName = (String) targetConnectMap.get("envName");
+                    if (StringUtils.isEmpty(targetEnvName)) {
+                        continue;
+                    }
+                    sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, null, targetIterator.next(), selectResult));
+                }
+            } else {
+                sqlList.addAll(getMultiSourceAccuracyfromSql(midTableAction, dbTableMap, filters, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], null, null, selectResult));
+            }
+
+            if (CollectionUtils.isEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
+                if ((StringUtils.isNotEmpty(rule.getAbnormalDatabase())) && midTableName.matches("[a-zA-Z0-9_]+")) {
+                    sqlList.addAll(getSaveMidTableSentenceSettings());
+                    sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
+                }
+            } else {
+                String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
+                unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
+            }
+
+        }
+    }
+
+    private void handleWithUnionWay(List<String> sqlList, int unionWay, Map<String, String> dbTableMap, String partOfVariableName, StringBuilder partition, Map<String, String> filters, List<String> columns, List<Map<String, Object>> sourceConnect, List<Map<String, Object>> targetConnect, Rule rule, List<String> leftCols, List<String> rightCols, List<String> complexCols, Map<String, String> selectResult, boolean unionAllForSaveResult, String midTableName, String runDate, String runToday, boolean midTableReUse) {
+        if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+            sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                    , sourceConnect, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+        } else {
+            if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isNotEmpty(targetConnect)) {
+                for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(), targetIterator = targetConnect.iterator(); sourceIterator.hasNext() && targetIterator.hasNext(); ) {
+                    Map<String, Object> sourceConnectMap = sourceIterator.next();
+                    Map<String, Object> targetConnectMap = targetIterator.next();
+                    String sourceEnvName = (String) sourceConnectMap.get("envName");
+                    String targetEnvName = (String) targetConnectMap.get("envName");
+                    if (StringUtils.isEmpty(sourceEnvName) || StringUtils.isEmpty(targetEnvName)) {
+                        continue;
+                    }
+                    sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                            , sourceConnectMap, targetConnectMap, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                }
+            } else if (CollectionUtils.isNotEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
+                for (Iterator<Map<String, Object>> sourceIterator = sourceConnect.iterator(); sourceIterator.hasNext(); ) {
+                    Map<String, Object> sourceConnectMap = sourceIterator.next();
+                    String sourceEnvName = (String) sourceConnectMap.get("envName");
+                    if (StringUtils.isEmpty(sourceEnvName)) {
+                        continue;
+                    }
+                    sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + sourceEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                            , sourceIterator.next(), null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                }
+            } else if (CollectionUtils.isNotEmpty(targetConnect) && CollectionUtils.isEmpty(sourceConnect)) {
+                if (UnionWayEnum.CALCULATE_AFTER_COLLECT.getCode().equals(unionWay)) {
+                    sqlList.addAll(getSpecialTransformSqlList(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                            , null, targetConnect, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                } else {
+                    for (Iterator<Map<String, Object>> targetIterator = targetConnect.iterator(); targetIterator.hasNext(); ) {
+                        Map<String, Object> targetConnectMap = targetIterator.next();
+                        String targetEnvName = (String) targetConnectMap.get("envName");
+                        if (StringUtils.isEmpty(targetEnvName)) {
+                            continue;
+                        }
+                        sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + targetEnvName, partition.toString(), filters, Strings.join(columns, ',')
+                                , null, targetIterator.next(), rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+                    }
+                }
+            } else {
+                sqlList.addAll(getSpecialTransformSql(dbTableMap, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], partition.toString(), filters, Strings.join(columns, ',')
+                        , null, null, rule.getContrastType(), leftCols, rightCols, complexCols, selectResult));
+            }
+        }
+
+        if (CollectionUtils.isEmpty(sourceConnect) && CollectionUtils.isEmpty(targetConnect)) {
+            if (StringUtils.isNotEmpty(midTableName) && midTableName.matches("[a-zA-Z0-9_]+")) {
+                sqlList.addAll(getSaveMidTableSentenceSettings());
+                sqlList.addAll(getSaveMidTableSentence(midTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
+            }
+        } else {
+            String lastVariable = getVariableNameByRule(OptTypeEnum.STATISTIC_DF.getMessage(), partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + "Last");
+            unionAllSaveResult(lastVariable, selectResult, sqlList, unionAllForSaveResult);
+        }
+
     }
 
     private void getTableRowsWithEnvs(String partOfVariableName, List<Map<String, Object>> connect, String midTableAction, List<String> sqlList) {
@@ -1575,23 +1556,28 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     private Map<String, Object> getUserNameAndPassword(Map<String, Object> connectParams) throws UnExpectedRequestException {
+        if (overseasVersionEnabled){
+            LOGGER.info(" get username and password from dpm return empty map.");
+            return new HashMap<>();
+        }
 //        String appId = (String) connectParams.get("appid");
 //        String objectId = (String) connectParams.get("objectid");
 //        String timestamp = (String) connectParams.get("timestamp");
+//        String userClientIp = connectParams.containsKey("userClientIp") ? (String) connectParams.get("userClientIp"): "fakeIp";
 //
 //        String dk = (String) connectParams.get("dk");
 //        String datasourceInf = LocalNetwork.getNetCardName();
-//        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf);
+//        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf, false);
 //        obtainer.init();
 //        try {
 //            AccountInfoSys accountInfoSys = obtainer.getAccountInfo_system(dk, timestamp, dpmConfig.getDatasourceSystemAppId()
-//                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId);
+//                    , dpmConfig.getDatasourceSystemAppKey(), appId, objectId, userClientIp, 0);
 //            String userName = accountInfoSys.getName();
 //            String passwordTest = accountInfoSys.getPassword();
 //
 //            connectParams.put("username", userName);
 //            connectParams.put("password", passwordTest);
-//        } catch (AccountInfoObtainException e) {
+//        } catch (Exception e) {
 //            LOGGER.error(e.getMessage(), e);
 //            throw new UnExpectedRequestException("{&FAILED_TO_GET_USERNAME_PASSWORD}", 500);
 //        }
@@ -1622,6 +1608,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 //            templateMidTableAction = templateMidTableAction.replace("${run_today_std}", runToday);
         }
 
+        templateMidTableAction = replaceStandardValueWithinCustomSql(rule, templateMidTableAction);
         templateMidTableAction = DateExprReplaceUtil.replaceRunDate(date, templateMidTableAction);
 
         Set<String> ruleMetricNames = ruleMetricMap.keySet();
@@ -2018,6 +2005,19 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         transformSql.add("val " + variableLatter + " = " + variableFormer + ".where(" + variableFormer + "(\"compare_result\") === 0)");
         selectResult.put(variableLatter, envName.toString());
         return transformSql;
+    }
+
+    public String replaceStandardValueWithinCustomSql(Rule rule, String sql) {
+        List<StandardValueVariables> standardValueVariablesList = standardValueVariablesDao.findByRuleId(rule.getId());
+        if (CollectionUtils.isEmpty(standardValueVariablesList)) {
+            return sql;
+        }
+        List<StandardValueVersion> standardValueVersionList = standardValueVersionDao.findByIds(standardValueVariablesList.stream().map(StandardValueVariables::getStandardValueVersionId).collect(Collectors.toList()));
+        if (CollectionUtils.isEmpty(standardValueVersionList)) {
+            return sql;
+        }
+        Map<Long, StandardValueVersion> idAndStandardValueMap = standardValueVersionList.stream().collect(Collectors.toMap(StandardValueVersion::getId, Function.identity(), (oldVal, newVal) -> oldVal));
+        return DateExprReplaceUtil.replaceStandardValueWithinCustomSql(standardValueVariablesList, idAndStandardValueMap, sql);
     }
 
     private List<String> getMultiSourceCustomFromSqlList(String midTableAction, Map<String, String> dbTableMap, String partOfOriginVariableName
@@ -2622,273 +2622,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
         sparkSqlList.add("stmt.executeUpdate(" + finalSql + ".format("+values+"," +partitionAttr+"))");
     }
 
-    private void handleCustomRuleCode(List<String> sparkSqlList, Rule rule, String partOfVariableName,Map<String, String> execParams) {
-        if(compareProjectName(rule)){
-            String variableNamePrefix = getVariableNameByRule(partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[0], partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1]);
-            String ageing = jointVariableName(variableNamePrefix, "ageing");
-            String partitionAttr = jointVariableName(variableNamePrefix, "partition_attr");
-            // dataSources info
-            Set<RuleDataSource> ruleDataSources = rule.getRuleDataSources();
-            Iterator<RuleDataSource> it = ruleDataSources.iterator();
-            RuleDataSource ruleDataSource = new RuleDataSource();
-            while(it.hasNext()){
-                ruleDataSource = it.next();
-            }
-            int datasourceTypeInt = ruleDataSource.getDatasourceType();
-            String databaseNameStr = ruleDataSource.getDbName();
-            String tableNameStr = ruleDataSource.getTableName();
-            String proxyUserStr = ruleDataSource.getProxyUser();
-
-            // init exec params
-            int enumMaxLength = 1000;
-            int batchInsertSize = 1000;
-            long dataTime = 0;
-            if(!execParams.isEmpty()) {
-                for (Map.Entry<String, String> entry : execParams.entrySet()) {
-                    String entryKey = String.valueOf(entry.getKey());
-                    String entryValue = String.valueOf(entry.getValue());
-                    if ("partition_day".equals(entryKey)) {
-                        dataTime = DateExprReplaceUtil.getDateTimeSeconds(entryValue);
-                    }
-                    if ("ageing".equals(entryKey)) {
-                        sparkSqlList.add(stateValInitString(ageing, entryValue));
-                    }
-                    if ("partition_attr".equals(entryKey)) {
-                        sparkSqlList.add(stateValInitString(partitionAttr, entryValue));
-                    }
-                    if ("enum_max_length".equals(entryKey)) {
-                        try {
-                            if(StringUtils.isNotBlank(entryValue)){
-                                enumMaxLength = Integer.valueOf(entryValue);
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error("exec param error");
-                        }
-                    }
-                    if ("batch_insert_size".equals(entryKey)) {
-                        try {
-                            if(StringUtils.isNotBlank(entryValue)){
-                                batchInsertSize = Integer.valueOf(entryValue);
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error("exec param error");
-                        }
-                    }
-                }
-            }
-            String rolName = "";
-            Set<RuleVariable> variableSet = rule.getRuleVariables();
-            for (RuleVariable ruleVariable : variableSet) {
-                String placeholder = ruleVariable.getTemplateMidTableInputMeta().getPlaceholder();
-                if("fields".equals(placeholder) || "${fields}".equals(placeholder)){
-                    rolName = ruleVariable.getValue();
-                }
-            }
-
-            // add spark sql
-            int metricTypeInt = 1;
-            String templateEnName = rule.getTemplate().getEnName();
-            if(intellectCheckTableTemplateName.equals(templateEnName)){
-                metricTypeInt = MetricTypeEnum.TABLE_STATISTICS.getCode();
-            }else if(intellectCheckEnumTemplateName.equals(templateEnName)){
-                metricTypeInt = MetricTypeEnum.ENUM_STATISTICS.getCode();
-            }else if(intellectCheckOriginTemplateName.equals(templateEnName)){
-                metricTypeInt = MetricTypeEnum.ORIGIN_STATISTICS.getCode();
-            }else{
-                throw new RuntimeException(ScalaCodeConstant.NOT_SUPPORTED_METRIC_TYPE);
-            }
-
-            String datasourceType = jointVariableName(variableNamePrefix, "datasource_type");
-            String databaseName = jointVariableName(variableNamePrefix, "database_name");
-            String tableName = jointVariableName(variableNamePrefix, "table_name");
-            String metricType = jointVariableName(variableNamePrefix, "metric_type");
-            String attrName = jointVariableName(variableNamePrefix, "attr_name");
-            String rowkeyName = jointVariableName(variableNamePrefix, "rowkey_name");
-            String proxyUser = jointVariableName(variableNamePrefix, "proxy_user");
-            String dataArray = jointVariableName(variableNamePrefix, "array");
-            String errorList = jointVariableName(variableNamePrefix, "error_list");
-            String nowTime = jointVariableName(variableNamePrefix, "now_time");
-            String insertList = jointVariableName(variableNamePrefix, "insert_list");
-            String metricValue = jointVariableName(variableNamePrefix,"value");
-            String metricId = jointVariableName(variableNamePrefix,"metric_id");
-            String calcType = jointVariableName(variableNamePrefix,"calcType");
-            String errorMsg =  jointVariableName(variableNamePrefix,"error_msg");
-            String rowvalueenumName = jointVariableName(variableNamePrefix, "rowvalueenum_name");
-            String dsDateTime = jointVariableName(variableNamePrefix, "ds_date_time");
-            String querySql = jointVariableName(variableNamePrefix, "query_sql");
-            String insertSql = jointVariableName(variableNamePrefix, "insert_sql");
-            String insertCommonData = jointVariableName(variableNamePrefix, "insert_common_data");
-            String insertData = jointVariableName(variableNamePrefix, "insert_data");
-            String groupbyattrNames = jointVariableName(variableNamePrefix, "groupbyattr_names");
-            String identifyRs = jointVariableName(variableNamePrefix, "identify_rs");
-            String metricIdRs = jointVariableName(variableNamePrefix, "metricid_rs");
-            String splitList = jointVariableName(variableNamePrefix, "split_list");
-
-            sparkSqlList.add("import scala.math.BigDecimal");
-            sparkSqlList.add(stateValInitNumber("conn",abstractTranslator.getDataSourceConn()));
-            sparkSqlList.add(stateVarInitNumber("stmt", "conn.prepareStatement(\"\",1)"));
-            sparkSqlList.add(stateValInitNumber(dataArray,variableNamePrefix + ".collect"));
-            sparkSqlList.add(stateValInitNumber(datasourceType, datasourceTypeInt));
-            sparkSqlList.add(stateValInitString(databaseName, databaseNameStr));
-            sparkSqlList.add(stateValInitString(tableName, tableNameStr));
-            sparkSqlList.add(stateValInitString(proxyUser, proxyUserStr));
-            sparkSqlList.add(stateValInitNumber(metricType, metricTypeInt));
-            sparkSqlList.add(stateVarInitString(attrName, rolName));
-            sparkSqlList.add(stateVarInitEmptyString(rowkeyName + " : String"));
-            sparkSqlList.add(stateVarInitEmptyString(rowvalueenumName +  " : String"));
-            sparkSqlList.add(stateVarInitEmptyString(groupbyattrNames +  " : String"));
-            sparkSqlList.add(stateValInitString(nowTime, DateUtils.now()));
-            sparkSqlList.add(stateVarInitNumber(calcType,0));
-            sparkSqlList.add(stateVarInitNumber(metricId,0.0));
-            sparkSqlList.add(stateVarInitNumber(metricValue , "BigDecimal(\"0.0\")"));
-            sparkSqlList.add(stateVarInitNumber(insertList + " : List[String]" ,"List()"));
-            sparkSqlList.add(stateVarInitNumber(errorList + " : List[String]" ,"List()"));
-            sparkSqlList.add(stateValInitString(insertCommonData, ScalaCodeConstant.INSERT_DATA_COMMON_SQL));
-            sparkSqlList.add(stateValInitString(insertData, ScalaCodeConstant.getInsertDataSql(metricTypeInt, ruleDataSource, nowTime)));
-
-            sparkSqlList.add(stateVarInitEmptyString(errorMsg));
-            sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
-            if(MetricTypeEnum.ORIGIN_STATISTICS.getCode() == metricTypeInt) {
-                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
-                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
-                sparkSqlList.add("import java.text.SimpleDateFormat");
-                sparkSqlList.add(stateVarInitNumber("sdf", "new SimpleDateFormat(\"yyyyMMdd HH:mm:ss\")"));
-                sparkSqlList.add("try{");
-                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
-                sparkSqlList.add("try{");
-                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(0).toString)"));
-                sparkSqlList.add(stateNumber(calcType, dataArray + "(i)(1).toString.toInt"));
-                sparkSqlList.add(stateNumber(rowkeyName,dataArray + "(i)(2).toString"));
-                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
-                sparkSqlList.add(stateValInitNumber(dsDateTime,"sdf.parse(" + dataArray + "(i)(3).toString + \" 00:00:00\").getTime/1000"));
-                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + rowkeyName + "))"));
-                sparkSqlList.add("if(" + identifyRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
-                sparkSqlList.add("}else{");
-                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + rowkeyName + "), 1)"));
-                sparkSqlList.add("stmt.executeUpdate()");
-                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
-                sparkSqlList.add("if(" + metricIdRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
-                sparkSqlList.add("}");
-                sparkSqlList.add("}");
-                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dsDateTime +") +: " + insertList));
-                sparkSqlList.add("} catch {");
-            }else if(MetricTypeEnum.TABLE_STATISTICS.getCode() == metricTypeInt) {
-                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
-                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
-                sparkSqlList.add("try{");
-                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
-                sparkSqlList.add("for(j <- 0 to " + dataArray + "(i).length - 1){");
-                sparkSqlList.add("try{");
-                // 无数据补零
-                sparkSqlList.add("try{");
-                sparkSqlList.add("if(j == 0){");
-                sparkSqlList.add(stateNumber(calcType,1));
-                sparkSqlList.add("}else if(j == 1){");
-                sparkSqlList.add(stateNumber(calcType,5));
-                sparkSqlList.add("}");
-                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(j).toString)"));
-                sparkSqlList.add("} catch {");
-                sparkSqlList.add("case e: Exception => {");
-                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(\"0.0\")"));
-                sparkSqlList.add("}}");
-                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
-                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + calcType + "))"));
-                sparkSqlList.add("if(" + identifyRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
-                sparkSqlList.add("}else{");
-                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + calcType + "), 1)"));
-                sparkSqlList.add("stmt.executeUpdate()");
-                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
-                sparkSqlList.add("if(" + metricIdRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
-                sparkSqlList.add("}");
-                sparkSqlList.add("}");
-                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dataTime +") +: " + insertList));
-                sparkSqlList.add("} catch {");
-
-            }else if(MetricTypeEnum.ENUM_STATISTICS.getCode() == metricTypeInt){
-                sparkSqlList.add(stateValInitString(querySql, ScalaCodeConstant.getQueryIdentifySql(metricTypeInt, ruleDataSource, attrName)));
-                sparkSqlList.add(stateValInitString(insertSql, ScalaCodeConstant.getInsertIdentifySql(metricTypeInt, ruleDataSource, attrName, nowTime, ageing, partitionAttr)));
-
-
-                sparkSqlList.add("if(" + dataArray + ".length > " + enumMaxLength + "){");
-                sparkSqlList.add("throw new RuntimeException(\"枚举类型规则计算数据量已超过最大长度，请检查分组字段\")");
-                sparkSqlList.add("}");
-                sparkSqlList.add("try{");
-                sparkSqlList.add("for(i <- 0 to " + dataArray + ".length - 1){");
-                sparkSqlList.add("for(j <- 0 to " + dataArray + "(i).length - 2){");
-                sparkSqlList.add("try{");
-                sparkSqlList.add("if(j == 0){");
-                sparkSqlList.add(stateNumber(calcType,5));
-                sparkSqlList.add("}else if(j == 1){");
-                sparkSqlList.add(stateNumber(calcType,8));
-                sparkSqlList.add("}");
-                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowkeyName, calcType));
-                sparkSqlList.add("try{");
-                sparkSqlList.add(stateNumber(rowvalueenumName,dataArray + "(i)(2).toString"));
-                sparkSqlList.add("} catch {");
-                sparkSqlList.add("case e: Exception => {");
-                sparkSqlList.add(stateNumber(rowvalueenumName,"\"NULL\""));
-//                sparkSqlList.add(stateNumber(errorList, "(" + errorMsg + "+\",name为空,\") +: " + errorList));
-                sparkSqlList.add("}");
-                sparkSqlList.add("}");
-                sparkSqlList.add("try{");
-                sparkSqlList.add(stateNumber(metricValue, "BigDecimal(" + dataArray + "(i)(j).toString)"));
-                sparkSqlList.add("} catch {");
-                sparkSqlList.add("case e: Exception =>  throw  new NullPointerException(\"metric_value值为空\")");
-                sparkSqlList.add("}");
-                sparkSqlList.add(ScalaCodeConstant.errorMsg(errorMsg, databaseName, tableName, attrName, rowkeyName, rowvalueenumName, calcType));
-                sparkSqlList.add(stateVarInitNumber(identifyRs, "stmt.executeQuery(" + querySql + ".format(" + rowvalueenumName + "," + calcType +"))"));
-                sparkSqlList.add("if(" + identifyRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, identifyRs + ".getInt(\"metric_id\")"));
-                sparkSqlList.add("}else{");
-                sparkSqlList.add(stateNumber("stmt", "conn.prepareStatement(" + insertSql + ".format(" + calcType + "," + rowvalueenumName +"), 1)"));
-                sparkSqlList.add("stmt.executeUpdate()");
-                sparkSqlList.add(stateVarInitNumber(metricIdRs, "stmt.getGeneratedKeys()"));
-                sparkSqlList.add("if(" + metricIdRs + ".next()){");
-                sparkSqlList.add(stateNumber(metricId, metricIdRs + ".getInt(1)"));
-                sparkSqlList.add("}");
-                sparkSqlList.add("}");
-                sparkSqlList.add(stateNumber(insertList, insertData + ".format(" + metricId + "," + metricValue + "," + dataTime +") +: " + insertList));
-                sparkSqlList.add("} catch {");
-
-            }
-
-            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("NullPointerException", errorList, "指标数据为空", errorMsg));
-            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("NumberFormatException", errorList, "指标数据为空", errorMsg));
-            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("Exception", errorList, "scala执行异常", errorMsg));
-            sparkSqlList.add("}");
-            sparkSqlList.add("}");
-            if(MetricTypeEnum.TABLE_STATISTICS.getCode() == metricTypeInt || MetricTypeEnum.ENUM_STATISTICS.getCode() == metricTypeInt) {
-                sparkSqlList.add("}");
-            }
-
-            sparkSqlList.add("try{");
-            sparkSqlList.add(insertList + ".grouped(" + batchInsertSize + ").toList.foreach { " + splitList + " =>");
-            sparkSqlList.add("stmt.executeUpdate(" + insertCommonData + ".format(" + splitList + ".reverse.mkString(\",\")))");
-            sparkSqlList.add("}");
-            sparkSqlList.add("}catch{");
-            sparkSqlList.add(ScalaCodeConstant.exceptionCollect("Exception", errorList, "写入指标数据异常", errorMsg));
-            sparkSqlList.add("}");
-            sparkSqlList.add("if(!" + errorList + ".isEmpty){");
-            sparkSqlList.add("if(" + metricType + " == 1 && "  + errorList + ".reverse.mkString(\"\\n\").indexOf(\"指标数据为空:\") != -1" +  "){");
-            sparkSqlList.add(variableNamePrefix + " = " + variableNamePrefix + ".na.drop()");
-            sparkSqlList.add("}else{");
-            sparkSqlList.add("throw new RuntimeException(" + errorList + ".reverse.mkString(\"\\n\"))");
-            sparkSqlList.add("}");
-            sparkSqlList.add("}");
-            sparkSqlList.add("}catch{");
-            sparkSqlList.add("case e: Exception => throw e");
-            sparkSqlList.add("}finally{");
-            sparkSqlList.add("stmt.close()");
-            sparkSqlList.add("conn.close()");
-            sparkSqlList.add("}");
-
-        }
-    }
-
     /**
      * Generate scala code of select statement and save into hive database
      *
@@ -2955,8 +2688,6 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 LOGGER.info("Succeed to generate spark sql. sentence: {}", sparkSqlSentence);
                 sparkSqlList.add("// 生成规则 " + partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1] + " 的校验查询代码");
                 sparkSqlList.add(sparkSqlSentence);
-                // 特殊处理规则生成scala代码
-                handleCustomRuleCode(sparkSqlList, rule, partOfVariableName,execParams);
 
                 if (linePrimaryRepeat) {
                     handleLinePrimaryRepeat(sparkSqlList, partOfVariableName);
@@ -2967,7 +2698,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                 formatSchema(sparkSqlList, partOfVariableName, variableFormer, variableLatter);
                 analyseFieldsCountCode(sparkSqlList, rule, partOfVariableName,execParams, variableFormer);
 
-                if (StringUtils.isNotEmpty(saveTableName) && ! MID_TABLE_NAME_PATTERN.matcher(saveTableName).find()) {
+                if (StringUtils.isNotEmpty(saveTableName) && saveTableName.matches("[a-zA-Z0-9_]+")) {
                     sparkSqlList.addAll(getSaveMidTableSentenceSettings());
                     sparkSqlList.addAll(getSaveMidTableSentence(saveTableName, partOfVariableName.split(SpecCharEnum.EQUAL.getValue())[1], runDate, runToday, midTableReUse));
                     LOGGER.info("Succeed to generate spark sql. sentence.");
@@ -2976,7 +2707,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
             return sparkSqlList;
         } else {
-            boolean saveMidTable = StringUtils.isNotEmpty(saveTableName) && ! MID_TABLE_NAME_PATTERN.matcher(saveTableName).find();
+            boolean saveMidTable = StringUtils.isNotEmpty(saveTableName) && saveTableName.matches("[a-zA-Z0-9_]+");
             // Repeat with envs. When polymerization, repeat one more time.
             selectResult.putAll(getSparkSqlSententceWithMysqlConnParams(rule, sql, partOfVariableName, connParamMaps, sparkSqlList, linePrimaryRepeat,  saveMidTable, saveTableName, runDate, runToday, midTableReUse, unionAllForSaveResult, filterFields, shareConnect, shareFromPart));
         }
@@ -3334,6 +3065,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     value = value.replace("${run_today}", runToday);
 //                    value = value.replace("${run_today_std}", runToday);
                 }
+                value = replaceStandardValueWithinCustomSql(ruleVariable.getRule(), value);
                 ruleVariable.setOriginValue(DateExprReplaceUtil.replaceRunDate(date, value));
                 dbTableMap.put("left_collect_sql", ruleVariable.getOriginValue());
             } else if ("right_collect_sql".equals(midInputMetaPlaceHolder)) {
@@ -3346,6 +3078,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     value = value.replace("${run_today}", runToday);
 //                    value = value.replace("${run_today_std}", runToday);
                 }
+                value = replaceStandardValueWithinCustomSql(ruleVariable.getRule(), value);
                 ruleVariable.setOriginValue(DateExprReplaceUtil.replaceRunDate(date, value));
                 dbTableMap.put("right_collect_sql", ruleVariable.getOriginValue());
             } else if (TemplateInputTypeEnum.FIELD.getCode().equals(ruleVariable.getTemplateMidTableInputMeta().getInputType()) && Boolean.TRUE.equals(ruleVariable.getTemplateMidTableInputMeta().getFieldMultipleChoice())) {
@@ -3413,7 +3146,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
                     if (StringUtils.isNotBlank(ruleVariableValue) && EngineTypeEnum.TRINO_ENGINE.getMessage().equals(engineType) && "enumerated_list".equals(midInputMetaPlaceHolder) && ! ruleVariableValue.contains("'") && ! ruleVariableValue.contains("\"")) {
                         ruleVariableValue = StringUtils.join(Arrays.asList(ruleVariableValue.split(SpecCharEnum.COMMA.getValue())).stream().map(ele -> "'" + ele + "'").collect(Collectors.toList()), SpecCharEnum.COMMA.getValue());
                     }
-
+                    LOGGER.info("To replace placeholder [{}] with variable value [{}]", placeHolder, ruleVariableValue);
                     sqlAction = sqlAction.replaceAll(placeHolder, ruleVariableValue);
                 }
             }
@@ -3461,10 +3194,14 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
      * @return
      */
     private String checkRuleNameWhetherContainSpecialCharacters(String ruleName) {
-        String resultRuleName = MID_TABLE_NAME_PATTERN.matcher(ruleName).find() ?
-            MID_TABLE_NAME_PATTERN.matcher(ruleName).replaceAll("") + SpecCharEnum.BOTTOM_BAR.getValue() + generateShortHash(ruleName).toLowerCase() : ruleName;
-        if (StringUtils.isNotBlank(resultRuleName)) {
-            return resultRuleName;
+        String cleanedRuleName = ruleName.replaceAll("[^a-zA-Z0-9_]", "");
+
+        if (StringUtils.isBlank(cleanedRuleName)) {
+            return generateShortHash(ruleName).toLowerCase().replaceAll("[^a-zA-Z0-9_]", "");
+        }
+
+        if (cleanedRuleName.length() != ruleName.length()) {
+            return cleanedRuleName + SpecCharEnum.BOTTOM_BAR.getValue() + generateShortHash(ruleName).toLowerCase().replaceAll("[^a-zA-Z0-9_]", "");
         } else {
             return ruleName;
         }

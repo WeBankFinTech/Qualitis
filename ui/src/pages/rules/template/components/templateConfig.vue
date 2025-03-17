@@ -45,21 +45,21 @@
             <!-- 是否保存异常数据 -->
             <FFormItem :label="$t('ruleTemplatelist.exceptionDatabase')" prop="save_mid_table">
                 <FRadioGroup v-model="templateData.save_mid_table" class="form-edit-input" :cancelable="false">
-                    <FRadio :value="true" :disabled="templateType === 4">是</FRadio>
-                    <FRadio :value="false">否</FRadio>
+                    <FRadio :value="true" :disabled="templateType === 4">{{$t('_.是')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.否')}}</FRadio>
                 </FRadioGroup>
                 <span class="form-preview-label">{{templateData.save_mid_table ? '是' : '否'}}</span>
             </FFormItem>
             <!-- 是否需要过滤字段 -->
             <FFormItem :label="$t('ruleTemplatelist.filterFields')" prop="filter_fields">
                 <FRadioGroup v-model="templateData.filter_fields" class="form-edit-input" :cancelable="false">
-                    <FRadio :value="true" :disabled="templateType === 4">是</FRadio>
-                    <FRadio :value="false">否</FRadio>
+                    <FRadio :value="true" :disabled="templateType === 4">{{$t('_.是')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.否')}}</FRadio>
                 </FRadioGroup>
                 <span class="form-preview-label">{{templateData.filter_fields ? '是' : '否'}}</span>
             </FFormItem>
             <!-- 校验值中文名 -->
-            <FFormItem :label="$t('ruleTemplatelist.verificationCNName')" prop="verification_cn_name">
+            <!-- <FFormItem :label="$t('ruleTemplatelist.verificationCNName')" prop="verification_cn_name">
                 <FInput
                     v-model="templateData.verification_cn_name"
                     class="form-edit-input"
@@ -67,9 +67,9 @@
                     placeholder="请输入"
                 />
                 <span class="form-preview-label">{{templateData.verification_cn_name || '--'}}</span>
-            </FFormItem>
+            </FFormItem> -->
             <!-- 校验值英文名 -->
-            <FFormItem :label="$t('ruleTemplatelist.verificationENName')" prop="verification_en_name">
+            <!-- <FFormItem :label="$t('ruleTemplatelist.verificationENName')" prop="verification_en_name">
                 <FInput
                     v-model="templateData.verification_en_name"
                     class="form-edit-input"
@@ -77,6 +77,16 @@
                     placeholder="请输入"
                 />
                 <span class="form-preview-label">{{templateData.verification_en_name || '--'}}</span>
+            </FFormItem> -->
+            <!-- 校验值描述 -->
+            <FFormItem :label="$t('ruleTemplatelist.verificationDescription')" prop="verification_cn_name">
+                <FInput
+                    v-model="templateData.verification_cn_name"
+                    class="form-edit-input"
+                    :maxlength="64"
+                    :placeholder="$t('_.请输入')"
+                />
+                <span class="form-preview-label">{{templateData.verification_cn_name || '--'}}</span>
             </FFormItem>
             <!-- 校验值采样方式 -->
             <FFormItem :label="$t('ruleTemplatelist.verificationActionType')" prop="action_type">
@@ -91,13 +101,41 @@
             </FFormItem>
             <!-- 采样方式选择为SQL -->
             <div v-if="templateData.action_type === 1">
+                <!-- 是否使用UDF -->
+                <FFormItem
+                    :label="$t('ruleTemplatelist.whetherUsingFunctions')"
+                    prop="whether_using_functions"
+                >
+                    <FRadioGroup v-model="templateData.whether_using_functions" class="form-edit-input" :cancelable="false">
+                        <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                        <FRadio :value="false">{{$t('_.否')}}</FRadio>
+                    </FRadioGroup>
+                    <span
+                        class="form-preview-label"
+                    >{{templateData.whether_using_functions ? $t('_.是') : $t('_.否')}}</span>
+                </FFormItem>
+                <!-- UDF函数 -->
+                <FFormItem
+                    v-if="templateData.whether_using_functions"
+                    :label="$t('ruleTemplatelist.udfFunction')"
+                    prop="udf_function_name"
+                >
+                    <FSelect
+                        v-model="templateData.udf_function_name"
+                        class="form-edit-input"
+                        :options="UDFFunctionList"
+                        multiple
+                        @focus="getUDFFunctionList"
+                    ></FSelect>
+                    <span class="form-preview-label">{{templateData.udf_function_name.join('、') || '--'}}</span>
+                </FFormItem>
                 <!-- 采样SQL -->
                 <FFormItem :label="$t('ruleTemplatelist.midTableAction')" prop="mid_table_action">
                     <FInput
                         v-model="templateData.mid_table_action"
                         class="form-edit-input"
                         type="textarea"
-                        placeholder="请输入"
+                        :placeholder="$t('_.请输入')"
                     />
                     <span class="form-preview-label">{{templateData.mid_table_action || '--'}}</span>
                 </FFormItem>
@@ -135,17 +173,17 @@
                 <FInput
                     v-model="templateData.count_function_alias"
                     class="form-edit-input"
-                    placeholder="请输入"
+                    :placeholder="$t('_.请输入')"
                 />
                 <span class="form-preview-label">{{templateData.count_function_alias || '--'}}</span>
             </FFormItem>
             <!-- 是否固化校验方式 -->
             <FFormItem :label="$t('ruleTemplatelist.whetherSetVerificationMethod')" prop="whether_solidification">
                 <FRadioGroup v-model="templateData.whether_solidification" class="form-edit-input" :cancelable="false">
-                    <FRadio :value="true">是</FRadio>
-                    <FRadio :value="false">否</FRadio>
+                    <FRadio :value="true">{{$t('_.是')}}</FRadio>
+                    <FRadio :value="false">{{$t('_.否')}}</FRadio>
                 </FRadioGroup>
-                <span class="form-preview-label">{{templateData.whether_solidification ? '是' : '否'}}</span>
+                <span class="form-preview-label">{{templateData.whether_solidification ? $t('_.是') : $t('_.否')}}</span>
             </FFormItem>
             <!-- 校验方式 -->
             <FFormItem v-if="templateData.whether_solidification"
@@ -164,6 +202,7 @@
     </div>
 </template>
 <script setup>
+
 import {
     useI18n,
 } from '@fesjs/fes';
@@ -172,6 +211,7 @@ import useDivisions from '@/hooks/useDivisions';
 import useDepartment from '@/hooks/useDepartment';
 import usePermissionDivisions from '@/hooks/usePermissionDivisions';
 import { getLabelByValue } from '@/common/utils';
+import { fetchUDFFunction } from '../api';
 
 const { t: $t } = useI18n();
 
@@ -196,10 +236,20 @@ const props = defineProps({
 const datasourceTypeList = inject('datasourceTypeList', []);
 const verificationLevelList = inject('verificationLevelList', []);
 const verificationTypeList = inject('verificationTypeList', []);
-const actionTypeList = props.templateType === 4 ? [{ value: 5, label: '元数据接口' }] : inject('actionTypeList', []);
+const actionTypeList = props.templateType === 4 ? [{ value: 5, label: $t('_.元数据接口') }] : inject('actionTypeList', []);
 const actionContentList = inject('actionContentList', []);
 const countFunctionList = inject('countFunctionList', []);
 
+const UDFFunctionList = ref([]);
+const getUDFFunctionList = async () => {
+    try {
+        const result = await fetchUDFFunction();
+        UDFFunctionList.value = result.content.map(item => ({ value: item.name, label: item.name, disabled: !item.status }));
+        // console.log(UDFFunctionList.value)
+    } catch (error) {
+        console.log('getUDFFunctionList error:', error);
+    }
+};
 
 // eslint-disable-next-line no-undef
 const emit = defineEmits(['update:templateData']);
@@ -239,7 +289,7 @@ const templateRules = {
             required: true,
             type: 'array',
             trigger: ['blur', 'change'],
-            message: '请选择数据源类型',
+            message: $t('_.请选择数据源类型'),
         },
     ],
     verification_level: [
@@ -247,7 +297,7 @@ const templateRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择校验级别',
+            message: $t('_.请选择校验级别'),
         },
     ],
     verification_type: [
@@ -255,7 +305,7 @@ const templateRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择校验类型',
+            message: $t('_.请选择校验类型'),
         },
     ],
     save_mid_table: [
@@ -263,7 +313,7 @@ const templateRules = {
             required: true,
             type: 'bool',
             trigger: ['blur', 'change'],
-            message: '请选择是否保存异常数据',
+            message: $t('_.请选择是否保存异常数据'),
         },
     ],
     whether_solidification: [
@@ -271,21 +321,14 @@ const templateRules = {
             required: true,
             type: 'bool',
             trigger: ['blur', 'change'],
-            message: '请选择是否固定校验方式',
+            message: $t('_.请选择是否固定校验方式'),
         },
     ],
     verification_cn_name: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入模板中文名',
-        },
-    ],
-    verification_en_name: [
-        {
-            required: true,
-            trigger: ['blur', 'change'],
-            message: '请输入模板英文名',
+            message: $t('_.请输入校验值描述'),
         },
     ],
     filter_fields: [
@@ -293,7 +336,7 @@ const templateRules = {
             required: true,
             type: 'bool',
             trigger: ['blur', 'change'],
-            message: '请选择是否需要过滤字段',
+            message: $t('_.请选择是否需要过滤字段'),
         },
     ],
     action_type: [
@@ -301,7 +344,7 @@ const templateRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择采样方式',
+            message: $t('_.请选择采样方式'),
         },
     ],
     sampling_content: [
@@ -309,14 +352,30 @@ const templateRules = {
             required: true,
             type: 'string',
             trigger: ['blur', 'change'],
-            message: '请选择采样内容',
+            message: $t('_.请选择采样内容'),
+        },
+    ],
+    whether_using_functions: [
+        {
+            required: true,
+            type: 'bool',
+            trigger: ['blur', 'change'],
+            message: $t('_.请选择是否使用UDF'),
+        },
+    ],
+    udf_function_name: [
+        {
+            required: true,
+            type: 'array',
+            trigger: ['blur', 'change'],
+            message: $t('_.请选择UDF函数'),
         },
     ],
     mid_table_action: [
         {
             required: true,
             trigger: ['blur', 'change'],
-            message: '请输入采样SQL',
+            message: $t('_.请输入采样SQL'),
         },
     ],
     count_function_name: [
@@ -324,7 +383,7 @@ const templateRules = {
             required: true,
             type: 'string',
             trigger: ['blur', 'change'],
-            message: '请选择统计函数',
+            message: $t('_.请选择统计函数'),
         },
     ],
     count_function_alias: [
@@ -332,7 +391,7 @@ const templateRules = {
             required: true,
             type: 'string',
             trigger: ['blur', 'change'],
-            message: '请输入统计值',
+            message: $t('_.请输入统计值'),
         },
     ],
     check_template: [
@@ -340,7 +399,7 @@ const templateRules = {
             required: true,
             type: 'number',
             trigger: ['blur', 'change'],
-            message: '请选择校验方式',
+            message: $t('_.请选择校验方式'),
         },
     ],
 };
@@ -412,6 +471,7 @@ const verificationMethodList = ref([
 ]);
 // eslint-disable-next-line no-undef
 defineExpose({ valid });
+
 </script>
 <style lang='less' scoped>
 .rule-detail-form {

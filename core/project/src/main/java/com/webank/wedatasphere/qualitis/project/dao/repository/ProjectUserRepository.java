@@ -168,6 +168,16 @@ public interface ProjectUserRepository extends JpaRepository<ProjectUser, Long>,
     void deleteByProjectAndUserName(Long projectId, String userName);
 
     /**
+     * Delete project user by project and user name
+     *
+     * @param permission
+     * @param userName
+     */
+    @Modifying
+    @Query(value = "delete from qualitis_project_user where permission = ?1 and user_name = ?2 and automatic_switch = 1", nativeQuery = true)
+    void deleteByPermissionAndUsername(int permission, String userName);
+
+    /**
      * Find project user by project
      * @param project
      * @return

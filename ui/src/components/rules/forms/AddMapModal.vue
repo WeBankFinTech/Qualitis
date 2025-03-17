@@ -12,31 +12,31 @@
             <div class="body">
                 <div class="expression">
                     <div class="left">
-                        <div class="title">左侧表达式</div>
-                        <FInput v-model="leftStatement" type="textarea" placeholder="请输入左侧表达式" @click="changeSelection('left')"></FInput>
+                        <div class="title">{{$t('_.左侧表达式')}}</div>
+                        <FInput v-model="leftStatement" type="textarea" :placeholder="$t('_.请输入左侧表达式')" @click="changeSelection('left')"></FInput>
                     </div>
                     <div class="relation">
-                        <FSelect v-model="relationshipBetween" placeholder="关系">
+                        <FSelect v-model="relationshipBetween" :placeholder="$t('_.关系')">
                             <FOption v-for="(item, index) in relationList" :key="index" :value="item.type" :label="item.value"></FOption>
                         </FSelect>
                     </div>
                     <div class="right">
-                        <div class="title">右侧表达式</div>
-                        <FInput v-model="rightStatement" type="textarea" placeholder="请输入右侧表达式" @click="changeSelection('right')"></FInput>
+                        <div class="title">{{$t('_.右侧表达式')}}</div>
+                        <FInput v-model="rightStatement" type="textarea" :placeholder="$t('_.请输入右侧表达式')" @click="changeSelection('right')"></FInput>
                     </div>
                 </div>
                 <div class="tables">
-                    <div v-if="leftGroup.length || rightGroup.length" class="desc">展开数据表可查看字段信息</div>
+                    <div v-if="leftGroup.length || rightGroup.length" class="desc">{{$t('_.展开数据表可查看字段信息')}}</div>
                     <div v-if="leftGroup.length" class="table" :class="{ small: leftExpand }">
                         <div class="info" @click="expand('left')">
-                            <div class="left">数据表：{{leftTableName}}</div>
+                            <div class="left">{{$t('_.数据表：')}}{{leftTableName}}</div>
                             <div class="right">
                                 <DownOutlined v-if="!leftExpand" />
                                 <UpOutlined v-if="leftExpand" />
                             </div>
                         </div>
                         <div v-if="leftExpand" class="expand">
-                            <div class="input"><input v-model="leftChar" type="text" placeholder="请输入搜索内容" /></div>
+                            <div class="input"><input v-model="leftChar" type="text" :placeholder="$t('_.请输入搜索内容')" /></div>
                             <div class="group">
                                 <div v-for="(item, index) in leftFilterGroup" :key="index" class="item" @click="selectItem(item)">{{item.column_name}} ({{item.data_type}})</div>
                             </div>
@@ -44,14 +44,14 @@
                     </div>
                     <div v-if="rightGroup.length" class="table" :class="{ small: rightExpand }">
                         <div class="info" @click="expand('right')">
-                            <div class="left">数据表：{{rightTableName}}</div>
+                            <div class="left">{{$t('_.数据表：')}}{{rightTableName}}</div>
                             <div class="right">
                                 <DownOutlined v-if="!rightExpand" />
                                 <UpOutlined v-if="rightExpand" />
                             </div>
                         </div>
                         <div v-if="rightExpand" class="expand">
-                            <div class="input"><input v-model="rightChar" type="text" placeholder="请输入搜索内容" /></div>
+                            <div class="input"><input v-model="rightChar" type="text" :placeholder="$t('_.请输入搜索内容')" /></div>
                             <div class="group">
                                 <div v-for="(item, index) in rightFilterGroup" :key="index" class="item" @click="selectItem(item)">{{item.column_name}} ({{item.data_type}})</div>
                             </div>
@@ -64,11 +64,16 @@
 </template>
 
 <script setup>
+import { useI18n } from '@fesjs/fes';
+
 import {
     ref, computed, watch, defineProps, defineEmits,
 } from 'vue';
 import { DownOutlined, UpOutlined } from '@fesjs/fes-design/es/icon';
 import { FMessage } from '@fesjs/fes-design';
+
+
+const { t: $t } = useI18n();
 
 // props: 数据源数据, 打开类型（新增、编辑、详情）
 
@@ -203,13 +208,13 @@ function changeSelection(side) {
 function saveMap() {
     console.log('saveMap');
     if (!leftStatement.value || leftStatement.value.length === 0) {
-        return FMessage.warn('请输入左侧表达式');
+        return FMessage.warn($t('_.请输入左侧表达式'));
     }
     if (!relationshipBetween.value) {
-        return FMessage.warn('请输选择关系');
+        return FMessage.warn($t('_.请输选择关系'));
     }
     if (!rightStatement.value || rightStatement.value.length === 0) {
-        return FMessage.warn('请输入右侧表达式');
+        return FMessage.warn($t('_.请输入右侧表达式'));
     }
     showModal.value = false;
     emit('saved', {
@@ -236,6 +241,7 @@ function cancel() {
     rightChar.value = '';
     emit('cancel');
 }
+
 </script>
 
 <style lang="less" scoped>

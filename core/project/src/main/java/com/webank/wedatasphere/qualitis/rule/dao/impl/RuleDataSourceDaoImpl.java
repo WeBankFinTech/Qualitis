@@ -28,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -151,10 +152,10 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public Page<RuleDataSource> findAllWithPage(int page, int size) {
+    public Page<RuleDataSource> findDmsTable(List<String> proxyUsers, int page, int size) {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ruleDataSourceRepository.findAll(pageable);
+        return ruleDataSourceRepository.findByUserWithPage(proxyUsers, pageable);
     }
 
     @Override
@@ -163,8 +164,13 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     }
 
     @Override
-    public List<RuleDataSource> findByRuleId(List<Long> ruleIds) {
-        return ruleDataSourceRepository.findByRuleId(ruleIds);
+    public List<RuleDataSource> findByRuleIds(List<Long> ruleIds) {
+        return ruleDataSourceRepository.findByRuleIds(ruleIds);
+    }
+
+    @Override
+    public List<RuleDataSource> findByRuleId(Long ruleId) {
+        return ruleDataSourceRepository.findByRuleId(ruleId);
     }
 
     @Override
@@ -208,6 +214,11 @@ public class RuleDataSourceDaoImpl implements RuleDataSourceDao {
     @Override
     public void updateMetadataFields(Long id, String subSystemId, String subSystemName, String departmentCode, String departmentName, String devDepartmentName, String tagCode, String tagName) {
         ruleDataSourceRepository.updateMetadataFields(id, subSystemId, subSystemName, departmentCode, departmentName, devDepartmentName, tagCode, tagName);
+    }
+
+    @Override
+    public List<RuleDataSource> findByRuleIdAndNonNullLinkisDataSourceId(List<Long> ruleIds) {
+        return ruleDataSourceRepository.findByRuleIdAndNonNullLinkisDataSourceId(ruleIds);
     }
 
 }

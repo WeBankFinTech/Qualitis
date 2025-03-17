@@ -2,11 +2,11 @@ import { ref } from 'vue';
 import { useI18n } from '@fesjs/fes';
 import { FMessage } from '@fesjs/fes-design';
 import { isIE } from '@/assets/js/utils';
+import { uploadMetric } from '@/pages/metricManagement/dqmetricManagement/api';
 import {
     uploadProject,
     uploadRules,
 } from '../api';
-import { uploadMetric } from '../../metricManagement/api';
 
 export default function useImport(type = 'project') {
     const { t: $t } = useI18n();

@@ -60,12 +60,12 @@ public class RuleLisingCallable implements Callable<ProjectDetailResponse> {
             permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
             projectService.checkProjectPermission(projectInDb, request.getLoginUser(), permissions);
 
-            // Find rules by project
-            List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb, null);
+            // Find rules by project and rule name
+            List<Map<String, Object>> rules = ruleDao.findSpecialInfoByProject(projectInDb, request.getRuleName());
             projectDetailResponse = new ProjectDetailResponse(rules);
             projectDetailResponse.setTotal(rules != null ? rules.size() : 0);
 
-            Page<Rule> rulePage = ruleDao.findByConditionWithPage(projectInDb, null, null, null
+            Page<Rule> rulePage = ruleDao.findByConditionWithPage(projectInDb, request.getRuleName(), null, null
                     , null, null, null, null, null, null, null,
                     null, null, null, null, null, null, null, request.getPage(), request.getSize());
             if (rulePage.getSize() <= 0) {

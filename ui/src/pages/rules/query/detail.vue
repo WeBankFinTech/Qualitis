@@ -24,8 +24,8 @@
                 </div>
                 <div class="condition-item">
                     <FSpace :size="CONDITIONBUTTONSPACE">
-                        <FButton type="primary" @click="filterSearch">查询</FButton>
-                        <FButton @click="filterReset">重置</FButton>
+                        <FButton type="primary" @click="filterSearch">{{$t('_.查询')}}</FButton>
+                        <FButton @click="filterReset">{{$t('_.重置')}}</FButton>
                     </FSpace>
                 </div>
                 <div class="condition-item" style="margin-left:auto; display:flex">
@@ -59,7 +59,7 @@
                 <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="128">
                     <FSpace :size="CONDITIONBUTTONSPACE">
                         <a class="a-link" @click="jumpBlood(row)"> {{$t('common.bloodRelationshipAnalysis')}} </a>
-                        <a class="a-link" @click="handleRelatedRule(row)">{{`${$t('common.columnRule')}(${row.rule_count || 0})`}}</a>
+                        <a class="a-link" @click="handleRelatedRule(row)">{{`${$t('common.columnRule')}(${row?.rule_count || 0})`}}</a>
                     </FSpace>
                 </f-table-column>
             </f-table>
@@ -76,6 +76,7 @@
                 @pageSizeChange="changePage"></FPagination>
         </div>
         <RelatedRuleDrawer
+            v-if="showRelatedRuleDrawer"
             v-model:show="showRelatedRuleDrawer"
             :title="$t('common.columnRule')"
             :cluster="cluster"
@@ -86,8 +87,11 @@
     </div>
 </template>
 <script setup>
+
 import { ref, reactive, onMounted } from 'vue';
-import { useI18n, useRouter, useRoute } from '@fesjs/fes';
+import {
+    useI18n, useRouter, useRoute, request,
+} from '@fesjs/fes';
 import { LeftOutlined } from '@fesjs/fes-design/es/icon';
 import { CONDITIONBUTTONSPACE } from '@/assets/js/const';
 import { FDivider, FMessage } from '@fesjs/fes-design';
@@ -144,11 +148,11 @@ const columnTypeList = [
 const isPartitionList = [
     {
         value: false,
-        label: '否',
+        label: $t('_.否'),
     },
     {
         value: true,
-        label: '是',
+        label: $t('_.是'),
     },
 ];
 const isKeysList = isPartitionList;
@@ -241,7 +245,7 @@ const filterSearch = async () => {
     updateColumnsDetail(params);
     resultByInit.value = false;
 };
-const bloodUrl = ref('');
+const baseUrl = ref('');
 const jumpBlood = async (row) => {
     const bloodParams = {
         cluster_name: route.query.cluster,
@@ -252,20 +256,55 @@ const jumpBlood = async (row) => {
     };
     try {
         const res = await fetctBloodParams(bloodParams);
+        let { urn } = res;
+        urn = urn.split('&baseUrl')[0];
         // eslint-disable-next-line no-restricted-globals
-        bloodUrl.value = `${location.origin}/static/bdp-dms/#/dataLineage?`;
-        const { urn } = res;
-        bloodUrl.value += getURLQueryParams({
+        const bloodUrl = `${baseUrl.value}&${getURLQueryParams({
             params: {
                 urn,
             },
-        });
-        window.open(bloodUrl.value);
+        })}`;
+        window.open(bloodUrl);
     } catch (e) {}
 };
+
+async function getBaseUrl() {
+    const loginUserName = sessionStorage.getItem('firstUserName');
+    // eslint-disable-next-line no-undef
+    const microAppUrl = BASEMICROURL;
+    function generateUrlTail() {
+        const tail = [];
+        tail.push('app_id=facade-framework');
+        tail.push('timestamp=1659924920342');
+        tail.push('nonce=12345');
+        tail.push('user=dqm');
+        tail.push('signature=eca1a93c2c2bb8fc55972d76d0c1267c7782f51552a5d4562a2d871a63f64168');
+        return tail.join('&');
+    }
+    try {
+        // 查询绑定信息
+        const data = await request(`/mfgov/fesdk/bindQuery/v1?${generateUrlTail()}`, {
+            main_mf_name: 'dqm_rule_management',
+            sub_mf_name: 'data_lineage',
+        }, {
+            method: 'get',
+            baseURL: microAppUrl,
+            headers: {
+                proxyUser: loginUserName,
+            },
+        });
+        console.log(data);
+        baseUrl.value = `${data.accessLocation}?baseUrl=${data.accessLocation.split('#')[0].replace(/\/$/, '')}` || '';
+    } catch (err) {
+        console.warn('-------', err);
+    }
+}
+
 onMounted(() => {
     search();
+    getBaseUrl();
 });
+
 </script>
 <style lang="less" scoped>
 @import "@/style/varible";

@@ -45,7 +45,7 @@
             </div>
         </div>
         <!-- 新增模板 -->
-        <div class="wd-content-body edit-template" :class="{ isEmbed: isEmbed , isOpen: openAdd }" :style="{ height: openAdd ? '' : '72px' }">
+        <div class="wd-content-body edit-template" :class="{ isEmbed: isEmbed , isOpen: openAdd }">
             <div class="header-bar" style="margin-top:-4px">
                 <FButton type="link" :class="openAdd ? 'open-title' : 'close-title'" @click="openAddBar">
                     <template v-if="!openAdd" #icon><PlusCircleOutlined /></template>{{$t('myProject.createNewTemplate')}}
@@ -81,6 +81,7 @@
                 <div>{{$t('myProject.confirmDelete') + currentTemlate.name + '?'}}</div>
             </FModal>
         </div>
+        <FPagination v-model:currentPage="currentPage" :total-count="totalCount" @change="handleChange" />
     </div>
 </template>
 <script setup>
@@ -114,6 +115,10 @@ const props = defineProps({
     },
     // 是否被嵌套
     isEmbed: {
+        type: Boolean,
+        default: false,
+    },
+    isFold: {
         type: Boolean,
         default: false,
     },
@@ -182,18 +187,23 @@ const selectTemplate = (value, index) => {
 // 去噪参数去json化
 const parseNoiseEliminationManagement = (data) => {
     data.forEach((e) => {
-        e.business_date = `[${e.business_date}]`;
-        e.business_date = JSON.parse(e.business_date);
+        // e.business_date = `${e.business_date}`;
+        // e.business_date = JSON.parse(e.business_date);
         e.noise_norm_ratio = JSON.parse(e.noise_norm_ratio);
     });
     return data;
 };
-const getTemplateList = async () => {
+const currentPage = ref(1);
+const totalCount = ref(0);
+const getTemplateList = async (page = 0, size = 10) => {
     try {
         const params = {
             project_id: route.query.projectId,
+            page,
+            size,
         };
         const data = await fetchTemplateList(params);
+        totalCount.value = data?.total || 0;
         if (data.data) {
             templateList.value = [];
             isOpenTemplateList.value = [];
@@ -208,7 +218,7 @@ const getTemplateList = async () => {
                     source_table_filter: item.source_table_filter,
                     target_table_filter: item.target_table_filter,
                     abort_on_failure: item.abort_on_failure,
-                    union_all: item.union_all,
+                    union_way: item.union_way,
                     abnormal_data_storage: item.abnormal_data_storage,
                     cluster: item.cluster,
                     abnormal_proxy_user: item.abnormal_proxy_user,
@@ -223,6 +233,8 @@ const getTemplateList = async () => {
                     // 告警参数
                     alert: item.alert,
                     alarm_arguments_execution_parameters: item.alarm_arguments_execution_parameters,
+                    // 去噪参数
+                    whether_noise: item.whether_noise,
                     noise_elimination_management: parseNoiseEliminationManagement(item.noise_elimination_management),
                     // 执行变量配置
                     execution_variable: item.execution_variable,
@@ -245,7 +257,9 @@ const getTemplateList = async () => {
         }
     } catch (error) { console.log('error : ', error); }
 };
-
+const handleChange = async (page, size) => {
+    await getTemplateList(page - 1);
+};
 const templateModel = ref({
     static_execution_parameters: [],
     alarm_arguments_execution_parameters: [],
@@ -253,6 +267,7 @@ const templateModel = ref({
     execution_management: [],
     advanced_execution: true,
     dynamic_partitioning: false,
+    union_way: 0,
     engine_reuse: true,
     concurrency_granularity: 'split_by:merge',
 });
@@ -265,6 +280,7 @@ const resetTemplateModel = () => {
         execution_management: [],
         advanced_execution: true,
         dynamic_partitioning: false,
+        union_way: 0,
         engine_reuse: true,
         concurrency_granularity: 'split_by:merge',
     };
@@ -314,6 +330,9 @@ const validTemplateValue = (template) => {
     if (!template.alert) {
         template.alarm_arguments_execution_parameters = [];
     }
+    if (!template.whether_noise) {
+        template.noise_elimination_management = [];
+    }
     if (!template.execution_variable) {
         template.execution_management = [];
     }
@@ -321,6 +340,7 @@ const validTemplateValue = (template) => {
         template.engine_reuse = true;
         template.concurrency_granularity = 'split_by:merge';
         template.dynamic_partitioning = false;
+        template.union_way = 0;
         template.top_partition = '';
     }
     return template;
@@ -365,7 +385,7 @@ const confirmAddTemplate = async () => {
             source_table_filter: templateModel.value.source_table_filter || '',
             target_table_filter: templateModel.value.target_table_filter || '',
             abort_on_failure: templateModel.value.abort_on_failure || false,
-            union_all: templateModel.value.union_all || false,
+            union_way: templateModel.value.union_way || 0,
             abnormal_data_storage: templateModel.value.abnormal_data_storage || false,
             cluster: templateModel.value.cluster || '',
             abnormal_proxy_user: templateModel.value.abnormal_proxy_user,
@@ -380,6 +400,8 @@ const confirmAddTemplate = async () => {
             // 告警参数
             alert: templateModel.value.alert || false,
             alarm_arguments_execution_parameters: cloneDeep(templateModel.value.alarm_arguments_execution_parameters) || [],
+            // 去噪参数
+            whether_noise: templateModel.value.whether_noise || false,
             noise_elimination_management: stringNoiseData,
             // 执行变量配置
             execution_variable: templateModel.value.execution_variable || false,
@@ -397,6 +419,8 @@ const confirmAddTemplate = async () => {
         await fetchAddTemplate(params);
         FMessage.success($t('toastSuccess.addSuccess'));
         resetTemplateModel();
+        currentPage.value = 1;
+        totalCount.value = 0;
         getTemplateList();
         closeAddBar();
         isAdding.value = false;
@@ -457,7 +481,7 @@ const confirmEditTemplate = async (template, index) => {
             source_table_filter: template.source_table_filter,
             target_table_filter: template.target_table_filter,
             abort_on_failure: template.abort_on_failure,
-            union_all: template.union_all,
+            union_way: template.union_way,
             abnormal_data_storage: template.abnormal_data_storage,
             cluster: template.cluster,
             abnormal_proxy_user: template.abnormal_proxy_user,
@@ -471,6 +495,8 @@ const confirmEditTemplate = async (template, index) => {
             // 告警参数
             alert: template.alert,
             alarm_arguments_execution_parameters: template.alarm_arguments_execution_parameters,
+            // 去噪参数
+            whether_noise: template.whether_noise,
             noise_elimination_management: stringNoiseData,
             // 执行变量配置
             execution_variable: template.execution_variable,
@@ -489,7 +515,7 @@ const confirmEditTemplate = async (template, index) => {
         console.log('confirmEditTemplate-params', params);
         await fetchModifyTemplate(params);
         FMessage.success($t('toastSuccess.editSuccess'));
-        getTemplateList();
+        getTemplateList(currentPage.value - 1);
     } catch (err) {
         console.warn(err);
     }
@@ -518,6 +544,8 @@ const confirmDeleteTemplate = async () => {
     try {
         await fetchDeleteTemplate(params);
         FMessage.success($t('toastSuccess.deleteSuccess'));
+        currentPage.value = 1;
+        totalCount.value = 0;
         getTemplateList();
         showDeleteConfirmModal.value = false;
     } catch (error) {}
@@ -528,7 +556,7 @@ const setDefaultExecutionParams = async () => {
         templateList.value.forEach((item, index) => {
             if (item.name === props.curExeName) {
                 item.isSelected = true;
-                isOpenTemplateList.value[index] = true;
+                isOpenTemplateList.value[index] = !props.isFold;
                 // 选中的模板，置顶展示
                 if (index !== 0) {
                     const firstItem = templateList.value.splice(index, 1)[0];
@@ -663,7 +691,7 @@ defineExpose({ templateList });
   }
 }
 .template-pag-style {
-    padding: 0px !important;
+    padding: 0px;
 }
 .template-menu-item {
     display: flex;

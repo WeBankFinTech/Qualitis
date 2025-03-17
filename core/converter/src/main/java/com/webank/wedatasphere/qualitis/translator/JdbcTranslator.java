@@ -77,8 +77,6 @@ public class JdbcTranslator extends AbstractTranslator {
     private String newValueTableName;
     @Value("${task.new_value.save}")
     private String newValueTableSave;
-    @Value("${task.persistent.encrypt: false}")
-    private Boolean isEncrypt;
 
     @Autowired
     private RuleMetricDao ruleMetricDao;
@@ -149,16 +147,14 @@ public class JdbcTranslator extends AbstractTranslator {
     @PostConstruct
     public void init() {
         usernamePropSentence = PROP_VARIABLE_NAME + ".setProperty(\"user\", \"" + mysqlUsername + "\");";
-        if (isEncrypt) {
-//            String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
-//            try {
-//                mysqlSecret = EncryptUtil.decrypt(passwordPrivateKey, taskDataSourceConfig.getPassword());
-//            } catch (Exception e) {
-//                LOGGER.error("Decrypt mysqlsec password exception.", e);
-//            }
-        } else {
-            mysqlPassword = taskDataSourceConfig.getPassword();
-        }
+//        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
+        String password = taskDataSourceConfig.getPassword();
+//        try {
+//            mysqlPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
+//        } catch (Exception e) {
+//            LOGGER.error("Decrypt mysqlsec password exception.", e);
+//        }
+        mysqlPassword = password;
         passwordPropSentence = PROP_VARIABLE_NAME + ".setProperty(\"password\", \"" + mysqlPassword + "\");";
         statisticsAndSaveResultTemplate = SqlTemplateConverter.VARIABLE_NAME_PLACEHOLDER + ".selectExpr(\"" +
                 STATISTICS_VALUE_PLACEHOLDER + " as " + STATISTICS_VALUE_FIELD_NAME + "\", \"'" +

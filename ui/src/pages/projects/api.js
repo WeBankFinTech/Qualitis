@@ -210,7 +210,7 @@ export function fetchDB(params = {}) {
 
 // 获取子系统列表
 export function fetchSubSystemInfo(params = {}) {
-    return Promise.resolve([]);
+    return FRequest('/api/v1/projector/meta_data/subSystemInfo', params);
 }
 
 // 获取规则查询数据源等信息
@@ -219,8 +219,8 @@ export function fetchOptions() {
 }
 
 // 获取项目检验模板
-export function fetchRuleTemplate() {
-    return FRequest('/api/v1/projector/rule_template/option/list', {}, 'get');
+export function fetchRuleTemplate(params = { project_id: null }) {
+    return FRequest('/api/v1/projector/rule_template/option/list', params, 'post');
 }
 
 // 获取调度任务列表
@@ -312,4 +312,55 @@ export function fetchWorkflowFilterList(params = {}) {
 // 获取告警规则表格数据
 export function fetchAlarmRuleTableData(params = {}) {
     return FRequest('/api/v1/projector/checkAlert/query', params, 'post');
+}
+
+// 运营报表列表
+export function fetchOprReportList(params = {}) {
+    return FRequest('/api/v1/projector/operate/report/query', params, 'post');
+}
+
+// 运营报表新增
+export function addOprReport(params = {}) {
+    return FRequest('/api/v1/projector/operate/report/add', params, 'post');
+}
+
+// 运营报表删除
+export function deleteOprReport(subscribeOperateReportId) {
+    return FRequest(`/api/v1/projector/operate/report/delete/${subscribeOperateReportId}`, {}, 'post');
+}
+
+// 运营报表编辑
+export function editOprReport(params = {}) {
+    return FRequest('/api/v1/projector/operate/report/modify', params, 'post');
+}
+// 运营报表详情
+export function getOprDetailReport(subscribeOperateReportId) {
+    return FRequest(`/api/v1/projector/operate/report/get/${subscribeOperateReportId}`, {}, 'get');
+}
+
+
+// 应用信息模版部分
+// 查询应用信息模版列表
+export function getAppInfoTemplateList(projectId) {
+    return FRequest(`/api/v1/projector/scheduled/workflow_business/list/${projectId}`, {}, 'get');
+}
+
+// 新增应用信息模版
+export function newAddAppInfoTemplate(params = {}) {
+    return FRequest('api/v1/projector/scheduled/workflow_business', params, 'post');
+}
+
+// 编辑应用信息模版列表
+export function editAppInfoTemplate(params = {}) {
+    return FRequest('/api/v1/projector/scheduled/workflow_business', params, 'put');
+}
+
+// 删除应用信息模版列表
+export function deleteAppInfoTemplate(templateId) {
+    return FRequest(`/api/v1/projector/scheduled/workflow_business/${templateId}`, {}, 'delete');
+}
+
+// 查询业务域列表
+export function getBusinessDomainList() {
+    return FRequest('/api/v1/projector/meta_data/buzDomain', {}, 'get');
 }

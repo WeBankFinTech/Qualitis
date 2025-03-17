@@ -79,7 +79,7 @@ public class AlarmUtil {
         StringBuilder alertInfo = new StringBuilder();
         List<Map<String, Object>> requestList = new ArrayList<>(checkAlarmRules.size());
 
-        List<TaskRuleSimple> checkAlarmAcrossClusters = checkAlarmRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        List<TaskRuleSimple> checkAlarmAcrossClusters = checkAlarmRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())).collect(Collectors.toList());
         Map<Long, List<TaskRuleSimple>> taskRuleSimpleMap = null;
         List<Long> alarmedRuleIds = null;
 
@@ -114,6 +114,7 @@ public class AlarmUtil {
             String cnName = taskRuleSimpleTemp.getCnName();
             String enName = taskRuleSimpleTemp.getRuleName();
             String realRuleName = StringUtils.isNotEmpty(cnName) ? cnName : enName;
+            String ruleDetail = StringUtils.isNotBlank(taskRuleSimpleTemp.getRuleDetail()) ? taskRuleSimpleTemp.getRuleDetail() : "无";
 
             String enProjectName = taskRuleSimpleTemp.getProjectName();
             String cnProjectName = taskRuleSimpleTemp.getProjectCnName();
@@ -132,6 +133,7 @@ public class AlarmUtil {
                 }
                 alertInfo.append("。\n");
             }
+            alertInfo.append("规则描述：").append(ruleDetail).append("。\n");
             List<TaskRuleAlarmConfig> taskRuleAlarmConfigList = taskRuleSimpleTemp.getTaskRuleAlarmConfigList();
             List<TaskResultStatus> taskResultStatusList = taskResultStatusDao.findByStatus(application.getId(), taskRuleSimpleTemp.getRuleId(), AlarmConfigStatusEnum.NOT_PASS.getCode());
             Map<Long, TaskRuleAlarmConfig> taskRuleAlarmConfigMap = taskRuleAlarmConfigList.stream().collect(Collectors.toMap(TaskRuleAlarmConfig::getId, t -> t, (oValue, nValue) -> nValue));
@@ -148,7 +150,7 @@ public class AlarmUtil {
                     String value = StringUtils.isBlank(taskResult.getValue()) ? "empty value" : taskResult.getValue();
                     String compareValue = StringUtils.isBlank(taskResult.getCompareValue()) ? "empty value" : taskResult.getCompareValue();
                     if (alarmConfig.getRuleMetric() == null || alarmConfig.getRuleMetric().getId().equals(taskResult.getRuleMetricId())) {
-                        alarmStringAppend(alertInfo, alarmConfig, value, compareValue, realRuleName, realProjectName, taskResult.getEnvName());
+                        alarmStringAppend(alertInfo, alarmConfig, value, compareValue, taskResult.getEnvName());
                     }
                 }
             }
@@ -176,8 +178,8 @@ public class AlarmUtil {
             }
 
             if (bdap) {
-                client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel));
+                client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警【告警对象】" + (StringUtils.isNotBlank(alertObj) ? alertObj : "无")
+                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
             }
 
             alertInfo.delete(0, alertInfo.length());
@@ -341,16 +343,16 @@ public class AlarmUtil {
 
     /**
      * Qualitis 项目xxx 技术规则xxx 任务运行完成，不符合数据质量要求。原因：任务运行结果: [5], 超出设定阈值: [4], 比较模版: [月波动], 比较方式: [大于]
-     *
      * @param alertInfo
      * @param alarmConfig
+     * @param value
+     * @param compareValue
+     * @param envName
      */
-    private static void alarmStringAppend(StringBuilder alertInfo, TaskRuleAlarmConfig alarmConfig, String value, String compareValue, String ruleName, String projectName, String envName) {
+    private static void alarmStringAppend(StringBuilder alertInfo, TaskRuleAlarmConfig alarmConfig, String value, String compareValue, String envName) {
         Integer checkTemplate = alarmConfig.getCheckTemplate();
         String checkTemplateName = CheckTemplateEnum.getCheckTemplateName(checkTemplate);
-        alertInfo.append("Qualitis项目: ").append(projectName).
-                append("，技术规则: ").append(ruleName)
-                .append("，任务运行完成, 不符合数据质量要求。原因: ")
+        alertInfo.append("具体原因: ")
                 .append(alarmConfig.getOutputName() + " - [").append(StringUtils.isEmpty(value) ? "" : value)
                 .append(alarmConfig.getOutputUnit() == null ? "" : alarmConfig.getOutputUnit()).append("]")
                 .append(", 不符合设定阈值: [").append(alarmConfig.getThreshold()).append(alarmConfig.getOutputUnit() == null ? "" : alarmConfig.getOutputUnit())
@@ -474,7 +476,7 @@ public class AlarmUtil {
         // 获取告警内容
         StringBuilder alertInfo = new StringBuilder();
         List<Map<String, Object>> requestList = new ArrayList<>(failedRules.size());
-        List<TaskRuleSimple> failedAcrossClusters = failedRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateName())).collect(Collectors.toList());
+        List<TaskRuleSimple> failedAcrossClusters = failedRules.stream().filter(taskRuleSimple -> QualitisConstants.MULTI_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName()) || QualitisConstants.SINGLE_SOURCE_ACROSS_TEMPLATE_NAME.equals(taskRuleSimple.getTemplateEnName())).collect(Collectors.toList());
         List<Long> alarmedRuleIds = null;
         if (CollectionUtils.isNotEmpty(failedAcrossClusters)) {
             alarmedRuleIds = new ArrayList<>(failedAcrossClusters.size());
@@ -543,8 +545,8 @@ public class AlarmUtil {
             }
 
             if (bdap) {
-                client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警\n"
-                        , alertInfo.toString(), String.valueOf(alertLevel));
+                client.sendAlarm(StringUtils.join(receivers, ","), imsConfig.getTitlePrefix() + "集群 Qualitis 任务告警【告警对象】" + (StringUtils.isNotBlank(alertObj) ? alertObj : "无")
+                        , alertInfo.toString(), String.valueOf(alertLevel), subSystemId);
             }
             alertInfo.delete(0, alertInfo.length());
         }
@@ -722,7 +724,7 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "");
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), maxLevel + "", null);
         }
     }
 
@@ -761,7 +763,7 @@ public class AlarmUtil {
 
         // 发送告警
         if (CollectionUtils.isNotEmpty(receivers)) {
-            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode());
+            client.sendAlarm(StringUtils.join(receivers, ","), alertTitle, alertContent.toString(), ImsLevelEnum.WARNING.getCode(), null);
         }
     }
 

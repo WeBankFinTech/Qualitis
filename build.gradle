@@ -64,10 +64,12 @@ repositories {
 mainClassName = "com.webank.wedatasphere.qualitis.QualitisServer"
 
 applicationDefaultJvmArgs =
-        ['-Xms256M', '-Xmx2G',
-         '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=20', '-XX:InitiatingHeapOccupancyPercent=50',
-         '-Dfile.encoding=UTF-8', "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
-         "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log"]
+        ["-Xms256M", "-Xmx2G",
+         "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=20", "-XX:InitiatingHeapOccupancyPercent=50",
+         "-Dfile.encoding=UTF-8", "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
+         "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log",
+         "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/appcom/logs/qualitis/heapdump.hprof",
+         "-Dspring.config.location=classpath:application.yml"]
 
 tasks.startScripts << {
   def scriptFile = file "${outputDir}/${applicationName}"
@@ -105,12 +107,36 @@ distributions {
     }
   }
 }
+def timestamp = new Date().format("yyyyMMddHHmmss")
+def projectVersion = project.property("version")
+def finalArchiveName = "WDSDQMS-CORE_${projectVersion}_0_R_${timestamp}.zip"
+
+distZip {
+  archiveName = finalArchiveName
+}
 
 subprojects {
   apply plugin: 'idea'
   apply plugin: 'eclipse'
   apply plugin: 'java'
   apply plugin: 'maven'
+
+  sourceSets {
+    main {
+      java {
+        srcDirs = ['src/main/java']
+      }
+    }
+  }
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  artifacts {
+    archives sourcesJar
+  }
 
   [compileJava, compileTestJava, javadoc]*.options*.encoding = defaultEncoding
 
@@ -139,11 +165,22 @@ subprojects {
 
 configurations.all {
   resolutionStrategy {
-    force 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.1'
+    force 'org.apache.logging.log4j:log4j-slf4j2-impl:2.24.0'
+    force 'org.apache.logging.log4j:log4j-api:2.24.0'
+    force 'org.apache.logging.log4j:log4j-core:2.24.0'
+    force 'org.apache.derby:derby:10.17.1.0'
+    force 'org.slf4j:slf4j-api:2.0.11'
   }
-  resolutionStrategy.cacheChangingModulesFor 1,'minutes'
-  exclude group: 'log4j', module: 'log4j'
+  resolutionStrategy.cacheChangingModulesFor 60,'seconds'
+//  exclude group: 'log4j', module: 'log4j'
+  exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
   exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
+  exclude group: 'com.zaxxer', module: 'HikariCP-java7'
+  exclude group: 'org.apache.poi', module: 'poi-ooxml-schemas'
+  exclude group: 'org.bouncycastle', module: 'bcprov-jdk15to18'
+  exclude group: 'javax.servlet', module: 'javax.servlet-api'
 }
 
 apply from: "profile.gradle"
+
+

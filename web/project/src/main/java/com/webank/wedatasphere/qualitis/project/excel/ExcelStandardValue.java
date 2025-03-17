@@ -1,12 +1,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author v_gaojiedeng@webank.com
  */
-public class ExcelStandardValue extends BaseRowModel {
+public class ExcelStandardValue {
 
     @ExcelProperty(value = "Standard Value Json Object", index = 0)
     private String standardValueJsonObject;

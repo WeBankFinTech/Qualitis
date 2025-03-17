@@ -113,7 +113,7 @@ public class AddExecutionParametersRequest extends AbstractAddRequest {
      * 2.动态引擎配置 staticStartupParam   格式(可以是多个，匹配字符串前缀
      * (1)yarn参数 wds.linkis.rm.yarnqueue,
      * (2)spark参数 a.spark.driver；b.spark.executor; )
-     * 参数类型(1.yarn参数 2.spark参数)：wds.linkis.rm.yarnqueue=queue_05;
+     * 参数类型(1.yarn参数 2.spark参数)：wds.linkis.rm.yarnqueue=q_05;
      *
      * @param abstrackAddRequest
      */
@@ -128,7 +128,10 @@ public class AddExecutionParametersRequest extends AbstractAddRequest {
             alarmArgumentsExecutionParameters.setAlarmReceiver(abstrackAddRequest.getAlertReceiver());
             lists.add(alarmArgumentsExecutionParameters);
             this.alert = true;
+        } else {
+            this.alert = false;
         }
+
 
         if (StringUtils.isNotBlank(abstrackAddRequest.getExecutionCompleted())) {
             handleAlarmEvent(lists, abstrackAddRequest.getExecutionCompleted(), AlarmEventEnum.EXECUTION_COMPLETED);
@@ -158,6 +161,8 @@ public class AddExecutionParametersRequest extends AbstractAddRequest {
             }
             this.staticExecutionParametersRequests = parametersRequests;
             this.specifyStaticStartupParam = true;
+        } else {
+            this.specifyStaticStartupParam = false;
         }
 
         if (null == this.getAdvancedExecution()) {

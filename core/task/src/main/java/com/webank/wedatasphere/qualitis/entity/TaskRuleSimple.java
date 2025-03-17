@@ -22,12 +22,22 @@ import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlert;
 import com.webank.wedatasphere.qualitis.constant.AlarmConfigStatusEnum;
 import com.webank.wedatasphere.qualitis.parser.LocaleParser;
 import com.webank.wedatasphere.qualitis.rule.constant.FileOutputUnitEnum;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
+
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.util.SpringContextHolder;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +92,9 @@ public class TaskRuleSimple {
     private Integer alertLevel;
     @Column(name = "alert_receiver")
     private String alertReceiver;
+    @Column(name = "reg_rule_code")
+    private String regRuleCode;
+
 
     @ManyToOne
     private Task task;
@@ -99,6 +112,7 @@ public class TaskRuleSimple {
     }
 
     public TaskRuleSimple(TaskRule rule, Task task, Map<Long, Map<String, Object>> ruleReplaceInfo) {
+        this.ruleDetail = rule.getRuleDetail();
         this.ruleName = rule.getRuleName();
         this.cnName = rule.getCnName();
         this.ruleId = rule.getRuleId();
@@ -118,6 +132,7 @@ public class TaskRuleSimple {
         this.ruleType = rule.getRuleType();
         this.alertLevel = rule.getAlertLevel();
         this.alertReceiver = rule.getAlertReceiver();
+        this.regRuleCode = rule.getRegRuleCode();
         LocaleParser localeParser = SpringContextHolder.getBean(LocaleParser.class);
         for (TaskRuleAlarmConfigBean taskRuleAlarmConfigBean : rule.getTaskRuleAlarmConfigBeans()) {
             TaskRuleAlarmConfig taskRuleAlarmConfig = new TaskRuleAlarmConfig(taskRuleAlarmConfigBean, this);
@@ -157,6 +172,7 @@ public class TaskRuleSimple {
         this.ruleGroupName = rule.getRuleGroup().getRuleGroupName();
         this.submitTime = task.getApplication().getSubmitTime();
         this.ruleType = rule.getRuleType();
+        this.regRuleCode = rule.getRegRuleCode();
     }
 
     public TaskRuleSimple(Rule rule, Task task, Map<Long, Map<String, Object>> ruleReplaceInfo, boolean fileRule) {
@@ -165,6 +181,7 @@ public class TaskRuleSimple {
         this.ruleDetail = rule.getDetail();
         this.templateName = rule.getTemplate().getName();
         this.templateEnName = rule.getTemplate().getEnName();
+        this.regRuleCode = rule.getRegRuleCode();
         if (ruleReplaceInfo.get(rule.getId()) != null && ruleReplaceInfo.get(rule.getId()).keySet().contains(QUALITIS_ALERT_LEVEL)) {
             this.alertReceiver = (String) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_RECEIVERS);
             this.alertLevel = (Integer) ruleReplaceInfo.get(rule.getId()).get(QUALITIS_ALERT_LEVEL);
@@ -413,6 +430,14 @@ public class TaskRuleSimple {
 
     public void setDeleteFailCheckResult(Boolean deleteFailCheckResult) {
         this.deleteFailCheckResult = deleteFailCheckResult;
+    }
+
+    public String getRegRuleCode() {
+        return regRuleCode;
+    }
+
+    public void setRegRuleCode(String regRuleCode) {
+        this.regRuleCode = regRuleCode;
     }
 
     @Override

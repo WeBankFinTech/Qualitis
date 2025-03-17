@@ -10,7 +10,7 @@
             <FForm ref="mjzFormRef" :model="propDatas" layout="inline" class="data-range" style="margin-bottom: 22px;">
                 <FFormItem :prop="`data[0].argument_value`" :rules="[{ required: true, message: $t('common.notEmpty') }]">
                     <FInput v-model="propDatas.data[curIndexs[0]].argument_value" :placeholder="$t('common.pleaseEnter')">
-                        <template #prepend>枚举值</template>
+                        <template #prepend>{{$t('_.枚举值')}}</template>
                     </FInput>
                 </FFormItem>
             </FForm>
@@ -19,15 +19,15 @@
         <div v-else-if="actionType === 'szfw' && propDatas.data.length && (!workflowProject || (workflowProject && isEmbedInFrame))" class="wd-drawer-header">
             <FForm ref="szfwFormRef" :model="propDatas" class="data-range">
                 <FFormItem style="flex: 0 0 20%; max-width: 20%;" :prop="`data[0].argument_value`" :rules="[{ required: true, message: $t('common.notEmpty') }]">
-                    <FInput v-model="propDatas.data[curIndexs[0]].argument_value" placeholder="最小值" />
+                    <FInput v-model="propDatas.data[curIndexs[0]].argument_value" :placeholder="$t('_.最小值')" />
                     <span class="sperator">&le;</span>
                 </FFormItem>
                 <FFormItem style="flex: 0 0 58%; max-width: 58%;" :prop="`data[1].argument_value`" :rules="[{ required: true, message: $t('common.notEmpty') }]">
-                    <FInput v-model="propDatas.data[curIndexs[1]].argument_value" placeholder="表达式" />
+                    <FInput v-model="propDatas.data[curIndexs[1]].argument_value" :placeholder="$t('_.表达式')" />
                     <span class="sperator">&le;</span>
                 </FFormItem>
                 <FFormItem style="flex: 0 0 20%; max-width: 20%;" :prop="`data[2].argument_value`" :rules="[{ required: true, message: $t('common.notEmpty') }]">
-                    <FInput v-model="propDatas.data[curIndexs[2]].argument_value" placeholder="最大值" />
+                    <FInput v-model="propDatas.data[curIndexs[2]].argument_value" :placeholder="$t('_.最大值')" />
                 </FFormItem>
             </FForm>
             <FButton type="primary" @click="confirmSzfwModify">{{$t('common.ok')}}</FButton>
@@ -45,7 +45,7 @@
             <FTableColumn :visible="(!workflowProject || (workflowProject && isEmbedInFrame)) && actionType !== ''" :label="$t('common.operate')" :width="104" ellipsis>
                 <template #default="{ row }">
                     <ul class="wd-table-operate-btns">
-                        <li class="btn-item" :class="{ disabled: row.status !== 1 || DQMWorkflow }" @click="handleImport(row)">导入</li>
+                        <li class="btn-item" :class="{ disabled: row.status !== 1 || DQMWorkflow }" @click="handleImport(row)">{{$t('_.导入')}}</li>
                         <li class="btn-item red" :class="{ disabled: row.status !== 1 || DQMWorkflow }" @click="handleDelete(row)">{{$t('common.delete')}}</li>
                     </ul>
                 </template>
@@ -65,6 +65,7 @@
     </FDrawer>
 </template>
 <script setup>
+
 import {
     onUpdated, ref, inject, defineEmits, watch, computed,
 } from 'vue';
@@ -109,11 +110,21 @@ const props = defineProps({
         default: false,
     },
 });
-
+const show = computed(
+    {
+        get() {
+            return props.show;
+        },
+        set(v) {
+            // eslint-disable-next-line no-use-before-define
+            emit('update:show', v);
+        },
+    },
+);
 const dataStatusMap = ref({
-    1: '未处理',
-    2: '已录入',
-    3: '已丢弃',
+    1: $t('_.未处理'),
+    2: $t('_.已录入'),
+    3: $t('_.已丢弃'),
 });
 
 const emit = defineEmits(['update:show', 'update:data', 'updateSqlPreview']);
@@ -257,7 +268,7 @@ const handleImport = async ({ task_new_value_id, result_value, status }) => {
             default:
                 break;
         }
-        FMessage.success('导入成功');
+        FMessage.success($t('_.导入成功'));
         loadListData();
     } catch (err) {
         console.warn(err);
@@ -321,6 +332,7 @@ onUpdated(async () => {
     };
     loadListData();
 });
+
 </script>
 <style lang="less" scoped>
 .wd-drawer-header{

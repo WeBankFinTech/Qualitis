@@ -1,5 +1,5 @@
 import { ref, onMounted } from 'vue';
-import { fetchDepartmentsDivisionsByCode } from '@/pages/metricManagement/api';
+import { fetchDepartmentsDivisionsByCode } from '@/pages/metricManagement/dqmetricManagement/api';
 import { getDepartment } from '@/pages/system/api';
 import { INTMAXVALUE } from '@/assets/js/const';
 

@@ -10,8 +10,14 @@ export default function useTableHeaderConfig() {
     // 显示表头列配置modal
     const showTableHeaderConfig = ref(false);
 
+    // 显示运维报表订阅管理
+    const showSubsManagement = ref(false);
+
     const toggleTColConfig = () => {
         showTableHeaderConfig.value = true;
+    };
+    const openSubsManagement = () => {
+        showSubsManagement.value = true;
     };
 
     return {
@@ -19,5 +25,7 @@ export default function useTableHeaderConfig() {
         toggleTColConfig,
         tableHeaders,
         showTableHeaderConfig,
+        openSubsManagement,
+        showSubsManagement,
     };
 }

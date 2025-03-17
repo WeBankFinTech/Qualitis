@@ -33,4 +33,24 @@ export const TEMPLATE_ARGUMENT_INPUT_TYPE = {
     RESULTS_FOR_FILTER: 34,
     // 连接字段设置
     CONNECT_FIELDS: 32,
+    // 左表指标计算采集sql
+    LEFT_SAMPLE_SQL: 40,
+    // 右表指标计算采集sql
+    RIGHT_SAMPLE_SQL: 41,
+};
+// 规则模板占位符对应固定ID
+export const TEMPLATE_ARGUMENT_INPUT_ID = {
+    // 左表采集SQL
+    LEFT_SAMPLE_SQL: 34100,
+    // 右表采集SQL
+    RIGHT_SAMPLE_SQL: 34101,
+};
+// 固定模板ID
+export const TEMPLATE_ID = {
+    CUSTOM_SQL_CONSISTENCY_VALIDATION: 'Multi cluster custom field consistency check',
+    CUSTOM_SQL_CONSISTENCY_VALIDATION1: 'Single cluster custom field consistency check',
+    DATA_CONSISTENCY_VALIDATION: 'Multi table rows consistensy',
+    SINGLE_CLUSTER_TABLE_STRUCTURE_CONSISTENCY_VALIDATION: 'Single cluster table structure consistency',
+    CROSS_CLUSTER_STRUCTURE_CONSISTENCY_VALIDATION: 'Cross cluster table structure consistency',
+    SINGLE_TABLE_ROWS_CONSISTENSY: 'Single table rows consistensy',
 };

@@ -28,7 +28,6 @@ import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestExcepti
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
-import com.webank.wedatasphere.qualitis.metadata.client.RuleClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserColumnByCsRequest;
 import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdRequest;
@@ -46,6 +45,7 @@ import com.webank.wedatasphere.qualitis.query.request.RulesDeleteRequest;
 import com.webank.wedatasphere.qualitis.query.response.*;
 import com.webank.wedatasphere.qualitis.query.service.RuleQueryService;
 import com.webank.wedatasphere.qualitis.request.PageRequest;
+import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceCountDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDataSourceDao;
@@ -54,8 +54,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.Rule;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 import com.webank.wedatasphere.qualitis.rule.service.RuleDataSourceService;
 import com.webank.wedatasphere.qualitis.rule.service.RuleTemplateService;
-import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
-//import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
+import com.webank.wedatasphere.qualitis.scheduled.service.ScheduledTaskService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -103,13 +102,11 @@ public class RuleQueryServiceImpl implements RuleQueryService {
     @Autowired
     private RuleTemplateService ruleTemplateService;
     @Autowired
-    private RuleClient ruleClient;
-    @Autowired
     private ClusterInfoDao clusterInfoDao;
     @Autowired
     private DataStandardClient dataStandardClient;
-//    @Autowired
-//    private ScheduledTaskService scheduledTaskService;
+    @Autowired
+    private ScheduledTaskService scheduledTaskService;
 
     private HttpServletRequest httpServletRequest;
 
@@ -355,7 +352,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         DataInfo<HiveRuleDetail> dataInfo = new DataInfo<>();
         Page<Rule> rules = ruleDao.findRuleByDataSource(cluster, db, table, column, userName, ruleTemplateId, relationObjectType, page, size);
         LOGGER.info("Success to get rules with column. Rules: {}", rules);
-        List<HiveRuleDetail> result = new ArrayList<>(rules.getSize());
+        List<HiveRuleDetail> result = Lists.newArrayListWithExpectedSize(rules.getSize());
         for (Rule rule : rules) {
             HiveRuleDetail hiveRuleDetail = new HiveRuleDetail(rule);
             hiveRuleDetail.setTemplateName(rule.getTemplate().getName());
@@ -392,7 +389,7 @@ public class RuleQueryServiceImpl implements RuleQueryService {
             List<Integer> permissions = new ArrayList<>();
             permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
             projectService.checkProjectPermission(projectInDb, loginUser, permissions);
-//            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
+            scheduledTaskService.checkRuleGroupIfDependedBySchedule(ruleInDb.getRuleGroup());
             // Delete rule
             ruleDao.deleteRule(ruleInDb);
             LOGGER.info("Succeed to delete rule, rule id: {}", ruleInDb.getId());
@@ -606,13 +603,17 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         String dbName = (String) ds.get("db_name");
         String tableName = (String) ds.get("table_name");
 
-        clusters.add(clusterName);
+        if (StringUtils.isNotBlank(clusterName)) {
+            clusters.add(clusterName);
+        }
         if (dbName == null) {
             dbs.add("default");
         } else {
             dbs.add(dbName);
         }
-        tables.add(tableName);
+        if (StringUtils.isNotBlank(tableName)) {
+            tables.add(tableName);
+        }
     }
 
     private void putIntoCascadeData(Map<String, Object> ds, Map<String, Set<String>> clusterDbs, Map<String, Set<String>> dbTables, Map<String, Set<String>> clusterTables) {
@@ -621,18 +622,21 @@ public class RuleQueryServiceImpl implements RuleQueryService {
         String tableName = (String) ds.get("table_name");
         Set<String> clusterDbsSet = clusterDbs.computeIfAbsent(clusterName, k -> new HashSet<>());
         Set<String> dbTablesSet = null;
-        if (dbName == null) {
+        if (StringUtils.isBlank(dbName)) {
             clusterDbsSet.add("default");
             dbTablesSet = dbTables.computeIfAbsent("default", k -> new HashSet<>());
         } else {
             clusterDbsSet.add(dbName);
             dbTablesSet = dbTables.computeIfAbsent(dbName, k -> new HashSet<>());
         }
-
-        dbTablesSet.add(tableName);
+        if (StringUtils.isNotBlank(tableName)) {
+            dbTablesSet.add(tableName);
+        }
 
         Set<String> clusterTablesSet = clusterTables.computeIfAbsent(clusterName, k -> new HashSet<>());
-        clusterTablesSet.add(tableName);
+        if (StringUtils.isNotBlank(tableName)) {
+            clusterTablesSet.add(tableName);
+        }
     }
 
     /**

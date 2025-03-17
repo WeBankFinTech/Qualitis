@@ -155,6 +155,26 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
     Page<RuleMetric> findRuleMetrics(Integer level, List<Department> departmentList, User user, Pageable pageable);
 
     /**
+     *
+     * @param departmentList
+     * @param user
+     * @param enCode
+     * @param pageable
+     * @return
+     */
+    @Query("SELECT qrm.enCode FROM RuleMetric qrm where (qrm IN (SELECT qrmdu.ruleMetric FROM RuleMetricDepartmentUser qrmdu where qrmdu.department in (?1) OR qrmdu.user = ?2)) AND (?3 is null or qrm.enCode LIKE ?3)")
+    List<String> findEnCodes(List<Department> departmentList, User user, String enCode, Pageable pageable);
+
+    /**
+     *
+     * @param enCode
+     * @param pageable
+     * @return
+     */
+    @Query("SELECT qrm.enCode FROM RuleMetric qrm where  (?1 is null or qrm.enCode LIKE ?1)")
+    List<String> findAllEnCodes(String enCode, Pageable pageable);
+
+    /**
      * Count all rule metrics with different characters(DEPARTMENT_ADMIN, PROJECTOR).
      * @param level
      * @param departmentList
@@ -234,8 +254,8 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
      * @return
      */
     @Query(value = "SELECT qrm FROM RuleMetric qrm where qrm.available = 1 AND ((qrm.createUser = ?1 OR qrm.devDepartmentId in (?3) OR qrm.opsDepartmentId in (?3) OR EXISTS (SELECT dv.tableDataId FROM DataVisibility dv WHERE dv.tableDataType = ?2 AND dv.departmentSubId in (?3) AND qrm = dv.tableDataId)) " +
-            " AND NOT EXISTS (SELECT id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id))")
-    Page<RuleMetric> findNotUsed(String createUser, String tableDataType, List<Long> dataVisibilityDeptList, Pageable pageable);
+            " AND NOT EXISTS (SELECT id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id)) and (?4 is null or qrm.name like CONCAT('%', CONCAT(?4, '%')))")
+    Page<RuleMetric> findNotUsed(String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, Pageable pageable);
 
     /**
      * Count not used rule metric
@@ -253,8 +273,8 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
      * @param pageable
      * @return
      */
-    @Query(value = "SELECT qrm FROM RuleMetric qrm WHERE qrm.available = 1 AND (NOT EXISTS (SELECT qrac.id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id))")
-    Page<RuleMetric> findAllNotUsed(Pageable pageable);
+    @Query(value = "SELECT qrm FROM RuleMetric qrm WHERE qrm.available = 1 AND (NOT EXISTS (SELECT qrac.id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id)) and (?1 is null or qrm.name like CONCAT('%', CONCAT(?1, '%')))")
+    Page<RuleMetric> findAllNotUsed(String name, Pageable pageable);
 
     /**
      * Count not used rule metric
@@ -272,8 +292,8 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
      * @return
      */
     @Query(value = "SELECT qrm FROM RuleMetric qrm where qrm.available = 1 AND (qrm.createUser = ?1 OR qrm.devDepartmentId in (?3) OR qrm.opsDepartmentId in (?3) OR EXISTS (SELECT dv.tableDataId FROM DataVisibility dv WHERE dv.tableDataType = ?2 AND dv.departmentSubId in (?3) AND qrm = dv.tableDataId))" +
-            " AND EXISTS (SELECT id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id)")
-    Page<RuleMetric> findUsed(String createUser, String tableDataType, List<Long> dataVisibilityDeptList, Pageable pageable);
+            " AND EXISTS (SELECT id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id) AND (?4 is null or qrm.name like CONCAT('%', CONCAT(?4, '%')))")
+    List<RuleMetric> findUsed(String createUser, String tableDataType, List<Long> dataVisibilityDeptList, String name, Pageable pageable);
 
     /**
      * Count used rule metric
@@ -291,8 +311,8 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
      * @param pageable
      * @return
      */
-    @Query(value = "SELECT qrm FROM RuleMetric qrm WHERE qrm.available = 1 AND (EXISTS (SELECT qrac.id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id))")
-    Page<RuleMetric> findAllUsed(Pageable pageable);
+    @Query(value = "SELECT qrm FROM RuleMetric qrm WHERE qrm.available = 1 AND (EXISTS (SELECT qrac.id FROM AlarmConfig qrac where qrm.id = qrac.ruleMetric.id)) and (?1 is null or qrm.name like CONCAT('%', CONCAT(?1, '%')))")
+    Page<RuleMetric> findAllUsed(String name, Pageable pageable);
 
     /**
      * Count used rule metric

@@ -21,7 +21,7 @@ public class LocalAuthorizationFilter implements Filter {
     @Autowired
     private LoginService loginService;
 
-    @Value("${local.username: admin}")
+    @Value("${local.username: allenzhou}")
     private String testUsername;
 
     @Override

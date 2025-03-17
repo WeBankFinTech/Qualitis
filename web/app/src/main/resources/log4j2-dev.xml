@@ -21,15 +21,15 @@
     </properties>
     <Appenders>
         <RollingFile name="RollingFile" fileName="/appcom/logs/qualitis/logs/qualitis/${LOG_FILE_NAME}"
-                     filePattern="/appcom/logs/qualitis/${LOG_FILE_NAME}-%d{yyyy-MM-dd}-%i.log">
+                     filePattern="/appcom/logs/qualitis/${LOG_FILE_NAME}-%d{yyyy-MM-dd-HH}-%i.log">
             <PatternLayout>
                 <Pattern>%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %c{2}: %m%n</Pattern>
             </PatternLayout>
             <Policies>
-                <TimeBasedTriggeringPolicy interval="1"/>
-                <SizeBasedTriggeringPolicy size="1024MB"/>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="1GB"/>
             </Policies>
-            <DefaultRolloverStrategy min="1" max="10" />
+            <DefaultRolloverStrategy fileIndex="min" max="10"/>
         </RollingFile>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %c{2} %M: %m%n"/>

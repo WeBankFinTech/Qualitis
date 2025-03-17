@@ -1,11 +1,13 @@
 import {
     ref, reactive, onMounted, watch,
 } from 'vue';
-import { useI18n } from '@fesjs/fes';
+import { useI18n, locale } from '@fesjs/fes';
 import {
-    ALARM_LEVELS, ALARM_LEVELS_FIELD_NAMES, APPLICATION_STATUSES, APPLICATION_STATUS_FIELD_NAMES,
+    ALARM_LEVELS, ALARM_LEVELS_FIELD_NAMES, APPLICATION_STATUS_FIELD_NAMES, getApplicationStatuses,
 } from '../const';
 
+
+const $t = locale.t;
 /**
  * 今日告警、今日应用模块 表格数据，分页数据 相关hook
  * @param {Function} fetchDataAction 获取数据逻辑，指调用接口方法
@@ -19,6 +21,7 @@ import {
  * @param {Object} alarmsCalculateData 今日告警汇总统计数据
  */
 export default function useDashboardTable(fetchDataAction = () => {}, handler = () => {}) {
+    const APPLICATION_STATUSES = getApplicationStatuses();
     // 表格数据分页
     const pagination = reactive({
         page: 1,
@@ -32,7 +35,6 @@ export default function useDashboardTable(fetchDataAction = () => {}, handler = 
     // 最近更新时间
     const lastUpdateTime = ref('');
 
-    const { t: $t } = useI18n();
     // 今日告警统计模块的数据
     const alarmsSummary = reactive({
         title: $t('dashboard.warningToday'),

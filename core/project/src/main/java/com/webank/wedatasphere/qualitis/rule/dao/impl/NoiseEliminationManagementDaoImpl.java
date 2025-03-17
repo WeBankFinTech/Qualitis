@@ -41,4 +41,9 @@ public class NoiseEliminationManagementDaoImpl implements NoiseEliminationManage
     public void deleteByExecutionParameters(ExecutionParameters executionParametersInDb) {
         noiseEliminationManagementRepository.deleteByExecutionParameters(executionParametersInDb);
     }
+
+    @Override
+    public void deleteByExecutionParametersId(Long id) {
+        noiseEliminationManagementRepository.deleteByExecutionParametersId(id);
+    }
 }

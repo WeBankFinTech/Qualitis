@@ -10,6 +10,7 @@ import org.forgerock.opendj.ldap.requests.Requests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,7 +24,14 @@ public class LdapUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LdapUtil.class);
 
+     @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
     public boolean loginByLdap(String userName, String password) throws UnsupportedEncodingException {
+        if (overseasVersionEnabled){
+            LOGGER.info("login by ldap return false.");
+            return false;
+        }
         LDAPConnectionFactory ldf = new LDAPConnectionFactory(ldapConfig.getIp(), ldapConfig.getPort());
         Connection conn;
         try {

@@ -17,13 +17,12 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
 import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSource;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -32,7 +31,7 @@ import java.util.List;
 /**
  * @author allenzhou
  */
-public class ExcelDatasourceEnv extends BaseRowModel {
+public class ExcelDatasourceEnv {
 
     @ExcelProperty(value = "Datasource Json Object", index = 0)
     private String datasourceJsonObject;

@@ -100,6 +100,7 @@ public class MultiDataSourceConfigRequest {
         this.tableName = tableName;
         this.filter = filter;
         this.proxyUser = proxyUser;
+        this.type = TemplateDataSourceTypeEnum.HIVE.getMessage();
     }
 
     public MultiDataSourceConfigRequest(String clusterName, String dbName, String tableName, String filter, String proxyUser) {

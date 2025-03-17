@@ -18,11 +18,11 @@ const hiveModes = ['HIVE', 'FPS'];
 export const isHiveMode = (dataSourceType = '') => hiveModes.includes((dataSourceType || '').toUpperCase());
 
 
-// const map = {
-//     mysql: 1,
-//     hive: 4,
-//     tdsql: 5,
-// };
+const map = {
+    mysql: 1,
+    hive: 4,
+    tdsql: 5,
+};
 /**
  * 查询数据源列表
  * @param {Object} params
@@ -35,13 +35,14 @@ export const isHiveMode = (dataSourceType = '') => hiveModes.includes((dataSourc
  */
 export const getDataSources = async ({
     clusterName = '', dataSourceType = '', proxyUser = '', name = '',
-}, map) => {
+}) => {
     if (!clusterName || !dataSourceType || isHiveMode(dataSourceType)) return [];
     const resp = await CommonDataSourceApi.getDataSources({
         clusterName,
         proxyUser,
         name,
         typeId: map[dataSourceType] || '',
+        typeName: dataSourceType,
         currentPage: 0,
         pageSize: 512,
     });

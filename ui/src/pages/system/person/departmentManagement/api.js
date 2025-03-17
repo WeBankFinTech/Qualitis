@@ -4,6 +4,7 @@ import { cloneDeep } from 'lodash-es';
 const base = '/api/v1/admin/department';
 const api = {
     getDepartments: `${base}/all`,
+    getAssociateDepartments: `${base}/tenant_user/list`,
     addDepartment: `${base}/add`,
     updateDepartment: `${base}/modify`,
     deleteDepartment: `${base}/delete`,
@@ -15,7 +16,11 @@ const defaultPrimaryKey = 'department_id';
  * @param {Object} params 查询参数
  */
 export const getDepartments = params => FRequest(api.getDepartments, params);
-
+/**
+ * 获取关联部门列表
+ * @param {Object} params 查询参数
+ */
+export const getAssociateDepartments = params => FRequest(api.getAssociateDepartments, params, 'get');
 /**
  * 新增部门
  * @param {Object} params 部门对象

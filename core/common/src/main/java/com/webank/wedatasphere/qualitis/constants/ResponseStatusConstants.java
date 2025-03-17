@@ -15,4 +15,14 @@ public class ResponseStatusConstants {
     public static final String SERVER_ERROR = "500";
     public static final String REQUEST_FORBIDDEN = "401";
 
+    /**
+     * outer http
+     */
+    public static final String OUTER_HTTP_EXCEPTION = "5001";
+
+    /**
+     * wtss
+     */
+    public static final String WORKFLOW_EXCEPTION_EXIST_CODE = "5101";
+
 }

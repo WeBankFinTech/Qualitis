@@ -29,20 +29,22 @@ public enum CompareTypeEnum {
      * 5 Smaller and equal to
      * 6 not equal
      */
-    EQUAL(1, "等于"),
-    BIGGER(2, "大于"),
-    SMALLER(3, "小于"),
-    BIGGER_EQUAL(4, "大于等于"),
-    SMALLER_EQUAL(5, "小于等于"),
-    NOT_EQUAL(6, "不等于"),
+    EQUAL(1, "等于", "="),
+    BIGGER(2, "大于", ">"),
+    SMALLER(3, "小于", "<"),
+    BIGGER_EQUAL(4, "大于等于", ">="),
+    SMALLER_EQUAL(5, "小于等于", "<="),
+    NOT_EQUAL(6, "不等于", "!="),
     ;
 
     private Integer code;
     private String message;
+    private String operator;
 
-    CompareTypeEnum(Integer code, String message) {
+    CompareTypeEnum(Integer code, String message, String operator) {
         this.code = code;
         this.message = message;
+        this.operator = operator;
     }
 
     public Integer getCode() {
@@ -53,10 +55,23 @@ public enum CompareTypeEnum {
         return message;
     }
 
+    public String getOperator() {
+        return operator;
+    }
+
     public static String getCompareTypeName(Integer code) {
         for (CompareTypeEnum c : CompareTypeEnum.values()) {
             if (c.getCode().equals(code)) {
                 return c.getMessage();
+            }
+        }
+        return null;
+    }
+
+    public static String getOperator(Integer code) {
+        for (CompareTypeEnum c : CompareTypeEnum.values()) {
+            if (c.getCode().equals(code)) {
+                return c.getOperator();
             }
         }
         return null;

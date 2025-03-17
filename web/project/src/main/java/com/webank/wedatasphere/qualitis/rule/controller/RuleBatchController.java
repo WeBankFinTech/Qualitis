@@ -17,30 +17,29 @@
 package com.webank.wedatasphere.qualitis.rule.controller;
 
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
-import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.exception.WriteExcelException;
 import com.webank.wedatasphere.qualitis.rule.request.DownloadRuleRequest;
 import com.webank.wedatasphere.qualitis.rule.service.RuleBatchService;
-import com.webank.wedatasphere.qualitis.response.GeneralResponse;
-import org.apache.hadoop.hive.ql.parse.ParseException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.slf4j.LoggerFactory;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 
 /**
  * @author howeye
+ * @description
  */
 @Path("api/v1/projector/rule/batch")
+@Deprecated
 public class RuleBatchController {
 
     @Autowired
@@ -73,7 +72,7 @@ public class RuleBatchController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public GeneralResponse uploadRules(@FormDataParam("file") InputStream fileInputStream, @FormDataParam("file") FormDataContentDisposition fileDisposition, @PathParam("projectId") Long projectId)
-        throws UnExpectedRequestException, MetaDataAcquireFailedException {
+        throws UnExpectedRequestException {
         try {
             return ruleBatchService.uploadRules(fileInputStream, fileDisposition, projectId);
         } catch (UnExpectedRequestException e) {

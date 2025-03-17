@@ -60,6 +60,10 @@ export function fetchInputType(params = {}) {
 export function fetchActionContent(params = {}) {
     return FRequest('/api/v1/projector/rule_template/file/type/list', params);
 }
+// 获取UDF函数列表
+export function fetchUDFFunction(params = { page: 0, size: 1000 }) {
+    return FRequest('/api/v1/projector/meta_data/udf/all', params);
+}
 // 获取统计函数枚举列表
 export function fetchCountFunction(params = {}) {
     return FRequest('/api/v1/projector/rule_template/statistical/function/list', params);

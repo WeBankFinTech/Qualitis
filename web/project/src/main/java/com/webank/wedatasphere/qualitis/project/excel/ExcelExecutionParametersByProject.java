@@ -1,12 +1,11 @@
 package com.webank.wedatasphere.qualitis.project.excel;
 
 import com.alibaba.excel.annotation.ExcelProperty;
-import com.alibaba.excel.metadata.BaseRowModel;
 
 /**
  * @author v_gaojiedeng
  */
-public class ExcelExecutionParametersByProject extends BaseRowModel {
+public class ExcelExecutionParametersByProject {
 
     @ExcelProperty(value = "Execution Parameter Json Object", index = 0)
     private String executionParameterJsonObject;

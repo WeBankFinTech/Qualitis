@@ -8,8 +8,8 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.dto.DataVisibilityPermissionDto;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-//import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
-//import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
+import com.webank.wedatasphere.qualitis.function.dao.LinkisUdfDao;
+import com.webank.wedatasphere.qualitis.function.entity.LinkisUdf;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
@@ -57,7 +57,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     private String proxyUser;
 
     private RuleGroupDao ruleGroupDao;
-//    private LinkisUdfDao linkisUdfDao;
+    private LinkisUdfDao linkisUdfDao;
     private RuleMetricDao ruleMetricDao;
     private MetaDataClient metaDataClient;
     private SubDepartmentPermissionService subDepartmentPermissionService;
@@ -92,14 +92,14 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         this.ruleMetricDao = ruleMetricDao;
     }
 
-    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient,
+    public AddCustomRuleRequestBuilder(RuleMetricDao ruleMetricDao, RuleGroupDao ruleGroupDao, MetaDataClient metaDataClient, LinkisUdfDao linkisUdfDao,
                                        SubDepartmentPermissionService subDepartmentPermissionService, LinkisConfig linkisConfig, LinkisDataSourceEnvService linkisDataSourceEnvService) {
         this.subDepartmentPermissionService = subDepartmentPermissionService;
         addCustomRuleRequest = new AddCustomRuleRequest();
         this.metaDataClient = metaDataClient;
         this.ruleMetricDao = ruleMetricDao;
         this.ruleGroupDao = ruleGroupDao;
-//        this.linkisUdfDao = linkisUdfDao;
+        this.linkisUdfDao = linkisUdfDao;
         this.linkisConfig = linkisConfig;
         this.linkisDataSourceEnvService = linkisDataSourceEnvService;
     }
@@ -217,6 +217,16 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     }
 
     @Override
+    public AddRequestBuilder updateSourceDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithDcnNums(String dcnNums) throws Exception {
+        return this;
+    }
+
+    @Override
     public AddRequestBuilder updateDataSourceWithLogicAreas(String logicAreas) throws Exception {
         Long sourceDataSourceId = this.addCustomRuleRequest.getLinkisDataSourceId();
         GetLinkisDataSourceEnvRequest request = new GetLinkisDataSourceEnvRequest();
@@ -230,6 +240,16 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         List<DataSourceEnvRequest> targetDataSourceEnvRequest = linkisDataSourceEnvList.stream().map(DataSourceEnvRequest::new).collect(Collectors.toList());
         this.addCustomRuleRequest.setDataSourceEnvRequests(targetDataSourceEnvRequest);
         addCustomRuleRequest.setDcnRangeType(QualitisConstants.CMDB_KEY_LOGIC_AREA);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateSourceDataSourceWithLogicAreas(String logicAreas) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder updateTargetDataSourceWithLogicAreas(String logicAreas) throws Exception {
         return this;
     }
 
@@ -308,9 +328,9 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         if (ruleMetricInDb != null) {
             setRuleMetricEnCode(ruleMetricInDb.getEnCode());
 
-            setUploadAbnormalValue(uploadAbnormalValue);
-            setUploadRuleMetricValue(uploadRuleMetricValue);
-            setDeleteFailCheckResult(deleteFailCheckResult);
+            this.uploadAbnormalValue = uploadAbnormalValue;
+            this.uploadRuleMetricValue = uploadRuleMetricValue;
+            this.deleteFailCheckResult = deleteFailCheckResult;
             return this;
         }
         String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
@@ -330,9 +350,9 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
 
         setRuleMetricEnCode(en);
 
-        setUploadAbnormalValue(uploadAbnormalValue);
-        setUploadRuleMetricValue(uploadRuleMetricValue);
-        setDeleteFailCheckResult(deleteFailCheckResult);
+        this.uploadAbnormalValue = uploadAbnormalValue;
+        this.uploadRuleMetricValue = uploadRuleMetricValue;
+        this.deleteFailCheckResult = deleteFailCheckResult;
 
         addCustomRuleRequest.setUploadAbnormalValue(uploadAbnormalValue);
         addCustomRuleRequest.setUploadRuleMetricValue(uploadRuleMetricValue);
@@ -1626,20 +1646,20 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
             return this;
         }
 
-//        String[] udfNameStrs = udfNames.split(SpecCharEnum.COMMA.getValue());
-//        for (String udfName : udfNameStrs) {
-//            LinkisUdf linkisUdf =  linkisUdfDao.findByName(udfName);
-//            if (linkisUdf == null) {
-//                throw new UnExpectedRequestException("Udf {&DOES_NOT_EXIST}");
-//            }
-//            DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
-//                .createUser(linkisUdf.getCreateUser())
-//                .devDepartmentId(linkisUdf.getDevDepartmentId())
-//                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
-//                .build();
-//            subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
-//        }
-//        addCustomRuleRequest.setLinkisUdfNames(Arrays.asList(udfNameStrs));
+        String[] udfNameStrs = udfNames.split(SpecCharEnum.COMMA.getValue());
+        for (String udfName : udfNameStrs) {
+            LinkisUdf linkisUdf =  linkisUdfDao.findByName(udfName);
+            if (linkisUdf == null) {
+                throw new UnExpectedRequestException("Udf {&DOES_NOT_EXIST}");
+            }
+            DataVisibilityPermissionDto dataVisibilityPermissionDto = new DataVisibilityPermissionDto.Builder()
+                .createUser(linkisUdf.getCreateUser())
+                .devDepartmentId(linkisUdf.getDevDepartmentId())
+                .opsDepartmentId(linkisUdf.getOpsDepartmentId())
+                .build();
+            subDepartmentPermissionService.checkAccessiblePermission(linkisUdf.getId(), TableDataTypeEnum.LINKIS_UDF, dataVisibilityPermissionDto);
+        }
+        addCustomRuleRequest.setLinkisUdfNames(Arrays.asList(udfNameStrs));
         return this;
     }
 
@@ -1669,28 +1689,168 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
         return this;
     }
 
+    @Override
+    public AddRequestBuilder createBy(String createUser) {
+        addCustomRuleRequest.setActualCreateUser(createUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder submitBy(String submitUser) {
+        addCustomRuleRequest.setActualExecutionUser(submitUser);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withRegRuleCode(String regRuleCode) {
+        addCustomRuleRequest.setRegRuleCode(regRuleCode);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder withStandardValue(String standardValueEnNames) {
+        if (StringUtils.isBlank(standardValueEnNames)) {
+            return this;
+        }
+        String[] standardValueEnNameArray = StringUtils.split(standardValueEnNames, SpecCharEnum.COMMA.getValue());
+        List<StandardValueVariableRequest> standardValueVariableRequests = Arrays.stream(standardValueEnNameArray).map(name -> {
+            StandardValueVariableRequest standardValueVariableRequest = new StandardValueVariableRequest();
+            standardValueVariableRequest.setStandardValueVersionVariablesName(name);
+            return standardValueVariableRequest;
+        }).collect(Collectors.toList());
+        addCustomRuleRequest.setStandardValueVariables(standardValueVariableRequests);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setDatasource(String datasource) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDatasource(String sourceDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDatasource(String targetDatasource) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceDbAndTable(String sourceDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetDbAndTable(String targetDbAndTable) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceFilter(String sourceFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetFilter(String targetFilter) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceSql(String sourceSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetSql(String targetSql) throws Exception {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAlert(String alertInfo) throws Exception {
+        alertSetting(alertInfo);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setResource(String resource) {
+        if (StringUtils.isNotBlank(resource)) {
+            addCustomRuleRequest.setSpecifyStaticStartupParam(true);
+            addCustomRuleRequest.setStaticStartupParam(resource);
+        } else {
+            addCustomRuleRequest.setSpecifyStaticStartupParam(false);
+        }
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setAbortonFailure(boolean abortonFailure) {
+        this.addCustomRuleRequest.setAbortOnFailure(abortonFailure);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCluster(String clusterName) {
+        this.addCustomRuleRequest.setClusterName(clusterName);
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setSourceCluster(String clusterName) {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setTargetCluster(String clusterName) {
+        return this;
+    }
+
     public boolean getDeleteFailCheckResult() {
         return deleteFailCheckResult;
     }
 
-    public void setDeleteFailCheckResult(boolean deleteFailCheckResult) {
+    public AddRequestBuilder setDeleteFailCheckResult(boolean deleteFailCheckResult) {
         this.deleteFailCheckResult = deleteFailCheckResult;
+        return this;
     }
 
     public boolean getUploadRuleMetricValue() {
         return uploadRuleMetricValue;
     }
 
-    public void setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
+    public AddRequestBuilder setUploadRuleMetricValue(boolean uploadRuleMetricValue) {
         this.uploadRuleMetricValue = uploadRuleMetricValue;
+        return this;
     }
 
     public boolean getUploadAbnormalValue() {
         return uploadAbnormalValue;
     }
 
-    public void setUploadAbnormalValue(boolean uploadAbnormalValue) {
+    public AddRequestBuilder setUploadAbnormalValue(boolean uploadAbnormalValue) {
         this.uploadAbnormalValue = uploadAbnormalValue;
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomMappingColumns(String mappingCols) throws UnExpectedRequestException {
+        return this;
+    }
+
+    @Override
+    public AddRequestBuilder setCustomCompareColumns(String compareCols) throws UnExpectedRequestException {
+        return this;
     }
 
     public String getRuleMetricEnCode() {

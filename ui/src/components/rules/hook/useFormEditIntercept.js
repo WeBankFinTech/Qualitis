@@ -1,8 +1,12 @@
 import {
     onBeforeRouteLeave,
+    locale,
 } from '@fesjs/fes';
 import { FModal } from '@fesjs/fes-design';
 import { isEqual } from '@/common/utils';
+
+
+const $t = locale.t;
 // import { unLockRule } from '@/components/rules/api/index';
 // import { nextTick } from 'vue';
 
@@ -16,10 +20,10 @@ export function useFormEditIntercept(store) {
             next();
         } else {
             FModal.confirm({
-                title: '提示',
-                content: '直接退出会导致未保存的数据丢失，是否确认退出？',
-                okText: '确认退出',
-                cancelText: '取消',
+                title: $t('_.提示'),
+                content: $t('_.直接退出会导致未保存的数据丢失，是否确认退出？'),
+                okText: $t('_.确认退出'),
+                cancelText: $t('_.取消'),
                 closable: true,
                 async onOk() {
                     // try {

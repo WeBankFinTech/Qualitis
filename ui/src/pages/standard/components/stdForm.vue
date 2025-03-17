@@ -1,6 +1,6 @@
 <template>
     <FForm ref="stdRef" labelWidth="94px" labelPosition="right" :model="stdForm" :rules="stdRules">
-        <FFormItem :label="`标准值来源`" prop="source_value">
+        <FFormItem :label="$t(`_.标准值来源`)" prop="source_value">
             <FSelect v-model="stdForm.source_value" :options="stdSourceList" filterable clearable
                      valueField="code" labelField="message" :placeholder="$t('common.pleaseEnter')"
                      @change="resetData('sourceValue')"
@@ -10,7 +10,7 @@
             <FInput v-model="stdForm.source" type="textarea" :placeholder="$t('common.pleaseEnter')" />
         </FFormItem>
         <template v-if="stdForm.source_value === 2">
-            <FFormItem :label="`数据标准类别`" prop="std_sub_name">
+            <FFormItem :label="$t(`_.数据标准类别`)" prop="std_sub_name">
                 <FSelect
                     v-model="stdForm.std_sub_name"
                     filterable
@@ -24,7 +24,7 @@
                     @focus="loadStdType('')"
                     @search="loadStdType" />
             </FFormItem>
-            <FFormItem :label="`数据标准大类`" prop="std_big_category_name">
+            <FFormItem :label="$t(`_.数据标准大类`)" prop="std_big_category_name">
                 <FSelect
                     v-model="stdForm.std_big_category_name"
                     filterable
@@ -38,7 +38,7 @@
                     @focus="handleStdBig"
                     @search="loadStdBig($event, stdForm.std_sub_name)" />
             </FFormItem>
-            <FFormItem :label="`数据标准小类`" prop="small_category_name">
+            <FFormItem :label="$t(`_.数据标准小类`)" prop="small_category_name">
                 <FSelect
                     v-model="stdForm.small_category_name"
                     filterable
@@ -52,7 +52,7 @@
                     @focus="handleStdSmall"
                     @search="loadStdSmall($event, stdForm.std_sub_name, stdForm.std_big_category_name)" />
             </FFormItem>
-            <FFormItem :label="`数据标准名称`" prop="std_cn_name">
+            <FFormItem :label="$t(`_.数据标准名称`)" prop="std_cn_name">
                 <FSelect
                     v-model="stdForm.std_cn_name"
                     filterable
@@ -66,13 +66,14 @@
                     @search="handleDataStd"
                     @change="handleStdCode" />
             </FFormItem>
-            <FFormItem :label="`标准代码`" prop="code_name">
-                <FInput v-model="stdForm.code_name" :disabled="true" :placeholder="`标准代码名称`" />
+            <FFormItem :label="$t(`_.标准代码`)" prop="code_name">
+                <FInput v-model="stdForm.code_name" :disabled="true" :placeholder="$t(`_.标准代码名称`)" />
             </FFormItem>
         </template>
     </FForm>
 </template>
 <script setup>
+
 import {
     ref, defineProps, defineEmits, defineExpose, computed, onMounted,
 } from 'vue';
@@ -205,14 +206,14 @@ const handleStdBig = () => {
     if (stdForm.value.std_sub_name) {
         loadStdBig('', stdForm.value.std_sub_name);
     } else {
-        FMessage.warn('请先选择数据标准类别');
+        FMessage.warn($t('_.请先选择数据标准类别'));
     }
 };
 const handleStdSmall = () => {
     if (stdForm.value.std_big_category_name) {
         loadStdSmall('', stdForm.value.std_sub_name, stdForm.value.std_big_category_name);
     } else {
-        FMessage.warn('请先选择数据标准大类');
+        FMessage.warn($t('_.请先选择数据标准大类'));
     }
 };
 const handleDataStd = async (key) => {
@@ -224,7 +225,7 @@ const handleDataStd = async (key) => {
             loadDataStd(key, stdForm.value.std_small_category_urn);
         }
     } else {
-        FMessage.warn('请先选择数据标准小类');
+        FMessage.warn($t('_.请先选择数据标准小类'));
     }
 };
 const handleStdCode = async () => {
@@ -237,7 +238,7 @@ const handleStdCode = async () => {
         stdRef.value.clearValidate();
         emit('updateStdContent', stdForm.value.code);
     } else {
-        FMessage.error('该数据标准暂无对应标准代码，请确认后重新选择。');
+        FMessage.error($t('_.该数据标准暂无对应标准代码，请确认后重新选择。'));
         stdForm.value.code = '';
         stdForm.value.code_name = '';
         emit('updateStdContent', '');
@@ -265,5 +266,6 @@ defineExpose({ valid, completionStd });
 onMounted(() => {
     loadStdSource();
 });
+
 
 </script>

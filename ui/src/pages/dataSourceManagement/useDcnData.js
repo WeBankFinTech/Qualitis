@@ -14,7 +14,7 @@ export const useDcnData = () => {
                     value: logicDcn + dcnName,
                     label: dcnName,
                     children: data[logicDcn][dcnName].map(vip => ({
-                        value: vip.db_name + vip.vip + vip.gwport,
+                        value: vip.dcn_num + vip.dbinstance_name + vip.vip + vip.gwport,
                         label: `${dcnName}-${vip.vip}:${vip.gwport} ${vip.set_type ? `(${vip.set_type})` : ''}`,
                         // disabled: vip.set_type === 'MASTER',
                         ...vip,
@@ -45,7 +45,7 @@ export const useDcnData = () => {
         //     "set_type": "MASTER", # 主备类型
         //     "idc": "I", # IDC
         //     "logic_area": "ADM", # 逻辑区域名称
-        //     "vip": "127.0.0.1",# vip 地址
+        //     "vip": # vip 地址
         //     "phy_set_name": "ADM_IA1_set_1",# 物理SET名称
         //     "dcn_num": "IA1" # DCN编号
         // },
