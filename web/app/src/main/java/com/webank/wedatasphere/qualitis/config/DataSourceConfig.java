@@ -1,8 +1,9 @@
 package com.webank.wedatasphere.qualitis.config;
 
+import bsp.encrypt.EncryptUtil;
 import com.zaxxer.hikari.HikariDataSource;
-//import org.apache.ibatis.session.SqlSessionFactory;
-//import org.mybatis.spring.SqlSessionFactoryBean;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionFactoryBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -55,7 +56,7 @@ public class DataSourceConfig {
     @ConfigurationProperties(prefix = "spring.datasource.hikari")
     public HikariDataSource dataSource(@Qualifier("masterDataSourceProperties") DataSourceProperties properties) throws Exception {
         HikariDataSource dataSource = properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
-//        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
         return dataSource;
     }
 
@@ -64,7 +65,7 @@ public class DataSourceConfig {
     @ConfigurationProperties(prefix = "spring.datasource.hikari")
     public HikariDataSource workerDataSource(@Qualifier("workerDataSourceProperties") DataSourceProperties properties) throws Exception {
         HikariDataSource dataSource = properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
-//        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
+        dataSource.setPassword(EncryptUtil.decrypt(privateKey, password));
         return dataSource;
     }
 
@@ -79,13 +80,13 @@ public class DataSourceConfig {
         return hibernateJpaVendorAdapter;
     }
 
-//    @Bean
-//    public SqlSessionFactory sqlSessionFactory(HikariDataSource dataSource) throws Exception {
-//        SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
-//        sessionFactory.setDataSource(dataSource);
-//        // 设置MapperLocations等其他配置
-//        return sessionFactory.getObject();
-//    }
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(HikariDataSource dataSource) throws Exception {
+        SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
+        sessionFactory.setDataSource(dataSource);
+        // 设置MapperLocations等其他配置
+        return sessionFactory.getObject();
+    }
 
     @Bean
     public Map<String, Object> vendorProperties() {

@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-08-03 16:00
  * @description
  */

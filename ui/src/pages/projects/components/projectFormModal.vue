@@ -34,16 +34,12 @@
                 />
             </FFormItem>
             <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="sub_system_id">
-                <FSelect
+                <FInput
                     v-model="formModel.sub_system_id"
                     clearable
-                    filterable
-                    valueField="value"
-                    labelField="label"
-                    :filter="upperCaseFilter"
-                    :options="subSystemList"
+                    :placeholder="$t('common.pleaseEnter')"
                     @change="setSubSystemName"
-                ></FSelect>
+                />
             </FFormItem>
             <FFormItem prop="description" :label="$t('label.projectIntro')">
                 <FInput
@@ -78,10 +74,10 @@ const props = defineProps({
         validator: value => value === '' || FORM_MODES.includes(value),
         required: true,
     },
-    subSystemList: {
-        type: Array,
-        required: true,
-    },
+    // subSystemList: {
+    //     type: Array,
+    //     required: true,
+    // },
 });
 const emit = defineEmits(['update:show', 'on-success']);
 const { t: $t } = useI18n();
@@ -139,10 +135,9 @@ const handleSubmit = async () => {
     emit('on-success', props.mode);
 };
 
-// 设置子系统名
-const setSubSystemName = (val) => {
-    const enName = props.subSystemList.find(v => v.value === val)?.enName || '';
-    formModel.sub_system_name = enName;
+// 处理子系统输入
+const handleSubSystemInput = (val) => {
+    formModel.sub_system_name = val;
 };
 </script>
 <style lang="less" scoped>

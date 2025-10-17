@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.scheduled.constant;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-04-13 11:01
  * @description
  */

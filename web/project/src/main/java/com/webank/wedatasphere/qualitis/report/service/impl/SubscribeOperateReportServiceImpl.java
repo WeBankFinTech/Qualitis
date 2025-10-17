@@ -58,7 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Service
 public class SubscribeOperateReportServiceImpl implements SubscribeOperateReportService {

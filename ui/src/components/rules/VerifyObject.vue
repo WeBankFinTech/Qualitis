@@ -120,8 +120,8 @@
                     <FFormItem v-show="!isSameTypeListByTemplate" :label="$t('_.数据源环境选择方式')" prop="dcn_range_type">
                         <FRadioGroup v-model="formDataSource.dcn_range_type" class="form-edit-input" :cancelable="false" @change="onDcnTypeChange">
                             <FRadio value="all">{{$t('_.直接选择')}}</FRadio>
-                            <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
-                            <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio>
+                            <!-- <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
+                            <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio> -->
                         </FRadioGroup>
                         <div class="form-preview-label">{{DCNTypeMap[formDataSource.dcn_range_type]}}</div>
                     </FFormItem>
@@ -307,7 +307,7 @@
                     <template #content>
                         <div style="width: 300px;">
                             {{$t('common.filter0')}}<br />
-                            {{`1.ds='$\{run_date},${$t('common.filter1')}ds='yyyyMMdd'; ds='$\{run_date_std}'${$t('common.filter1')}ds='yyyy-MM-dd'.`}}<br />
+                            {{`1.ds='$\{run_date}',${$t('common.filter1')}ds='yyyyMMdd'; ds='$\{run_date_std}'${$t('common.filter1')}ds='yyyy-MM-dd'.`}}<br />
                             {{`2.ds='$\{run_date-N}'${$t('common.filter2')}ds='$\{run_date-2}',${$t('common.filter3')}`}}<br />
                             {{`3.ds='$\{run_today}' or ds='$\{run_today_std}'${$t('common.filter4')}ds='$\{run_today}' or ds='$\{run_today_std}'${$t('common.filter5')}`}}
                         </div>

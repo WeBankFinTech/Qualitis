@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/7/28 11:45
  */
 public enum EngineTypeEnum {

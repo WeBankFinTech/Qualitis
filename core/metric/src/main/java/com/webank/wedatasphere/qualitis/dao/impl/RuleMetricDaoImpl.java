@@ -86,6 +86,11 @@ public class RuleMetricDaoImpl implements RuleMetricDao {
     }
 
     @Override
+    public List<String> findAllSubSystems(List<Department> departmentList, User user) {
+        return ruleMetricRepository.findAllSubSystems(departmentList, user);
+    }
+
+    @Override
     public long countAllRuleMetrics() {
         return ruleMetricRepository.count();
     }

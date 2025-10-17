@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface TemplateUdfRepository extends JpaRepository<TemplateUdf, Long> {
 

@@ -1,5 +1,8 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.LocalConfig;
 import com.webank.wedatasphere.qualitis.checkalert.dao.CheckAlertDao;
@@ -17,9 +20,6 @@ import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectTypeEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -46,6 +46,7 @@ import com.webank.wedatasphere.qualitis.rule.util.TemplateMidTableUtil;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.UserService;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import com.webank.wedatasphere.qualitis.util.UuidGenerator;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
@@ -1452,7 +1453,11 @@ public class RuleNodeServiceImpl implements RuleNodeService {
             checkAlert.setId(null);
             checkAlert.setProject(projectInDb);
             checkAlert.setRuleGroup(ruleGroupInDb);
-            LOGGER.info("Success to import new check alert rule. {}", checkAlertDao.save(checkAlert).toString());
+            checkAlert.setCreateTime(DateUtils.now());
+
+            checkAlert.setModifyUser(null);
+            checkAlert.setModifyTime(null);
+            LOGGER.info("Success to create check alert rule. {}", checkAlertDao.save(checkAlert).toString());
         } else {
             LOGGER.info("Import multiple times. That is to update.");
 
@@ -1460,13 +1465,16 @@ public class RuleNodeServiceImpl implements RuleNodeService {
 
             checkAlert.setProject(projectInDb);
             checkAlert.setRuleGroup(ruleGroupInDb);
-            LOGGER.info("Success to import update check alert rule. {}", checkAlertDao.save(checkAlert).toString());
+            checkAlert.setModifyTime(DateUtils.now());
+
+            LOGGER.info("Success to update check alert rule. {}", checkAlertDao.save(checkAlert).toString());
         }
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class}, propagation = Propagation.REQUIRED)
     public void handleExecutionParamObject(RuleNodeRequests ruleNodeRequests) throws IOException, UnExpectedRequestException {
+        LOGGER.info("Handle execution param requests: {}", ruleNodeRequests.toString());
         // Project
         Project projectInDb = projectDao.findById(ruleNodeRequests.getNewProjectId());
 

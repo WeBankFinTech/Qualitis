@@ -18,6 +18,7 @@
                     <FSpace :size="16">
                         <FButton type="primary" class="button" @click="openDrawer">{{$t('_.新增采集配置')}}</FButton>
                         <FButton type="primary" class="button" @click="openSchedule">{{$t('_.发布采集调度')}}</FButton>
+                        <FButton type="primary" class="button" @click="() => { isHistoryCollect = !isHistoryCollect }">{{$t('_.发布历史采集')}}</FButton>
                         <FButton class="button" @click="batchdete">{{$t('_.批量删除')}}</FButton>
                         <FButton class="button" @click="clickConfigTable">{{$t('_.设置表格')}}</FButton>
                     </FSpace>
@@ -91,6 +92,7 @@
             @submit="handleSubmit"
         />
         <CollectSchedule v-if="isScheduleShow" v-model:isScheduleShow="isScheduleShow" @scheduleSubmit="handleSubmit" />
+        <HistoryCollect v-if="isHistoryCollect" v-model:isHistoryCollect="isHistoryCollect" @histortSubmit="handleSubmit" />
         <EditDrawer
             v-if="isEditShow"
             v-model:isEditShow="isEditShow"
@@ -143,8 +145,10 @@ import SideDrawer from './components/sideDrawer.vue';
 import useBasicOptions from './hooks/useBasicOptions';
 import { collectDelete } from './api';
 import CollectSchedule from './components/collectSchedule.vue';
+import HistoryCollect from './components/historyCollect.vue';
 import EditDrawer from './components/editDrawer.vue';
 import AddDrawer from './addDrawer.vue';
+import History from '../../dqmetricManagement/components/history.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -283,6 +287,8 @@ const isScheduleShow = ref(false);
 const openSchedule = () => {
     isScheduleShow.value = true;
 };
+const isHistoryCollect = ref(false);
+const openHistorySchedule = () => {};
 // 执行参数详情
 const curExeName = ref('');
 const showExecuteParamsDrawer = ref(false);

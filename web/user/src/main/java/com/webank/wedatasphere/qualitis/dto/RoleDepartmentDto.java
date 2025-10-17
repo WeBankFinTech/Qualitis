@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.RoleSystemTypeEnum;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-09-24 10:11
  * @description
  */

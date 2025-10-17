@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.excel;
 import com.alibaba.excel.annotation.ExcelProperty;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/5/6 16:00
  */
 public class ExcelResult {

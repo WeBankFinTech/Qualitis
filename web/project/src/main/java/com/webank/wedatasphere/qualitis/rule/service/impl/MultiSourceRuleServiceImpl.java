@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
@@ -138,7 +139,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
 
     private GeneralResponse<RuleResponse> addMultiSourceRuleReal(AddMultiSourceRuleRequest request, boolean check)
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
-        LOGGER.info("add multi rule request detail: {}", request.toString());
+        LOGGER.info("add multi rule request detail: {}", JSONUtil.toJsonStr(request));
 
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
@@ -175,7 +176,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             // Check existence of rule name
             ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), projectInDb, null);
             //check the same rule name number
-            ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+            ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         }
         // Check existence of cluster
         if (StringUtils.isNotEmpty(request.getClusterName())) {
@@ -339,7 +340,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             throws UnExpectedRequestException, PermissionDeniedRequestException, IOException {
         // Check Arguments
         CommonChecker.checkObject(request, "request");
-        LOGGER.info("modify multi rule request detail: {}", request.toString());
+        LOGGER.info("modify multi rule request detail: {}", JSONUtil.toJsonStr(request));
         if (request.getRuleEnable() == null) {
             request.setRuleEnable(true);
         }
@@ -376,7 +377,7 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
         // Check existence of project name
         ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), ruleInDb.getProject(), ruleInDb.getId());
         //check the same rule name number
-        ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+        ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         // Check if cluster name supported
         ruleDataSourceService.checkDataSourceClusterSupport(request.getClusterName());
 
@@ -689,12 +690,12 @@ public class MultiSourceRuleServiceImpl extends AbstractRuleService implements M
             }
             mapping.getLeft().forEach(joinColumn -> {
                 if (!joinColumn.getColumnName().startsWith("tmp1.")) {
-                    joinColumn.setColumnName("tmp1." + joinColumn.getColumnName());
+                    joinColumn.setColumnName("tmp1." + StringUtils.trimToEmpty(joinColumn.getColumnName()));
                 }
             });
             mapping.getRight().forEach(joinColumn -> {
                 if (!joinColumn.getColumnName().startsWith("tmp2.")) {
-                    joinColumn.setColumnName("tmp2." + joinColumn.getColumnName());
+                    joinColumn.setColumnName("tmp2." + StringUtils.trimToEmpty(joinColumn.getColumnName()));
                 }
             });
         }

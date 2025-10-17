@@ -4,7 +4,7 @@ package com.webank.wedatasphere.qualitis.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/2/24 15:40
  */
 public class ModifyServiceInfoRequest {

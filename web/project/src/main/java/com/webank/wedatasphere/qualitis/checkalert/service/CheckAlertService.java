@@ -12,7 +12,7 @@ import com.webank.wedatasphere.qualitis.response.GetAllResponse;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2023/3/1 11:30
  */
 public interface CheckAlertService {

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/2/24 16:30
  */
 public class RuleMetricConditionResponse {

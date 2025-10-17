@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-12-19 9:41
  * @description
  */

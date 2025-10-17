@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;

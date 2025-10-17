@@ -7,7 +7,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/11/7 17:40
  */
 public class UdfRequest {

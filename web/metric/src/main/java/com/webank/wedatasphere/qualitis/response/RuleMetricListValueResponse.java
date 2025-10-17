@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/5/7 10:30
  */
 public class RuleMetricListValueResponse {

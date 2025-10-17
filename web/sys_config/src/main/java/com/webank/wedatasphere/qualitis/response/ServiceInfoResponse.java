@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.entity.TenantUser;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/2/23 16:10
  */
 public class ServiceInfoResponse {

@@ -7,7 +7,7 @@ import com.webank.wedatasphere.qualitis.rule.request.GetLinkisDataSourceEnvReque
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-12-01 16:44
  * @description
  */

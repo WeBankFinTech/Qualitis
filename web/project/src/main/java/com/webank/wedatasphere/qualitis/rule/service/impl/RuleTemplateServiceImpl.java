@@ -259,7 +259,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
                         flag = true;
                     }
 
-                    RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(customAlarmConfigRequest.getRuleMetricName(), loginUser, flag);
+                    RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAddOrModify(customAlarmConfigRequest.getRuleMetricName(), loginUser, flag);
                     if (ruleMetric == null) {
                         throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
                     } else {
@@ -269,7 +269,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
                 }
             }
 
-            Set<String> ruleMetricEnCodeSet = request.getAlarmVariable().stream().map(CustomAlarmConfigRequest::getRuleMetricEnCode).collect(Collectors.toSet());
+            Set<String> ruleMetricEnCodeSet = request.getAlarmVariable().stream().map(CustomAlarmConfigRequest::getRuleMetricEnCode).filter(Objects::nonNull).collect(Collectors.toSet());
             Set<TemplateStatisticsInputMeta> templateStatisticsInputMetas = new HashSet<>(ruleMetricEnCodeSet.size());
             Set<TemplateOutputMeta> templateOutputMetas = new HashSet<>(ruleMetricEnCodeSet.size());
             for (String enCode : ruleMetricEnCodeSet) {
@@ -323,7 +323,7 @@ public class RuleTemplateServiceImpl implements RuleTemplateService {
                     if (CollectionUtils.isNotEmpty(request.getDataSourceEnvRequests()) || CollectionUtils.isNotEmpty(request.getDataSourceEnvMappingRequests())) {
                         flag = true;
                     }
-                    RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(customAlarmConfigRequest.getRuleMetricName(), loginUser, flag);
+                    RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAddOrModify(customAlarmConfigRequest.getRuleMetricName(), loginUser, flag);
                     if (ruleMetric == null) {
                         throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
                     } else {

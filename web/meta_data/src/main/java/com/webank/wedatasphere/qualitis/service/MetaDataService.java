@@ -380,12 +380,11 @@ public interface MetaDataService {
 
     /**
      * find Sub Department By Dept Code
-     * @param departmentSourceType
      * @param deptCode
      * @return
      * @throws UnExpectedRequestException
      */
-    List<DepartmentSubResponse> getSubDepartmentByDeptCode(DepartmentSourceTypeEnum departmentSourceType, Integer deptCode) throws UnExpectedRequestException;
+    List<DepartmentSubResponse> getSubDepartmentByDeptCode(Integer deptCode) throws UnExpectedRequestException;
 
     /**
      * find department by role type
@@ -397,12 +396,11 @@ public interface MetaDataService {
 
     /**
      *  find sub department by role type
-     * @param departmentSourceTypeEnum
      * @param deptCode
      * @return
      * @throws UnExpectedRequestException
      */
-    List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(DepartmentSourceTypeEnum departmentSourceTypeEnum, Integer deptCode) throws UnExpectedRequestException;
+    List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(Integer deptCode) throws UnExpectedRequestException;
 
     /**
      * Add udf

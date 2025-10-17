@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.entity;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/4/27 15:05
  */
 public class DgsmData {

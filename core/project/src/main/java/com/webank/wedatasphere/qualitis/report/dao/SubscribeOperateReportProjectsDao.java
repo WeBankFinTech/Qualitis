@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.report.entity.SubscribeOperateReportProj
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface SubscribeOperateReportProjectsDao {
 

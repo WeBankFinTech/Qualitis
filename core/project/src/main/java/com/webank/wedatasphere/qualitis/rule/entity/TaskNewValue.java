@@ -8,7 +8,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Entity
 @Table(name = "qualitis_task_new_value")

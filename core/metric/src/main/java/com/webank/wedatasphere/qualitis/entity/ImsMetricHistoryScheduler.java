@@ -5,7 +5,7 @@ import javax.persistence.*;
 /**
  * @author allenzhou
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_imsmetric_history_scheduler")
 public class ImsMetricHistoryScheduler {
   @Id
@@ -18,6 +18,17 @@ public class ImsMetricHistoryScheduler {
   private String tableName;
   @Column(name = "db_name")
   private String dbName;
+  @Column(name = "column_names")
+  private String columnNames;
+  @Column(name = "start_date")
+  private String startDate;
+  @Column(name = "end_date")
+  private String endDate;
+  /**
+   * （0：未采集；1：已采集）
+   */
+  @Column(name = "collect_status")
+  private Integer collectStatus;
 
   public ImsMetricHistoryScheduler() {
     //do nothing
@@ -29,6 +40,38 @@ public class ImsMetricHistoryScheduler {
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  public Integer getCollectStatus() {
+    return collectStatus;
+  }
+
+  public void setCollectStatus(Integer collectStatus) {
+    this.collectStatus = collectStatus;
+  }
+
+  public String getColumnNames() {
+    return columnNames;
+  }
+
+  public void setColumnNames(String columnNames) {
+    this.columnNames = columnNames;
+  }
+
+  public String getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(String startDate) {
+    this.startDate = startDate;
+  }
+
+  public String getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(String endDate) {
+    this.endDate = endDate;
   }
 
   public String getSubmitTime() {

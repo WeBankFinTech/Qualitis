@@ -16,9 +16,10 @@
 
 package com.webank.wedatasphere.qualitis.project.dao.impl;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectUserDao;
 import com.webank.wedatasphere.qualitis.project.dao.repository.ProjectUserRepository;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -34,6 +35,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.PostConstruct;

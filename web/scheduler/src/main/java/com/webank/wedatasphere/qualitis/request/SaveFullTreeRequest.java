@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/5/7 14:55
  */
 public class SaveFullTreeRequest {

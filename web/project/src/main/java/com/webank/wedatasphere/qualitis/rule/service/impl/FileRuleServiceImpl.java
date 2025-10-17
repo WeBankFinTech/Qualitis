@@ -127,7 +127,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         // Check unique of rule name
         ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), projectInDb, null);
         //check the same rule name number
-        ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+        ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         // Check cluster support
         ruleDataSourceService.checkDataSourceClusterSupport(request.getDatasource().iterator().next().getClusterName());
         RuleGroup ruleGroup;
@@ -402,7 +402,7 @@ public class FileRuleServiceImpl extends AbstractRuleService implements FileRule
         // Check existence of project rule name
         ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), projectInDb, ruleInDb.getId());
         //check the same rule name number
-        ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+        ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         // Check cluster name support
         ruleDataSourceService.checkDataSourceClusterSupport(request.getDatasource().iterator().next().getClusterName());
         // Delete alarm config by file rule

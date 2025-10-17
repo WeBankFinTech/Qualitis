@@ -41,7 +41,7 @@ public class ImsAlarmClient implements AlarmClient {
     @Override
     public void sendAlarm(String receiver, String alertTitle, String alertInfo, String alertLevel, String subSystemId) {
         if (overseasVersionEnabled){
-            LOGGER.info("skip send ims alarm.");
+            LOGGER.info("[overseasVersion] skip send ims alarm.");
             return;
         }
         String url = imsConfig.getUrl() + imsConfig.getSendAlarmPath();

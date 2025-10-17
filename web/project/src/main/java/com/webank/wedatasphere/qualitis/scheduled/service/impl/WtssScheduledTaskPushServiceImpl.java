@@ -57,7 +57,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-07-14 18:17
  * @description
  */
@@ -143,7 +143,7 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
         HttpEntity httpEntity = new HttpEntity(requestMap, httpHeaders);
         LOGGER.info("createProject, uri:{}, req:{}", uri, wtssScheduledProjectRequest.toString());
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(uri, httpEntity, String.class);
-        LOGGER.info("createProject, resp:{}", responseEntity);
+        LOGGER.info("createProject, resp:{}", responseEntity.getBody());
         if (HttpStatus.OK.value() != responseEntity.getStatusCodeValue()) {
             throw new ScheduledPushFailedException("Error!network occurred an unexpected error");
         }
@@ -151,11 +151,11 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
         if (StringUtils.isEmpty(body)) {
             throw new ScheduledPushFailedException("Error!response body is null");
         }
+        LOGGER.info("Response from createProject: {}", body);
         try {
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
-            if (!"success".equals(responseMap.get("status"))) {
-                String message = responseMap.containsKey("message") ? responseMap.get("message").toString() : "Failed to create project";
-                throw new ScheduledPushFailedException(message);
+            if (responseMap.containsKey("error")) {
+                throw new ScheduledPushFailedException(responseMap.get("error").toString());
             }
         } catch (Exception e) {
             throw new ScheduledPushFailedException(e.getMessage());
@@ -237,10 +237,10 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
             if (StringUtils.isEmpty(body)) {
                 throw new ScheduledPushFailedException("Error!response body is empty");
             }
+            LOGGER.info("Response from createIntervalWorkflow: {}", body);
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
-            if (!"success".equals(responseMap.get("status"))) {
-                String message = responseMap.containsKey("message") ? responseMap.get("message").toString() : "Failed to add schedule";
-                throw new ScheduledPushFailedException(message);
+            if (responseMap.containsKey("error")) {
+                throw new ScheduledPushFailedException(responseMap.get("error").toString());
             }
             Object scheduleId = responseMap.get("scheduleId");
             Integer scheduleIdInt = Double.valueOf(scheduleId.toString()).intValue();
@@ -278,10 +278,10 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
             if (StringUtils.isEmpty(body)) {
                 throw new ScheduledPushFailedException("Error!response body is empty");
             }
+            LOGGER.info("Response from createSignalWorkflow: {}", body);
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
-            if (!"success".equals(responseMap.get("status"))) {
-                String message = responseMap.containsKey("error") ? responseMap.get("error").toString() : "Failed to add schedule";
-                throw new ScheduledPushFailedException(message);
+            if (responseMap.containsKey("error")) {
+                throw new ScheduledPushFailedException(responseMap.get("error").toString());
             }
             Object scheduleId = responseMap.get("eventScheduleId");
             Integer scheduleIdInt = Double.valueOf(scheduleId.toString()).intValue();
@@ -315,6 +315,7 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
             if (StringUtils.isEmpty(body)) {
                 throw new ScheduledPushFailedException("Error!response body is empty");
             }
+            LOGGER.info("Response from modifyScheduleWorkflow: {}", body);
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
             if (responseMap.containsKey("error")) {
                 throw new ScheduledPushFailedException(responseMap.get("error").toString());
@@ -340,7 +341,7 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
         try {
             LOGGER.info("deleteSignalJob, scheduleProject: {}, scheduleWorkflow: {}, scheduleId:{}", wtssScheduledJobRequest.getProjectName(), wtssScheduledJobRequest.getScheduleName(), scheduleId);
             ResponseEntity<String> responseEntity = restTemplate.postForEntity(uri, httpEntity, String.class);
-            LOGGER.info("deleteSignalJob, resp:{}", responseEntity);
+            LOGGER.info("deleteSignalJob, resp:{}", responseEntity.getBody());
             if (HttpStatus.OK.value() != responseEntity.getStatusCodeValue()) {
                 throw new ScheduledPushFailedException("Error!network occurred an unexpected error");
             }
@@ -348,9 +349,10 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
             if (StringUtils.isEmpty(body)) {
                 throw new ScheduledPushFailedException("Error!response body is empty");
             }
+            LOGGER.info("Response from deleteSignalJob: {}", body);
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
             if ("error".equals(responseMap.get("status"))) {
-                String message = responseMap.containsKey("message") ? responseMap.get("message").toString() : "Failed to delete schedule";
+                String message = responseMap.containsKey("error") ? responseMap.get("error").toString() : "Failed to delete schedule";
                 throw new ScheduledPushFailedException(message);
             }
         } catch (Exception e) {
@@ -570,9 +572,10 @@ public class WtssScheduledTaskPushServiceImpl implements ScheduledTaskPushServic
             if (StringUtils.isEmpty(body)) {
                 throw new ScheduledPushFailedException("Error!response body is empty");
             }
+            LOGGER.info("Response from deleteIntervalJob: {}", body);
             Map<String, Object> responseMap = new Gson().fromJson(body, Map.class);
             if ("error".equals(responseMap.get("status"))) {
-                String message = responseMap.containsKey("message") ? responseMap.get("message").toString() : "Failed to delete schedule";
+                String message = responseMap.containsKey("error") ? responseMap.get("error").toString() : "Failed to delete schedule";
                 throw new ScheduledPushFailedException(message);
             }
         } catch (Exception e) {

@@ -58,7 +58,7 @@
                 </f-table-column>
                 <f-table-column #default="{ row = {}}" :label="$t('common.operate')" :width="128">
                     <FSpace :size="CONDITIONBUTTONSPACE">
-                        <a class="a-link" @click="jumpBlood(row)"> {{$t('common.bloodRelationshipAnalysis')}} </a>
+                        <!-- <a class="a-link" @click="jumpBlood(row)"> {{$t('common.bloodRelationshipAnalysis')}} </a> -->
                         <a class="a-link" @click="handleRelatedRule(row)">{{`${$t('common.columnRule')}(${row?.rule_count || 0})`}}</a>
                     </FSpace>
                 </f-table-column>

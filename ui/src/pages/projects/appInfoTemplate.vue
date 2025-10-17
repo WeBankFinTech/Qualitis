@@ -38,16 +38,13 @@
                         <span v-else>{{template.business_domain}}</span>
                     </FFormItem>
                     <FFormItem :label="$t('myProject.subSystem')" prop="sub_system_id">
-                        <FSelect
+                        <FInput
                             v-if="template.isEditing"
                             v-model="template.sub_system_id"
-                            :options="subSystemList"
-                            :placeholder="$t('common.pleaseSelect')"
-                            filterable
-                            :filter="upperCaseFilter"
+                            :placeholder="$t('common.pleaseEnter')"
                             clearable
                         />
-                        <span v-else>{{subSystemList.find((item) => ( item.subSystemId === template.sub_system_id))?.label}}</span>
+                        <span v-else>{{template.sub_system_id}}</span>
                     </FFormItem>
                     <FFormItem :label="$t('myProject.importanceLevel')" prop="bus_res_lvl">
                         <FSelect
@@ -168,12 +165,9 @@
                         />
                     </FFormItem>
                     <FFormItem :label="$t('myProject.subSystem')" prop="sub_system_id">
-                        <FSelect
+                        <FInput
                             v-model="templateModel.sub_system_id"
-                            :options="subSystemList"
-                            :placeholder="$t('common.pleaseSelect')"
-                            filterable
-                            :filter="upperCaseFilter"
+                            :placeholder="$t('common.pleaseEnter')"
                             clearable
                         />
                     </FFormItem>
@@ -285,10 +279,10 @@ const route = useRoute();
 const businessDomainList = ref([]);
 
 const props = defineProps({
-    subSystemList: {
-        type: Array,
-        default: [],
-    },
+    // subSystemList: {
+    //     type: Array,
+    //     default: [],
+    // },
 });
 
 const {
@@ -335,7 +329,7 @@ const rules = computed(() => ({
     sub_system_id: [
         {
             required: true,
-            message: $t('common.pleaseSelect'),
+            message: $t('common.pleaseEnter'),
             trigger: ['blur', 'change'],
         },
     ],

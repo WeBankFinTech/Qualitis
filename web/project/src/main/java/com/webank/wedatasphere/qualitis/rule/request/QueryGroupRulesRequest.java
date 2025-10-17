@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/6/6 20:20
  */
 public class QueryGroupRulesRequest {

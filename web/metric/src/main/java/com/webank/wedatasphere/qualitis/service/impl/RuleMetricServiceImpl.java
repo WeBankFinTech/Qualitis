@@ -2,6 +2,7 @@ package com.webank.wedatasphere.qualitis.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.support.ExcelTypeEnum;
+import com.google.common.collect.Sets;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricBussCodeEnum;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricLevelEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
@@ -56,7 +57,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/2/22 16:20
  */
 @Service
@@ -132,7 +133,6 @@ public class RuleMetricServiceImpl implements RuleMetricService {
         Integer roleType = roleService.getRoleType(userRoles);
         subDepartmentPermissionService.checkEditablePermission(roleType, loginUser, null, request.getDevDepartmentId(), request.getOpsDepartmentId(), false);
 
-        checkDuplicateName(request.getName());
         checkDuplicateCode(request.getEnCode());
 
         RuleMetric newRuleMetric = buildRuleMetric(request, userName);
@@ -159,13 +159,13 @@ public class RuleMetricServiceImpl implements RuleMetricService {
         return newRuleMetric;
     }
 
-    private void checkDuplicateName(String name) throws UnExpectedRequestException {
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(name);
-
-        if (ruleMetricInDb != null) {
-            throw new UnExpectedRequestException("Rule metric name {&ALREADY_EXIST}");
-        }
-    }
+//    private void checkDuplicateName(String name) throws UnExpectedRequestException {
+//        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(name);
+//
+//        if (ruleMetricInDb != null) {
+//            throw new UnExpectedRequestException("Rule metric name {&ALREADY_EXIST}");
+//        }
+//    }
 
     private void checkDuplicateCode(String enCode) throws UnExpectedRequestException {
         RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
@@ -225,12 +225,11 @@ public class RuleMetricServiceImpl implements RuleMetricService {
             throw new UnExpectedRequestException("Rule Metric [ID=" + request.getId() + "] {&DOES_NOT_EXIST}");
         }
         LOGGER.info("Start to modify rule metric, modify request: [{}], user: [{}]", request.toString(), userName);
-        if (!ruleMetricInDb.getName().equals(request.getName())) {
-            checkDuplicateName(request.getName());
-        }
+
         if (!ruleMetricInDb.getEnCode().equals(request.getEnCode())) {
             checkDuplicateCode(request.getEnCode());
         }
+
         User loginUser = userDao.findByUsername(userName);
         List<UserRole> userRoles = userRoleDao.findByUser(loginUser);
 
@@ -474,22 +473,20 @@ public class RuleMetricServiceImpl implements RuleMetricService {
         User loginUser = userDao.findByUsername(userName);
 
         RoleDepartmentDto roleDepartmentDto = roleService.getRoleAndDepartments(loginUser);
-        List<RuleMetric> ruleMetrics = new ArrayList<>();
+        List<String> subSystems;
         if (roleDepartmentDto.getRoleSystemType().getCode().equals(RoleSystemTypeEnum.ADMIN.getCode())) {
             LOGGER.info("SYS_ADMIN will get all rule metrics with conditions.");
-            ruleMetrics.addAll(ruleMetricDao.findAllRuleMetrics(0, Integer.MAX_VALUE));
+            subSystems = ruleMetricDao.findAllSubSystems(Collections.emptyList(), null);
         } else {
             LOGGER.info("PROJECTOR  will get rule metrics of department and own.");
             List<Department> departments = roleDepartmentDto.getDepartmentList();
-            ruleMetrics.addAll(ruleMetricDao.findRuleMetrics(null,
-                    CollectionUtils.isEmpty(departments) ? null : departments, loginUser, 0, Integer.MAX_VALUE));
+            subSystems = ruleMetricDao.findAllSubSystems(CollectionUtils.isEmpty(departments) ? Collections.emptyList() : departments, loginUser);
         }
 
-        Set<String> subSystemNameSet = ruleMetrics.stream().map(RuleMetric::getSubSystemName).filter(s -> StringUtils.isNotBlank(s)).collect(Collectors.toSet());
         List<RuleMetricTypeConfig> ruleMetricTypeConfigs = ruleMetricTypeConfigDao.findAllRuleMetricTypeConfig().stream().sorted(Comparator.comparing(RuleMetricTypeConfig::getId)).collect(Collectors.toList());
 
         RuleMetricConditionResponse response = new RuleMetricConditionResponse();
-        response.setSubSystemNameCondition(subSystemNameSet);
+        response.setSubSystemNameCondition(Sets.newHashSet(subSystems));
         response.setRuleMetricType(ruleMetricTypeConfigs);
 
         return response;
@@ -667,39 +664,44 @@ public class RuleMetricServiceImpl implements RuleMetricService {
     public GeneralResponse download(DownloadRuleMetricRequest request, HttpServletResponse response) throws UnExpectedRequestException, IOException
             , WriteExcelException, PermissionDeniedRequestException {
         // Check rule metric IDs permission.
-        RuleMetricQueryRequest queryRequest = new RuleMetricQueryRequest(0, Integer.MAX_VALUE);
-        List<RuleMetricResponse> ownRuleMetric = queryRuleMetric(queryRequest, true).getData().getData().stream().collect(Collectors.toList());
-
-        if (ownRuleMetric.size() <= 0 || ownRuleMetric.size() >= MAX_RULE_METRIC_COUNT) {
-            throw new UnExpectedRequestException("Unable to retriever metric results, please check your user roles.");
-        }
         List<Long> downloadIds = request.getRuleMetricIds();
-        List<Long> ownIds = ownRuleMetric.stream().map(RuleMetricResponse::getId).collect(Collectors.toList());
-
-        if (ownIds.containsAll(downloadIds)) {
-            List<RuleMetricResponse> downloadRuleMetric = ownRuleMetric.stream().filter(ruleMetricResponse ->
-                    downloadIds.contains(ruleMetricResponse.getId())).collect(Collectors.toList());
-
-            List<ExcelRuleMetric> excelRuleMetrics = new ArrayList<>(downloadRuleMetric.size());
-
-            for (RuleMetricResponse ruleMetricResponse : downloadRuleMetric) {
-                ExcelRuleMetric excelRuleMetric = new ExcelRuleMetric();
-                excelRuleMetric.setRuleMetricJsonObject(objectMapper.writeValueAsString(ruleMetricResponse));
-
-                excelRuleMetrics.add(excelRuleMetric);
-            }
-            String fileName = "batch_metrics_export_" + FILE_DATE_FORMATTER.format(new Date()) + QualitisConstants.SUPPORT_CSV_SUFFIX_NAME;
-            fileName = URLEncoder.encode(fileName, "UTF-8");
-            response.setContentType("application/octet-stream");
-
-            response.addHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName);
-            response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
-            OutputStream outputStream = response.getOutputStream();
-            writeExcelToOutput(excelRuleMetrics, outputStream);
-            outputStream.flush();
-        } else {
-            throw new PermissionDeniedRequestException("HAS_NO_PERMISSION_TO_ACCESS", 403);
+        if (downloadIds.size() > MAX_RULE_METRIC_COUNT) {
+            throw new UnExpectedRequestException("A maximum of 10,000 records can be exported.");
         }
+        List<RuleMetric> ruleMetrics = ruleMetricDao.findByIds(downloadIds);
+
+        if (ruleMetrics.size() <= 0) {
+            throw new UnExpectedRequestException("Unable to query metric results, please check your user roles.");
+        }
+
+        List<RuleMetricResponse> ruleMetricResponses = ruleMetrics.stream().map(ruleMetric -> {
+            RuleMetricResponse ruleMetricResponse = new RuleMetricResponse(ruleMetric);
+            setVisibilityDepartment(ruleMetricResponse, ruleMetric);
+            return ruleMetricResponse;
+        }).collect(Collectors.toList());
+
+        fillMetricExtInfo(ruleMetricResponses);
+
+        List<RuleMetricResponse> downloadRuleMetric = ruleMetricResponses.stream().filter(ruleMetricResponse ->
+                downloadIds.contains(ruleMetricResponse.getId())).collect(Collectors.toList());
+
+        List<ExcelRuleMetric> excelRuleMetrics = new ArrayList<>(downloadRuleMetric.size());
+
+        for (RuleMetricResponse ruleMetricResponse : downloadRuleMetric) {
+            ExcelRuleMetric excelRuleMetric = new ExcelRuleMetric();
+            excelRuleMetric.setRuleMetricJsonObject(objectMapper.writeValueAsString(ruleMetricResponse));
+
+            excelRuleMetrics.add(excelRuleMetric);
+        }
+        String fileName = "batch_metrics_export_" + FILE_DATE_FORMATTER.format(new Date()) + QualitisConstants.SUPPORT_CSV_SUFFIX_NAME;
+        fileName = URLEncoder.encode(fileName, "UTF-8");
+        response.setContentType("application/octet-stream");
+
+        response.addHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName);
+        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
+        OutputStream outputStream = response.getOutputStream();
+        writeExcelToOutput(excelRuleMetrics, outputStream);
+        outputStream.flush();
         LOGGER.info("Succeed to download all rule metrics in type of excel");
         return new GeneralResponse<>(ResponseStatusConstants.OK, "SUCCESS", null);
     }

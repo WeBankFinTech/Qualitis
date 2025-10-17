@@ -8,9 +8,9 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_esb_mail_record")
 public class EsbMailRecord {
 

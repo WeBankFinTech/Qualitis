@@ -4,7 +4,6 @@ export default {
     define: {
         CURRENT_ENV: 'uat',
         BASEURL: '/qualitis',
-        BASEMICROURL: '',
     },
     dynamicImport: true
 };

@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.client;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface MailClient {
 

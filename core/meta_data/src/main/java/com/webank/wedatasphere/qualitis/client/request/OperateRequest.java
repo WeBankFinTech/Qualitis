@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/3/2 14:47
  */
 public class OperateRequest {

@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.util;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2023/4/18 14:55
  */
 public class GitUtils {

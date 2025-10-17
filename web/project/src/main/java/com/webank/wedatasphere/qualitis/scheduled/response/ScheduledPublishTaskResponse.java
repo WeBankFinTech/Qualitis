@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-07-18 9:32
  * @description
  */
@@ -71,32 +71,34 @@ public class ScheduledPublishTaskResponse {
         this.taskName = scheduledTask.getTaskName();
         if (Objects.nonNull(scheduledWorkflowTaskRelation)) {
             RuleGroup ruleGroup = scheduledWorkflowTaskRelation.getRuleGroup();
-            this.ruleGroupId = ruleGroup.getId();
-            this.ruleGroupName = ruleGroup.getRuleGroupName();
-            this.projectType = scheduledTask.getProject().getProjectType();
-            this.projectId = scheduledTask.getProject().getId();
-            Set<RuleDataSource> ruleDataSources = ruleGroup.getRuleDataSources();
-            if (CollectionUtils.isNotEmpty(ruleDataSources)) {
-                this.tableGroup = true;
-                for (RuleDataSource ruleDataSource : ruleDataSources) {
-                    if (StringUtils.isBlank(ruleDataSource.getTableName())) {
-                        continue;
-                    }
-                    this.dbName = ruleDataSource.getDbName();
-                    this.tableName = ruleDataSource.getTableName();
-                }
-            } else {
-                this.tableGroup = false;
-                RuleDao ruleDao = SpringContextHolder.getBean(RuleDao.class);
-                List<Rule> rules = ruleDao.findByRuleGroup(ruleGroup);
-                for (Rule rule: rules) {
-                    Set<RuleDataSource> ruleDataSourceSet = rule.getRuleDataSources();
-                    for (RuleDataSource ruleDataSource : ruleDataSourceSet) {
+            if (ruleGroup != null) {
+                this.ruleGroupId = ruleGroup.getId();
+                this.ruleGroupName = ruleGroup.getRuleGroupName();
+                this.projectType = scheduledTask.getProject().getProjectType();
+                this.projectId = scheduledTask.getProject().getId();
+                Set<RuleDataSource> ruleDataSources = ruleGroup.getRuleDataSources();
+                if (CollectionUtils.isNotEmpty(ruleDataSources)) {
+                    this.tableGroup = true;
+                    for (RuleDataSource ruleDataSource : ruleDataSources) {
                         if (StringUtils.isBlank(ruleDataSource.getTableName())) {
                             continue;
                         }
                         this.dbName = ruleDataSource.getDbName();
                         this.tableName = ruleDataSource.getTableName();
+                    }
+                } else {
+                    this.tableGroup = false;
+                    RuleDao ruleDao = SpringContextHolder.getBean(RuleDao.class);
+                    List<Rule> rules = ruleDao.findByRuleGroup(ruleGroup);
+                    for (Rule rule : rules) {
+                        Set<RuleDataSource> ruleDataSourceSet = rule.getRuleDataSources();
+                        for (RuleDataSource ruleDataSource : ruleDataSourceSet) {
+                            if (StringUtils.isBlank(ruleDataSource.getTableName())) {
+                                continue;
+                            }
+                            this.dbName = ruleDataSource.getDbName();
+                            this.tableName = ruleDataSource.getTableName();
+                        }
                     }
                 }
             }

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.project.excel;
 import com.alibaba.excel.annotation.ExcelProperty;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class ExcelStandardValue {
 

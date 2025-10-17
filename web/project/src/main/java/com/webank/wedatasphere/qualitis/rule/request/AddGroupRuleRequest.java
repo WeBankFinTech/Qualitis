@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/6/2 10:30
  */
 public class AddGroupRuleRequest {

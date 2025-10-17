@@ -36,7 +36,7 @@ import java.util.Base64;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Component
 public class ScheduledGetSessionUtil {
@@ -116,8 +116,8 @@ public class ScheduledGetSessionUtil {
         try {
             response = getScheduledResult(operationUser, realUser, cluster);
         } catch (Exception e) {
-            logger.error(">>>>>>>>>> Failed To get sessionId from Scheduled System  <<<<<<<<<<", e.getMessage());
-            throw new UnExpectedRequestException("Error! Failed To get sessionId from Scheduled System " + e.getMessage());
+            logger.error(">>>>>>>>>> Failed To get sessionId from Scheduled System: {}  <<<<<<<<<<", e.getMessage());
+            throw new UnExpectedRequestException("Error! Failed To get sessionId from Scheduled System: " + e.getMessage());
         }
         Gson gson = new Gson();
         Map<String, Object> resultMap = gson.fromJson(response, Map.class);

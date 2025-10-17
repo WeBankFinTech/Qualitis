@@ -34,23 +34,23 @@ public interface ImsmetricDataDao {
      * @param endDate
      * @return
      */
-//    List<ImsmetricData> queryImsmetricData(String metricIds, String startDate, String endDate);
-//
-//    /**
-//     * query Ims metric Data
-//     *
-//     * @param metricIds
-//     * @param startDate
-//     * @param endDate
-//     * @return
-//     */
-//    List<ImsmetricData> queryImsmetricDatas(List<Long> metricIds, int startDate, int endDate);
-//
-//
-//    /**
-//     * get all proxy users
-//     *
-//     * @return
-//     */
-//    List<String> findAllDataUsers();
+    List<ImsmetricData> queryImsmetricData(String metricIds, String startDate, String endDate);
+
+    /**
+     * query Ims metric Data
+     *
+     * @param metricIds
+     * @param startDate
+     * @param endDate
+     * @return
+     */
+    List<ImsmetricData> queryImsmetricDatas(List<Long> metricIds, int startDate, int endDate);
+
+
+    /**
+     * get all proxy users
+     *
+     * @return
+     */
+    List<String> findAllDataUsers();
 }

@@ -29,7 +29,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Path("api/v1/projector/scheduledTask")
 public class ScheduledTaskController {
@@ -299,8 +299,10 @@ public class ScheduledTaskController {
         try {
             scheduledTaskService.release(request);
         } catch (UnExpectedRequestException e) {
+            LOGGER.error("Failed to release task: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
+            LOGGER.error("Failed to release task: {}", e.getMessage());
             throw new UnExpectedRequestException("Error!Failed to release task.");
         }
         return new GeneralResponse<>(ResponseStatusConstants.OK, "success", null);

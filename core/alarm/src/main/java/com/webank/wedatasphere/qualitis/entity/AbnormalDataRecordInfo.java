@@ -8,7 +8,7 @@ import javax.persistence.IdClass;
 import javax.persistence.Table;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/10/5 11:10
  */
 @Entity

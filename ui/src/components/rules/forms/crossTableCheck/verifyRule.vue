@@ -646,6 +646,7 @@ const valid = async () => {
             validList.push(rightSamplingSQLRef.value.valid());
         }
         const result = await Promise.all(validList);
+        verifyRuleData.value.rule_template_en_name = checkTemplateList.value.find(v => v.template_id === verifyRuleData.value.multi_source_rule_template_id)?.en_name || '';
         store.commit('rule/updateCurrentRuleDetail', cloneDeep(verifyRuleData.value));
         return !result.includes(false);
     } catch (err) {

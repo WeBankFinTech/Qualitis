@@ -7,9 +7,9 @@ import java.util.Date;
 /**
  * @author v_wenxuanzhang
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_imsmetric_data_new")
-//@IdClass(ImsmetricPrimaryKey.class)
+@IdClass(ImsmetricPrimaryKey.class)
 public class ImsmetricData {
 
     @Id

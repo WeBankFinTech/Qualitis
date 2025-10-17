@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-06-28 15:13
  * @description
  */

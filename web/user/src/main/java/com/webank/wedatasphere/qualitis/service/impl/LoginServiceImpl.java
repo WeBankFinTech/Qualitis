@@ -19,7 +19,6 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.google.common.collect.ImmutableMap;
 import com.webank.wedatasphere.qualitis.client.config.DataMapConfig;
 import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
-import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
 import com.webank.wedatasphere.qualitis.dao.UserDao;
@@ -32,9 +31,12 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.request.LocalLoginRequest;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.service.LoginService;
+import java.util.stream.Collectors;
+
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.FastDateFormat;
+import org.jasig.cas.client.util.ResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,17 +48,13 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.security.SecureRandom;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author howeye
@@ -75,8 +73,6 @@ public class LoginServiceImpl implements LoginService {
 
     @Value("${dss.origin-urls}")
     private String dssOriginUrls;
-
-    private static final String URL_REGEX = "^(https?|ftp|file)://.*$";
 
     @Autowired
     private DataMapConfig dataMapConfig;
@@ -128,7 +124,6 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public GeneralResponse logout(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws IOException {
-        String username = HttpUtils.getUserName(httpServletRequest);
         if (overseasVersionEnabled){
             LOGGER.info(" logout clean cookie.");
             HttpSession session = httpServletRequest.getSession();
@@ -151,21 +146,11 @@ public class LoginServiceImpl implements LoginService {
             }
             return new GeneralResponse<>("200", "{&LOGOUT_SUCCESSFULLY}", null);
         }
-        LOGGER.info("Succeed to logout, user: {}, current_user: {}", username, username);
-        String logoutUrl = frontEndConfig.getDomainName().replace("{IP}", QualitisConstants.getPublicIp()) + "/#/home";
-        boolean valid = isValid(logoutUrl);
-        if (!valid) {
-            LOGGER.error("Verify if the url is legal", logoutUrl);
-        }
-        httpServletResponse.sendRedirect(logoutUrl);
-        return new GeneralResponse<>("200", "{&LOGOUT_SUCCESSFULLY}", null);
-    }
-
-    public static boolean isValid(String url) throws UnsupportedEncodingException {
-        String encodeUrl = URLEncoder.encode(url, "UTF-8");
-        Pattern pattern = Pattern.compile(URL_REGEX);
-        Matcher matcher = pattern.matcher(encodeUrl);
-        return matcher.matches();
+        String logoutUrl = ResourceLoader.getInstance().getPropFromFS("sso.client.properties").getProperty("sso.client.logoutUrl");
+        Map<String, Object> data = new HashMap<>();
+        data.put("retCode", 3001);
+        data.put("redirectUrl", logoutUrl);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "success", data);
     }
 
     @Override

@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Date;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/10/7 12:49
  */
 public class AbnormalDataRecordPrimaryKey implements Serializable {

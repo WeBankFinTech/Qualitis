@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-11-14 9:59
  * @description
  */

@@ -175,6 +175,9 @@ public class MetaDataServiceImpl implements MetaDataService {
     @Value("${department.data_source_from: hr}")
     private String departmentSourceType;
 
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
+
     private HttpServletRequest httpServletRequest;
 
     public MetaDataServiceImpl(@Context HttpServletRequest httpServletRequest) {
@@ -467,7 +470,20 @@ public class MetaDataServiceImpl implements MetaDataService {
             userName = proxyUser;
         }
 
-        return metaDataClient.getAllDataSourceTypes(clusterName, userName);
+        GeneralResponse<Map<String, Object>> generalResponse = metaDataClient.getAllDataSourceTypes(clusterName, userName);
+
+        if (overseasVersionEnabled) {
+            List<String> sourceTypes = Arrays.asList("kafka", "presto", "hive");
+            Map<String, Object> map = generalResponse.getData();
+            if (map.containsKey("typeList")) {
+                List<Map<String, Object>> typeList = (List<Map<String, Object>>) map.get("typeList");
+                List<Map<String, Object>> newTypeList = typeList.stream()
+                        .filter(typeMap -> !sourceTypes.contains(typeMap.get("name"))).collect(Collectors.toList());
+                map.put("typeList", newTypeList);
+            }
+        }
+
+        return generalResponse;
     }
 
     @Override
@@ -1205,15 +1221,8 @@ public class MetaDataServiceImpl implements MetaDataService {
     }
 
     @Override
-    public List<DepartmentSubResponse> getSubDepartmentByDeptCode(DepartmentSourceTypeEnum departmentSourceTypeEnum, Integer deptCode) throws UnExpectedRequestException {
-        String tmpSourceType = departmentSourceType;
-        List<DepartmentSubResponse> allDepartmentSubList;
-        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(tmpSourceType)) {
-            allDepartmentSubList = departmentService.getSubDepartmentByDeptCode(deptCode);
-        } else {
-            allDepartmentSubList = operateCiService.getDevAndOpsInfo(deptCode);
-        }
-        return allDepartmentSubList;
+    public List<DepartmentSubResponse> getSubDepartmentByDeptCode(Integer deptCode) throws UnExpectedRequestException {
+        return departmentService.getSubDepartmentBySourceType(deptCode);
     }
 
     @Override
@@ -1252,8 +1261,8 @@ public class MetaDataServiceImpl implements MetaDataService {
     }
 
     @Override
-    public List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(DepartmentSourceTypeEnum departmentSourceTypeEnum, Integer deptCode) throws UnExpectedRequestException {
-        List<DepartmentSubResponse> allDepartmentSubList = getSubDepartmentByDeptCode(departmentSourceTypeEnum, deptCode);
+    public List<DepartmentSubResponse> getDevAndOpsInfoListByRoleType(Integer deptCode) throws UnExpectedRequestException {
+        List<DepartmentSubResponse> allDepartmentSubList = departmentService.getSubDepartmentBySourceType(deptCode);
 
         Map<String, DepartmentSubResponse> departmentSubIdMap = allDepartmentSubList.stream().collect(Collectors.toMap(DepartmentSubResponse::getId, Function.identity(), (oldVal, newVal) -> oldVal));
         String userName = HttpUtils.getUserName(httpServletRequest);

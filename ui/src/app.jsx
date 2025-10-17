@@ -76,11 +76,11 @@ export default defineRuntimeConfig({
                 username = res?.username || 'noauth';
                 const roles = res?.roles || ['noauth'];
                 // eslint-disable-next-line camelcase
-                const overseas_external_version = res.overseas_external_version || false;
+                // const overseas_external_version = res.overseas_external_version || false;
                 // eslint-disable-next-line camelcase
                 const login_random = res.login_random;
                 sessionStorage.setItem('login_random', login_random);
-                sessionStorage.setItem('overseas_external_version', overseas_external_version);
+                // sessionStorage.setItem('overseas_external_version', overseas_external_version);
                 if (Array.isArray(roles) && roles.length > 0) {
                     access.setRole(roles[0].toLowerCase());
                 }
@@ -90,7 +90,7 @@ export default defineRuntimeConfig({
                 const isSimulatorMode = !!sessionStorage.getItem('simulatedUser');
                 if (!isSimulatorMode) {
                     // 兜底处理
-                    if (roles.length && (roles.includes('admin') || roles.includes('ADMIN'))) {
+                    if (roles?.length && (roles.includes('admin') || roles.includes('ADMIN'))) {
                         role = 'admin';
                     }
                     // 缓存原本的身份

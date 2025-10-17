@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2023/4/25 14:45
  */
 public class DcnResponse {

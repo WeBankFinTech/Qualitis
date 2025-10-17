@@ -42,7 +42,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Service
 public class ScheduledConfigServiceImpl implements ScheduledConfigService {
@@ -70,9 +70,8 @@ public class ScheduledConfigServiceImpl implements ScheduledConfigService {
         logger.info(">>>>>>>>>> Success Get SessionId From Scheduled System:  <<<<<<<<<<" +sessionId);
         String response;
         try {
-//            String url = String.format("%s/manager?ajax=ajaxFetchMaintainedDeptUsers&userName=%s&session.id=%s", existCluster.get("path").toString(), realUser, sessionId);
             String url = UriBuilder.fromUri(serverAddress).path("/manager")
-                    .queryParam("ajax", "ajaxFetchMaintainedDeptUsers")
+                    .queryParam("ajax", "ajaxFetchNoRealNameUsers")
                     .queryParam("session.id", sessionId)
                     .queryParam("userName", realUser)
                     .toString();

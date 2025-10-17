@@ -2,7 +2,7 @@
     <div>
         <BTablePage :isLoading="showLoading" actionType="loading" :loadingText="{ loading: '' }">
             <template v-slot:search>
-                <SearchFilterBar workSpace="commonProjectFilter" :subSystemList="subSystemList" />
+                <SearchFilterBar workSpace="commonProjectFilter" />
             </template>
             <template v-slot:operate>
                 <ProjectActionBar
@@ -136,7 +136,6 @@
         <ProjectFormModal
             v-model:show="showProjectFormModal"
             :mode="projectFormMode"
-            :subSystemList="subSystemList"
             @on-success="handleProjectFormModalSuccess"
         />
         <!-- 普通项目表头配置弹窗 -->
@@ -189,7 +188,6 @@ import useExport from '../hooks/useExport';
 import useExecutation from '../hooks/useExecutation';
 import { fetchProjects } from '../api';
 import SearchFilterBar from './searchFilterBar';
-import useDataSource from '../hooks/useDataSource';
 
 const props = defineProps({
     originProjectHeaders: {
@@ -202,7 +200,7 @@ const router = useRouter();
 // 项目类型（1：普通项目 2：工作流项目）
 const projectType = 1;
 provide('projectType', projectType);
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
+
 const showLoading = ref(false);
 // 项目topbar操作配置
 const projectActions = [
@@ -241,24 +239,15 @@ const projectActions = [
         icon: MoreCircleOutlined,
         label: $t('myProject.more'),
         trigger: 'click',
-        options: overseasVersion === 'true' ? [
-            {
-                label: $t('common.setTableHeaderConfig'),
-                value: '2',
-                handler: () => {
-                    // eslint-disable-next-line no-use-before-define
-                    toggleTColConfig();
-                },
-            },
-        ] : [
-            {
-                label: $t('common.operReportingSubsManagement'),
-                value: '1',
-                handler: () => {
-                    // eslint-disable-next-line no-use-before-define
-                    openSubsManagement();
-                },
-            },
+        options: [
+            // {
+            //     label: $t('common.operReportingSubsManagement'),
+            //     value: '1',
+            //     handler: () => {
+            //         // eslint-disable-next-line no-use-before-define
+            //         openSubsManagement();
+            //     },
+            // },
             {
                 label: $t('common.setTableHeaderConfig'),
                 value: '2',
@@ -383,10 +372,7 @@ const navigateToProjectDetail = (row) => {
     });
 };
 
-// 获取数据源相关数据
-const {
-    subSystemList,
-} = useDataSource(['subSystemList']);
+// 获取数据源相关数据 - 已移除子系统列表
 </script>
 <style lang="less" scoped>
 .loading-box {

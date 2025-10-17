@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.project.excel.ExcelProject;
 import com.webank.wedatasphere.qualitis.project.excel.ExcelProjectInfoListeners;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-10-29 14:15
  * @description
  */

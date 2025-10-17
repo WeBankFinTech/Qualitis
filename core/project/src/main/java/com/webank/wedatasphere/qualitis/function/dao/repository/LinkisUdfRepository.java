@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/11/7 17:30
  */
 public interface LinkisUdfRepository extends JpaRepository<LinkisUdf, Long> {

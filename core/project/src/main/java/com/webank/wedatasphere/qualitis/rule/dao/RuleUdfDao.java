@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  */
 public interface RuleUdfDao {
 

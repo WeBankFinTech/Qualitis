@@ -46,6 +46,9 @@
                 <FFormItem :label="$t('_.数据表')" prop="table">
                     <FSelect v-model="advancedConditions.table" clearable filterable :options="tableList"></FSelect>
                 </FFormItem>
+                <FFormItem :label="$t('_.字段')" prop="table">
+                    <FSelect v-model="advancedConditions.column" clearable filterable :options="columnList"></FSelect>
+                </FFormItem>
                 <FFormItem :label="$t('_.采集分区')" prop="partition">
                     <FSelect v-model="advancedConditions.partition" clearable filterable :options="partitionLists"></FSelect>
                 </FFormItem>
@@ -176,10 +179,13 @@ const common = async () => {
 const reset = () => {
     emit('reset');
 };
+const columnList = ref([]);
 const partitionLists = ref([]);
 const openAdvancedSearch = async () => {
     const res = await request('api/v1/projector/imsmetric/collect/partition/list', {});
     partitionLists.value = res?.map(item => ({ value: item, label: item })) ?? [];
+    const resdata = await request('/api/v1/projector/imsmetric/data_source/conditions', {}, { method: 'get', cache: true });
+    columnList.value = resdata.columns.map(item => ({ label: item, value: item }));
     showModal.value = true;
     commonConditions.value = {};
 };

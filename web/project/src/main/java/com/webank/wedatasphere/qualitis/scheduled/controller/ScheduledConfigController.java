@@ -19,7 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Path("api/v1/projector/scheduled/config")
 public class ScheduledConfigController {

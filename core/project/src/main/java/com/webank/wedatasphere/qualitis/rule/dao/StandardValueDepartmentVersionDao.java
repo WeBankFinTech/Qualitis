@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.StandardValueDepartmentVersi
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface StandardValueDepartmentVersionDao {
 

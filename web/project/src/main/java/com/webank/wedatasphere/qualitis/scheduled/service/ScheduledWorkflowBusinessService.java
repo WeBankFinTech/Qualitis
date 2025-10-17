@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-07-17 9:55
  * @description
  */
@@ -19,26 +19,26 @@ public interface ScheduledWorkflowBusinessService {
      * add
      * @param addRequest
      */
-//    void add(ScheduledWorkflowBusinessRequest addRequest) throws UnExpectedRequestException;
-//
-//    /**
-//     * modify
-//     * @param addRequest
-//     * @throws UnExpectedRequestException
-//     */
-//    void modify(ScheduledWorkflowBusinessRequest addRequest) throws UnExpectedRequestException;
-//
-//    /**
-//     * delete by id
-//     * @param id
-//     */
-//    void delete(Long id);
-//
-//    /**
-//     * find by projectId
-//     * @param projectId
-//     * @return
-//     * @throws UnExpectedRequestException
-//     */
-//    List<ScheduledWorkflowBusiness> list(Long projectId) throws UnExpectedRequestException;
+    void add(ScheduledWorkflowBusinessRequest addRequest) throws UnExpectedRequestException;
+
+    /**
+     * modify
+     * @param addRequest
+     * @throws UnExpectedRequestException
+     */
+    void modify(ScheduledWorkflowBusinessRequest addRequest) throws UnExpectedRequestException;
+
+    /**
+     * delete by id
+     * @param id
+     */
+    void delete(Long id);
+
+    /**
+     * find by projectId
+     * @param projectId
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<ScheduledWorkflowBusiness> list(Long projectId) throws UnExpectedRequestException;
 }

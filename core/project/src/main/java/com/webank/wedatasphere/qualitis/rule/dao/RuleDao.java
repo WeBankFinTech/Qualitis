@@ -276,7 +276,7 @@ public interface RuleDao {
      * @param projectId
      * @return
      */
-    int countByProjectAndRuleName(String ruleName, Long projectId);
+    int countByProjectAndRuleName(String ruleName, Long projectId, String workflowName);
 
     /**
      * select mate rule by ruleName  workFlowName workFlowVersion
@@ -296,7 +296,7 @@ public interface RuleDao {
      * @param projectId
      * @return
      */
-    Rule findMinWorkFlowVersionRule(String ruleName, Long projectId);
+    Rule findMinWorkFlowVersionRule(String ruleName, Long projectId, String workflowName);
 
     /**
      * find All By Id

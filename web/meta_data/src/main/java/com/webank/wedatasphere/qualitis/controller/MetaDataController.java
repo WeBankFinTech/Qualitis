@@ -259,7 +259,7 @@ public class MetaDataController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public GeneralResponse<List<DepartmentSubResponse>> getSubDepartmentInfoBySourceType(@PathParam("deptCode") Integer deptCode) throws UnExpectedRequestException {
-        return new GeneralResponse<>(ResponseStatusConstants.OK, "success", metaDataService.getSubDepartmentByDeptCode(null, deptCode));
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "success", metaDataService.getSubDepartmentByDeptCode(deptCode));
     }
 
     @POST
@@ -286,7 +286,7 @@ public class MetaDataController {
             if (deptCode == null) {
                 throw new UnExpectedRequestException("Dept code {&CAN_NOT_BE_NULL_OR_EMPTY}");
             }
-            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_DEPARTMENT_INFO_SUCCESS}", metaDataService.getDevAndOpsInfoListByRoleType(null, deptCode));
+            return new GeneralResponse<>(ResponseStatusConstants.OK, "{&GET_DEPARTMENT_INFO_SUCCESS}", metaDataService.getDevAndOpsInfoListByRoleType(deptCode));
         } catch (UnExpectedRequestException e) {
             throw new UnExpectedRequestException(e.getMessage());
         } catch (Exception e) {

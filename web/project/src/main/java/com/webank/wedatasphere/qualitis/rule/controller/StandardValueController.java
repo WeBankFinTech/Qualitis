@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Path("api/v1/projector/standardValue")
 public class StandardValueController {

@@ -16,15 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.timer;
 
+import cn.webank.bdp.wedatasphere.biz.components.servicis.rpc.ServicisRpc;
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.webank.wedatasphere.qualitis.bean.JobChecker;
 import com.webank.wedatasphere.qualitis.checkalert.dao.repository.CheckAlertWhiteListRepository;
 import com.webank.wedatasphere.qualitis.client.AlarmClient;
-import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.config.ImsConfig;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
@@ -87,8 +88,8 @@ import java.util.stream.Collectors;
 public class TaskChecker implements IChecker {
     @Autowired
     private MonitorManager monitorManager;
-//    @Autowired(required = false)
-//    private ServicisRpc servicisRpc;
+    @Autowired
+    private ServicisRpc servicisRpc;
     @Autowired
     private TaskDao taskDao;
     @Autowired
@@ -157,9 +158,6 @@ public class TaskChecker implements IChecker {
 
     @Value("${metric.collector.path.collect_submit:/qualitis/outer/api/v1/imsmetric/collect}")
     private String collectorCollectSubmitPath;
-
-    @Value("${overseas_external_version.enable:false}")
-    private Boolean overseasVersionEnabled;
 
     @Autowired
     private SpecialProjectRuleConfig specialProjectRuleConfig;
@@ -1066,48 +1064,48 @@ public class TaskChecker implements IChecker {
         }
 
         // DGSM
-//        dgsmThreadPool.execute(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    Thread.currentThread().setName("DgsmReport-Thread-" + UuidGenerator.generate());
-//                    LOGGER.info("Start to collect dgsm data. Application ID: {}", application.getId());
-//                    List<DgsmData> dgsmDataList = ReportUtil.collectDgsmData(application, tasks, taskResultDao, checkAlertWhiteListRepository);
-//                    LOGGER.info("Success to collect dgsm data. Application ID: {}, dgsm data'size: {}", application.getId(), CollectionUtils.isNotEmpty(dgsmDataList) ? dgsmDataList.size() : 0);
-//
-//                    LOGGER.info("Start to report dgsm data. Application ID: {}", application.getId());
-//
-//                    if (CollectionUtils.isNotEmpty(dgsmDataList)) {
-//                        int size = dgsmDataList.size();
-//                        int batchNo = size / dgsmDataBatchSize + 1;
-//                        if (size % dgsmDataBatchSize == 0) {
-//                            batchNo = size / dgsmDataBatchSize;
-//                        }
-//
-//                        for (int index = 0; index < size; index += dgsmDataBatchSize) {
-//                            if (index + dgsmDataBatchSize < size) {
-//                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, index + dgsmDataBatchSize);
-//                                callRpcSync(subDgsmDataList, batchNo);
-//                            } else {
-//                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, size);
-//                                callRpcSync(subDgsmDataList, batchNo);
-//                            }
-//                            batchNo --;
-//                        }
-//                    }
-//
-//                    LOGGER.info("Success to report dgsm data. Application ID: {}", application.getId());
-//                } catch (Exception e) {
-//                    LOGGER.error("Dgsm report async failed exception.", e);
-//                }
-//            }
-//        });
+        dgsmThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.currentThread().setName("DgsmReport-Thread-" + UuidGenerator.generate());
+                    LOGGER.info("Start to collect dgsm data. Application ID: {}", application.getId());
+                    List<DgsmData> dgsmDataList = ReportUtil.collectDgsmData(application, tasks, taskResultDao, checkAlertWhiteListRepository);
+                    LOGGER.info("Success to collect dgsm data. Application ID: {}, dgsm data'size: {}", application.getId(), CollectionUtils.isNotEmpty(dgsmDataList) ? dgsmDataList.size() : 0);
+
+                    LOGGER.info("Start to report dgsm data. Application ID: {}", application.getId());
+
+                    if (CollectionUtils.isNotEmpty(dgsmDataList)) {
+                        int size = dgsmDataList.size();
+                        int batchNo = size / dgsmDataBatchSize + 1;
+                        if (size % dgsmDataBatchSize == 0) {
+                            batchNo = size / dgsmDataBatchSize;
+                        }
+
+                        for (int index = 0; index < size; index += dgsmDataBatchSize) {
+                            if (index + dgsmDataBatchSize < size) {
+                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, index + dgsmDataBatchSize);
+                                callRpcSync(subDgsmDataList, batchNo);
+                            } else {
+                                List<DgsmData> subDgsmDataList = dgsmDataList.subList(index, size);
+                                callRpcSync(subDgsmDataList, batchNo);
+                            }
+                            batchNo --;
+                        }
+                    }
+
+                    LOGGER.info("Success to report dgsm data. Application ID: {}", application.getId());
+                } catch (Exception e) {
+                    LOGGER.error("Dgsm report async failed exception.", e);
+                }
+            }
+        });
     }
 
-//    private void callRpcSync(List<DgsmData> subDgsmDataList, int batchNo) {
-//        servicisRpc.invokeAsync(subDgsmDataList);
-//        LOGGER.info("Batch NO: {}", batchNo);
-//    }
+    private void callRpcSync(List<DgsmData> subDgsmDataList, int batchNo) {
+        servicisRpc.invokeAsync(subDgsmDataList);
+        LOGGER.info("Batch NO: {}", batchNo);
+    }
 
     /**
      * 查询规则配置是否匹配去噪管理参数
@@ -1141,9 +1139,16 @@ public class TaskChecker implements IChecker {
 
                 Set<Long> dateCollectResponses = Sets.newHashSet();
                 if (StringUtils.isNotBlank(noiseEliminationManagement.getBusinessDate())) {
-                    String[] businessDate = noiseEliminationManagement.getBusinessDate().split(",");
+                    String[] businessDate = noiseEliminationManagement.getBusinessDate().split(SpecCharEnum.COMMA.getValue());
                     for (String date : businessDate) {
-                        dateCollectResponses.add(Long.parseLong(date));
+                        Date runRealDate = null;
+//                        保持跟上文执行变量中 run_date 格式的一致性
+                        try {
+                            runRealDate = DateUtils.handleTimeFormatting(date);
+                        } catch (UnExpectedRequestException e) {
+                            LOGGER.warn("Incorrect business date format: {}", date);
+                        }
+                        dateCollectResponses.add(runRealDate.getTime());
                     }
                 }
                 // 业务时间范围 1661616000000

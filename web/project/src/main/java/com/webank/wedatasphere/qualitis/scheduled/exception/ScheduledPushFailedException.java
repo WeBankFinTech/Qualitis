@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.scheduled.exception;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-07-18 15:05
  * @description
  */

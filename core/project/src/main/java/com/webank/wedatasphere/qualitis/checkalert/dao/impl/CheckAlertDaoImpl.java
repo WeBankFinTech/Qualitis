@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2023/3/1 15:43
  */
 @Repository
@@ -65,13 +65,13 @@ public class CheckAlertDaoImpl implements CheckAlertDao {
     }
 
     @Override
-    public CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic) {
-        return checkAlertRepository.findLowestVersionByProjectAndTopic(projectId, topic);
+    public CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic, String workflowName) {
+        return checkAlertRepository.findLowestVersionByProjectAndTopic(projectId, topic, workflowName);
     }
 
     @Override
-    public int countByProjectAndTopic(Long projectId, String topic) {
-        return checkAlertRepository.countByProjectAndTopic(projectId, topic);
+    public int countByProjectAndTopic(Long projectId, String topic, String workflowName) {
+        return checkAlertRepository.countByProjectAndTopic(projectId, topic, workflowName);
     }
 
     @Override

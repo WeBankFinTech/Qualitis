@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-04-16 15:11
  * @description
  */
@@ -18,5 +18,5 @@ public interface OuterMetricCollectService {
      * @param addMetricCollectRequest
      * @throws UnExpectedRequestException
      */
-//    void addMetricCollectEnumConfigs(AddMetricCollectRequest addMetricCollectRequest) throws Exception;
+    void addMetricCollectEnumConfigs(AddMetricCollectRequest addMetricCollectRequest) throws Exception;
 }

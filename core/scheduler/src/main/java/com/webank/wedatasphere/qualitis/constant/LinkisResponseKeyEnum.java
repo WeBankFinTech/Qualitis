@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.constant;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/6/4 18:07
  */
 public enum LinkisResponseKeyEnum {

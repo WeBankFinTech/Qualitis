@@ -11,8 +11,8 @@ export default function useMetricInit() {
     const metricCategories = ref([]);
     // 指标英文名列表
     const enCodes = ref([]);
-    // 子系统列表
-    const subSystemNames = ref([]);
+    // 子系统列表 - 已移除，改为直接输入
+    // const subSystemNames = ref([]);
     // 指标频率列表
     const enIndexMap = getLocaleMessage('en-US').indexManagement;
     const cnIndexMap = getLocaleMessage('zh-CN').indexManagement;
@@ -52,15 +52,15 @@ export default function useMetricInit() {
         return str;
     };
 
-    // 子系统formatter
-    const subSystemFormatter = ({ row, cellValue }) => {
-        const arr = [
-            getSystemName(cellValue, row),
-            row.product_name || '',
-            row.buss_custom || '',
-        ];
-        return arr.filter(v => !!v).join('/') || '--';
-    };
+    // 子系统formatter - 已移除，改为直接显示
+    // const subSystemFormatter = ({ row, cellValue }) => {
+    //     const arr = [
+    //         getSystemName(cellValue, row),
+    //         row.product_name || '',
+    //         row.buss_custom || '',
+    //     ];
+    //     return arr.filter(v => !!v).join('/') || '--';
+    // };
 
     // _booleans先进行国际化转化
     const booleans = _booleans.map(v => ({ label: $t(v.label), value: v.value }));
@@ -88,10 +88,11 @@ export default function useMetricInit() {
     onMounted(async () => {
         const res = await fetchOptions();
         await handleSearchEnCodes('');
-        subSystemNames.value = res.sub_system_name_condition.map(item => ({
-            label: item,
-            value: item,
-        })) || [];
+        // 子系统列表初始化已移除
+        // subSystemNames.value = res.sub_system_name_condition.map(item => ({
+        //     label: item,
+        //     value: item,
+        // })) || [];
         if (Array.isArray(res.rule_metric_type)) {
             const lang = localStorage.getItem('currentLanguage') || 'zh-CN';
             const labelFieldNameMap = {
@@ -113,13 +114,13 @@ export default function useMetricInit() {
         metricCategories,
         // 指标英文名列表
         enCodes,
-        // 子系统列表
-        subSystemNames,
+        // 子系统列表 - 已移除
+        // subSystemNames,
         // 指标频率列表
         metricFrequencies,
 
-        // 子系统formatter
-        subSystemFormatter,
+        // 子系统formatter - 已移除
+        // subSystemFormatter,
         // 指标分类formatter
         typeFormatter,
         // 指标是否可用formatter

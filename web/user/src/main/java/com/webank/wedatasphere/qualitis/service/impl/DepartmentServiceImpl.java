@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
 import com.webank.wedatasphere.qualitis.dao.RoleDao;
@@ -8,6 +9,7 @@ import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.Role;
 import com.webank.wedatasphere.qualitis.entity.User;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
+import com.webank.wedatasphere.qualitis.metadata.client.OperateCiService;
 import com.webank.wedatasphere.qualitis.metadata.response.DepartmentSubResponse;
 import com.webank.wedatasphere.qualitis.request.DepartmentAddRequest;
 import com.webank.wedatasphere.qualitis.request.DepartmentModifyRequest;
@@ -24,6 +26,7 @@ import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +53,11 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Autowired
     private ProxyUserService proxyUserService;
+    @Autowired
+    private OperateCiService operateCiService;
+
+    @Value("${department.data_source_from: hr}")
+    private String departmentSourceType;
 
     @Autowired
     private RoleDao roleDao;
@@ -197,6 +205,18 @@ public class DepartmentServiceImpl implements DepartmentService {
             departmentSubResponse.setId(subDepartment.getDepartmentCode());
             return departmentSubResponse;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DepartmentSubResponse> getSubDepartmentBySourceType(Integer deptCode) throws UnExpectedRequestException {
+        String tmpSourceType = departmentSourceType;
+        List<DepartmentSubResponse> allDepartmentSubList;
+        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(tmpSourceType)) {
+            allDepartmentSubList = getSubDepartmentByDeptCode(deptCode);
+        } else {
+            allDepartmentSubList = operateCiService.getDevAndOpsInfo(deptCode);
+        }
+        return allDepartmentSubList;
     }
 
     @Override

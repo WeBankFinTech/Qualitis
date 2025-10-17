@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Callable;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class RuleGroupSumbitCallable implements Callable<ApplicationTaskSimpleResponse> {
 

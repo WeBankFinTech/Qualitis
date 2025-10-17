@@ -109,25 +109,15 @@ const initImportForm = () => {
     const initForm = {
         upload_type: 1,
         zip_path: '',
-        git_branch: props.project?.git_branch || 'master',
-        git_type: props.project?.git_type || 1,
-        git_repo: props.project?.git_repo || '',
-        git_root_dir: props.project?.git_root_dir || `dqm/${props.project?.project_name || ''}`,
         dif_array: [],
     };
     if (props.type === 'table') {
         initForm.update = false;
         initForm.project_id = '';
-        initForm.git_root_dir = '';
     }
     if (props.uploadRule) {
         initForm.upload_type = 1;
-        importTypeList.value = [
-            {
-                value: 1,
-                label: $t('_.从本地导入'),
-            },
-        ];
+        importTypeList.value.splice(0, 1);
         delete initForm.git_branch;
         delete initForm.git_type;
         delete initForm.git_repo;

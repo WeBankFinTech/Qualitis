@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.scheduled.request;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledProject;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-08-17 15:29
  * @description
  */

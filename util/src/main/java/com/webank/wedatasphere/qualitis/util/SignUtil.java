@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-06-03 14:27
  * @description
  */

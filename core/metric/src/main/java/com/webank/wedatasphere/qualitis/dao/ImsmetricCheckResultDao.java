@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package com.webank.wedatasphere.qualitis.client.config;
+package com.webank.wedatasphere.qualitis.dao;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+
+import com.webank.wedatasphere.qualitis.entity.ImsmetricCheckResult;
+
+import java.util.List;
 
 /**
- * @author allenzhou
+ * @author v_wenxuanzhang
  */
-@Configuration
-public class MetricPropertiesConfig {
+public interface ImsmetricCheckResultDao {
 
-    @Value("${department.white_list}")
-    private String whiteList;
+    /**
+     * query Ims metric Check Result
+     * @param metricIdList
+     * @param startDate
+     * @param endDate
+     * @return
+     */
+    List< ImsmetricCheckResult > queryImsmetricCheckResult(List< Long > metricIdList, String startDate, String endDate);
 
-    public String getWhiteList() {
-        return whiteList;
-    }
-
-    public void setWhiteList(String whiteList) {
-        this.whiteList = whiteList;
-    }
 }

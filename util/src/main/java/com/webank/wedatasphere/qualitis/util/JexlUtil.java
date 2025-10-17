@@ -8,7 +8,7 @@ import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.jexl3.internal.Engine;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/8/17 10:45
  */
 public class JexlUtil {

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletComponentScan;
@@ -31,6 +32,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableRetry
 @EnableAsync
+@MapperScan(basePackages = "cn.webank.bdp.wedatasphere.biz.pojo.um.mapper")
 public class QualitisServer {
 
     public static void main(String[] args) {

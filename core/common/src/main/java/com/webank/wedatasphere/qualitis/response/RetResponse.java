@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.response;
 import java.io.Serializable;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-03-22 14:12
  * @description
  */

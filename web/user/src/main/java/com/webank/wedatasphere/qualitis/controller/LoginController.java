@@ -29,7 +29,6 @@ import com.webank.wedatasphere.qualitis.util.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -78,8 +77,7 @@ public class LoginController {
         String username = null;
         try {
             username = HttpUtils.getUserName(httpServletRequest);
-            GeneralResponse<UserAndRoleResponse> userAndRoleResponse = roleService.getRoleByUser();
-            return userAndRoleResponse;
+            return roleService.getRoleByUser();
         } catch (Exception e) {
             LOGGER.error("Failed to get role of user: {}, caused by: {}, current_user: {}", username, e.getMessage(), username, e);
             return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&FAILED_TO_GET_ROLE_OF_USER} :" + username + ", caused by :" + e.getMessage(), null);

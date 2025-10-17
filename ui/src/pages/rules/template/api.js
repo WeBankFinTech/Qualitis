@@ -2,7 +2,7 @@ import { request as FRequest } from '@fesjs/fes';
 
 // 获取模板列表 根据template_type确认类型 1 单表 2 单/多指标 3跨表 4文件
 export function fetchTemplates(params = {}) {
-    return FRequest('/api/v1/projector/rule_template/default/all', params);
+    return FRequest(`/api/v1/projector/rule_template/default/all?t=${Date.now()}`, params);
 }
 
 // 添加规则模板 根据template_type确认类型 1 单表 2 单/多指标 3跨表 4文件

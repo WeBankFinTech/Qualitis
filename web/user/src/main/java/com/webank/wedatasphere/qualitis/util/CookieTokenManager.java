@@ -8,7 +8,7 @@ import org.springframework.web.util.CookieGenerator;
 import java.io.UnsupportedEncodingException;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/6/22 16:20
  */
 public class CookieTokenManager {

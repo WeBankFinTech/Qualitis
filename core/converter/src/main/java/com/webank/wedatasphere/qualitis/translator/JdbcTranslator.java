@@ -16,7 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.translator;
 
-//import bsp.encrypt.EncryptUtil;
+import bsp.encrypt.EncryptUtil;
 import com.webank.wedatasphere.qualitis.config.TaskDataSourceConfig;
 import com.webank.wedatasphere.qualitis.constant.OptTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
@@ -147,14 +147,13 @@ public class JdbcTranslator extends AbstractTranslator {
     @PostConstruct
     public void init() {
         usernamePropSentence = PROP_VARIABLE_NAME + ".setProperty(\"user\", \"" + mysqlUsername + "\");";
-//        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
+        String passwordPrivateKey = taskDataSourceConfig.getPrivateKey();
         String password = taskDataSourceConfig.getPassword();
-//        try {
-//            mysqlPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
-//        } catch (Exception e) {
-//            LOGGER.error("Decrypt mysqlsec password exception.", e);
-//        }
-        mysqlPassword = password;
+        try {
+            mysqlPassword = EncryptUtil.decrypt(passwordPrivateKey, password);
+        } catch (Exception e) {
+            LOGGER.error("Decrypt mysqlsec password exception.", e);
+        }
         passwordPropSentence = PROP_VARIABLE_NAME + ".setProperty(\"password\", \"" + mysqlPassword + "\");";
         statisticsAndSaveResultTemplate = SqlTemplateConverter.VARIABLE_NAME_PLACEHOLDER + ".selectExpr(\"" +
                 STATISTICS_VALUE_PLACEHOLDER + " as " + STATISTICS_VALUE_FIELD_NAME + "\", \"'" +

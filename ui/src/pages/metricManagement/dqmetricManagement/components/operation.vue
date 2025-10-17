@@ -11,8 +11,8 @@
         </div>
         <div class="condition-item">
             <span class="condition-label">{{$t('indexManagement.subsystem')}}</span>
-            <FSelect v-model="formModel.sub_system_name" filterable clearable :filter="upperCaseFilter" :options="subSystemNames">
-            </FSelect>
+            <FInput v-model="formModel.sub_system_name" clearable :placeholder="$t('common.pleaseEnter')">
+            </FInput>
         </div>
         <div class="condition-item">
             <span class="condition-label">{{$t('indexManagement.en_code')}}</span>
@@ -58,8 +58,8 @@
                     <FSelect v-model="advanceQueryModel.available" filterable clearable :options="booleans" :width="160"></FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('indexManagement.subsystem')" prop="subsystem">
-                    <FSelect v-model="advanceQueryModel.sub_system_name" filterable clearable :width="160" :filter="upperCaseFilter" :options="subSystemNames">
-                    </FSelect>
+                    <FInput v-model="advanceQueryModel.sub_system_name" clearable :width="160" :placeholder="$t('common.pleaseEnter')">
+                    </FInput>
                 </FFormItem>
                 <FFormItem :label="$t('indexManagement.en_code')" prop="en_code">
                     <FSelect v-model="advanceQueryModel.en_code" filterable clearable :width="160" :options="enCodes" remote @search="handleSearchEnCodes">
@@ -156,10 +156,10 @@ const props = defineProps({
         type: Array,
         required: true,
     },
-    subSystemNames: {
-        type: Array,
-        required: true,
-    },
+    // subSystemNames: {
+    //     type: Array,
+    //     required: true,
+    // },
 });
 
 // 筛选条件数量的watch

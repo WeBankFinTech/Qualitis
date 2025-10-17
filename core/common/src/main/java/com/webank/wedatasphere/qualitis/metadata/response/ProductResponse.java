@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.metadata.response;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/3/2 10:54
  */
 public class ProductResponse {

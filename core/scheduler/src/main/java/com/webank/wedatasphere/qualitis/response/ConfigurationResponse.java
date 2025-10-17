@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.response;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class ConfigurationResponse {
 

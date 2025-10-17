@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.constant;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/9/8 11:18
  */
 public enum TemplateFunctionNameEnum {

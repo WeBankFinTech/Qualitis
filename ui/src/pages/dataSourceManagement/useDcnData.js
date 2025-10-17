@@ -34,21 +34,6 @@ export const useDcnData = () => {
     const genDcnTreeData = async ({ subSystemId = 2819 }) => {
         const result = await getDcnData({ subSystemId });
         const data = result.res;
-        console.log(data);
-        // {
-        //     "logic_dcn": "IA0",# 逻辑DCN编码
-        //     "db_name": "cuecsbcore",# 数据库名
-        //     "clu_name": "ADM_IA1", # 集群名
-        //     "set_name": "ADM_IA1_set_1",# SET名称
-        //     "gwport": "3306", # vip 端口
-        //     "dbinstance_name": "cuecsbcore_ADM_IA1_set_1",# 实例名称
-        //     "set_type": "MASTER", # 主备类型
-        //     "idc": "I", # IDC
-        //     "logic_area": "ADM", # 逻辑区域名称
-        //     "vip": # vip 地址
-        //     "phy_set_name": "ADM_IA1_set_1",# 物理SET名称
-        //     "dcn_num": "IA1" # DCN编号
-        // },
         dcnTreeData.value = genTreeData(data);
         dcnListData.value = flatTreeData(dcnTreeData.value);
     };

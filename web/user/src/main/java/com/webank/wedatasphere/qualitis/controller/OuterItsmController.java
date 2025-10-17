@@ -17,7 +17,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-03-12 16:36
  * @description
  */

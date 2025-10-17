@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledTask;
 import org.springframework.beans.BeanUtils;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-04-21 16:21
  * @description
  */

@@ -31,23 +31,23 @@ public interface ImsmetricIdentifyDao {
      * @param metricIds
      * @return
      */
-//    List<ImsmetricIdentify> queryIdentify(List<Long> metricIds);
-//
-//    /**
-//     * query Identify
-//     * @param startDate
-//     * @param endDate
-//     * @return
-//     */
-//    List<ImsmetricIdentify> queryIdentify(String startDate, String endDate);
-//
-//    /**
-//     * query Identify
-//     * @param startDate
-//     * @param endDate
-//     * @param metricIds
-//     * @return
-//     */
-//    List<ImsmetricIdentify> queryIdentify(String startDate, String endDate, String metricIds);
+    List<ImsmetricIdentify> queryIdentify(List<Long> metricIds);
+
+    /**
+     * query Identify
+     * @param startDate
+     * @param endDate
+     * @return
+     */
+    List<ImsmetricIdentify> queryIdentify(String startDate, String endDate);
+
+    /**
+     * query Identify
+     * @param startDate
+     * @param endDate
+     * @param metricIds
+     * @return
+     */
+    List<ImsmetricIdentify> queryIdentify(String startDate, String endDate, String metricIds);
 
 }

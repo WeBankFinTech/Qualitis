@@ -1,5 +1,6 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import com.webank.wedatasphere.qualitis.constant.DepartmentSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.RuleMetricBussCodeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
@@ -18,10 +19,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
 import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
-import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
-import com.webank.wedatasphere.qualitis.service.RoleService;
-import com.webank.wedatasphere.qualitis.service.RuleMetricCommonService;
-import com.webank.wedatasphere.qualitis.service.SubDepartmentPermissionService;
+import com.webank.wedatasphere.qualitis.service.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.curator.shaded.com.google.common.collect.Maps;
@@ -29,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +38,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Service
 public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
@@ -66,9 +65,14 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     private RoleService roleService;
     @Autowired
     private RuleDao ruleDao;
+    @Autowired
+    private DepartmentService departmentService;
 
     @Autowired
     private RuleMetricCommonService ruleMetricCommonService;
+
+    @Value("${department.data_source_from: hr}")
+    private String departmentSourceType;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RuleMetricCommonServiceImpl.class);
 
@@ -104,12 +108,16 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     }
 
     @Override
-    public RuleMetric accordingRuleMetricNameAdd(String ruleMetricName, String loginUser, boolean multiEnv) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
-        RuleMetric ruleMetric = null;
+    public RuleMetric accordingRuleMetricNameAddOrModify(String ruleMetricName, String loginUser, boolean multiEnv) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
+        RuleMetric ruleMetric;
         if (StringUtils.isBlank(ruleMetricName)) {
             throw new UnExpectedRequestException(ruleMetricName + " {&CAN_NOT_BE_NULL_OR_EMPTY}");
         }
-        checkDuplicateName(ruleMetricName);
+        String enCode = QualitisConstants.getRuleMetricEnCodeFromName(ruleMetricName);
+        if (StringUtils.isBlank(enCode)) {
+            throw new UnExpectedRequestException(ruleMetricName + " does not meet specifications");
+        }
+        checkDuplicateCode(enCode);
 
         Map<String, Object> maps = ruleMetricCommonService.checkRuleMetricNameAndAddOrModify(ruleMetricName, loginUser, multiEnv, null);
         RuleMetric ruleMetricData = (RuleMetric) maps.get("rule_metric");
@@ -128,17 +136,17 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
 
     @Override
     public Map<String, Object> checkRuleMetricNameAndAddOrModify(String ruleMetricName, String loginUser, Boolean multiEnv, String createUser) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
-        // 判断指标名是否存在于 指标表   输入格式subSystemName_type_enCode_frequency  系统(产品ID)_指标分类_编号_指标频率 (无需对编号进行校验)
+        // 判断指标名是否存在于指标表   输入格式subSystemName_type_enCode_frequency  系统(产品ID)_指标分类_编号_指标频率 (无需对编号进行校验)
         // productId：RETAIL003  productName：微众个人APP账户
         LOGGER.info("Start to create metric with name: {}", ruleMetricName);
         String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
-        String subSystemName, type, en, frequency = null;
+        String subSystemName, type, enCode, frequency = null;
 
         try {
-            subSystemName = infos[0];
-            type = infos[1];
-            en = infos[2];
-            frequency = infos[3];
+            subSystemName = infos[QualitisConstants.COMMON_ARRAY_INDEX_0];
+            type = infos[QualitisConstants.COMMON_ARRAY_INDEX_1];
+            enCode = infos[QualitisConstants.COMMON_ARRAY_INDEX_2];
+            frequency = infos[QualitisConstants.COMMON_ARRAY_INDEX_3];
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new UnExpectedRequestException("{&METRICS_FORMAT_ARRAY_OUT_OF_BOUNDS_EXCEPTION}", 400);
         } catch (Exception exception) {
@@ -161,7 +169,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
                 .filter(item -> item.equals(finalType)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(collectType)) {
             ruleMetricName = subSystemName + SpecCharEnum.BOTTOM_BAR.getValue() +
-                    IT_METRIC_EN_NAME + SpecCharEnum.BOTTOM_BAR.getValue() + en +
+                    IT_METRIC_EN_NAME + SpecCharEnum.BOTTOM_BAR.getValue() + enCode +
                     SpecCharEnum.BOTTOM_BAR.getValue() + frequency;
         }
 
@@ -180,36 +188,43 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         }
 
         //子系统校验
-        List<SubSystemResponse> subSystemResponses = operateCiService.getAllSubSystemInfo();
         List<CmdbDepartmentResponse> deptResponse = operateCiService.getAllDepartmetInfo();
-        List<ProductResponse> productResponses = operateCiService.getAllProductInfo();
+        if (DepartmentSourceTypeEnum.CUSTOM.getValue().equals(departmentSourceType)) {
+            List<Department> departmentResponses = departmentService.findAllDepartmentCodeAndName();
+            deptResponse = departmentResponses.stream().map(departmentResponse -> {
+                CmdbDepartmentResponse cmdbDepartmentResponse = new CmdbDepartmentResponse();
+                cmdbDepartmentResponse.setCode(departmentResponse.getDepartmentCode());
+                cmdbDepartmentResponse.setName(departmentResponse.getName());
+                return cmdbDepartmentResponse;
+            }).collect(Collectors.toList());
+        }
 
         SubSystemResponse currentSystem = null;
         ProductResponse currentProduct = null;
-        if (StringUtils.isNotBlank(subSystemName)) {
-            String finalSubSystemName = subSystemName;
-            // 子系统
-            List<SubSystemResponse> currentSubSystemResponses = subSystemResponses.stream()
-                    .filter(subSystemResponse -> subSystemResponse.getSubSystemName().equals(finalSubSystemName)).collect(Collectors.toList());
 
-            if (CollectionUtils.isNotEmpty(currentSubSystemResponses)) {
-                currentSystem = currentSubSystemResponses.iterator().next();
-                LOGGER.info("Find sub system from CMDB, current sub system is [ID=" + currentSystem.getSubSystemId() + ", name=" + currentSystem.getSubSystemName() + "]");
-            }
-
-            // productId
-            List<ProductResponse> currentProductResponses = productResponses.stream()
-                    .filter(item -> item.getProductId().equals(finalSubSystemName)).collect(Collectors.toList());
-            if (CollectionUtils.isNotEmpty(currentProductResponses)) {
-                currentProduct = currentProductResponses.iterator().next();
-                LOGGER.info("Find product Id from CMDB, current product is [ID=" + currentProduct.getProductId() + ", name=" + currentProduct.getProductName() + "]");
-            }
-
-            if (CollectionUtils.isEmpty(currentProductResponses) && CollectionUtils.isEmpty(currentSubSystemResponses)) {
-                throw new UnExpectedRequestException("Cannot recognize the product Id or sub system name.", 400);
-            }
-
+        if (StringUtils.isBlank(subSystemName)) {
+            throw new UnExpectedRequestException("The metric name format is incorrect.");
         }
+        // 子系统
+        List<SubSystemResponse> currentSubSystemResponses = operateCiService.getSubSystemInfoByPage(subSystemName, 0, 10);
+
+        if (CollectionUtils.isEmpty(currentSubSystemResponses)) {
+            throw new UnExpectedRequestException(String.format("The sub system [%s] doesn't exists.", subSystemName));
+        }
+        currentSystem = currentSubSystemResponses.iterator().next();
+        LOGGER.info("Find sub system from CMDB, current sub system is [ID=" + currentSystem.getSubSystemId() + ", name=" + currentSystem.getSubSystemName() + "]");
+
+        // productId
+        List<ProductResponse> currentProductResponses = operateCiService.getProductInfoByCondition(subSystemName);
+        if (CollectionUtils.isNotEmpty(currentProductResponses)) {
+            currentProduct = currentProductResponses.iterator().next();
+            LOGGER.info("Find product Id from CMDB, current product is [ID=" + currentProduct.getProductId() + ", name=" + currentProduct.getProductName() + "]");
+        }
+
+        if (CollectionUtils.isEmpty(currentProductResponses) && CollectionUtils.isEmpty(currentSubSystemResponses)) {
+            throw new UnExpectedRequestException("Cannot recognize the product Id or sub system name.", 400);
+        }
+
 
         String dept = null, devDept = null;
         if (StringUtils.isBlank(loginUser) && StringUtils.isNotBlank(createUser)) {
@@ -225,8 +240,8 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             }
             //数据格式 例如：基础科技产品部/大数据平台室
             String[] splitData = user.getDepartmentName().split("/");
-            dept = splitData[0];
-            devDept = splitData[1];
+            dept = splitData[QualitisConstants.COMMON_ARRAY_INDEX_0];
+            devDept = splitData[QualitisConstants.COMMON_ARRAY_INDEX_1];
         } else if (null != currentSystem) {
             dept = currentSystem.getDepartmentName();
             if (StringUtils.isEmpty(dept)) {
@@ -253,7 +268,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         String deptCode = currentDept.get().getCode();
         String opsDept = devDept;
 
-        List<DepartmentSubResponse> departmentSubResponses = operateCiService.getDevAndOpsInfo(Integer.parseInt(deptCode));
+        List<DepartmentSubResponse> departmentSubResponses = departmentService.getSubDepartmentBySourceType(Integer.parseInt(deptCode));
         String finalDevDept = devDept;
         List<DepartmentSubResponse> conformCollect = departmentSubResponses.stream().filter(item -> finalDevDept.equals(item.getName())).collect(Collectors.toList());
 
@@ -261,7 +276,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
         Long opsDeptId = devDeptId;
 
         AddCommonRuleMetricRequest ruleMetricRequest = new AddCommonRuleMetricRequest();
-        setBasicInfoForRequest(ruleMetricName, en, frequency, cnFrequency, currentRuleMetricTypeConfig, cnType,
+        setBasicInfoForRequest(ruleMetricName, enCode, frequency, cnFrequency, currentRuleMetricTypeConfig, cnType,
                 null != currentSystem ? currentSystem : null, dept, deptCode, devDept, opsDept, devDeptId, opsDeptId, ruleMetricRequest,null != currentProduct ? currentProduct : null);
 
         if (multiEnv) {
@@ -270,7 +285,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             ruleMetricRequest.setMultiEnv(false);
         }
 
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(en);
+        RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
 
         Map<String, Object> map = Maps.newHashMap();
         map.put("rule_metric", ruleMetricInDb);
@@ -289,9 +304,7 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             throw new UnExpectedRequestException("Rule Metric [ID=" + request.getId() + "] {&DOES_NOT_EXIST}");
         }
         LOGGER.info("Start to modify rule metric, modify request: [{}], user: [{}]", request.toString(), userName);
-        if (!ruleMetricInDb.getName().equals(request.getName())) {
-            checkDuplicateName(request.getName());
-        }
+
         if (!ruleMetricInDb.getEnCode().equals(request.getEnCode())) {
             checkDuplicateCode(request.getEnCode());
         }
@@ -312,7 +325,11 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
     @Transactional(rollbackFor = {Exception.class, RuntimeException.class})
     @Override
     public void deleteRuleMetric(String name, String userName) throws UnExpectedRequestException {
-        RuleMetric ruleMetric = ruleMetricDao.findByName(name);
+        String enCode = QualitisConstants.getRuleMetricEnCodeFromName(name);
+        if (StringUtils.isBlank(enCode)) {
+            throw new UnExpectedRequestException(name + " does not meet specifications");
+        }
+        RuleMetric ruleMetric = ruleMetricDao.findByEnCode(enCode);
         if (ruleMetric == null) {
             return;
         }
@@ -334,14 +351,6 @@ public class RuleMetricCommonServiceImpl implements RuleMetricCommonService {
             taskRuleAlarmConfigDao.saveAll(taskRuleAlarmConfigList);
         }
         ruleMetricDao.delete(ruleMetric);
-    }
-
-    private void checkDuplicateName(String name) throws UnExpectedRequestException {
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(name);
-
-        if (ruleMetricInDb != null) {
-            throw new UnExpectedRequestException("Rule metric name {&ALREADY_EXIST}");
-        }
     }
 
     private void checkDuplicateCode(String enCode) throws UnExpectedRequestException {

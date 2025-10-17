@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class WorkFlowRequest {
 

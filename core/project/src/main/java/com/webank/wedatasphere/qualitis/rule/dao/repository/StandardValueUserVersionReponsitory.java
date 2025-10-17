@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface StandardValueUserVersionReponsitory extends JpaRepository<StandardValueUserVersion, Long>, JpaSpecificationExecutor<StandardValueUserVersion> {
 

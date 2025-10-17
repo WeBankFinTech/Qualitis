@@ -228,7 +228,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         // Check existence of rule name
         checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), projectInDb, null);
         //check the same rule name number
-        checkRuleNameNumber(request.getRuleName(), projectInDb);
+        checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
 
         RuleGroup ruleGroup;
         String ruleGroupName = request.getRuleGroupName();
@@ -539,7 +539,7 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
         // Check existence of rule
         checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), ruleInDb.getProject(), ruleInDb.getId());
         //check the same rule name number
-        checkRuleNameNumber(request.getRuleName(), projectInDb);
+        checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         // Basic rule info.
         setExecutionParametersFields(ruleInDb, templateInDb, request, loginUser);
         Rule savedRule = ruleDao.saveRule(ruleInDb);
@@ -746,10 +746,14 @@ public class RuleServiceImpl extends AbstractRuleService implements RuleService 
     }
 
     @Override
-    public void checkRuleNameNumber(String ruleName, Project project) throws UnExpectedRequestException {
-        int total = ruleDao.countByProjectAndRuleName(ruleName, project.getId());
+    public void checkRuleNameNumber(String workflowName, String ruleName, Project project) throws UnExpectedRequestException {
+        if (StringUtils.isBlank(workflowName)) {
+            return;
+        }
+        LOGGER.info("Checking the number of dss rule. project: [{}], workflowName: [{}], ruleName: [{}]", project.getId(), workflowName, ruleName);
+        int total = ruleDao.countByProjectAndRuleName(ruleName, project.getId(), workflowName);
         if (total > QualitisConstants.DSS_NODE_VERSION_NUM) {
-            Rule rule = ruleDao.findMinWorkFlowVersionRule(ruleName, project.getId());
+            Rule rule = ruleDao.findMinWorkFlowVersionRule(ruleName, project.getId(), workflowName);
             if (rule != null) {
                 // Delete rule
                 scheduledTaskService.checkRuleGroupIfDependedBySchedule(rule.getRuleGroup());

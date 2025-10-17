@@ -16,17 +16,16 @@
 
 package com.webank.wedatasphere.qualitis.config;
 
-//import cn.webank.bdp.microfrontend.sso.*;
+import cn.webank.bdp.microfrontend.sso.*;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.filter.spring.SpringOriginSSOPluginFilter;
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.SSOPluginFilter;
 import com.webank.wedatasphere.qualitis.filter.*;
-//import org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
-//import com.webank.wedatasphere.qualitis.sso.CustomAuthenticationFilter;
+import org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-//import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -70,10 +69,10 @@ public class FilterOrderConfig {
         return new LocalAuthorizationFilter();
     }
 
-//    @Bean
-//    public ServletListenerRegistrationBean<SingleSignOutHttpSessionListener> ssoListener() {
-//        return new ServletListenerRegistrationBean<>(new SingleSignOutHttpSessionListener());
-//    }
+    @Bean
+    public ServletListenerRegistrationBean<SingleSignOutHttpSessionListener> ssoListener() {
+        return new ServletListenerRegistrationBean<>(new SingleSignOutHttpSessionListener());
+    }
 
     /**
      * Local environment filters starts
@@ -123,72 +122,72 @@ public class FilterOrderConfig {
      * Security/Micro-Frontend SSO filters starts
      * @return
      */
-//    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
-//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
-//    @Bean
-//    public FilterRegistrationBean casSingleSignOutFilter() {
-//        FilterRegistrationBean registration = new FilterRegistrationBean();
-//        registration.setFilter(new CustomSingleSignOutFilter());
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
-//        registration.setName("CAS Single Sign Out Filter");
-//        registration.setOrder(1);
-//        return registration;
-//    }
-//
-//    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
-//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
-//    @Bean
-//    public FilterRegistrationBean casFilter() {
-//        FilterRegistrationBean registration = new FilterRegistrationBean();
-//        CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter();
-//        customAuthenticationFilter.setCompatiblePenetrationUrlList(dssOriginUrls);
-//        customAuthenticationFilter.setGovCoreIPList(facadeGovCoreIPs);
-//        registration.setFilter(customAuthenticationFilter);
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
-//        registration.setName("CAS Filter");
-//        registration.setOrder(2);
-//        return registration;
-//    }
-//
-//    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
-//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
-//    @Bean
-//    public FilterRegistrationBean casValidationFilter() {
-//        FilterRegistrationBean registration = new FilterRegistrationBean();
-//        registration.setFilter(new CustomCas20ProxyReceivingTicketValidationFilter());
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
-//        registration.setName("CAS Validation Filter");
-//        registration.setOrder(3);
-//        return registration;
-//    }
-//
-//    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
-//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
-//    @Bean
-//    public FilterRegistrationBean casHttpServletRequestWrapperFilter() {
-//        FilterRegistrationBean registration = new FilterRegistrationBean();
-//        registration.setFilter(new CustomHttpServletRequestWrapperFilter());
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
-//        registration.setName("CAS HttpServletRequest Wrapper Filter");
-//        registration.setOrder(4);
-//        return registration;
-//    }
-//
-//    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
-//    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
-//    @Bean
-//    public FilterRegistrationBean casAssertionThreadLocalFilter() {
-//        FilterRegistrationBean registration = new FilterRegistrationBean();
-//        registration.setFilter(new CustomAssertionThreadLocalFilter());
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
-//        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
-//        registration.setName("CAS Assertion Thread Local Filter");
-//        registration.setOrder(5);
-//        return registration;
-//    }
+    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
+    @Bean
+    public FilterRegistrationBean casSingleSignOutFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new CustomSingleSignOutFilter());
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
+        registration.setName("CAS Single Sign Out Filter");
+        registration.setOrder(1);
+        return registration;
+    }
+
+    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
+    @Bean
+    public FilterRegistrationBean casFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter();
+        customAuthenticationFilter.setCompatiblePenetrationUrlList(dssOriginUrls);
+        customAuthenticationFilter.setGovCoreIPList(facadeGovCoreIPs);
+        registration.setFilter(customAuthenticationFilter);
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
+        registration.setName("CAS Filter");
+        registration.setOrder(2);
+        return registration;
+    }
+
+    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
+    @Bean
+    public FilterRegistrationBean casValidationFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new CustomCas20ProxyReceivingTicketValidationFilter());
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
+        registration.setName("CAS Validation Filter");
+        registration.setOrder(3);
+        return registration;
+    }
+
+    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
+    @Bean
+    public FilterRegistrationBean casHttpServletRequestWrapperFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new CustomHttpServletRequestWrapperFilter());
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
+        registration.setName("CAS HttpServletRequest Wrapper Filter");
+        registration.setOrder(4);
+        return registration;
+    }
+
+    @ConditionalOnMissingBean(name = "localAuthorizationFilter")
+    @ConditionalOnProperty(name = "overseas_external_version.enable", havingValue = "false", matchIfMissing = true)
+    @Bean
+    public FilterRegistrationBean casAssertionThreadLocalFilter() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new CustomAssertionThreadLocalFilter());
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/api/v1/*");
+        registration.addUrlPatterns(JerseyConfig.APPLICATION_PATH + "/auth/common/*");
+        registration.setName("CAS Assertion Thread Local Filter");
+        registration.setOrder(5);
+        return registration;
+    }
     // *******************  Security/Micro-Frontend SSO filters ends  **********************
 
 

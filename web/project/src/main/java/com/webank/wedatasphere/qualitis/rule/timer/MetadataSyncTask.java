@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.entity.ImsMetricCollect;
 import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSource;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-03-01 10:09
  * @description
  */

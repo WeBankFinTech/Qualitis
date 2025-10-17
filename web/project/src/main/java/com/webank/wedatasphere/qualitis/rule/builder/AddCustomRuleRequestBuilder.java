@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/8/17 14:14
  */
 @Service
@@ -64,7 +64,6 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
     private LinkisConfig linkisConfig;
     private LinkisDataSourceEnvService linkisDataSourceEnvService;
 
-    private static Integer FOUR = 4;
     private static final String COMMA = ".";
 
     private static final Pattern DATA_SOURCE_ID = Pattern.compile("\\.\\(ID=[0-9]+\\)");
@@ -323,7 +322,13 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder addRuleMetricWithCheck(String ruleMetricName, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue) throws UnExpectedRequestException {
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(ruleMetricName);
+        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
+        if (infos.length != QualitisConstants.LENGTH_FOUR) {
+            throw new UnExpectedRequestException(ruleMetricName + " does not meet specifications");
+        }
+
+        String enCode = infos[QualitisConstants.COMMON_ARRAY_INDEX_2];
+        RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
 
         if (ruleMetricInDb != null) {
             setRuleMetricEnCode(ruleMetricInDb.getEnCode());
@@ -333,11 +338,6 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
             this.deleteFailCheckResult = deleteFailCheckResult;
             return this;
         }
-        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
-        if (infos.length != FOUR) {
-            throw new UnExpectedRequestException("The metric name does not meet specifications");
-        }
-        String en = infos[2];
 
         List<String> existRuleMetricNames = addCustomRuleRequest.getRuleMetricNamesForBdpClient();
         if (CollectionUtils.isNotEmpty(existRuleMetricNames)) {
@@ -348,7 +348,7 @@ public class AddCustomRuleRequestBuilder implements AddRequestBuilder {
             addCustomRuleRequest.setRuleMetricNamesForBdpClient(ruleMetricNames);
         }
 
-        setRuleMetricEnCode(en);
+        setRuleMetricEnCode(enCode);
 
         this.uploadAbnormalValue = uploadAbnormalValue;
         this.uploadRuleMetricValue = uploadRuleMetricValue;

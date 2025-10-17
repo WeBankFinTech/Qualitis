@@ -17,6 +17,7 @@
 package com.webank.wedatasphere.qualitis.entity;
 
 import org.springframework.boot.json.JacksonJsonParser;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
 import java.util.HashMap;
@@ -146,8 +147,12 @@ public class ProxyUser {
     }
 
     public Map<String, Object> getUserConfigMap() {
-        if (this.userConfigJson != null) {
-            this.userConfigMap = new JacksonJsonParser().parseMap(this.userConfigJson);
+        if (StringUtils.hasText(this.userConfigJson)) {
+            try {
+                this.userConfigMap = new JacksonJsonParser().parseMap(this.userConfigJson);
+            } catch (Exception e) {
+//                doing nothing
+            }
         }
         return this.userConfigMap;
     }

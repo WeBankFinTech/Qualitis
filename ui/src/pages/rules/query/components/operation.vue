@@ -80,7 +80,7 @@
                     <!-- <FSelect v-model="advanceQueryData.sub_system_id" filterable clearable remote :width="160">
                         <FOption v-for="item in subSystems" :key="item.value" :value="item.value">{{item.label}}</FOption>
                     </FSelect> -->
-                    <FSelect v-model="advanceQueryData.sub_system_id" filterable clearable :filter="upperCaseFilter" :options="subSystems" :width="160" />
+                    <FInput v-model="advanceQueryData.sub_system_id" clearable :width="160" :placeholder="$t('common.pleaseEnter')" />
                 </FFormItem>
                 <FFormItem :label="$t('common.developDepartment')" prop="developDepartment">
                     <FSelectCascader
@@ -155,10 +155,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    subSystems: {
-        type: Array,
-        required: true,
-    },
+    // subSystems: {
+    //     type: Array,
+    //     required: true,
+    // },
     devDivisions: {
         type: Array,
         required: true,

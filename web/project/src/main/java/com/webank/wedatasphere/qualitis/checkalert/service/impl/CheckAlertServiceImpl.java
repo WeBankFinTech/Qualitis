@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2023/3/1 11:43
  */
 @Service
@@ -242,7 +242,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
         if (dbAndTable.length != QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Alert table is illegal.");
         }
-        List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(linkisConfig.getBdapCheckAlertCluster(), dbAndTable[QualitisConstants.COMMON_ARRAY_INDEX_O], dbAndTable[QualitisConstants.COMMON_ARRAY_INDEX_1], loginUser);
+        List<ColumnInfoDetail> columnInfoDetails = metaDataClient.getColumnInfo(linkisConfig.getBdapCheckAlertCluster(), dbAndTable[QualitisConstants.COMMON_ARRAY_INDEX_0], dbAndTable[QualitisConstants.COMMON_ARRAY_INDEX_1], loginUser);
 
         if (CollectionUtils.isEmpty(columnInfoDetails)) {
             throw new MetaDataAcquireFailedException("Alert table has no columns.");
@@ -262,7 +262,7 @@ public class CheckAlertServiceImpl implements CheckAlertService {
 
             for (String pair : pairs) {
                 String[] temp = pair.split(SpecCharEnum.COLON.getValue());
-                String realColName = temp[QualitisConstants.COMMON_ARRAY_INDEX_O];
+                String realColName = temp[QualitisConstants.COMMON_ARRAY_INDEX_0];
                 if (!columnNames.contains(realColName)) {
                     throw new MetaDataAcquireFailedException("Content column does not exist.");
                 }

@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/8/17 17:45
  */
 @Scope("prototype")
@@ -1142,8 +1142,8 @@ public class AddDirector {
         if (datasourceStrs.length != QualitisConstants.LENGTH_TWO) {
             throw new UnExpectedRequestException("Datasource param is illegle");
         }
-        String sourceCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_O].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
-        String targetCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_1].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_O];
+        String sourceCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_0].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_0];
+        String targetCluster = datasourceStrs[QualitisConstants.COMMON_ARRAY_INDEX_1].split(SpecCharEnum.PERIOD.getValue())[QualitisConstants.COMMON_ARRAY_INDEX_0];
 
         // Template
         Template templateInDb;

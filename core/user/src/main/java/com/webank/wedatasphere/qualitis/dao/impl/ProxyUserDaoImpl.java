@@ -38,4 +38,9 @@ public class ProxyUserDaoImpl implements ProxyUserDao {
     public ProxyUser findByProxyUserName(String proxyUserName) {
         return roleRepository.findByProxyUserName(proxyUserName);
     }
+
+    @Override
+    public List<ProxyUser> findByProxyUserNameList(List<String> proxyUserNameList) {
+        return roleRepository.findByProxyUserNameIn(proxyUserNameList);
+    }
 }

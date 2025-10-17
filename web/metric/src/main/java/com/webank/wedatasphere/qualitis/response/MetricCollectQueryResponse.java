@@ -8,7 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import static com.webank.wedatasphere.qualitis.scheduled.util.CronUtil.cronToText;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-05-14 15:58
  * @description
  */

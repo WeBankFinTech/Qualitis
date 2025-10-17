@@ -19,6 +19,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.RoleSystemTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TableDataTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
 import com.webank.wedatasphere.qualitis.service.DataVisibilityService;
+import com.webank.wedatasphere.qualitis.service.DepartmentService;
 import com.webank.wedatasphere.qualitis.service.RoleService;
 import com.webank.wedatasphere.qualitis.service.SubDepartmentPermissionService;
 import com.webank.wedatasphere.qualitis.util.HttpUtils;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-09-22 16:16
  * @description
  */
@@ -60,10 +61,15 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
     @Autowired
     private DepartmentDao departmentDao;
     @Autowired
+    private DepartmentService departmentService;
+    @Autowired
     private DataVisibilityService dataVisibilityService;
 
     @Value("${devOps.enable}")
     private Boolean isDevOpsModel;
+
+    @Value("${department.data_source_from: hr}")
+    private String departmentSourceType;
 
     private HttpServletRequest httpServletRequest;
 
@@ -186,7 +192,7 @@ public class SubDepartmentPermissionServiceImpl implements SubDepartmentPermissi
                 allDevAndOpsInfoWithinDeptList.addAll(devAndOpsInfoWithinDeptList);
             } else {
                 LOGGER.info("Query department list from CMDB by code, code:{}", departmentCode);
-                List<DepartmentSubResponse> devAndOpsInfoList = operateCiService.getDevAndOpsInfo(Integer.valueOf(departmentCode));
+                List<DepartmentSubResponse> devAndOpsInfoList = departmentService.getSubDepartmentBySourceType(Integer.valueOf(departmentCode));
                 if (CollectionUtils.isNotEmpty(devAndOpsInfoList)) {
                     devAndOpsInfoWithinDeptList = devAndOpsInfoList.stream().map(DepartmentSubResponse::getId).map(Long::valueOf).collect(Collectors.toList());
                     allDevAndOpsInfoWithinDeptList.addAll(devAndOpsInfoWithinDeptList);

@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface RuleMetricCommonService {
 
@@ -25,7 +25,7 @@ public interface RuleMetricCommonService {
      * @throws IOException
      * @throws PermissionDeniedRequestException
      */
-    RuleMetric accordingRuleMetricNameAdd(String ruleMetricName, String loginUser, boolean multiEnv) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
+    RuleMetric accordingRuleMetricNameAddOrModify(String ruleMetricName, String loginUser, boolean multiEnv) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException;
 
     /**
      * add RuleMetric For Object

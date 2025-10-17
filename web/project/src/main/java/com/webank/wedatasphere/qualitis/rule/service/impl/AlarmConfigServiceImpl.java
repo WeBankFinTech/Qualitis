@@ -23,7 +23,6 @@ import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestExcepti
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.CheckTemplateEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.AlarmConfigDao;
-import com.webank.wedatasphere.qualitis.rule.dao.RuleDao;
 import com.webank.wedatasphere.qualitis.rule.dao.repository.AlarmConfigRepository;
 import com.webank.wedatasphere.qualitis.rule.entity.AlarmConfig;
 import com.webank.wedatasphere.qualitis.rule.entity.Rule;
@@ -46,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -101,7 +101,7 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
                     present = true;
                 }
                 //支持用户手动输入指标名
-                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(request.getRuleMetricName(), loginUser, present);
+                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAddOrModify(request.getRuleMetricName(), loginUser, present);
                 if (ruleMetric == null) {
                     throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
                 }
@@ -173,6 +173,7 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
             // Check existence of templateOutputMeta
             RuleMetric finalRuleMetric = ruleMetric;
             TemplateOutputMeta templateOutputMetaInDb = rule.getTemplate().getTemplateOutputMetas().stream()
+                    .filter(Objects::nonNull)
                     .filter(templateOutputMeta -> templateOutputMeta.getOutputName().equals(finalRuleMetric.getName())).iterator().next();
 
             // Generate alarmConfig and save
@@ -222,7 +223,7 @@ public class AlarmConfigServiceImpl implements AlarmConfigService {
                 checkRuleMetricInOtherRules(ruleMetric, rule);
                 newAlarmConfig.setRuleMetric(ruleMetric);
             } else if (StringUtils.isNotBlank(request.getRuleMetricName()) && dataSourceRequest != null) {
-                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(request.getRuleMetricName(), loginUser, CollectionUtils.isNotEmpty(dataSourceRequest.getDataSourceEnvRequests()) ? true : false);
+                RuleMetric ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAddOrModify(request.getRuleMetricName(), loginUser, CollectionUtils.isNotEmpty(dataSourceRequest.getDataSourceEnvRequests()) ? true : false);
                 if (ruleMetric == null) {
                     throw new UnExpectedRequestException("{&FAILED_TO_AUTOMATE_CREATE_METRICS}");
                 }

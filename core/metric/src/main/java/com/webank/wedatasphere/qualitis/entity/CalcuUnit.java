@@ -5,7 +5,7 @@ import javax.persistence.*;
 /**
  * @author allenzhou
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_calcu_unit")
 public class CalcuUnit {
   @Id

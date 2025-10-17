@@ -1,5 +1,7 @@
 package com.webank.wedatasphere.qualitis.rule.timer;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.webank.wedatasphere.qualitis.client.config.DataMapConfig;
@@ -14,8 +16,6 @@ import com.webank.wedatasphere.qualitis.metadata.client.DataStandardClient;
 import com.webank.wedatasphere.qualitis.metadata.client.MetaDataClient;
 import com.webank.wedatasphere.qualitis.metadata.exception.MetaDataAcquireFailedException;
 import com.webank.wedatasphere.qualitis.metadata.response.table.SearchMetadataInfo;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.rule.constant.MetricClassEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.dao.MetricExtInfoDao;
@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-02-27 15:29
  * @description 获取来自DMS的元数据子字段(子系统 、 开发部门 、 业务部门 、 表标签)，更新到RuleDataSource
  */

@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.entity.AuthList;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-03-13 14:34
  * @description
  */

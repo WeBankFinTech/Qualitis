@@ -781,7 +781,7 @@ const doPublishTask = async () => {
         emit('publishTask');
         drawerShow.value = false;
         resetTask();
-        FMessage.success($t('_.发布成功'));
+        FMessage.success($t('_.新建成功'));
     } catch (error) {
         console.log('doPublishTask', error);
     }

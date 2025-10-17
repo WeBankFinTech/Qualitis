@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class StandardValueResponse {
     @JsonProperty("id")
@@ -117,12 +117,11 @@ public class StandardValueResponse {
             this.source = standardValueVersion.getSource();
             this.sourceValue = standardValueVersion.getSourceValue() == null ? null : standardValueVersion.getSourceValue();
             this.sourceValueName = standardValueVersion.getSourceValue() == null ? null : StandardSourceEnum.getStandardSourceByCode(standardValueVersion.getSourceValue());
+        } else if (standardValueVersion.getSourceValue().equals(StandardSourceEnum.DATA_SHAPIS.getCode())) {
+            this.source = standardValueVersion.getStdCnName();
+            this.sourceValue = standardValueVersion.getSourceValue();
+            this.sourceValueName = StandardSourceEnum.getStandardSourceByCode(standardValueVersion.getSourceValue());
         }
-//        else if (standardValueVersion.getSourceValue().equals(StandardSourceEnum.DATA_SHAPIS.getCode())) {
-//            this.source = standardValueVersion.getStdCnName();
-//            this.sourceValue = standardValueVersion.getSourceValue();
-//            this.sourceValueName = StandardSourceEnum.getStandardSourceByCode(standardValueVersion.getSourceValue());
-//        }
 
         this.createUser = standardValueVersion.getCreateUser();
         this.createTime = standardValueVersion.getCreateTime();

@@ -8,7 +8,7 @@ import org.springframework.beans.BeanUtils;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class ModifyScheduledRelationProjectRequest {
 

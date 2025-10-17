@@ -5,7 +5,7 @@ import javax.persistence.*;
 /**
  * @author allenzhou
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_imsmetric_scheduler")
 public class ImsMetricScheduler {
   @Id

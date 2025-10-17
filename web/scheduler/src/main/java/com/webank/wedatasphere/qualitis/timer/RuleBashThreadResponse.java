@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/6/10 11:30
  */
 public class RuleBashThreadResponse {

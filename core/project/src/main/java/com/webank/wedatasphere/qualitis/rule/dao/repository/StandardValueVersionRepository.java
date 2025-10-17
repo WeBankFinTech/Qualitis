@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface StandardValueVersionRepository extends JpaRepository<StandardValueVersion, Long>, JpaSpecificationExecutor<StandardValueVersion> {
 

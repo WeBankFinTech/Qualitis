@@ -19,7 +19,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-01-13 14:56
  * @description
  */

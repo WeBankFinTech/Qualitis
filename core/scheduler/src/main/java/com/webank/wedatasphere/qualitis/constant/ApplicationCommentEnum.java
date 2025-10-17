@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.constant;
 import org.apache.commons.lang.StringUtils;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/7/14 1:12
  */
 public enum ApplicationCommentEnum {

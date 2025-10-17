@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2023/3/1 15:40
  */
 public interface CheckAlertDao {
@@ -72,7 +72,7 @@ public interface CheckAlertDao {
      * @param topic
      * @return
      */
-    CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic);
+    CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic, String workflowName);
 
     /**
      * count by project and topic
@@ -80,7 +80,7 @@ public interface CheckAlertDao {
      * @param topic
      * @return
      */
-    int countByProjectAndTopic(Long projectId, String topic);
+    int countByProjectAndTopic(Long projectId, String topic, String workflowName);
 
     /**
      * find by project and workflow and topics

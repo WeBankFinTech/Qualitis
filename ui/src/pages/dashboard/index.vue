@@ -3,7 +3,7 @@
         <main>
             <section class="section">
                 <h3 class="wd-content-title">{{$t('dashboard.todaySummary')}}</h3>
-                <div v-if="overseas_external_version === 'false'" class="wd-content-body">
+                <!-- <div class="wd-content-body">
                     <div class="summary-container">
                         <DashboardSummary v-bind="alarmsSummary" />
                     </div>
@@ -30,7 +30,7 @@
                             @pageSizeChange="alarmsPageChange(true)"
                         ></FPagination>
                     </div>
-                </div>
+                </div> -->
                 <div class="wd-content-body">
                     <div class="summary-container">
                         <DashboardSummary v-bind="applicationsSummary" />
@@ -65,7 +65,7 @@
             </section>
             <section class="section">
                 <h3 class="wd-content-title">{{$t('dashboard.summaryAnalysis')}}</h3>
-                <div v-if="overseas_external_version === 'false'" class="wd-content-body">
+                <!-- <div class="wd-content-body">
                     <h4 class="chart-title">{{$t('dashboard.alarmLevelSummaryAnalysis')}}</h4>
                     <div class="date-range-container">
                         <DateRange
@@ -75,7 +75,7 @@
                         />
                     </div>
                     <div id="alarms-chart" class="my-chart-container"></div>
-                </div>
+                </div> -->
                 <div class="wd-content-body">
                     <h4 class="chart-title">{{$t('dashboard.projectStateSummaryAnalysis')}}</h4>
                     <div class="date-range-container">
@@ -108,8 +108,6 @@ import {
     getApplicationStatuses,
 } from './const';
 
-// eslint-disable-next-line camelcase
-const overseas_external_version = sessionStorage.getItem('overseas_external_version');
 const APPLICATION_STATUSES = getApplicationStatuses();
 // 今日告警数据处理器(处理后端返回数据，防止异常数据导致页面报错)
 const alarmsResHandler = (res) => {
@@ -168,14 +166,14 @@ const applicationsResHandler = (res) => {
 };
 
 const { t: $t } = useI18n();
-const {
-    pagination: alarmsPagination,
-    tableData: alarms,
-    calculateData: alarmsCalculateData,
-    lastUpdateTime: alarmsLastUpdateTime,
-    getData: getAlarmsData,
-    alarmsSummary,
-} = useDashboardTable(fetchAlarmData, alarmsResHandler);
+// const {
+//     pagination: alarmsPagination,
+//     tableData: alarms,
+//     calculateData: alarmsCalculateData,
+//     lastUpdateTime: alarmsLastUpdateTime,
+//     getData: getAlarmsData,
+//     alarmsSummary,
+// } = useDashboardTable(fetchAlarmData, alarmsResHandler);
 const {
     pagination: applicationsPagination,
     tableData: applications,
@@ -198,14 +196,14 @@ const {
     endDate: applicationsEndDate,
     days: applicationsDays,
 } = useDateRange(startDate.getTime(), endDate.getTime(), days);
-useAlarmsChart(alarmsStartDate, alarmsEndDate, alarmsDays, applicationsDays);
+// useAlarmsChart(alarmsStartDate, alarmsEndDate, alarmsDays, applicationsDays);
 useApplicationsChart(applicationsStartDate, applicationsEndDate, applicationsDays);
 const alarmLevelFormatter = ({ cellValue }) => getLabelFromList(ALARM_LEVELS, cellValue);
 const applicationStatusFormatter = ({ cellValue }) => getLabelFromList(APPLICATION_STATUSES, cellValue);
-const alarmsPageChange = (reset = false) => {
-    if (reset) alarmsPagination.page = 1;
-    getAlarmsData();
-};
+// const alarmsPageChange = (reset = false) => {
+//     if (reset) alarmsPagination.page = 1;
+//     getAlarmsData();
+// };
 const applicationsPageChange = (reset = false) => {
     if (reset) applicationsPagination.page = 1;
     getApplicationsData();

@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface ScheduledConfigService {
 

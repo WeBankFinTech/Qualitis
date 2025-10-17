@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.rule.entity.TaskNewValue;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class TaskNewValueResponse {
 

@@ -8,7 +8,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-09-15 10:12
  * @description
  */

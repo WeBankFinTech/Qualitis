@@ -150,7 +150,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         // Check unique of rule name
         ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), projectInDb, null);
         //check the same rule name number
-        ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+        ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         // Check if cluster name is supported
         ruleDataSourceService.checkDataSourceClusterSupport(request.getClusterName());
 
@@ -494,7 +494,7 @@ public class CustomRuleServiceImpl extends AbstractRuleService implements Custom
         // Check existence of project rule name
         ruleService.checkRuleName(request.getRuleName(), request.getWorkFlowName(), request.getWorkFlowVersion(), ruleInDb.getProject(), ruleInDb.getId());
         //check the same rule name number
-        ruleService.checkRuleNameNumber(request.getRuleName(), projectInDb);
+        ruleService.checkRuleNameNumber(request.getWorkFlowName(), request.getRuleName(), projectInDb);
         String nowDate = QualitisConstants.PRINT_TIME_FORMAT.format(new Date());
 
         // Delete alarm config by custom rule

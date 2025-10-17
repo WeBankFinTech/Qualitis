@@ -13,10 +13,9 @@
             :metricCategories="metricCategories"
             :metricFrequencies="metricFrequencies"
             :bussinessDimensions="bussinessDimensions"
-            :subSystems="subSystems"
             :monitoringCapabilitiesList="monitoringCapabilitiesList"
             :businessDomains="businessDomains"
-            :products="products" />
+        />
         <FForm v-show="mode === FORM_MODE.ADD || mode === FORM_MODE.EDIT" ref="formRef" label-width="72px" class="metric-form" :model="formModel" :rules="formRule">
             <!-- 指标名 -->
             <FFormItem :label="$t('indexManagement.indexName')" prop="name">
@@ -57,20 +56,19 @@
             </FFormItem>
             <!-- 子系统 -->
             <FFormItem v-if="formModel.buss_code === 1" :label="$t('indexManagement.subsystem')" prop="sub_system_id">
-                <FSelect
+                <FInput
                     v-model="formModel.sub_system_id"
-                    filterable
-                    :options="subSystems"
-                    :filter="upperCaseFilter"
-                    @change="selectSubSystem" />
+                    clearable
+                    :placeholder="$t('common.pleaseEnter')"
+                    @change="handleSubSystemInput" />
             </FFormItem>
             <!-- 产品 -->
             <FFormItem v-if="formModel.buss_code === 2" :label="$t('indexManagement.product')" prop="product_id">
-                <FSelect
+                <FInput
                     v-model="formModel.product_id"
-                    filterable
-                    :options="products"
-                    @change="selectProduct" />
+                    clearable
+                    :placeholder="$t('common.pleaseEnter')"
+                    @change="handleProductInput" />
             </FFormItem>
             <!-- 自定义 -->
             <FFormItem v-if="formModel.buss_code === 3" :label="$t('indexManagement.customize')" prop="buss_custom">
@@ -203,7 +201,7 @@ import usePermissionDivisions from '@/hooks/usePermissionDivisions';
 import useDepartment from '@/hooks/useDepartment';
 import MetricDetail from './components/detail';
 import {
-    fetchSubSystemInfo, fetchProductInfo, addMetric, modifyMetric, metricDetail, fetchBusinessDomain, fetchMonitoringCapabilities,
+    addMetric, modifyMetric, metricDetail, fetchBusinessDomain, fetchMonitoringCapabilities,
 } from './api';
 import { calculations } from '../utils';
 
@@ -408,40 +406,6 @@ const bussinessDimensions = [
     { label: $t('indexManagement.customize'), value: 3 },
 ];
 
-// 子系统列表
-const subSystems = ref([]);
-// 获取子系统中文名
-const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
-// 获取子系统列表
-const getSubSystemInfo = async () => {
-    const res = await fetchSubSystemInfo();
-    const list = res || [];
-    subSystems.value = list.map((item) => {
-        const cnName = getSystemNameNew(item.subSystemId, item);
-        return Object.assign({}, item, {
-            subSystemName: cnName,
-            enName: item.subSystemName,
-            cnName,
-            value: String(item.subSystemId),
-            label: item.subSystemName,
-        });
-    });
-};
-
-// 产品列表
-const products = ref([]);
-// 获取产品列表
-const getProducts = async () => {
-    const res = await fetchProductInfo();
-    if (!Array.isArray(res)) return;
-    products.value = res.map(item => Object.assign(item, {
-        enName: item.productId,
-        cnName: item.productName,
-        value: item.productId,
-        label: item.productName,
-    }));
-};
-
 // 更新指标名(拼接的指标名信息)
 const updateIndicatorsNameInfo = () => {
     const bussCode = formModel.buss_code;
@@ -453,9 +417,15 @@ const updateIndicatorsNameInfo = () => {
     let enName = '';
     let cnName = '';
     if ([1, '1'].includes(bussCode)) {
-        tempObj = subSystems.value.find(item => item.subSystemId === formModel.sub_system_id);
+        tempObj = {
+            enName: formModel.sub_system_id,
+            cnName: formModel.sub_system_id,
+        };
     } else if ([2, '2'].includes(bussCode)) {
-        tempObj = products.value.find(item => item.productId === formModel.product_id);
+        tempObj = {
+            enName: formModel.product_id,
+            cnName: formModel.product_id,
+        };
     } else {
         tempObj = {
             enName: formModel.buss_custom,
@@ -493,7 +463,6 @@ const updateIndicatorsNameInfo = () => {
 
 // 选择业务维度
 const selectBussinessDimension = () => {
-    formModel.sub_system_id = '';
     formModel.sub_system_name = '';
     formModel.product_id = '';
     formModel.product_name = '';
@@ -513,12 +482,9 @@ const selectIndicatorsFrequency = () => {
     updateIndicatorsNameInfo();
 };
 
-// 选择子系统
-const selectSubSystem = (value) => {
-    const target = subSystems.value.find(item => item.value === value);
-    if (target) {
-        formModel.sub_system_name = target.label || '';
-    }
+// 子系统输入处理
+const handleSubSystemInput = (value) => {
+    formModel.sub_system_name = value;
     updateIndicatorsNameInfo();
 };
 
@@ -528,11 +494,8 @@ const inputEnCodeHandler = () => {
 };
 
 // 选择产品
-const selectProduct = (value) => {
-    const target = products.value.find(item => item.value === value);
-    if (target) {
-        formModel.product_name = target.label || '';
-    }
+const handleProductInput = (value) => {
+    formModel.product_name = value;
     updateIndicatorsNameInfo();
 };
 
@@ -644,7 +607,7 @@ const getMonitoringCapabilities = async () => {
     }
 };
 const getPreparedData = async () => {
-    Promise.all([getProducts(), getSubSystemInfo(), getBusinessDomain(), getMonitoringCapabilities()]);
+    Promise.all([getBusinessDomain(), getMonitoringCapabilities()]);
     // getProducts();
     // getSubSystemInfo();
 };

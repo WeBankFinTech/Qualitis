@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.model;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/6/22 16:10
  */
 public class DmTicketValue {

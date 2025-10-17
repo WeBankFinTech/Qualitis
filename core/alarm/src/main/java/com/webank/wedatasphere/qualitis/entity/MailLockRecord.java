@@ -9,9 +9,9 @@ import javax.persistence.Table;
 import java.util.Date;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_mail_lock_record")
 public class MailLockRecord {
     @Id

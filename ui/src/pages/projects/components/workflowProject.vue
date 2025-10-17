@@ -2,7 +2,7 @@
     <div>
         <BTablePage :isLoading="showLoading" actionType="loading" :loadingText="{ loading: '' }">
             <template v-slot:search>
-                <SearchFilterBar workSpace="workflowProjectFilter" :subSystemList="subSystemList" />
+                <SearchFilterBar workSpace="workflowProjectFilter" />
             </template>
             <template v-slot:operate>
                 <ProjectActionBar :actions="projectActions" />
@@ -89,7 +89,6 @@ const showLoading = ref(false);
 // 项目类型（1：普通项目 2：工作流项目）
 const projectType = 2;
 provide('projectType', projectType);
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
 // 项目topbar按钮配置
 const projectActions = [
     {
@@ -98,24 +97,15 @@ const projectActions = [
         icon: MoreCircleOutlined,
         label: $t('myProject.more'),
         trigger: 'click',
-        options: overseasVersion === 'true' ? [
-            {
-                label: $t('common.setTableHeaderConfig'),
-                value: '2',
-                handler: () => {
-                    // eslint-disable-next-line no-use-before-define
-                    toggleTColConfig();
-                },
-            },
-        ] : [
-            {
-                label: $t('common.operReportingSubsManagement'),
-                value: '1',
-                handler: () => {
-                    // eslint-disable-next-line no-use-before-define
-                    openSubsManagement();
-                },
-            },
+        options: [
+            // {
+            //     label: $t('common.operReportingSubsManagement'),
+            //     value: '1',
+            //     handler: () => {
+            //         // eslint-disable-next-line no-use-before-define
+            //         openSubsManagement();
+            //     },
+            // },
             {
                 label: $t('common.setTableHeaderConfig'),
                 value: '2',
@@ -173,8 +163,5 @@ const navigateToProjectDetail = (row) => {
     });
 };
 
-// 获取数据源相关数据
-const {
-    subSystemList,
-} = useDataSource(['subSystemList']);
+// 获取数据源相关数据 - 已移除子系统列表
 </script>

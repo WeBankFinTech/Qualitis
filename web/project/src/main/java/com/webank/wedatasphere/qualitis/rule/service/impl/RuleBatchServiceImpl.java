@@ -487,7 +487,7 @@ public class RuleBatchServiceImpl implements RuleBatchService {
                 alarmConfig.setRule(ruleInDb);
 
                 if (alarmConfig.getRuleMetric() != null) {
-                    RuleMetric ruleMetricInDb = ruleMetricDao.findByName(alarmConfig.getRuleMetric().getName());
+                    RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(alarmConfig.getRuleMetric().getEnCode());
                     if (ruleMetricInDb != null) {
                         alarmConfig.setRuleMetric(ruleMetricInDb);
                     } else {

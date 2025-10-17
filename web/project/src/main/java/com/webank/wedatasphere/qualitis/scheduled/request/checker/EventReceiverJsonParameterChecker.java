@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import java.util.Map;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-11-02 11:25
  * @description
  */

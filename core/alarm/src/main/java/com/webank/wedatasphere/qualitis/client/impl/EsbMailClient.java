@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Component
 public class EsbMailClient implements MailClient {
@@ -95,7 +95,7 @@ public class EsbMailClient implements MailClient {
         esbMailRecord.setAssemblyResult(result);
         esbMailRecord.setCreateTime(simpleDateFormat.format(new Date()));
         esbMailRecord.setCreateUser(createUser);
-//        esbMailRecordDao.save(esbMailRecord);
+        esbMailRecordDao.save(esbMailRecord);
         LOGGER.info(">>>>>>>>>> Esb Mail Record Object :<<<<<<<<<< : " + esbMailRecord.toString());
     }
 

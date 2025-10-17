@@ -1,5 +1,5 @@
 import { ref, onMounted } from 'vue';
-import { fetchOptions, fetchSubSystemInfo, fetctdataLabels } from '../api';
+import { fetchOptions, fetctdataLabels } from '../api';
 
 export default function useRuleQueryInit() {
     const clusters = ref([]);
@@ -12,27 +12,28 @@ export default function useRuleQueryInit() {
     ];
     const databases = ref([]);
     const tables = ref([]);
-    const subSystems = ref([]);
+    // const subSystems = ref([]); // 已移除，改为直接输入
     const dataLabels = ref([]);
     const dcns = ref([]); // 等接口
 
-    // 获取子系统中文名
-    const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
+    // 获取子系统中文名 - 已移除
+    // const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
 
     onMounted(async () => {
         try {
-            const subSystemInfoRes = await fetchSubSystemInfo();
-            const subSystemInfoResList = subSystemInfoRes || [];
-            subSystems.value = subSystemInfoResList.map((item) => {
-                const cnName = getSystemNameNew(item.subSystemId, item);
-                return Object.assign({}, item, {
-                    subSystemName: cnName,
-                    enName: item.subSystemName,
-                    cnName,
-                    value: String(item.subSystemId),
-                    label: item.subSystemName,
-                });
-            });
+            // 子系统初始化已移除
+            // const subSystemInfoRes = await fetchSubSystemInfo();
+            // const subSystemInfoResList = subSystemInfoRes || [];
+            // subSystems.value = subSystemInfoResList.map((item) => {
+            //     const cnName = getSystemNameNew(item.subSystemId, item);
+            //     return Object.assign({}, item, {
+            //         subSystemName: cnName,
+            //         enName: item.subSystemName,
+            //         cnName,
+            //         value: String(item.subSystemId),
+            //         label: item.subSystemName,
+            //     });
+            // });
             const dataLabelsRes = await fetctdataLabels();
             const dataLabelsResList = dataLabelsRes.content || [];
             dataLabels.value = dataLabelsResList.map(item => Object.assign({}, item, {
@@ -65,7 +66,7 @@ export default function useRuleQueryInit() {
         databases,
         tables,
         dcns,
-        subSystems,
+        // subSystems, // 已移除
         dataLabels,
     };
 }

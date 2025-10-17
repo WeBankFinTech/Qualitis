@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.request;
 import java.util.Map;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-08-02 15:13
  * @description
  */

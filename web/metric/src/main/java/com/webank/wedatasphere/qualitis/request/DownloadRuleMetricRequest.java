@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/5/17 17:00
  */
 public class DownloadRuleMetricRequest {

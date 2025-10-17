@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.controller;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/5/7 14:35
  */
 

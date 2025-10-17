@@ -6,7 +6,7 @@ import java.util.Date;
 /**
  * @author v_wenxuanzhang
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_imsmetric_identify")
 public class ImsmetricIdentify {
 

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.dao;
 import com.webank.wedatasphere.qualitis.rule.entity.StandardValue;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface StandardValueDao {
 

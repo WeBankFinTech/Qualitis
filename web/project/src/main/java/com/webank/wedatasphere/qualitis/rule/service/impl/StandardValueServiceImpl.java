@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,7 +74,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Service
 public class StandardValueServiceImpl implements StandardValueService {
@@ -111,6 +112,9 @@ public class StandardValueServiceImpl implements StandardValueService {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardValueServiceImpl.class);
 
     public static final FastDateFormat PRINT_TIME_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
+
+    @Value("${overseas_external_version.enable:false}")
+    private Boolean overseasVersionEnabled;
 
     private HttpServletRequest httpServletRequest;
 
@@ -476,6 +480,12 @@ public class StandardValueServiceImpl implements StandardValueService {
 
     @Override
     public List<Map<String, Object>> getAllSourceEnum() {
+        if (overseasVersionEnabled) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("code", StandardSourceEnum.CUSTOM_SOURCE.getCode());
+            item.put("message", StandardSourceEnum.CUSTOM_SOURCE.getMessage());
+            return Arrays.asList(item);
+        }
         return StandardSourceEnum.getStandardSourceList();
     }
 

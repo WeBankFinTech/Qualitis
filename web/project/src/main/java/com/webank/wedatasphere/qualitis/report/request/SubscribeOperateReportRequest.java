@@ -8,7 +8,7 @@ import org.apache.commons.collections.CollectionUtils;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class SubscribeOperateReportRequest {
 

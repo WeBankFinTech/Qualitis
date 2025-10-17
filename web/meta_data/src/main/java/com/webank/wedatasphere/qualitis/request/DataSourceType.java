@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.request;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/11/2 10:50
  */
 public class DataSourceType {

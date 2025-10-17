@@ -1,10 +1,11 @@
 package com.webank.wedatasphere.qualitis.concurrent;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.handler.RecordRejectedExecutionHandler;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.MetricMonitorThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
+import cn.webank.bdp.wedatasphere.biz.utils.ThreadPoolMetricStatisticsUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
-import com.webank.wedatasphere.qualitis.pool.MetricMonitorThreadPool;
-import com.webank.wedatasphere.qualitis.pool.handler.RecordRejectedExecutionHandler;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.*;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-10-18 14:15
  * @description
  */
@@ -43,6 +44,7 @@ public class QualitisThreadPoolManager extends AbstractThreadPoolManager {
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(1000),
                 new RecordRejectedExecutionHandler(taskRerunName));
+        ThreadPoolMetricStatisticsUtils.registry(taskRerunName);
 
         String dgsmName = ThreadPoolConstant.DGSM;
         this.buildMonitoredThreadPool(dgsmName, 50,
@@ -51,6 +53,7 @@ public class QualitisThreadPoolManager extends AbstractThreadPoolManager {
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(1000),
                 new RecordRejectedExecutionHandler(dgsmName));
+        ThreadPoolMetricStatisticsUtils.registry(dgsmName);
 
         String ruleExecutionName = ThreadPoolConstant.RULE_EXECUTION;
         this.buildMonitoredThreadPool(ruleExecutionName, 50,
@@ -59,6 +62,7 @@ public class QualitisThreadPoolManager extends AbstractThreadPoolManager {
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(1000),
                 new RecordRejectedExecutionHandler(ruleExecutionName));
+        ThreadPoolMetricStatisticsUtils.registry(ruleExecutionName);
 
         String dssRuleNodeName = ThreadPoolConstant.DSS_RULE_NODE;
         this.buildMonitoredThreadPool(dssRuleNodeName, 50,
@@ -67,6 +71,7 @@ public class QualitisThreadPoolManager extends AbstractThreadPoolManager {
                 TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(1000),
                 new RecordRejectedExecutionHandler(dssRuleNodeName));
+        ThreadPoolMetricStatisticsUtils.registry(dssRuleNodeName);
     }
 
     /**

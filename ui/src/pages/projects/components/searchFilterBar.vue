@@ -57,15 +57,12 @@
                     </FSelect>
                 </FFormItem>
                 <FFormItem :label="$t('dataSourceManagement.subSystem')" prop="subsystem_id">
-                    <FSelect
+                    <FInput
                         v-model="advanceQueryData.subsystem_id"
                         clearable
-                        filterable
-                        valueField="value"
-                        labelField="label"
-                        :filter="upperCaseFilter"
-                        :options="subSystemList"
-                    ></FSelect>
+                        :placeholder="$t('common.pleaseEnter')"
+
+                    />
                 </FFormItem>
                 <FFormItem :label="$t('common.databaseList')" prop="db_name">
                     <FSelect
@@ -120,10 +117,10 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    subSystemList: {
-        type: Array,
-        required: true,
-    },
+    // subSystemList: {
+    //     type: Array,
+    //     required: true,
+    // },
 });
 
 // 获取数据源相关数据

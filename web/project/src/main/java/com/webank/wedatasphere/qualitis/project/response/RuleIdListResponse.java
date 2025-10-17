@@ -6,7 +6,7 @@ import com.google.gson.Gson;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class RuleIdListResponse {
 

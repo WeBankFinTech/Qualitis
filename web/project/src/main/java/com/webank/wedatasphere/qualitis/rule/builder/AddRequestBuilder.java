@@ -10,7 +10,7 @@ import com.webank.wedatasphere.qualitis.rule.request.TemplateArgumentRequest;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/8/17 11:45
  */
 public interface AddRequestBuilder {

@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public enum StandardSourceEnum {
     /**
      * 标准值来源枚举
      */
     CUSTOM_SOURCE(1, "自定义"),
-//    DATA_SHAPIS(2, "DataShapis"),
+    DATA_SHAPIS(2, "DataShapis"),
     ;
 
     private Integer code;

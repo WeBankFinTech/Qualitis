@@ -1,5 +1,7 @@
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
@@ -10,8 +12,6 @@ import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.project.constant.ProjectUserPermissionEnum;
 import com.webank.wedatasphere.qualitis.project.dao.ProjectDao;
 import com.webank.wedatasphere.qualitis.project.entity.Project;
@@ -58,7 +58,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/6/1 15:20
  */
 @Service
@@ -626,9 +626,13 @@ public class RuleGroupServiceImpl implements RuleGroupService {
         for (AddBatchRuleRequest.AddBatchCheckObjectRequest AddBatchCheckObjectRequest: checkObjectList) {
             if (Objects.isNull(AddBatchCheckObjectRequest.getRuleMetricId()) && StringUtils.isNotEmpty(AddBatchCheckObjectRequest.getRuleMetricName())) {
                 String ruleMetricName = AddBatchCheckObjectRequest.getRuleMetricName();
-                RuleMetric ruleMetric = ruleMetricDao.findByName(ruleMetricName);
+                String enCode = QualitisConstants.getRuleMetricEnCodeFromName(ruleMetricName);
+                if (StringUtils.isBlank(enCode)) {
+                    throw new UnExpectedRequestException(ruleMetricName + " does not meet specifications");
+                }
+                RuleMetric ruleMetric = ruleMetricDao.findByEnCode(enCode);
                 if (ruleMetric == null) {
-                    ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAdd(ruleMetricName, loginUser, CollectionUtils.isNotEmpty(AddBatchCheckObjectRequest.getDataSourceEnvRequests()));
+                    ruleMetric = ruleMetricCommonService.accordingRuleMetricNameAddOrModify(ruleMetricName, loginUser, CollectionUtils.isNotEmpty(AddBatchCheckObjectRequest.getDataSourceEnvRequests()));
                 }
                 AddBatchCheckObjectRequest.setRuleMetricId(ruleMetric.getId());
                 AddBatchCheckObjectRequest.setRuleMetricEnCode(ruleMetric.getEnCode());

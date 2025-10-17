@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.client.constant;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/3/3 10:41
  */
 public enum OperateEnum {

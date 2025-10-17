@@ -1112,6 +1112,7 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
     }
 
     /**
+     * before: UR1-127.0.0.1-15202(epccmaindb_G-DCN_9F1_set_2)
      * after: UR11010819212715202
      * @param envName
      * @return
@@ -1557,16 +1558,16 @@ public class SqlTemplateConverter extends AbstractTemplateConverter {
 
     private Map<String, Object> getUserNameAndPassword(Map<String, Object> connectParams) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get username and password from dpm return empty map.");
+            LOGGER.info("[overseasVersion] get username and password from dpm return empty map.");
             return new HashMap<>();
         }
-//        String appId = (String) connectParams.get("appid");
-//        String objectId = (String) connectParams.get("objectid");
-//        String timestamp = (String) connectParams.get("timestamp");
-//        String userClientIp = connectParams.containsKey("userClientIp") ? (String) connectParams.get("userClientIp"): "fakeIp";
-//
-//        String dk = (String) connectParams.get("dk");
-//        String datasourceInf = LocalNetwork.getNetCardName();
+        String appId = (String) connectParams.get("appid");
+        String objectId = (String) connectParams.get("objectid");
+        String timestamp = (String) connectParams.get("timestamp");
+        String userClientIp = connectParams.containsKey("userClientIp") ? (String) connectParams.get("userClientIp"): "fakeIp";
+
+        String dk = (String) connectParams.get("dk");
+        String datasourceInf = LocalNetwork.getNetCardName();
 //        AccountInfoObtainer obtainer = new AccountInfoObtainer(dpmConfig.getDatasourceServer(), dpmConfig.getDatasourcePort(), datasourceInf, false);
 //        obtainer.init();
 //        try {

@@ -5,8 +5,8 @@ import javax.persistence.*;
 /**
  * @author allenzhou
  */
-//@Entity
-//@Table(name = "qualitis_imsmetric_collect")
+@Entity
+@Table(name = "qualitis_imsmetric_collect")
 public class ImsMetricCollect {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

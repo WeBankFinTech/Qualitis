@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-04-13 17:42
  * @description
  */

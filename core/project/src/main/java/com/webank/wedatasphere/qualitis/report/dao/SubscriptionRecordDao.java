@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.report.entity.SubscribeOperateReport;
 import com.webank.wedatasphere.qualitis.report.entity.SubscriptionRecord;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface SubscriptionRecordDao {
 

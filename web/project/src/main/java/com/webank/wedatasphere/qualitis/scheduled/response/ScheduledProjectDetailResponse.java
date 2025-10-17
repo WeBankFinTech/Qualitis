@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledProject;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-07-14 9:39
  * @description
  */

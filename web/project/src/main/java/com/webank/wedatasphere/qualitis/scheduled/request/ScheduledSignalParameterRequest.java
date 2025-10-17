@@ -10,7 +10,7 @@ import com.webank.wedatasphere.qualitis.scheduled.request.checker.SignalParamete
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-11-02 11:11
  * @description
  */

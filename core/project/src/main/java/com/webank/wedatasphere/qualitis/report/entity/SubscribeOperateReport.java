@@ -15,7 +15,7 @@ import javax.persistence.Table;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Entity
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")

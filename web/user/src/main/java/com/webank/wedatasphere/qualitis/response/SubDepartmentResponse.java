@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.entity.Department;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-06-14 10:27
  * @description
  */

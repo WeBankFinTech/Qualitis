@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.response;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-08-20 18:08
  * @description
  */

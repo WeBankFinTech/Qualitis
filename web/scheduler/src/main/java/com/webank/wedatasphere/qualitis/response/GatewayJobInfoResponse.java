@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/1/7 14:40
  */
 public class GatewayJobInfoResponse {

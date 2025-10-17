@@ -9,7 +9,7 @@ import java.util.Date;
 /**
  * @author v_wenxuanzhang
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_imsmetric_check_result")
 public class ImsmetricCheckResult {
 

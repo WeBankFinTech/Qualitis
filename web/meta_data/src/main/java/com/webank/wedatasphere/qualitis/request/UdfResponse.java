@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/11/7 17:40
  */
 public class UdfResponse {

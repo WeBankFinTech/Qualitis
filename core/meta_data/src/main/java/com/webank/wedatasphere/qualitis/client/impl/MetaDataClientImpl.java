@@ -1282,7 +1282,7 @@ public class MetaDataClientImpl implements MetaDataClient {
     @Override
     public TableTagInfo getTableTag(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, ResourceAccessException, UnExpectedRequestException {
         if (overseasVersionEnabled) {
-            LOGGER.info(" get table tag return empty dto.");
+            LOGGER.info("[overseasVersion] get table tag return empty dto.");
             return new TableTagInfo();
         }
         validateParameter(sourceType, clusterType, dbName, tableName);
@@ -1328,7 +1328,7 @@ public class MetaDataClientImpl implements MetaDataClient {
     @Override
     public Optional<SearchMetadataInfo> getTableMetaData(String sourceType, String clusterType, String dbName, String tableName, String loginUser) throws MetaDataAcquireFailedException, ResourceAccessException, UnExpectedRequestException {
         if (overseasVersionEnabled) {
-            LOGGER.info(" get table tag return empty object.");
+            LOGGER.info("[overseasVersion] get table tag return empty object.");
             return Optional.empty();
         }
         validateParameter(sourceType, clusterType, dbName, tableName);

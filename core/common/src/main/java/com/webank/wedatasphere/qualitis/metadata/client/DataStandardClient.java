@@ -7,7 +7,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/6/15 11:30
  */
 public interface DataStandardClient {

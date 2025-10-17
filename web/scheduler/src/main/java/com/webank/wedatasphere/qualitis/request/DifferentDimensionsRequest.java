@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.rule.request.AddRuleRequest;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class DifferentDimensionsRequest {
 

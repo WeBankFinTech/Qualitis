@@ -6,35 +6,15 @@ const $t = locale.t;
 
 
 export const useDataList = () => {
-    const overseasVersion = sessionStorage.getItem('overseas_external_version');
     // 导入
-    const importTypeList = ref(overseasVersion === 'true' ? [
-        {
-            value: 1,
-            label: $t('_.从本地导入'),
-        },
-    ] : [
-        {
-            value: 2,
-            label: $t('_.从Git导入'),
-        },
+    const importTypeList = ref([
         {
             value: 1,
             label: $t('_.从本地导入'),
         },
     ]);
-
     // 导出
-    const exportTypeList = ref(overseasVersion === 'true' ? [
-        {
-            value: 1,
-            label: $t('_.导出到本地'),
-        },
-    ] : [
-        {
-            value: 2,
-            label: $t('_.导出到Git'),
-        },
+    const exportTypeList = ref([
         {
             value: 1,
             label: $t('_.导出到本地'),

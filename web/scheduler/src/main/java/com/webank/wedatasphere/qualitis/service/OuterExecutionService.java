@@ -345,14 +345,14 @@ public interface OuterExecutionService {
      * @param request
      * @return
      */
-//    GeneralResponse<Object> queryIdentify(OmnisScriptRequest request);
+    GeneralResponse<Object> queryIdentify(OmnisScriptRequest request);
 
     /**
      * query Ims metric Data
      * @param request
      * @return
      */
-//    GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request);
+    GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request);
 
 
     /**
@@ -379,5 +379,5 @@ public interface OuterExecutionService {
      * @return
      * @throws UnExpectedRequestException
      */
-//    GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
+    GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request)throws UnExpectedRequestException;
 }

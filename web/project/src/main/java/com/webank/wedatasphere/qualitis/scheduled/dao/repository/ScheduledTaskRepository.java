@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface ScheduledTaskRepository extends JpaRepository<ScheduledTask, Long>, JpaSpecificationExecutor<ScheduledTask> {
 

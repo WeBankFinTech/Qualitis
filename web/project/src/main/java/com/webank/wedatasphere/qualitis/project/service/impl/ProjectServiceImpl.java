@@ -47,10 +47,10 @@ import com.webank.wedatasphere.qualitis.project.entity.ProjectLabel;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectUser;
 import com.webank.wedatasphere.qualitis.project.request.AddProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.AuthorizeProjectUserRequest;
-//import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
+import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 import com.webank.wedatasphere.qualitis.project.request.DeleteProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.ModifyProjectDetailRequest;
-//import com.webank.wedatasphere.qualitis.project.request.ModifyProjectGitRelationRequest;
+import com.webank.wedatasphere.qualitis.project.request.ModifyProjectGitRelationRequest;
 import com.webank.wedatasphere.qualitis.project.request.ProjectTypeRequest;
 import com.webank.wedatasphere.qualitis.project.request.QueryProjectRequest;
 import com.webank.wedatasphere.qualitis.project.request.QueryRuleRequest;
@@ -432,49 +432,49 @@ public class ProjectServiceImpl implements ProjectService {
         return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
     }
 
-//    @Override
-//    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
-//    public GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
-//        // Check Arguments
-//        ModifyProjectGitRelationRequest.checkRequest(request);
-//
-//        // Check existence of project
-//        Project projectInDb = projectDao.findById(request.getProjectId());
-//        if (projectInDb == null) {
-//            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
-//        }
-//        LOGGER.info("Succeed to get project. project: {}", projectInDb);
-//
-//        // Get user
-//        User user;
-//        Long userId = HttpUtils.getUserId(httpServletRequest);
-//
-//        if (userId == null) {
-//            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
-//        } else {
-//            user = userDao.findById(userId);
-//            if (user == null) {
-//                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
-//            }
-//        }
-//        // Check if user has permission modifying project
-//        List<Integer> permissions = new ArrayList<>();
-//        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
-//        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
-//        checkProjectPermission(projectInDb, user.getUsername(), permissions);
-//
-//        // Record modify field detail.
-//        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
-//        projectInDb.setGitRepo(request.getGitRepo());
-//        projectInDb.setGitType(request.getGitType());
-//
-//        projectInDb.setGitBranch(StringUtils.isEmpty(request.getGitBranch()) ? QualitisConstants.MASTER : request.getGitBranch());
-//        projectInDb.setGitRootDir(StringUtils.isEmpty(request.getGitRootDir()) ? "dqm".concat(File.separator).concat(projectInDb.getName()) : request.getGitRootDir());
-//
-//        Project savedProject = projectDao.saveProject(projectInDb);
-//        LOGGER.info("Succeed to modify project. Project: {}", savedProject);
-//        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
-//    }
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
+    public GeneralResponse<ProjectDetailResponse> modifyProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        // Check Arguments
+        ModifyProjectGitRelationRequest.checkRequest(request);
+
+        // Check existence of project
+        Project projectInDb = projectDao.findById(request.getProjectId());
+        if (projectInDb == null) {
+            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
+        }
+        LOGGER.info("Succeed to get project. project: {}", projectInDb);
+
+        // Get user
+        User user;
+        Long userId = HttpUtils.getUserId(httpServletRequest);
+
+        if (userId == null) {
+            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
+        } else {
+            user = userDao.findById(userId);
+            if (user == null) {
+                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
+            }
+        }
+        // Check if user has permission modifying project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        checkProjectPermission(projectInDb, user.getUsername(), permissions);
+
+        // Record modify field detail.
+        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
+        projectInDb.setGitRepo(request.getGitRepo());
+        projectInDb.setGitType(request.getGitType());
+
+        projectInDb.setGitBranch(StringUtils.isEmpty(request.getGitBranch()) ? QualitisConstants.MASTER : request.getGitBranch());
+        projectInDb.setGitRootDir(StringUtils.isEmpty(request.getGitRootDir()) ? "dqm".concat(File.separator).concat(projectInDb.getName()) : request.getGitRootDir());
+
+        Project savedProject = projectDao.saveProject(projectInDb);
+        LOGGER.info("Succeed to modify project. Project: {}", savedProject);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "{&MODIFY_PROJECT_DETAIL_SUCCESSFULLY}", new ProjectDetailResponse(savedProject, null));
+    }
 
     @Override
     public void createProjectUser(Project project, User user, Boolean switchType) {
@@ -760,46 +760,46 @@ public class ProjectServiceImpl implements ProjectService {
         return projectInDb;
     }
 
-//    @Override
-//    public GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
-//        CommonChecker.checkObject(request.getProjectId(), "Project ID");
-//
-//        // Check existence of project
-//        Project projectInDb = projectDao.findById(request.getProjectId());
-//        if (projectInDb == null) {
-//            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
-//        }
-//        LOGGER.info("Succeed to get project. project: {}", projectInDb);
-//
-//        // Get user
-//        User user;
-//        Long userId = HttpUtils.getUserId(httpServletRequest);
-//
-//        if (userId == null) {
-//            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
-//        } else {
-//            user = userDao.findById(userId);
-//            if (user == null) {
-//                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
-//            }
-//        }
-//        // Check if user has permission modifying project
-//        List<Integer> permissions = new ArrayList<>();
-//        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
-//        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
-//        checkProjectPermission(projectInDb, user.getUsername(), permissions);
-//
-//        // Record modify field detail.
-//        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
-//        projectInDb.setGitType(null);
-//        projectInDb.setGitRepo("");
-//        projectInDb.setGitBranch("");
-//        projectInDb.setGitRootDir("");
-//
-//        Project savedProject = projectDao.saveProject(projectInDb);
-//        LOGGER.info("Succeed to delete project git relation. Project: {}", savedProject);
-//        return new GeneralResponse<>(ResponseStatusConstants.OK, "Succeed to delete git relation of project", new ProjectDetailResponse(savedProject, null));
-//    }
+    @Override
+    public GeneralResponse<ProjectDetailResponse> deleteProjectGitRelation(ModifyProjectGitRelationRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException {
+        CommonChecker.checkObject(request.getProjectId(), "Project ID");
+
+        // Check existence of project
+        Project projectInDb = projectDao.findById(request.getProjectId());
+        if (projectInDb == null) {
+            throw new UnExpectedRequestException("project id {&DOES_NOT_EXIST}");
+        }
+        LOGGER.info("Succeed to get project. project: {}", projectInDb);
+
+        // Get user
+        User user;
+        Long userId = HttpUtils.getUserId(httpServletRequest);
+
+        if (userId == null) {
+            throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "because of http session has no user info"));
+        } else {
+            user = userDao.findById(userId);
+            if (user == null) {
+                throw new UnExpectedRequestException(String.format("{&FAILED_TO_FIND_USER} %s", "user ID cannot be found in db"));
+            }
+        }
+        // Check if user has permission modifying project
+        List<Integer> permissions = new ArrayList<>();
+        permissions.add(ProjectUserPermissionEnum.BUSSMAN.getCode());
+        permissions.add(ProjectUserPermissionEnum.DEVELOPER.getCode());
+        checkProjectPermission(projectInDb, user.getUsername(), permissions);
+
+        // Record modify field detail.
+        projectEventService.record(projectInDb, user.getUsername(), Strings.EMPTY, OperateTypeEnum.MODIFY_PROJECT);
+        projectInDb.setGitType(null);
+        projectInDb.setGitRepo("");
+        projectInDb.setGitBranch("");
+        projectInDb.setGitRootDir("");
+
+        Project savedProject = projectDao.saveProject(projectInDb);
+        LOGGER.info("Succeed to delete project git relation. Project: {}", savedProject);
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "Succeed to delete git relation of project", new ProjectDetailResponse(savedProject, null));
+    }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})

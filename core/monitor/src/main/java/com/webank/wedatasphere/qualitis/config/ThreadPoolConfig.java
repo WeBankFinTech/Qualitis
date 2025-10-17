@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.config;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.concurrent.QualitisThreadPoolManager;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

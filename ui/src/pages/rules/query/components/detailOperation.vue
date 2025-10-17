@@ -51,10 +51,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    subSystems: {
-        type: Array,
-        required: true,
-    },
+    // subSystems: {
+    //     type: Array,
+    //     required: true,
+    // },
 });
 
 const emit = defineEmits([

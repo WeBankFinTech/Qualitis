@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.dao;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledOperateHistory;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-04-13 17:42
  * @description
  */

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.dao;
 import com.webank.wedatasphere.qualitis.entity.EsbMailRecord;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface EsbMailRecordDao {
 
@@ -13,7 +13,7 @@ public interface EsbMailRecordDao {
      * @param esbMailRecord
      * @return
      */
-//    EsbMailRecord save(EsbMailRecord esbMailRecord);
+    EsbMailRecord save(EsbMailRecord esbMailRecord);
 
     /**
      * find by id
@@ -21,5 +21,5 @@ public interface EsbMailRecordDao {
      * @param esbMailRecordId
      * @return
      */
-//    EsbMailRecord findById(Long esbMailRecordId);
+    EsbMailRecord findById(Long esbMailRecordId);
 }

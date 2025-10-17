@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-01-11 18:10
  * @description
  * 背景：多线程并发请求createOrModifyAndSubmitRule，且是修改同一个Rule，过程中会经历两个阶段：修改规则阶段（其他分支不考虑）、提交规则阶段。

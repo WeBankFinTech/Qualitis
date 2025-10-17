@@ -19,9 +19,11 @@ package com.webank.wedatasphere.qualitis.service.impl;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.dao.DepartmentDao;
+import com.webank.wedatasphere.qualitis.dao.UserDao;
 import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserDepartmentRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.ProxyUserRepository;
 import com.webank.wedatasphere.qualitis.dao.repository.UserProxyUserRepository;
+import com.webank.wedatasphere.qualitis.dao.repository.UserRepository;
 import com.webank.wedatasphere.qualitis.entity.Department;
 import com.webank.wedatasphere.qualitis.entity.ProxyUser;
 import com.webank.wedatasphere.qualitis.entity.ProxyUserDepartment;
@@ -64,6 +66,9 @@ public class ProxyUserServiceImpl implements ProxyUserService {
     private ProxyUserRepository proxyUserRepository;
 
     @Autowired
+    private UserDao userDao;
+
+    @Autowired
     private ProxyUserDepartmentRepository proxyUserDepartmentRepository;
 
     @Autowired
@@ -93,6 +98,11 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         if (proxyUserInDb != null) {
             throw new UnExpectedRequestException("ProxyUser name: [" + request.getProxyUserName() +  "] {&ALREADY_EXIST}");
         }
+        String loginUser = HttpUtils.getUserName(httpServletRequest);
+        User user = userDao.findByUsername(loginUser);
+        if (user.getDepartment() == null) {
+            throw new UnExpectedRequestException("The department of the login user cannot be empty.");
+        }
 
         // Save proxy user
         ProxyUser proxyUser = new ProxyUser();
@@ -100,7 +110,7 @@ public class ProxyUserServiceImpl implements ProxyUserService {
         proxyUser.setUserConfigJson(request.getUserConfigJson());
         Department departmentInDb = departmentDao.findById(request.getDepartment());
         proxyUser.setDepartment(departmentInDb);
-        proxyUser.setCreateUser(HttpUtils.getUserName(httpServletRequest));
+        proxyUser.setCreateUser(loginUser);
         proxyUser.setCreateTime(DateUtils.now());
         List<DepartmentInfo> departmentInfo = request.getDepartmentInfo();
         ProxyUser savedProxyUser = proxyUserRepository.save(proxyUser);

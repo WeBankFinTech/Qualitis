@@ -7,7 +7,7 @@ import com.webank.wedatasphere.qualitis.project.entity.Project;
 import javax.persistence.*;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-07-13 17:58
  * @description
  */

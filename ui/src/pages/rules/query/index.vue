@@ -11,7 +11,6 @@
                     :tables="tables"
                     :dcns="dcns"
                     :advanceQueryData="advanceQueryData"
-                    :subSystems="subSystems"
                     :dataLabels="dataLabels"
                     :devDivisions="devDivisions"
                     :loadDevDivisions="loadDevDivisions"
@@ -131,7 +130,7 @@ const {
     databases,
     tables,
     dcns,
-    subSystems,
+    // subSystems, // 已移除
     dataLabels,
 } = useRuleQueryInit();
 
@@ -361,11 +360,9 @@ const handleCancelAdvanceSearch = () => {
     Object.assign(advanceQueryData, advanceQueryDataCopy.value);
     searchModal.value.closeAdvanceModal();
 };
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
-const moreMenus = ref(overseasVersion === 'true' ? [
-    { label: $t('common.setTableHeaderConfig'), value: '2' },
-] : [
-    { label: $t('metadataManagement.metadataUpdate'), value: '1' },
+
+const moreMenus = ref([
+    // { label: $t('metadataManagement.metadataUpdate'), value: '1' },
     { label: $t('common.setTableHeaderConfig'), value: '2' },
 ]);
 
@@ -497,12 +494,9 @@ const handleTaskQuery = (row) => {
         query,
     });
 };
-const tableOperations = ref(overseasVersion === 'true' ? [
-    { label: $t('ruleQuery.verifyRule'), value: '3' },
-    { label: $t('ruleQuery.taskQuery'), value: '4' },
-] : [
-    { label: $t('ruleQuery.associatedApp'), value: '1' },
-    { label: $t('ruleQuery.dataBlood'), value: '2' },
+const tableOperations = ref([
+    // { label: $t('ruleQuery.associatedApp'), value: '1' },
+    // { label: $t('ruleQuery.dataBlood'), value: '2' },
     { label: $t('ruleQuery.verifyRule'), value: '3' },
     { label: $t('ruleQuery.taskQuery'), value: '4' },
 ]);

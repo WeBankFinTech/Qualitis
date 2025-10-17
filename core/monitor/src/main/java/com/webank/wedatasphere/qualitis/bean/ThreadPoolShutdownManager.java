@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.bean;
 
-import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-10-18 15:47
  * @description
  */

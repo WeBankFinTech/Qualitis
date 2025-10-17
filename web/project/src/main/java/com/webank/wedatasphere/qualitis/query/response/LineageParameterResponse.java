@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.query.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-06-28 15:18
  * @description
  */

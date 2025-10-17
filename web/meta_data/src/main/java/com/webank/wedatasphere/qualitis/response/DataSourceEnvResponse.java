@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.response;
 import com.webank.wedatasphere.qualitis.rule.entity.LinkisDataSourceEnv;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-12-07 15:05
  * @description
  */

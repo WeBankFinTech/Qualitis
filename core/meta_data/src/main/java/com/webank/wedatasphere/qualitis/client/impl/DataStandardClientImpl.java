@@ -32,7 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/6/15 15:29
  */
 @Component
@@ -52,7 +52,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDatabase(String searchKey, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get database return empty map.");
+            LOGGER.info("[overseasVersion] get database return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -82,7 +82,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     public Map<String, Object> getDataset(String dbId, String datasetName, int page, int size, String loginUser)
             throws UnExpectedRequestException, MetaDataAcquireFailedException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get dataset return empty map.");
+            LOGGER.info("[overseasVersion] get dataset return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -112,7 +112,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getColumnStandard(Long datasetId, String fieldName, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get column standard return empty map.");
+            LOGGER.info("[overseasVersion] get column standard return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -147,7 +147,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataStandardDetail(String stdCode, String source, String loginUser) throws UnExpectedRequestException, MetaDataAcquireFailedException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get data standard detail return empty map.");
+            LOGGER.info("[overseasVersion] get data standard detail return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -177,7 +177,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataStandardCategory(int page, int size, String loginUser, String stdSubName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get data standard category return empty map.");
+            LOGGER.info("[overseasVersion] get data standard category return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -215,7 +215,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataStandardBigCategory(int page, int size, String loginUser, String stdSubName, String stdBigCategoryName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get data standard big category return empty map.");
+            LOGGER.info("[overseasVersion] get data standard big category return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -254,7 +254,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataStandardSmallCategory(int page, int size, String loginUser, String stdSubName, String stdBigCategoryName, String smallCategoryName) throws MetaDataAcquireFailedException, UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get data standard small category return empty map.");
+            LOGGER.info("[overseasVersion] get data standard small category return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -294,7 +294,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getDataStandard(int page, int size, String loginUser, String stdSmallCategoryUrn, String stdCnName) throws MetaDataAcquireFailedException, UnExpectedRequestException, URISyntaxException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get data standard return empty map.");
+            LOGGER.info("[overseasVersion] get data standard return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -337,7 +337,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getStandardCode(int page, int size, String loginUser, String stdUrn) throws MetaDataAcquireFailedException, UnExpectedRequestException, URISyntaxException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get standard code return empty map.");
+            LOGGER.info("[overseasVersion] get standard code return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())
@@ -370,7 +370,7 @@ public class DataStandardClientImpl implements DataStandardClient {
     @Override
     public Map<String, Object> getStandardCodeTable(int page, int size, String loginUser, String stdCode) throws MetaDataAcquireFailedException, UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get standard code table return empty map.");
+            LOGGER.info("[overseasVersion] get standard code table return empty map.");
             return new HashMap<>();
         }
         UriBuilder uriBuilder = UriBuilder.fromUri(dataMapConfig.getAddress())

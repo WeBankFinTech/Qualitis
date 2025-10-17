@@ -4,7 +4,7 @@ import javax.persistence.*;
 import java.util.Date;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-11-18 11:47
  * @description
  */

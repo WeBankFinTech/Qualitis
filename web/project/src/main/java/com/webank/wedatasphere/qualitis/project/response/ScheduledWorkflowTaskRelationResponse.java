@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleGroup;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledWorkflowTaskRelation;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-07-15 10:00
  * @description
  */

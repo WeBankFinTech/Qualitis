@@ -7,7 +7,7 @@ import com.webank.wedatasphere.qualitis.rule.exception.RuleLockException;
 import java.time.Duration;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-12-19 8:55
  * @description
  */

@@ -5,7 +5,7 @@ import javax.persistence.*;
 /**
  * @author allenzhou
  */
-//@Entity
+@Entity
 //@Table(name = "qualitis_auto_collect_record")
 public class ImsMetricAutoCollectRecord {
   @Id

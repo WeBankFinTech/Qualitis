@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/8/25 16:15
  */
 public class DatasourceEnvUtil {

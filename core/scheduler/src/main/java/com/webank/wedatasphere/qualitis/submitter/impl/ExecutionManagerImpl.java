@@ -64,6 +64,7 @@ import com.webank.wedatasphere.qualitis.rule.util.UnitTransfer;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTypeEnum;
 import com.webank.wedatasphere.qualitis.submitter.ExecutionManager;
 import com.webank.wedatasphere.qualitis.util.DateExprReplaceUtil;
+import com.webank.wedatasphere.qualitis.util.DateUtils;
 import com.webank.wedatasphere.qualitis.util.FilePassUtil;
 import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
@@ -808,13 +809,13 @@ public class ExecutionManagerImpl implements ExecutionManager {
             if (StringUtils.isEmpty(runDate)) {
                 if (StringUtils.isNotBlank(runToday)) {
                     runDate = runToday;
-                    Date runRealDate = handleTimeFormatting(runDate);
+                    Date runRealDate = DateUtils.handleTimeFormatting(runDate);
                     runDate = runRealDate.getTime() + "";
                 } else {
                     runDate = "-1";
                 }
             } else {
-                Date runRealDate = handleTimeFormatting(runDate);
+                Date runRealDate = DateUtils.handleTimeFormatting(runDate);
                 runDate = runRealDate.getTime() + "";
             }
 
@@ -883,22 +884,6 @@ public class ExecutionManagerImpl implements ExecutionManager {
         return taskSubmitResults;
     }
 
-    private Date handleTimeFormatting(String runDate) throws UnExpectedRequestException {
-        Date runRealDate = null;
-        try {
-            if (runDate.contains(SpecCharEnum.MINUS.getValue())) {
-                runRealDate = new SimpleDateFormat("yyyy-MM-dd").parse(runDate);
-            } else {
-                runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
-            }
-        } catch (ParseException e) {
-            String errorMsg = "Parse date string with run date failed. Exception message: " + e.getMessage();
-            LOGGER.error(errorMsg);
-            throw new UnExpectedRequestException(errorMsg);
-        }
-        return runRealDate;
-    }
-
     @Override
     public TaskSubmitResult executeCheckAlert(ClusterInfo clusterInfo, String[] dbAndTables, List<String> columns, CheckAlert currentCheckAlert
             , Application saveApplication, String startupParam, Boolean engineReuse, String engineType) throws Exception {
@@ -944,14 +929,20 @@ public class ExecutionManagerImpl implements ExecutionManager {
                 contentTitle.add(colAndAlias[1]);
             }
         } else {
-            for (String tmpCol : columns.subList(QualitisConstants.COMMON_ARRAY_INDEX_O, columns.size() <= QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH ? columns.size() : QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH)) {
+            for (String tmpCol : columns.subList(QualitisConstants.COMMON_ARRAY_INDEX_0, columns.size() <= QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH ? columns.size() : QualitisConstants.DEFAULT_CONTENT_COLUMN_LENGTH)) {
                 selectPart.add(tmpCol);
                 contentTitle.add(tmpCol);
             }
         }
 
         jobCodes.add("import sys.process._");
-        jobCodes.add("import scala.util.parsing.json._");
+        if (QualitisConstants.OUTDATED_SPARK_ENGINE_VERSION.equals(linkisConfig.getEngineVersion())) {
+            jobCodes.add("import scala.util.parsing.json._");
+        } else {
+            jobCodes.add("import org.json4s._");
+            jobCodes.add("import org.json4s.jackson.JsonMethods.parse");
+            jobCodes.add("implicit val formats: DefaultFormats = DefaultFormats");
+        }
 
         String realContent = "\"" + linkisConfig.getCheckAlertTemplate().replace("qualitis_check_alert_topic", currentCheckAlert.getTopic()).replace("qualitis_check_alert_time", saveApplication.getSubmitTime()).replace("qualitis_check_alert_project_info", currentCheckAlert.getProject().getName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getWorkFlowName() + SpecCharEnum.COLON.getValue() + currentCheckAlert.getNodeName()) + "\"";
 
@@ -1009,8 +1000,15 @@ public class ExecutionManagerImpl implements ExecutionManager {
                 jobCodes.add("val realJsonAdvancedValue = jsonAdvancedValue.replaceAll(\"qualitis_check_alert_Advanced\", alertContent)");
                 jobCodes.add("val jsonAdvancedCmd = Seq(\"curl\", \"-H\", \"Content-Type: application/json\",\"-d\", s\"$realJsonAdvancedValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
                 jobCodes.add("val advancedResponse = jsonAdvancedCmd.!!");
-                jobCodes.add("val code = JSON.parseFull(advancedResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
-                jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
+
+                if (QualitisConstants.OUTDATED_SPARK_ENGINE_VERSION.equals(linkisConfig.getEngineVersion())) {
+                    jobCodes.add("val code = JSON.parseFull(advancedResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+                } else {
+                    jobCodes.add("val json = parse(advancedResponse)");
+                    jobCodes.add("val code =(json \\ \"resultCode\").extractOpt[String].get");
+                }
+
+                jobCodes.add("if (! \"0.0\".equals(code) && ! \"0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
             }
             jobCodes.add("} else {");
             jobCodes.add("alertContent = alertContent.replaceAll(\"qualitis_check_alert_advanced_content\", \"\")");
@@ -1050,8 +1048,16 @@ public class ExecutionManagerImpl implements ExecutionManager {
         jobCodes.add("val realJsonDefaultValue = jsonDefaultValue.replaceAll(\"qualitis_check_alert_info\", alertContent)");
         jobCodes.add("val jsonDefaultCmd = Seq(\"curl\", \"-H\", \"Content-Type: application/json\",\"-d\", s\"$realJsonDefaultValue\",\"" + imsConfig.getUrl() + imsConfig.getSendAlarmPath() + "\")");
         jobCodes.add("val defaultResponse = jsonDefaultCmd.!!");
-        jobCodes.add("val code = JSON.parseFull(defaultResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
-        jobCodes.add("if (! \"0.0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
+
+        if (QualitisConstants.OUTDATED_SPARK_ENGINE_VERSION.equals(linkisConfig.getEngineVersion())) {
+            jobCodes.add("val code = JSON.parseFull(defaultResponse).get.asInstanceOf[Map[String, Object]].get(\"resultCode\").get.toString");
+        } else {
+            jobCodes.add("val json = parse(defaultResponse)");
+            jobCodes.add("val code =(json \\ \"resultCode\").extractOpt[String].get");
+        }
+
+        jobCodes.add("if (! \"0.0\".equals(code) && ! \"0\".equals(code)) throw new RuntimeException(\"Failed to send ims alarm. Return non-zero code from IMS.\")");
+
         jobCodes.add("}");
 
 
@@ -1135,7 +1141,7 @@ public class ExecutionManagerImpl implements ExecutionManager {
             taskResult = existTaskResult;
         } else {
             taskResult = new TaskResult();
-            Date runRealDate = handleTimeFormatting(runDate);
+            Date runRealDate = DateUtils.handleTimeFormatting(runDate);
             taskResult.setRunDate(runRealDate.getTime());
         }
         return taskResult;

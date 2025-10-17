@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.project.constant;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public enum ProjectStatusEnum {
 

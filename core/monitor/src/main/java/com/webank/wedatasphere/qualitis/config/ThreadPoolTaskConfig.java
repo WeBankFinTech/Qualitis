@@ -9,7 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Configuration
 @EnableAsync

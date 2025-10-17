@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.concurrent;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-01-19 9:49
  * @description
  */

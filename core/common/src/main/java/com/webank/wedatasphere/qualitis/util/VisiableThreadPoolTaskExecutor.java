@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Slf4j
 public class VisiableThreadPoolTaskExecutor extends ThreadPoolTaskExecutor {

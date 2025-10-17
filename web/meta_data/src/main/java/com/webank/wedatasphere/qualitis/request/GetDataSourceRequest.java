@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-06-16 16:54
  * @description
  */

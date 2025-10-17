@@ -16,6 +16,9 @@
 
 package com.webank.wedatasphere.qualitis.rule.service.impl;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.GeneralThreadPool;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
@@ -34,9 +37,6 @@ import com.webank.wedatasphere.qualitis.metadata.request.GetUserTableByCsIdReque
 import com.webank.wedatasphere.qualitis.metadata.response.DataInfo;
 import com.webank.wedatasphere.qualitis.metadata.response.column.ColumnInfoDetail;
 import com.webank.wedatasphere.qualitis.metadata.response.table.CsTableInfoDetail;
-import com.webank.wedatasphere.qualitis.pool.GeneralThreadPool;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.rule.constant.RuleTemplateTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.TemplateDataSourceTypeEnum;
@@ -495,7 +495,7 @@ public class RuleDataSourceServiceImpl implements RuleDataSourceService {
     @Override
     public GeneralResponse<Object> syncMetadata(String userName) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info("disable sync metadata");
+            LOGGER.info("[overseasVersion] disable sync metadata");
             return new GeneralResponse(ResponseStatusConstants.OK, "THIS_FEATURE_IS_TEMPORARILY_DISABLED", null);
         }
         LOGGER.info("Ready to sync metadata, loginUser: {}", userName);

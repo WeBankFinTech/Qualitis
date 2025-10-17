@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Repository
 public class SubscribeOperateReportDaoImpl implements SubscribeOperateReportDao {

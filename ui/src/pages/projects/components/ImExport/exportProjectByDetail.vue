@@ -107,35 +107,12 @@ const modalTitle = computed(() => (props.downloadRule ? $t('myProject.downloadRu
 const emit = defineEmits(['update:show']);
 const initExportForm = () => {
     if (props.downloadRule) {
-        exportTypeList.value = [
-            {
-                value: 1,
-                label: $t('_.导出到本地'),
-            },
-        ];
-        return {
-            download_type: 1,
-            dif_array: [],
-            rule_ids: [],
-        };
-    }
-    if (props.type === 'detail') {
-        return {
-            download_type: 1,
-            git_branch: props.project.git_branch,
-            git_type: props.project.git_type,
-            git_repo: props.project.git_repo,
-            git_root_dir: props.project.git_root_dir || `dqm/${props.project?.project_name || ''}`,
-            dif_array: [],
-        };
+        exportTypeList.value.splice(0, 1);
     }
     return {
         download_type: 1,
-        git_branch: 'master',
-        git_type: 1,
-        git_repo: '',
-        git_root_dir: 'dqm/',
         dif_array: [],
+        rule_ids: [],
     };
 };
 const {

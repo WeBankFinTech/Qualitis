@@ -1,6 +1,7 @@
 {
   "name": "dqm-ui-next",
-  "version": "1.12.0",
+  "version": "1.14.3",
+  "wbSubSystem": "WDSDQMS-UI",
   "description": "新版qualities页面",
   "scripts": {
     "build": "fes build",
@@ -71,7 +72,6 @@
     "@fesjs/plugin-watermark": "3.0.0",
     "@fesjs/traction-widget": "1.11.0",
     "@micro-zoe/micro-app": "1.0.0-beta.3",
-    "@webank/fes-plugin-pmbank-um": "3.1.1",
     "babel-plugin-syntax-jsx": "6.18.0",
     "clipboard": "^2.0.11",
     "core-js": "3.33.0",

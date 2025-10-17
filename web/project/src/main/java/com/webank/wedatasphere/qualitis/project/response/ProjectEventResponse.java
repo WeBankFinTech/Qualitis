@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.project.constant.OperateTypeEnum;
 import com.webank.wedatasphere.qualitis.project.entity.ProjectEvent;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/4/20 17:20
  */
 public class ProjectEventResponse {

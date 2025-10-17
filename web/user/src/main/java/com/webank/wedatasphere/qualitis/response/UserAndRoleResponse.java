@@ -52,19 +52,19 @@ public class UserAndRoleResponse {
         this.username = username;
     }
 
-    public Integer getLoginRandom() {
-        return loginRandom;
-    }
-
-    public void setLoginRandom(Integer loginRandom) {
-        this.loginRandom = loginRandom;
-    }
-
     public Boolean getOverseasVersionEnabled() {
         return overseasVersionEnabled;
     }
 
     public void setOverseasVersionEnabled(Boolean overseasVersionEnabled) {
         this.overseasVersionEnabled = overseasVersionEnabled;
+    }
+
+    public Integer getLoginRandom() {
+        return loginRandom;
+    }
+
+    public void setLoginRandom(Integer loginRandom) {
+        this.loginRandom = loginRandom;
     }
 }

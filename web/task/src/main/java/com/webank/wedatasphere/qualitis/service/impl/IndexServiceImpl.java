@@ -59,8 +59,8 @@ public class IndexServiceImpl implements IndexService {
 
   private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
 
-//  @Autowired
-//  private ImsMetricAutoCollectRecordDao imsMetricAutoCollectRecordDao;
+  @Autowired
+  private ImsMetricAutoCollectRecordDao imsMetricAutoCollectRecordDao;
   @Autowired
   private ApplicationDao applicationDao;
   @Autowired
@@ -382,21 +382,21 @@ public class IndexServiceImpl implements IndexService {
       return result;
     }
 
-//    if (request.getStepSize() != null) {
-//      LOGGER.info("[Home overview]user:{},recent:{} days, find auto collect recordsby the user's proxy user with specified date.", request.getUser(), request.getStepSize());
-//      Calendar calendar = Calendar.getInstance();
-//      calendar.setTime(new Date());
-//      String endDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
-//      calendar.add(Calendar.MONTH, request.getStepSize());
-//      String startDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
-//      List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(startDate + " 00:00:00", endDate + " 23:59:59", proxyUserNames);
-//      findAndFill(imsMetricAutoCollectRecords, result);
-//
-//      return result;
-//    }
-//
-//    List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(request.getStartDate() + " 00:00:00", request.getEndDate() + " 23:59:59", proxyUserNames);
-//    findAndFill(imsMetricAutoCollectRecords, result);
+    if (request.getStepSize() != null) {
+      LOGGER.info("[Home overview]user:{},recent:{} days, find auto collect recordsby the user's proxy user with specified date.", request.getUser(), request.getStepSize());
+      Calendar calendar = Calendar.getInstance();
+      calendar.setTime(new Date());
+      String endDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
+      calendar.add(Calendar.MONTH, request.getStepSize());
+      String startDate = DateFormatUtils.format(calendar.getTime(), DATE_FORMAT_PATTERN);
+      List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(startDate + " 00:00:00", endDate + " 23:59:59", proxyUserNames);
+      findAndFill(imsMetricAutoCollectRecords, result);
+
+      return result;
+    }
+
+    List<ImsMetricAutoCollectRecord> imsMetricAutoCollectRecords = imsMetricAutoCollectRecordDao.findByConditions(request.getStartDate() + " 00:00:00", request.getEndDate() + " 23:59:59", proxyUserNames);
+    findAndFill(imsMetricAutoCollectRecords, result);
 
     return result;
   }

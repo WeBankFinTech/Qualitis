@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.request.PageRequest;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class QueryCheckAlertRequest extends PageRequest {
 

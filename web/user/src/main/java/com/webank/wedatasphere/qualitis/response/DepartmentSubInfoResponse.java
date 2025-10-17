@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.response;
 import com.webank.wedatasphere.qualitis.rule.entity.DataVisibility;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-09-21 10:54
  * @description
  */

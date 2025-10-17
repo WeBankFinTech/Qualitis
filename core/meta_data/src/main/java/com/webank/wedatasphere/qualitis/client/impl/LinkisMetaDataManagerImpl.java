@@ -35,7 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-05-12 10:59
  * @description 封装对metaDataClient的调用，主要用于处理请求参数的包装和转换
  */

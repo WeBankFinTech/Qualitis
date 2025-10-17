@@ -154,10 +154,9 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                         }
                         checkAlertObject.setWorkFlowVersion(request.getVersion());
                         checkAlertObject.setWorkFlowName(request.getWorkFlowName());
-                        LOGGER.info("Success to copy check alert: " + checkAlertDao.save(checkAlertObject).toString());
-                        int total = checkAlertDao.countByProjectAndTopic(project.getId(), checkAlertObject.getTopic());
+                        int total = checkAlertDao.countByProjectAndTopic(project.getId(), checkAlertObject.getTopic(), request.getWorkFlowName());
                         if (total > QualitisConstants.DSS_NODE_VERSION_NUM) {
-                            CheckAlert lowestCheckAlert = checkAlertDao.findLowestVersionByProjectAndTopic(project.getId(), checkAlertObject.getTopic());
+                            CheckAlert lowestCheckAlert = checkAlertDao.findLowestVersionByProjectAndTopic(project.getId(), checkAlertObject.getTopic(), request.getWorkFlowName());
 
                             if (lowestCheckAlert != null) {
                                 LOGGER.info("Start to delete lowest version check alert. {}", lowestCheckAlert.toString());
@@ -165,6 +164,10 @@ public class RuleNodeCallable implements Callable<List<Exception>> {
                                 LOGGER.info("Success to delete lowest version check alert.");
                             }
                         }
+                        LOGGER.info("Success to copy check alert: " + checkAlertDao.save(checkAlertObject).toString());
+                    } else {
+                        marryCheckAlert.setRuleGroup(targetRuleGroup);
+                        LOGGER.info("Success to copy same check alert again: " + checkAlertDao.save(marryCheckAlert).toString());
                     }
                     totalFinish++;
                 }

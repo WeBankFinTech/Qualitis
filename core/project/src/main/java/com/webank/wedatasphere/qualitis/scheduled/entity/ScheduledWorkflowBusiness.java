@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import javax.persistence.*;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-07-17 9:45
  * @description
  */
-//@Entity
-//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+@Entity
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 //@Table(name = "qualitis_scheduled_workflow_business")
 public class ScheduledWorkflowBusiness {
 

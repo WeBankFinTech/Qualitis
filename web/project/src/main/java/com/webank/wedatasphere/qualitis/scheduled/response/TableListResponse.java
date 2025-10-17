@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.scheduled.response;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class TableListResponse {
 

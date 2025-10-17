@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.entity;
 import javax.persistence.*;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-11-14 9:51
  * @description
  */

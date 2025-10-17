@@ -10,7 +10,7 @@ import javax.persistence.Column;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-10-20 10:43
  * @description
  */

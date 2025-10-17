@@ -83,8 +83,7 @@ public class ReportUtil {
                         if (CollectionUtils.isNotEmpty(taskResults)) {
                             for (TaskResult taskResult : taskResults) {
                                 RuleMetric ruleMetric = ruleMetricDao.findById(taskResult.getRuleMetricId());
-                                metricDatas
-                                        .add(constructMetaData(ruleMetric, taskResult, imsConfig, ruleName, collectTimestamp, taskDataSources));
+                                metricDatas.add(constructMetaData(ruleMetric, taskResult, imsConfig, ruleName, collectTimestamp, taskDataSources));
                             }
                         }
                     }

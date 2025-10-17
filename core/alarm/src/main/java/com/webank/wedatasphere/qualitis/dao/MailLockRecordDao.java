@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.entity.MailLockRecord;
 import java.util.Date;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface MailLockRecordDao {
 
@@ -15,7 +15,7 @@ public interface MailLockRecordDao {
      * @param mailLockRecord
      * @return
      */
-//    MailLockRecord save(MailLockRecord mailLockRecord);
+    MailLockRecord save(MailLockRecord mailLockRecord);
 
     /**
      * Find with unique keys(status, upload date).
@@ -25,5 +25,5 @@ public interface MailLockRecordDao {
      * @param executionFrequency
      * @return
      */
-//    MailLockRecord findByUnique(Date recordDate, Boolean status, Integer executionFrequency);
+    MailLockRecord findByUnique(Date recordDate, Boolean status, Integer executionFrequency);
 }

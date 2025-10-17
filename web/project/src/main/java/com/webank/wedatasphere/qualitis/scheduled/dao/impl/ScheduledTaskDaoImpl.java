@@ -21,7 +21,7 @@ import javax.persistence.criteria.Predicate;
 import java.util.*;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Repository
 public class ScheduledTaskDaoImpl implements ScheduledTaskDao {

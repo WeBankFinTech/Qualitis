@@ -26,4 +26,6 @@ import java.util.List;
 public interface ProxyUserDao {
 
     ProxyUser findByProxyUserName(String proxyUserName);
+
+    List<ProxyUser> findByProxyUserNameList(List<String> proxyUserNameList);
 }

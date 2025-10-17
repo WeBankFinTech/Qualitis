@@ -12,13 +12,10 @@
             </FFormItem>
             <!-- 关联子系统 -->
             <FFormItem :label="$t('dataSourceManagement.associatedSubSystem')">
-                <FSelect
+                <FInput
                     v-model="advanceQuery.sub_system_name"
-                    filterable
                     clearable
                     :placeholder="$t('common.pleaseEnter')"
-                    :options="subSystemList"
-                    :fitler="upperCaseFilter"
                 />
             </FFormItem>
             <!-- 开发科室 -->
@@ -126,11 +123,6 @@ const props = defineProps({
     advanceQuery: {
         default: {},
         required: true,
-    },
-    // 子系统下拉框列表
-    subSystemList: {
-        type: Array,
-        default: [],
     },
 });
 const advanceQuery = computed({

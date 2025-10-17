@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.rule.constant.MetricClassEnum;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-11-18 11:53
  * @description
  */

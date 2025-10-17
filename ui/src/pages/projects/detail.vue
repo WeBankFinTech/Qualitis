@@ -12,7 +12,7 @@
                 <li class="wd-body-menu-item" @click="showTaskRecordPanel">{{$t('myProject.record')}}</li>
                 <!-- <li class="wd-body-menu-item" @click="showExecuteParamsTemplate(projectId)">{{$t('myProject.executeParamsTemplate')}}</li> -->
                 <li class="wd-body-menu-item" @click="showTemplateDrawer">{{$t('myProject.executeParamsTemplate')}}</li>
-                <li v-if="overseasVersion === 'false'" class="wd-body-menu-item" @click="showApplicationInfoTemplateDrawer = true">{{$t('myProject.applicationInfoTemplate')}}</li>
+                <!-- <li class="wd-body-menu-item" @click="showApplicationInfoTemplateDrawer = true">{{$t('myProject.applicationInfoTemplate')}}</li> -->
             </ul>
             <h6 class="wd-body-title">{{$t('myProject.rules')}}</h6>
             <!-- 规则筛选 -->
@@ -39,13 +39,13 @@
                             <FButton type="primary" @click="excuteProjectRules"><fes-icon type="execute" style="margin-right: 4px;" />{{$t('myProject.run')}}</FButton>
                             <FTooltip placement="top" popperClass="range-text-wrap">
                                 <div>
-                                    <FButton type="default" class="button" style="margin-right: 16px" @click="toTask(1)">
+                                    <FButton type="default" class="button" @click="toTask(1)">
                                         <img class="button-icon" src="@/assets/images/icons/scheduleIcon.svg" style="margin-right: 4px; height: 14px; width:14px;" />
                                         {{$t('myProject.associateScheduledTask')}}
                                     </FButton>
-                                    <FButton v-if="overseasVersion === 'false'" type="default" class="button" @click="toTask(2)">
+                                    <!-- <FButton type="default" class="button" @click="toTask(2)">
                                         <img class="button-icon" src="@/assets/images/icons/timingIcon.svg" style="margin-right: 4px; height: 14px; width:14px;" />{{$t('myProject.publishScheduledTask')}}
-                                    </FButton>
+                                    </FButton> -->
                                 </div>
                                 <template #content>
                                     <div>{{$t('_.当前租户下可支持的最大峰值提交总量：')}}{{peakNum}}</div>
@@ -328,7 +328,7 @@
             displayDirective="if"
             width="50%"
         >
-            <AppInfoTemplate :subSystemList="subSystemList"></AppInfoTemplate>
+            <AppInfoTemplate></AppInfoTemplate>
         </FDrawer>
 
         <!-- 数据告警规则抽屉 -->
@@ -389,30 +389,8 @@ import {
 import DataAlarmRuleDrawer from './components/dataAlarmRuleDrawer.vue';
 
 const { t: $t } = useI18n();
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
-const subSystemList = ref([]);
-// 获取子系统中文名
-const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
-// 获取子系统列表
-const getSubSystemInfo = async () => {
-    try {
-        const timestamp = new Date().getTime();
-        const res = await FRequest(`/api/v1/projector/meta_data/subSystemInfo?timestamp=${timestamp}`, {}, 'post');
-        const list = res || [];
-        subSystemList.value = list.map((item) => {
-            const cnName = getSystemNameNew(item.subSystemId, item);
-            return Object.assign({}, item, {
-                subSystemName: cnName,
-                enName: item.subSystemName,
-                cnName,
-                value: String(item.subSystemId),
-                label: item.subSystemName,
-            });
-        });
-    } catch (error) {
-        console.log('error: ', error);
-    }
-};
+
+// 获取子系统列表 - 已移除，改为直接输入
 
 const tempStatusList = ref({
     0: {
@@ -1286,7 +1264,6 @@ onMounted(() => {
         mergeCells.value = projectMergeCells !== 'false';
     }
     getPeakNum();
-    getSubSystemInfo();
 });
 
 

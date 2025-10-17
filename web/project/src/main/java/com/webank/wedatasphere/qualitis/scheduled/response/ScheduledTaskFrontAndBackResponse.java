@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.scheduled.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class ScheduledTaskFrontAndBackResponse {
 

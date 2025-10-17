@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.metadata.request.LinkisConnectParamsRequest;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2023-11-02 10:54
  * @description
  */

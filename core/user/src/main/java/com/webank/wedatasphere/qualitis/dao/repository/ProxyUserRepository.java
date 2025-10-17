@@ -38,6 +38,13 @@ public interface ProxyUserRepository extends JpaRepository<ProxyUser, Long>, Jpa
     ProxyUser findByProxyUserName(String proxyUserName);
 
     /**
+     * find proxy users by a list of proxy username
+     * @param proxyUserNameList
+     * @return
+     */
+    List<ProxyUser> findByProxyUserNameIn(List<String> proxyUserNameList);
+
+    /**
      * find By Department
      * @param department
      * @return

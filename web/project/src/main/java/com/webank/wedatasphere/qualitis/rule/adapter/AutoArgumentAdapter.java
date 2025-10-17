@@ -18,6 +18,7 @@ package com.webank.wedatasphere.qualitis.rule.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.rule.constant.ContrastTypeEnum;
 import com.webank.wedatasphere.qualitis.rule.constant.MappingOperationEnum;
@@ -89,7 +90,7 @@ public class AutoArgumentAdapter {
 
     public Map<String, String> getMultiSourceAdaptValue(Rule rule, TemplateMidTableInputMeta templateMidTableInputMeta, String clusterName, MultiDataSourceConfigRequest firstDataSource
         , MultiDataSourceConfigRequest secondDataSource, List<MultiDataSourceJoinConfigRequest> mappings, List<DataSourceColumnRequest> colNames, String filter, String contrastType, String connFieldOriginValue, String compFieldOriginValue
-        , String leftMetricSql, String rightMetricSql) {
+        , String leftMetricSql, String rightMetricSql) throws UnExpectedRequestException {
 
         Integer inputType = templateMidTableInputMeta.getInputType();
         if (inputType.equals(TemplateInputTypeEnum.CONTRAST_TYPE.getCode())) {
@@ -192,14 +193,19 @@ public class AutoArgumentAdapter {
         return map;
     }
 
-    private String generateAndConcatStatement(List<MultiDataSourceJoinConfigRequest> mappings) {
+    // 多表比对/跨集群比对，通过AND建立多个比对字段之间的映射关系
+    private String generateAndConcatStatement(List<MultiDataSourceJoinConfigRequest> mappings) throws UnExpectedRequestException {
         List<String> originStatement = new ArrayList<>();
         for (MultiDataSourceJoinConfigRequest mapping : mappings) {
-            StringBuilder fullStatement = new StringBuilder();
-            String leftStatement = StringUtils.isNotBlank(mapping.getLeftStatement())?mapping.getLeftStatement():appendColumn(mapping.getLeft());
-            String rightStatement = StringUtils.isNotBlank(mapping.getRightStatement())?mapping.getRightStatement():appendColumn(mapping.getRight());
-            fullStatement.append(leftStatement).append(MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol()).append(rightStatement);
-            originStatement.add(fullStatement.toString());
+            if (CollectionUtils.isNotEmpty(mapping.getLeft()) && CollectionUtils.isNotEmpty(mapping.getRight())) {
+                originStatement.add(buildingColumnMapping(mapping.getLeft(), mapping.getRight()));
+            } else {
+                StringBuilder fullStatement = new StringBuilder();
+                String leftStatement = StringUtils.isNotBlank(mapping.getLeftStatement())?mapping.getLeftStatement():appendColumn(mapping.getLeft());
+                String rightStatement = StringUtils.isNotBlank(mapping.getRightStatement())?mapping.getRightStatement():appendColumn(mapping.getRight());
+                fullStatement.append(leftStatement).append(MappingOperationEnum.getByCode(mapping.getOperation()).getSymbol()).append(rightStatement);
+                originStatement.add(fullStatement.toString());
+            }
         }
 
         return generateStatementByConcatStr(originStatement, "AND");
@@ -211,6 +217,28 @@ public class AutoArgumentAdapter {
             columnStrList.add(request.getColumnName());
         }
         return StringUtils.join(columnStrList, SpecCharEnum.EMPTY.getValue());
+    }
+
+    /**
+     *
+     * @param leftColumnList
+     * @param rightColumnList
+     * @return tmp1.a=tmp2.a and tmp1.b=tmp2.b
+     */
+    private String buildingColumnMapping(List<MultiDataSourceJoinColumnRequest> leftColumnList, List<MultiDataSourceJoinColumnRequest> rightColumnList) throws UnExpectedRequestException {
+        if (leftColumnList.size() != rightColumnList.size()) {
+            throw new UnExpectedRequestException("left column and right column is inconsistent.");
+        }
+        StringBuilder mappingSql = new StringBuilder();
+        for (int i = 0; i < leftColumnList.size(); i++) {
+            MultiDataSourceJoinColumnRequest leftColumn = leftColumnList.get(i);
+            MultiDataSourceJoinColumnRequest rightColumn = rightColumnList.get(i);
+            mappingSql.append(leftColumn.getColumnName() + SpecCharEnum.EQUAL.getValue() + rightColumn.getColumnName());
+            if (i < (leftColumnList.size()) - 1) {
+                mappingSql.append(SpecCharEnum.EMPTY.getValue() + QualitisConstants.AND + SpecCharEnum.EMPTY.getValue());
+            }
+        }
+        return mappingSql.toString();
     }
 
     private String getPlaceHolder(String str) {

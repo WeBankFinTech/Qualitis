@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public enum PositionRoleEnum {
     /**

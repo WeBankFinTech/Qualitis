@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class RuleLisingCallable implements Callable<ProjectDetailResponse> {
 

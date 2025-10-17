@@ -17,7 +17,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.Objects;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Path("operation/aomp/detection")
 public class ExploringActivityController {

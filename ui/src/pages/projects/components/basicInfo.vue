@@ -44,17 +44,12 @@
                 />
             </FFormItem>
             <FFormItem :label="`${$t('myProject.owningSubsystem')}`" prop="sub_system_id">
-                <FSelect
-                    ref="subSystemRef"
+                <FInput
                     v-model="tempProject.sub_system_id"
                     clearable
-                    filterable
-                    valueField="value"
-                    labelField="label"
-                    :options="subSystemList"
-                    :filter="upperCaseFilter"
-                    @change="setSubSysName"
-                ></FSelect>
+                    :placeholder="$t('common.pleaseEnter')"
+                    @change="handleSubSystemInput"
+                ></FInput>
             </FFormItem>
             <FFormItem :label="`${$t('common.itemTag')}`" prop="project_label">
                 <TagsPanel v-model:tags="tempProject.project_label" />
@@ -248,17 +243,13 @@ const emit = defineEmits([
     'update:project', // 编辑表单提交更新
     'upateProject', // 向后端接口拉取最新project信息
 ]);
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
 
 // 更多操作
 const showGitBase = ref(false);
 const showImport = ref(false);
 const showExport = ref(false);
-const moreMenus = ref(overseasVersion === 'true' ? [
-    { label: $t('myProject.importProject'), value: 'import' },
-    { label: $t('myProject.downloadProject'), value: 'export' },
-] : [
-    { label: $t('myProject.codeAddress'), value: 'codeAddress' },
+const moreMenus = ref([
+    // { label: $t('myProject.codeAddress'), value: 'codeAddress' },
     { label: $t('myProject.importProject'), value: 'import' },
     { label: $t('myProject.downloadProject'), value: 'export' },
 ]);
@@ -299,13 +290,11 @@ const toggleBasicEdit = () => {
     showBasicEdit.value = !showBasicEdit.value;
 };
 
-// 获取子系统
-const { subSystemList } = useDataSource(['subSystemList']);
+// 获取子系统 - 已移除，改为直接输入
+// const { subSystemList } = useDataSource(['subSystemList']);
 
-const setSubSysName = (val) => {
-    tempProject.value.sub_system_name = val
-        ? subSystemList.value.find(v => v.value === val)?.label
-        : '';
+const handleSubSystemInput = (val) => {
+    tempProject.value.sub_system_name = val;
 };
 
 const projectBasicForm = ref(null);
@@ -325,8 +314,8 @@ const editProject = async () => {
             cn_name,
             description,
             project_label,
-            sub_system_id,
             sub_system_name,
+            sub_system_id,
         } = tempProject.value;
         await FRequest(
             'api/v1/projector/project/modify',
@@ -336,8 +325,8 @@ const editProject = async () => {
                 cn_name,
                 description,
                 project_label,
-                sub_system_id,
                 sub_system_name,
+                sub_system_id,
             },
         );
         FMessage.success($t('toastSuccess.editSuccess'));

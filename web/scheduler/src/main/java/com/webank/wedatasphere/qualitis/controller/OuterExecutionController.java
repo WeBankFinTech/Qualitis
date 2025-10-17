@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.qualitis.controller;
 
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.exception.PermissionDeniedRequestException;
@@ -309,31 +309,31 @@ public class OuterExecutionController {
 
     }
 
-//    @POST
-//    @Path("query/identify")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse<Object> queryIdentifyConfig(OmnisScriptRequest request) {
-//        try {
-//            return outerExecutionService.queryIdentify(request);
-//        } catch (Exception e) {
-//            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
-//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
-//        }
-//    }
+    @POST
+    @Path("query/identify")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<Object> queryIdentifyConfig(OmnisScriptRequest request) {
+        try {
+            return outerExecutionService.queryIdentify(request);
+        } catch (Exception e) {
+            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+        }
+    }
 
-//    @POST
-//    @Path("query/ImsmetricData")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
-//        try {
-//            return outerExecutionService.queryImsmetricData(request);
-//        } catch (Exception e) {
-//            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
-//            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
-//        }
-//    }
+    @POST
+    @Path("query/ImsmetricData")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
+        try {
+            return outerExecutionService.queryImsmetricData(request);
+        } catch (Exception e) {
+            LOGGER.error("queryIdentifyConfig Failed  caused by system error: {}", e.getMessage(), e);
+            return new GeneralResponse<>(ResponseStatusConstants.SERVER_ERROR, "{&CAN_NOT_FIND_SUITABLE_REQUEST}", e.getMessage());
+        }
+    }
 
     @POST
     @Path("batch/enable/rule")
@@ -370,21 +370,21 @@ public class OuterExecutionController {
         }
     }
 
-//    @POST
-//    @Path("fieldsAnalyse/result")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
-//        try {
-//            return outerExecutionService.getFieldsAnalyseResult(request);
-//        } catch (UnExpectedRequestException e) {
-//            LOGGER.error(e.getMessage(), e);
-//            return new GeneralResponse<>("500", e.getMessage(), e);
-//        } catch (Exception e) {
-//            LOGGER.error("Failed to get result of application: {}", e);
-//            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
-//        }
-//    }
+    @POST
+    @Path("fieldsAnalyse/result")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+        try {
+            return outerExecutionService.getFieldsAnalyseResult(request);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error(e.getMessage(), e);
+            return new GeneralResponse<>("500", e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.error("Failed to get result of application: {}", e);
+            return new GeneralResponse<>("500", "{&FAILED_TO_GET_RESULT_OF_APPLICATION}:", e);
+        }
+    }
 
     @POST
     @Path("delete/rule_metrics")

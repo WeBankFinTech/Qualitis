@@ -13,7 +13,7 @@ import com.webank.wedatasphere.qualitis.rule.response.RuleResponse;
 import java.io.IOException;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/9/8 10:40
  */
 public interface CreateAndExecutionService {

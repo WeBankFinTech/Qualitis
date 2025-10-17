@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.project.response;
 import com.webank.wedatasphere.qualitis.scheduled.entity.ScheduledFrontBackRule;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class ScheduledFrontBackRuleResponse {
 

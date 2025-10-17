@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.util;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2024/2/23 12:00
  */
 public class MyStringEscaper {

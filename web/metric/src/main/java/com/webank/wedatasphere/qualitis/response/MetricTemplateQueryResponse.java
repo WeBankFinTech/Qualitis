@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.Template;
 import com.webank.wedatasphere.qualitis.rule.response.RuleTemplateResponse;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-04-18 9:38
  * @description
  */

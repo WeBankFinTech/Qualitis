@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import com.webank.wedatasphere.qualitis.project.request.CommonChecker;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-07-17 9:57
  * @description
  */

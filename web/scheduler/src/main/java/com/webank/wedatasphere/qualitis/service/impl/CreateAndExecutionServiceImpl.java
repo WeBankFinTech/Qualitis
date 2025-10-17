@@ -1,17 +1,18 @@
 package com.webank.wedatasphere.qualitis.service.impl;
 
+import cn.webank.bdp.wedatasphere.biz.concurrent.exception.ThreadPoolNotFoundException;
+import cn.webank.bdp.wedatasphere.biz.concurrent.pool.manager.AbstractThreadPoolManager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.webank.wedatasphere.qualitis.checkalert.dao.repository.CheckAlertWhiteListRepository;
 import com.webank.wedatasphere.qualitis.checkalert.entity.CheckAlertWhiteList;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContext;
 import com.webank.wedatasphere.qualitis.concurrent.RuleContextManager;
-import com.webank.wedatasphere.qualitis.pool.exception.ThreadPoolNotFoundException;
-import com.webank.wedatasphere.qualitis.pool.manager.AbstractThreadPoolManager;
 import com.webank.wedatasphere.qualitis.config.LinkisConfig;
 import com.webank.wedatasphere.qualitis.config.SpecialProjectRuleConfig;
 import com.webank.wedatasphere.qualitis.constant.InvokeTypeEnum;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.constants.ResponseStatusConstants;
 import com.webank.wedatasphere.qualitis.constants.ThreadPoolConstant;
 import com.webank.wedatasphere.qualitis.constants.WhiteListTypeEnum;
@@ -73,7 +74,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/9/8 10:42
  */
 @Service
@@ -357,23 +358,23 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
             List<String> ruleMetricNames = request.getRuleMetricNamesForBdpClient();
             boolean multiEnv = CollectionUtils.isNotEmpty(request.getDatasource().iterator().next().getDataSourceEnvRequests());
             Map<String, Object> maps = solveAndConstruct(null, ruleMetricNames, createUser, multiEnv, templateFunction);
-            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(solveAndConstruct(null, ruleMetricNames, createUser, multiEnv, templateFunction));
+            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(maps);
         } else if (abstrackAddRequest instanceof AddMultiSourceRuleRequest) {
             AddMultiSourceRuleRequest request = (AddMultiSourceRuleRequest) abstrackAddRequest;
             List<String> ruleMetricNames = request.getRuleMetricNamesForBdpClient();
             Map<String, Object> maps = solveAndConstruct(null, ruleMetricNames, createUser, false, templateFunction);
-            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(solveAndConstruct(null, ruleMetricNames, createUser, false, templateFunction));
+            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(maps);
         } else if (abstrackAddRequest instanceof AddCustomRuleRequest) {
             AddCustomRuleRequest request = (AddCustomRuleRequest) abstrackAddRequest;
             List<String> ruleMetricNames = request.getRuleMetricNamesForBdpClient();
             boolean multiEnv = CollectionUtils.isNotEmpty(request.getDataSourceEnvRequests());
             Map<String, Object> maps = solveAndConstruct(request.getSqlCheckArea(), ruleMetricNames, createUser, multiEnv, templateFunction);
-            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(solveAndConstruct(request.getSqlCheckArea(), ruleMetricNames, createUser, multiEnv, templateFunction));
+            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(maps);
         } else if (abstrackAddRequest instanceof AddFileRuleRequest) {
             AddFileRuleRequest request = (AddFileRuleRequest) abstrackAddRequest;
             List<String> ruleMetricNames = request.getRuleMetricNamesForBdpClient();
             Map<String, Object> maps = solveAndConstruct(null, ruleMetricNames, createUser, false, templateFunction);
-            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(solveAndConstruct(null, ruleMetricNames, createUser, false, templateFunction));
+            return maps.isEmpty() ? "" : CustomObjectMapper.transObjectToJson(maps);
         }
         return "";
     }
@@ -509,26 +510,29 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         RuleContext ruleContext = null;
         boolean isAsyncRequest = Objects.nonNull(request.getAsync()) && Boolean.TRUE.equals(request.getAsync());
         try {
-            LOGGER.info("Begin to create new rule and execute in first time.");
             AddDirector addDirector = SpringContextHolder.getBean(AddDirector.class);
             addDirector.setUserName(request.getCreateUser());
             addDirector.setProxyUser(request.getExecutionUser());
             Map<String, Object> map = Maps.newHashMapWithExpectedSize(1);
             map.put("addDirector", addDirector);
 
+            LOGGER.info("Judge template function.");
             String templateFunction = judgeTemplateFunction(request, apiUserNameBlackList);
             if (StringUtils.isBlank(templateFunction)) {
                 return new GeneralResponse<>(ResponseStatusConstants.OUTER_HTTP_EXCEPTION, "Stop this user to call api", null);
             }
 
-//        checking actual createUser and executeUser
+            LOGGER.info("Check actual createUser and executeUser.");
             checkAndUpdateActualCreator(templateFunction, request, addDirector);
 
             CreateAndSubmitResponse response = new CreateAndSubmitResponse();
+            LOGGER.info("Set project and rule info.");
             RuleResponse ruleResponse = setProjectAndRuleInfo(addDirector, request, templateFunction);
             try {
                 if (null == ruleResponse) {
+                    LOGGER.info("Jexl start to run.");
                     AbstractCommonRequest abstractAddRequest = (AbstractCommonRequest) JexlUtil.executeExpression("addDirector." + templateFunction + ".returnRequest()", map);
+                    LOGGER.info("Jexl finish to run.");
                     LOGGER.info("Auto create rule or metric for bdp-client request: {}" + abstractAddRequest.toString());
                     ruleResponse = addOrModifyRule(abstractAddRequest, request, templateFunction, addDirector);
                     response.setRuleResponse(ruleResponse);
@@ -722,9 +726,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         return "" + ruleId + Thread.currentThread().getId() + (System.currentTimeMillis() / 1000) + UuidGenerator.generateRandom(6);
     }
 
-    private RuleResponse addOrModifyRule(AbstractCommonRequest abstractCommonRequest, CreateAndSubmitRequest request,
-                                         String templateFunction, AddDirector addDirector)
-            throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
+    private RuleResponse addOrModifyRule(AbstractCommonRequest abstractCommonRequest, CreateAndSubmitRequest request, String templateFunction, AddDirector addDirector) throws UnExpectedRequestException, IOException, PermissionDeniedRequestException {
         String mapDataset = createAndExecutionService.checkRuleMetricAndSave(abstractCommonRequest, request.getCreateUser(), templateFunction);
         Map<String, Object> maps = Maps.newLinkedHashMap();
         if (StringUtils.isNotBlank(mapDataset)) {
@@ -734,6 +736,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
         try {
             RuleResponse ruleResponse;
             if (addDirector.getRule() == null) {
+                LOGGER.info("Begin to create new rule and execute in first time.");
                 ruleResponse = addRuleAndGetRuleResponse(abstractCommonRequest, templateFunction, request, addDirector, maps);
             } else {
                 ruleResponse = modifyRuleAndGetRuleResponse(abstractCommonRequest, templateFunction, request, addDirector, maps);
@@ -1000,6 +1003,7 @@ public class CreateAndExecutionServiceImpl implements CreateAndExecutionService 
                 addDirector.setProject(project);
                 Rule rule = ruleDao.findByProjectAndRuleName(project, ruleName);
                 if (rule != null) {
+                    LOGGER.info("Begin to modify rule and execute.");
                     addDirector.setRule(rule);
                     String savedRuleDetail = rule.getDetail() == null ? "" : rule.getDetail();
                     String savedRuleCnName = rule.getCnName() == null ? "" : rule.getCnName();

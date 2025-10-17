@@ -78,7 +78,6 @@ const isLoadingUserData = ref(false);
 
 // 确认是否为管理员用户
 const isAdminUser = ref(sessionStorage.getItem('firstRole') === 'admin');
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
 
 // 未登录
 const unLogin = computed(() => route.path === '/home');
@@ -116,34 +115,10 @@ const menus = ref([{
     label: $t('indexManagement.title'),
     icon: () => h(<fes-icon type="quota" />),
     value: '/metricManagement',
-    children: overseasVersion === 'true' ? [{
+    children: [{
         label: $t('_.校验指标管理'),
         value: '/metricManagement/dqmetricManagement',
         icon: () => h(<fes-icon type="quota" />),
-    },
-    ] : [{
-        label: $t('_.校验指标管理'),
-        value: '/metricManagement/dqmetricManagement',
-        icon: () => h(<fes-icon type="quota" />),
-    }, {
-        label: $t('_.统计指标管理'),
-        icon: () => h(<fes-icon type="ims" />),
-        value: '/metricManagement/statisticsMetric',
-        children: [
-            {
-                label: $t('_.采集概览'),
-                value: '/metricManagement/statisticsMetric/overview',
-            },
-            {
-                label: $t('_.采集指标'),
-                value: '/metricManagement/statisticsMetric/metricQuery',
-            }, {
-                label: $t('_.采集算子'),
-                value: '/metricManagement/statisticsMetric/metricTemplate',
-            }, {
-                label: $t('_.采集配置'),
-                value: '/metricManagement/statisticsMetric/collectionConfiguration',
-            }],
     }],
 }, {
     label: $t('_.标准值管理'),

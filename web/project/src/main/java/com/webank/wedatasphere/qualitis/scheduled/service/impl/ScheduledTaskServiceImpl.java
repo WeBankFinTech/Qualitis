@@ -22,7 +22,7 @@ import com.webank.wedatasphere.qualitis.scheduled.constant.ScheduledSystemTypeEn
 import com.webank.wedatasphere.qualitis.scheduled.constant.ScheduledTaskTypeEnum;
 import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledFrontBackRuleDao;
 import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledTaskDao;
-//import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowBusinessDao;
+import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowBusinessDao;
 import com.webank.wedatasphere.qualitis.scheduled.dao.ScheduledWorkflowTaskRelationDao;
 import com.webank.wedatasphere.qualitis.scheduled.entity.*;
 import com.webank.wedatasphere.qualitis.scheduled.exception.ScheduledPushFailedException;
@@ -54,7 +54,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 @Service
 public class ScheduledTaskServiceImpl implements ScheduledTaskService {
@@ -83,8 +83,8 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
     private ScheduledOperateHistoryDao scheduledOperateHistoryDao;
     @Resource(name = "wtssScheduledPushService")
     private ScheduledTaskPushService scheduledTaskPushService;
-//    @Autowired
-//    private ScheduledWorkflowBusinessDao scheduledWorkflowBusinessDao;
+    @Autowired
+    private ScheduledWorkflowBusinessDao scheduledWorkflowBusinessDao;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScheduledTaskServiceImpl.class);
 
@@ -725,15 +725,16 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
                 pushAndUpdateRelationTask(request.getCluster(), releaseTaskList);
                 scheduledOperateHistory.setProgressStatus(PROGRESS_STATUS_ENDED);
             } else if (ScheduledTaskTypeEnum.PUBLISH.getCode().equals(request.getTaskType())) {
-//                LOGGER.info("Ready to release publish tasks");
-//                pushAndUpdatePublishTask(request.getWtssProjectName(), request.getWorkFlow(), releaseTaskList, request.getWorkflowBusinessId(), request.getApproveNumber());
-//                scheduledOperateHistory.setProgressStatus(PROGRESS_STATUS_ENDED);
+                LOGGER.info("Ready to release publish tasks");
+                pushAndUpdatePublishTask(request.getWtssProjectName(), request.getWorkFlow(), releaseTaskList, request.getWorkflowBusinessId(), request.getApproveNumber());
+                scheduledOperateHistory.setProgressStatus(PROGRESS_STATUS_ENDED);
             }
         } catch (UnExpectedRequestException e) {
             scheduledOperateHistory.setErrorMessage(e.getMessage());
             scheduledOperateHistory.setProgressStatus(PROGRESS_STATUS_FAILED);
             throw e;
         } catch (Exception e) {
+            scheduledOperateHistory.setErrorMessage(e.getMessage());
             scheduledOperateHistory.setProgressStatus(PROGRESS_STATUS_FAILED);
             throw e;
         } finally {
@@ -747,12 +748,12 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
             scheduledOperateHistory.setOperateType(OPERATE_TYPE_RELEASE);
             scheduledOperateHistory.setCreateUser(HttpUtils.getUserName(httpServletRequest));
             scheduledOperateHistory.setCreateTime(DateUtils.now());
-//            if (request.getWorkflowBusinessId() != null) {
-//                Optional<ScheduledWorkflowBusiness> workflowBusinessOptional = scheduledWorkflowBusinessDao.get(request.getWorkflowBusinessId());
-//                if (workflowBusinessOptional.isPresent()) {
-//                    scheduledOperateHistory.setWorkflowBusinessName(workflowBusinessOptional.get().getName());
-//                }
-//            }
+            if (request.getWorkflowBusinessId() != null) {
+                Optional<ScheduledWorkflowBusiness> workflowBusinessOptional = scheduledWorkflowBusinessDao.get(request.getWorkflowBusinessId());
+                if (workflowBusinessOptional.isPresent()) {
+                    scheduledOperateHistory.setWorkflowBusinessName(workflowBusinessOptional.get().getName());
+                }
+            }
             scheduledOperateHistoryDao.add(scheduledOperateHistory);
         }
     }
@@ -778,11 +779,11 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         }
         LOGGER.info("Preparing to delete all scheduled tasks if they are all in an unreleased state.");
 
-//        try {
-//            deleteBatchPublishSchedules(project.getId());
-//        } catch (ScheduledPushFailedException | IOException e) {
-//            LOGGER.error("Failed to delete batch of publish schedule", e);
-//        }
+        try {
+            deleteBatchPublishSchedules(project.getId());
+        } catch (ScheduledPushFailedException | IOException e) {
+            LOGGER.error("Failed to delete batch of publish schedule", e);
+        }
 
         try {
             deleteBatchRelationSchedules(scheduledTaskList);
@@ -811,43 +812,43 @@ public class ScheduledTaskServiceImpl implements ScheduledTaskService {
         }
     }
 
-//    private void deleteBatchPublishSchedules(Long projectId) throws UnExpectedRequestException, ScheduledPushFailedException, IOException {
-//        ScheduledTaskRequest scheduledTaskRequest = new ScheduledTaskRequest();
-//        scheduledTaskRequest.setProjectId(projectId);
-//        List<Map<String, Object>> scheduleProjectList = scheduledProjectService.getProjectOptionList(scheduledTaskRequest);
-//        List<Long> scheduledProjectIds = scheduleProjectList.stream().map(map -> (Long) map.get("scheduled_project_id")).distinct().collect(Collectors.toList());
-//        for (Long scheduledProjectId : scheduledProjectIds) {
-//            scheduledProjectService.delete(scheduledProjectId);
-//        }
-//    }
+    private void deleteBatchPublishSchedules(Long projectId) throws UnExpectedRequestException, ScheduledPushFailedException, IOException {
+        ScheduledTaskRequest scheduledTaskRequest = new ScheduledTaskRequest();
+        scheduledTaskRequest.setProjectId(projectId);
+        List<Map<String, Object>> scheduleProjectList = scheduledProjectService.getProjectOptionList(scheduledTaskRequest);
+        List<Long> scheduledProjectIds = scheduleProjectList.stream().map(map -> (Long) map.get("scheduled_project_id")).distinct().collect(Collectors.toList());
+        for (Long scheduledProjectId : scheduledProjectIds) {
+            scheduledProjectService.delete(scheduledProjectId);
+        }
+    }
 
-//    private void pushAndUpdatePublishTask(String wtssProjectName, String workflowName, List<ScheduledTask> releaseTaskList, Long workflowBusinessId, String itsmNo) throws UnExpectedRequestException {
-//        CommonChecker.checkObject(workflowBusinessId, "workflow_business_id");
-//        UnExpectedRequestException exception = null;
-//        boolean success = false;
-//        try {
-//            success = scheduledProjectService.releaseSchedulesToWTSS(wtssProjectName, workflowName, releaseTaskList, workflowBusinessId, itsmNo);
-//        } catch (UnExpectedRequestException e) {
-//            LOGGER.error("", e);
-//            exception = e;
-//        } catch (ScheduledPushFailedException e) {
-//            LOGGER.error("", e);
-//            exception = new UnExpectedRequestException(e.getMessage());
-//        } catch (IOException e) {
-//            LOGGER.error("", e);
-//            exception = new UnExpectedRequestException("File I/O Error!");
-//        }
-//        if (success) {
-//            releaseTaskList.forEach(scheduledTask -> scheduledTask.setReleaseStatus(TASK_RELEASE_STATUS_SUCCESS));
-//        } else {
-//            releaseTaskList.forEach(scheduledTask -> scheduledTask.setReleaseStatus(TASK_RELEASE_STATUS_NO));
-//        }
-//        scheduledTasksDao.saveAll(releaseTaskList);
-//
-//        if (null != exception) {
-//            throw exception;
-//        }
-//    }
+    private void pushAndUpdatePublishTask(String wtssProjectName, String workflowName, List<ScheduledTask> releaseTaskList, Long workflowBusinessId, String itsmNo) throws UnExpectedRequestException {
+        CommonChecker.checkObject(workflowBusinessId, "workflow_business_id");
+        UnExpectedRequestException exception = null;
+        boolean success = false;
+        try {
+            success = scheduledProjectService.releaseSchedulesToWTSS(wtssProjectName, workflowName, releaseTaskList, workflowBusinessId, itsmNo);
+        } catch (UnExpectedRequestException e) {
+            LOGGER.error("", e);
+            exception = e;
+        } catch (ScheduledPushFailedException e) {
+            LOGGER.error("", e);
+            exception = new UnExpectedRequestException(e.getMessage());
+        } catch (IOException e) {
+            LOGGER.error("", e);
+            exception = new UnExpectedRequestException("File I/O Error!");
+        }
+        if (success) {
+            releaseTaskList.forEach(scheduledTask -> scheduledTask.setReleaseStatus(TASK_RELEASE_STATUS_SUCCESS));
+        } else {
+            releaseTaskList.forEach(scheduledTask -> scheduledTask.setReleaseStatus(TASK_RELEASE_STATUS_NO));
+        }
+        scheduledTasksDao.saveAll(releaseTaskList);
+
+        if (null != exception) {
+            throw exception;
+        }
+    }
 
     private void pushAndUpdateRelationTask(String cluster, List<ScheduledTask> releaseTaskList) throws Exception {
         List<ScheduledFrontBackRule> allScheduledFrontBackRuleList = scheduledFrontBackRuleDao.findByScheduledTaskList(releaseTaskList);

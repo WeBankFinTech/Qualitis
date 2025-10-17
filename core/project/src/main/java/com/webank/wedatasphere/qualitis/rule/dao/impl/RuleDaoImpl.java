@@ -208,8 +208,8 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public int countByProjectAndRuleName(String ruleName, Long projectId) {
-        return ruleRepository.countByProjectAndRuleName(ruleName, projectId);
+    public int countByProjectAndRuleName(String ruleName, Long projectId, String workflowName) {
+        return ruleRepository.countByProjectAndRuleName(ruleName, projectId, workflowName);
     }
 
     @Override
@@ -218,8 +218,8 @@ public class RuleDaoImpl implements RuleDao {
     }
 
     @Override
-    public Rule findMinWorkFlowVersionRule(String ruleName, Long projectId) {
-        return ruleRepository.findLowestWorkFlowVersion(projectId, ruleName);
+    public Rule findMinWorkFlowVersionRule(String ruleName, Long projectId, String workflowName) {
+        return ruleRepository.findLowestWorkFlowVersion(projectId, ruleName, workflowName);
     }
 
     @Override

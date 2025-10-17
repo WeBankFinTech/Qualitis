@@ -17,8 +17,13 @@
 package com.webank.wedatasphere.qualitis.filter;
 
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.webank.bdp.wedatasphere.biz.components.servicis.ServicisApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.qualitis.config.ItsmConfig;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.dao.repository.AuthListRepository;
+import com.webank.wedatasphere.qualitis.encoder.Sha256Encoder;
+import com.webank.wedatasphere.qualitis.entity.AuthList;
 import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 import com.webank.wedatasphere.qualitis.response.RetResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +36,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,10 +44,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Filter2TokenFilter implements Filter {
 
-//    @Autowired
-//    private ServicisApi servicisApi;
+    @Autowired
+    private ServicisApi servicisApi;
+    @Autowired
+    private AuthListRepository authListRepository;
     @Value("${itsm.path}")
     private String itsmPath;
+    @Value("${metric.white_list.paths:}")
+    private List<String> whiteListPaths;
+    @Value("${metric.white_list.ips:}")
+    private List<String> whiteListIps;
+    @Value("${servicis.api_urls.validate_signature.enable:false}")
+    private Boolean servicisValidateSignature;
     @Autowired
     private ItsmConfig itsmConfig;
     /**
@@ -67,7 +81,7 @@ public class Filter2TokenFilter implements Filter {
                          FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
-
+//      Verify request from ITSM
         if (request.getRequestURI().startsWith(itsmPath)) {
             LOGGER.info("The request come from ITSM. url='{}', remote url='{}'", request.getRequestURL().toString(), request.getRemoteAddr() + ":" + request.getRemotePort());
             RetResponse retResponse = verifyRequestFromITSM(request);
@@ -79,6 +93,22 @@ public class Filter2TokenFilter implements Filter {
             }
             filterChain.doFilter(request, response);
             return;
+        }
+
+//      Verify request access to endpoints in the metricRateLimitPaths
+        String clientIp = QualitisConstants.getIp(request);
+        String requestUri = request.getRequestURI();
+        if (whiteListPaths.contains(requestUri)) {
+            LOGGER.info("The ip [{}] trying to access [{}]", clientIp, request.getRequestURI());
+            if (!whiteListIps.contains(clientIp)) {
+                LOGGER.warn("The ip [{}] not allowed to access [{}]", clientIp, request.getRequestURI());
+                ServletOutputStream out = response.getOutputStream();
+                GeneralResponse generalResponse = new GeneralResponse<>("403", "IP access is restricted. Please contact the administrator to enable the whitelist.",
+                        null);
+                out.write(objectMapper.writeValueAsBytes(generalResponse));
+                out.flush();
+                return;
+            }
         }
 
         String appId = request.getParameter("app_id");
@@ -100,12 +130,23 @@ public class Filter2TokenFilter implements Filter {
 
         if (appId != null) {
             boolean passed = false;
-//            try {
-//                passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
-//            } catch (Exception e) {
-//                LOGGER.error("Validate signature via Servicis failed with error: ", e);
-//                throw new ServletException(e);
-//            }
+
+            if (servicisValidateSignature) {
+                try {
+                    passed = servicisApi.validateSignature(appId, nonce, timestamp, null, signature);
+                } catch (Exception e) {
+                    LOGGER.error("Validate signature via Servicis failed with error: ", e);
+                    throw new ServletException(e);
+                }
+            } else {
+                // Find appToken by appId
+                LOGGER.info("Check signature with owner db");
+                AuthList authList = authListRepository.findByAppId(appId);
+                if (authList != null && validateSignature(nonce, timestamp, authList.getAppToken(),
+                        appId, signature)) {
+                    passed = true;
+                }
+            }
 
             if (passed) {
                 if (request.getRequestURI().contains("create_and_submit")) {
@@ -130,6 +171,16 @@ public class Filter2TokenFilter implements Filter {
         LOGGER.info("Request forbidden, appId='{}', nonce='{}', timestamp='{}', signature='{}'",
                 appId, nonce, timestamp, signature);
         writeToResponse("Forbidden! please check appid and token", response);
+    }
+
+    public boolean validateSignature(String nonce, String timestamp, String appToken,
+                                     String appId, String signature) {
+        return getSignature(nonce, timestamp, appToken, appId).equals(signature);
+    }
+
+    public String getSignature(String nonce, String timestamp, String appToken, String appId) {
+        return Sha256Encoder
+                .encode(Sha256Encoder.encode(appId + nonce + timestamp) + appToken);
     }
 
     private RetResponse verifyRequestFromITSM(HttpServletRequest httpServletRequest)  {

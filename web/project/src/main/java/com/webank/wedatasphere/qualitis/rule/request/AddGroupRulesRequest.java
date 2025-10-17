@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/6/1 21:10
  */
 public class AddGroupRulesRequest {

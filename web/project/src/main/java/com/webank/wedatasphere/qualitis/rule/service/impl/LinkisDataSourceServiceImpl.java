@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-05-17 14:11
  * @description
  */
@@ -188,6 +188,7 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      * 1. If the env name the user enters is: env_name
      * 2. then format it to:
      * manual input: 212_env_name
+     * automatic input: 212_env_name-127.0.0.1:3306(epccmaindb_G-DCN_D21_set_4)
      *
      * @param linkisDataSourceId
      * @param originalEnvName
@@ -216,6 +217,7 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
     /**
      * 1. If the env name store in database is:
      * linkisEnvName with input manually: 212_env_name
+     * linkisEnvName with input automatically: 212_env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
      * 2. then recovery it to: env_name
      *
      * @param linkisDataSourceId
@@ -225,6 +227,7 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
      */
     @Override
     public String convertLinkisEnvNameToOriginal(Long linkisDataSourceId, String linkisEnvName, Integer inputType) {
+//        1. 212_env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
         String tmpLinkisEnvName = linkisEnvName;
 //        removing the prefix of the env_name: 212_
         int prefixIndex = 0;
@@ -232,6 +235,7 @@ public class LinkisDataSourceServiceImpl implements LinkisDataSourceService {
         if (-1 != tmpLinkisEnvName.indexOf(prefixStr)) {
             prefixIndex = prefixStr.length();
         }
+//        2. env_name-127.0.0.1-3306(epccmaindb_G-DCN_D21_set_4)
         tmpLinkisEnvName = StringUtils.substring(tmpLinkisEnvName, prefixIndex);
 
         if (isAutoInput(inputType)) {

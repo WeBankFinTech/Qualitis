@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/8/17 14:14
  */
 @Service
@@ -655,45 +655,43 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     private void solveCustomMapping(String mappingCols, Integer mappingType) {
         List<MultiDataSourceJoinConfigRequest> requests = new ArrayList<>();
+
+        List<MultiDataSourceJoinColumnRequest> leftDataSourceCols = new ArrayList<>();
+        List<MultiDataSourceJoinColumnRequest> rightDataSourceCols = new ArrayList<>();
         String[] mappingColStrs = mappingCols.toLowerCase().split(AND);
 
         for (String currentMappingCol : mappingColStrs) {
-            List<MultiDataSourceJoinColumnRequest> leftDataSourceCols = new ArrayList<>();
-            List<MultiDataSourceJoinColumnRequest> rightDataSourceCols = new ArrayList<>();
-
-            MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
-
-            multiDataSourceJoinConfigRequest.setOperation(MappingOperationEnum.EQUAL.getCode());
+            MultiDataSourceJoinColumnRequest leftColumn = new MultiDataSourceJoinColumnRequest();
+            MultiDataSourceJoinColumnRequest rightColumn = new MultiDataSourceJoinColumnRequest();
             String[] statements = currentMappingCol.split(MappingOperationEnum.EQUAL.getSymbol());
-
             String leftCol = statements[0];
             String rightCol = statements[1];
-            MultiDataSourceJoinColumnRequest leftColumn = new MultiDataSourceJoinColumnRequest();
             leftColumn.setColumnName(leftCol);
-            leftDataSourceCols.add(leftColumn);
-            MultiDataSourceJoinColumnRequest rightColumn = new MultiDataSourceJoinColumnRequest();
             rightColumn.setColumnName(rightCol);
+            leftDataSourceCols.add(leftColumn);
             rightDataSourceCols.add(rightColumn);
-
-            multiDataSourceJoinConfigRequest.setLeft(leftDataSourceCols);
-            multiDataSourceJoinConfigRequest.setRight(rightDataSourceCols);
-
-            requests.add(multiDataSourceJoinConfigRequest);
-
-            List<TemplateArgumentRequest> templateArgumentRequests= Lists.newArrayList();
-            if (MappingTypeEnum.CONNECT_FIELDS.getCode().equals(mappingType)) {
-                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
-                templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.CONNECT_FIELDS.getCode());
-                templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
-                templateArgumentRequests.add(templateArgumentRequest);
-            } else if (MappingTypeEnum.MATCHING_FIELDS.getCode().equals(mappingType)) {
-                TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
-                templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode());
-                templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
-                templateArgumentRequests.add(templateArgumentRequest);
-            }
-            addMultiSourceRuleRequest.getTemplateArgumentRequests().addAll(templateArgumentRequests);
         }
+
+        MultiDataSourceJoinConfigRequest multiDataSourceJoinConfigRequest = new MultiDataSourceJoinConfigRequest();
+
+        multiDataSourceJoinConfigRequest.setLeft(leftDataSourceCols);
+        multiDataSourceJoinConfigRequest.setRight(rightDataSourceCols);
+
+        requests.add(multiDataSourceJoinConfigRequest);
+
+        List<TemplateArgumentRequest> templateArgumentRequests= Lists.newArrayList();
+        if (MappingTypeEnum.CONNECT_FIELDS.getCode().equals(mappingType)) {
+            TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+            templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.CONNECT_FIELDS.getCode());
+            templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
+            templateArgumentRequests.add(templateArgumentRequest);
+        } else if (MappingTypeEnum.MATCHING_FIELDS.getCode().equals(mappingType)) {
+            TemplateArgumentRequest templateArgumentRequest = new TemplateArgumentRequest();
+            templateArgumentRequest.setArgumentType(TemplateInputTypeEnum.COMPARISON_FIELD_SETTINGS.getCode());
+            templateArgumentRequest.setArgumentValue(CustomObjectMapper.transObjectToJson(requests));
+            templateArgumentRequests.add(templateArgumentRequest);
+        }
+        addMultiSourceRuleRequest.getTemplateArgumentRequests().addAll(templateArgumentRequests);
     }
 
     private void solveMapping(String mappings, Map<String, List<ColumnInfoDetail>> colsMap, Integer mappingType) {
@@ -846,22 +844,23 @@ public class AddMultiRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder addRuleMetric(String ruleMetricName) throws UnExpectedRequestException {
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(ruleMetricName);
+        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
+        if (infos.length != QualitisConstants.LENGTH_FOUR) {
+            throw new UnExpectedRequestException(ruleMetricName + " does not meet specifications");
+        }
+
+        String enCode = infos[QualitisConstants.COMMON_ARRAY_INDEX_2];
+        RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
 
         if (ruleMetricInDb != null) {
             setRuleMetricEnCode(ruleMetricInDb.getEnCode());
             return this;
         }
 
-        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
-        if (infos.length != QualitisConstants.LENGTH_FOUR) {
-            throw new UnExpectedRequestException("The metric name does not meet specifications");
-        }
-        String en = infos[2];
         List<String> ruleMetricNames = new ArrayList<>(1);
         ruleMetricNames.add(ruleMetricName);
         addMultiSourceRuleRequest.setRuleMetricNamesForBdpClient(ruleMetricNames);
-        setRuleMetricEnCode(en);
+        setRuleMetricEnCode(enCode);
         return this;
     }
 

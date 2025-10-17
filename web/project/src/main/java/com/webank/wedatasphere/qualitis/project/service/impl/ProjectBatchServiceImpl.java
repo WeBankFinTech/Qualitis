@@ -215,8 +215,8 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
     private ScheduledTaskDao scheduledTaskDao;
     @Autowired
     private ScheduledWorkflowTaskRelationDao scheduledWorkflowTaskRelationDao;
-//    @Autowired
-//    private ScheduledWorkflowBusinessDao scheduledWorkflowBusinessDao;
+    @Autowired
+    private ScheduledWorkflowBusinessDao scheduledWorkflowBusinessDao;
     @Autowired
     private ScheduledFrontBackRuleDao scheduledFrontBackRuleDao;
     @Autowired
@@ -324,12 +324,12 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
                 LOGGER.error("uploadProjectsReal, failed to save rules", e);
                 operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
             }
-//            try {
-//                handleScheduledWorkflowBusiness(projectInDb, listener.getExcelWorkflowBusinessContent());
-//            } catch (Exception e) {
-//                LOGGER.error("uploadProjectsReal, failed to save workflow businesses", e);
-//                operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
-//            }
+            try {
+                handleScheduledWorkflowBusiness(projectInDb, listener.getExcelWorkflowBusinessContent());
+            } catch (Exception e) {
+                LOGGER.error("uploadProjectsReal, failed to save workflow businesses", e);
+                operateComment.append(SpecCharEnum.LINE.getValue()).append(e.getMessage());
+            }
             try {
                 LOGGER.info(user.getUsername() + " start to handle publish schedule.");
                 handlePublishSchedule(user, projectInDb, listener.getExcelPublishScheduledContent(), diffVariableRequestList);
@@ -632,7 +632,7 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         for (ExcelRuleMetric excelRuleMetric : excelMetricContent) {
             RuleMetric ruleMetric = objectMapper.readValue(excelRuleMetric.getRuleMetricJsonObject(), RuleMetric.class);
 
-            RuleMetric ruleMetricInDb = ruleMetricDao.findByName(ruleMetric.getName());
+            RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(ruleMetric.getEnCode());
 
             RuleMetric savedRuleMetric;
             if (ruleMetricInDb == null) {
@@ -736,6 +736,25 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         Set<ExecutionVariable> executionVariableSets = executionParameters.getExecutionVariableSets();
 
         if (executionParametersInDb != null) {
+            if (StringUtils.isBlank(executionParameters.getModifyTime())) {
+                LOGGER.info("Never modify in dev center, donot need modify in prod center, execution parameters name: {}", executionParameters.getName());
+                return;
+            }
+
+            try {
+                if (StringUtils.isNotBlank(executionParametersInDb.getModifyTime())) {
+                    long diff = QualitisConstants.PRINT_TIME_FORMAT.parse(executionParameters.getModifyTime()).getTime() - QualitisConstants.PRINT_TIME_FORMAT.parse(executionParametersInDb.getModifyTime()).getTime();
+                    LOGGER.info("Modification time in dev center - modification time in prod center = {}, execution parameters name: {}", diff, executionParameters.getName());
+                    if (diff < 0) {
+                        LOGGER.info("Modification time of development center is earlier than the modification time of production center, and there is no content change, execution parameters name: {}", executionParameters.getName());
+                        return;
+                    }
+                }
+
+            } catch (ParseException e) {
+                throw new IOException("Failed to parse modify time");
+            }
+
             executionParameters.setId(executionParametersInDb.getId());
             executionParameters.setProjectId(executionParametersInDb.getProjectId());
             executionParameters.setModifyTime(QualitisConstants.PRINT_TIME_FORMAT.format(new Date()));
@@ -1395,14 +1414,14 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             operateComment.append(ProjectTransportTypeEnum.LOCAL.name());
         } else if (ProjectTransportTypeEnum.GIT.getCode().equals(request.getUploadType())) {
             // Use git to pull
-//            try {
-//                String projectDir = null != request.getProjectId() ? request.getProjectId().toString() : UuidGenerator.generate();
-//                GitUtils.gitPull(projectFiles, request.getGitRepo(), request.getGitBranch(), request.getGitRootDir(), linkisConfig.getGitPrivateKey(), linkisConfig.getUploadTmpPath() + File.separator + userName + File.separator + projectDir);
-//            } catch (Exception e) {
-//                LOGGER.error(e.getMessage(), e);
-//                throw new UnExpectedRequestException("Failed to git pull.");
-//            }
-//            operateComment.append(ProjectTransportTypeEnum.GIT.name());
+            try {
+                String projectDir = null != request.getProjectId() ? request.getProjectId().toString() : UuidGenerator.generate();
+                GitUtils.gitPull(projectFiles, request.getGitRepo(), request.getGitBranch(), request.getGitRootDir(), linkisConfig.getGitPrivateKey(), linkisConfig.getUploadTmpPath() + File.separator + userName + File.separator + projectDir);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+                throw new UnExpectedRequestException("Failed to git pull.");
+            }
+            operateComment.append(ProjectTransportTypeEnum.GIT.name());
         } else {
             throw new UnExpectedRequestException("Not support upload type.");
         }
@@ -1581,16 +1600,15 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
             // Clear
             deleteDirectory(forGenFilesDirFile);
             operateComment = ProjectTransportTypeEnum.LOCAL.name();
-//        }
-//        else if (ProjectTransportTypeEnum.GIT.getCode().equals(request.getDownloadType())) {
+        } else if (ProjectTransportTypeEnum.GIT.getCode().equals(request.getDownloadType())) {
             // Use git to push
-//            try {
-//                GitUtils.gitPush(repoUrl.toString(), repoBranch.toString(), linkisConfig.getGitPrivateKey(), forGenFilesDirFile, currProjectId.toString(), repoRootDir.toString(), StringUtils.isNotBlank(request.getGitCommit()) ? request.getGitCommit() : "From Qualitis");
-//            } catch (Exception e) {
-//                LOGGER.error(e.getMessage(), e);
-//                throw new UnExpectedRequestException("Failed to git push.");
-//            }
-//            operateComment = ProjectTransportTypeEnum.GIT.name();
+            try {
+                GitUtils.gitPush(repoUrl.toString(), repoBranch.toString(), linkisConfig.getGitPrivateKey(), forGenFilesDirFile, currProjectId.toString(), repoRootDir.toString(), StringUtils.isNotBlank(request.getGitCommit()) ? request.getGitCommit() : "From Qualitis");
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+                throw new UnExpectedRequestException("Failed to git push.");
+            }
+            operateComment = ProjectTransportTypeEnum.GIT.name();
         } else {
             throw new UnExpectedRequestException("Not support download type.");
         }
@@ -2087,17 +2105,17 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
 
     public List<ExcelWorkflowBusiness> getWorkflowBusinessSheet(List<Project> projects) {
         List<ExcelWorkflowBusiness> excelWorkflowBusinesses = new ArrayList<>();
-//        for (Project project : projects) {
-//           List<ScheduledWorkflowBusiness> scheduledWorkflowBusinessList = scheduledWorkflowBusinessDao.getByProjectId(project.getId());
-//           excelWorkflowBusinesses.addAll(scheduledWorkflowBusinessList.stream().map(data -> {
-//               try {
-//                   return ExcelWorkflowBusiness.from(data);
-//               } catch (IOException e) {
-//                   LOGGER.error(e.getMessage());
-//               }
-//               return null;
-//           }).filter(Objects::nonNull).collect(Collectors.toList()));
-//        }
+        for (Project project : projects) {
+           List<ScheduledWorkflowBusiness> scheduledWorkflowBusinessList = scheduledWorkflowBusinessDao.getByProjectId(project.getId());
+           excelWorkflowBusinesses.addAll(scheduledWorkflowBusinessList.stream().map(data -> {
+               try {
+                   return ExcelWorkflowBusiness.from(data);
+               } catch (IOException e) {
+                   LOGGER.error(e.getMessage());
+               }
+               return null;
+           }).filter(Objects::nonNull).collect(Collectors.toList()));
+        }
         return excelWorkflowBusinesses;
     }
 
@@ -2696,33 +2714,33 @@ public class ProjectBatchServiceImpl implements ProjectBatchService {
         }
     }
 
-//    private void handleScheduledWorkflowBusiness(Project projectInDb, List<ExcelWorkflowBusiness> excelWorkflowBusinesses) {
-//        for (ExcelWorkflowBusiness excelWorkflowBusiness: excelWorkflowBusinesses) {
-//            ScheduledWorkflowBusiness scheduledWorkflowBusiness = excelWorkflowBusiness.getScheduledWorkflowBusinesses(objectMapper);
-//            if (scheduledWorkflowBusiness == null) {
-//                continue;
-//            }
-//            ScheduledWorkflowBusiness scheduledWorkflowBusinessInDb = scheduledWorkflowBusinessDao.getByProjectIdAndName(projectInDb.getId(), scheduledWorkflowBusiness.getName());
-//            if (scheduledWorkflowBusinessInDb == null) {
-//                scheduledWorkflowBusiness.setId(null);
-//                scheduledWorkflowBusiness.setProjectId(projectInDb.getId());
-//            } else {
-//                scheduledWorkflowBusinessInDb.setBusinessDomain(scheduledWorkflowBusiness.getBusinessDomain());
-//                scheduledWorkflowBusinessInDb.setBusResLvl(scheduledWorkflowBusiness.getBusResLvl());
-//                scheduledWorkflowBusinessInDb.setSubSystemId(scheduledWorkflowBusiness.getSubSystemId());
-//                scheduledWorkflowBusinessInDb.setPlanStartTime(scheduledWorkflowBusiness.getPlanStartTime());
-//                scheduledWorkflowBusinessInDb.setPlanFinishTime(scheduledWorkflowBusiness.getPlanFinishTime());
-//                scheduledWorkflowBusinessInDb.setLastStartTime(scheduledWorkflowBusiness.getLastStartTime());
-//                scheduledWorkflowBusinessInDb.setLastFinishTime(scheduledWorkflowBusiness.getLastFinishTime());
-//                scheduledWorkflowBusinessInDb.setDevDepartmentId(scheduledWorkflowBusiness.getDevDepartmentId());
-//                scheduledWorkflowBusinessInDb.setDevDepartmentName(scheduledWorkflowBusiness.getDevDepartmentName());
-//                scheduledWorkflowBusinessInDb.setOpsDepartmentId(scheduledWorkflowBusiness.getOpsDepartmentId());
-//                scheduledWorkflowBusinessInDb.setOpsDepartmentName(scheduledWorkflowBusiness.getOpsDepartmentName());
-//            }
-//
-//            scheduledWorkflowBusinessDao.save(scheduledWorkflowBusiness);
-//        }
-//    }
+    private void handleScheduledWorkflowBusiness(Project projectInDb, List<ExcelWorkflowBusiness> excelWorkflowBusinesses) {
+        for (ExcelWorkflowBusiness excelWorkflowBusiness: excelWorkflowBusinesses) {
+            ScheduledWorkflowBusiness scheduledWorkflowBusiness = excelWorkflowBusiness.getScheduledWorkflowBusinesses(objectMapper);
+            if (scheduledWorkflowBusiness == null) {
+                continue;
+            }
+            ScheduledWorkflowBusiness scheduledWorkflowBusinessInDb = scheduledWorkflowBusinessDao.getByProjectIdAndName(projectInDb.getId(), scheduledWorkflowBusiness.getName());
+            if (scheduledWorkflowBusinessInDb == null) {
+                scheduledWorkflowBusiness.setId(null);
+                scheduledWorkflowBusiness.setProjectId(projectInDb.getId());
+            } else {
+                scheduledWorkflowBusinessInDb.setBusinessDomain(scheduledWorkflowBusiness.getBusinessDomain());
+                scheduledWorkflowBusinessInDb.setBusResLvl(scheduledWorkflowBusiness.getBusResLvl());
+                scheduledWorkflowBusinessInDb.setSubSystemId(scheduledWorkflowBusiness.getSubSystemId());
+                scheduledWorkflowBusinessInDb.setPlanStartTime(scheduledWorkflowBusiness.getPlanStartTime());
+                scheduledWorkflowBusinessInDb.setPlanFinishTime(scheduledWorkflowBusiness.getPlanFinishTime());
+                scheduledWorkflowBusinessInDb.setLastStartTime(scheduledWorkflowBusiness.getLastStartTime());
+                scheduledWorkflowBusinessInDb.setLastFinishTime(scheduledWorkflowBusiness.getLastFinishTime());
+                scheduledWorkflowBusinessInDb.setDevDepartmentId(scheduledWorkflowBusiness.getDevDepartmentId());
+                scheduledWorkflowBusinessInDb.setDevDepartmentName(scheduledWorkflowBusiness.getDevDepartmentName());
+                scheduledWorkflowBusinessInDb.setOpsDepartmentId(scheduledWorkflowBusiness.getOpsDepartmentId());
+                scheduledWorkflowBusinessInDb.setOpsDepartmentName(scheduledWorkflowBusiness.getOpsDepartmentName());
+            }
+
+            scheduledWorkflowBusinessDao.save(scheduledWorkflowBusiness);
+        }
+    }
 
     private ScheduledProject uploadScheduledProject(Project projectInDb, ExcelPublishScheduled excelPublishScheduled, String username,
         String createTime, List<DiffVariableRequest> diffVariableRequestList) throws UnExpectedRequestException {

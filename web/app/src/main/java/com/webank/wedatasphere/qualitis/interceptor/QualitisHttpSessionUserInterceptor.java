@@ -17,7 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/12/21 18:10
  */
 @Component

@@ -1693,7 +1693,7 @@ CREATE TABLE `qualitis_rule_variable` (
   `cluster_name` varchar(50) DEFAULT NULL,
   `db_name` varchar(200) DEFAULT NULL,
   `input_action_step` int(11) DEFAULT NULL,
-  `origin_value` mediumtext,
+  `origin_value` varchar(500) DEFAULT NULL,-- Need to be alter to mediumtext type after create table.
   `table_name` varchar(200) DEFAULT NULL,
   `value` mediumtext,
   `rule_id` bigint(20) DEFAULT NULL,

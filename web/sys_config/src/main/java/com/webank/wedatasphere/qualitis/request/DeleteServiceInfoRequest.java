@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.request;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/2/23 16:10
  */
 public class DeleteServiceInfoRequest {

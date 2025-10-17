@@ -26,47 +26,47 @@ import java.util.Optional;
  * @author allenzhou
  */
 public interface ImsMetricSchedulerDao {
-//
-//    /**
-//     * Find by datasource
-//     * @param dbName
-//     * @param tableName
-//     * @return
-//     */
-//    List<ImsMetricScheduler> findByDatasource(String dbName, String tableName);
-//
-//    /**
-//     *
-//     * @param id
-//     * @return
-//     */
-//    Optional<ImsMetricScheduler> findById(Long id);
-//
-//    /**
-//     *
-//     * @param dbName
-//     * @param tableName
-//     * @param partition
-//     * @return
-//     */
-//    ImsMetricScheduler findByPartition(String dbName, String tableName, String partition);
-//
-//    /**
-//     *
-//     * @param imsMetricSchedulerList
-//     */
-//    void saveAll(List<ImsMetricScheduler> imsMetricSchedulerList);
-//
-//    /**
-//     *
-//     * @param imsMetricScheduler
-//     */
-//    void save(ImsMetricScheduler imsMetricScheduler);
-//
-//    /**
-//     *
-//     * @param id
-//     */
-//    void delete(Long id);
+
+    /**
+     * Find by datasource
+     * @param dbName
+     * @param tableName
+     * @return
+     */
+    List<ImsMetricScheduler> findByDatasource(String dbName, String tableName);
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    Optional<ImsMetricScheduler> findById(Long id);
+
+    /**
+     *
+     * @param dbName
+     * @param tableName
+     * @param partition
+     * @return
+     */
+    ImsMetricScheduler findByPartition(String dbName, String tableName, String partition);
+
+    /**
+     *
+     * @param imsMetricSchedulerList
+     */
+    void saveAll(List<ImsMetricScheduler> imsMetricSchedulerList);
+
+    /**
+     *
+     * @param imsMetricScheduler
+     */
+    void save(ImsMetricScheduler imsMetricScheduler);
+
+    /**
+     *
+     * @param id
+     */
+    void delete(Long id);
 
 }

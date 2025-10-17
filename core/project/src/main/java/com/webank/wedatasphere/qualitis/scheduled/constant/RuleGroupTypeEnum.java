@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.scheduled.constant;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public enum RuleGroupTypeEnum {
     /**

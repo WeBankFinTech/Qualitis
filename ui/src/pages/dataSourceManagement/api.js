@@ -292,10 +292,6 @@ export function queryDataSourceList(body) {
     });
 }
 
-// 获取子系统列表
-export function fetchSubSystemInfo(params = {}) {
-    return FRequest('/api/v1/projector/meta_data/subSystemInfo', params);
-}
 
 export function getDcnData(params = {}) {
     return FRequest(`/api/v1/projector/meta_data/dcn?sub_system_id=${params.subSystemId}`, {}, 'post');

@@ -10,7 +10,7 @@ import org.hibernate.annotations.NotFound;
 import org.hibernate.annotations.NotFoundAction;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2022-08-03 15:57
  * @description
  */

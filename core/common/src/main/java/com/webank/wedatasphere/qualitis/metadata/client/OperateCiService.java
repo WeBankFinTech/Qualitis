@@ -6,9 +6,10 @@ import com.webank.wedatasphere.qualitis.response.GeneralResponse;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/3/2 10:53
  */
 public interface OperateCiService {
@@ -27,6 +28,14 @@ public interface OperateCiService {
      */
     List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException;
 
+    /**
+     * Get all sub_system info by name with page
+     * @param subSystemName
+     * @param page
+     * @param size
+     * @return
+     * @throws UnExpectedRequestException
+     */
     List<SubSystemResponse> getSubSystemInfoByPage(String subSystemName, int page, int size) throws UnExpectedRequestException;
 
     /**
@@ -44,6 +53,14 @@ public interface OperateCiService {
      * @throws UnExpectedRequestException
      */
     List<ProductResponse> getAllProductInfo() throws UnExpectedRequestException;
+
+    /**
+     * get product info by condition
+     * @param productId
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<ProductResponse> getProductInfoByCondition(String productId) throws UnExpectedRequestException;
 
     /**
      * Get all department info from http of cmdb, incloud:department name.

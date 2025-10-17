@@ -1,11 +1,11 @@
 import { onMounted, ref, watch } from 'vue';
-import { fetchOptions, fetchSubSystemInfo } from '../api';
+import { fetchOptions } from '../api';
 
 export default function useDataSource(opts = []) {
-    // 数据库 数据表 子系统列表
+    // 数据库 数据表列表
     const dataBaseList = ref([]);
     const dataTableList = ref([]);
-    const subSystemList = ref([]);
+    // const subSystemList = ref([]); // 已移除，改为直接输入
 
     // 获取数据源列表
     const getDataSourceList = async () => {
@@ -22,33 +22,12 @@ export default function useDataSource(opts = []) {
         }
     };
 
-    // 获取子系统中文名
-    const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
-
-    // 获取子系统列表
-    const getSubSystemInfo = async () => {
-        try {
-            const res = await fetchSubSystemInfo();
-            const list = res || [];
-            subSystemList.value = list.map((item) => {
-                const cnName = getSystemNameNew(item.subSystemId, item);
-                return Object.assign({}, item, {
-                    subSystemName: cnName,
-                    enName: item.subSystemName,
-                    cnName,
-                    value: String(item.subSystemId),
-                    label: item.subSystemName,
-                });
-            });
-        } catch (error) {
-            console.log('error: ', error);
-        }
-    };
+    // 获取子系统列表 - 已移除，改为直接输入
 
     // 函数映射
     const handleMap = {
         dataBaseList: getDataSourceList,
-        subSystemList: getSubSystemInfo,
+        // subSystemList: getSubSystemInfo, // 已移除
     };
 
     onMounted(() => {
@@ -58,8 +37,8 @@ export default function useDataSource(opts = []) {
     return {
         dataBaseList,
         dataTableList,
-        subSystemList,
+        // subSystemList, // 已移除
         getDataSourceList,
-        getSubSystemInfo,
+        // getSubSystemInfo, // 已移除
     };
 }

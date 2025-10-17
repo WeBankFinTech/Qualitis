@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.request;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-12-13 10:05
  * @description
  */

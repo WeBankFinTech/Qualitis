@@ -186,8 +186,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Autowired
     private StandardValueVariablesDao standardValueVariablesDao;
 
-//    @Autowired
-//    private ImsmetricIdentifyDao imsmetricIdentifyDao;
+    @Autowired
+    private ImsmetricIdentifyDao imsmetricIdentifyDao;
     @Autowired
     private ImsmetricDataDao imsmetricDataDao;
 
@@ -225,6 +225,8 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     @Autowired
     private ProjectEventService projectEventService;
     @Autowired
+    private FieldsAnalyseDao fieldsAnalyseDao;
+    @Autowired
     private RestTemplate restTemplate;
 
     @Value("${task.create_and_submit.limit_size:1000}")
@@ -235,9 +237,6 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     @Value("${metric.collector.path.collect_submit:/qualitis/outer/api/v1/imsmetric/collect}")
     private String collectorCollectSubmitPath;
-
-    @Value("${overseas_external_version.enable:false}")
-    private Boolean overseasVersionEnabled;
 
     @Value("${rule.delete_metric.enable:false}")
     private Boolean deleteMetricEnable;
@@ -298,9 +297,9 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     @Override
     public GeneralResponse<RuleResponse> addRule(AddRuleRequest request, String loginUser) throws Exception {
-        GeneralResponse< TemplateInputDemandResponse > ruleTemplateInputMeta = ruleTemplateService.getRuleTemplateInputMeta(request.getRuleTemplateId());
+        GeneralResponse<TemplateInputDemandResponse> ruleTemplateInputMeta = ruleTemplateService.getRuleTemplateInputMeta(request.getRuleTemplateId());
         request.getAlarmVariable().get(0).setOutputMetaId(ruleTemplateInputMeta.getData().getTemplateOutput().get(0).getOutputId());
-        return ruleService.addRule(request,loginUser,false);
+        return ruleService.addRule(request, loginUser, false);
     }
 
 
@@ -792,7 +791,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             String timestamp = String.valueOf(System.currentTimeMillis());
             AuthList authList = authListRepository.findByAppId(appId);
             String signature = SignUtil.generateSignature(appId, authList.getAppToken(), nonce, timestamp);
-            String collectorServerUri = collectorServerHost + collectorCollectSubmitPath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;;
+            String collectorServerUri = collectorServerHost + collectorCollectSubmitPath + "?app_id=" + appId + "&timestamp=" + timestamp + "&nonce=" + nonce + "&signature=" + signature;
 
             try {
                 LOGGER.info("Start to submit collect to collector server, url: {}, data: {}", collectorServerUri, GSON.toJson(paramMap));
@@ -981,45 +980,45 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
             }
 
         } else if (StringUtils.isNotEmpty(executionParam)) {
-                if (executionParam.contains(FPS_HASH) && StringUtils.isEmpty(fpsHashValue)) {
-                    StringBuilder fpsHash = new StringBuilder();
-                    StringBuilder tmpExecParams = new StringBuilder();
-                    String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
-                    for (String str : setStrs) {
-                        if (str.startsWith(FPS_HASH)) {
-                            fpsHash.append(str.replace(FPS_HASH, "").replace(SpecCharEnum.COLON.getValue(), ""));
-                        } else {
-                            tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
-                        }
-                    }
-
-                    if (StringUtils.isNotEmpty(fpsHash.toString())) {
-                        maps.put(FPS_HASH, fpsHash.toString());
-                    }
-
-                    if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
-                        maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
-                    }
-                } else if (executionParam.contains(ENV_NAMES)) {
-                    StringBuilder envNames = new StringBuilder();
-                    StringBuilder tmpExecParams = new StringBuilder();
-                    String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
-                    for (String str : setStrs) {
-                        if (str.startsWith(ENV_NAMES)) {
-                            envNames.append(str.replace(ENV_NAMES, "").replace(SpecCharEnum.COLON.getValue(), ""));
-                        } else {
-                            tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
-                        }
-                    }
-
-                    if (StringUtils.isNotEmpty(envNames.toString())) {
-                        maps.put(ENV_NAMES, envNames.toString());
-                    }
-
-                    if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
-                        maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
+            if (executionParam.contains(FPS_HASH) && StringUtils.isEmpty(fpsHashValue)) {
+                StringBuilder fpsHash = new StringBuilder();
+                StringBuilder tmpExecParams = new StringBuilder();
+                String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
+                for (String str : setStrs) {
+                    if (str.startsWith(FPS_HASH)) {
+                        fpsHash.append(str.replace(FPS_HASH, "").replace(SpecCharEnum.COLON.getValue(), ""));
+                    } else {
+                        tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
                     }
                 }
+
+                if (StringUtils.isNotEmpty(fpsHash.toString())) {
+                    maps.put(FPS_HASH, fpsHash.toString());
+                }
+
+                if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
+                    maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
+                }
+            } else if (executionParam.contains(ENV_NAMES)) {
+                StringBuilder envNames = new StringBuilder();
+                StringBuilder tmpExecParams = new StringBuilder();
+                String[] setStrs = executionParam.split(SpecCharEnum.DIVIDER.getValue());
+                for (String str : setStrs) {
+                    if (str.startsWith(ENV_NAMES)) {
+                        envNames.append(str.replace(ENV_NAMES, "").replace(SpecCharEnum.COLON.getValue(), ""));
+                    } else {
+                        tmpExecParams.append(str).append(SpecCharEnum.DIVIDER.getValue());
+                    }
+                }
+
+                if (StringUtils.isNotEmpty(envNames.toString())) {
+                    maps.put(ENV_NAMES, envNames.toString());
+                }
+
+                if (StringUtils.isNotEmpty(tmpExecParams.toString())) {
+                    maps.put(EXECUTION_PARAM, tmpExecParams.deleteCharAt(tmpExecParams.length() - 1).toString());
+                }
+            }
 
         }
 
@@ -2058,7 +2057,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     private void setApplicationBaseInfo(List<Long> ruleIds, StringBuilder partition, String nodeName, Long projectId, Long ruleGroupId
             , String fpsFileId, String fpsHashValue, String startupParam, String clusterName, String setFlag, Map<String, String> execParams, String execParamStr
-            , StringBuilder runDate,StringBuilder runToday, StringBuilder splitBy, String subSystemId, Application newApplication, Boolean engineReuse, String envNames) {
+            , StringBuilder runDate, StringBuilder runToday, StringBuilder splitBy, String subSystemId, Application newApplication, Boolean engineReuse, String envNames) {
         newApplication.setProjectId(projectId);
         newApplication.setRuleGroupId(ruleGroupId);
         newApplication.setPartition(partition.toString());
@@ -2526,24 +2525,24 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         handleCheckAlert(executeUser, ruleGroupDao.findById(ruleGroupId), projectDao.findById(projectId), executionParam);
     }
 
-//    @Override
-//    public GeneralResponse<Object> queryIdentify(OmnisScriptRequest request) {
-//        String metricIds = request.getMetricIds();
-//        List<ImsmetricIdentify> imsmetricIdentifyList;
-//        if (StringUtils.isBlank(metricIds)){
-//            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate());
-//        }else {
-//            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(),request.getEndDate(),metricIds);
-//        }
-//
-//        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryIdentify succeed", imsmetricIdentifyList);
-//    }
+    @Override
+    public GeneralResponse<Object> queryIdentify(OmnisScriptRequest request) {
+        String metricIds = request.getMetricIds();
+        List<ImsmetricIdentify> imsmetricIdentifyList;
+        if (StringUtils.isBlank(metricIds)) {
+            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(), request.getEndDate());
+        } else {
+            imsmetricIdentifyList = imsmetricIdentifyDao.queryIdentify(request.getStartDate(), request.getEndDate(), metricIds);
+        }
 
-//    @Override
-//    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
-//        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
-//        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
-//    }
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryIdentify succeed", imsmetricIdentifyList);
+    }
+
+    @Override
+    public GeneralResponse<Object> queryImsmetricData(OmnisScriptRequest request) {
+        List<ImsmetricData> imsmetricDatas = imsmetricDataDao.queryImsmetricData(request.getMetricIds(), request.getStartDate(), request.getEndDate());
+        return new GeneralResponse<>(ResponseStatusConstants.OK, "queryImsmetricData succeed", imsmetricDatas);
+    }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, UnExpectedRequestException.class})
@@ -3057,7 +3056,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
         if (fps) {
             LOGGER.info("Start to prepare fps params in rule datasource service.");
             // Upload fps file.
-            String fpsExecUser = StringUtils.isNotBlank(ruleDataSource.getProxyUser())? ruleDataSource.getProxyUser(): userName;
+            String fpsExecUser = StringUtils.isNotBlank(ruleDataSource.getProxyUser()) ? ruleDataSource.getProxyUser() : userName;
             checkAndUploadFpsFile(fpsExecUser, fpsFileId, fpsHashValue, ruleDataSource, clusterName);
             // Save the last fps file infomation.
             ruleDataSourceDao.saveRuleDataSource(ruleDataSource);
@@ -3127,6 +3126,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
 
     /**
      * switching engine type by the data size of partition or table
+     *
      * @param userName
      * @param partition
      * @param clusterName
@@ -3158,7 +3158,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                         exceededThreshold = checkIfExceedTableSize(userName, clusterInfo, datasourceSizeList, ruleDataSource);
                     }
 
-    //                 1. 表/分区大小超过阈值 -》执行参数中指定了引擎类型 -》引擎类型类型是spark && 规则类型是行数据一致性 -》 替换引擎类型为shell
+                    // 1. 表/分区大小超过阈值 -》执行参数中指定了引擎类型 -》引擎类型类型是spark && 规则类型是行数据一致性 -》 替换引擎类型为shell
                     if (exceededThreshold) {
                         LOGGER.info("The data size has exceeded threshold. cluster: {}, partition: {}, table: {}", clusterInfo.getClusterName(), partition, ruleDataSource.getTableName());
                         execParams.put(QualitisConstants.QUALITIS_ENGINE_TYPE, EngineTypeEnum.DEFAULT_ENGINE.getMessage());
@@ -3527,7 +3527,7 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
     }
 
     @Override
-    public GeneralResponse<Object> getApplicationResult(List< String> applicationIdList)  {
+    public GeneralResponse<Object> getApplicationResult(List<String> applicationIdList) {
         Map<String, String> result = new HashMap<>();
         for (String applicationId : applicationIdList) {
             result.put(applicationId, null);
@@ -3540,10 +3540,10 @@ public class OuterExecutionServiceImpl implements OuterExecutionService {
                 new ApplicationListResultResponse(result));
     }
 
-//    @Override
-//    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
-//        List< FieldsAnalyse > taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(),request.getDataDateList());
-//        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}", new FieldsAnalyseResultResponse(taskResultList));
-//    }
+    @Override
+    public GeneralResponse<Object> getFieldsAnalyseResult(FieldsAnalyseRequest request) {
+        List<FieldsAnalyse> taskResultList = fieldsAnalyseDao.findByRuleIdInAndDataDateIn(request.getRuleIdList(), request.getDataDateList());
+        return new GeneralResponse<>("200", "{&SUCCEED_TO_GET_APPLICATION_RESULT}", new FieldsAnalyseResultResponse(taskResultList));
+    }
 
 }

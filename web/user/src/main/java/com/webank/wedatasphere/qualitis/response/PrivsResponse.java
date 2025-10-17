@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.entity.Permission;
 import java.util.Objects;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class PrivsResponse {
 

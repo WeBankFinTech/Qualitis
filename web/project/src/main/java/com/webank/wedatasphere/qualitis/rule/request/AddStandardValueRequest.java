@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class AddStandardValueRequest extends AbstractAddRequest {
 

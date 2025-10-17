@@ -7,7 +7,6 @@
                     :metric-categories="metricCategories"
                     :booleans="booleans"
                     :en-codes="enCodes"
-                    :sub-system-names="subSystemNames"
                     :form-model="queryFormModel"
                     :advanceQueryModel="advanceQueryFormModel"
                     @on-advance-search="handleAdvanceSearch"
@@ -51,7 +50,9 @@
                             </FEllipsis>
                         </template>
                     </f-table-column>
-                    <f-table-column ellipsis prop="sub_system_id" :visible="checkTColShow('sub_system_id')" :formatter="subSystemFormatter" :label="$t('indexManagement.multiIndexType')" :width="140" />
+                    <f-table-column ellipsis prop="sub_system_name" :visible="checkTColShow('sub_system_name')" :label="$t('indexManagement.multiIndexType')" :width="140">
+                        <template #default="{ row }">{{row.sub_system_name || row.product_name || row.buss_custom || '--'}}</template>
+                    </f-table-column>
                     <f-table-column ellipsis prop="type" :visible="checkTColShow('type')" :formatter="typeFormatter" :label="$t('indexManagement.indexCategory')" :width="88" />
                     <f-table-column ellipsis prop="available" :visible="checkTColShow('available')" :formatter="availableFormatter" :label="$t('indexManagement.inUse')" :width="88" />
                     <f-table-column ellipsis prop="multi_env" :visible="checkTColShow('multi_env')" :formatter="multiEnvFormatter" :label="$t('indexManagement.inMultiDCN')" :width="100" />
@@ -235,12 +236,12 @@ const {
     // 指标英文名列表
     enCodes,
     // 子系统列表
-    subSystemNames,
+    // subSystemNames,
     // 指标频率列表
     metricFrequencies,
 
     // 子系统formatter
-    subSystemFormatter,
+    // subSystemFormatter,
     // 指标分类formatter
     typeFormatter,
     // 指标是否可用formatter
@@ -436,7 +437,7 @@ const metricActions = [
 const originProjectHeaders = [
     { prop: 'name', label: $t('indexManagement.indexName') },
     { prop: 'metric_desc', label: $t('indexManagement.indexDesc') },
-    { prop: 'sub_system_id', label: $t('indexManagement.subsystem') },
+    { prop: 'sub_system_name', label: $t('indexManagement.subsystem') },
     { prop: 'type', label: $t('indexManagement.indexCategory') },
     { prop: 'available', label: $t('indexManagement.inUse') },
     { prop: 'frequency', label: $t('indexManagement.indexFrequency') },
@@ -546,7 +547,7 @@ const exportRule = () => {
             'Content-Language': localStorage.getItem('currentLanguage') || 'zh_CN',
         },
         credentials: 'include',
-    }, 'get').then((res) => {
+    }).then((res) => {
         const contentDisposition = res?.headers['content-disposition'] || '';
         const fileNameUnicode = contentDisposition.split('filename*=')[1];
         fileName = fileNameUnicode ? decodeURIComponent(fileNameUnicode.split("''")[1]) : $t('_.技术规则xlsx');

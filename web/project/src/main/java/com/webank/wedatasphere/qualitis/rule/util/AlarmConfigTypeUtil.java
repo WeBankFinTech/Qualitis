@@ -11,7 +11,7 @@ import com.webank.wedatasphere.qualitis.rule.response.AlarmConfigResponse;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public class AlarmConfigTypeUtil {
 

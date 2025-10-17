@@ -118,8 +118,8 @@
                             <FFormItem :label="$t('_.数据源环境选择方式')" prop="dcn_range_type">
                                 <FRadioGroup v-model="settingFormData.dcn_range_type" class="form-edit-input" :cancelable="false" @change="onRangeDcnTypeChange">
                                     <FRadio value="all">{{$t('_.直接选择')}}</FRadio>
-                                    <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
-                                    <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio>
+                                    <!-- <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
+                                    <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio> -->
                                 </FRadioGroup>
                                 <div class="form-preview-label">{{DCNTypeMap[settingFormData.dcn_range_type]}}</div>
                             </FFormItem>

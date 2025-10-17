@@ -32,18 +32,12 @@ def defaultEncoding = 'UTF-8'
 buildscript {
   repositories {
     mavenLocal()
-    maven {
-      url "http://maven.aliyun.com/nexus/content/groups/public/"
-    }
-  maven {
-    url "http://maven.javastream.de/"
-  }
-//     mavenCentral()
+    mavenCentral()
   }
 
   dependencies {
     classpath 'net.sf.proguard:proguard-gradle:6.2.0'
-    classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.7.17'
+//    classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.15.RELEASE'
   }
 }
 
@@ -53,23 +47,18 @@ dependencies {
 
 repositories {
   mavenLocal()
-  maven {
-    url "http://maven.aliyun.com/nexus/content/groups/public/"
-  }
-  maven {
-    url "http://maven.javastream.de/"
-  }
+  mavenCentral()
 }
 
 mainClassName = "com.webank.wedatasphere.qualitis.QualitisServer"
 
 applicationDefaultJvmArgs =
-        ["-Xms256M", "-Xmx2G",
+        ["-javaagent:/data/app/weapm-agent/5375/weapm-agent-starter.jar", "-Xms256M", "-Xmx2G",
          "-XX:+UseG1GC", "-XX:MaxGCPauseMillis=20", "-XX:InitiatingHeapOccupancyPercent=50",
          "-Dfile.encoding=UTF-8", "-Djava.library.path=HADOOP_COMMON_LIB_NATIVE_DIR",
          "-Dlog.file=${project.name}-MY_USER-MY_HOSTNAME.log",
          "-XX:+HeapDumpOnOutOfMemoryError", "-XX:HeapDumpPath=/appcom/logs/qualitis/heapdump.hprof",
-         "-Dspring.config.location=classpath:application.yml"]
+         "-Dspring.config.location=classpath:sdk.properties,classpath:rmb-client.properties,classpath:weservice.properties,classpath:application.yml"]
 
 tasks.startScripts << {
   def scriptFile = file "${outputDir}/${applicationName}"
@@ -78,7 +67,7 @@ tasks.startScripts << {
   scriptFile.eachLine {
     line ->
       if (line.contains('CLASSPATH=\$APP_HOME/lib')) {
-        scriptFile.text = scriptFile.text.replace(line, "CLASSPATH=\${YOUR_CONF_DIR:-\$APP_HOME/conf}:\${APP_HOME}/lib/*")
+        scriptFile.text = scriptFile.text.replace(line, "CLASSPATH=/appcom/config/qualitis-config:\${APP_HOME}/lib/*")
         return
       }
   }
@@ -89,6 +78,53 @@ tasks.startScripts << {
 
   // custom 'java.library.path'
   unixScript.text = unixScript.text.replace("HADOOP_COMMON_LIB_NATIVE_DIR", '\${HADOOP_COMMON_LIB_NATIVE_DIR}')
+
+  unixScript.text = unixScript.text.replace('MAX_FD="maximum"', '''\
+# 根据外部传参weapmEnabled判断是否移除挂载WeAPM
+weapmEnabled=$1
+if [ "${weapmEnabled}x" != "1x" ]; then
+  # 将DEFAULT_JVM_OPTS转换为数组
+  IFS=' ' read -r -a JVM_OPTS_ARRAY <<< "${DEFAULT_JVM_OPTS}"
+  
+  # 遍历数组，查找并移除-javaagent参数
+  UPDATED_JVM_OPTS=()
+  for opt in "${JVM_OPTS_ARRAY[@]}"; do
+    if [[ $opt != *-javaagent* ]]; then
+      # 保留其他参数
+      UPDATED_JVM_OPTS+=("$opt")
+    fi
+  done
+  
+  # 重新组合数组为字符串
+  DEFAULT_JVM_OPTS=$(IFS=' '; echo "${UPDATED_JVM_OPTS[*]}")
+  
+  # 输出新的DEFAULT_JVM_OPTS
+  echo "Updated DEFAULT_JVM_OPTS: $DEFAULT_JVM_OPTS"
+fi
+
+# 如果是生产环境，则将堆内存修改为实时读取部署机器内存
+envName=$2
+if [ "${envName}x" = "prodx" ]; then
+  IFS=' ' read -r -a JVM_OPTS_ARRAY <<< "${DEFAULT_JVM_OPTS}"
+  
+  UPDATED_JVM_OPTS=()
+  for opt in "${JVM_OPTS_ARRAY[@]}"; do
+    if [[ $opt = *-Xms* ]]; then
+        UPDATED_JVM_OPTS+=("-Xms$3")
+    elif [[ $opt = *-Xmx* ]]; then
+        UPDATED_JVM_OPTS+=("-Xmx$4")
+    else
+        UPDATED_JVM_OPTS+=("$opt")
+    fi
+  done
+  
+  # 重新组合数组为字符串
+  DEFAULT_JVM_OPTS=$(IFS=' '; echo "${UPDATED_JVM_OPTS[*]}")
+  echo "Updated DEFAULT_JVM_OPTS: $DEFAULT_JVM_OPTS"
+fi
+
+MAX_FD="maximum"
+  ''')
 }
 
 distributions {
@@ -109,10 +145,17 @@ distributions {
 }
 def timestamp = new Date().format("yyyyMMddHHmmss")
 def projectVersion = project.property("version")
-def finalArchiveName = "WDSDQMS-CORE_${projectVersion}_0_R_${timestamp}.zip"
+def finalArchiveName = "WDSDQMS-CORE_${projectVersion}_0_R_${timestamp}"
+def suffix = ".zip"
 
 distZip {
-  archiveName = finalArchiveName
+  archiveName = "${finalArchiveName}${suffix}"
+  eachFile { file ->
+    String path = file.relativePath
+    file.setPath(path.replaceFirst("^${finalArchiveName}/", "qualitis_pkg/"))
+  }
+
+  includeEmptyDirs = false
 }
 
 subprojects {
@@ -142,12 +185,7 @@ subprojects {
 
   repositories {
     mavenLocal()
-    maven {
-      url "http://maven.aliyun.com/nexus/content/groups/public/"
-    }
-  maven {
-    url "http://maven.javastream.de/"
-  }
+     mavenCentral()
   }
 
   processResources {
@@ -166,19 +204,16 @@ subprojects {
 configurations.all {
   resolutionStrategy {
     force 'org.apache.logging.log4j:log4j-slf4j2-impl:2.24.0'
-    force 'org.apache.logging.log4j:log4j-api:2.24.0'
-    force 'org.apache.logging.log4j:log4j-core:2.24.0'
     force 'org.apache.derby:derby:10.17.1.0'
     force 'org.slf4j:slf4j-api:2.0.11'
   }
   resolutionStrategy.cacheChangingModulesFor 60,'seconds'
-//  exclude group: 'log4j', module: 'log4j'
+  exclude group: 'log4j', module: 'log4j'
   exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
   exclude group: 'org.codehaus.jackson', module: 'jackson-mapper-asl'
   exclude group: 'com.zaxxer', module: 'HikariCP-java7'
   exclude group: 'org.apache.poi', module: 'poi-ooxml-schemas'
   exclude group: 'org.bouncycastle', module: 'bcprov-jdk15to18'
-  exclude group: 'javax.servlet', module: 'javax.servlet-api'
 }
 
 apply from: "profile.gradle"

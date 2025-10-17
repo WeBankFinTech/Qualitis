@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Set;
@@ -229,6 +230,16 @@ public interface RuleMetricRepository extends JpaRepository<RuleMetric, Long> {
      */
     @Query(value = "SELECT count(qrm.id) FROM RuleMetric qrm where qrm.level = ?1 AND qrm.subSystemId = ?4 OR (qrm IN (SELECT qrmdu.ruleMetric FROM RuleMetricDepartmentUser qrmdu where qrmdu.department in (?2) OR qrmdu.user IN (?3)))")
     long countBySubSystemId(Integer level, List<Department> departmentList, User user, long subSystemId);
+
+    @Query("SELECT DISTINCT rm.subSystemName FROM RuleMetric rm " +
+            "WHERE rm.subSystemName is not null AND rm.subSystemName != '' " +
+            "AND EXISTS (SELECT 1 FROM RuleMetricDepartmentUser qrmdu " +
+            "           WHERE qrmdu.ruleMetric = rm " +
+            "           AND (qrmdu.department IN (:departments) " +
+            "                OR (:user IS NULL OR qrmdu.user = :user)))")
+    List findAllSubSystems(
+            @Param("departments") List<Department> departments,
+            @Param("user") User user);
 
     /**
      * Find by name.

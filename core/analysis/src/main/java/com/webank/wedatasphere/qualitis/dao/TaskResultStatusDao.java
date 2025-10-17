@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.entity.TaskResultStatus;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-11-14 10:01
  * @description
  */

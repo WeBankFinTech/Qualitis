@@ -148,7 +148,7 @@ public interface RuleService {
      * @param project
      * @throws UnExpectedRequestException
      */
-    void checkRuleNameNumber(String ruleName, Project project) throws UnExpectedRequestException;
+    void checkRuleNameNumber(String workflowName, String ruleName, Project project) throws UnExpectedRequestException;
 
     /**
      * check rule existence using template

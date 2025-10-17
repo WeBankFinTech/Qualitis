@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/2/24 16:30
  */
 public class RuleMetricRulesRequest {

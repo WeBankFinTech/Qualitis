@@ -2,7 +2,7 @@
 import path from 'path';
 
 export default {
-    publicPath: './',
+    publicPath: '/',
     access: {
         roles: {
             noauth: ["*"],
@@ -15,10 +15,12 @@ export default {
     },
     layout: false,
     define: {
-        CURRENT_ENV: 'sit',
-        BASEMICROURL: '',
-        BASEURL: '',
+        BASEURL: '/qualitis',
+         CURRENT_ENV: 'dev',
     },
+    // alias: {
+    //     '@': path.resolve(__dirname, 'src')
+    // },
     devServer: {
         port: 8000
     },
@@ -28,5 +30,23 @@ export default {
     locale: {
         legacy: false
     },
-
+    // chainWebpack: config => {
+    //     // 专门处理 CSS 中的图片路径
+    //     config.module
+    //       .rule('css')
+    //       .test(/\.css$/)
+    //       .use('css-loader')
+    //       .loader('css-loader')
+    //       .options({
+    //         url: {
+    //           filter: (url) => {
+    //             // 如果 url 以 static 开头，移除开头的 static/
+    //             if (url.startsWith('static/')) {
+    //               return url.replace('static/', '');
+    //             }
+    //             return url;
+    //           }
+    //         }
+    //       });
+    //   }
 };

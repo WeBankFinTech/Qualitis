@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-04-16 16:03
  * @description
  */

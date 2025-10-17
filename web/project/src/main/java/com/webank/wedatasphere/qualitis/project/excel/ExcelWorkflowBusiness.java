@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.IOException;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-07-17 14:57
  * @description
  */

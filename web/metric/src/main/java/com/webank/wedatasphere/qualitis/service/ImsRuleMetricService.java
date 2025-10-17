@@ -23,7 +23,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-//    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricDataFromOuter(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricDataFromOuter(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * Get ims rule metric.
@@ -33,7 +33,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-//    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricData(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<GetAllMetricResponse<ImsRuleMetricQueryResponse>> getMetricData(ImsRuleMetricQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get Alarm Data
@@ -43,7 +43,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-//    GeneralResponse<GetDataResponse<ImsAlarmDataQueryResponse>> getAlarmData(ImsAlarmDataQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GeneralResponse<GetDataResponse<ImsAlarmDataQueryResponse>> getAlarmData(ImsAlarmDataQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get metric collect data
@@ -52,7 +52,7 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-//    GetAllResponse<ImsmetricCollectViewResponse> getMetricCollectList(MetricCollectQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    GetAllResponse<ImsmetricCollectViewResponse> getMetricCollectList(MetricCollectQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
 
     /**
      * get metric collect data for outer
@@ -61,7 +61,14 @@ public interface ImsRuleMetricService {
      * @throws UnExpectedRequestException
      * @throws PermissionDeniedRequestException
      */
-//    List<ImsmetricCollectViewOuterResponse> getMetricCollectListForOuter(MetricCollectOuterQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+    List<ImsmetricCollectViewOuterResponse> getMetricCollectListForOuter(MetricCollectOuterQueryRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     *
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    ImsmetricCollectDoneViewOuterResponse getMetricCollectDoneListForOuter() throws UnExpectedRequestException;
 
     /**
      * get metric templates
@@ -69,61 +76,61 @@ public interface ImsRuleMetricService {
      * @return
      * @throws UnExpectedRequestException
      */
-//    GetAllResponse<MetricTemplateQueryResponse> getTemplateList(TemplatePageRequest request) throws UnExpectedRequestException;
-//
-//    /**
-//     * get all proxy users
-//     * @return
-//     */
-//    List<String> findAllDataUsers();
-//
-//    /**
-//     *  get datasource
-//     * @param cluster
-//     * @param db
-//     * @return
-//     */
-//    DataSourcesConditionResponse getAllDataSources(String cluster, String db) throws UnExpectedRequestException;
-//
-//    /**
-//     *
-//     * @param request
-//     */
-//    void createMetricTemplate(AddCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
-//
-//    /**
-//     *
-//     * @param request
-//     */
-//    void modifyMetricTemplate(ModifyCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
-//
-//    /**
-//     * get detail of metric template
-//     * @param templateId
-//     * @return
-//     */
-//    MetricTemplateDetailResponse getMetricTemplateDetail(Long templateId) throws UnExpectedRequestException;
-//
-//    /**
-//     * get detail of metric collect
-//     *
-//     * @param metricId
-//     * @return
-//     */
-//    ImsMetricCollectQueryResponse getMetricIdentifyById(String metricId) throws UnExpectedRequestException;
-//
-//    /**
-//     * get metric relation
-//     *
-//     * @param metricId
-//     * @return
-//     */
-//    GeneralResponse<Map<String, Object>> getMetricRelation(String metricId) throws UnExpectedRequestException;
-//
-//    /**
-//     *
-//     * @param userName
-//     * @return
-//     */
-//    GeneralResponse syncMetadata(String userName) throws UnExpectedRequestException;
+    GetAllResponse<MetricTemplateQueryResponse> getTemplateList(TemplatePageRequest request) throws UnExpectedRequestException;
+
+    /**
+     * get all proxy users
+     * @return
+     */
+    List<String> findAllDataUsers();
+
+    /**
+     *  get datasource
+     * @param cluster
+     * @param db
+     * @return
+     */
+    DataSourcesConditionResponse getAllDataSources(String cluster, String db) throws UnExpectedRequestException;
+
+    /**
+     *
+     * @param request
+     */
+    void createMetricTemplate(AddCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     *
+     * @param request
+     */
+    void modifyMetricTemplate(ModifyCalcuTemplateRequest request) throws UnExpectedRequestException, PermissionDeniedRequestException;
+
+    /**
+     * get detail of metric template
+     * @param templateId
+     * @return
+     */
+    MetricTemplateDetailResponse getMetricTemplateDetail(Long templateId) throws UnExpectedRequestException;
+
+    /**
+     * get detail of metric collect
+     *
+     * @param metricId
+     * @return
+     */
+    ImsMetricCollectQueryResponse getMetricIdentifyById(String metricId) throws UnExpectedRequestException;
+
+    /**
+     * get metric relation
+     *
+     * @param metricId
+     * @return
+     */
+    GeneralResponse<Map<String, Object>> getMetricRelation(String metricId) throws UnExpectedRequestException;
+
+    /**
+     *
+     * @param userName
+     * @return
+     */
+    GeneralResponse syncMetadata(String userName) throws UnExpectedRequestException;
 }

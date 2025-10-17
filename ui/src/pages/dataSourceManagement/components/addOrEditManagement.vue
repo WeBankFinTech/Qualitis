@@ -34,14 +34,10 @@
                         </FFormItem>
                         <!-- 关联子系统 -->
                         <FFormItem :label="$t('dataSourceManagement.associatedSubSystem')" prop="subSystem">
-                            <FSelect
+                            <FInput
                                 v-model="addDataSourceForm.subSystem"
-                                filterable
                                 clearable
                                 :placeholder="$t('common.pleaseEnter')"
-                                :options="subSystemList"
-                                :filter="upperCaseFilter"
-                                @change="handleSubSystemChange"
                             />
                         </FFormItem>
                         <!-- 开发科室 -->
@@ -95,10 +91,10 @@
                     <div class="title">{{$t('_.连接配置')}}</div>
                     <!-- 录入方式 -->
                     <FFormItem :label="$t('dataSourceManagement.inputType')" prop="inputType">
-                        <FRadioGroup v-model="addDataSourceForm.inputType" :cancelable="false" @change="onInputTypeChange">
+                        <FRadioGroup v-model="addDataSourceForm.inputType" :cancelable="false">
                             <FRadio :value="1">{{$t('_.手动录入')}}</FRadio>
                             <!-- <FRadio :value="2" :disabled="!(addDataSourceForm.dataSourceTypeId === '5')">自动导入</FRadio> -->
-                            <FRadio v-if="overseasVersion === 'false'" :value="2">{{$t('_.自动导入')}}</FRadio>
+                            <!-- <FRadio :value="2">{{$t('_.自动导入')}}</FRadio> -->
                         </FRadioGroup>
                     </FFormItem>
                     <!-- 认证方式 -->
@@ -196,45 +192,7 @@
                             </FButton>
                         </div>
                     </div>
-                    <div v-if="addDataSourceForm.inputType === 2">
-                        <!-- {{ addDataSourceForm.dcn }} -->
-                        <FFormItem :label="$t('_.数据源环境选择方式')" prop="dcn_range_type">
-                            <FRadioGroup v-model="addDataSourceForm.dcn_range_type" class="form-edit-input" :cancelable="false" @change="onDcnTypeChange">
-                                <FRadio value="all">{{$t('_.直接选择')}}</FRadio>
-                                <FRadio value="dcn_num">{{$t('_.按环境编号选择')}}</FRadio>
-                                <FRadio value="logic_area">{{$t('_.按逻辑区域选择')}}</FRadio>
-                            </FRadioGroup>
-                        </FFormItem>
-                        <FFormItem v-if="['dcn_num', 'logic_area'].includes(addDataSourceForm.dcn_range_type)" :label="addDataSourceForm.dcn_range_type === 'dcn_num' ? '环境编号' : '逻辑区域'" prop="dcn_range_values">
-                            <FSelect
-                                v-model="addDataSourceForm.dcn_range_values"
-                                :options="dcnValueOptions"
-                                class="form-edit-input"
-                                filterable
-                                clearable
-                                multiple
-                                collapseTags
-                                :collapseTagsLimit="2"
-                                @change="onDcnChange"
-                            ></FSelect>
-                        </FFormItem>
-                        <!-- 数据源环境 -->
-                        <FFormItem :label="$t('_.数据源环境')" prop="dcnEnv">
-                            <FSelect
-                                v-model="addDataSourceForm.dcnEnv"
-                                :options="dcnEnvOptions"
-                                class="form-edit-input"
-                                filterable
-                                clearable
-                                multiple
-                                labelField="env_name"
-                                :disabled="['dcn_num', 'logic_area'].includes(addDataSourceForm.dcn_range_type)"
-                                collapseTags
-                                :collapseTagsLimit="2"
-                                @change="onEnvChange($event, -1)"
-                            ></FSelect>
-                        </FFormItem>
-                    </div>
+
                     <template v-if="!(addDataSourceForm.inputType === 1 && addDataSourceForm.verifyType === 2)">
                         <div class="title">{{$t('_.登录认证')}}</div>
                         <div>
@@ -303,12 +261,11 @@ import useDivisions from '@/hooks/useDivisions';
 import usePermissionDivisions from '@/hooks/usePermissionDivisions';
 import { getDataFormTreeSelect, upperCaseFilter } from '@/common/utils';
 import {
-    fetchDataSourceType, fetchAddDataSource, fetchSubSystemInfo, fetchEditDataSource, fetchUpdateDataSourceVersion,
+    fetchDataSourceType, fetchAddDataSource, fetchEditDataSource, fetchUpdateDataSourceVersion,
 } from '../api';
 import DetailManagement from './detailManagement.vue';
-import { useDcnData } from '../useDcnData';
 
-const overseasVersion = sessionStorage.getItem('overseas_external_version');
+
 const { t: $t } = useI18n();
 const props = defineProps({
     // 控制组件的显示隐藏
@@ -332,11 +289,6 @@ const props = defineProps({
     queryProxyUser: {
         type: String,
         default: '',
-    },
-    // 子系统下拉框列表
-    subSystemList: {
-        type: Array,
-        default: [],
     },
     // 详情展示、编辑时的当前数据库
     curDataSourceDetail: {
@@ -414,16 +366,6 @@ const addRuleValidate = ref({ // 表单验证规则
             required: true, trigger: ['change', 'blur'], message: $t('common.notEmpty'), type: 'number',
         },
     ],
-
-    dcn_range_type: [
-        { required: true, message: $t('common.notEmpty') },
-    ],
-    dcn_range_values: [
-        { required: true, message: $t('common.notEmpty'), type: 'array' },
-    ],
-    dcnEnv: [
-        { required: true, message: $t('common.notEmpty'), type: 'array' },
-    ],
     authType: [
         { required: true, trigger: ['change', 'blur'], message: $t('common.notEmpty') },
     ],
@@ -470,7 +412,6 @@ const initaddDataSourceForm = () => ({
     dataSourceTypeId: '',
     inputType: 1,
     verifyType: 1,
-    dcn_range_type: 'all',
 });
 const addDataSourceForm = ref(initaddDataSourceForm);
 const drawerShow = computed({
@@ -491,20 +432,15 @@ const curMode = computed({
         emit('update:mode', value);
     },
 });
-const tdsqlAuthTypeList = overseasVersion === 'true' ? [
+const tdsqlAuthTypeList = [
     {
         value: 'accountPwd',
         label: $t('_.账户密码'),
     },
-] : [
-    {
-        value: 'accountPwd',
-        label: $t('_.账户密码'),
-    },
-    {
-        value: 'dpm',
-        label: $t('_.密码管家'),
-    },
+    // {
+    //     value: 'dpm',
+    //     label: $t('_.密码管家'),
+    // },
 ];
 const commonAuthTypeList = [
     {
@@ -537,19 +473,6 @@ const {
     visSelectChange,
 } = useDepartment(devCurSubDepartData, opsCurSubDepartData, visCurSubDepartData, visDivisions);
 
-// DCN list相关处理
-const {
-    dcnTreeData,
-    dcnListData,
-    // genDcnTreeData,
-} = useDcnData();
-const handleSubSystemChange = async () => {
-    // const subSystem = props.subSystemList.find(item => item.value === addDataSourceForm.value.subSystem);
-    // console.log('subSystem', subSystem);
-    // eslint-disable-next-line no-use-before-define
-    await onDcnTypeChange();
-    // await genDcnTreeData({ subSystemId: subSystem.id });
-};
 
 const curAuthTypeList = ref(commonAuthTypeList);
 const getDataSourceAddTypeList = async () => {
@@ -582,14 +505,7 @@ const getInitEnvItem = () => {
     return item;
 };
 
-const onInputTypeChange = () => {
-    if (addDataSourceForm.value.inputType === 2) {
-        addDataSourceForm.value.verifyType = 1;
-        addDataSourceForm.value.dcn_range_type = 'all';
-    }
-    addDataSourceForm.value.dcnEnv = [];
-    addDataSourceForm.value.dcn_range_values = [];
-};
+
 const handleSelectedDataSourceType = () => {
     // 数据源类型从tdsql换成其他后,无密码管家一项
     if (Number(addDataSourceForm.value.dataSourceTypeId) !== 5) {
@@ -623,20 +539,7 @@ const handleRequestParams = () => {
     let connectParams = {};
     curDataSourceEnvs = [];
     params = pick(addDataSourceForm.value, Object.keys(initaddDataSourceForm()));
-    if (addDataSourceForm.value.inputType === 2) {
-        const dcns = cloneDeep(addDataSourceForm.value.dcnEnv);
-        const authData = computeAuthData(addDataSourceForm.value);
-        curDataSourceEnvs = dcns.map(dcn => ({
-            envName: dcn.env_name,
-            dcnNum: dcn.dcn_num,
-            logicArea: dcn.logic_area,
-            connectParams: {
-                host: dcn.vip,
-                port: dcn.gwport,
-                ...authData,
-            },
-        }));
-    } else if (addDataSourceForm.value.inputType === 1) {
+    if (addDataSourceForm.value.inputType === 1) {
         envList.value.forEach((item) => {
             const curEnv = pick(item, ['envName', 'envDesc']);
             connectParams = pick(item, ['port', 'host', 'connectParam']);
@@ -653,7 +556,6 @@ const handleRequestParams = () => {
         });
     }
     params.dataSourceEnvs = curDataSourceEnvs;
-    // params.dcnSequence = addDataSourceForm.value.dcn;
     params.connectParams = {};
     return params;
 };
@@ -670,7 +572,6 @@ const afterAddOrEditDataSource = async (envIdArray, dataSourceId, type) => {
         envIdArray,
         inputType: addDataSourceForm.value.inputType,
         verifyType: addDataSourceForm.value.verifyType,
-        // dcnSequence: addDataSourceForm.value.dcn,
         dataSourceEnvs,
     };
     console.log('afterAddOrEditDataSource-params', params);
@@ -751,94 +652,19 @@ const closePanel = () => {
     addDataSourceForm.value = initaddDataSourceForm();
     emit('update:show', false);
 };
-const dcnEnvOptions = ref([]);
-const dcnValueOptions = ref([]);
-const getSubSysId = name => props.subSystemList.find(item => item.value === name)?.id || '';
-const onDcnTypeChange = async (val = '', isInit = false) => {
-    try {
-        if (!isInit) {
-            addDataSourceForm.value.dcn_range_values = [];
-        }
 
-        addDataSourceForm.value.dcnEnv = [];
-        dcnEnvOptions.value = [];
-        dcnValueOptions.value = [];
-        if (!addDataSourceForm.value.subSystem || !addDataSourceForm.value.dcn_range_type) {
-            return;
-        }
-        const res = await FRequest('/api/v1/projector/meta_data/dcn', { sub_system_id: getSubSysId(addDataSourceForm.value.subSystem), dcn_range_type: addDataSourceForm.value.dcn_range_type });
-        if (addDataSourceForm.value.dcn_range_type === 'all') {
-            dcnEnvOptions.value = res.map(item => ({
-                env_name: item.env_name,
-                value: {
-                    env_name: item.env_name,
-                    dcn_num: item.dcn_num,
-                    logic_area: item.logic_area,
-                    gwport: item.gwport,
-                    vip: item.vip,
-                },
-            }));
-        } else if (['logic_area', 'dcn_num'].includes(addDataSourceForm.value.dcn_range_type)) {
-            const keys = Object.keys(res);
-            const dcnOptions = [];
-            dcnEnvOptions.value = [];
-            for (let i = 0; i < keys.length; i++) {
-                const dcnEnvs = res[keys[i]].map(item => ({
-                    env_name: item.env_name,
-                    value: {
-                        env_name: item.env_name,
-                        gwport: item.gwport,
-                        vip: item.vip,
-                        dcn_num: item.dcn_num,
-                        logic_area: item.logic_area,
-                    },
-                }));
-                dcnOptions.push({ label: keys[i], value: keys[i], envs: dcnEnvs });
-            }
-            dcnValueOptions.value = dcnOptions;
-            dcnOptions.forEach((item) => {
-                dcnEnvOptions.value.push(...item.envs);
-            });
-        }
-    } catch (err) {
-        console.warn(err);
-    }
-};
-const rebuildEnvs = (dcnList) => {
-    const tempEnvs = [];
-    for (let i = 0; i < dcnList.length; i++) {
-        const tempDcn = dcnValueOptions.value.find(item => item.value === dcnList[i]);
-        if (tempDcn) {
-            for (let j = 0; j < tempDcn.envs.length; j++) {
-                const tempEnv = dcnEnvOptions.value.find(item => item.env_name === tempDcn.envs[j].env_name).value;
-                tempEnvs.push(tempEnv);
-            }
-        }
-    }
-    return tempEnvs;
-};
-const onDcnChange = async () => {
-    addDataSourceForm.value.dcnEnv = rebuildEnvs(addDataSourceForm.value.dcn_range_values);
-
-    if (addDataSourceFormRef.value) {
-        await addDataSourceFormRef.value.validate(['dcnEnv']);
-    }
-};
 const editSource = async () => {
     console.log('curDataSourceDetail1111', props.curDataSourceDetail);
     if (!props.curDataSourceDetail.is_editable) {
         return FMessage.error($t('_.没有编辑权限'));
     }
     curMode.value = 'edit';
-    addDataSourceForm.value = pick(props.curDataSourceDetail, ['dataSourceName', 'subSystem', 'action_range', 'dev_department_name', 'dev_department_id', 'ops_department_id', 'ops_department_name', 'visibility_department_list', 'inputType', 'verifyType', 'labels', 'dcn_range_type', 'dcn_range_values']);
+    addDataSourceForm.value = pick(props.curDataSourceDetail, ['dataSourceName', 'subSystem', 'action_range', 'dev_department_name', 'dev_department_id', 'ops_department_id', 'ops_department_name', 'visibility_department_list', 'inputType', 'verifyType', 'labels']);
     addDataSourceForm.value.createSystem = 'Qualitis';
     addDataSourceForm.value.dataSourceDesc = props.curDataSourceDetail.dataSourceDescription;
     addDataSourceForm.value.dataSourceTypeId = String(props.curDataSourceDetail.dataSourceTypeId);
     addDataSourceForm.value.action_range = addDataSourceForm.value.visibility_department_list?.map(item => item.name.split('/')) || [];
-    // 初始化DCN Tree初始值
-    await onDcnTypeChange('', true);
-    // 初始化多DCN相关数据
-    // addDataSourceForm.value.dcn = props.curDataSourceDetail.dcnSequence;
+
     console.log(addDataSourceForm.value);
     initDepartment(addDataSourceForm.value.visibility_department_list);
     handleSelectedDataSourceType();
@@ -848,7 +674,6 @@ const editSource = async () => {
             envList.value[index].id = item?.id || '';
             envList.value[index].host = item?.connectParams?.host || '';
             envList.value[index].port = item?.connectParams?.port || '';
-            envList.value[index].dcnId = item?.dcnId || '';
             envList.value[index].connectParam = item?.connectParams?.connectParam;
             if (addDataSourceForm.value.verifyType === 2) {
                 envList.value[index].authType = item.connectParams.authType;
@@ -860,10 +685,6 @@ const editSource = async () => {
                     envList.value[index].objectId = item.connectParams.objectId;
                 }
             }
-        });
-    } else {
-        props.curDataSourceDetail.dataSourceEnvs.forEach((item, index) => {
-            addDataSourceForm.value.dcnEnv[index] = dcnEnvOptions.value.find(env => item.envName === env.env_name)?.value || null;
         });
     }
     if (addDataSourceForm.value.verifyType === 1) {

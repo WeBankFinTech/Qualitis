@@ -10,7 +10,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/4/20 16:59
  */
 @Entity

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.request;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/11/2 11:55
  */
 public class DataSourceParamModifyRequest {

@@ -6,7 +6,7 @@ import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import java.util.List;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class ScheduledTaskRequest {
 

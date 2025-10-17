@@ -6,7 +6,7 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2022/11/7 17:30
  */
 public interface LinkisUdfDao {

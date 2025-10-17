@@ -9,7 +9,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2022/3/7 12:25
  */
 public class RuleBashResponse {

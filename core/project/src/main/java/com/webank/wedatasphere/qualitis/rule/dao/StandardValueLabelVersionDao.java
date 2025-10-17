@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.StandardValueLabelVersion;
 import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVersion;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface StandardValueLabelVersionDao {
 

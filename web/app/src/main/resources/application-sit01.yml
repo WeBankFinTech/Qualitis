@@ -16,21 +16,16 @@ spring:
       url: jdbc:mysql://[DB_HOST_WORKER]:[DB_PORT]/[DB_NAME]?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf-8
       driver-class-name: com.mysql.jdbc.Driver
       type: com.webank.wedatasphere.qualitis.util.MyDataSource
-    # 连接池配置
-    hikari:
-      minimum-idle: 20
-      maximum-pool-size: 500
-      idle-timeout: 60000
-      max-lifetime: 180000
-      leak-detection-threshold: 120000
   jpa:
     hibernate:
       ddl-auto: validate
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     show-sql: false
-  # 循环依赖支持
   main:
     allow-circular-references: true
+  autoconfigure:
+    exclude:
+    - org.springframework.boot.actuate.autoconfigure.metrics.jersey.JerseyServerMetricsAutoConfiguration   # 会导致循环依赖，目前不需要系统资源监控，禁用
 
 restTemplate:
   thread:
@@ -129,7 +124,6 @@ auth:
     - /qualitis/api/v1/projector/rule/batch/upload/*
     - /qualitis/api/v1/projector/project/batch/upload*
 
-# Linkis 服务相关配置
 linkis:
   check_start_time: YYYYMMDD # 重复数据校验历史分区的起始日期
   datasource_cluster: [DATASOURCE_CLUSTER_NAME] # 数据源管理依赖集群名称
@@ -142,10 +136,10 @@ linkis:
     submitJobNew: entrance/submit
     killJob: entrance
     status: jobhistory/{id}/get
-    unDone: jobhistory/listundone # 获取未完成任务量接口
-    unDone_days: 1 # 获取 Linkis 侧过去 1 天的未完成任务量，避免设置过大，查询范围较大增加 Linkis 接口压力
-    unDone_switch: true # 未完成任务量探测开关，开启之后，未完成任务大于 maxUnDone 时，在 Qualitis 侧 pending，不提交 Linkis，直到 Linkis 资源空余。
-    maxUnDone: 10000 # 未完成任务最大值
+    unDone: jobhistory/listundone
+    unDone_days: 1
+    unDone_switch: true
+    maxUnDone: 200
     runningLog: entrance/{id}/log
     finishLog: filesystem/openLog
     upload: filesystem/upload
@@ -235,7 +229,7 @@ linkis:
       reparation: 50
     engine:
       name: spark
-      version: 2.4.3
+      version: 3.4.4
       limit: 20
   shell:
     engine:
@@ -285,8 +279,8 @@ datamap:
   special_app_token: X
 
 front_end:
-  home_page: http://{IP}:8090/#/dashboard
-  domain_name: http://{IP}:8090
+  home_page: http://{IP}:7080/#/dashboard
+  domain_name: http://{IP}:7080
   local: zh_CN
   support_migrate: false
   cluster: BDAP
@@ -390,7 +384,30 @@ servicis:
 
 itsm:
   secret_key: X
-  path: X
+  path: /qualitis/outer/itsm
+
+metric:
+  collector:
+    host: http://127.0.0.1:8091
+    path:
+      scheduler_update: /qualitis/outer/api/v1/imsmetric/collect/scheduler/update
+      collect_submit: /qualitis/outer/api/v1/imsmetric/collect
+  white_list:
+    paths: /qualitis/outer/api/v1/imsmetric/collect_done_list
+    ips: 127.0.0.1
+  rate_limit:
+    permits: 3
+    period_seconds: 3600
+  last_time_range_hour: 120
+
+management:
+  server:
+    port: -1  # 修改端口，跳过安全漏洞扫描
+  endpoints:
+    enabled-by-default: false #关闭监控
+    web:
+      exposure:
+        include: '*'
 
 overseas_external_version:
   enable: true

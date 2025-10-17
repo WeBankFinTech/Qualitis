@@ -17,9 +17,9 @@
             <FFormItem :label="$t('indexManagement.indexFrequency')" prop="indexEnName">{{getFrequencyConetnt(data.frequency)}}</FFormItem>
             <FFormItem :label="$t('indexManagement.en_code')" prop="en_code">{{data.en_code}}</FFormItem>
             <FFormItem :label="$t('indexManagement.bussinessDimension')" prop="buss_code">{{getBussinessDimensionContent(data.buss_code)}}</FFormItem>
-            <FFormItem v-if="data.buss_code === 1" :label="$t('indexManagement.subsystem')" prop="sub_system_id">{{getSubSystemContent(data.sub_system_id)}}</FFormItem>
+            <FFormItem v-if="data.buss_code === 1" :label="$t('indexManagement.subsystem')" prop="sub_system_id">{{data.sub_system_id || '--'}}</FFormItem>
             <FFormItem :label="$t('indexManagement.inMultiDCN')" prop="multi_env">{{data.multi_env ? $t('common.yes') : $t('common.no')}}</FFormItem>
-            <FFormItem v-if="data.buss_code === 2" :label="$t('indexManagement.product')" prop="product_id">{{getProductContent(data.product_id)}}</FFormItem>
+            <FFormItem v-if="data.buss_code === 2" :label="$t('indexManagement.product')" prop="product_id">{{data.product_id || '--'}}</FFormItem>
             <FFormItem v-if="data.buss_code === 3" :label="$t('indexManagement.customize')" prop="buss_custom">{{data.buss_custom}}</FFormItem>
             <FFormItem :label="$t('indexManagement.developDepartment')" prop="dev_department_name">{{departmentDetail(data.dev_department_name)}}</FFormItem>
             <FFormItem :label="$t('indexManagement.maintainDepartment')" prop="ops_department_name">{{departmentDetail(data.ops_department_name)}}</FFormItem>
@@ -81,14 +81,14 @@ const props = defineProps({
         type: Array,
         required: true,
     },
-    subSystems: {
-        type: Array,
-        required: true,
-    },
-    products: {
-        type: Array,
-        required: true,
-    },
+    // subSystems: {
+    //     type: Array,
+    //     required: true,
+    // },
+    // products: {
+    //     type: Array,
+    //     required: true,
+    // },
     businessDomains: {
         type: Array,
         required: true,
@@ -102,8 +102,8 @@ const props = defineProps({
 const getCategoryContent = value => getLabelFromList(props.metricCategories, value);
 const getFrequencyConetnt = value => getLabelFromList(props.metricFrequencies, value);
 const getBussinessDimensionContent = value => getLabelFromList(props.bussinessDimensions, value);
-const getSubSystemContent = value => getLabelFromList(props.subSystems, value);
-const getProductContent = value => getLabelFromList(props.products, value);
+// const getSubSystemContent = value => getLabelFromList(props.subSystems, value);
+// const getProductContent = value => getLabelFromList(props.products, value);
 const getBusinessDomainContent = value => getLabelFromList(props.businessDomains, value);
 </script>
 <style lang="less" scoped>

@@ -19,19 +19,30 @@ package com.webank.wedatasphere.qualitis.dao;
 
 import com.webank.wedatasphere.qualitis.entity.ImsMetricHistoryScheduler;
 
+import java.util.List;
+
 /**
  * @author allenzhou
  */
 public interface ImsMetricHistorySchedulerDao {
 
-//    ImsMetricHistoryScheduler findLast();
-//
-//    /**
-//     * Count the number of records that are within the time period of the last day.
-//     * @param startTime
-//     * @param endTime
-//     * @return
-//     */
-//    int countWithLastDay(String startTime, String endTime);
+    ImsMetricHistoryScheduler findLast();
+
+    /**
+     * Count the number of records that are within the time period of the last day.
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    int countWithLastDay(String startTime, String endTime);
+
+    /**
+     * find ImsMetricHistoryScheduler by collect status
+     * @param db
+     * @param table
+     * @param collectStatus
+     * @return
+     */
+    List<ImsMetricHistoryScheduler> findByCollectStatus(String db, String table, Integer collectStatus);
 
 }

@@ -7,7 +7,7 @@ import com.webank.wedatasphere.qualitis.rule.request.ModifyTaskNewValueRequest;
 import com.webank.wedatasphere.qualitis.rule.response.TaskNewValueResponse;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public interface TaskNewValueService {
 

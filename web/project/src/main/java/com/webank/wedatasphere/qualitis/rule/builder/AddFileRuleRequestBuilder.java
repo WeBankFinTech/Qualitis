@@ -3,6 +3,7 @@ package com.webank.wedatasphere.qualitis.rule.builder;
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constant.UnionWayEnum;
+import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
 import com.webank.wedatasphere.qualitis.dao.RuleMetricDao;
 import com.webank.wedatasphere.qualitis.entity.RuleMetric;
 import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
@@ -32,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2021/8/17 14:14
  */
 @Service
@@ -283,7 +284,13 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
 
     @Override
     public AddRequestBuilder addRuleMetricWithCheck(String ruleMetricName, boolean deleteFailCheckResult, boolean uploadRuleMetricValue, boolean uploadAbnormalValue) throws UnExpectedRequestException {
-        RuleMetric ruleMetricInDb = ruleMetricDao.findByName(ruleMetricName);
+        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
+        if (infos.length != FOUR) {
+            throw new UnExpectedRequestException(ruleMetricName + " does not meet specifications");
+        }
+
+        String enCode = infos[QualitisConstants.COMMON_ARRAY_INDEX_2];
+        RuleMetric ruleMetricInDb = ruleMetricDao.findByEnCode(enCode);
 
         if (ruleMetricInDb != null) {
             setRuleMetricEnCode(ruleMetricInDb.getEnCode());
@@ -293,11 +300,6 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
             this.deleteFailCheckResult = deleteFailCheckResult;
             return this;
         }
-        String[] infos = ruleMetricName.split(SpecCharEnum.BOTTOM_BAR.getValue());
-        if (infos.length != FOUR) {
-            throw new UnExpectedRequestException("The metric name does not meet specifications");
-        }
-        String en = infos[2];
 
         List<String> existRuleMetricNames = addFileRuleRequest.getRuleMetricNamesForBdpClient();
         if (CollectionUtils.isNotEmpty(existRuleMetricNames)) {
@@ -308,7 +310,8 @@ public class AddFileRuleRequestBuilder implements AddRequestBuilder {
             addFileRuleRequest.setRuleMetricNamesForBdpClient(ruleMetricNames);
         }
 
-        setRuleMetricEnCode(en);
+        setRuleMetricEnCode(enCode);
+
         this.uploadAbnormalValue = uploadAbnormalValue;
         this.uploadRuleMetricValue = uploadRuleMetricValue;
         this.deleteFailCheckResult = deleteFailCheckResult;

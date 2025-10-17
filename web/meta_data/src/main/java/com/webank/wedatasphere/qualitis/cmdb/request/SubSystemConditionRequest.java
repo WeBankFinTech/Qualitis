@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.cmdb.request;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/3/2 14:51
  */
 public class SubSystemConditionRequest {

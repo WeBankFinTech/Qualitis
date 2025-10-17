@@ -57,6 +57,14 @@ public interface DepartmentService {
     List<DepartmentSubResponse> getSubDepartmentByDeptCode(Integer deptCode) throws UnExpectedRequestException;
 
     /**
+     *
+     * @param deptCode
+     * @return
+     * @throws UnExpectedRequestException
+     */
+    List<DepartmentSubResponse> getSubDepartmentBySourceType(Integer deptCode) throws UnExpectedRequestException;
+
+    /**
      * find code and name
      * @return
      */

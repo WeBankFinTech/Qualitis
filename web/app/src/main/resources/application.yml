@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: sit01
   jersey:
     type: servlet
   http:

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-07-14 10:29
  * @description
  */
@@ -28,7 +28,7 @@ public interface ScheduledProjectService {
      * @throws ScheduledPushFailedException
      * @throws UnExpectedRequestException
      */
-//    Boolean isCreatedScheduleProject(AddScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException;
+    Boolean isCreatedScheduleProject(AddScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException;
     /**
      * add
      * @param request
@@ -38,7 +38,7 @@ public interface ScheduledProjectService {
      * @throws PermissionDeniedRequestException
      * @throws RoleNotFoundException
      */
-//    void add(AddScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException, PermissionDeniedRequestException, RoleNotFoundException;
+    void add(AddScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
      * modify
@@ -49,7 +49,7 @@ public interface ScheduledProjectService {
      * @throws PermissionDeniedRequestException
      * @throws RoleNotFoundException
      */
-//    void modify(ModifyScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException, IOException, PermissionDeniedRequestException, RoleNotFoundException;
+    void modify(ModifyScheduledTaskRequest request) throws UnExpectedRequestException, ScheduledPushFailedException, IOException, PermissionDeniedRequestException, RoleNotFoundException;
 
     /**
      * Delete scheduled project、scheduled workflow、scheduled task
@@ -58,14 +58,14 @@ public interface ScheduledProjectService {
      * @throws UnExpectedRequestException
      * @throws IOException
      */
-//    void delete(Long scheduledProjectId) throws ScheduledPushFailedException, UnExpectedRequestException, IOException;
+    void delete(Long scheduledProjectId) throws ScheduledPushFailedException, UnExpectedRequestException, IOException;
 
     /**
      * Find rule group by projectId
      * @param projectId
      * @return
      */
-//    List<Map<String, Object>> findRuleGroupNotInFrontBackRule(Long projectId);
+    List<Map<String, Object>> findRuleGroupNotInFrontBackRule(Long projectId);
 
 
     /**
@@ -74,14 +74,14 @@ public interface ScheduledProjectService {
      * @return
      * @throws UnExpectedRequestException
      */
-//    ScheduledProjectDetailResponse getProjectDetail(Long scheduledProjectId) throws UnExpectedRequestException;
+    ScheduledProjectDetailResponse getProjectDetail(Long scheduledProjectId) throws UnExpectedRequestException;
 
     /**
      * Find list of id and name
      * @param request
      * @return
      */
-//    List<Map<String, Object>> getProjectOptionList(ScheduledTaskRequest request);
+    List<Map<String, Object>> getProjectOptionList(ScheduledTaskRequest request);
 
     /**
      * push schedules to WTSS
@@ -93,6 +93,6 @@ public interface ScheduledProjectService {
      * @throws IOException
      * @return
      */
-//    boolean releaseSchedulesToWTSS(String wtssProjectName, String releaseWorkflowName, List<ScheduledTask> releaseTaskList, Long workflowBusinessId, String itsmNo) throws UnExpectedRequestException, ScheduledPushFailedException, IOException;
+    boolean releaseSchedulesToWTSS(String wtssProjectName, String releaseWorkflowName, List<ScheduledTask> releaseTaskList, Long workflowBusinessId, String itsmNo) throws UnExpectedRequestException, ScheduledPushFailedException, IOException;
 
 }

@@ -16,6 +16,7 @@
 
 package com.webank.wedatasphere.qualitis.filter;
 
+import cn.webank.bdp.microfrontend.utils.FilterUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webank.wedatasphere.qualitis.config.AuthFilterUrlConfig;
 import com.webank.wedatasphere.qualitis.config.FrontEndConfig;
@@ -123,7 +124,7 @@ public class Filter1AuthorizationFilter implements Filter {
             return;
         }
 
-        String username = getLoginUser(httpServletRequest);
+        String username = FilterUtil.shouldPass(httpServletRequest, dssOriginUrls, facadeGovCoreIPs) ? getFacadisProxyUser(httpServletRequest) : getLoginUser(httpServletRequest);
         if (overseasVersionEnabled && StringUtils.isBlank(username)){
             if (permitUrlList.contains(requestURI)) {
                 LOGGER.info(" permitUrl allows passing through the filter.");

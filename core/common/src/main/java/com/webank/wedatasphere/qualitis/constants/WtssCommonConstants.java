@@ -1,7 +1,7 @@
 package com.webank.wedatasphere.qualitis.constants;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class WtssCommonConstants {
 

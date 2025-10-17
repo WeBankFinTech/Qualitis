@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.webank.wedatasphere.qualitis.dto.ImsMetricCollectDto;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2024-04-28 11:47
  * @description
  */

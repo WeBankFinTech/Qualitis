@@ -174,6 +174,12 @@ public interface RuleMetricDao {
     List<RuleMetric> findAllRuleMetrics(int page, int size);
 
     /**
+     * Find all sub_systems
+     * @return
+     */
+    List<String> findAllSubSystems(List<Department> departmentList, User user);
+
+    /**
      * Count all rule metrics.
      *
      * @return

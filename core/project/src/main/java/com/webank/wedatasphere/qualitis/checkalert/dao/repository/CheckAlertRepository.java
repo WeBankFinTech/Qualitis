@@ -66,8 +66,8 @@ public interface CheckAlertRepository extends JpaRepository<CheckAlert, Long> {
      * @param topic
      * @return
      */
-    @Query(value = "select qac.*, 0+RIGHT(work_flow_version, 6) AS workFlowVersion from qualitis_alert_config qac where qac.project_id = ?1 and qac.topic = ?2 ORDER BY workFlowVersion ASC limit 1", nativeQuery = true)
-    CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic);
+    @Query(value = "select qac.*, 0+RIGHT(work_flow_version, 6) AS workFlowVersion from qualitis_alert_config qac where qac.project_id = ?1 and qac.topic = ?2 and qac.work_flow_name = ?3 ORDER BY workFlowVersion ASC limit 1", nativeQuery = true)
+    CheckAlert findLowestVersionByProjectAndTopic(Long projectId, String topic, String workflowName);
 
     /**
      *count by project and topic
@@ -75,8 +75,8 @@ public interface CheckAlertRepository extends JpaRepository<CheckAlert, Long> {
      * @param topic
      * @return
      */
-    @Query(value = "select count(qac.id) from qualitis_alert_config qac where qac.project_id = ?1 and qac.topic = ?2", nativeQuery = true)
-    int countByProjectAndTopic(Long projectId, String topic);
+    @Query(value = "select count(qac.id) from qualitis_alert_config qac where qac.project_id = ?1 and qac.topic = ?2 and qac.work_flow_name = ?3", nativeQuery = true)
+    int countByProjectAndTopic(Long projectId, String topic, String workflowName);
 
     /**
      * find by project and workflow and topics

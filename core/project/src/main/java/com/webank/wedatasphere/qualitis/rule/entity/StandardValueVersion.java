@@ -13,7 +13,7 @@ import javax.persistence.Table;
 import java.util.Set;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Entity
 @Table(name = "qualitis_standard_value_version")

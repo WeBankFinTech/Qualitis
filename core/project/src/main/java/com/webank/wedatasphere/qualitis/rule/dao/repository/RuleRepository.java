@@ -68,7 +68,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param ruleName
      * @return
      */
-    @Query(value = "SELECT new map(qr.id as rule_id, qr.name as rule_name, qr.ruleGroup.id as rule_group_id, qr.ruleGroup.ruleGroupName as rule_group_name, qr.template as template,qr.workFlowName as work_flow_name,qr.workFlowVersion as work_flow_version,qr.enable as rule_enable,qr.workFlowSpace as work_flow_space,qr.nodeName as node_name ) FROM Rule qr where qr.project = ?1 and (?2 is null or qr.name = ?2)")
+    @Query(value = "SELECT new map(qr.id as rule_id, qr.name as rule_name, qr.ruleGroup.id as rule_group_id, qr.ruleGroup.ruleGroupName as rule_group_name, qr.template as template, qr.workFlowName as work_flow_name, qr.workFlowVersion as work_flow_version, qr.enable as rule_enable, qr.workFlowSpace as work_flow_space, qr.nodeName as node_name) FROM Rule qr where qr.project = ?1 and (?2 is null or qr.name = ?2)")
     List<Map<String, Object>> findSpecialInfoByProject(Project project, String ruleName);
 
     /**
@@ -257,8 +257,8 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param ruleName
      * @return
      */
-    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 ORDER BY workFlowVersion ASC limit 1 ", nativeQuery = true)
-    Rule findLowestWorkFlowVersion(Long projectId, String ruleName);
+    @Query(value = "SELECT q.*, 0+RIGHT(work_flow_version,6) AS workFlowVersion from qualitis_rule q where q.name =?2 and q.project_id =?1 and q.work_flow_name = ?3 ORDER BY workFlowVersion ASC limit 1 ", nativeQuery = true)
+    Rule findLowestWorkFlowVersion(Long projectId, String ruleName, String workflowName);
 
     /**
      * Paging rules
@@ -293,8 +293,8 @@ public interface RuleRepository extends JpaRepository<Rule, Long> {
      * @param projectId
      * @return
      */
-    @Query(value = "select count(*) FROM qualitis_rule where name = ?1 and project_id= ?2 ", nativeQuery = true)
-    int countByProjectAndRuleName(String ruleName, Long projectId);
+    @Query(value = "select count(*) FROM qualitis_rule where name = ?1 and project_id= ?2 and work_flow_name = ?3", nativeQuery = true)
+    int countByProjectAndRuleName(String ruleName, Long projectId, String workflowName);
 
     /**
      * select mate rule by ruleName workFlowName workFlowVersion

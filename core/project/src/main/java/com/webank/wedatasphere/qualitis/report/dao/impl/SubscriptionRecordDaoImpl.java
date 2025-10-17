@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 @Repository
 public class SubscriptionRecordDaoImpl implements SubscriptionRecordDao {

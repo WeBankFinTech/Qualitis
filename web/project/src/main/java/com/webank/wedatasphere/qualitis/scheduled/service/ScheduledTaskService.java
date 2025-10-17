@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author
  */
 public interface ScheduledTaskService {
 

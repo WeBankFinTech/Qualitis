@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.entity;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/4/26 20:55
  */
 public class ReportBatchInfo {

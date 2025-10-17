@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author allenzhou@webank.com
+ * @author
  * @date 2023/1/3 19:25
  */
 public class DataSourceEnvMappingRequest {

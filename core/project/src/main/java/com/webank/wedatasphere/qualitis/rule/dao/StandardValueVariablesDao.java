@@ -5,7 +5,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.StandardValueVariables;
 import java.util.List;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2024-09-10 15:26
  * @description
  */

@@ -3,7 +3,7 @@ package com.webank.wedatasphere.qualitis.scheduled.request.checker;
 import com.webank.wedatasphere.qualitis.scheduled.constant.SignalTypeEnum;
 
 /**
- * @author v_minminghe@webank.com
+ * @author 
  * @date 2022-11-03 17:30
  * @description
  */

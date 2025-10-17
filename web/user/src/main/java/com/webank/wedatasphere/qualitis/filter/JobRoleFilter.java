@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * @author v_gaojiedeng@webank.com
+ * @author 
  */
 public class JobRoleFilter implements Filter {
     @Autowired

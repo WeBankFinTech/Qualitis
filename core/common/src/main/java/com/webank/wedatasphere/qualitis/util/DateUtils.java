@@ -16,11 +16,15 @@
 
 package com.webank.wedatasphere.qualitis.util;
 
+import com.webank.wedatasphere.qualitis.constant.SpecCharEnum;
 import com.webank.wedatasphere.qualitis.constants.QualitisConstants;
+import com.webank.wedatasphere.qualitis.exception.UnExpectedRequestException;
 import org.apache.commons.lang.time.FastDateFormat;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -59,5 +63,20 @@ public class DateUtils {
       stringBuilder.append(characters.charAt(index));
     }
     return stringBuilder.toString();
+  }
+
+  public static Date handleTimeFormatting(String runDate) throws UnExpectedRequestException {
+    Date runRealDate = null;
+    try {
+      if (runDate.contains(SpecCharEnum.MINUS.getValue())) {
+        runRealDate = new SimpleDateFormat("yyyy-MM-dd").parse(runDate);
+      } else {
+        runRealDate = new SimpleDateFormat("yyyyMMdd").parse(runDate);
+      }
+    } catch (ParseException e) {
+      String errorMsg = "Parse date string with run date failed. Exception message: " + e.getMessage();
+      throw new UnExpectedRequestException(errorMsg);
+    }
+    return runRealDate;
   }
 }

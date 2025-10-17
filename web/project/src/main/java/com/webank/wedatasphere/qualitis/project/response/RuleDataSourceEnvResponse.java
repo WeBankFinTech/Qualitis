@@ -4,7 +4,7 @@ import com.webank.wedatasphere.qualitis.rule.entity.RuleDataSourceEnv;
 import org.springframework.beans.BeanUtils;
 
 /**
- * @author v_minminghe@webank.com
+ * @author
  * @date 2023-04-25 15:43
  * @description
  */

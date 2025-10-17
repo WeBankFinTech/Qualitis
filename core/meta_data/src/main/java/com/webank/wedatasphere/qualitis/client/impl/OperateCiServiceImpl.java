@@ -1,9 +1,9 @@
 package com.webank.wedatasphere.qualitis.client.impl;
 
 import cn.hutool.db.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.webank.wedatasphere.qualitis.client.config.MetricPropertiesConfig;
 import com.webank.wedatasphere.qualitis.client.constant.OperateEnum;
 import com.webank.wedatasphere.qualitis.client.request.OperateRequest;
 import com.webank.wedatasphere.qualitis.config.OperateCiConfig;
@@ -18,12 +18,10 @@ import com.webank.wedatasphere.qualitis.util.map.CustomObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -38,13 +36,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @author allenzhou@webank.com
+ * @author 
  * @date 2021/3/2 10:58
  */
 @Service
 public class OperateCiServiceImpl implements OperateCiService {
-    @Autowired
-    private MetricPropertiesConfig metricPropertiesConfig;
+
+    @Value("${department.white_list}")
+    private String whiteList;
 
     @Autowired
     private OperateCiConfig operateCiConfig;
@@ -60,7 +59,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<BuzDomainResponse> getAllBuzDomainInfo() throws UnExpectedRequestException, IOException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get all buz Domain Info return empty list.");
+            LOGGER.info("[overseasVersion] get all buz Domain Info return empty list.");
             return new ArrayList<>();
         }
         String url = UriBuilder.fromUri(operateCiConfig.getHost()).path(operateCiConfig.getIntegrateUrl()).toString();
@@ -103,7 +102,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<SubSystemResponse> getAllSubSystemInfo() throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get all sub system info return default 5375.");
+            LOGGER.info("[overseasVersion] get all sub system info return default 5375.");
             SubSystemResponse subSystemResponse = new SubSystemResponse();
             subSystemResponse.setSubSystemId("5375");
             subSystemResponse.setSubSystemName("WDSDQMS-CORE");
@@ -199,7 +198,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<SubSystemResponse> getSubSystemInfoByPage(String subSystemName, int page, int size) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get usb system Info return default 5375.");
+            LOGGER.info("[overseasVersion] get usb system Info return default 5375.");
             SubSystemResponse subSystemResponse = new SubSystemResponse();
             subSystemResponse.setSubSystemId("5375");
             subSystemResponse.setSubSystemName("WDSDQMS-CORE");
@@ -303,11 +302,13 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public String getSubSystemIdByName(String subSystemName) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get sub system id return null.");
+            LOGGER.info("[overseasVersion] get sub system id return null.");
             //上层调用判断了非空
             return null;
         }
-        Map<String, Object> response = requestCmdb(OperateEnum.SUB_SYSTEM, "A problem occurred when converting the request body to json.", "{&FAILED_TO_GET_SUB_SYSTEM_INFO}", "Start to get sub_system info from cmdb. url: {}, method: {}, body: {}", "Succeed to get sub_system info from cmdb. response.", null, null);
+        Map<String, String> filterMap = Maps.newHashMapWithExpectedSize(1);
+        filterMap.put("subsystem_name", subSystemName);
+        Map<String, Object> response = requestCmdb(OperateEnum.SUB_SYSTEM, "A problem occurred when converting the request body to json.", "{&FAILED_TO_GET_SUB_SYSTEM_INFO}", "Start to get sub_system info from cmdb. url: {}, method: {}, body: {}", "Succeed to get sub_system info from cmdb. response.", filterMap, null);
 
         List<Object> content = checkResponse(response);
         for (int i = 0; i < content.size(); i++) {
@@ -337,7 +338,7 @@ public class OperateCiServiceImpl implements OperateCiService {
 
     private Map<String, Object> requestCmdb(OperateEnum subSystem, String problemDescribe, String international, String requestInfo, String successInfo, Map<String, String> filter, Page pageRequest) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" request cmdb return empty map.");
+            LOGGER.info("[overseasVersion] request cmdb return empty map.");
             return new HashMap<>();
         }
         String url = UriBuilder.fromUri(operateCiConfig.getHost()).path(operateCiConfig.getUrl()).toString();
@@ -400,8 +401,13 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<ProductResponse> getAllProductInfo()
             throws UnExpectedRequestException {
+        return getProductInfoByCondition(null);
+    }
+
+    @Override
+    public List<ProductResponse> getProductInfoByCondition(String productId) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get all product Info return Qualitis.");
+            LOGGER.info("[overseasVersion] get all product Info return Qualitis.");
             ProductResponse productResponse = new ProductResponse();
             productResponse.setProductId("Qualitis");
             productResponse.setProductName("Qualitis");
@@ -418,6 +424,12 @@ public class OperateCiServiceImpl implements OperateCiService {
         // Construct request body.
         OperateRequest request = new OperateRequest(OperateEnum.PRODUCT.getCode());
         request.setUserAuthKey(operateCiConfig.getUserAuthKey());
+
+        Map<String, String> filter = new HashMap<>();
+        if (StringUtils.isNotBlank(productId)) {
+            filter.put("product_cd", productId);
+        }
+        request.setFilter(filter);
         HttpEntity<Object> entity = null;
         try {
             String jsonRequest = objectMapper.writeValueAsString(request);
@@ -453,7 +465,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<CmdbDepartmentResponse> getAllDepartmetInfo() throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get all department Info return empty list.");
+            LOGGER.info("[overseasVersion] get all department Info return empty list.");
             return new ArrayList<>();
         }
         Integer pId = 100000;
@@ -462,7 +474,7 @@ public class OperateCiServiceImpl implements OperateCiService {
         LOGGER.info("Succeed to get department response from esb.");
 
         List<CmdbDepartmentResponse> responses = Lists.newArrayListWithCapacity(departmentSubResponses.size());
-        List<String> departmentList = Arrays.asList(metricPropertiesConfig.getWhiteList().split(SpecCharEnum.COMMA.getValue()));
+        List<String> departmentList = Arrays.asList(whiteList.split(SpecCharEnum.COMMA.getValue()));
 
         for (int i = 0; i < departmentSubResponses.size(); i++) {
             DepartmentSubResponse current = departmentSubResponses.get(i);
@@ -488,7 +500,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public List<DepartmentSubResponse> getDevAndOpsInfo(Integer deptCode) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get dev and ops info return empty list.");
+            LOGGER.info("[overseasVersion] get dev and ops info return empty list.");
             return new ArrayList<>();
         }
         String url = UriBuilder.fromUri(operateCiConfig.getEfHost()).path(operateCiConfig.getEfUrl())
@@ -548,7 +560,7 @@ public class OperateCiServiceImpl implements OperateCiService {
     @Override
     public GeneralResponse getDcn(String subSystemId, String dcnRangeType, List<String> dcnRangeValues) throws UnExpectedRequestException {
         if (overseasVersionEnabled){
-            LOGGER.info(" get dev and ops info return empty list.");
+            LOGGER.info("[overseasVersion] get dev and ops info return empty list.");
             return new GeneralResponse();
         }
         String url = UriBuilder.fromUri(operateCiConfig.getHost()).path(operateCiConfig.getIntegrateUrl()).toString();

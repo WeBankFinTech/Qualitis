@@ -20,10 +20,7 @@ export function fetchColumnsOfTableDetail(params = {}) {
     return FRequest('/api/v1/projector/query/columns', params);
 }
 
-// 获取子系统列表
-export function fetchSubSystemInfo(params = {}) {
-    return FRequest('/api/v1/projector/meta_data/subSystemInfo', params);
-}
+// 获取子系统列表 - 已移除，改为直接输入
 
 // 获取关联规则
 // 修改为表规则、字段规则查询

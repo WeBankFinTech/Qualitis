@@ -173,7 +173,6 @@
             :curDataSourceDetail="curDataSourceDetail"
             :sid="curSelectedDataSourceId"
             :queryProxyUser="queryData.proxyUser"
-            :subSystemList="subSystemList"
             @updateDataSource="getTasksData(0,tasksPagination.size)"
         ></AddOrEditManagement>
 
@@ -188,7 +187,6 @@
             ref="advancedQueryRef"
             v-model:showAdvanceQuery="showAdvanceQuery"
             v-model:advanceQuery="advanceQuery"
-            :subSystemList="subSystemList"
             @advanceSearch="search"
         />
         <!-- 连接过期确认 -->
@@ -229,7 +227,7 @@ import useTableHeaderConfig from '@/hooks/useTableHeaderConfig';
 import { getvisibilityDepartment, formatterEmptyValue } from '@/common/utils';
 import AdvancedQuery from './components/advancedQuery.vue';
 import {
-    fetchProxyUserList, fetchDataSourceName, fetchDataSourceType, fetchVersionList, fetchDataSourceDetail, fetchTestConnection, fetchPublishDataSource, fetchExpireDataSource, fetchEditDataSource, fetchAddDataSource, fetchDataSourceList, fetchSubSystemInfo, queryDataSourceList,
+    fetchProxyUserList, fetchDataSourceName, fetchDataSourceType, fetchVersionList, fetchDataSourceDetail, fetchTestConnection, fetchPublishDataSource, fetchExpireDataSource, fetchEditDataSource, fetchAddDataSource, fetchDataSourceList, queryDataSourceList,
 } from './api';
 import AddOrEditManagement from './components/addOrEditManagement.vue';
 
@@ -296,8 +294,6 @@ const showAdvanceQuery = ref(false);
 const toggleAdvanceQuery = async () => {
     showAdvanceQuery.value = true;
     queryData.value = {};
-    // eslint-disable-next-line no-use-before-define
-    await getSubSystemInfo();
 };
 const handleReset = (common = false) => {
     console.log('handleReset-重置操作，重置页码重新查询');
@@ -611,27 +607,6 @@ const clickVersionListTableCell = (data) => {
     versionListTaskId.value = data.row.application_id;
 };
 
-// 子系统列表
-const subSystemList = ref([]);
-// 获取子系统中文名
-const getSystemNameNew = (data, tr) => tr.full_cn_name || tr.subSystemFullCnName || data;
-
-// 获取子系统列表
-const getSubSystemInfo = async () => {
-    const res = await fetchSubSystemInfo();
-    const list = res || [];
-    subSystemList.value = list.map((item) => {
-        const cnName = getSystemNameNew(item.subSystemId, item);
-        return Object.assign({}, item, {
-            subSystemName: cnName,
-            enName: item.subSystemName,
-            cnName,
-            id: item.subSystemId,
-            value: String(item.subSystemName),
-            label: item.subSystemName,
-        });
-    });
-};
 
 // 版本列表组件的数据初始化
 const logDetailDrawerInit = (dataSourceId) => {
@@ -639,7 +614,6 @@ const logDetailDrawerInit = (dataSourceId) => {
 
     try {
         getVersionListTableData(dataSourceId);
-        getSubSystemInfo();
     } catch (error) {
         console.log('error: ', error);
     }
@@ -710,9 +684,6 @@ const curDataSourceDetail = ref({});
 const openAddDataSourceModal = () => {
     showAddDataSourceModal.value = true;
     curMode.value = 'add';
-    if (subSystemList.value.length === 0) {
-        getSubSystemInfo();
-    }
 };
 
 const addRuleValidate = ref({ // 表单验证规则
@@ -798,8 +769,7 @@ const confirmAddDataSource = async () => {
     if (!isDetail.value) return saveEditing();
     addDataSourceFormRef.value.validate().then(async () => {
         const url = `/api/v1/projector/meta_data/data_source/create?proxyUser=${queryData.value.proxyUser}`;
-        const subSystemId = addDataSourceForm.value.subSystem;
-        const subSystemName = subSystemList.value.find(v => v.value === subSystemId)?.enName;
+        const subSystemName = addDataSourceForm.value.subSystem;
         const params = {
             dataSourceName: addDataSourceForm.value.dataSourceName,
             dataSourceDesc: addDataSourceForm.value.dataSourceDescription,
@@ -845,7 +815,6 @@ const showDataSourceModal = ref(false);
 const openEditDataSourceModal = async () => {
     showDataSourceModal.value = false;
     isDetail.value = false;
-    if (subSystemList.value.length === 0) await getSubSystemInfo();
     showAddDataSourceModal.value = true;
 };
 
@@ -908,8 +877,7 @@ const cancelEditing = () => {
 const saveEditing = () => {
     addDataSourceFormRef.value.validate().then(async () => {
         const url = `/api/v1/projector/meta_data/data_source/modify?proxyUser=${queryData.value.proxyUser}&dataSourceId=${trData.value.id}`;
-        const subSystemId = addDataSourceForm.value.subSystem;
-        const subSystemName = subSystemList.value.find(v => v.value === subSystemId)?.enName;
+        const subSystemName = addDataSourceForm.value.subSystem;
 
         const params = {
             dataSourceName: addDataSourceForm.value.dataSourceName,
@@ -1022,7 +990,6 @@ const handleExpire = async () => {
 const spinShow = ref(false);
 const clickTableMore = async (value, row) => {
     if (value === 'detail') {
-        if (subSystemList.value.length === 0) await getSubSystemInfo();
         // 数据源详情查看时不带版本id
         spinShow.value = true; // 数据请求太慢给个加载中提示
         await getDataSourceDetailByVersionId();
